@@ -123,7 +123,7 @@ type TargetDetails struct {
 	Location []string
 }
 
-// LINT.ThenChange(binary/proto/scan_result.proto)
+// LINT.ThenChange(/binary/proto/scan_result.proto)
 
 // Run runs the specified detectors and returns their findings,
 // as well as info about whether the plugin runs completed successfully.

@@ -24,22 +24,22 @@ To build SCALIBR, you'll need to have the following installed:
 1. `make`
 1. `./scalibr --result=result.textproto`
 
-See the [result proto definition](binary/proto/scan_result.proto) for details about the scan result format.
+See the [result proto definition](/binary/proto/scan_result.proto) for details about the scan result format.
 
 Run `./scalibr --help` for a list of additional CLI args.
 
 ### As a library:
 1. Import `github.com/google/osv-scalibr` into your Go project
 1. Write a custom implementation for the `fs.FS` interface, or use an existing one like `os.DirFS`
-1. Create a new [scalibr.ScanConfig](scalibr.go#L36) struct, configure the extraction and detection plugins to run
+1. Create a new [scalibr.ScanConfig](/scalibr.go#L36) struct, configure the extraction and detection plugins to run
 1. Call `scalibr.New().Scan()` with the config and the FS implementation
-1. Parse the returned [scalibr.ScanResults](scalibr.go#L50)
+1. Parse the returned [scalibr.ScanResults](/scalibr.go#L50)
 
 See below for an example code snippet.
 
 ### On a container image
 
-See the [run_scalibr_on_image.sh](run_scalibr_on_image.sh) script for an example of how to run SCALIBR on container images.
+See the [run_scalibr_on_image.sh](/run_scalibr_on_image.sh) script for an example of how to run SCALIBR on container images.
 
 ### SPDX generation
 
@@ -58,10 +58,10 @@ Some fields in the generated SPDX can be overwritten:
 ## Running built-in plugins
 
 ### With the standalone binary
-The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors](extractor/list/list.go#L26), [detectors](detector/list/list.go#L26)).
+The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors](/extractor/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
 
 ### With the library
-A collection of all built-in plugin modules can be found in the definition files ([extractors](extractor/list/list.go#L26), [detectors](detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
+A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
 
 ```
 import (
@@ -80,7 +80,7 @@ results := scalibr.New().Scan(context.Background(), cfg)
 ## Creating + running custom plugins
 Custom plugins can only be run when using SCALIBR as a library.
 
-1. Create an implementation of the SCALIBR [Extractor](extractor/extractor.go#L30) or [Detector](detector/detector.go#L28) interface.
+1. Create an implementation of the SCALIBR [Extractor](/extractor/extractor.go#L30) or [Detector](/detector/detector.go#L28) interface.
 2. Add the newly created struct to the scan config and run the scan, e.g.
 
 ```
@@ -96,7 +96,7 @@ results := scalibr.New().Scan(context.Background(), cfg)
 ```
 
 ## Custom logging
-You can make the  SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](log/log.go#L22) interface to `log.SetLogger()`:
+You can make the  SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
 
 ```
 import (

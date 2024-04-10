@@ -51,7 +51,7 @@ const (
 	ScanStatusFailed
 )
 
-// LINT.ThenChange(binary/proto/scan_result.proto)
+// LINT.ThenChange(/binary/proto/scan_result.proto)
 
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
 func StatusFromErr(p Plugin, partial bool, err error) *Status {

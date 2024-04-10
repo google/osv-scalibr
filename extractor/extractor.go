@@ -101,7 +101,7 @@ type Inventory struct {
 	Metadata any
 }
 
-// LINT.ThenChange(binary/proto/scan_result.proto)
+// LINT.ThenChange(/binary/proto/scan_result.proto)
 
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.

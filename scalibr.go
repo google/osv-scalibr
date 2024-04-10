@@ -71,7 +71,7 @@ type ScanResult struct {
 	Findings     []*detector.Finding
 }
 
-// LINT.ThenChange(binary/proto/scan_result.proto)
+// LINT.ThenChange(/binary/proto/scan_result.proto)
 
 // Scan executes the extraction and detection using the provided scan config.
 func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {

@@ -119,7 +119,7 @@ var (
 	}
 )
 
-// LINT.ThenChange(docs/supported_inventory_types.md)
+// LINT.ThenChange(/docs/supported_inventory_types.md)
 
 func init() {
 	for _, e := range append(All, Untested...) {
