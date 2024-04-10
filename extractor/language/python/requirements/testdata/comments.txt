@@ -1,0 +1,8 @@
+# main
+PyCrypto==1.2-alpha
+GMPY2==1
+
+# asdf
+SymPy==1.2
+requests ==1.0 # this one in particular
+six==1.2

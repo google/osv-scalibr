@@ -1,0 +1,33 @@
+Metadata-Version: 1.1
+Name: pycups
+Version: 2.0.1
+Summary: Python bindings for libcups
+Home-page: https://github.com/zdohnal/pycups
+Author: Zdenek Dohnal
+Author-email: zdohnal@redhat.com
+License: GPLv2+
+Download-URL: https://github.com/zdohnal/pycups/releases
+Description: This is a set of Python bindings for the libcups library from the
+        CUPS project.
+        
+        >>> # Example of getting a list of printers
+        >>> import cups
+        >>> conn = cups.Connection ()
+        >>> printers = conn.getPrinters ()
+        >>> for printer in printers:
+        ...     print printer, printers[printer]["device-uri"]
+        ...
+        HP ipp://192.168.1.1:631/printers/HP
+        duplex ipp://192.168.1.1:631/printers/duplex
+        HP-LaserJet-6MP ipp://192.168.1.1:631/printers/HP-LaserJet-6MP
+        EPSON-Stylus-D78 usb://EPSON/Stylus%20D78
+        
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3

@@ -1,0 +1,3 @@
+PyCrypto
+GMPY2
+SymPy

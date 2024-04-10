@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Implementation-Version: 1.2.3
+Name: ${wrong_name}
+Implementation-Title: %pluginName
+Specification-Title: no spaces allowed in artifact id
+Bundle-Name: correct.name
+Bundle-SymbolicName: no spaces allowed in group id
+Extension-Name: test.group

@@ -1,0 +1,3 @@
+asdf==1.2
+qwert==${MY_VARIABLE_1}
+another==1.0

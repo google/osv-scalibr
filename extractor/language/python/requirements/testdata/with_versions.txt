@@ -1,0 +1,9 @@
+nltk==3.2.2
+tabulate==0.7.7
+newspaper3k>=0.2.2
+asdf==0.7.*
+qwerty \
+  == 0.1
+hy-phen==1.2
+under_score==1.3
+yolo===1.0
