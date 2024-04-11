@@ -9,6 +9,9 @@ test: protos
 protos:
 	./build_protos.sh
 
+scalibr-static: protos
+	go build -ldflags="-extldflags=-static" binary/scalibr.go
+
 clean:
 	rm -rf binary/proto/*_go_proto
 	rm -f scalibr
