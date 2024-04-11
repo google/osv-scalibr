@@ -2,8 +2,6 @@
 
 SCALIBR supports extracting software package information from a variety of OS and language package managers. See below for the comprehensive list. Some of these are supported by reusing extraction code from Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 
-If you're a SCALIBR user and are interested in having it support new inventory types we're happy to accept contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
-
 ## OS packages
 
 * Alpine
@@ -40,3 +38,5 @@ If you're a SCALIBR user and are interested in having it support new inventory t
   * Lockfiles: Gemfile.lock (OSV)
 * Rust
   * Cargo.lock (OSV)
+
+If you're a SCALIBR user and are interested in having it support new inventory types we're happy to accept contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
