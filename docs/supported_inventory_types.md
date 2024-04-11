@@ -8,7 +8,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * APK
 * COS
   * cos-package-info.json
-* DPGK (used by e.g. Debian, Ubuntu)
+* DPKG (used by e.g. Debian, Ubuntu)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 
 ## Language packages
