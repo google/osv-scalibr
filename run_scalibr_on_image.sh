@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # Build SCALIBR and copy it into the tmp dir.
 touch "$tmp/scalibr-result.textproto"
-make scalibr
+make scalibr-static
 cp -f scalibr "$tmp/scalibr"
 chmod -R 777 $tmp
 
