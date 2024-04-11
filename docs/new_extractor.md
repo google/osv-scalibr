@@ -29,7 +29,7 @@ requirements/ <- extractor
 ## What you need to implement
 
 They have to implement the
-[InventoryExtractor](/extractor/extractor.go#L34)
+[InventoryExtractor](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L38)
 interface.
 
 # See extractor/extractor.go symbol InventoryExtractor
@@ -37,7 +37,7 @@ interface.
 # See plugin/plugin.go symbol Plugin
 
 Here is a simplified version of how SCALIBR will call the extractor like this
-([actual code](/extractor/extractor.go#L86)):
+([actual code](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L108)):
 
 ```
 for f in walk.files:
@@ -58,7 +58,7 @@ will take care of this.
 ## Input
 
 SCALIBR will call `Extract` with
-[ScanInput](/extractor/extractor.go#L50),
+[ScanInput](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L54),
 which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
 # See extractor/extractor.go symbol ScanInput
@@ -66,7 +66,7 @@ which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 ## Output
 
 The `Extract` method should return a list of
-[Inventory](/extractor/extractor.go#L63).
+[Inventory](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L85).
 
 # See extractor/extractor.go symbol extractor.Inventory\b
 

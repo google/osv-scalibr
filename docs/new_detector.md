@@ -73,7 +73,7 @@ software found, or exit early if none are installed. For an example use case see
 ## Output format
 
 Detectors return their vulnerability findings in the
-[`Finding`](/detector/detector.go#L46)
+[`Finding`](https://github.com/google/osv-scalibr/blob/4d646d6e/detector/detector.go#46)
 struct. See the comments in the `Finding` struct and
 [existing Detector implementations](/detector/govulncheck/binary/detector.go)
 for guidance on how to fill it out. Keep in mind that findings are uniquely
