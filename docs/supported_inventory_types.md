@@ -10,7 +10,7 @@ If you're a SCALIBR user and are interested in having it support new inventory t
   * APK
 * COS
   * cos-package-info.json
-* DPGK (used by e.g. Debian, Ubuntu)
+* DPKG (used by e.g. Debian, Ubuntu)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 
 ## Language packages
