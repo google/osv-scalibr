@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/internal/units"
 	"github.com/google/osv-scalibr/extractor/os/osrelease"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -38,7 +39,7 @@ const (
 
 	// defaultMaxFileSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSize = int64(100) << 20 // 100MiB
+	defaultMaxFileSize = 100 * units.MiB
 )
 
 // Config is the configuration for the Extractor.

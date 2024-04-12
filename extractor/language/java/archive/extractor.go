@@ -30,6 +30,7 @@ import (
 
 	"go.uber.org/multierr"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -43,7 +44,7 @@ const (
 	defaultMaxZipDepth = 16
 	// defaultMaxZipBytes in the maximum number of bytes recursively read from an archive file.
 	// If this limit is reached, the default extractor is halted and results so far are returned.
-	defaultMaxZipBytes = 4 << 30 // 4GiB
+	defaultMaxZipBytes = 4 * units.GiB
 	// defaultMinZipBytes is slightly larger than an empty zip file which is 22 bytes.
 	// https://en.wikipedia.org/wiki/ZIP_(file_format)#:~:text=Viewed%20as%20an%20ASCII%20string,file%20are%20usually%20%22PK%22.
 	defaultMinZipBytes = 30
@@ -60,7 +61,7 @@ type Config struct {
 	MaxZipDepth int
 	// MaxOpenedBytes is the maximum number of bytes recursively read from an archive file.
 	// If this limit is reached, extraction is halted and results so far are returned.
-	MaxOpenedBytes int
+	MaxOpenedBytes int64
 	// MinZipBytes is use to ignore empty zip files during extraction.
 	// Zip files smaller than minZipBytes are ignored.
 	MinZipBytes int
@@ -73,7 +74,7 @@ type Config struct {
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
 	maxZipDepth         int
-	maxOpenedBytes      int
+	maxOpenedBytes      int64
 	minZipBytes         int
 	extractFromFilename bool
 	hashJars            bool
@@ -128,12 +129,12 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 //
 // It returns early with an error if max depth or max opened bytes is reached.
 // Extracted packages are returned even if an error has occurred.
-func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInput, depth, openedBytes int) ([]*extractor.Inventory, error) {
+func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, error) {
 	// Return early if any max/min thresholds are hit.
 	if depth > e.maxZipDepth {
 		return nil, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
 	}
-	if oBytes := openedBytes + int(input.Info.Size()); oBytes > e.maxOpenedBytes {
+	if oBytes := openedBytes + input.Info.Size(); oBytes > e.maxOpenedBytes {
 		return nil, fmt.Errorf("%s reached max opened bytes of %d at %q", e.Name(), oBytes, input.Path)
 	}
 	if int(input.Info.Size()) < e.minZipBytes {
@@ -151,7 +152,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 		if err != nil {
 			return nil, fmt.Errorf("%s failed to read file at %q: %w", e.Name(), input.Path, err)
 		}
-		openedBytes += len(b)
+		openedBytes += int64(len(b))
 		// Check size again in case input.Info.Size() was not accurate. Return early if hit max.
 		if openedBytes > e.maxOpenedBytes {
 			return nil, fmt.Errorf("%s reached max opened bytes of %d at %q", e.Name(), openedBytes, input.Path)

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -35,7 +36,7 @@ const (
 
 	// defaultMaxJSONSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxJSONSize = int64(100) << 20 // 100MiB
+	defaultMaxJSONSize = 100 * units.MiB
 )
 
 type packageJSON struct {
