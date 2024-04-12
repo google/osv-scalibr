@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/purl"
@@ -97,7 +96,7 @@ func Parse(r io.Reader) (PackagesLockJSON, error) {
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	return &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    strings.ToLower(i.Name),
+		Name:    i.Name,
 		Version: i.Version,
 	}, nil
 }

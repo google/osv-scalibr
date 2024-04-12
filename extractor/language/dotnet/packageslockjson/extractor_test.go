@@ -158,7 +158,7 @@ func TestToPURL(t *testing.T) {
 	}
 	want := &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    "name",
+		Name:    "Name",
 		Version: "1.2.3",
 	}
 	got, err := e.ToPURL(i)
