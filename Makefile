@@ -1,16 +1,16 @@
 export PATH := $(PATH):$(shell go env GOPATH)/bin
 
 scalibr: protos
-	go build binary/scalibr.go
+	CGO_ENABLED=1 go build binary/scalibr.go
 
 test: protos
-	go test ./...
+	CGO_ENABLED=1 go test ./...
 
 protos:
 	./build_protos.sh
 
 scalibr-static: protos
-	go build -ldflags="-extldflags=-static" binary/scalibr.go
+	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr.go
 
 clean:
 	rm -rf binary/proto/*_go_proto
