@@ -1,7 +1,7 @@
 export PATH := $(PATH):$(shell go env GOPATH)/bin
 
 scalibr: protos
-	CGO_ENABLED=1 go build binary/scalibr.go
+	CGO_ENABLED=1 asdf
 
 test: protos
 	CGO_ENABLED=1 go test ./...
