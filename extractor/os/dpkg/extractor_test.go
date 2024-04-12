@@ -418,6 +418,28 @@ func TestExtract(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			name:      "status.d file without Status field set should work",
+			path:      "testdata/status.d/foo",
+			osrelease: DebianBookworm,
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "foo",
+					Version: "1.2.3",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "foo",
+						PackageVersion:    "1.2.3",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+						Maintainer:        "someone",
+						Architecture:      "amd64",
+					},
+					Locations: []string{"testdata/status.d/foo"},
+					Extractor: dpkg.Name,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

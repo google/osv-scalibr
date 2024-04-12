@@ -124,12 +124,16 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				return pkgs, err
 			}
 		}
-		installed, err := statusInstalled(h.Get("Status"))
-		if err != nil {
-			return pkgs, fmt.Errorf("statusInstalled(%q): %w", h.Get("Status"), err)
-		}
-		if !installed {
-			continue
+		// Distroless distributions have their packages in status.d, which does not contain the Status
+		// value.
+		if !strings.Contains(input.Path, "status.d") || h.Get("Status") != "" {
+			installed, err := statusInstalled(h.Get("Status"))
+			if err != nil {
+				return pkgs, fmt.Errorf("statusInstalled(%q): %w", h.Get("Status"), err)
+			}
+			if !installed {
+				continue
+			}
 		}
 		pkgName := h.Get("Package")
 		pkgVersion := h.Get("Version")
