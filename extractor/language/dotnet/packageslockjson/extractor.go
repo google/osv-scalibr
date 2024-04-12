@@ -27,6 +27,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "dotnet/packageslockjson"
+)
+
 // Extractor extracts packages from inside a packages.lock.json.
 type Extractor struct{}
 
@@ -47,7 +52,7 @@ type PackageInfo struct {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return "dotnet/packageslockjson" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
@@ -72,6 +77,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				Locations: []string{
 					input.Path,
 				},
+				Extractor: e.Name(),
 			}
 			res = append(res, inv)
 		}
