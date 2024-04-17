@@ -25,4 +25,5 @@ type Metadata struct {
 	OSBuildID    string
 	Vendor       string
 	Architecture string
+	License      string
 }

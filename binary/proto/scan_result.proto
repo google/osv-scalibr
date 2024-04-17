@@ -223,6 +223,7 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
+  string license = 10;
 }
 
 // The additional data found in COS packages.

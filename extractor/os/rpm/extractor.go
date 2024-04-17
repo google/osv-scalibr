@@ -117,6 +117,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 			OSBuildID:    m["BUILD_ID"],
 			Vendor:       p.Vendor,
 			Architecture: p.Architecture,
+			License:      p.License,
 		}
 
 		i := &extractor.Inventory{
@@ -167,6 +168,7 @@ func (e Extractor) parseRPMDB(path string) ([]rpmPackageInfo, error) {
 			SourceRPM:    pkg.SourceRpm,
 			Vendor:       pkg.Vendor,
 			Architecture: pkg.Arch,
+			License:      pkg.License,
 		}
 
 		result = append(result, newPkg)
@@ -184,6 +186,7 @@ type rpmPackageInfo struct {
 	Maintainer   string
 	Vendor       string
 	Architecture string
+	License      string
 }
 
 func toNamespace(m *Metadata) string {
@@ -226,6 +229,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	}
 	if m.SourceRPM != "" {
 		q[purl.SourceRPM] = m.SourceRPM
+	}
+	if m.Architecture != "" {
+		q[purl.Arch] = m.Architecture
 	}
 	return &purl.PackageURL{
 		Type:       purl.TypeRPM,

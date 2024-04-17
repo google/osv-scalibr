@@ -278,6 +278,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsBuildId:    m.OSBuildID,
 				Vendor:       m.Vendor,
 				Architecture: m.Architecture,
+				License:      m.License,
 			},
 		}
 	case *cos.Metadata:

@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/os/dpkg"
+	"github.com/google/osv-scalibr/extractor/os/rpm"
 	"github.com/google/osv-scalibr/extractor/sbom/spdx"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -274,6 +275,57 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file3"},
 		Extractor: "sbom/spdx",
 	}
+	purlRPMInventory := &extractor.Inventory{
+		Name:    "openssh-clients",
+		Version: "5.3p1",
+		Metadata: &rpm.Metadata{
+			PackageName:  "openssh-clients",
+			SourceRPM:    "openssh-5.3p1-124.el6_10.src.rpm",
+			Epoch:        2,
+			OSID:         "rhel",
+			OSVersionID:  "8.9",
+			OSBuildID:    "",
+			OSName:       "Red Hat Enterprise Linux",
+			Vendor:       "CentOS",
+			Architecture: "x86_64",
+			License:      "BSD",
+		},
+		Locations: []string{"/file1"},
+		Extractor: "os/rpm",
+	}
+	purlRPMInventoryProto := &spb.Inventory{
+		Name:    "openssh-clients",
+		Version: "5.3p1",
+		Purl: &spb.Purl{
+			Purl:      "pkg:rpm/rhel/openssh-clients@5.3p1?arch=x86_64&distro=rhel-8.9&epoch=2&sourcerpm=openssh-5.3p1-124.el6_10.src.rpm",
+			Type:      purl.TypeRPM,
+			Namespace: "rhel",
+			Name:      "openssh-clients",
+			Version:   "5.3p1",
+			Qualifiers: []*spb.Qualifier{
+				&spb.Qualifier{Key: "arch", Value: "x86_64"},
+				&spb.Qualifier{Key: "distro", Value: "rhel-8.9"},
+				&spb.Qualifier{Key: "epoch", Value: "2"},
+				&spb.Qualifier{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
+			},
+		},
+		Metadata: &spb.Inventory_RpmMetadata{
+			RpmMetadata: &spb.RPMPackageMetadata{
+				PackageName:  "openssh-clients",
+				SourceRpm:    "openssh-5.3p1-124.el6_10.src.rpm",
+				Epoch:        2,
+				OsId:         "rhel",
+				OsVersionId:  "8.9",
+				OsBuildId:    "",
+				OsName:       "Red Hat Enterprise Linux",
+				Vendor:       "CentOS",
+				Architecture: "x86_64",
+				License:      "BSD",
+			},
+		},
+		Locations: []string{"/file1"},
+		Extractor: "os/rpm",
+	}
 
 	testCases := []struct {
 		desc    string
@@ -300,7 +352,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, purlRPMInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -343,7 +395,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
+				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto, purlRPMInventoryProto},
 				Findings: []*spb.Finding{
 					&spb.Finding{
 						Adv: &spb.Advisory{

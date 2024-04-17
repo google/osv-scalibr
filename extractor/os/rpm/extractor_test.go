@@ -118,6 +118,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
+						License:      "GPL-2.0+",
 					},
 				},
 				&extractor.Inventory{
@@ -134,6 +135,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID:  "38",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
+						License:      "GPL-3.0-or-later",
 					},
 				},
 				&extractor.Inventory{
@@ -150,6 +152,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
+						License:      "GPL-3.0-or-later",
 					},
 				},
 			},
@@ -175,6 +178,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
+						License:      "GPLv2+",
 					},
 				},
 				&extractor.Inventory{
@@ -191,6 +195,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
+						License:      "LGPLv2+",
 					},
 				},
 				&extractor.Inventory{
@@ -207,6 +212,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
+						License:      "Public Domain",
 					},
 				},
 			},
@@ -261,6 +267,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
+						License:      "GPLv2",
 					},
 				},
 				&extractor.Inventory{
@@ -277,6 +284,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
+						License:      "LGPLv2+",
 					},
 				},
 				&extractor.Inventory{
@@ -293,6 +301,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora Linux",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
+						License:      "Public Domain",
 					},
 				},
 			},
@@ -318,6 +327,7 @@ func TestExtract(t *testing.T) {
 						OSBuildID:    "asdf",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
+						License:      "GPLv2",
 					},
 				},
 				&extractor.Inventory{
@@ -333,6 +343,7 @@ func TestExtract(t *testing.T) {
 						OSBuildID:    "asdf",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
+						License:      "LGPLv2+",
 					},
 				},
 				&extractor.Inventory{
@@ -348,6 +359,7 @@ func TestExtract(t *testing.T) {
 						OSBuildID:    "asdf",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
+						License:      "Public Domain",
 					},
 				},
 			},
@@ -380,6 +392,7 @@ func TestExtract(t *testing.T) {
 						OSName:       "Fedora",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
+						License:      "GPL",
 					},
 				},
 			},
