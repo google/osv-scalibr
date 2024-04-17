@@ -27,6 +27,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/language/java/archive"
@@ -117,6 +118,8 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 			return err
 		}
 	}
+
+	log.Infof("Marshaled result proto has %d bytes", len(p))
 
 	f, err := os.Create(filePath)
 	if err != nil {
