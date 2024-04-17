@@ -196,6 +196,7 @@ message APKPackageMetadata {
   string os_version_id = 4;
   string maintainer = 5;
   string architecture = 6;
+  string license = 7;
 }
 
 // The additional data found in DPKG packages.

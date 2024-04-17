@@ -90,21 +90,21 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/installed",
 			osrelease: alpine,
 			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/installed", e.Name(), "alpine-baselayout", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "alpine-keys", "alpine-keys", "2.4-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "apk-tools", "apk-tools", "2.14.0-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "busybox", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "busybox-binsh", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "ca-certificates-bundle", "ca-certificates", "20230506-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "libc-utils", "libc-dev", "0.7.2-r5", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "libcrypto3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "libssl3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "musl", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "musl-utils", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "scanelf", "pax-utils", "1.3.7-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64"),
-				getInventory("testdata/installed", e.Name(), "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
+				getInventory("testdata/installed", e.Name(), "alpine-baselayout", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "alpine-keys", "alpine-keys", "2.4-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MIT"),
+				getInventory("testdata/installed", e.Name(), "apk-tools", "apk-tools", "2.14.0-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "busybox", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "busybox-binsh", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "ca-certificates-bundle", "ca-certificates", "20230506-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MPL-2.0 AND MIT"),
+				getInventory("testdata/installed", e.Name(), "libc-utils", "libc-dev", "0.7.2-r5", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "BSD-2-Clause AND BSD-3-Clause"),
+				getInventory("testdata/installed", e.Name(), "libcrypto3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0"),
+				getInventory("testdata/installed", e.Name(), "libssl3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0"),
+				getInventory("testdata/installed", e.Name(), "musl", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT"),
+				getInventory("testdata/installed", e.Name(), "musl-utils", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT AND BSD-2-Clause AND GPL-2.0-or-later"),
+				getInventory("testdata/installed", e.Name(), "scanelf", "pax-utils", "1.3.7-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only"),
+				getInventory("testdata/installed", e.Name(), "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib"),
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/no-origin",
 			osrelease: alpine,
 			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/no-origin", e.Name(), "pkgname", "", "1.2.3", "alpine", "3.18.0", "", "x86_64"),
+				getInventory("testdata/no-origin", e.Name(), "pkgname", "", "1.2.3", "alpine", "3.18.0", "", "x86_64", "GPL-2.0-only"),
 			},
 		},
 		{
@@ -131,7 +131,7 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=openwrt
 			VERSION_ID=1.2.3`,
 			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "1.2.3", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
+				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "1.2.3", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single",
 			osrelease: "ID=openwrt",
 			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
+				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single",
 			osrelease: "",
 			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64"),
+				getInventory("testdata/single", e.Name(), "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
 		},
 	}
@@ -256,7 +256,7 @@ func TestToPURL(t *testing.T) {
 	}
 }
 
-func getInventory(path, ext, pkgName, origin, version, osID, osVersionID, maintainer, arch string) *extractor.Inventory {
+func getInventory(path, ext, pkgName, origin, version, osID, osVersionID, maintainer, arch, license string) *extractor.Inventory {
 	return &extractor.Inventory{
 		Locations: []string{path},
 		Extractor: ext,
@@ -269,6 +269,7 @@ func getInventory(path, ext, pkgName, origin, version, osID, osVersionID, mainta
 			OSVersionID:  osVersionID,
 			Maintainer:   maintainer,
 			Architecture: arch,
+			License:      license,
 		},
 	}
 }

@@ -22,4 +22,5 @@ type Metadata struct {
 	OSVersionID  string
 	Maintainer   string
 	Architecture string
+	License      string
 }

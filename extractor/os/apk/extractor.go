@@ -91,6 +91,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 		originName := h.Get("o")
 		maintainer := h.Get("m")
 		arch := h.Get("A")
+		license := h.Get("L")
 		pkgs = append(pkgs, &extractor.Inventory{
 			Name:    pkgName,
 			Version: version,
@@ -101,6 +102,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				OSVersionID:  m["VERSION_ID"],
 				Maintainer:   maintainer,
 				Architecture: arch,
+				License:      license,
 			},
 			Locations: []string{input.Path},
 			Extractor: e.Name(),

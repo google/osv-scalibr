@@ -249,6 +249,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:  m.OSVersionID,
 				Maintainer:   m.Maintainer,
 				Architecture: m.Architecture,
+				License:      m.License,
 			},
 		}
 	case *dpkg.Metadata:
