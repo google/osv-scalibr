@@ -25,7 +25,13 @@ import (
 
 // GetOSRelease tries different os-release locations and parses the first found.
 func GetOSRelease(root string) (map[string]string, error) {
-	paths := []string{"etc/os-release", "usr/lib/os-release"}
+	paths := []string{
+		// Debian based.
+		"etc/os-release",
+		// Redhat.
+		"/etc/redhat-release",
+		"usr/lib/os-release",
+	}
 
 	for _, p := range paths {
 		p = filepath.Join(root, p)
