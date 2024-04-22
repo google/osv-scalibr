@@ -140,6 +140,7 @@ func (e Extractor) parseRPMDB(path string) ([]rpmPackageInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
 	var pkgs []*rpmdb.PackageInfo
 	if e.Timeout == 0 {
