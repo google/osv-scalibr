@@ -97,7 +97,9 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
 	if input.Info != nil && input.Info.Size() > e.maxJSONSize {
-		return nil, fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
+		err := fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
+		log.Error(err)
+		return nil, err
 	}
 	i, err := parse(input.Path, input.Reader)
 	if err != nil {
