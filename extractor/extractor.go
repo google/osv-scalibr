@@ -23,12 +23,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"slices"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor/internal"
-	"github.com/google/osv-scalibr/extractor/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -79,8 +77,6 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
-	// Optional: Logs extractor name and path, which trigger a high memory increase.
-	LogMemoryUsage bool
 }
 
 // LINT.IfChange
@@ -124,17 +120,16 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 	}
 	start := time.Now()
 	wc := walkContext{
-		ctx:            ctx,
-		stats:          config.Stats,
-		extractors:     config.Extractors,
-		fs:             config.FS,
-		scanRoot:       config.ScanRoot,
-		dirsToSkip:     stringListToMap(config.DirsToSkip),
-		skipDirRegex:   config.SkipDirRegex,
-		readSymlinks:   config.ReadSymlinks,
-		maxInodes:      config.MaxInodes,
-		logMemoryUsage: config.LogMemoryUsage,
-		inodesVisited:  0,
+		ctx:           ctx,
+		stats:         config.Stats,
+		extractors:    config.Extractors,
+		fs:            config.FS,
+		scanRoot:      config.ScanRoot,
+		dirsToSkip:    stringListToMap(config.DirsToSkip),
+		skipDirRegex:  config.SkipDirRegex,
+		readSymlinks:  config.ReadSymlinks,
+		maxInodes:     config.MaxInodes,
+		inodesVisited: 0,
 
 		lastStatus: time.Now(),
 
@@ -156,16 +151,15 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 }
 
 type walkContext struct {
-	ctx            context.Context
-	stats          stats.Collector
-	extractors     []InventoryExtractor
-	fs             fs.FS
-	scanRoot       string
-	dirsToSkip     map[string]bool // Anything under these paths should be skipped.
-	skipDirRegex   *regexp.Regexp
-	maxInodes      int
-	inodesVisited  int
-	logMemoryUsage bool
+	ctx           context.Context
+	stats         stats.Collector
+	extractors    []InventoryExtractor
+	fs            fs.FS
+	scanRoot      string
+	dirsToSkip    map[string]bool // Anything under these paths should be skipped.
+	skipDirRegex  *regexp.Regexp
+	maxInodes     int
+	inodesVisited int
 
 	// Inventories found.
 	inventory []*Inventory
@@ -234,24 +228,8 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 
 	wc.mapInodes[internal.ParentDir(filepath.Dir(path), 3)]++
 
-	var before int64
-	if wc.logMemoryUsage {
-		before = internal.MaxResident() * units.KiB
-	}
 	for _, ex := range wc.extractors {
-		extractRun := wc.runExtractor(ex, path, s.Mode())
-		if wc.logMemoryUsage && extractRun {
-			// Assuming the Extract function is the memory intense function. If no extract run, we don't
-			// need to query MaxResident again.
-			after := internal.MaxResident() * units.KiB
-			if after > before+5*units.MiB {
-				runtime.GC()
-				afterGC := internal.MaxResident() * units.KiB
-				log.Infof("Memory increase: before: %d, after: %d, after GC: %d extractor: %s path: %s\n",
-					before, after, afterGC, ex.Name(), path)
-			}
-			before = after
-		}
+		wc.runExtractor(ex, path, s.Mode())
 	}
 	return nil
 }
@@ -266,21 +244,21 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.FileMode) bool {
+func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.FileMode) {
 	if !ex.FileRequired(path, mode) {
-		return false
+		return
 	}
 	rc, err := wc.fs.Open(path)
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %v", path, err))
-		return false
+		return
 	}
 	defer rc.Close()
 
 	info, err := rc.Stat()
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %v", path, err))
-		return false
+		return
 	}
 
 	wc.mapExtracts[internal.ParentDir(filepath.Dir(path), 3)]++
@@ -299,7 +277,6 @@ func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.
 			wc.inventory = append(wc.inventory, r)
 		}
 	}
-	return true
 }
 
 func stringListToMap(paths []string) map[string]bool {

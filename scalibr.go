@@ -54,8 +54,6 @@ type ScanConfig struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
-	// Optional: Logs extractor name and path, which trigger a high memory increase.
-	LogMemoryUsage bool
 }
 
 // LINT.IfChange
@@ -96,7 +94,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		SkipDirRegex: config.SkipDirRegex,
 		ScanRoot:     config.ScanRoot,
 		MaxInodes:    config.MaxInodes,
-		LogMemoryUsage:    config.LogMemoryUsage,
 	}
 	inventories, extractorStatus, err := extractor.Run(ctx, extractorConfig)
 	sro.Inventories = inventories
