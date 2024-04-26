@@ -43,7 +43,8 @@ type ScanConfig struct {
 	InventoryExtractors []extractor.InventoryExtractor
 	Detectors           []detector.Detector
 	ScanRoot            string
-	// Directories that the file system walk should ignore, relative to the FS root.
+	// Directories that the file system walk should ignore. Note that this is not
+	// relative to ScanRoot and thus needs to be a sub-directory of ScanRoot.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.

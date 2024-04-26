@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"testing"
@@ -47,6 +50,11 @@ func TestRun(t *testing.T) {
 	}
 	name1 := "software1"
 	name2 := "software2"
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
 
 	testCases := []struct {
 		desc           string
@@ -102,6 +110,37 @@ func TestRun(t *testing.T) {
 				&plugin.Status{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
+		},
+		{
+			desc: "Dir skipped with absolute path",
+			ex: []extractor.InventoryExtractor{
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
+				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
+			},
+			// ScanRoot is CWD
+			dirsToSkip: []string{path.Join(cwd, "dir1")},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: "ex2",
+				},
+			},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 5,
+		},
+		{
+			desc: "Dir skipped not relative to ScanRoot",
+			ex: []extractor.InventoryExtractor{
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
+				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
+			},
+			// ScanRoot is CWD, dirsToSkip is in its parent dir.
+			dirsToSkip: []string{path.Join(filepath.Dir(cwd), "dir1")},
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			desc: "Dir skipped using regex",

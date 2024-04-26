@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor/internal"
@@ -66,7 +67,8 @@ type Config struct {
 	Extractors []InventoryExtractor
 	ScanRoot   string
 	FS         fs.FS
-	// Directories that the file system walk should ignore, relative to the FS root.
+	// Directories that the file system walk should ignore. Note that this is not
+	// relative to ScanRoot and thus needs to be a sub-directory of ScanRoot.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// If the regex matches a directory, it will be skipped.
@@ -119,13 +121,21 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 		return []*Inventory{}, []*plugin.Status{}, nil
 	}
 	start := time.Now()
+	scanRoot, err := filepath.Abs(config.ScanRoot)
+	if err != nil {
+		return nil, nil, err
+	}
+	dirsToSkip, err := stripPathPrefix(config.DirsToSkip, scanRoot)
+	if err != nil {
+		return nil, nil, err
+	}
 	wc := walkContext{
 		ctx:           ctx,
 		stats:         config.Stats,
 		extractors:    config.Extractors,
 		fs:            config.FS,
-		scanRoot:      config.ScanRoot,
-		dirsToSkip:    stringListToMap(config.DirsToSkip),
+		scanRoot:      scanRoot,
+		dirsToSkip:    stringListToMap(dirsToSkip),
 		skipDirRegex:  config.SkipDirRegex,
 		readSymlinks:  config.ReadSymlinks,
 		maxInodes:     config.MaxInodes,
@@ -141,7 +151,7 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 		mapExtracts: make(map[string]int),
 	}
 
-	err := internal.WalkDirUnsorted(config.FS, ".", wc.handleFile)
+	err = internal.WalkDirUnsorted(config.FS, ".", wc.handleFile)
 
 	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
 		wc.inodesVisited, wc.extractCalls, time.Since(start))
@@ -277,6 +287,26 @@ func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.
 			wc.inventory = append(wc.inventory, r)
 		}
 	}
+}
+
+func stripPathPrefix(paths []string, prefix string) ([]string, error) {
+	result := make([]string, 0, len(paths))
+	for _, p := range paths {
+		// prefix is assumed to already be an absolute path.
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasPrefix(abs, prefix) {
+			return nil, fmt.Errorf("%q is not in a subdirectory of %q", abs, prefix)
+		}
+		rel, err := filepath.Rel(prefix, abs)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, rel)
+	}
+	return result, nil
 }
 
 func stringListToMap(paths []string) map[string]bool {
