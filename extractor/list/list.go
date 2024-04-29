@@ -20,7 +20,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/osv-scanner/pkg/lockfile"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/language/golang/gobinary"
@@ -34,10 +33,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/os/cos"
 	"github.com/google/osv-scalibr/extractor/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/os/rpm"
+	"github.com/google/osv-scalibr/extractor/os/testractor"
 	"github.com/google/osv-scalibr/extractor/osv"
 	"github.com/google/osv-scalibr/extractor/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scanner/pkg/lockfile"
 )
 
 // LINT.IfChange
@@ -65,6 +66,7 @@ var (
 		&apk.Extractor{},
 		rpm.New(rpm.DefaultConfig()),
 		&cos.Extractor{},
+		&testractor.Extractor{},
 	}
 
 	// Collections of extractors.
