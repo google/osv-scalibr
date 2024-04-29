@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build linux
+
 // Package etcpasswdpermissions implements a detector for the "Ensure permissions on /etc/passwd- are configured" CIS check.
 package etcpasswdpermissions
 
@@ -40,10 +42,12 @@ func (Detector) Version() int { return 0 }
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
+// Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	return d.ScanFS(ctx, os.DirFS(scanRoot), ix)
 }
 
+// ScanFS starts the scan from a pseudo-filesystem.
 func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	f, err := fs.Open("etc/passwd")
 	if err != nil {
