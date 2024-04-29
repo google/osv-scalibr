@@ -53,8 +53,9 @@ type InventoryExtractor interface {
 
 // ScanInput describes one file to extract from.
 type ScanInput struct {
+	// The path of the file to extract, relative to ScanRoot.
 	Path string
-	// The root directory to start all extractions from.
+	// The root directory where the extraction file walking started from.
 	ScanRoot string
 	Info     fs.FileInfo
 	// A reader for accessing contents of the file.
@@ -67,11 +68,17 @@ type Config struct {
 	Extractors []InventoryExtractor
 	ScanRoot   string
 	FS         fs.FS
-	// Directories that the file system walk should ignore. Note that this is not
-	// relative to ScanRoot and thus needs to be a sub-directory of ScanRoot.
+	// Optional: Individual files to extract inventory from. If specified, the
+	// extractors will only look at these files during the filesystem traversal.
+	// Note that these are not relative to ScanRoot and thus need to be in
+	// sub-directories of ScanRoot.
+	FilesToExtract []string
+	// Optional: Directories that the file system walk should ignore.
+	// Note that these are not relative to ScanRoot and thus need to be
+	// sub-directories of ScanRoot.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
-	// If the regex matches a directory, it will be skipped.
+	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
@@ -125,21 +132,26 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 	if err != nil {
 		return nil, nil, err
 	}
+	filesToExtract, err := stripPathPrefix(config.FilesToExtract, scanRoot)
+	if err != nil {
+		return nil, nil, err
+	}
 	dirsToSkip, err := stripPathPrefix(config.DirsToSkip, scanRoot)
 	if err != nil {
 		return nil, nil, err
 	}
 	wc := walkContext{
-		ctx:           ctx,
-		stats:         config.Stats,
-		extractors:    config.Extractors,
-		fs:            config.FS,
-		scanRoot:      scanRoot,
-		dirsToSkip:    stringListToMap(dirsToSkip),
-		skipDirRegex:  config.SkipDirRegex,
-		readSymlinks:  config.ReadSymlinks,
-		maxInodes:     config.MaxInodes,
-		inodesVisited: 0,
+		ctx:            ctx,
+		stats:          config.Stats,
+		extractors:     config.Extractors,
+		fs:             config.FS,
+		scanRoot:       scanRoot,
+		filesToExtract: filesToExtract,
+		dirsToSkip:     stringListToMap(dirsToSkip),
+		skipDirRegex:   config.SkipDirRegex,
+		readSymlinks:   config.ReadSymlinks,
+		maxInodes:      config.MaxInodes,
+		inodesVisited:  0,
 
 		lastStatus: time.Now(),
 
@@ -151,7 +163,11 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 		mapExtracts: make(map[string]int),
 	}
 
-	err = internal.WalkDirUnsorted(config.FS, ".", wc.handleFile)
+	if len(wc.filesToExtract) > 0 {
+		err = walkIndividualFiles(config.FS, wc.filesToExtract, wc.handleFile)
+	} else {
+		err = internal.WalkDirUnsorted(config.FS, ".", wc.handleFile)
+	}
 
 	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
 		wc.inodesVisited, wc.extractCalls, time.Since(start))
@@ -161,15 +177,16 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 }
 
 type walkContext struct {
-	ctx           context.Context
-	stats         stats.Collector
-	extractors    []InventoryExtractor
-	fs            fs.FS
-	scanRoot      string
-	dirsToSkip    map[string]bool // Anything under these paths should be skipped.
-	skipDirRegex  *regexp.Regexp
-	maxInodes     int
-	inodesVisited int
+	ctx            context.Context
+	stats          stats.Collector
+	extractors     []InventoryExtractor
+	fs             fs.FS
+	scanRoot       string
+	filesToExtract []string
+	dirsToSkip     map[string]bool // Anything under these paths should be skipped.
+	skipDirRegex   *regexp.Regexp
+	maxInodes      int
+	inodesVisited  int
 
 	// Inventories found.
 	inventory []*Inventory
@@ -189,6 +206,21 @@ type walkContext struct {
 	// Data for analytics.
 	mapInodes   map[string]int
 	mapExtracts map[string]int
+}
+
+func walkIndividualFiles(fsys fs.FS, paths []string, fn fs.WalkDirFunc) error {
+	for _, p := range paths {
+		info, err := fs.Stat(fsys, p)
+		if err != nil {
+			err = fn(p, nil, err)
+		} else {
+			err = fn(p, fs.FileInfoToDirEntry(info), nil)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {

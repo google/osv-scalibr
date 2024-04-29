@@ -59,6 +59,7 @@ func TestRun(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		ex             []extractor.InventoryExtractor
+		filesToExtract []string
 		dirsToSkip     []string
 		skipDirRegex   string
 		maxInodes      int
@@ -232,6 +233,57 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
+			desc: "Extract specific file",
+			ex: []extractor.InventoryExtractor{
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
+				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
+			},
+			filesToExtract: []string{path2},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: "ex2",
+				},
+			},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 1,
+		},
+		{
+			desc: "Extract specific file with absolute path",
+			ex: []extractor.InventoryExtractor{
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
+				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
+			},
+			// ScanRoot is CWD
+			filesToExtract: []string{path.Join(cwd, path2)},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: "ex2",
+				},
+			},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 1,
+		},
+		{
+			desc: "Extract specific file not relative to ScanRoot",
+			ex: []extractor.InventoryExtractor{
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
+				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
+			},
+			// ScanRoot is CWD, filepath is in its parent dir.
+			filesToExtract: []string{path.Join(filepath.Dir(cwd), path2)},
+			wantErr:        cmpopts.AnyError,
+		},
+		{
 			desc: "nil result",
 			ex: []extractor.InventoryExtractor{
 				// An Extractor that returns nil.
@@ -342,13 +394,14 @@ func TestRun(t *testing.T) {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
 			config := &extractor.Config{
-				Extractors:   tc.ex,
-				DirsToSkip:   tc.dirsToSkip,
-				SkipDirRegex: skipDirRegex,
-				MaxInodes:    tc.maxInodes,
-				ScanRoot:     ".",
-				FS:           fsys,
-				Stats:        fc,
+				Extractors:     tc.ex,
+				FilesToExtract: tc.filesToExtract,
+				DirsToSkip:     tc.dirsToSkip,
+				SkipDirRegex:   skipDirRegex,
+				MaxInodes:      tc.maxInodes,
+				ScanRoot:       ".",
+				FS:             fsys,
+				Stats:          fc,
 			}
 			gotInv, gotStatus, err := extractor.RunFS(context.Background(), config)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {

@@ -42,9 +42,19 @@ func New() *Scanner { return &Scanner{} }
 type ScanConfig struct {
 	InventoryExtractors []extractor.InventoryExtractor
 	Detectors           []detector.Detector
-	ScanRoot            string
-	// Directories that the file system walk should ignore. Note that this is not
-	// relative to ScanRoot and thus needs to be a sub-directory of ScanRoot.
+	// ScanRoot is the root dir used by file walking during extraction.
+	// All extractors and detectors will assume files are relative to this dir.
+	// Example use case: Scanning a container image or source code repo that is
+	// mounted to a local dir.
+	ScanRoot string
+	// Optional: Individual files to extract inventory from. If specified, the
+	// extractors will only look at these files during the filesystem traversal.
+	// Note that these are not relative to ScanRoot and thus need to be in
+	// sub-directories of ScanRoot.
+	FilesToExtract []string
+	// Optional: Directories that the file system walk should ignore.
+	// Note that these are not relative to ScanRoot and thus need to be
+	// sub-directories of ScanRoot.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
@@ -88,13 +98,14 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		Findings:    []*detector.Finding{},
 	}
 	extractorConfig := &extractor.Config{
-		Stats:        config.Stats,
-		ReadSymlinks: config.ReadSymlinks,
-		Extractors:   config.InventoryExtractors,
-		DirsToSkip:   config.DirsToSkip,
-		SkipDirRegex: config.SkipDirRegex,
-		ScanRoot:     config.ScanRoot,
-		MaxInodes:    config.MaxInodes,
+		Stats:          config.Stats,
+		ReadSymlinks:   config.ReadSymlinks,
+		Extractors:     config.InventoryExtractors,
+		FilesToExtract: config.FilesToExtract,
+		DirsToSkip:     config.DirsToSkip,
+		SkipDirRegex:   config.SkipDirRegex,
+		ScanRoot:       config.ScanRoot,
+		MaxInodes:      config.MaxInodes,
 	}
 	inventories, extractorStatus, err := extractor.Run(ctx, extractorConfig)
 	sro.Inventories = inventories

@@ -32,7 +32,7 @@ func main() {
 
 func parseFlags() *cli.Flags {
 	// TODO(b/279138598): Make this OS-agnostic, e.g. don't use the unix-specific root path.
-	root := flag.String("root", "/", `The root directory to start all extractions/detections from (e.g.: "/", "c:\" or ".")`)
+	root := flag.String("root", "/", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := flag.String("result", "", "The path of the output scan result file")
 	var output cli.Array
 	flag.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json")
