@@ -13,7 +13,8 @@ See [here](docs/supported_inventory_types.md) for the list of currently supporte
 To build SCALIBR, you'll need to have the following installed:
 
 * `go`: Follow https://go.dev/doc/install
-* `protoc`: Install the appropriate package, e.g. `apt install protobuf-compiler`
+* `protoc`: Install the appropriate [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
+  * For Mac, you can also [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
 * `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
 
 
@@ -21,7 +22,7 @@ To build SCALIBR, you'll need to have the following installed:
 
 ### As a standalone binary
 
-1. `make`
+1. `make` (use `sudo make` to cleanup prior built proto without prompting)
 1. `./scalibr --result=result.textproto`
 
 See the [result proto definition](/binary/proto/scan_result.proto) for details about the scan result format.
