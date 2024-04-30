@@ -63,6 +63,7 @@ type Flags struct {
 	Output                Array
 	ExtractorsToRun       string
 	DetectorsToRun        string
+	FilesToExtract        []string
 	DirsToSkip            string
 	SkipDirRegex          string
 	GovulncheckDBPath     string
@@ -215,6 +216,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		ScanRoot:            f.Root,
 		InventoryExtractors: extractors,
 		Detectors:           detectors,
+		FilesToExtract:      f.FilesToExtract,
 		DirsToSkip:          f.dirsToSkip(),
 		SkipDirRegex:        skipDirRegex,
 	}, nil
