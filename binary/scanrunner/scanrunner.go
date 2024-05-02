@@ -39,6 +39,9 @@ func RunScan(flags *cli.Flags) int {
 
 	log.Infof("Running scan with %d extractors and %d detectors", len(cfg.InventoryExtractors), len(cfg.Detectors))
 	log.Infof("Scan root: %s", cfg.ScanRoot)
+	if len(cfg.FilesToExtract) > 0 {
+		log.Infof("Files to extract: %s", cfg.FilesToExtract)
+	}
 	result := scalibr.New().Scan(context.Background(), cfg)
 
 	log.Infof("Scan status: %v", result.Status)

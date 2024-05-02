@@ -20,6 +20,10 @@ import (
 	"os"
 	"strings"
 
+	// OSV extractors.
+	"github.com/google/osv-scanner/pkg/lockfile"
+
+	// SCALIBR internal extractors.
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/language/golang/gobinary"
@@ -38,7 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/google/osv-scanner/pkg/lockfile"
+
 )
 
 // LINT.IfChange

@@ -47,12 +47,15 @@ func parseFlags() *cli.Flags {
 	verbose := flag.Bool("verbose", false, "Enable this to print debug logs")
 
 	flag.Parse()
+	filesToExtract := flag.Args()
+
 	flags := &cli.Flags{
 		Root:                  *root,
 		ResultFile:            *resultFile,
 		Output:                output,
 		ExtractorsToRun:       *extractorsToRun,
 		DetectorsToRun:        *detectorsToRun,
+		FilesToExtract:        filesToExtract,
 		DirsToSkip:            *dirsToSkip,
 		SkipDirRegex:          *skipDirRegex,
 		GovulncheckDBPath:     *govulncheckDBPath,
