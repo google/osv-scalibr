@@ -22,7 +22,7 @@ To build SCALIBR, you'll need to have the following installed:
 
 ### As a standalone binary
 
-1. `make` (use `sudo make` to cleanup prior built proto without prompting)
+1. `make`
 1. `./scalibr --result=result.textproto`
 
 See the [result proto definition](/binary/proto/scan_result.proto) for details about the scan result format.
