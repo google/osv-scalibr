@@ -174,10 +174,11 @@ func validType(t string) bool {
 
 // Qualifier names.
 const (
-	Distro = "distro"
-	Epoch  = "epoch"
-	Arch   = "arch"
-	Origin = "origin"
-	Source = "source"
-	SourceRPM = "sourcerpm"
+	Distro        = "distro"
+	Epoch         = "epoch"
+	Arch          = "arch"
+	Origin        = "origin"
+	Source        = "source"
+	SourceVersion = "sourceversion"
+	SourceRPM     = "sourcerpm"
 )

@@ -530,6 +530,7 @@ func TestToPURL(t *testing.T) {
 	pkgname := "pkgname"
 	sourcename := "sourcename"
 	version := "1.2.3"
+	sourceversion := "1.2.4"
 	source := "sourcename"
 	e := dpkg.Extractor{}
 	tests := []struct {
@@ -538,10 +539,11 @@ func TestToPURL(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			name: "both versions present",
+			name: "both OS versions present",
 			metadata: &dpkg.Metadata{
 				PackageName:       pkgname,
 				SourceName:        sourcename,
+				SourceVersion:     sourceversion,
 				OSID:              "debian",
 				OSVersionCodename: "jammy",
 				OSVersionID:       "22.04",
@@ -552,18 +554,20 @@ func TestToPURL(t *testing.T) {
 				Namespace: "debian",
 				Version:   version,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Source: source,
-					purl.Distro: "jammy",
+					purl.Source:        source,
+					purl.SourceVersion: sourceversion,
+					purl.Distro:        "jammy",
 				}),
 			},
 		},
 		{
 			name: "only VERSION_ID set",
 			metadata: &dpkg.Metadata{
-				PackageName: pkgname,
-				SourceName:  sourcename,
-				OSID:        "debian",
-				OSVersionID: "22.04",
+				PackageName:   pkgname,
+				SourceName:    sourcename,
+				SourceVersion: sourceversion,
+				OSID:          "debian",
+				OSVersionID:   "22.04",
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeDebian,
@@ -571,8 +575,9 @@ func TestToPURL(t *testing.T) {
 				Namespace: "debian",
 				Version:   version,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Source: source,
-					purl.Distro: "22.04",
+					purl.Source:        source,
+					purl.SourceVersion: sourceversion,
+					purl.Distro:        "22.04",
 				}),
 			},
 		},
@@ -581,6 +586,7 @@ func TestToPURL(t *testing.T) {
 			metadata: &dpkg.Metadata{
 				PackageName:       pkgname,
 				SourceName:        sourcename,
+				SourceVersion:     sourceversion,
 				OSVersionCodename: "jammy",
 				OSVersionID:       "22.04",
 			},
@@ -590,8 +596,9 @@ func TestToPURL(t *testing.T) {
 				Namespace: "linux",
 				Version:   version,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Source: source,
-					purl.Distro: "jammy",
+					purl.Source:        source,
+					purl.SourceVersion: sourceversion,
+					purl.Distro:        "jammy",
 				}),
 			},
 		},

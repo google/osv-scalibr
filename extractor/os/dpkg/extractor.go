@@ -237,6 +237,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	if m.SourceName != "" {
 		q[purl.Source] = m.SourceName
 	}
+	if m.SourceVersion != "" {
+		q[purl.SourceVersion] = m.SourceVersion
+	}
 	if m.Architecture != "" {
 		q[purl.Arch] = m.Architecture
 	}
