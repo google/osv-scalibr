@@ -29,6 +29,9 @@ type Collector interface {
 	AfterExtractorRun(name string, runtime time.Duration, err error)
 	AfterDetectorRun(name string, runtime time.Duration, err error)
 	AfterScan(runtime time.Duration, status *plugin.ScanStatus)
+	// AfterResultsExported is called after results have been exported. destination should merely be
+	// a category of where the result was written to (e.g. 'file', 'http'), not the precise location.
+	AfterResultsExported(destination string, bytes int, err error)
 }
 
 // NoopCollector implements Collector by doing nothing.
@@ -45,3 +48,6 @@ func (c NoopCollector) AfterDetectorRun(name string, runtime time.Duration, err 
 
 // AfterScan implements Collector by doing nothing.
 func (c NoopCollector) AfterScan(runtime time.Duration, status *plugin.ScanStatus) {}
+
+// AfterResultsExported implements Collector by doing nothing.
+func (c NoopCollector) AfterResultsExported(destination string, bytes int, err error) {}
