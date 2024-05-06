@@ -19,14 +19,53 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/internal/units"
 	"github.com/google/osv-scalibr/extractor/os/dpkg"
 	"github.com/google/osv-scalibr/purl"
 )
+
+func TestNew(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     dpkg.Config
+		wantCfg dpkg.Config
+	}{
+		{
+			name: "default",
+			cfg:  dpkg.DefaultConfig(),
+			wantCfg: dpkg.Config{
+				MaxFileSize:         100 * units.MiB,
+				IncludeNotInstalled: false,
+			},
+		},
+		{
+			name: "custom",
+			cfg: dpkg.Config{
+				MaxFileSize:         10,
+				IncludeNotInstalled: true,
+			},
+			wantCfg: dpkg.Config{
+				MaxFileSize:         10,
+				IncludeNotInstalled: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := dpkg.New(tt.cfg)
+			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
+				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			}
+		})
+	}
+}
 
 func TestFileRequired(t *testing.T) {
 	var e extractor.InventoryExtractor = dpkg.Extractor{}
@@ -90,6 +129,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "accountsservice",
 						PackageVersion:    "22.08.8-6",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -105,6 +145,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "acl",
 						PackageVersion:    "2.3.1-3",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -120,6 +161,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "adduser",
 						PackageVersion:    "3.131",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -135,6 +177,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "admin-session",
 						PackageVersion:    "2023.06.26.c543406313-00",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -150,6 +193,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "attr",
 						PackageVersion:    "1:2.5.1-4",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -166,6 +210,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "libacl1",
 						PackageVersion:    "2.3.1-3",
+						Status:            "install ok installed",
 						SourceName:        "acl",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
@@ -183,6 +228,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "util-linux-extra",
 						PackageVersion:    "2.38.1-5+b1",
+						Status:            "install ok installed",
 						SourceName:        "util-linux",
 						SourceVersion:     "2.38.1-5",
 						OSID:              "debian",
@@ -207,6 +253,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "foo",
 						PackageVersion:    "1.0",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -220,6 +267,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "bar",
 						PackageVersion:    "2.0",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -240,6 +288,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "foo",
 						PackageVersion:    "1.0",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -253,6 +302,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "bar",
 						PackageVersion:    "2.0",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -273,6 +323,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "wantinstall_installed",
 						PackageVersion:    "1.0",
+						Status:            "install ok installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -286,6 +337,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "wantdeinstall_installed",
 						PackageVersion:    "1.0",
+						Status:            "deinstall reinstreq installed",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
@@ -298,6 +350,114 @@ func TestExtract(t *testing.T) {
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
 						PackageName:       "wantpurge_installed",
+						PackageVersion:    "1.0",
+						Status:            "purge ok installed",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+			},
+		},
+		{
+			name:      "statusfield including not installed",
+			path:      "testdata/statusfield",
+			osrelease: DebianBookworm,
+			cfg: dpkg.Config{
+				IncludeNotInstalled: true,
+			},
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "wantinstall_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_installed",
+						PackageVersion:    "1.0",
+						Status:            "install ok installed",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantdeinstall_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantdeinstall_installed",
+						PackageVersion:    "1.0",
+						Status:            "deinstall reinstreq installed",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantdeinstall_configfiles",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantdeinstall_configfiles",
+						PackageVersion:    "1.0",
+						Status:            "deinstall ok config-files",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantinstall_unpacked",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_unpacked",
+						PackageVersion:    "1.0",
+						Status:            "install ok unpacked",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantpurge_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantpurge_installed",
+						PackageVersion:    "1.0",
+						Status:            "purge ok installed",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantinstall_halfinstalled",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_halfinstalled",
+						PackageVersion:    "1.0",
+						Status:            "install reinstreq half-installed",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+					},
+					Locations: []string{"testdata/statusfield"},
+					Extractor: dpkg.Name,
+				},
+				&extractor.Inventory{
+					Name:    "wantnostatus",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantnostatus",
 						PackageVersion:    "1.0",
 						OSID:              "debian",
 						OSVersionCodename: "bookworm",
@@ -313,7 +473,6 @@ func TestExtract(t *testing.T) {
 			path:          "testdata/empty",
 			osrelease:     DebianBookworm,
 			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
 		},
 		{
 			name:          "invalid",
@@ -334,6 +493,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:    "acl",
 						PackageVersion: "2.3.1-3",
+						Status:         "install ok installed",
 						OSID:           "debian",
 						OSVersionID:    "12",
 						Maintainer:     "Guillem Jover <guillem@debian.org>",
@@ -355,6 +515,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:    "acl",
 						PackageVersion: "2.3.1-3",
+						Status:         "install ok installed",
 						OSID:           "debian",
 						Maintainer:     "Guillem Jover <guillem@debian.org>",
 						Architecture:   "amd64",
@@ -375,6 +536,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "acl",
 						PackageVersion:    "2.3.1-3",
+						Status:            "install ok installed",
 						OSVersionCodename: "bookworm",
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
@@ -398,6 +560,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &dpkg.Metadata{
 						PackageName:       "acl",
 						PackageVersion:    "2.3.1-3",
+						Status:            "install ok installed",
 						OSID:              "ubuntu",
 						OSVersionCodename: "jammy",
 						OSVersionID:       "22.04",
@@ -489,6 +652,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 			Metadata: &dpkg.Metadata{
 				PackageName:    "acl",
 				PackageVersion: "2.3.1-3",
+				Status:         "install ok installed",
 				OSID:           "",
 				OSVersionID:    "",
 				Maintainer:     "Guillem Jover <guillem@debian.org>",
@@ -638,5 +802,10 @@ func defaultConfigWith(cfg dpkg.Config) dpkg.Config {
 	if cfg.MaxFileSize > 0 {
 		newCfg.MaxFileSize = cfg.MaxFileSize
 	}
+
+	if cfg.IncludeNotInstalled {
+		newCfg.IncludeNotInstalled = cfg.IncludeNotInstalled
+	}
+
 	return newCfg
 }

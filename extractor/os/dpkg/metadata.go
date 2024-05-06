@@ -17,6 +17,7 @@ package dpkg
 // Metadata holds parsing information for an dpkg package.
 type Metadata struct {
 	PackageName       string
+	Status            string
 	SourceName        string
 	SourceVersion     string
 	PackageVersion    string

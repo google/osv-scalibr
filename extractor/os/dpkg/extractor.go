@@ -40,6 +40,9 @@ const (
 	// defaultMaxFileSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSize = 100 * units.MiB
+
+	// defaultIncludeNotInstalled is the default value for the IncludeNotInstalled option.
+	defaultIncludeNotInstalled = false
 )
 
 // Config is the configuration for the Extractor.
@@ -47,18 +50,23 @@ type Config struct {
 	// MaxFileSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	MaxFileSize int64
+	// IncludeNotInstalled includes packages that are not installed
+	// (e.g. `deinstall`, `purge`, and those missing a status field).
+	IncludeNotInstalled bool
 }
 
 // DefaultConfig returns the default configuration for the DPKG extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxFileSize: defaultMaxFileSize,
+		MaxFileSize:         defaultMaxFileSize,
+		IncludeNotInstalled: defaultIncludeNotInstalled,
 	}
 }
 
 // Extractor extracts packages from DPKG files.
 type Extractor struct {
-	maxFileSize int64
+	maxFileSize         int64
+	includeNotInstalled bool
 }
 
 // New returns a DPKG extractor.
@@ -69,7 +77,16 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		maxFileSize: cfg.MaxFileSize,
+		maxFileSize:         cfg.MaxFileSize,
+		includeNotInstalled: cfg.IncludeNotInstalled,
+	}
+}
+
+// Config returns the configuration of the extractor.
+func (e Extractor) Config() Config {
+	return Config{
+		MaxFileSize:         e.maxFileSize,
+		IncludeNotInstalled: e.includeNotInstalled,
 	}
 }
 
@@ -125,9 +142,14 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				return pkgs, err
 			}
 		}
+
 		// Distroless distributions have their packages in status.d, which does not contain the Status
 		// value.
-		if !strings.Contains(input.Path, "status.d") || h.Get("Status") != "" {
+		if !e.includeNotInstalled && (!strings.Contains(input.Path, "status.d") || h.Get("Status") != "") {
+			if h.Get("Status") == "" {
+				log.Warnf("Package %q has no status field", h.Get("Package"))
+				continue
+			}
 			installed, err := statusInstalled(h.Get("Status"))
 			if err != nil {
 				return pkgs, fmt.Errorf("statusInstalled(%q): %w", h.Get("Status"), err)
@@ -136,6 +158,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				continue
 			}
 		}
+
 		pkgName := h.Get("Package")
 		pkgVersion := h.Get("Version")
 		if pkgName == "" || pkgVersion == "" {
@@ -153,6 +176,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 			Metadata: &Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
+				Status:            h.Get("Status"),
 				OSID:              m["ID"],
 				OSVersionCodename: m["VERSION_CODENAME"],
 				OSVersionID:       m["VERSION_ID"],

@@ -257,6 +257,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       m.PackageName,
 				SourceName:        m.SourceName,
+				Status:            m.Status,
 				SourceVersion:     m.SourceVersion,
 				PackageVersion:    m.PackageVersion,
 				OsId:              m.OSID,

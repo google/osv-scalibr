@@ -21,3 +21,6 @@ Version: 1.0
 Package: wantinstall_halfinstalled
 Status: install reinstreq half-installed
 Version: 1.0
+
+Package: wantnostatus
+Version: 1.0
