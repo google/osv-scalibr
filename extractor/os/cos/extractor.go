@@ -27,6 +27,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "os/cos"
+)
+
 // Extractor extracts cos packages from cos database.
 type Extractor struct{}
 
@@ -45,7 +50,7 @@ type cosPackageInfo struct {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return "os/cos" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
