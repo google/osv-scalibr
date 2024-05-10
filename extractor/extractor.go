@@ -115,7 +115,9 @@ type Inventory struct {
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
 func Run(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status, error) {
-	config.FS = os.DirFS(config.ScanRoot)
+	if config.FS == nil {
+		config.FS = os.DirFS(config.ScanRoot)
+	}
 	return RunFS(ctx, config)
 }
 

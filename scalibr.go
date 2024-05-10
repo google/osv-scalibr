@@ -19,6 +19,7 @@ package scalibr
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"regexp"
 	"slices"
 	"sort"
@@ -47,6 +48,9 @@ type ScanConfig struct {
 	// Example use case: Scanning a container image or source code repo that is
 	// mounted to a local dir.
 	ScanRoot string
+	// Optional: Provides a specific filesystem to use for the Extractor to use.
+	// If this is nil, then the OS filesystem will be used by default.
+	FS fs.FS
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
 	// Note that these are not relative to ScanRoot and thus need to be in
@@ -106,6 +110,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		SkipDirRegex:   config.SkipDirRegex,
 		ScanRoot:       config.ScanRoot,
 		MaxInodes:      config.MaxInodes,
+		FS:             config.FS,
 	}
 	inventories, extractorStatus, err := extractor.Run(ctx, extractorConfig)
 	sro.Inventories = inventories
