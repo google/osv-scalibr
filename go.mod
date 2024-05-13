@@ -5,6 +5,7 @@ go 1.22
 require (
   github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
   github.com/erikvarga/go-rpmdb v0.0.0-20240208180226-b97e041ef9af
+  github.com/golang/protobuf v1.5.3
   github.com/google/go-cmp v0.6.0
   github.com/google/osv-scanner v1.7.1
   github.com/google/uuid v1.6.0
