@@ -292,7 +292,7 @@ func TestExtract(t *testing.T) {
 				Locations: []string{"testdata/complex.jar/pom.properties"},
 				Extractor: archive.Name,
 			}},
-			wantErr: errAny,
+			wantErr: extractor.ErrExtractorMemoryLimitExceeded,
 		},
 		{
 			name: "Realistic jar file with pom.properties",
@@ -400,7 +400,7 @@ func TestExtract(t *testing.T) {
 			if err != nil && tt.wantErr == errAny {
 				err = errAny
 			}
-			if err != tt.wantErr {
+			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
 			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }

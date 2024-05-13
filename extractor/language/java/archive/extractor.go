@@ -135,7 +135,9 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 		return nil, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
 	}
 	if oBytes := openedBytes + input.Info.Size(); oBytes > e.maxOpenedBytes {
-		return nil, fmt.Errorf("%s reached max opened bytes of %d at %q", e.Name(), oBytes, input.Path)
+		return nil, fmt.Errorf(
+			"%w: %s reached max opened bytes of %d at %q",
+			extractor.ErrExtractorMemoryLimitExceeded, e.Name(), oBytes, input.Path)
 	}
 	if int(input.Info.Size()) < e.minZipBytes {
 		log.Warnf("%s ignoring zip with size %d because it is smaller than min size %d at %q",
@@ -155,7 +157,9 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 		openedBytes += int64(len(b))
 		// Check size again in case input.Info.Size() was not accurate. Return early if hit max.
 		if openedBytes > e.maxOpenedBytes {
-			return nil, fmt.Errorf("%s reached max opened bytes of %d at %q", e.Name(), openedBytes, input.Path)
+			return nil, fmt.Errorf(
+				"%w: %s reached max opened bytes of %d at %q",
+				extractor.ErrExtractorMemoryLimitExceeded, e.Name(), openedBytes, input.Path)
 		}
 		r = bytes.NewReader(b)
 		l = int64(len(b))
@@ -321,7 +325,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 	// Aggregate errors.
 	err = multierr.Combine(errs...)
 	if err != nil {
-		return inventory, fmt.Errorf("error(s) in extractor %s:%s", e.Name(), err)
+		return inventory, fmt.Errorf("error(s) in extractor %s: %w", e.Name(), err)
 	}
 
 	return inventory, err
