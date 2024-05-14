@@ -32,6 +32,8 @@ import (
 	dl "github.com/google/osv-scalibr/detector/list"
 	extractor "github.com/google/osv-scalibr/extractor/filesystem"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	sl "github.com/google/osv-scalibr/extractor/standalone/list"
+	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/log"
 	scalibr "github.com/google/osv-scalibr"
 )
@@ -173,7 +175,7 @@ func validateDetectorDependency(detectors string, extractors string) error {
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
 	}
-	ex, err := f.extractorsToRun()
+	ex, stdex, err := f.extractorsToRun()
 	if err != nil {
 		return err
 	}
@@ -183,6 +185,9 @@ func validateDetectorDependency(detectors string, extractors string) error {
 	}
 	exMap := make(map[string]bool)
 	for _, e := range ex {
+		exMap[e.Name()] = true
+	}
+	for _, e := range stdex {
 		exMap[e.Name()] = true
 	}
 	for _, d := range det {
@@ -197,7 +202,7 @@ func validateDetectorDependency(detectors string, extractors string) error {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	extractors, err := f.extractorsToRun()
+	extractors, standaloneExtractors, err := f.extractorsToRun()
 	if err != nil {
 		return nil, err
 	}
@@ -213,12 +218,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		}
 	}
 	return &scalibr.ScanConfig{
-		ScanRoot:            f.Root,
-		InventoryExtractors: extractors,
-		Detectors:           detectors,
-		FilesToExtract:      f.FilesToExtract,
-		DirsToSkip:          f.dirsToSkip(),
-		SkipDirRegex:        skipDirRegex,
+		ScanRoot:             f.Root,
+		InventoryExtractors:  extractors,
+		StandaloneExtractors: standaloneExtractors,
+		Detectors:            detectors,
+		FilesToExtract:       f.FilesToExtract,
+		DirsToSkip:           f.dirsToSkip(),
+		SkipDirRegex:         skipDirRegex,
 	}, nil
 }
 
@@ -281,11 +287,33 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) extractorsToRun() ([]extractor.InventoryExtractor, error) {
+func (f *Flags) extractorsToRun() ([]extractor.InventoryExtractor, []standalone.Extractor, error) {
 	if len(f.ExtractorsToRun) == 0 {
-		return []extractor.InventoryExtractor{}, nil
+		return []extractor.InventoryExtractor{}, []standalone.Extractor{}, nil
 	}
-	return el.ExtractorsFromNames(strings.Split(f.ExtractorsToRun, ","))
+
+	var fsExtractors []extractor.InventoryExtractor
+	var standaloneExtractors []standalone.Extractor
+
+	// We need to check extractors individually as they may be defined in one or both lists.
+	for _, name := range strings.Split(f.ExtractorsToRun, ",") {
+		ex, err := el.ExtractorsFromNames([]string{name})
+		stex, sterr := sl.ExtractorsFromNames([]string{name})
+
+		if err != nil && sterr != nil { // both fails.
+			return nil, nil, err
+		}
+
+		if err == nil {
+			fsExtractors = append(fsExtractors, ex...)
+		}
+
+		if sterr == nil {
+			standaloneExtractors = append(standaloneExtractors, stex...)
+		}
+	}
+
+	return fsExtractors, standaloneExtractors, nil
 }
 
 func (f *Flags) detectorsToRun() ([]detector.Detector, error) {

@@ -19,6 +19,7 @@ package inventoryindex
 import (
 	extractor "github.com/google/osv-scalibr/extractor/filesystem"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -87,9 +88,14 @@ func (ix *InventoryIndex) GetSpecific(name string, packageType string) []*extrac
 }
 
 func toPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	ex, err := el.ExtractorFromName(i.Extractor)
-	if err != nil {
-		return nil, err
+	if ex, err := el.ExtractorFromName(i.Extractor); err == nil {
+		return ex.ToPURL(i)
 	}
-	return ex.ToPURL(i)
+
+	stex, err := sl.ExtractorFromName(i.Extractor)
+	if err == nil {
+		return stex.ToPURL(i)
+	}
+
+	return nil, err
 }

@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -40,8 +41,9 @@ func New() *Scanner { return &Scanner{} }
 // ScanConfig stores the config settings of a scan run such as the plugins to
 // use and the dir to consider the root of the scanned system.
 type ScanConfig struct {
-	InventoryExtractors []extractor.InventoryExtractor
-	Detectors           []detector.Detector
+	InventoryExtractors  []extractor.InventoryExtractor
+	StandaloneExtractors []standalone.Extractor
+	Detectors            []detector.Detector
 	// ScanRoot is the root dir used by file walking during extraction.
 	// All extractors and detectors will assume files are relative to this dir.
 	// Example use case: Scanning a container image or source code repo that is
@@ -108,15 +110,29 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		MaxInodes:      config.MaxInodes,
 	}
 	inventories, extractorStatus, err := extractor.Run(ctx, extractorConfig)
-	sro.Inventories = inventories
-	sro.ExtractorStatus = extractorStatus
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
 
-	ix, err := inventoryindex.New(inventories)
+	sro.Inventories = inventories
+	sro.ExtractorStatus = extractorStatus
+	standaloneCfg := &standalone.Config{
+		Extractors: config.StandaloneExtractors,
+		ScanRoot:   config.ScanRoot,
+	}
+	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
+	if err != nil {
+		sro.Err = err
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
+
+	sro.Inventories = append(sro.Inventories, standaloneInv...)
+	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
+
+	ix, err := inventoryindex.New(sro.Inventories)
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()

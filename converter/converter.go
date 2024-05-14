@@ -25,6 +25,7 @@ import (
 	"github.com/google/uuid"
 	extractor "github.com/google/osv-scalibr/extractor/filesystem"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	scalibr "github.com/google/osv-scalibr"
@@ -42,20 +43,30 @@ var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 
 // ToPURL converts a SCALIBR inventory structure into a package URL.
 func ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	ex, err := el.ExtractorFromName(i.Extractor)
-	if err != nil {
-		return nil, err
+	if ex, err := el.ExtractorFromName(i.Extractor); err == nil {
+		return ex.ToPURL(i)
 	}
-	return ex.ToPURL(i)
+
+	stex, err := sl.ExtractorFromName(i.Extractor)
+	if err == nil {
+		return stex.ToPURL(i)
+	}
+
+	return nil, err
 }
 
 // ToCPEs converts a SCALIBR inventory structure into CPEs, if they're present in the inventory.
 func ToCPEs(i *extractor.Inventory) ([]string, error) {
-	ex, err := el.ExtractorFromName(i.Extractor)
-	if err != nil {
-		return nil, err
+	if ex, err := el.ExtractorFromName(i.Extractor); err == nil {
+		return ex.ToCPEs(i)
 	}
-	return ex.ToCPEs(i)
+
+	stex, err := sl.ExtractorFromName(i.Extractor)
+	if err == nil {
+		return stex.ToCPEs(i)
+	}
+
+	return nil, err
 }
 
 // SPDXConfig describes custom settings that should be applied to the generated SPDX file.
