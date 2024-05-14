@@ -59,15 +59,15 @@ Some fields in the generated SPDX can be overwritten:
 ## Running built-in plugins
 
 ### With the standalone binary
-The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors](/extractor/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
+The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors (fs)](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
 
 ### With the library
-A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
+A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
 
 ```
 import (
   scalibr "github.com/google/osv-scalibr"
-  el "github.com/google/osv-scalibr/extractor/list"
+  el "github.com/google/osv-scalibr/extractor/filesystem/list"
   dl "github.com/google/osv-scalibr/detector/list"
 )
 cfg := &scalibr.ScanConfig{
@@ -81,12 +81,12 @@ results := scalibr.New().Scan(context.Background(), cfg)
 ## Creating + running custom plugins
 Custom plugins can only be run when using SCALIBR as a library.
 
-1. Create an implementation of the SCALIBR [Extractor](/extractor/extractor.go#L30) or [Detector](/detector/detector.go#L28) interface.
+1. Create an implementation of the SCALIBR [Extractor](/extractor/filesystem/extractor.go#L30) or [Detector](/detector/detector.go#L28) interface.
 2. Add the newly created struct to the scan config and run the scan, e.g.
 
 ```
 import (
-  "github.com/google/osv-scalibr/extractor"
+  "github.com/google/osv-scalibr/extractor/filesystem"
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{

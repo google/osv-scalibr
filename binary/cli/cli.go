@@ -30,8 +30,8 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
-	"github.com/google/osv-scalibr/extractor"
-	el "github.com/google/osv-scalibr/extractor/list"
+	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	"github.com/google/osv-scalibr/log"
 	scalibr "github.com/google/osv-scalibr"
 )

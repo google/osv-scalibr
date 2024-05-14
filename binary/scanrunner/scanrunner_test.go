@@ -50,7 +50,7 @@ func createExtractorTestFiles(t *testing.T) string {
 	if err := os.Mkdir(distDir, 0777); err != nil {
 		t.Fatalf("error creating directory %v: %v", distDir, err)
 	}
-	srcFile := "../../extractor/language/python/wheelegg/testdata/distinfo_meta"
+	srcFile := "../../extractor/filesystem/language/python/wheelegg/testdata/distinfo_meta"
 	dstFile := filepath.Join(distDir, "METADATA")
 	data, err := os.ReadFile(srcFile)
 	if err != nil {

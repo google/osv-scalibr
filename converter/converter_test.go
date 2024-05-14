@@ -23,8 +23,8 @@ import (
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"github.com/google/uuid"
 	"github.com/google/osv-scalibr/converter"
-	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/sbom/spdx"
+	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/purl"
 	scalibr "github.com/google/osv-scalibr"
 )

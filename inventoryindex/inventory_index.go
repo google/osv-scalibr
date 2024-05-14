@@ -17,8 +17,8 @@
 package inventoryindex
 
 import (
-	"github.com/google/osv-scalibr/extractor"
-	el "github.com/google/osv-scalibr/extractor/list"
+	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	"github.com/google/osv-scalibr/purl"
 )
 

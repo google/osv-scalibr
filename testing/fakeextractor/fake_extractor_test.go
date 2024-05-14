@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	scalibrextractor "github.com/google/osv-scalibr/extractor"
+	scalibrextractor "github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
 )
 

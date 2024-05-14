@@ -1,13 +1,14 @@
 # Add a new Extractor
 
-Extractors are plugins that extract software packages, represented by the
-Inventory struct. They are called on each file of the filesystem.
+Extractors are plugins that extract a inventory information, represented by the
+Inventory struct. They are called on every file of system (filesystem
+extractor).
 
 There should be one Extractor per parsing logic. In python for example there are
 multiple files to represent installed packages. `PKG-INFO`, `egg-info` and
 `METADATA` have the same format (MIME type) and therefore same parsing logic.
 Therefore there is one extractor
-([wheelegg](/extractor/language/python/wheelegg/extractor.go))
+([wheelegg](/extractor/filesystem/language/python/wheelegg/extractor.go))
 for all of them. `.egg` files are zip files which contain one of the previously
 mentioned files, thus `.egg` is also handled by this extractor. On the other
 side, there are files which have a different format, e.g. `requirements.txt`,
@@ -29,15 +30,16 @@ requirements/ <- extractor
 ## What you need to implement
 
 They have to implement the
-[InventoryExtractor](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L38)
+[InventoryExtractor](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L38)
 interface.
 
-# See extractor/extractor.go symbol InventoryExtractor
+# See extractor/filesystem/extractor.go symbol InventoryExtractor
 
 # See plugin/plugin.go symbol Plugin
 
-Here is a simplified version of how SCALIBR will call the extractor like this
-([actual code](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L108)):
+Here is a simplified version of how SCALIBR will call the filesystem extractor
+like this
+([actual code](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L108)):
 
 ```
 for f in walk.files:
@@ -58,17 +60,17 @@ will take care of this.
 ## Input
 
 SCALIBR will call `Extract` with
-[ScanInput](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L54),
+[ScanInput](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L54),
 which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
-# See extractor/extractor.go symbol ScanInput
+# See extractor/filesystem/extractor.go symbol ScanInput
 
 ## Output
 
 The `Extract` method should return a list of
-[Inventory](https://github.com/google/osv-scalibr/blob/4d646d6e/extractor/extractor.go#L85).
+[Inventory](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L85).
 
-# See extractor/extractor.go symbol extractor.Inventory\b
+# See extractor/filesystem/extractor.go symbol extractor.Inventory\b
 
 You can return an empty list in case you don't find inventory in the file or
 multiple Inventory entries in case there are multiple in one file.
@@ -82,21 +84,21 @@ Use this decision tree to identify where to add the extractor.
 
 -   Is the extractor for a specific language? (Java, Go, Python, etc)
     -   **Yes**: Add the extractor under
-        [extractor/language/](/extractor/language/)
+        [extractor/language/](/extractor/filesystem/language/)
         using the format: `language/[LANGUAGE]/[EXTRACTION_TARGET]`. For
         example, the location for a JavaScript
         [`package.json`](https://docs.npmjs.com/cli/v9/configuring-npm/package-json)
         extractor would be
-        [`language/javascript/packagejson/`](/extractor/language/javascript/packagejson/).
+        [`language/javascript/packagejson/`](/extractor/filesystem/language/javascript/packagejson/).
 -   Is the extractor for an OS or OS package manager? (Debian, Linux, etc)
     -   **Yes**: Add the extractor under
-        [extractor/os](/extractor/os)
+        [extractor/os](/extractor/filesystem/os)
         using the format: `os/[PACKAGE_MANAGER]`. For example, the location for
         a Debian based [dpkg](https://man7.org/linux/man-pages/man1/dpkg.1.html)
         extractor would be `os/dpkg`.
 -   Is the extractor for an SBOM format? (SPDX, etc)
     -   **Yes**: Add the extractor under
-        [extractor/sbom/](/extractor/sbom/)
+        [extractor/sbom/](/extractor/filesystem/sbom/)
         using the format: `sbom/[FORMAT]/`. For example, the location for an
         [SPDX](https://spdx.dev/) file extractor would be `sbom/spdx`.
 -   Is the extractor for something else?
@@ -105,7 +107,7 @@ Use this decision tree to identify where to add the extractor.
 
 ## Step by step
 
-You can take the [package.json](/extractor/language/javascript/packagejson/extractor.go)
+You can take the [package.json](/extractor/filesystem/language/javascript/packagejson/extractor.go)
 extractor as an example.
 
 1.  Implement `Name()` to return a unique name. Best practice is to use the path
@@ -124,7 +126,7 @@ extractor as an example.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid
     having to give test data specific file names).
 1.  Register your extractor in
-    [list.go](/extractor/list/list.go)
+    [list.go](/extractor/filesystem/list/list.go)
 1.  Optional: test locally, use the name of the extractor given by `Name()` to
     select your extractor. For the `packagejson` extractor it would look like
     this:
@@ -140,7 +142,7 @@ extractor as an example.
     not activated in any defaults yet.
 
 To add your extractor to the list of default extractors, add it in
-[extractor/list/list.go](/extractor/list/list.go).
+[extractor/list/list.go](/extractor/filesystem/list/list.go).
 Please submit this code separately from the main extractor logic.
 
 In case you have any questions or feedback, feel free to open an issue.

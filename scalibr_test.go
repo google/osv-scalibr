@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/detector"
-	"github.com/google/osv-scalibr/extractor"
+	extractor "github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	scalibr "github.com/google/osv-scalibr"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"

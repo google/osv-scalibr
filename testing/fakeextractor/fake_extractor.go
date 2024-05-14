@@ -20,7 +20,7 @@ import (
 	"errors"
 	"io/fs"
 
-	scalibrextractor "github.com/google/osv-scalibr/extractor"
+	scalibrextractor "github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
 )
 
