@@ -35,6 +35,11 @@ func TestDetectorsFromNames(t *testing.T) {
 			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
 		},
 		{
+			desc:     "Find weak credentials detectors",
+			names:    []string{"weakcreds"},
+			wantDets: []string{"weakcredentials/etcshadow"},
+		},
+		{
 			desc:     "Case-insensitive",
 			names:    []string{"CIS"},
 			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},

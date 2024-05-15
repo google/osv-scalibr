@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/cve202338408"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -36,16 +37,20 @@ var CVE []detector.Detector = []detector.Detector{&cve202338408.Detector{}}
 // Govulncheck detectors.
 var Govulncheck []detector.Detector = []detector.Detector{&binary.Detector{}}
 
+// Weakcreds detectors for weak credentials.
+var Weakcreds []detector.Detector = []detector.Detector{&etcshadow.Detector{}}
+
 // Default detectors that are recommended to be enabled.
 var Default []detector.Detector = []detector.Detector{}
 
 // All detectors internal to SCALIBR.
-var All []detector.Detector = concat(CIS, CVE, Govulncheck)
+var All []detector.Detector = concat(CIS, CVE, Govulncheck, Weakcreds)
 
 var detectorNames = map[string][]detector.Detector{
 	"cis":         CIS,
 	"cve":         CVE,
 	"govulncheck": Govulncheck,
+	"weakcreds":   Weakcreds,
 	"default":     Default,
 	"all":         All,
 }
