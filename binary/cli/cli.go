@@ -337,15 +337,16 @@ func (f *Flags) dirsToSkip() []string {
 	if len(f.DirsToSkip) > 0 {
 		paths = append(paths, strings.Split(f.DirsToSkip, ",")...)
 	}
-	// Convert absolute paths into paths relative to f.Root.
+
+	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
 	prefix := f.Root
 	if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
 		prefix += string(os.PathSeparator)
 	}
 	for _, p := range paths {
-		if strings.HasPrefix(p, prefix) { // Ignore paths that are not under Root.
-			result = append(result, strings.TrimPrefix(p, prefix))
+		if strings.HasPrefix(p, prefix) {
+			result = append(result, p)
 		}
 	}
 	return result

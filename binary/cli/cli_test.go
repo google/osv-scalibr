@@ -182,7 +182,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 			flags: &cli.Flags{
 				Root: "/",
 			},
-			wantDirsToSkip: []string{"dev", "proc", "sys"},
+			wantDirsToSkip: []string{"/dev", "/proc", "/sys"},
 		},
 		{
 			desc: "Skip additional dirs",
@@ -190,7 +190,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				Root:       "/",
 				DirsToSkip: "/boot,/mnt",
 			},
-			wantDirsToSkip: []string{"dev", "proc", "sys", "boot", "mnt"},
+			wantDirsToSkip: []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
 		},
 		{
 			desc: "Ignore paths outside root",
@@ -198,7 +198,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				Root:       "/root",
 				DirsToSkip: "/root/dir1,/dir2",
 			},
-			wantDirsToSkip: []string{"dir1"},
+			wantDirsToSkip: []string{"/root/dir1"},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
