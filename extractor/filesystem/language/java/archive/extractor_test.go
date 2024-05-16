@@ -164,7 +164,6 @@ func TestExtract(t *testing.T) {
 				Version:   "1.2.3",
 				Metadata:  &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{"testdata/simple.jar/pom.properties"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -188,7 +187,6 @@ func TestExtract(t *testing.T) {
 				Version:   "1.2.3",
 				Metadata:  &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{"testdata/simple.jar/pom.properties"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -203,7 +201,6 @@ func TestExtract(t *testing.T) {
 				Version:   "2.4.0",
 				Metadata:  &archive.Metadata{ArtifactID: "no_pom_properties", GroupID: "no_pom_properties"},
 				Locations: []string{"testdata/no_pom_properties-2.4.0.jar"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -218,7 +215,6 @@ func TestExtract(t *testing.T) {
 				Version:   "2.4.0",
 				Metadata:  &archive.Metadata{ArtifactID: "pom_missing_group_id", GroupID: "pom_missing_group_id"},
 				Locations: []string{"testdata/pom_missing_group_id-2.4.0.jar"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -233,7 +229,6 @@ func TestExtract(t *testing.T) {
 				Version:   "0.3.5",
 				Metadata:  &archive.Metadata{ArtifactID: "org.eclipse.sisu.inject", GroupID: "org.eclipse.sisu"},
 				Locations: []string{"testdata/org.eclipse.sisu.inject-0.3.5.jar"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -249,7 +244,6 @@ func TestExtract(t *testing.T) {
 					SHA1:       "PO6pevcX8f2Rkpv4xB6NYviFokQ=", // inner most nested.jar
 				},
 				Locations: []string{"testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -269,14 +263,12 @@ func TestExtract(t *testing.T) {
 					Version:   "1.2.3",
 					Metadata:  &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 					Locations: []string{"testdata/complex.jar/pom.properties"},
-					Extractor: archive.Name,
 				},
 				{
 					Name:      "another-package-name",
 					Version:   "3.2.1",
 					Metadata:  &archive.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
 					Locations: []string{"testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties"},
-					Extractor: archive.Name,
 				},
 			},
 		},
@@ -290,7 +282,6 @@ func TestExtract(t *testing.T) {
 				Version:   "1.2.3",
 				Metadata:  &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{"testdata/complex.jar/pom.properties"},
-				Extractor: archive.Name,
 			}},
 			wantErr: extractor.ErrExtractorMemoryLimitExceeded,
 		},
@@ -309,7 +300,6 @@ func TestExtract(t *testing.T) {
 						SHA1: "YEWPh30FXQyRFNnhou+3N7S8KCw=",
 					},
 					Locations: []string{"testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties"},
-					Extractor: archive.Name,
 				},
 			},
 		},
@@ -330,7 +320,6 @@ func TestExtract(t *testing.T) {
 					GroupID:    "com.google.guava.failureaccess",
 				},
 				Locations: []string{"testdata/manifest-symbolicname/MANIFEST.MF"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -345,7 +334,6 @@ func TestExtract(t *testing.T) {
 					GroupID:    "test.group",
 				},
 				Locations: []string{"testdata/invalid-ids/MANIFEST.MF"},
-				Extractor: archive.Name,
 			}},
 		},
 		{
@@ -361,7 +349,6 @@ func TestExtract(t *testing.T) {
 					GroupID:    "org.apache.ivy",
 				},
 				Locations: []string{"testdata/ivy-2.4.0.jar"},
-				Extractor: archive.Name,
 			}},
 		},
 	}

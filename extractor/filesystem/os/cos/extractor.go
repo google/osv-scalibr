@@ -91,7 +91,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				OSVersionID: m["VERSION_ID"],
 			},
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		}
 		inventory = append(inventory, i)
 	}

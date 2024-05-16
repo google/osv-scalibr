@@ -108,7 +108,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 	}
 
 	i.Locations = []string{input.Path}
-	i.Extractor = e.Name()
 	return []*extractor.Inventory{i}, nil
 }
 

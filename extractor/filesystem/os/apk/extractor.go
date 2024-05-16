@@ -110,7 +110,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				License:      license,
 			},
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		})
 	}
 	return pkgs, nil

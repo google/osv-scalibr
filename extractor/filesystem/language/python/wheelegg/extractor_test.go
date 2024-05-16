@@ -91,7 +91,6 @@ func TestExtract(t *testing.T) {
 				Name:      "pip",
 				Version:   "22.2.2",
 				Locations: []string{"testdata/distinfo_meta"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "The pip developers",
 					AuthorEmail: "distutils-sig@python.org",
@@ -105,7 +104,6 @@ func TestExtract(t *testing.T) {
 				Name:      "setuptools",
 				Version:   "57.4.0",
 				Locations: []string{"testdata/egginfo_pkginfo"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Python Packaging Authority",
 					AuthorEmail: "distutils-sig@python.org",
@@ -119,7 +117,6 @@ func TestExtract(t *testing.T) {
 				Name:      "pycups",
 				Version:   "2.0.1",
 				Locations: []string{"testdata/egginfo"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Zdenek Dohnal",
 					AuthorEmail: "zdohnal@redhat.com",
@@ -133,7 +130,6 @@ func TestExtract(t *testing.T) {
 				Name:      "httplib2",
 				Version:   "0.20.4",
 				Locations: []string{"testdata/pkginfo"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Joe Gregorio",
 					AuthorEmail: "joe@bitworking.org",
@@ -148,7 +144,6 @@ func TestExtract(t *testing.T) {
 				Name:      "passlib",
 				Version:   "1.7.4",
 				Locations: []string{"testdata/malformed_pkginfo"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Eli Collins",
 					AuthorEmail: "elic@assurancetechnologies.com",
@@ -162,7 +157,6 @@ func TestExtract(t *testing.T) {
 				Name:      "monotonic",
 				Version:   "1.6",
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
-				Extractor: wheelegg.Name,
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -244,7 +238,6 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				Name:      "monotonic",
 				Version:   "1.6",
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
-				Extractor: e.Name(),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",

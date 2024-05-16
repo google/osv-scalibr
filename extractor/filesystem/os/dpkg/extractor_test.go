@@ -137,7 +137,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "acl",
@@ -153,7 +152,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "adduser",
@@ -169,7 +167,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "all",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "admin-session",
@@ -185,7 +182,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "attr",
@@ -201,7 +197,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				// Expect source name.
 				&extractor.Inventory{
@@ -219,7 +214,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 				// Expect source name and version.
 				&extractor.Inventory{
@@ -238,7 +232,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/valid"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -259,7 +252,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/noversion"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "bar",
@@ -273,7 +265,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/noversion"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -294,7 +285,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/nopackage"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "bar",
@@ -308,7 +298,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/nopackage"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -329,7 +318,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantdeinstall_installed",
@@ -343,7 +331,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantpurge_installed",
@@ -357,7 +344,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -381,7 +367,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantdeinstall_installed",
@@ -395,7 +380,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantdeinstall_configfiles",
@@ -409,7 +393,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantinstall_unpacked",
@@ -423,7 +406,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantpurge_installed",
@@ -437,7 +419,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantinstall_halfinstalled",
@@ -451,7 +432,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 				&extractor.Inventory{
 					Name:    "wantnostatus",
@@ -464,7 +444,6 @@ func TestExtract(t *testing.T) {
 						OSVersionID:       "12",
 					},
 					Locations: []string{"testdata/statusfield"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -500,7 +479,6 @@ func TestExtract(t *testing.T) {
 						Architecture:   "amd64",
 					},
 					Locations: []string{"testdata/single"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -521,7 +499,6 @@ func TestExtract(t *testing.T) {
 						Architecture:   "amd64",
 					},
 					Locations: []string{"testdata/single"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -542,7 +519,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/single"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -568,7 +544,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/single"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -599,7 +574,6 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/status.d/foo"},
-					Extractor: dpkg.Name,
 				},
 			},
 		},
@@ -659,7 +633,6 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 				Architecture:   "amd64",
 			},
 			Locations: []string{path},
-			Extractor: dpkg.Name,
 		},
 	}
 

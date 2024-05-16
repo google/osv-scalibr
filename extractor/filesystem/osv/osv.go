@@ -66,7 +66,6 @@ func (e Wrapper) Extract(ctx context.Context, input *extractor.ScanInput) ([]*ex
 				CompareAs: string(p.CompareAs),
 			},
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		})
 	}
 

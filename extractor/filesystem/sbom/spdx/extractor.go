@@ -95,7 +95,6 @@ func (e Extractor) convertSpdxDocToInventory(spdxDoc *spdx.Document, path string
 	for _, spdxPkg := range spdxDoc.Packages {
 		inv := &extractor.Inventory{
 			Locations: []string{path},
-			Extractor: e.Name(),
 			Metadata:  &Metadata{},
 		}
 		m := inv.Metadata.(*Metadata)

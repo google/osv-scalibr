@@ -86,7 +86,6 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 			Name:      "go",
 			Version:   validatedGoVers,
 			Locations: []string{filename},
-			Extractor: e.Name(),
 		})
 	}
 
@@ -102,7 +101,6 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 			Name:      pkgName,
 			Version:   pkgVers,
 			Locations: []string{filename},
-			Extractor: e.Name(),
 		}
 		res = append(res, pkg)
 	}

@@ -77,7 +77,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				Locations: []string{
 					input.Path,
 				},
-				Extractor: e.Name(),
 			}
 			res = append(res, inv)
 		}

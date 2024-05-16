@@ -184,7 +184,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 				Architecture:      arch,
 			},
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))
 		if err != nil {

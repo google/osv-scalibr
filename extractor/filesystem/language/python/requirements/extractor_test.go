@@ -128,7 +128,6 @@ func TestExtract(t *testing.T) {
 	for _, t := range tests {
 		for _, i := range t.wantInventory {
 			i.Locations = []string{t.path}
-			i.Extractor = e.Name()
 		}
 	}
 

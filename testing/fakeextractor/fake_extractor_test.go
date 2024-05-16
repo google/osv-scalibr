@@ -129,11 +129,9 @@ func TestExtract(t *testing.T) {
 	multipleInventories := []*scalibrextractor.Inventory{&scalibrextractor.Inventory{
 		Name:      name1,
 		Locations: []string{"some path"},
-		Extractor: "extractor name",
 	}, &scalibrextractor.Inventory{
 		Name:      name2,
 		Locations: []string{"some path"},
-		Extractor: "extractor name",
 	}}
 
 	type args struct {

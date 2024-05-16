@@ -100,7 +100,6 @@ func TestExtract(t *testing.T) {
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:        "python-exec",
 						Version:     "17162.336.16",
@@ -120,7 +119,6 @@ func TestExtract(t *testing.T) {
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/multiple.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:        "python-exec",
 						Version:     "17162.336.16",
@@ -133,7 +131,6 @@ func TestExtract(t *testing.T) {
 					Name:      "zlib",
 					Version:   "17162.336.17",
 					Locations: []string{"testdata/multiple.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:        "zlib",
 						Version:     "17162.336.17",
@@ -146,7 +143,6 @@ func TestExtract(t *testing.T) {
 					Name:      "baselayout",
 					Version:   "17162.336.18",
 					Locations: []string{"testdata/multiple.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:        "baselayout",
 						Version:     "17162.336.18",
@@ -159,7 +155,6 @@ func TestExtract(t *testing.T) {
 					Name:      "ncurses",
 					Version:   "17162.336.19",
 					Locations: []string{"testdata/multiple.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:        "ncurses",
 						Version:     "17162.336.19",
@@ -179,7 +174,6 @@ func TestExtract(t *testing.T) {
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:      "python-exec",
 						Version:   "17162.336.16",
@@ -198,7 +192,6 @@ func TestExtract(t *testing.T) {
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},
-					Extractor: e.Name(),
 					Metadata: &cos.Metadata{
 						Name:     "python-exec",
 						Version:  "17162.336.16",

@@ -106,7 +106,6 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages.db"},
-					Extractor: "os/rpm",
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
 					Metadata: &rpm.Metadata{
@@ -123,7 +122,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages.db"},
-					Extractor: "os/rpm",
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
 					Metadata: &rpm.Metadata{
@@ -140,7 +138,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages.db"},
-					Extractor: "os/rpm",
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
 					Metadata: &rpm.Metadata{
@@ -166,7 +163,6 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
-					Extractor: "os/rpm",
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
 					Metadata: &rpm.Metadata{
@@ -183,7 +179,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
-					Extractor: "os/rpm",
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
 					Metadata: &rpm.Metadata{
@@ -200,7 +195,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
-					Extractor: "os/rpm",
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
 					Metadata: &rpm.Metadata{
@@ -255,7 +249,6 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
 					Metadata: &rpm.Metadata{
@@ -272,7 +265,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
 					Metadata: &rpm.Metadata{
@@ -289,7 +281,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "basesystem",
 					Version:   "11-13.el9",
 					Metadata: &rpm.Metadata{
@@ -316,7 +307,6 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
 					Metadata: &rpm.Metadata{
@@ -332,7 +322,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
 					Metadata: &rpm.Metadata{
@@ -348,7 +337,6 @@ func TestExtract(t *testing.T) {
 				},
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
-					Extractor: "os/rpm",
 					Name:      "basesystem",
 					Version:   "11-13.el9",
 					Metadata: &rpm.Metadata{
@@ -381,7 +369,6 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
-					Extractor: "os/rpm",
 					Name:      "hello",
 					Version:   "0.0.1-rls",
 					Metadata: &rpm.Metadata{

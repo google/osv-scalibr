@@ -316,6 +316,7 @@ func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.
 	if len(results) > 0 {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results {
+			r.Extractor = ex.Name()
 			wc.inventory = append(wc.inventory, r)
 		}
 	}

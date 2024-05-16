@@ -95,82 +95,82 @@ func TestExtract(t *testing.T) {
 		{
 			name: "binary_with_module_replacement-darwin-amd64",
 			path: "testdata/binary_with_module_replacement-darwin-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64"),
 		},
 		{
 			name: "binary_with_module_replacement-darwin-arm64",
 			path: "testdata/binary_with_module_replacement-darwin-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64"),
 		},
 		{
 			name: "binary_with_module_replacement-linux-386",
 			path: "testdata/binary_with_module_replacement-linux-386",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386"),
 		},
 		{
 			name: "binary_with_module_replacement-linux-amd64",
 			path: "testdata/binary_with_module_replacement-linux-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64"),
 		},
 		{
 			name: "binary_with_module_replacement-linux-arm64",
 			path: "testdata/binary_with_module_replacement-linux-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64"),
 		},
 		{
 			name: "binary_with_module_replacement-windows-386",
 			path: "testdata/binary_with_module_replacement-windows-386",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386"),
 		},
 		{
 			name: "binary_with_module_replacement-windows-amd64",
 			path: "testdata/binary_with_module_replacement-windows-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64"),
 		},
 		{
 			name: "binary_with_module_replacement-windows-arm64",
 			path: "testdata/binary_with_module_replacement-windows-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64"),
 		},
 		{
 			name: "binary_with_modules-darwin-amd64",
 			path: "testdata/binary_with_modules-darwin-amd64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64"),
 		},
 		{
 			name: "binary_with_modules-darwin-arm64",
 			path: "testdata/binary_with_modules-darwin-arm64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64"),
 		},
 		{
 			name: "binary_with_modules-linux-386",
 			path: "testdata/binary_with_modules-linux-386",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386"),
 		},
 		{
 			name: "binary_with_modules-linux-amd64",
 			path: "testdata/binary_with_modules-linux-amd64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64"),
 		},
 		{
 			name: "binary_with_modules-linux-arm64",
 			path: "testdata/binary_with_modules-linux-arm64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64"),
 		},
 		{
 			name: "binary_with_modules-windows-386",
 			path: "testdata/binary_with_modules-windows-386",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386"),
 		},
 		{
 			name: "binary_with_modules-windows-amd64",
 			path: "testdata/binary_with_modules-windows-amd64",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64"),
 		},
 		{
 			name: "binary_with_modules-windows-arm64",
 			path: "testdata/binary_with_modules-windows-arm64",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64", e.Name()),
+			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64"),
 		},
 		{
 			name: "dummy",
@@ -273,11 +273,11 @@ func goPackage(name, version string) *extractor.Inventory {
 	return &extractor.Inventory{Name: name, Version: version}
 }
 
-func createInventories(invs []*extractor.Inventory, location string, e string) []*extractor.Inventory {
+func createInventories(invs []*extractor.Inventory, location string) []*extractor.Inventory {
 	res := []*extractor.Inventory{}
 	for _, i := range invs {
 		res = append(res, &extractor.Inventory{
-			Name: i.Name, Version: i.Version, Locations: []string{location}, Extractor: e,
+			Name: i.Name, Version: i.Version, Locations: []string{location},
 		})
 	}
 	return res

@@ -68,6 +68,9 @@ func Run(ctx context.Context, config *Config) ([]*filesystem.Inventory, []*plugi
 			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err))
 			continue
 		}
+		for _, i := range inv {
+			i.Extractor = extractor.Name()
+		}
 
 		inventories = append(inventories, inv...)
 		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil))

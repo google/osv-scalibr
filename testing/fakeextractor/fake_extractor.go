@@ -93,7 +93,6 @@ func (e *extractor) Extract(ctx context.Context, input *scalibrextractor.ScanInp
 		invs = append(invs, &scalibrextractor.Inventory{
 			Name:      name,
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		})
 	}
 

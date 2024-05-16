@@ -83,7 +83,6 @@ func TestExtract(t *testing.T) {
 					Name:      "testdata",
 					Version:   "10.46.8",
 					Locations: []string{"testdata/package.json"},
-					Extractor: packagejson.Name,
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Author: &packagejson.Person{
 							Name:  "Developer",
@@ -110,7 +109,6 @@ func TestExtract(t *testing.T) {
 					Name:      "accepts",
 					Version:   "1.3.8",
 					Locations: []string{"testdata/deps/accepts/package.json"},
-					Extractor: packagejson.Name,
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
 							&packagejson.Person{
@@ -135,7 +133,6 @@ func TestExtract(t *testing.T) {
 					Name:      "accepts",
 					Version:   "1.3.8",
 					Locations: []string{"testdata/deps/no-person-name/package.json"},
-					Extractor: packagejson.Name,
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
 							&packagejson.Person{
@@ -156,7 +153,6 @@ func TestExtract(t *testing.T) {
 					Name:      "acorn",
 					Version:   "1.2.2",
 					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
-					Extractor: packagejson.Name,
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Maintainers: []*packagejson.Person{
 							&packagejson.Person{
@@ -205,7 +201,6 @@ func TestExtract(t *testing.T) {
 					Name:      "jsonparse",
 					Version:   "1.3.1",
 					Locations: []string{"testdata/not-vscode.json"},
-					Extractor: packagejson.Name,
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Author: &packagejson.Person{
 							Name:  "Tim Caswell",

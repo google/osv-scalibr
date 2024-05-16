@@ -126,7 +126,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 			Name:      p.Name,
 			Version:   fmt.Sprintf("%s-%s", p.Version, p.Release),
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 			Metadata:  metadata,
 		}
 

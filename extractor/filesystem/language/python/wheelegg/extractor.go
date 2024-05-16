@@ -197,7 +197,6 @@ func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Inven
 	}
 
 	i.Locations = []string{path}
-	i.Extractor = e.Name()
 	return i, nil
 }
 

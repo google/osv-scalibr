@@ -223,7 +223,6 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 						SHA1:       sha1,
 					},
 					Locations: []string{path},
-					Extractor: e.Name(),
 				})
 			}
 
@@ -244,7 +243,6 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 						SHA1:       sha1,
 					},
 					Locations: []string{path},
-					Extractor: e.Name(),
 				})
 			}
 
@@ -297,7 +295,6 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 					SHA1:       sha1,
 				},
 				Locations: []string{input.Path},
-				Extractor: e.Name(),
 			})
 		}
 	}
@@ -318,7 +315,6 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 				SHA1:       sha1,
 			},
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		})
 	}
 

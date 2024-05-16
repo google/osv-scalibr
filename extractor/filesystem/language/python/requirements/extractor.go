@@ -102,7 +102,6 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 			Name:      name,
 			Version:   version,
 			Locations: []string{input.Path},
-			Extractor: e.Name(),
 		})
 	}
 
