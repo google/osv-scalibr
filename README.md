@@ -31,9 +31,8 @@ Run `./scalibr --help` for a list of additional CLI args.
 
 ### As a library:
 1. Import `github.com/google/osv-scalibr` into your Go project
-1. Write a custom implementation for the `fs.FS` interface, or use an existing one like `os.DirFS`
 1. Create a new [scalibr.ScanConfig](/scalibr.go#L36) struct, configure the extraction and detection plugins to run
-1. Call `scalibr.New().Scan()` with the config and the FS implementation
+1. Call `scalibr.New().Scan()` with the config
 1. Parse the returned [scalibr.ScanResults](/scalibr.go#L50)
 
 See below for an example code snippet.
@@ -71,7 +70,7 @@ import (
   dl "github.com/google/osv-scalibr/detector/list"
 )
 cfg := &scalibr.ScanConfig{
-  FS:                  os.DirFS("/"),
+  ScanRoot:            "/",
   InventoryExtractors: el.Python,
   Detectors:           dl.CIS,
 }
@@ -90,7 +89,7 @@ import (
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{
-  FS:                  os.DirFS("/"),
+  ScanRoot:            "/",
   InventoryExtractors: []extractor.InventoryExtractor{&myExtractor{}},
 }
 results := scalibr.New().Scan(context.Background(), cfg)
@@ -105,7 +104,7 @@ import (
   "github.com/google/osv-scalibr/log"
   scalibr "github.com/google/osv-scalibr"
 )
-cfg := &scalibr.ScanConfig{FS: os.DirFS("/")}
+cfg := &scalibr.ScanConfig{ScanRoot: "/"}
 log.SetLogger(&customlog.Logger{})
 results := scalibr.New().Scan(context.Background(), cfg)
 log.Info(results)
