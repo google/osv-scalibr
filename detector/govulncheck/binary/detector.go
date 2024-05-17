@@ -24,12 +24,12 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/vuln/scan"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/vuln/scan"
 )
 
 const (
@@ -144,13 +144,13 @@ func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Fin
 }
 
 func getAdvisoryID(e *osvEntry) *detector.AdvisoryID {
-	// Get the CVE or GSHA advisory if it exists.
+	// Get the CVE or GHSA advisory if it exists.
 	for _, a := range e.Aliases {
 		var publisher string
 		if strings.HasPrefix(a, "CVE-") {
 			publisher = "CVE"
 		} else if strings.HasPrefix(a, "GHSA-") {
-			publisher = "GSHA"
+			publisher = "GHSA"
 		} else {
 			continue
 		}
