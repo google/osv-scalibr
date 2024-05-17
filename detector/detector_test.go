@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"

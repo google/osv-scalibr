@@ -31,7 +31,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
@@ -51,6 +52,11 @@ func TestRun(t *testing.T) {
 	name1 := "software1"
 	name2 := "software2"
 
+	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
+	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
+	fakeEx2WithInv1 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name1}, Err: nil}})
+	fakeExWithPartialResult := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: errors.New("extraction failed")}})
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("os.Getwd(): %v", err)
@@ -58,7 +64,7 @@ func TestRun(t *testing.T) {
 
 	testCases := []struct {
 		desc           string
-		ex             []extractor.InventoryExtractor
+		ex             []filesystem.Extractor
 		filesToExtract []string
 		dirsToSkip     []string
 		skipDirRegex   string
@@ -70,20 +76,17 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			desc: "Extractors successful",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeEx1,
 				},
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -93,17 +96,14 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Dir skipped",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:       "Dir skipped",
+			ex:         []filesystem.Extractor{fakeEx1, fakeEx2},
 			dirsToSkip: []string{"dir1"},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -114,17 +114,14 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Dir skipped with absolute path",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			dirsToSkip: []string{path.Join(cwd, "dir1")},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -135,26 +132,20 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Dir skipped not relative to ScanRoot",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD, dirsToSkip is in its parent dir.
 			dirsToSkip: []string{path.Join(filepath.Dir(cwd), "dir1")},
 			wantErr:    cmpopts.AnyError,
 		},
 		{
-			desc: "Dir skipped using regex",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:         "Dir skipped using regex",
+			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: ".*1",
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -164,17 +155,14 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 5,
 		},
 		{
-			desc: "Dir skipped with full match of dirname",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:         "Dir skipped with full match of dirname",
+			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "/sub$",
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeEx1,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -184,22 +172,19 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 5,
 		},
 		{
-			desc: "skip regex set but not match",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:         "skip regex set but not match",
+			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "asdf",
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeEx1,
 				},
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -210,20 +195,17 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Duplicate inventory results kept separate",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name1}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithInv1},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeEx1,
 				},
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2WithInv1,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -233,17 +215,14 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extract specific file",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:           "Extract specific file",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			filesToExtract: []string{path2},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -254,17 +233,14 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Extract specific file with absolute path",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			filesToExtract: []string{path.Join(cwd, path2)},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -275,17 +251,14 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Extract specific file not relative to ScanRoot",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD, filepath is in its parent dir.
 			filesToExtract: []string{path.Join(filepath.Dir(cwd), path2)},
 			wantErr:        cmpopts.AnyError,
 		},
 		{
 			desc: "nil result",
-			ex: []extractor.InventoryExtractor{
+			ex: []filesystem.Extractor{
 				// An Extractor that returns nil.
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {nil, nil}}),
 			},
@@ -297,14 +270,12 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Extraction fails with partial results",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: errors.New("extraction failed")}}),
-			},
+			ex:   []filesystem.Extractor{fakeExWithPartialResult},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeExWithPartialResult,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -316,7 +287,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Extraction fails with no results",
-			ex: []extractor.InventoryExtractor{
+			ex: []filesystem.Extractor{
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: errors.New("extraction failed")}}),
 			},
 			wantInv: []*extractor.Inventory{},
@@ -329,7 +300,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			desc: "Extraction fails several times",
-			ex: []extractor.InventoryExtractor{
+			ex: []filesystem.Extractor{
 				fe.New("ex1", 1, []string{path1, path2}, map[string]fe.NamesErr{
 					path1: {Names: nil, Err: errors.New("extraction failed")},
 					path2: {Names: nil, Err: errors.New("extraction failed")},
@@ -345,11 +316,8 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "More inodes visited than limit, Error",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:      "More inodes visited than limit, Error",
+			ex:        []filesystem.Extractor{fakeEx1, fakeEx2},
 			maxInodes: 2,
 			wantInv:   []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
@@ -360,22 +328,19 @@ func TestRun(t *testing.T) {
 			wantErr:        cmpopts.AnyError,
 		},
 		{
-			desc: "Less inodes visited than limit, no Error",
-			ex: []extractor.InventoryExtractor{
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}}),
-				fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}}),
-			},
+			desc:      "Less inodes visited than limit, no Error",
+			ex:        []filesystem.Extractor{fakeEx1, fakeEx2},
 			maxInodes: 6,
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: "ex1",
+					Extractor: fakeEx1,
 				},
 				&extractor.Inventory{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: "ex2",
+					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
@@ -393,7 +358,7 @@ func TestRun(t *testing.T) {
 			if tc.skipDirRegex != "" {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
-			config := &extractor.Config{
+			config := &filesystem.Config{
 				Extractors:     tc.ex,
 				FilesToExtract: tc.filesToExtract,
 				DirsToSkip:     tc.dirsToSkip,
@@ -403,7 +368,7 @@ func TestRun(t *testing.T) {
 				FS:             fsys,
 				Stats:          fc,
 			}
-			gotInv, gotStatus, err := extractor.RunFS(context.Background(), config)
+			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v) error got diff (-want +got):\n%s", tc.ex, diff)
 			}
@@ -417,7 +382,7 @@ func TestRun(t *testing.T) {
 				sort.Strings(i.Locations)
 			}
 
-			if diff := cmp.Diff(tc.wantInv, gotInv, cmpopts.SortSlices(invLess)); diff != "" {
+			if diff := cmp.Diff(tc.wantInv, gotInv, cmpopts.SortSlices(invLess), fe.AllowUnexported, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
@@ -503,7 +468,7 @@ func (fakeDirEntry) Type() fs.FileMode          { return 0777 }
 func (fakeDirEntry) Info() (fs.FileInfo, error) { return &fakeFileInfo{dir: false}, nil }
 
 func TestRun_ReadError(t *testing.T) {
-	ex := []extractor.InventoryExtractor{
+	ex := []filesystem.Extractor{
 		fe.New("ex1", 1, []string{"file"},
 			map[string]fe.NamesErr{"file": {Names: []string{"software"}, Err: nil}}),
 	}
@@ -512,14 +477,14 @@ func TestRun_ReadError(t *testing.T) {
 			Status: plugin.ScanStatusFailed, FailureReason: "Open(file): failed to open",
 		}},
 	}
-	config := &extractor.Config{
+	config := &filesystem.Config{
 		Extractors: ex,
 		DirsToSkip: []string{},
 		ScanRoot:   ".",
 		FS:         &fakeFS{},
 		Stats:      stats.NoopCollector{},
 	}
-	gotInv, gotStatus, err := extractor.RunFS(context.Background(), config)
+	gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config)
 	if err != nil {
 		t.Fatalf("extractor.Run(%v): %v", ex, err)
 	}

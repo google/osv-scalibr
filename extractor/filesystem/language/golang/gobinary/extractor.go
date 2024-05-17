@@ -25,7 +25,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -65,7 +66,7 @@ func (e Extractor) FileRequired(path string, mode fs.FileMode) bool {
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	binfo, err := buildinfo.Read(input.Reader.(io.ReaderAt))
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)

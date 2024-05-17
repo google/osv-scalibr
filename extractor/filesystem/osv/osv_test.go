@@ -26,7 +26,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scanner/pkg/lockfile"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -124,7 +125,7 @@ func TestExtract(t *testing.T) {
 	writeFile(t, filepath.Join(tmp, "yolo"), "yolo content")
 	writeFile(t, filepath.Join(tmp, "foo/bar"), "foobar content")
 
-	input := &extractor.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
+	input := &filesystem.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
 
 	got, err := w.Extract(context.Background(), input)
 	if err != nil {
@@ -147,7 +148,7 @@ func TestExtractErr(t *testing.T) {
 
 	r := strings.NewReader("reader content")
 	tmp := t.TempDir()
-	input := &extractor.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
+	input := &filesystem.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
 
 	_, err := w.Extract(context.Background(), input)
 	if !cmp.Equal(err, wantErr, cmpopts.EquateErrors()) {

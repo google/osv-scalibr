@@ -25,7 +25,8 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/detector"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
@@ -41,7 +42,7 @@ func New() *Scanner { return &Scanner{} }
 // ScanConfig stores the config settings of a scan run such as the plugins to
 // use and the dir to consider the root of the scanned system.
 type ScanConfig struct {
-	InventoryExtractors  []extractor.InventoryExtractor
+	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
 	// ScanRoot is the root dir used by file walking during extraction.
@@ -99,17 +100,17 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		Inventories: []*extractor.Inventory{},
 		Findings:    []*detector.Finding{},
 	}
-	extractorConfig := &extractor.Config{
+	extractorConfig := &filesystem.Config{
 		Stats:          config.Stats,
 		ReadSymlinks:   config.ReadSymlinks,
-		Extractors:     config.InventoryExtractors,
+		Extractors:     config.FilesystemExtractors,
 		FilesToExtract: config.FilesToExtract,
 		DirsToSkip:     config.DirsToSkip,
 		SkipDirRegex:   config.SkipDirRegex,
 		ScanRoot:       config.ScanRoot,
 		MaxInodes:      config.MaxInodes,
 	}
-	inventories, extractorStatus, err := extractor.Run(ctx, extractorConfig)
+	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
@@ -214,8 +215,8 @@ func cmpInventories(a, b *extractor.Inventory) int {
 	if a.Version != b.Version {
 		return cmpString(a.Version, b.Version)
 	}
-	if a.Extractor != b.Extractor {
-		return cmpString(a.Extractor, b.Extractor)
+	if a.Extractor.Name() != b.Extractor.Name() {
+		return cmpString(a.Extractor.Name(), b.Extractor.Name())
 	}
 	return 0
 }

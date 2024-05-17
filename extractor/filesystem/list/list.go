@@ -24,7 +24,8 @@ import (
 	"github.com/google/osv-scanner/pkg/lockfile"
 
 	// SCALIBR internal extractors.
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -49,22 +50,22 @@ var (
 	// Language extractors.
 
 	// Java extractors.
-	Java []extractor.InventoryExtractor = []extractor.InventoryExtractor{javaarchive.New(javaarchive.DefaultConfig())}
+	Java []filesystem.Extractor = []filesystem.Extractor{javaarchive.New(javaarchive.DefaultConfig())}
 	// Javascript extractors.
-	Javascript []extractor.InventoryExtractor = []extractor.InventoryExtractor{packagejson.New(packagejson.DefaultConfig()), &packagelockjson.Extractor{}}
+	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), &packagelockjson.Extractor{}}
 	// Python extractors.
-	Python []extractor.InventoryExtractor = []extractor.InventoryExtractor{wheelegg.New(wheelegg.DefaultConfig()), &requirements.Extractor{}}
+	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), &requirements.Extractor{}}
 	// Go extractors.
-	Go []extractor.InventoryExtractor = []extractor.InventoryExtractor{&gobinary.Extractor{}}
+	Go []filesystem.Extractor = []filesystem.Extractor{&gobinary.Extractor{}}
 	// Ruby extractors.
-	Ruby []extractor.InventoryExtractor = []extractor.InventoryExtractor{&gemspec.Extractor{}}
+	Ruby []filesystem.Extractor = []filesystem.Extractor{&gemspec.Extractor{}}
 	// SBOM extractors.
-	SBOM []extractor.InventoryExtractor = []extractor.InventoryExtractor{&spdx.Extractor{}}
+	SBOM []filesystem.Extractor = []filesystem.Extractor{&spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
-	Dotnet []extractor.InventoryExtractor = []extractor.InventoryExtractor{&packageslockjson.Extractor{}}
+	Dotnet []filesystem.Extractor = []filesystem.Extractor{&packageslockjson.Extractor{}}
 
 	// OS extractors.
-	OS []extractor.InventoryExtractor = []extractor.InventoryExtractor{
+	OS []filesystem.Extractor = []filesystem.Extractor{
 		dpkg.New(dpkg.DefaultConfig()),
 		&apk.Extractor{},
 		rpm.New(rpm.DefaultConfig()),
@@ -74,9 +75,9 @@ var (
 	// Collections of extractors.
 
 	// Default extractors that are recommended to be enabled.
-	Default []extractor.InventoryExtractor = concat(Java, Javascript, Python, Go, OS)
+	Default []filesystem.Extractor = concat(Java, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR. These don't include the untested extractors which can be enabled manually.
-	All []extractor.InventoryExtractor = concat(
+	All []filesystem.Extractor = concat(
 		Java,
 		Javascript,
 		Python,
@@ -89,7 +90,7 @@ var (
 
 	// Untested extractors are OSV extractors without tests.
 	// TODO(b/307735923): Add tests for these and move them into All.
-	Untested []extractor.InventoryExtractor = []extractor.InventoryExtractor{
+	Untested []filesystem.Extractor = []filesystem.Extractor{
 		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
 		osv.Wrapper{ExtractorName: "dart/pubspec", ExtractorVersion: 0, PURLType: purl.TypePub, Extractor: lockfile.PubspecLockExtractor{}},
 		osv.Wrapper{ExtractorName: "go/gomod", ExtractorVersion: 0, PURLType: purl.TypeGolang, Extractor: lockfile.GoLockExtractor{}},
@@ -104,7 +105,7 @@ var (
 		osv.Wrapper{ExtractorName: "rust/cargo", ExtractorVersion: 0, PURLType: purl.TypeCargo, Extractor: lockfile.CargoLockExtractor{}},
 	}
 
-	extractorNames = map[string][]extractor.InventoryExtractor{
+	extractorNames = map[string][]filesystem.Extractor{
 		// Languages.
 		"java":       Java,
 		"javascript": Javascript,
@@ -132,17 +133,17 @@ func init() {
 }
 
 // register adds the individual extractors to the extractorNames map.
-func register(d extractor.InventoryExtractor) {
+func register(d filesystem.Extractor) {
 	if _, ok := extractorNames[strings.ToLower(d.Name())]; ok {
 		log.Errorf("There are 2 extractors with the name: %q", d.Name())
 		os.Exit(1)
 	}
-	extractorNames[strings.ToLower(d.Name())] = []extractor.InventoryExtractor{d}
+	extractorNames[strings.ToLower(d.Name())] = []filesystem.Extractor{d}
 }
 
 // ExtractorsFromNames returns a deduplicated list of extractors from a list of names.
-func ExtractorsFromNames(names []string) ([]extractor.InventoryExtractor, error) {
-	resultMap := make(map[string]extractor.InventoryExtractor)
+func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
+	resultMap := make(map[string]filesystem.Extractor)
 	for _, n := range names {
 		if es, ok := extractorNames[strings.ToLower(n)]; ok {
 			for _, e := range es {
@@ -154,7 +155,7 @@ func ExtractorsFromNames(names []string) ([]extractor.InventoryExtractor, error)
 			return nil, fmt.Errorf("unknown extractor %s", n)
 		}
 	}
-	result := make([]extractor.InventoryExtractor, 0, len(resultMap))
+	result := make([]filesystem.Extractor, 0, len(resultMap))
 	for _, e := range resultMap {
 		result = append(result, e)
 	}
@@ -162,7 +163,7 @@ func ExtractorsFromNames(names []string) ([]extractor.InventoryExtractor, error)
 }
 
 // ExtractorFromName returns a single extractor based on its exact name.
-func ExtractorFromName(name string) (extractor.InventoryExtractor, error) {
+func ExtractorFromName(name string) (filesystem.Extractor, error) {
 	es, ok := extractorNames[strings.ToLower(name)]
 	if !ok {
 		return nil, fmt.Errorf("unknown extractor %s", name)
@@ -174,12 +175,12 @@ func ExtractorFromName(name string) (extractor.InventoryExtractor, error) {
 }
 
 // Returns a new slice that concatenates the values of two or more slices without modifying them.
-func concat(exs ...[]extractor.InventoryExtractor) []extractor.InventoryExtractor {
+func concat(exs ...[]filesystem.Extractor) []filesystem.Extractor {
 	length := 0
 	for _, e := range exs {
 		length += len(e)
 	}
-	result := make([]extractor.InventoryExtractor, 0, length)
+	result := make([]filesystem.Extractor, 0, length)
 	for _, e := range exs {
 		result = append(result, e...)
 	}

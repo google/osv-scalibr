@@ -22,13 +22,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = wheelegg.Extractor{}
+	var e filesystem.Extractor = wheelegg.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -198,7 +199,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -224,7 +225,7 @@ func defaultConfigWith(cfg wheelegg.Config) wheelegg.Config {
 }
 
 func TestExtractWithoutReadAt(t *testing.T) {
-	var e extractor.InventoryExtractor = wheelegg.New(wheelegg.DefaultConfig())
+	var e filesystem.Extractor = wheelegg.New(wheelegg.DefaultConfig())
 
 	tests := []struct {
 		name          string
@@ -266,7 +267,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Info: info, Reader: noReadAt}
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: noReadAt}
 			got, err := e.Extract(context.Background(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
@@ -310,7 +311,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	// egg file.
 	var info fs.FileInfo = nil
 
-	input := &extractor.ScanInput{Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
 	_, gotErr := e.Extract(context.Background(), input)
 	wantErr := wheelegg.ErrSizeNotSet

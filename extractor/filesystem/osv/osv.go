@@ -23,7 +23,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scanner/pkg/lockfile"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -46,8 +47,8 @@ func (e Wrapper) FileRequired(path string, _ fs.FileMode) bool {
 	return e.Extractor.ShouldExtract(path)
 }
 
-// Extract wrapps the osv Extract method.
-func (e Wrapper) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+// Extract wraps the osv Extract method.
+func (e Wrapper) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	full := filepath.Join(input.ScanRoot, input.Path)
 	osvpkgs, err := e.Extractor.Extract(WrapInput(input))
 	if err != nil {
@@ -73,12 +74,12 @@ func (e Wrapper) Extract(ctx context.Context, input *extractor.ScanInput) ([]*ex
 }
 
 // WrapInput returns an implementation of OSVs DepFile using a scalibr ScanInput.
-func WrapInput(input *extractor.ScanInput) lockfile.DepFile {
+func WrapInput(input *filesystem.ScanInput) lockfile.DepFile {
 	return fileWrapper{input: input}
 }
 
 type fileWrapper struct {
-	input *extractor.ScanInput
+	input *filesystem.ScanInput
 }
 
 // Implement io.Reader interface

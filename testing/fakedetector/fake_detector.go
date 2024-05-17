@@ -55,7 +55,7 @@ func (d *fakeDetector) Name() string { return d.DetName }
 // Version returns the detector's version.
 func (d *fakeDetector) Version() int { return d.DetVersion }
 
-// RequiredExtractors returns a list of InventoryExtractors that this Detector requires.
+// RequiredExtractors returns a list of Extractors that this Detector requires.
 func (d *fakeDetector) RequiredExtractors() []string { return d.ReqExtractors }
 
 // Scan always returns the same predefined finding or error.

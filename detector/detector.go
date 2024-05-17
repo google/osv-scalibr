@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"time"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -31,7 +31,7 @@ import (
 // such as vulnerabilities.
 type Detector interface {
 	plugin.Plugin
-	// RequiredExtractors returns a list of InventoryExtractors that need to be enabled for this
+	// RequiredExtractors returns a list of Extractors that need to be enabled for this
 	// Detector to run.
 	RequiredExtractors() []string
 	// Scan performs the security scan, considering scanRoot to be the root directory.

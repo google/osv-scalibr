@@ -23,7 +23,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scanner/pkg/lockfile"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -44,7 +45,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts packages from package-lock.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	osve := lockfile.NpmLockExtractor{}
 	osvpkgs, err := osve.Extract(osv.WrapInput(input))
 	if err != nil {

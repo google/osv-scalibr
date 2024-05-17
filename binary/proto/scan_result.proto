@@ -69,7 +69,7 @@ message Inventory {
   repeated string cpes = 4;
   // Paths or source of files related to the package.
   repeated string locations = 2;
-  // The name of the InventoryExtractor that found this software. Set by the
+  // The name of the Extractor that found this software. Set by the
   // core library.
   string extractor = 10;
   // The additional data found in the package.

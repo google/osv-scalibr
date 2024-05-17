@@ -21,14 +21,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	scalibrextractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
 )
 
 func TestName(t *testing.T) {
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		want      string
 	}{
 		{
@@ -56,7 +57,7 @@ func TestName(t *testing.T) {
 func TestVersion(t *testing.T) {
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		want      int
 	}{
 		{
@@ -89,7 +90,7 @@ func TestFileRequired(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		args      args
 		want      bool
 	}{
@@ -126,23 +127,23 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
-	multipleInventories := []*scalibrextractor.Inventory{&scalibrextractor.Inventory{
+	multipleInventories := []*extractor.Inventory{&extractor.Inventory{
 		Name:      name1,
 		Locations: []string{"some path"},
-	}, &scalibrextractor.Inventory{
+	}, &extractor.Inventory{
 		Name:      name2,
 		Locations: []string{"some path"},
 	}}
 
 	type args struct {
 		ctx   context.Context
-		input *scalibrextractor.ScanInput
+		input *filesystem.ScanInput
 	}
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		args      args
-		want      []*scalibrextractor.Inventory
+		want      []*extractor.Inventory
 		wantErr   error
 	}{
 		{
@@ -150,15 +151,15 @@ func TestExtract(t *testing.T) {
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": fakeextractor.NamesErr{nil, nil},
 			}),
-			args: args{context.Background(), &scalibrextractor.ScanInput{Path: "some path"}},
-			want: []*scalibrextractor.Inventory{},
+			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
+			want: []*extractor.Inventory{},
 		},
 		{
 			name: "multiple results",
 			extractor: fakeextractor.New("extractor name", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": fakeextractor.NamesErr{[]string{name1, name2}, nil},
 			}),
-			args: args{context.Background(), &scalibrextractor.ScanInput{Path: "some path"}},
+			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
 			want: multipleInventories,
 		},
 		{
@@ -166,7 +167,7 @@ func TestExtract(t *testing.T) {
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": fakeextractor.NamesErr{nil, nil},
 			}),
-			args:    args{context.Background(), &scalibrextractor.ScanInput{Path: "another path"}},
+			args:    args{context.Background(), &filesystem.ScanInput{Path: "another path"}},
 			wantErr: cmpopts.AnyError,
 		},
 	}

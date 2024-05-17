@@ -19,22 +19,16 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // Extractor is an interface for plugins that extract information independently. For
 // example, a plugin that executes a command or retrieves information from only one file.
 type Extractor interface {
-	plugin.Plugin
-
+	extractor.Extractor
 	// Extract the information.
-	Extract(ctx context.Context, input *ScanInput) ([]*filesystem.Inventory, error)
-	// ToPURL converts an inventory created by this extractor into a PURL.
-	ToPURL(i *filesystem.Inventory) (*purl.PackageURL, error)
-	// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-	ToCPEs(i *filesystem.Inventory) ([]string, error)
+	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
 
 // Config for running standalone extractors.
@@ -49,8 +43,8 @@ type ScanInput struct {
 }
 
 // Run the extractors that are specified in the config.
-func Run(ctx context.Context, config *Config) ([]*filesystem.Inventory, []*plugin.Status, error) {
-	var inventories []*filesystem.Inventory
+func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
+	var inventories []*extractor.Inventory
 	var statuses []*plugin.Status
 
 	scanRoot, err := filepath.Abs(config.ScanRoot)
@@ -69,7 +63,7 @@ func Run(ctx context.Context, config *Config) ([]*filesystem.Inventory, []*plugi
 			continue
 		}
 		for _, i := range inv {
-			i.Extractor = extractor.Name()
+			i.Extractor = extractor
 		}
 
 		inventories = append(inventories, inv...)

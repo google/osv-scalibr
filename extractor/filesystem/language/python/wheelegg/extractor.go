@@ -28,7 +28,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -107,7 +108,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 
 // Extract extracts packages from wheel/egg files passed through the scan input.
 // For .egg files, input.Info.Size() is required to unzip the file.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	if input.Info != nil && input.Info.Size() > e.maxFileSize {
 		return nil, fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
 	}
@@ -126,7 +127,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 // ErrSizeNotSet will trigger when Info.Size() is not set.
 var ErrSizeNotSet = errors.New("input.Info is nil, but should have Size set")
 
-func (e Extractor) extractZip(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	r, err := newReaderAt(input.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("newReaderAt(%s): %w", input.Path, err)
@@ -174,7 +175,7 @@ func newReaderAt(ioReader io.Reader) (io.ReaderAt, error) {
 	return bytes.NewReader(buff.Bytes()), nil
 }
 
-func (e Extractor) openAndExtract(f *zip.File, input *extractor.ScanInput) (*extractor.Inventory, error) {
+func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Inventory, error) {
 	r, err := f.Open()
 	if err != nil {
 		return nil, fmt.Errorf("On %q: Open(%s): %w", input.Path, f.Name, err)

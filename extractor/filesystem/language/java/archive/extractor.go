@@ -29,7 +29,8 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -121,7 +122,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts java packages from archive files passed through input.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	return e.extractWithMax(ctx, input, 1, 0)
 }
 
@@ -129,7 +130,7 @@ func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*
 //
 // It returns early with an error if max depth or max opened bytes is reached.
 // Extracted packages are returned even if an error has occurred.
-func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, error) {
+func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, error) {
 	// Return early if any max/min thresholds are hit.
 	if depth > e.maxZipDepth {
 		return nil, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
@@ -137,7 +138,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 	if oBytes := openedBytes + input.Info.Size(); oBytes > e.maxOpenedBytes {
 		return nil, fmt.Errorf(
 			"%w: %s reached max opened bytes of %d at %q",
-			extractor.ErrExtractorMemoryLimitExceeded, e.Name(), oBytes, input.Path)
+			filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), oBytes, input.Path)
 	}
 	if int(input.Info.Size()) < e.minZipBytes {
 		log.Warnf("%s ignoring zip with size %d because it is smaller than min size %d at %q",
@@ -159,7 +160,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 		if openedBytes > e.maxOpenedBytes {
 			return nil, fmt.Errorf(
 				"%w: %s reached max opened bytes of %d at %q",
-				extractor.ErrExtractorMemoryLimitExceeded, e.Name(), openedBytes, input.Path)
+				filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), openedBytes, input.Path)
 		}
 		r = bytes.NewReader(b)
 		l = int64(len(b))
@@ -257,7 +258,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *extractor.ScanInpu
 				}
 				// Do not need to handle error from f.Close() because it only happens if the file was previously closed.
 				defer f.Close()
-				subInput := &extractor.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
+				subInput := &filesystem.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
 				subInventory, err := e.extractWithMax(ctx, subInput, depth+1, openedBytes)
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)

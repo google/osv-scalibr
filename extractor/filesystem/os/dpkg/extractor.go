@@ -26,7 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/log"
@@ -115,7 +116,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts packages from dpkg status files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	if input.Info != nil && input.Info.Size() > e.maxFileSize {
 		return nil, fmt.Errorf("DPKG status file %s is too large: %d", input.Path, input.Info.Size())
 	}

@@ -21,13 +21,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = spdx.Extractor{}
+	var e filesystem.Extractor = spdx.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -86,7 +87,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	var e extractor.InventoryExtractor = spdx.Extractor{}
+	var e filesystem.Extractor = spdx.Extractor{}
 
 	tests := []struct {
 		name          string
@@ -220,7 +221,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Reader: r}
+			input := &filesystem.ScanInput{Path: tt.path, Reader: r}
 			got, err := e.Extract(context.Background(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)

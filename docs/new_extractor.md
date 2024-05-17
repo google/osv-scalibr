@@ -30,10 +30,10 @@ requirements/ <- extractor
 ## What you need to implement
 
 They have to implement the
-[InventoryExtractor](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L38)
+[Extractor](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L38)
 interface.
 
-# See extractor/filesystem/extractor.go symbol InventoryExtractor
+# See extractor/filesystem/extractor.go symbol Extractor
 
 # See plugin/plugin.go symbol Plugin
 

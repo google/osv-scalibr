@@ -60,7 +60,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.
 	var allErrs error = nil
 	for _, i := range ix.GetAllOfType(purl.TypeGolang) {
 		// We only look at Go binaries (no source code).
-		if i.Extractor != gobinary.Name {
+		if i.Extractor.Name() != gobinary.Name {
 			continue
 		}
 		for _, l := range i.Locations {

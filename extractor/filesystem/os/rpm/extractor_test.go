@@ -26,13 +26,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = rpm.Extractor{}
+	var e filesystem.Extractor = rpm.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -398,9 +399,9 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("CopyFileToTempDir(%s) error: %v\n", tt.path, err)
 			}
 
-			var e extractor.InventoryExtractor = rpm.New(rpm.Config{Timeout: tt.timeoutval})
+			var e filesystem.Extractor = rpm.New(rpm.Config{Timeout: tt.timeoutval})
 
-			input := &extractor.ScanInput{Path: filepath.Base(tmpPath), ScanRoot: filepath.Dir(tmpPath)}
+			input := &filesystem.ScanInput{Path: filepath.Base(tmpPath), ScanRoot: filepath.Dir(tmpPath)}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tmpPath, err, tt.wantErr)

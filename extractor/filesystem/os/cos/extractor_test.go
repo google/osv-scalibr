@@ -23,7 +23,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -41,7 +42,7 @@ const (
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = cos.Extractor{}
+	var e filesystem.Extractor = cos.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -70,7 +71,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	var e extractor.InventoryExtractor = cos.Extractor{}
+	var e filesystem.Extractor = cos.Extractor{}
 
 	tests := []struct {
 		name          string
@@ -217,7 +218,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Reader: r, ScanRoot: d}
+			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)

@@ -24,7 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/purl"
@@ -68,7 +69,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = dpkg.Extractor{}
+	var e filesystem.Extractor = dpkg.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -600,7 +601,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Reader: r, ScanRoot: d, Info: info}
+			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d, Info: info}
 			e := dpkg.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -651,7 +652,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Note that we didn't create any OS release file.
-	input := &extractor.ScanInput{Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{Path: path, Info: info, Reader: r}
 
 	e := dpkg.New(dpkg.DefaultConfig())
 	got, err := e.Extract(context.Background(), input)

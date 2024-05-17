@@ -20,7 +20,9 @@ import (
 	"errors"
 	"io/fs"
 
-	scalibrextractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -30,19 +32,23 @@ type NamesErr struct {
 	Err   error
 }
 
-// extractor is an Extractor implementation to be used in tests.
-type extractor struct {
+// fakeExtractor is an Extractor implementation to be used in tests.
+type fakeExtractor struct {
 	name           string
 	version        int
 	requiredFiles  map[string]bool
 	pathToNamesErr map[string]NamesErr
 }
 
-// New returns a fake extractor.
+// AllowUnexported is a utility function to be used with cmp.Diff to
+// compare structs that contain the fake extractor.
+var AllowUnexported = cmp.AllowUnexported(fakeExtractor{})
+
+// New returns a fake fakeExtractor.
 //
-// The extractor returns FileRequired(path) = true for any path in requiredFiles.
-// The extractor returns the inventory and error from pathToNamesErr given the same path to Extract(...).
-func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) scalibrextractor.InventoryExtractor {
+// The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
+// The fakeExtractor returns the inventory and error from pathToNamesErr given the same path to Extract(...).
+func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
 
 	rfs := map[string]bool{}
 	for _, path := range requiredFiles {
@@ -54,7 +60,7 @@ func New(name string, version int, requiredFiles []string, pathToNamesErr map[st
 		pathToNamesErr = map[string]NamesErr{}
 	}
 
-	return &extractor{
+	return &fakeExtractor{
 		name:           name,
 		version:        version,
 		requiredFiles:  rfs,
@@ -63,17 +69,17 @@ func New(name string, version int, requiredFiles []string, pathToNamesErr map[st
 }
 
 // Name returns the extractor's name.
-func (e *extractor) Name() string { return e.name }
+func (e *fakeExtractor) Name() string { return e.name }
 
 // Version returns the extractor's version.
-func (e *extractor) Version() int { return e.version }
+func (e *fakeExtractor) Version() int { return e.version }
 
 // FileRequired should return true if the file described by path and mode is
 // relevant for the extractor.
 //
 // FileRequired returns true if the path was in requiredFiles and its value is true during
 // construction in New(..., requiredFiles, ...) and false otherwise.
-func (e *extractor) FileRequired(path string, mode fs.FileMode) bool {
+func (e *fakeExtractor) FileRequired(path string, mode fs.FileMode) bool {
 	return e.requiredFiles[path]
 }
 
@@ -81,16 +87,16 @@ func (e *extractor) FileRequired(path string, mode fs.FileMode) bool {
 //
 // Extract returns the inventory list and error associated with input.Path from the pathToInventoryErr map used
 // during construction in NewExtractor(..., pathToInventoryErr, ...).
-func (e *extractor) Extract(ctx context.Context, input *scalibrextractor.ScanInput) ([]*scalibrextractor.Inventory, error) {
+func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 
 	namesErr, ok := e.pathToNamesErr[input.Path]
 	if !ok {
 		return nil, errors.New("unrecognized path")
 	}
 
-	invs := []*scalibrextractor.Inventory{}
+	invs := []*extractor.Inventory{}
 	for _, name := range namesErr.Names {
-		invs = append(invs, &scalibrextractor.Inventory{
+		invs = append(invs, &extractor.Inventory{
 			Name:      name,
 			Locations: []string{input.Path},
 		})
@@ -100,7 +106,7 @@ func (e *extractor) Extract(ctx context.Context, input *scalibrextractor.ScanInp
 }
 
 // ToPURL returns a fake PURL based on the inventory name+version.
-func (e *extractor) ToPURL(i *scalibrextractor.Inventory) (*purl.PackageURL, error) {
+func (e *fakeExtractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
 		Name:    i.Name,
@@ -109,4 +115,4 @@ func (e *extractor) ToPURL(i *scalibrextractor.Inventory) (*purl.PackageURL, err
 }
 
 // ToCPEs always returns an empty array.
-func (e *extractor) ToCPEs(i *scalibrextractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e *fakeExtractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }

@@ -281,7 +281,7 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			if len(cfg.Detectors) != tc.wantDetectorCount {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
-			if len(cfg.InventoryExtractors) != tc.wantExtractorCount {
+			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
 		})

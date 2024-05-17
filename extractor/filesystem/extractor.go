@@ -27,28 +27,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
 
-// InventoryExtractor is the interface extraction plugin, used to extract inventory data such as
-// OS and language packages.
-type InventoryExtractor interface {
-	plugin.Plugin
+// Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
+// from the filesystem such as OS and language packages.
+type Extractor interface {
+	extractor.Extractor
 	// FileRequired should return true if the file described by path and mode is
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
 	FileRequired(path string, mode fs.FileMode) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
-	Extract(ctx context.Context, input *ScanInput) ([]*Inventory, error)
-	// ToPURL converts an inventory created by this extractor into a PURL.
-	ToPURL(i *Inventory) (*purl.PackageURL, error)
-	// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-	ToCPEs(i *Inventory) ([]string, error)
+	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
 
 // ScanInput describes one file to extract from.
@@ -65,7 +61,7 @@ type ScanInput struct {
 
 // Config stores the config settings for an extraction run.
 type Config struct {
-	Extractors []InventoryExtractor
+	Extractors []Extractor
 	ScanRoot   string
 	FS         fs.FS
 	// Optional: Individual files to extract inventory from. If specified, the
@@ -88,33 +84,9 @@ type Config struct {
 	MaxInodes int
 }
 
-// LINT.IfChange
-
-// Inventory is an instance of a software package or library found by the extractor.
-type Inventory struct {
-	// A human-readable name representation of the package. Note that this field
-	// should only be used for things like logging as different packages can have
-	// multiple different types of names (e.g. .deb packages have a source name
-	// and a binary name), in which case we arbitrarily pick one of them to use here.
-	// In cases when the exact name type used is important (e.g. when matching
-	// against vuln feeds) you should use the specific name field from the Metadata.
-	Name string
-	// The version of this package.
-	Version string
-
-	// Paths or source of files related to the package.
-	Locations []string
-	// The name of the InventoryExtractor that found this software instance. Set by the core library.
-	Extractor string
-	// The additional data found in the package.
-	Metadata any
-}
-
-// LINT.ThenChange(/binary/proto/scan_result.proto)
-
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status, error) {
+func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
 	config.FS = os.DirFS(config.ScanRoot)
 	return RunFS(ctx, config)
 }
@@ -123,9 +95,9 @@ func Run(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status, e
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status, error) {
+func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
 	if len(config.Extractors) == 0 {
-		return []*Inventory{}, []*plugin.Status{}, nil
+		return []*extractor.Inventory{}, []*plugin.Status{}, nil
 	}
 	start := time.Now()
 	scanRoot, err := filepath.Abs(config.ScanRoot)
@@ -155,7 +127,7 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 
 		lastStatus: time.Now(),
 
-		inventory: []*Inventory{},
+		inventory: []*extractor.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
 
@@ -179,7 +151,7 @@ func RunFS(ctx context.Context, config *Config) ([]*Inventory, []*plugin.Status,
 type walkContext struct {
 	ctx            context.Context
 	stats          stats.Collector
-	extractors     []InventoryExtractor
+	extractors     []Extractor
 	fs             fs.FS
 	scanRoot       string
 	filesToExtract []string
@@ -189,7 +161,7 @@ type walkContext struct {
 	inodesVisited  int
 
 	// Inventories found.
-	inventory []*Inventory
+	inventory []*extractor.Inventory
 	// Extractor name to runtime errors.
 	errors map[string]error
 	// Whether an extractor found any inventory.
@@ -286,7 +258,7 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.FileMode) {
+func (wc *walkContext) runExtractor(ex Extractor, path string, mode fs.FileMode) {
 	if !ex.FileRequired(path, mode) {
 		return
 	}
@@ -316,7 +288,7 @@ func (wc *walkContext) runExtractor(ex InventoryExtractor, path string, mode fs.
 	if len(results) > 0 {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results {
-			r.Extractor = ex.Name()
+			r.Extractor = ex
 			wc.inventory = append(wc.inventory, r)
 		}
 	}
@@ -358,7 +330,7 @@ func addErrToMap(errors map[string]error, key string, err error) {
 	}
 }
 
-func errToExtractorStatus(extractors []InventoryExtractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
+func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
 		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))

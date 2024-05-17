@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -219,7 +219,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 	return &scalibr.ScanConfig{
 		ScanRoot:             f.Root,
-		InventoryExtractors:  extractors,
+		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
 		FilesToExtract:       f.FilesToExtract,
@@ -287,12 +287,12 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) extractorsToRun() ([]extractor.InventoryExtractor, []standalone.Extractor, error) {
+func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extractor, error) {
 	if len(f.ExtractorsToRun) == 0 {
-		return []extractor.InventoryExtractor{}, []standalone.Extractor{}, nil
+		return []filesystem.Extractor{}, []standalone.Extractor{}, nil
 	}
 
-	var fsExtractors []extractor.InventoryExtractor
+	var fsExtractors []filesystem.Extractor
 	var standaloneExtractors []standalone.Extractor
 
 	// We need to check extractors individually as they may be defined in one or both lists.

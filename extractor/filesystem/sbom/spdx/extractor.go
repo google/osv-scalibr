@@ -28,7 +28,8 @@ import (
 	"github.com/spdx/tools-golang/spdx"
 	"github.com/spdx/tools-golang/tagvalue"
 	"github.com/spdx/tools-golang/yaml"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -60,7 +61,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract parses the SPDX SBOM and returns a list purls from the SBOM.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parseSbom, isSupported = findExtractor(input.Path)
 
 	if !isSupported {

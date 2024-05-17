@@ -70,9 +70,9 @@ import (
   dl "github.com/google/osv-scalibr/detector/list"
 )
 cfg := &scalibr.ScanConfig{
-  ScanRoot:            "/",
-  InventoryExtractors: el.Python,
-  Detectors:           dl.CIS,
+  ScanRoot:             "/",
+  FilesystemExtractors: el.Python,
+  Detectors:            dl.CIS,
 }
 results := scalibr.New().Scan(context.Background(), cfg)
 ```
@@ -89,8 +89,8 @@ import (
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{
-  ScanRoot:            "/",
-  InventoryExtractors: []extractor.InventoryExtractor{&myExtractor{}},
+  ScanRoot:             "/",
+  FilesystemExtractors: []extractor.Extractor{&myExtractor{}},
 }
 results := scalibr.New().Scan(context.Background(), cfg)
 ```

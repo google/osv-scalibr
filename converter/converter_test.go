@@ -23,7 +23,8 @@ import (
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"github.com/google/uuid"
 	"github.com/google/osv-scalibr/converter"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/purl"
 	scalibr "github.com/google/osv-scalibr"
@@ -32,6 +33,7 @@ import (
 func TestToSPDX23(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
+	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 
 	testCases := []struct {
 		desc       string
@@ -43,7 +45,7 @@ func TestToSPDX23(t *testing.T) {
 			desc: "Package with no custom config",
 			scanResult: &scalibr.ScanResult{
 				Inventories: []*extractor.Inventory{&extractor.Inventory{
-					Name: "software", Version: "1.2.3", Extractor: "python/wheelegg",
+					Name: "software", Version: "1.2.3", Extractor: pipEx,
 				}},
 			},
 			want: &v2_3.Document{
@@ -113,7 +115,7 @@ func TestToSPDX23(t *testing.T) {
 			desc: "Package with custom config",
 			scanResult: &scalibr.ScanResult{
 				Inventories: []*extractor.Inventory{&extractor.Inventory{
-					Name: "software", Version: "1.2.3", Extractor: "python/wheelegg",
+					Name: "software", Version: "1.2.3", Extractor: pipEx,
 				}},
 			},
 			config: converter.SPDXConfig{
@@ -198,14 +200,14 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventories: []*extractor.Inventory{
 					// PURL field missing
-					&extractor.Inventory{},
+					&extractor.Inventory{Extractor: pipEx},
 					// No name
 					&extractor.Inventory{
-						Version: "1.2.3", Extractor: "python/wheelegg",
+						Version: "1.2.3", Extractor: pipEx,
 					},
 					// No version
 					&extractor.Inventory{
-						Name: "software", Extractor: "python/wheelegg",
+						Name: "software", Extractor: pipEx,
 					},
 				},
 			},
@@ -237,7 +239,7 @@ func TestToSPDX23(t *testing.T) {
 			desc: "Invalid chars in package name replaced",
 			scanResult: &scalibr.ScanResult{
 				Inventories: []*extractor.Inventory{&extractor.Inventory{
-					Name: "softw@re&", Version: "1.2.3", Extractor: "python/wheelegg",
+					Name: "softw@re&", Version: "1.2.3", Extractor: pipEx,
 				}},
 			},
 			want: &v2_3.Document{
@@ -319,11 +321,12 @@ func TestToSPDX23(t *testing.T) {
 }
 
 func TestToPURL(t *testing.T) {
+	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	inventory := &extractor.Inventory{
 		Name:      "software",
 		Version:   "1.0.0",
 		Locations: []string{"/file1"},
-		Extractor: "python/wheelegg",
+		Extractor: pipEx,
 	}
 	want := &purl.PackageURL{
 		Type:    purl.TypePyPi,
@@ -346,7 +349,7 @@ func TestToCPEs(t *testing.T) {
 		Metadata: &spdx.Metadata{
 			CPEs: cpes,
 		},
-		Extractor: "sbom/spdx",
+		Extractor: &spdx.Extractor{},
 	}
 	want := cpes
 	got, err := converter.ToCPEs(inventory)

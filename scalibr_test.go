@@ -23,7 +23,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/detector"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	scalibr "github.com/google/osv-scalibr"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
@@ -46,10 +47,14 @@ func TestScan(t *testing.T) {
 	os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 
 	invName := "software"
+	fakeExtractor := fe.New(
+		"python/wheelegg", 1, []string{"file.txt"},
+		map[string]fe.NamesErr{"file.txt": {Names: []string{invName}, Err: nil}},
+	)
 	inventory := &extractor.Inventory{
 		Name:      invName,
 		Locations: []string{"file.txt"},
-		Extractor: "python/wheelegg",
+		Extractor: fakeExtractor,
 	}
 	finding := &detector.Finding{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Reference: "CVE-1234"}}}
 
@@ -61,10 +66,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Successful scan",
 			cfg: &scalibr.ScanConfig{
-				InventoryExtractors: []extractor.InventoryExtractor{
-					fe.New("python/wheelegg", 1, []string{"file.txt"},
-						map[string]fe.NamesErr{"file.txt": {[]string{invName}, nil}}),
-				},
+				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, finding, nil),
 				},
@@ -108,8 +110,8 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Extractor plugin failed",
 			cfg: &scalibr.ScanConfig{
-				InventoryExtractors: []extractor.InventoryExtractor{
-					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {nil, errors.New(pluginFailure)}}),
+				FilesystemExtractors: []filesystem.Extractor{
+					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
 				},
 				Detectors: []detector.Detector{fd.New("detector", 2, finding, nil)},
 				ScanRoot:  tmp,
@@ -127,10 +129,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Detector plugin failed",
 			cfg: &scalibr.ScanConfig{
-				InventoryExtractors: []extractor.InventoryExtractor{
-					fe.New("python/wheelegg", 1, []string{"file.txt"},
-						map[string]fe.NamesErr{"file.txt": {[]string{invName}, nil}}),
-				},
+				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, nil, errors.New(pluginFailure)),
 				},
@@ -156,7 +155,7 @@ func TestScan(t *testing.T) {
 			tc.want.StartTime = got.StartTime
 			tc.want.EndTime = got.EndTime
 
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})

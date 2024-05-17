@@ -24,7 +24,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -95,7 +96,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts packages from package.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	if input.Info != nil && input.Info.Size() > e.maxJSONSize {
 		return nil, fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
 	}

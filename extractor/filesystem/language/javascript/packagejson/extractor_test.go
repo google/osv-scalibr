@@ -21,13 +21,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = packagejson.New(packagejson.DefaultConfig())
+	var e filesystem.Extractor = packagejson.New(packagejson.DefaultConfig())
 
 	tests := []struct {
 		name           string
@@ -236,7 +237,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Reader: r, Info: info}
+			input := &filesystem.ScanInput{Path: tt.path, Reader: r, Info: info}
 			e := packagejson.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {

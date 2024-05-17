@@ -23,7 +23,8 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -63,7 +64,7 @@ func (e Extractor) FileRequired(path string, mode fs.FileMode) bool {
 }
 
 // Extract returns a list of dependencies in a packages.lock.json file.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	p, err := Parse(input.Reader)
 	if err != nil {
 		return nil, err

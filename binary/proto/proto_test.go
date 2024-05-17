@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/detector"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -160,13 +160,13 @@ func TestScanResultToProto(t *testing.T) {
 			Architecture:      "amd64",
 		},
 		Locations: []string{"/file1"},
-		Extractor: "os/dpkg",
+		Extractor: dpkg.New(dpkg.DefaultConfig()),
 	}
 	purlPythonInventory := &extractor.Inventory{
 		Name:      "software",
 		Version:   "1.0.0",
 		Locations: []string{"/file1"},
-		Extractor: "python/wheelegg",
+		Extractor: wheelegg.New(wheelegg.DefaultConfig()),
 		Metadata: &wheelegg.PythonPackageMetadata{
 			Author:      "author",
 			AuthorEmail: "author@corp.com",
@@ -189,7 +189,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Locations: []string{"/file1"},
-		Extractor: "javascript/packagejson",
+		Extractor: &packagejson.Extractor{},
 	}
 	purlDPKGInventoryProto := &spb.Inventory{
 		Name:    "software",
@@ -262,7 +262,7 @@ func TestScanResultToProto(t *testing.T) {
 			CPEs: []string{"cpe:2.3:a:google:tensorflow:1.2.0"},
 		},
 		Locations: []string{"/file3"},
-		Extractor: "sbom/spdx",
+		Extractor: &spdx.Extractor{},
 	}
 	cpeInventoryProto := &spb.Inventory{
 		Name: "cpe:2.3:a:google:tensorflow:1.2.0",
@@ -291,7 +291,7 @@ func TestScanResultToProto(t *testing.T) {
 			License:      "BSD",
 		},
 		Locations: []string{"/file1"},
-		Extractor: "os/rpm",
+		Extractor: rpm.New(rpm.DefaultConfig()),
 	}
 	purlRPMInventoryProto := &spb.Inventory{
 		Name:    "openssh-clients",

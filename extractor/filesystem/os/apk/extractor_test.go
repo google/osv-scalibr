@@ -23,13 +23,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = apk.Extractor{}
+	var e filesystem.Extractor = apk.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -76,7 +77,7 @@ HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"`
 
 func TestExtract(t *testing.T) {
-	var e extractor.InventoryExtractor = apk.Extractor{}
+	var e filesystem.Extractor = apk.Extractor{}
 
 	tests := []struct {
 		name          string
@@ -167,7 +168,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Reader: r, ScanRoot: d}
+			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)

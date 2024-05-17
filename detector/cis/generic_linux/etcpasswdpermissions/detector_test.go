@@ -27,7 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventoryindex"
 )
 

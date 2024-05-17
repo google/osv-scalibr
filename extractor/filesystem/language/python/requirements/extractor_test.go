@@ -20,13 +20,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = requirements.Extractor{}
+	var e filesystem.Extractor = requirements.Extractor{}
 
 	tests := []struct {
 		path           string
@@ -48,7 +49,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	var e extractor.InventoryExtractor = requirements.Extractor{}
+	var e filesystem.Extractor = requirements.Extractor{}
 
 	tests := []struct {
 		name          string
@@ -151,7 +152,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
 			got, err := e.Extract(context.Background(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)

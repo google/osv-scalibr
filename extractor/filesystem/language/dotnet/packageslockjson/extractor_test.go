@@ -21,13 +21,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = packageslockjson.Extractor{}
+	var e filesystem.Extractor = packageslockjson.Extractor{}
 
 	tests := []struct {
 		name           string
@@ -63,7 +64,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractor(t *testing.T) {
-	var e extractor.InventoryExtractor = packageslockjson.Extractor{}
+	var e filesystem.Extractor = packageslockjson.Extractor{}
 	tests := []struct {
 		name          string
 		path          string
@@ -135,7 +136,7 @@ func TestExtractor(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &extractor.ScanInput{Path: test.path, Reader: r}
+			input := &filesystem.ScanInput{Path: test.path, Reader: r}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)

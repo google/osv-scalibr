@@ -26,7 +26,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -37,7 +38,7 @@ var (
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = archive.New(archive.DefaultConfig())
+	var e filesystem.Extractor = archive.New(archive.DefaultConfig())
 
 	tests := []struct {
 		name string
@@ -283,7 +284,7 @@ func TestExtract(t *testing.T) {
 				Metadata:  &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{"testdata/complex.jar/pom.properties"},
 			}},
-			wantErr: extractor.ErrExtractorMemoryLimitExceeded,
+			wantErr: filesystem.ErrExtractorMemoryLimitExceeded,
 		},
 		{
 			name: "Realistic jar file with pom.properties",
@@ -379,7 +380,7 @@ func TestExtract(t *testing.T) {
 				r = noReaderAt{r: r}
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))

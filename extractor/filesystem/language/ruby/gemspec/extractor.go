@@ -24,7 +24,8 @@ import (
 	"path/filepath"
 	"regexp"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -52,7 +53,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts packages from the .gemspec file.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	i, err := extract(input.Path, input.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)

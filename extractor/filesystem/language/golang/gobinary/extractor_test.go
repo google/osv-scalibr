@@ -22,13 +22,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e extractor.InventoryExtractor = gobinary.Extractor{}
+	var e filesystem.Extractor = gobinary.Extractor{}
 
 	tests := []struct {
 		name string
@@ -192,7 +193,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("f.Stat() for %q unexpected error: %v", tt.path, err)
 			}
 
-			input := &extractor.ScanInput{Path: tt.path, Info: info, Reader: f}
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: f}
 
 			got, err := e.Extract(context.Background(), input)
 			if err != tt.wantErr {

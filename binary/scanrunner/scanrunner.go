@@ -37,7 +37,10 @@ func RunScan(flags *cli.Flags) int {
 		return 1
 	}
 
-	log.Infof("Running scan with %d extractors and %d detectors", len(cfg.InventoryExtractors), len(cfg.Detectors))
+	log.Infof(
+		"Running scan with %d extractors and %d detectors",
+		len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors), len(cfg.Detectors),
+	)
 	log.Infof("Scan root: %s", cfg.ScanRoot)
 	if len(cfg.FilesToExtract) > 0 {
 		log.Infof("Files to extract: %s", cfg.FilesToExtract)

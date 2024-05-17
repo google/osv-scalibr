@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/inventoryindex"
 )
@@ -103,7 +103,7 @@ func setupInventoryIndex(names []string) *inventoryindex.InventoryIndex {
 			Name:      n,
 			Version:   "1.2.3",
 			Locations: []string{filepath.Join("testdata", n)},
-			Extractor: gobinary.Name,
+			Extractor: &gobinary.Extractor{},
 		})
 	}
 	ix, _ := inventoryindex.New(invs)

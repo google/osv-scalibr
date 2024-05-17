@@ -26,7 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -60,7 +61,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
 }
 
 // Extract extracts packages from lib/apk/db/installed passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *extractor.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	m, err := osrelease.GetOSRelease(input.ScanRoot)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)

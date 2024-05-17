@@ -29,7 +29,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/log"
 
-	extractor "github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -217,7 +217,7 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		Purl:      purlToProto(p),
 		Cpes:      cpes,
 		Locations: i.Locations,
-		Extractor: i.Extractor,
+		Extractor: i.Extractor.Name(),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
 	return inventoryProto, nil
