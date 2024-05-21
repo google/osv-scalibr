@@ -25,7 +25,7 @@ type osvEntry struct {
 	// ID is a unique identifier for the vulnerability.
 	ID string
 	// Aliases is a list of IDs for the same vulnerability in other
-	// databases (CVE, GSHA)
+	// databases (CVE, GHSA)
 	Aliases []string
 	// Summary gives a one-line, English textual summary of the vulnerability.
 	// It is recommended that this field be kept short, on the order of no more
