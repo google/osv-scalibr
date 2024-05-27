@@ -9,7 +9,11 @@ test: protos
 	CGO_ENABLED=1 go test ./...
 
 protos:
+ifeq ($(OS),Windows_NT)
+	powershell.exe -exec bypass -File .\build_protos.ps1
+else
 	./build_protos.sh
+endif
 
 scalibr-static: protos
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr.go

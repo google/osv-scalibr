@@ -11,7 +11,7 @@ on:
 
 jobs:
 
-  build:
+  build-for-linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -21,11 +21,10 @@ jobs:
       with:
         go-version: 1.22.x
 
-    - name: Set up protoc
-      uses: awalsh128/cache-apt-pkgs-action@latest
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v3
       with:
-        packages: protobuf-compiler
-        version: 1.0
+        version: "23.x"
 
     - name: Set up protoc-gen-go
       run: go install google.golang.org/protobuf/cmd/protoc-gen-go
@@ -35,3 +34,24 @@ jobs:
 
     - name: Test
       run: make test
+
+  build-for-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.22.x
+
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v3
+      with:
+        version: "23.x"
+
+    - name: Set up protoc-gen-go
+      run: go install google.golang.org/protobuf/cmd/protoc-gen-go
+
+    - name: Build
+      run: make
