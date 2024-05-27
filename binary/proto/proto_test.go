@@ -623,3 +623,18 @@ func TestScanResultToProto(t *testing.T) {
 		})
 	}
 }
+
+func TestCompression(t *testing.T) {
+	var result = &spb.ScanResult{Version: "1.0.0"}
+	compressed, err := proto.CompressScanResults(result)
+	if err != nil {
+		t.Fatalf("proto.CompressScanResults(%v) returned an error: %v", result, err)
+	}
+	uncompressed, err := proto.DecompressScanResults(compressed)
+	if err != nil {
+		t.Fatalf("proto.DecompressScanResults(%v) returned an error: %v", compressed, err)
+	}
+	if diff := cmp.Diff(result, uncompressed, protocmp.Transform()); diff != "" {
+		t.Errorf("proto.DecompressScanResults(proto.CompressScanResults(%v)) returned unexpected diff (+got -want):\n%s", result, diff)
+	}
+}

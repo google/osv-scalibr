@@ -16,9 +16,11 @@
 package proto
 
 import (
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -174,6 +176,42 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		Inventories:  inventories,
 		Findings:     findings,
 	}, nil
+}
+
+// CompressScanResults compresses a ScanResult proto into a CompressedScanResult proto.
+func CompressScanResults(scanResult *spb.ScanResult) (*spb.CompressedScanResult, error) {
+	serialized, err := proto.Marshal(scanResult)
+	if err != nil {
+		return nil, err
+	}
+	var compressed bytes.Buffer
+	w := gzip.NewWriter(&compressed)
+	if _, err := w.Write(serialized); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return &spb.CompressedScanResult{
+		Payload: compressed.Bytes(),
+	}, nil
+}
+
+// DecompressScanResults decompresses a CompressedScanResult proto into a ScanResult proto.
+func DecompressScanResults(compressedScanResult *spb.CompressedScanResult) (*spb.ScanResult, error) {
+	r, err := gzip.NewReader(bytes.NewReader(compressedScanResult.GetPayload()))
+	if err != nil {
+		return nil, err
+	}
+	var serialized bytes.Buffer
+	if _, err := io.Copy(&serialized, r); err != nil {
+		return nil, err
+	}
+	scanResult := &spb.ScanResult{}
+	if err := proto.Unmarshal(serialized.Bytes(), scanResult); err != nil {
+		return nil, err
+	}
+	return scanResult, nil
 }
 
 func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {

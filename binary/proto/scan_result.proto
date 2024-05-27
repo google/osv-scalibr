@@ -36,6 +36,14 @@ message ScanResult {
   repeated Finding findings = 7;
 }
 
+// A wrapper message around a single ScanResult message.
+// This can be used to reduce the size of scan results on disk or when wrapped
+// in other proto messages, for example, without turning into a generic blob.
+message CompressedScanResult {
+  // A gzip compressed ScanResult message.
+  bytes payload = 1;
+}
+
 message ScanStatus {
   ScanStatusEnum status = 1;
   string failure_reason = 2;
