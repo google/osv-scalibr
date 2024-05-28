@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	scalibr "github.com/google/osv-scalibr"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
@@ -66,7 +66,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Successful scan",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+				Extractors: []extractor.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, finding, nil),
 				},
@@ -110,7 +110,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Extractor plugin failed",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Extractors: []extractor.Extractor{
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
 				},
 				Detectors: []detector.Detector{fd.New("detector", 2, finding, nil)},
@@ -129,7 +129,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Detector plugin failed",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+				Extractors: []extractor.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, nil, errors.New(pluginFailure)),
 				},
@@ -166,4 +166,78 @@ func withDetectorName(f *detector.Finding, det string) *detector.Finding {
 	copy := *f
 	copy.Detectors = []string{det}
 	return &copy
+}
+
+func TestEnableRequiredExtractors(t *testing.T) {
+	cases := []struct {
+		name           string
+		cfg            scalibr.ScanConfig
+		wantExtractors []string
+		wantErr        error
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name: "no required extractors",
+			cfg: scalibr.ScanConfig{
+				Detectors: []detector.Detector{
+					fd.NewWithOptions(fd.WithName("foo")),
+				},
+			},
+		},
+		{
+			name: "required extractor in already enabled",
+			cfg: scalibr.ScanConfig{
+				Detectors: []detector.Detector{
+					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("bar/baz")),
+				},
+				Extractors: []extractor.Extractor{
+					fe.New("bar/baz", 0, nil, nil),
+				},
+			},
+			wantExtractors: []string{"bar/baz"},
+		},
+		{
+			name: "auto-loaded required extractor",
+			cfg: scalibr.ScanConfig{
+				Detectors: []detector.Detector{
+					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("python/wheelegg")),
+				},
+			},
+			wantExtractors: []string{"python/wheelegg"},
+		},
+		{
+			name: "required extractor doesn't exist",
+			cfg: scalibr.ScanConfig{
+				Detectors: []detector.Detector{
+					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("bar/baz")),
+				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if err := tc.cfg.EnableRequiredExtractors(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
+				t.Fatalf("EnableRequiredExtractors() error: %v, want %v", tc.wantErr, err)
+			}
+			if tc.wantErr == nil {
+				gotExtractors := []string{}
+				for _, e := range tc.cfg.Extractors {
+					gotExtractors = append(gotExtractors, e.Name())
+				}
+				if diff := cmp.Diff(
+					tc.wantExtractors,
+					gotExtractors,
+					cmpopts.EquateEmpty(),
+					cmpopts.SortSlices(func(l, r string) bool { return l < r }),
+				); diff != "" {
+					t.Errorf("EnableRequiredExtractors() diff (-want, +got):\n%s", diff)
+				}
+			}
+		})
+	}
 }

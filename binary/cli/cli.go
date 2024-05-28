@@ -30,10 +30,8 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
-	"github.com/google/osv-scalibr/extractor/filesystem"
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
-	sl "github.com/google/osv-scalibr/extractor/standalone/list"
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor"
+	el "github.com/google/osv-scalibr/extractor/list"
 	"github.com/google/osv-scalibr/log"
 	scalibr "github.com/google/osv-scalibr"
 )
@@ -73,6 +71,7 @@ type Flags struct {
 	SPDXDocumentNamespace string
 	SPDXCreators          string
 	Verbose               bool
+	ExplicitExtractors    bool
 }
 
 var supportedOutputFormats = []string{
@@ -107,7 +106,7 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateRegex(flags.SkipDirRegex); err != nil {
 		return fmt.Errorf("--skip-dir-regex: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun); err != nil {
+	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
 	return nil
@@ -170,12 +169,12 @@ func validateRegex(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors string, extractors string) error {
+func validateDetectorDependency(detectors string, extractors string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
 	}
-	ex, stdex, err := f.extractorsToRun()
+	ex, err := f.extractorsToRun()
 	if err != nil {
 		return err
 	}
@@ -183,17 +182,16 @@ func validateDetectorDependency(detectors string, extractors string) error {
 	if err != nil {
 		return err
 	}
-	exMap := make(map[string]bool)
-	for _, e := range ex {
-		exMap[e.Name()] = true
-	}
-	for _, e := range stdex {
-		exMap[e.Name()] = true
-	}
-	for _, d := range det {
-		for _, req := range d.RequiredExtractors() {
-			if !exMap[req] {
-				return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+	if requireExtractors {
+		enabled := map[string]struct{}{}
+		for _, e := range ex {
+			enabled[e.Name()] = struct{}{}
+		}
+		for _, d := range det {
+			for _, req := range d.RequiredExtractors() {
+				if _, ok := enabled[req]; !ok {
+					return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+				}
 			}
 		}
 	}
@@ -202,7 +200,7 @@ func validateDetectorDependency(detectors string, extractors string) error {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	extractors, standaloneExtractors, err := f.extractorsToRun()
+	extractors, err := f.extractorsToRun()
 	if err != nil {
 		return nil, err
 	}
@@ -218,13 +216,12 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		}
 	}
 	return &scalibr.ScanConfig{
-		ScanRoot:             f.Root,
-		FilesystemExtractors: extractors,
-		StandaloneExtractors: standaloneExtractors,
-		Detectors:            detectors,
-		FilesToExtract:       f.FilesToExtract,
-		DirsToSkip:           f.dirsToSkip(),
-		SkipDirRegex:         skipDirRegex,
+		ScanRoot:       f.Root,
+		Extractors:     extractors,
+		Detectors:      detectors,
+		FilesToExtract: f.FilesToExtract,
+		DirsToSkip:     f.dirsToSkip(),
+		SkipDirRegex:   skipDirRegex,
 	}, nil
 }
 
@@ -287,33 +284,16 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extractor, error) {
+func (f *Flags) extractorsToRun() ([]extractor.Extractor, error) {
 	if len(f.ExtractorsToRun) == 0 {
-		return []filesystem.Extractor{}, []standalone.Extractor{}, nil
+		return nil, nil
 	}
 
-	var fsExtractors []filesystem.Extractor
-	var standaloneExtractors []standalone.Extractor
-
-	// We need to check extractors individually as they may be defined in one or both lists.
-	for _, name := range strings.Split(f.ExtractorsToRun, ",") {
-		ex, err := el.ExtractorsFromNames([]string{name})
-		stex, sterr := sl.ExtractorsFromNames([]string{name})
-
-		if err != nil && sterr != nil { // both fails.
-			return nil, nil, err
-		}
-
-		if err == nil {
-			fsExtractors = append(fsExtractors, ex...)
-		}
-
-		if sterr == nil {
-			standaloneExtractors = append(standaloneExtractors, stex...)
-		}
+	exs, err := el.ExtractorsFromNames(strings.Split(f.ExtractorsToRun, ","))
+	if err != nil {
+		return nil, err
 	}
-
-	return fsExtractors, standaloneExtractors, nil
+	return exs, nil
 }
 
 func (f *Flags) detectorsToRun() ([]detector.Detector, error) {

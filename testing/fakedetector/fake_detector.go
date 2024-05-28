@@ -65,3 +65,50 @@ func (d *fakeDetector) Scan(ctx context.Context, scanRoot string, ix *inventoryi
 	}
 	return []*detector.Finding{d.Finding}, d.Err
 }
+
+// Option is an option that can be set when creating a new fake detector
+type Option func(*fakeDetector)
+
+// WithName sets the fake detector's name.
+func WithName(name string) Option {
+	return func(fd *fakeDetector) {
+		fd.DetName = name
+	}
+}
+
+// WithVersion sets the fake detector's version.
+func WithVersion(version int) Option {
+	return func(fd *fakeDetector) {
+		fd.DetVersion = version
+	}
+}
+
+// WithRequiredExtractors sets the fake detector's required extractors.
+func WithRequiredExtractors(extractors ...string) Option {
+	return func(fd *fakeDetector) {
+		fd.ReqExtractors = extractors
+	}
+}
+
+// WithFinding sets the fake detector's finding that is returned when Scan() is called.
+func WithFinding(finding *detector.Finding) Option {
+	return func(fd *fakeDetector) {
+		fd.Finding = finding
+	}
+}
+
+// WithErr sets the fake detector's error that is returned when Scan() is called.
+func WithErr(err error) Option {
+	return func(fd *fakeDetector) {
+		fd.Err = err
+	}
+}
+
+// NewWithOptions creates a new fake detector with its properties set according to opts.
+func NewWithOptions(opts ...Option) detector.Detector {
+	fd := &fakeDetector{}
+	for _, opt := range opts {
+		opt(fd)
+	}
+	return fd
+}

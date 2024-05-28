@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	"github.com/google/osv-scalibr/extractor/list"
 )
 
 func TestExtractorsFromNames(t *testing.T) {
@@ -54,9 +54,9 @@ func TestExtractorsFromNames(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.ExtractorsFromNames(tc.names)
+			got, err := list.ExtractorsFromNames(tc.names)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("el.ExtractorsFromNames(%v) error got diff (-want +got):\n%s", tc.names, diff)
+				t.Errorf("ExtractorsFromNames(%v) error got diff (-want +got):\n%s", tc.names, diff)
 			}
 			gotNames := []string{}
 			for _, e := range got {
@@ -64,7 +64,7 @@ func TestExtractorsFromNames(t *testing.T) {
 			}
 			sort := func(e1, e2 string) bool { return e1 < e2 }
 			if diff := cmp.Diff(tc.wantExts, gotNames, cmpopts.SortSlices(sort)); diff != "" {
-				t.Errorf("el.ExtractorsFromNames(%v): got diff (-want +got):\n%s", tc.names, diff)
+				t.Errorf("ExtractorsFromNames(%v): got diff (-want +got):\n%s", tc.names, diff)
 			}
 		})
 	}
@@ -101,15 +101,15 @@ func TestExtractorFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.ExtractorFromName(tc.name)
+			got, err := list.ExtractorFromName(tc.name)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("el.ExtractorFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
+				t.Errorf("ExtractorFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}
 			if err != nil {
 				return
 			}
 			if tc.wantExt != got.Name() {
-				t.Errorf("el.ExtractorFromName(%s): want %s, got %s", tc.name, tc.wantExt, got.Name())
+				t.Errorf("ExtractorFromName(%s) = %s, want %s", tc.name, got.Name(), tc.wantExt)
 			}
 		})
 	}
