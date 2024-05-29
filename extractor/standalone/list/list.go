@@ -22,12 +22,15 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/log"
 )
 
 var (
 	// Windows standalone extractors.
-	Windows = []standalone.Extractor{}
+	Windows = []standalone.Extractor{
+		&dismpatch.Extractor{},
+	}
 
 	// Default standalone extractors.
 	Default []standalone.Extractor = slices.Concat(Windows)

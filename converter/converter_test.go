@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/purl"
 	scalibr "github.com/google/osv-scalibr"
 )
@@ -322,41 +323,90 @@ func TestToSPDX23(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
-	inventory := &extractor.Inventory{
-		Name:      "software",
-		Version:   "1.0.0",
-		Locations: []string{"/file1"},
-		Extractor: pipEx,
+	tests := []struct {
+		desc      string
+		inventory *extractor.Inventory
+		want      *purl.PackageURL
+		wantErr   bool
+	}{
+		{
+			desc: "Valid inventory extractor",
+			inventory: &extractor.Inventory{
+				Name:      "software",
+				Version:   "1.0.0",
+				Locations: []string{"/file1"},
+				Extractor: pipEx,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypePyPi,
+				Name:    "software",
+				Version: "1.0.0",
+			},
+		},
+		{
+			desc: "Windows-only returns error",
+			inventory: &extractor.Inventory{
+				Name:      "irrelevant",
+				Extractor: dismpatch.Extractor{},
+				Locations: []string{"irrelevant"},
+				Version:   "irrelevant",
+			},
+			wantErr: true,
+		},
 	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "software",
-		Version: "1.0.0",
-	}
-	got, err := converter.ToPURL(inventory)
-	if err != nil {
-		t.Fatalf("converter.ToPURL(%v): %v", inventory, err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", inventory, diff)
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := converter.ToPURL(tc.inventory)
+			if err != nil && !tc.wantErr || err == nil && tc.wantErr {
+				t.Fatalf("converter.ToPURL(%v): %v", tc.inventory, err)
+			}
+
+			if tc.wantErr == true {
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
+			}
+		})
 	}
 }
 
 func TestToCPEs(t *testing.T) {
-	cpes := []string{"cpe:2.3:a:nginx:nginx:1.21.1"}
-	inventory := &extractor.Inventory{
-		Name: "nginx",
-		Metadata: &spdx.Metadata{
-			CPEs: cpes,
+	tests := []struct {
+		desc      string
+		inventory *extractor.Inventory
+		want      []string
+		wantErr   bool
+	}{
+		{
+			desc: "Valid fileststem extractor",
+			inventory: &extractor.Inventory{
+				Name: "nginx",
+				Metadata: &spdx.Metadata{
+					CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+				},
+				Extractor: &spdx.Extractor{},
+			},
+			want: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 		},
-		Extractor: &spdx.Extractor{},
 	}
-	want := cpes
-	got, err := converter.ToCPEs(inventory)
-	if err != nil {
-		t.Fatalf("converter.ToCPEs(%v): %v", inventory, err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("converter.ToCPEs(%v) returned unexpected diff (-want +got):\n%s", inventory, diff)
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := converter.ToCPEs(tc.inventory)
+			if err != nil && !tc.wantErr || err == nil && tc.wantErr {
+				t.Fatalf("converter.ToCPEs(%v): %v", tc.inventory, err)
+			}
+
+			if tc.wantErr == true {
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("converter.ToCPEs(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
+			}
+		})
 	}
 }
