@@ -57,6 +57,8 @@ type ScanInput struct {
 	// A reader for accessing contents of the file.
 	// Note that the file is closed by the core library, not the plugin.
 	Reader io.Reader
+	// Stats collector to export stats internally from a plugin.
+	Stats stats.Collector
 }
 
 // Config stores the config settings for an extraction run.
@@ -279,7 +281,13 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, mode fs.FileMode)
 	wc.extractCalls++
 
 	start := time.Now()
-	results, err := ex.Extract(wc.ctx, &ScanInput{Path: path, ScanRoot: wc.scanRoot, Info: info, Reader: rc})
+	results, err := ex.Extract(wc.ctx, &ScanInput{
+		Path:     path,
+		ScanRoot: wc.scanRoot,
+		Info:     info,
+		Reader:   rc,
+		Stats:    wc.stats,
+	})
 	wc.stats.AfterExtractorRun(ex.Name(), time.Since(start), err)
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))

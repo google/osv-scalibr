@@ -32,6 +32,19 @@ type Collector interface {
 	// AfterResultsExported is called after results have been exported. destination should merely be
 	// a category of where the result was written to (e.g. 'file', 'http'), not the precise location.
 	AfterResultsExported(destination string, bytes int, err error)
+	AfterFileSeen(pluginName string, filestats *FileStats)
+}
+
+// FileStats is a struct containing stats about a file that was extracted. If
+// the file was skipped due to an error during extraction, `Error` will be
+// populated.
+type FileStats struct {
+	Path          string
+	Error         error
+	FileSizeBytes int64
+	// For extractors that unarchive a compressed files, this reports the bytes
+	// that were opened during the unarchiving process.
+	UncompressedBytes int64
 }
 
 // NoopCollector implements Collector by doing nothing.
@@ -51,3 +64,6 @@ func (c NoopCollector) AfterScan(runtime time.Duration, status *plugin.ScanStatu
 
 // AfterResultsExported implements Collector by doing nothing.
 func (c NoopCollector) AfterResultsExported(destination string, bytes int, err error) {}
+
+// AfterFileSeen implements Collector by doing nothing.
+func (c NoopCollector) AfterFileSeen(name string, filestats *FileStats) {}
