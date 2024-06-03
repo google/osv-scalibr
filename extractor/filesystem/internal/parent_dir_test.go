@@ -16,6 +16,7 @@ package internal
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 )
 
@@ -35,8 +36,8 @@ func TestParentDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("ParentDir(%q, %d), want %q", test.path, test.n, test.want), func(t *testing.T) {
-			got := ParentDir(test.path, test.n)
-			if got != test.want {
+			got := ParentDir(filepath.FromSlash(test.path), test.n)
+			if filepath.ToSlash(got) != test.want {
 				t.Errorf("ParentDir(%q, %d) = %q, want %q", test.path, test.n, got, test.want)
 			}
 		})

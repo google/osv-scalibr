@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,23 +29,23 @@ func TestBuildTransitiveMaps(t *testing.T) {
 	}{
 		{
 			name:  "single",
-			input: map[string]int{"a": 1, "a/b": 2},
+			input: map[string]int{"a": 1, filepath.FromSlash("a/b"): 2},
 			want:  map[string]int{".": 3, "a": 2},
 		},
 		{
 			name:  "double",
-			input: map[string]int{"a": 1, "a/b": 2, "a/b/c": 3},
-			want:  map[string]int{".": 6, "a": 5, "a/b": 3},
+			input: map[string]int{"a": 1, filepath.FromSlash("a/b"): 2, filepath.FromSlash("a/b/c"): 3},
+			want:  map[string]int{".": 6, "a": 5, filepath.FromSlash("a/b"): 3},
 		},
 		{
 			name:  "only in leaf directory",
-			input: map[string]int{"a/b/c": 3},
-			want:  map[string]int{".": 3, "a": 3, "a/b": 3},
+			input: map[string]int{filepath.FromSlash("a/b/c"): 3},
+			want:  map[string]int{".": 3, "a": 3, filepath.FromSlash("a/b"): 3},
 		},
 		{
 			name:  "2 leaf directories",
-			input: map[string]int{"a/b/c": 3, "a/b/d": 2},
-			want:  map[string]int{".": 5, "a": 5, "a/b": 5},
+			input: map[string]int{filepath.FromSlash("a/b/c"): 3, filepath.FromSlash("a/b/d"): 2},
+			want:  map[string]int{".": 5, "a": 5, filepath.FromSlash("a/b"): 5},
 		},
 	}
 

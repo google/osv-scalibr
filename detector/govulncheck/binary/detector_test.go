@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -37,7 +38,13 @@ func TestScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("os.Getwd(): %v", err)
 	}
-	det := binary.Detector{OfflineVulnDBPath: filepath.Join(wd, "testdata/vulndb")}
+	// Govulncheck expects the path to be file:///c:/something
+	if runtime.GOOS == "windows" {
+		wd = "/" + wd
+	}
+	det := binary.Detector{
+		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
+	}
 	ix := setupInventoryIndex([]string{binaryName})
 	findings, err := det.Scan(context.Background(), ".", ix)
 	if err != nil {
@@ -85,7 +92,13 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("os.Getwd(): %v", err)
 	}
-	det := binary.Detector{OfflineVulnDBPath: filepath.Join(wd, "testdata/vulndb")}
+	// Govulncheck expects the path to be file:///c:/something
+	if runtime.GOOS == "windows" {
+		wd = "/" + wd
+	}
+	det := binary.Detector{
+		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
+	}
 	ix := setupInventoryIndex([]string{"nonexistent", binaryName})
 	result, err := det.Scan(context.Background(), ".", ix)
 	if err == nil {

@@ -19,7 +19,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -336,18 +338,24 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 }
 
 func (f *Flags) dirsToSkip() []string {
-	paths := []string{"/dev", "/proc", "/sys"}
+	var paths []string
+	if runtime.GOOS == "windows" {
+		paths = []string{"\\Windows"}
+	} else {
+		paths = []string{"/dev", "/proc", "/sys"}
+	}
 	if len(f.DirsToSkip) > 0 {
 		paths = append(paths, strings.Split(f.DirsToSkip, ",")...)
 	}
 
 	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
-	prefix := f.Root
+	prefix := filepath.FromSlash(f.Root)
 	if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
 		prefix += string(os.PathSeparator)
 	}
 	for _, p := range paths {
+		p = filepath.FromSlash(p)
 		if strings.HasPrefix(p, prefix) {
 			result = append(result, p)
 		}

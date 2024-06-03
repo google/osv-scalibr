@@ -17,6 +17,7 @@ package spdx_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -75,8 +76,13 @@ func TestWrite23(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error while reading %s: %v", tc.want, err)
 			}
-			wantStr := strings.Trim(string(want), "\n")
-			gotStr := strings.Trim(string(got), "\n")
+			wantStr := strings.TrimSpace(string(want))
+			gotStr := strings.TrimSpace(string(got))
+			if runtime.GOOS == "windows" {
+				wantStr = strings.ReplaceAll(wantStr, "\r", "")
+				gotStr = strings.ReplaceAll(gotStr, "\r", "")
+			}
+
 			if diff := cmp.Diff(wantStr, gotStr); diff != "" {
 				t.Errorf("spdx.Write23(%v, %s, %s) produced unexpected results, diff (-want +got):\n%s", doc, fullPath, tc.format, diff)
 			}

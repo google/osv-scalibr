@@ -24,12 +24,12 @@ import (
 	"path"
 	"strings"
 
+	"golang.org/x/vuln/scan"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/vuln/scan"
 )
 
 const (

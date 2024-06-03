@@ -43,7 +43,7 @@ func parsePomProps(f *zip.File) (PomProps, error) {
 	}
 	defer file.Close()
 
-	log.Debugf("Parsing pom.propoerties file %s\n", f.Name)
+	log.Debugf("Parsing pom.properties file %s\n", f.Name)
 
 	s := bufio.NewScanner(file)
 	for s.Scan() {

@@ -55,3 +55,6 @@ jobs:
 
     - name: Build
       run: make
+
+    - name: Test
+      run: make test

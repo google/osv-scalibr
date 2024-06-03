@@ -114,12 +114,7 @@ func WalkDirUnsorted(fsys fs.FS, root string, fn fs.WalkDirFunc) error {
 	return err
 }
 
-// readDir reads the named directory
-// and returns a list of directory entries sorted by filename.
-//
-// If fs implements [ReadDirFS], ReadDir calls fs.ReadDir.
-// Otherwise ReadDir calls fs.Open and uses ReadDir and Close
-// on the returned file.
+// readDir reads the named directory and returns an iterator over the directory entries.
 func readDir(fsys fs.FS, name string) (*dirIterator, error) {
 	file, err := fsys.Open(name)
 	if err != nil {

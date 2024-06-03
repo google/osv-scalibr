@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"testing"
 	"testing/fstest"
@@ -39,9 +40,14 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	// TODO: b/343906804 - Until we can fix mapfs, we need to skip this test on Windows.
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows")
+	}
+
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
-	path1 := "dir1/file1.txt"
-	path2 := "dir2/sub/file2.txt"
+	path1 := filepath.FromSlash("dir1/file1.txt")
+	path2 := filepath.FromSlash("dir2/sub/file2.txt")
 	fsys := fstest.MapFS{
 		".":                  {Mode: fs.ModeDir},
 		"dir1":               {Mode: fs.ModeDir},

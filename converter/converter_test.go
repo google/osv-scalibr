@@ -16,6 +16,7 @@ package converter_test
 
 import (
 	"math/rand"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -328,6 +329,7 @@ func TestToPURL(t *testing.T) {
 		inventory *extractor.Inventory
 		want      *purl.PackageURL
 		wantErr   bool
+		onGoos    string
 	}{
 		{
 			desc: "Valid inventory extractor",
@@ -344,7 +346,7 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			desc: "Windows-only returns error",
+			desc: "Windows-only returns error on Linux",
 			inventory: &extractor.Inventory{
 				Name:      "irrelevant",
 				Extractor: dismpatch.Extractor{},
@@ -352,11 +354,16 @@ func TestToPURL(t *testing.T) {
 				Version:   "irrelevant",
 			},
 			wantErr: true,
+			onGoos:  "linux",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
+			if tc.onGoos != "" && tc.onGoos != runtime.GOOS {
+				t.Skipf("Skipping test on %s", runtime.GOOS)
+			}
+
 			got, err := converter.ToPURL(tc.inventory)
 			if err != nil && !tc.wantErr || err == nil && tc.wantErr {
 				t.Fatalf("converter.ToPURL(%v): %v", tc.inventory, err)

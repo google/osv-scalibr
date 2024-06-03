@@ -17,6 +17,7 @@ package cli_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -186,14 +187,17 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 	for _, tc := range []struct {
 		desc           string
 		flags          *cli.Flags
-		wantDirsToSkip []string
+		wantDirsToSkip map[string][]string
 	}{
 		{
 			desc: "Skip default dirs",
 			flags: &cli.Flags{
 				Root: "/",
 			},
-			wantDirsToSkip: []string{"/dev", "/proc", "/sys"},
+			wantDirsToSkip: map[string][]string{
+				"linux":   []string{"/dev", "/proc", "/sys"},
+				"windows": []string{"\\Windows"},
+			},
 		},
 		{
 			desc: "Skip additional dirs",
@@ -201,7 +205,10 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				Root:       "/",
 				DirsToSkip: "/boot,/mnt",
 			},
-			wantDirsToSkip: []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
+			wantDirsToSkip: map[string][]string{
+				"linux":   []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
+				"windows": []string{"\\Windows", "\\boot", "\\mnt"},
+			},
 		},
 		{
 			desc: "Ignore paths outside root",
@@ -209,15 +216,23 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				Root:       "/root",
 				DirsToSkip: "/root/dir1,/dir2",
 			},
-			wantDirsToSkip: []string{"/root/dir1"},
+			wantDirsToSkip: map[string][]string{
+				"linux":   []string{"/root/dir1"},
+				"windows": []string{"\\root\\dir1"},
+			},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
+			wantDirsToSkip, ok := tc.wantDirsToSkip[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
 			cfg, err := tc.flags.GetScanConfig()
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
 			}
-			if diff := cmp.Diff(tc.wantDirsToSkip, cfg.DirsToSkip); diff != "" {
+			if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
 				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", tc.flags, diff)
 			}
 		})

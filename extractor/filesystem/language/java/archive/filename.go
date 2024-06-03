@@ -15,7 +15,7 @@
 package archive
 
 import (
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -52,8 +52,8 @@ func ParseFilename(filePath string) *JarProps {
 }
 
 func nameVersionFromFilename(filePath string) (string, string) {
-	base := path.Base(filePath)
-	filename := strings.TrimSuffix(base, path.Ext(base))
+	base := filepath.Base(filePath)
+	filename := strings.TrimSuffix(base, filepath.Ext(base))
 	if strings.Contains(filename, "-") {
 		// Most archive names follow the convention "some-package-name-1.2.3"
 		// There might be dashes in the version too, e.g. "guava-31.1-jre"

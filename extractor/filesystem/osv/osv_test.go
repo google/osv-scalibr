@@ -123,7 +123,7 @@ func TestExtract(t *testing.T) {
 
 	tmp := t.TempDir()
 	writeFile(t, filepath.Join(tmp, "yolo"), "yolo content")
-	writeFile(t, filepath.Join(tmp, "foo/bar"), "foobar content")
+	writeFile(t, filepath.Join(tmp, "foo", "bar"), "foobar content")
 
 	input := &filesystem.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
 
@@ -218,6 +218,7 @@ func (m MockExtractor) Extract(f lockfile.DepFile) ([]lockfile.PackageDetails, e
 	if err != nil {
 		return nil, err
 	}
+	defer g.Close()
 	b, err = io.ReadAll(g)
 	if err != nil {
 		return nil, err
@@ -225,10 +226,11 @@ func (m MockExtractor) Extract(f lockfile.DepFile) ([]lockfile.PackageDetails, e
 	r = append(r, lockfile.PackageDetails{Name: string(b), Version: "2.0"})
 
 	// use absolute open
-	g, err = f.Open("/foo/bar")
+	g, err = f.Open(filepath.FromSlash("/foo/bar"))
 	if err != nil {
 		return nil, err
 	}
+	defer g.Close()
 	b, err = io.ReadAll(g)
 	if err != nil {
 		return nil, err

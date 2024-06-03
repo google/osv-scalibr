@@ -69,7 +69,7 @@ func Parse(input string) ([]DismPkg, string, error) {
 			// this is the first entry that has the image version
 			matches = imgExp.FindStringSubmatch(pkg)
 			if len(matches) > 1 {
-				imgVersion = matches[1]
+				imgVersion = strings.TrimSpace(matches[1])
 			}
 		}
 	}

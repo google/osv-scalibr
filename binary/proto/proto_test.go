@@ -17,6 +17,7 @@ package proto_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -328,10 +329,11 @@ func TestScanResultToProto(t *testing.T) {
 	}
 
 	testCases := []struct {
-		desc    string
-		res     *scalibr.ScanResult
-		want    *spb.ScanResult
-		wantErr error
+		desc        string
+		res         *scalibr.ScanResult
+		want        *spb.ScanResult
+		wantErr     error
+		exclWindows bool // should test be skipped on windows
 	}{
 		{
 			desc: "Successful scan",
@@ -352,7 +354,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, purlRPMInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -395,7 +397,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto, purlRPMInventoryProto},
+				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
 				Findings: []*spb.Finding{
 					&spb.Finding{
 						Adv: &spb.Advisory{
@@ -421,6 +423,39 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc: "Successful RPM scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					&plugin.Status{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{purlRPMInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					&spb.PluginStatus{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{purlRPMInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			exclWindows: true,
 		},
 		{
 			desc: "no inventory target, still works",
@@ -613,6 +648,10 @@ func TestScanResultToProto(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
+			if tc.exclWindows && runtime.GOOS == "windows" {
+				t.Skipf("Skipping test %q on Windows", tc.desc)
+			}
+
 			got, err := proto.ScanResultToProto(tc.res)
 			if err != tc.wantErr {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
