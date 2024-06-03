@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package list provides a public list of SCALIBR-internal extraction plugins.
+// Package list provides a public list of SCALIBR extraction plugins.
+//
+// It contains both filesystem and standalone extractors.
+//
+// All individual extractors are available through their unique names. In addition, there are groups
+// of extractors such as e.g. "javascript" that bundle related extractors together.
 package list
 
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	// OSV extractors.
 	"github.com/google/osv-scanner/pkg/lockfile"
 
 	// SCALIBR internal extractors.
-
-	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -40,6 +45,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 
@@ -50,22 +56,28 @@ var (
 	// Language extractors.
 
 	// Java extractors.
-	Java []filesystem.Extractor = []filesystem.Extractor{javaarchive.New(javaarchive.DefaultConfig())}
+	Java []extractor.Extractor = []extractor.Extractor{javaarchive.New(javaarchive.DefaultConfig())}
 	// Javascript extractors.
-	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), &packagelockjson.Extractor{}}
+	Javascript []extractor.Extractor = []extractor.Extractor{
+		packagejson.New(packagejson.DefaultConfig()),
+		&packagelockjson.Extractor{},
+	}
 	// Python extractors.
-	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), &requirements.Extractor{}}
+	Python []extractor.Extractor = []extractor.Extractor{
+		wheelegg.New(wheelegg.DefaultConfig()),
+		&requirements.Extractor{},
+	}
 	// Go extractors.
-	Go []filesystem.Extractor = []filesystem.Extractor{&gobinary.Extractor{}}
+	Go []extractor.Extractor = []extractor.Extractor{&gobinary.Extractor{}}
 	// Ruby extractors.
-	Ruby []filesystem.Extractor = []filesystem.Extractor{&gemspec.Extractor{}}
+	Ruby []extractor.Extractor = []extractor.Extractor{&gemspec.Extractor{}}
 	// SBOM extractors.
-	SBOM []filesystem.Extractor = []filesystem.Extractor{&spdx.Extractor{}}
+	SBOM []extractor.Extractor = []extractor.Extractor{&spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
-	Dotnet []filesystem.Extractor = []filesystem.Extractor{&packageslockjson.Extractor{}}
+	Dotnet []extractor.Extractor = []extractor.Extractor{&packageslockjson.Extractor{}}
 
 	// OS extractors.
-	OS []filesystem.Extractor = []filesystem.Extractor{
+	OS []extractor.Extractor = []extractor.Extractor{
 		dpkg.New(dpkg.DefaultConfig()),
 		&apk.Extractor{},
 		rpm.New(rpm.DefaultConfig()),
@@ -75,9 +87,9 @@ var (
 	// Collections of extractors.
 
 	// Default extractors that are recommended to be enabled.
-	Default []filesystem.Extractor = concat(Java, Javascript, Python, Go, OS)
+	Default []extractor.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR. These don't include the untested extractors which can be enabled manually.
-	All []filesystem.Extractor = concat(
+	All []extractor.Extractor = slices.Concat(
 		Java,
 		Javascript,
 		Python,
@@ -90,7 +102,7 @@ var (
 
 	// Untested extractors are OSV extractors without tests.
 	// TODO(b/307735923): Add tests for these and move them into All.
-	Untested []filesystem.Extractor = []filesystem.Extractor{
+	Untested []extractor.Extractor = []extractor.Extractor{
 		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
 		osv.Wrapper{ExtractorName: "dart/pubspec", ExtractorVersion: 0, PURLType: purl.TypePub, Extractor: lockfile.PubspecLockExtractor{}},
 		osv.Wrapper{ExtractorName: "go/gomod", ExtractorVersion: 0, PURLType: purl.TypeGolang, Extractor: lockfile.GoLockExtractor{}},
@@ -105,7 +117,13 @@ var (
 		osv.Wrapper{ExtractorName: "rust/cargo", ExtractorVersion: 0, PURLType: purl.TypeCargo, Extractor: lockfile.CargoLockExtractor{}},
 	}
 
-	extractorNames = map[string][]filesystem.Extractor{
+	// Standalone extractors.
+	Windows    []extractor.Extractor = []extractor.Extractor{&dismpatch.Extractor{}}
+	Standalone []extractor.Extractor = slices.Concat(
+		Windows,
+	)
+
+	extractors = map[string][]extractor.Extractor{
 		// Languages.
 		"java":       Java,
 		"javascript": Javascript,
@@ -121,50 +139,54 @@ var (
 		"default":  Default,
 		"all":      All,
 		"untested": Untested,
+
+		// Standalone.
+		"windows": Windows,
 	}
 )
 
 // LINT.ThenChange(/docs/supported_inventory_types.md)
 
 func init() {
-	for _, e := range append(All, Untested...) {
+	for _, e := range slices.Concat(All, Untested, Standalone) {
 		register(e)
 	}
 }
 
-// register adds the individual extractors to the extractorNames map.
-func register(d filesystem.Extractor) {
-	if _, ok := extractorNames[strings.ToLower(d.Name())]; ok {
+// register adds an individual extractor to the extractors map.
+func register(d extractor.Extractor) {
+	if _, ok := extractors[strings.ToLower(d.Name())]; ok {
 		log.Errorf("There are 2 extractors with the name: %q", d.Name())
 		os.Exit(1)
 	}
-	extractorNames[strings.ToLower(d.Name())] = []filesystem.Extractor{d}
+	extractors[strings.ToLower(d.Name())] = []extractor.Extractor{d}
 }
 
-// ExtractorsFromNames returns a deduplicated list of extractors from a list of names.
-func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
-	resultMap := make(map[string]filesystem.Extractor)
+// ExtractorsFromNames returns a deduplicated list of extractors given a list of names.
+// Those names can be shorthands for groups of extractors like "javascript" or refer to specific
+// extractors by their unique name.
+func ExtractorsFromNames(names []string) ([]extractor.Extractor, error) {
+	seen := map[string]struct{}{}
+	result := []extractor.Extractor{}
 	for _, n := range names {
-		if es, ok := extractorNames[strings.ToLower(n)]; ok {
-			for _, e := range es {
-				if _, ok := resultMap[e.Name()]; !ok {
-					resultMap[e.Name()] = e
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("unknown extractor %s", n)
+		es, ok := extractors[strings.ToLower(n)]
+		if !ok {
+			return nil, fmt.Errorf("unknown extractor %q", n)
 		}
-	}
-	result := make([]filesystem.Extractor, 0, len(resultMap))
-	for _, e := range resultMap {
-		result = append(result, e)
+		for _, e := range es {
+			if _, ok := seen[e.Name()]; ok {
+				continue
+			}
+			seen[e.Name()] = struct{}{}
+			result = append(result, e)
+		}
 	}
 	return result, nil
 }
 
-// ExtractorFromName returns a single extractor based on its exact name.
-func ExtractorFromName(name string) (filesystem.Extractor, error) {
-	es, ok := extractorNames[strings.ToLower(name)]
+// ExtractorFromName returns a single extractor based on its unique name.
+func ExtractorFromName(name string) (extractor.Extractor, error) {
+	es, ok := extractors[strings.ToLower(name)]
 	if !ok {
 		return nil, fmt.Errorf("unknown extractor %s", name)
 	}
@@ -174,15 +196,30 @@ func ExtractorFromName(name string) (filesystem.Extractor, error) {
 	return es[0], nil
 }
 
-// Returns a new slice that concatenates the values of two or more slices without modifying them.
-func concat(exs ...[]filesystem.Extractor) []filesystem.Extractor {
-	length := 0
-	for _, e := range exs {
-		length += len(e)
+// SpecificExtractorsFromNames returns a deduplicated list of extractors that conform to type T
+// given a list of names.
+//
+// Those names can be shorthands for groups of extractors like "javascript" or refer to specific
+// extractors by their unique name.
+//
+// If strict is false, an extractor with a listed name that does not conform to T, it is silently
+// omitted from the result.
+// If strict is true, an error is returned instead.
+func SpecificExtractorsFromNames[T extractor.Extractor](names []string, strict bool) ([]T, error) {
+	es, err := ExtractorsFromNames(names)
+	if err != nil {
+		return nil, err
 	}
-	result := make([]filesystem.Extractor, 0, length)
-	for _, e := range exs {
-		result = append(result, e...)
+	esT := []T{}
+	for _, e := range es {
+		eT, ok := e.(T)
+		if !ok {
+			if strict {
+				return nil, fmt.Errorf("extractor %q does not conform to %T, is %T", e.Name(), *new(T), e)
+			}
+			continue
+		}
+		esT = append(esT, eT)
 	}
-	return result
+	return esT, nil
 }

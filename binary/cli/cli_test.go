@@ -135,14 +135,25 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Detector with missing extractor dependency",
+			desc: "Detector with missing extractor dependency when ExplicitExtractors",
+			flags: &cli.Flags{
+				Root:               "/",
+				ResultFile:         "result.textproto",
+				ExtractorsToRun:    "python,javascript",
+				DetectorsToRun:     "govulncheck", // Needs the Go binary extractor.
+				ExplicitExtractors: true,
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Detector with missing extractor dependency (enabled automatically)",
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
 				ExtractorsToRun: "python,javascript",
 				DetectorsToRun:  "govulncheck", // Needs the Go binary extractor.
 			},
-			wantErr: cmpopts.AnyError,
+			wantErr: nil,
 		},
 		{
 			desc: "Invalid paths to skip",
@@ -281,7 +292,7 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			if len(cfg.Detectors) != tc.wantDetectorCount {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
-			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
+			if len(cfg.Extractors) != tc.wantExtractorCount {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
 		})

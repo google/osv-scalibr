@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+
+	"github.com/google/osv-scalibr/extractor/list"
 )
 
 // Scanner is the main entry point of the scanner.
@@ -42,9 +44,8 @@ func New() *Scanner { return &Scanner{} }
 // ScanConfig stores the config settings of a scan run such as the plugins to
 // use and the dir to consider the root of the scanned system.
 type ScanConfig struct {
-	FilesystemExtractors []filesystem.Extractor
-	StandaloneExtractors []standalone.Extractor
-	Detectors            []detector.Detector
+	Extractors []extractor.Extractor
+	Detectors  []detector.Detector
 	// ScanRoot is the root dir used by file walking during extraction.
 	// All extractors and detectors will assume files are relative to this dir.
 	// Example use case: Scanning a container image or source code repo that is
@@ -68,6 +69,29 @@ type ScanConfig struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+}
+
+// EnableRequiredExtractors adds those extractors to the config that are required by enabled
+// detectors but have not been explicitly enabled.
+func (cfg *ScanConfig) EnableRequiredExtractors() error {
+	enabledExtractors := map[string]struct{}{}
+	for _, e := range cfg.Extractors {
+		enabledExtractors[e.Name()] = struct{}{}
+	}
+	for _, d := range cfg.Detectors {
+		for _, name := range d.RequiredExtractors() {
+			if _, enabled := enabledExtractors[name]; enabled {
+				continue
+			}
+			e, err := list.ExtractorFromName(name)
+			if err != nil {
+				return fmt.Errorf("unable to enable required extractor: %w", err)
+			}
+			enabledExtractors[name] = struct{}{}
+			cfg.Extractors = append(cfg.Extractors, e)
+		}
+	}
+	return nil
 }
 
 // LINT.IfChange
@@ -100,10 +124,32 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		Inventories: []*extractor.Inventory{},
 		Findings:    []*detector.Finding{},
 	}
+	if err := config.EnableRequiredExtractors(); err != nil {
+		sro.Err = err
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
+
+	// Split extractors into filesystem extractors and standalone extractors.
+	filesystemExtractors := []filesystem.Extractor{}
+	standaloneExtractors := []standalone.Extractor{}
+	for _, ex := range config.Extractors {
+		switch e := ex.(type) {
+		case filesystem.Extractor:
+			filesystemExtractors = append(filesystemExtractors, e)
+		case standalone.Extractor:
+			standaloneExtractors = append(standaloneExtractors, e)
+		default:
+			sro.Err = fmt.Errorf("not a valid extractor type: %T", ex)
+			sro.EndTime = time.Now()
+			return newScanResult(sro)
+		}
+	}
+
 	extractorConfig := &filesystem.Config{
 		Stats:          config.Stats,
 		ReadSymlinks:   config.ReadSymlinks,
-		Extractors:     config.FilesystemExtractors,
+		Extractors:     filesystemExtractors,
 		FilesToExtract: config.FilesToExtract,
 		DirsToSkip:     config.DirsToSkip,
 		SkipDirRegex:   config.SkipDirRegex,
@@ -120,7 +166,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro.Inventories = inventories
 	sro.ExtractorStatus = extractorStatus
 	standaloneCfg := &standalone.Config{
-		Extractors: config.StandaloneExtractors,
+		Extractors: standaloneExtractors,
 		ScanRoot:   config.ScanRoot,
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)

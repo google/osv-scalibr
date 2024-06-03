@@ -126,7 +126,7 @@ extractor as an example.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid
     having to give test data specific file names).
 1.  Register your extractor in
-    [list.go](/extractor/filesystem/list/list.go)
+    [list.go](/extractor/list/list.go)
 1.  Optional: test locally, use the name of the extractor given by `Name()` to
     select your extractor. For the `packagejson` extractor it would look like
     this:
@@ -142,7 +142,7 @@ extractor as an example.
     not activated in any defaults yet.
 
 To add your extractor to the list of default extractors, add it in
-[extractor/list/list.go](/extractor/filesystem/list/list.go).
+[extractor/list/list.go](/extractor/list/list.go).
 Please submit this code separately from the main extractor logic.
 
 In case you have any questions or feedback, feel free to open an issue.

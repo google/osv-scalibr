@@ -20,7 +20,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Extractor is the common interface of inventory extraction plugins..
+// Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
 	// ToPURL converts an inventory created by this extractor into a PURL.
