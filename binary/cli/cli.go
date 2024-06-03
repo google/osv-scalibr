@@ -73,6 +73,7 @@ type Flags struct {
 	SPDXDocumentNamespace string
 	SPDXCreators          string
 	Verbose               bool
+	ExplicitExtractors    bool
 }
 
 var supportedOutputFormats = []string{
@@ -107,7 +108,7 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateRegex(flags.SkipDirRegex); err != nil {
 		return fmt.Errorf("--skip-dir-regex: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun); err != nil {
+	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
 	return nil
@@ -170,7 +171,7 @@ func validateRegex(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors string, extractors string) error {
+func validateDetectorDependency(detectors string, extractors string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
@@ -190,10 +191,12 @@ func validateDetectorDependency(detectors string, extractors string) error {
 	for _, e := range stdex {
 		exMap[e.Name()] = true
 	}
-	for _, d := range det {
-		for _, req := range d.RequiredExtractors() {
-			if !exMap[req] {
-				return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+	if requireExtractors {
+		for _, d := range det {
+			for _, req := range d.RequiredExtractors() {
+				if !exMap[req] {
+					return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+				}
 			}
 		}
 	}

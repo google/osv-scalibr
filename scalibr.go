@@ -31,6 +31,9 @@ import (
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+
+	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 )
 
 // Scanner is the main entry point of the scanner.
@@ -70,6 +73,38 @@ type ScanConfig struct {
 	MaxInodes int
 }
 
+// EnableRequiredExtractors adds those extractors to the config that are required by enabled
+// detectors but have not been explicitly enabled.
+func (cfg *ScanConfig) EnableRequiredExtractors() error {
+	enabledExtractors := map[string]struct{}{}
+	for _, e := range cfg.FilesystemExtractors {
+		enabledExtractors[e.Name()] = struct{}{}
+	}
+	for _, e := range cfg.StandaloneExtractors {
+		enabledExtractors[e.Name()] = struct{}{}
+	}
+	for _, d := range cfg.Detectors {
+		for _, e := range d.RequiredExtractors() {
+			if _, enabled := enabledExtractors[e]; enabled {
+				continue
+			}
+			ex, err := el.ExtractorFromName(e)
+			stex, sterr := sl.ExtractorFromName(e)
+			if err != nil && sterr != nil {
+				return fmt.Errorf("required extractor %q not present in list.go: %w, %w", e, err, sterr)
+			}
+			enabledExtractors[e] = struct{}{}
+			if err == nil {
+				cfg.FilesystemExtractors = append(cfg.FilesystemExtractors, ex)
+			}
+			if sterr == nil {
+				cfg.StandaloneExtractors = append(cfg.StandaloneExtractors, stex)
+			}
+		}
+	}
+	return nil
+}
+
 // LINT.IfChange
 
 // ScanResult stores the software inventory and security findings that a scan run found.
@@ -99,6 +134,11 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		StartTime:   time.Now(),
 		Inventories: []*extractor.Inventory{},
 		Findings:    []*detector.Finding{},
+	}
+	if err := config.EnableRequiredExtractors(); err != nil {
+		sro.Err = err
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
 	}
 	extractorConfig := &filesystem.Config{
 		Stats:          config.Stats,
