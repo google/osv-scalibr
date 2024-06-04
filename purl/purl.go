@@ -79,6 +79,8 @@ const (
 	TypeRPM = "rpm"
 	// TypeSwift is pkg:swift purl
 	TypeSwift = "swift"
+	// TypeMicrosoft is pkg:microsoft purl
+	TypeMicrosoft = "microsoft"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -164,6 +166,7 @@ func validType(t string) bool {
 		TypePyPi:      true,
 		TypeRPM:       true,
 		TypeSwift:     true,
+		TypeMicrosoft: true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
