@@ -68,9 +68,7 @@ func WhichWindowsFlavor(installType string) string {
 	switch flavor {
 	case "client":
 		return "client"
-
-	case "server":
-	case "server core":
+	case "server", "server core":
 		return "server"
 	}
 
