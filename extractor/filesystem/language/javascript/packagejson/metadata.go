@@ -41,9 +41,11 @@ func (p *Person) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &personStr); err != nil {
 		// string parsing did not work, assume a map was given
 		// for more information: https://docs.npmjs.com/files/package.json#people-fields-author-contributors
-		if err := json.Unmarshal(b, &fields); err != nil {
+		var rawJSON map[string]any
+		if err := json.Unmarshal(b, &rawJSON); err != nil {
 			return fmt.Errorf("unable to parse package.json person: %w", err)
 		}
+		fields = rawToPerson(rawJSON)
 	} else {
 		// parse out "name <email> (url)" into a person struct
 		fields = internal.MatchNamedCaptureGroups(personPattern, personStr)
@@ -81,4 +83,14 @@ type JavascriptPackageJSONMetadata struct {
 	Author       *Person   `json:"author"`
 	Maintainers  []*Person `json:"maintainers"`
 	Contributors []*Person `json:"contributors"`
+}
+
+func rawToPerson(rawJSON map[string]any) map[string]string {
+	personMap := make(map[string]string)
+	for key := range rawJSON {
+		if val, ok := rawJSON[key].(string); ok {
+			personMap[key] = val
+		}
+	}
+	return personMap
 }

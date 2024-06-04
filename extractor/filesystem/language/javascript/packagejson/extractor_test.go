@@ -195,6 +195,34 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{},
 		},
 		{
+			name: "Undici package with nonstandard contributors parsed correctly",
+			path: "testdata/undici-package.json",
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "undici",
+					Version: "5.28.3",
+					Locations: []string{
+						"testdata/undici-package.json",
+					},
+					Metadata: &packagejson.JavascriptPackageJSONMetadata{
+						Contributors: []*packagejson.Person{
+							&packagejson.Person{
+								Name: "Daniele Belardi",
+								URL:  "https://github.com/dnlup",
+							},
+							&packagejson.Person{
+								Name: "Tomas Della Vedova",
+								URL:  "https://github.com/delvedor",
+							},
+							&packagejson.Person{
+								Name: "Invalid URL NoCrash",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "npm package with engine field set",
 			path: "testdata/not-vscode.json",
 			wantInventory: []*extractor.Inventory{
