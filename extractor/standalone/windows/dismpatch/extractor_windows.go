@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/winproducts"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/purl"
 )
 

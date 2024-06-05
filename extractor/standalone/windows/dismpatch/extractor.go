@@ -18,8 +18,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/dismparser"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/winproducts"
 )
 
 // inventoryFromOutput parses the output of DISM and produces inventory entries from it.
