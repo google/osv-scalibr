@@ -21,7 +21,6 @@ import (
 	"context"
 	"os/exec"
 
-	"golang.org/x/sys/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
@@ -31,10 +30,6 @@ import (
 const (
 	// Name of the extractor
 	Name = "windows/dismpatch"
-
-	// Registry information to find the flavor of Windows.
-	registryPath = `SOFTWARE\Microsoft\Windows NT\CurrentVersion`
-	registryKey  = "InstallationType"
 )
 
 // Extractor implements the dismpatch extractor.
@@ -53,8 +48,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	installType := readInstallationTypeRegistry()
-	flavor := winproducts.WhichWindowsFlavor(installType)
+	flavor := winproducts.WindowsFlavorFromRegistry()
 	return inventoryFromOutput(flavor, output)
 }
 
@@ -75,22 +69,4 @@ func runDISM(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(ctx, "dism", "/online", "/get-packages", "/format:list")
 	output, err := cmd.CombinedOutput()
 	return string(output), err
-}
-
-// readInstallationTypeRegistry returns the lowercase value of the "InstallationType" registry key
-// on the currently running system.
-// Full key path: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\InstallationType
-// Defaults to "server" if the key is not found.
-func readInstallationTypeRegistry() string {
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPath, registry.QUERY_VALUE)
-	if err != nil {
-		return "server"
-	}
-	defer key.Close()
-
-	if value, _, err := key.GetStringValue(registryKey); err == nil {
-		return value
-	}
-
-	return "server"
 }

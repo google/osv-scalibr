@@ -53,7 +53,7 @@ func TestWhichWindowsFlavor(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := WhichWindowsFlavor(tc.installType)
+			got := windowsFlavor(tc.installType)
 			if got != tc.want {
 				t.Errorf("WhichWindowsFlavor(%q) = %q, want: %q", tc.installType, got, tc.want)
 			}

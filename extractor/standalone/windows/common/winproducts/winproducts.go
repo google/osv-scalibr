@@ -59,10 +59,10 @@ var (
 	}
 )
 
-// WhichWindowsFlavor returns the lowercase Windows flavor (server or client) of the current system
+// windowsFlavor returns the lowercase Windows flavor (server or client) of the current system
 // using the provided lowercase installType (found in the registry).
 // Defaults to "server" if we don't recognize the flavor, but log so that we can add it later.
-func WhichWindowsFlavor(installType string) string {
+func windowsFlavor(installType string) string {
 	flavor := strings.ToLower(installType)
 
 	switch flavor {
