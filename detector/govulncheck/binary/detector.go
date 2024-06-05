@@ -24,12 +24,12 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/vuln/scan"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/vuln/scan"
 )
 
 const (
@@ -110,18 +110,32 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 
 func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Finding, error) {
 	result := []*detector.Finding{}
+	allOSVs := make(map[string]*osvEntry)
+	detectedOSVs := make(map[string]struct{}) // osvs detected at the symbol level
 	dec := json.NewDecoder(bytes.NewReader(out.Bytes()))
 	for dec.More() {
 		msg := govulncheckMessage{}
 		if err := dec.Decode(&msg); err != nil {
 			return nil, err
 		}
-		if msg.OSV == nil {
-			continue
+		if msg.OSV != nil {
+			allOSVs[msg.OSV.ID] = msg.OSV
 		}
+		if msg.Finding != nil {
+			trace := msg.Finding.Trace
+			if len(trace) != 0 && trace[0].Function != "" {
+				// symbol findings
+				detectedOSVs[msg.Finding.OSV] = struct{}{}
+			}
+		}
+	}
+
+	// create scalibr findings for detected govulncheck findings
+	for osvID := range detectedOSVs {
+		osv := allOSVs[osvID]
 		recommendation := "Remove the binary or upgrade its affected dependencies to non-vulnerable versions"
 		extra := ""
-		affected, err := json.Marshal(msg.OSV.Affected)
+		affected, err := json.Marshal(osv.Affected)
 		if err == nil {
 			extra = fmt.Sprintf("Vulnerable dependencies for binary %s: %s", binaryPath, string(affected[:]))
 		} else {
@@ -129,10 +143,10 @@ func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Fin
 		}
 		result = append(result, &detector.Finding{
 			Adv: &detector.Advisory{
-				ID:             getAdvisoryID(msg.OSV),
+				ID:             getAdvisoryID(osv),
 				Type:           detector.TypeVulnerability,
-				Title:          msg.OSV.Summary,
-				Description:    msg.OSV.Details,
+				Title:          osv.Summary,
+				Description:    osv.Details,
 				Recommendation: recommendation,
 				Sev:            &detector.Severity{Severity: detector.SeverityMedium},
 			},
