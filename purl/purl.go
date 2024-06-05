@@ -81,6 +81,8 @@ const (
 	TypeSwift = "swift"
 	// TypeMicrosoft is pkg:microsoft purl
 	TypeMicrosoft = "microsoft"
+	// TypeGooget is pkg:googet purl
+	TypeGooget = "googet"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -167,6 +169,7 @@ func validType(t string) bool {
 		TypeRPM:       true,
 		TypeSwift:     true,
 		TypeMicrosoft: true,
+		TypeGooget:    true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
