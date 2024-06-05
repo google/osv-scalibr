@@ -16,7 +16,19 @@ package binary
 
 // govulncheckMessage contains the relevant parts of the json output of govulncheck.
 type govulncheckMessage struct {
-	OSV *osvEntry `json:"osv,omitempty"`
+	OSV     *osvEntry           `json:"osv,omitempty"`
+	Finding *govulncheckFinding `json:"finding,omitempty"`
+}
+
+// govulncheckFinding is a trimmed down version of govulncheck finding.
+type govulncheckFinding struct {
+	OSV   string              `json:"osv,omitempty"`
+	Trace []*govulncheckFrame `json:"trace,omitempty"`
+}
+
+type govulncheckFrame struct {
+	// Function is the detected symbol.
+	Function string `json:"function,omitempty"`
 }
 
 // osvEntry represents a vulnerability in the Go OSV format, documented
@@ -37,6 +49,7 @@ type osvEntry struct {
 	// affected by the vulnerability.
 	Affected []affected
 }
+
 type affected struct {
 	// The affected Go module. Required.
 	// Note that this field is called "package" in the OSV specification.
@@ -46,6 +59,7 @@ type affected struct {
 	// Details on the affected packages and symbols within the module.
 	EcosystemSpecific ecosystemSpecific `json:"ecosystem_specific"`
 }
+
 type module struct {
 	// The Go module path.
 	Path string `json:"name"`

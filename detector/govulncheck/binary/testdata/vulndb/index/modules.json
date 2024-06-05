@@ -1,1 +1,1 @@
-[{"path":"golang.org/x/net","vulns":[{"id":"GO-2022-1144","modified":"2023-06-12T18:45:41Z","fixed":"0.4.0"}]},{"path":"stdlib","vulns":[{"id":"GO-2022-1144","modified":"2023-06-12T18:45:41Z","fixed":"1.19.4"}]}]
+[{"path":"golang.org/x/net","vulns":[{"id":"GO-2022-1144","modified":"2023-06-12T18:45:41Z","fixed":"0.4.0"}]},{"path":"stdlib","vulns":[{"id":"GO-2022-1144","modified":"2023-06-12T18:45:41Z","fixed":"1.19.4"},{"id":"GO-2024-2887","modified":"2024-06-04T17:58:12Z","fixed":"1.22.4"}]}]

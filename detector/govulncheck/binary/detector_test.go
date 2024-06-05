@@ -50,8 +50,12 @@ func TestScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("detector.Scan(%v): %v", ix, err)
 	}
-	if len(findings) == 0 {
-		t.Fatalf("detector.Scan(%v): expected findings, got none: %v", ix, findings)
+	// There are two vulns in the test vulndb defined for two
+	// module dependencies of the test binary. Both dependencies
+	// are used at a vulnerable version. However, for only one
+	// there is a vulnerable symbol present in the binary.
+	if len(findings) != 1 {
+		t.Fatalf("detector.Scan(%v): expected 1 finding, got: %v", ix, findings)
 	}
 	got := findings[0]
 	wantTitle := "Excessive memory growth in net/http and golang.org/x/net/http2"
