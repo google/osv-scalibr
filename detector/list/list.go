@@ -18,6 +18,7 @@ package list
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/log"
+
 )
 
 // CIS scanning related detectors.
@@ -44,7 +46,12 @@ var Weakcreds []detector.Detector = []detector.Detector{&etcshadow.Detector{}}
 var Default []detector.Detector = []detector.Detector{}
 
 // All detectors internal to SCALIBR.
-var All []detector.Detector = concat(CIS, CVE, Govulncheck, Weakcreds)
+var All []detector.Detector = slices.Concat(
+	CIS,
+	CVE,
+	Govulncheck,
+	Weakcreds,
+)
 
 var detectorNames = map[string][]detector.Detector{
 	"cis":         CIS,
@@ -88,17 +95,4 @@ func DetectorsFromNames(names []string) ([]detector.Detector, error) {
 		result = append(result, d)
 	}
 	return result, nil
-}
-
-// Returns a new slice that concatenates the values of two or more slices without modifying them.
-func concat(exs ...[]detector.Detector) []detector.Detector {
-	length := 0
-	for _, e := range exs {
-		length += len(e)
-	}
-	result := make([]detector.Detector, 0, length)
-	for _, e := range exs {
-		result = append(result, e...)
-	}
-	return result
 }
