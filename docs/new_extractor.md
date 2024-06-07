@@ -120,6 +120,8 @@ extractor as an example.
     matches a file you need to parse. For example, the JavaScript `package.json`
     extractor returns true for any file named `package.json`.
 1.  Implement `Extract` to extract inventory inside the file.
+1.  If you introduced any new metadata type, be sure to add them to the scan_results.proto
+    as well and re-generate the go_proto using `make protos`
 1.  Implement `ToPURL` and `ToCPE` to generate PURLs and CPEs from the Inventory
     extracted. If your extractor doesn't support CPEs feel free to return an empty
     list.

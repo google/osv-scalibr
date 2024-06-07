@@ -23,6 +23,10 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/google/scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
 
+// Proto file describing the SCALIBR scan results. Whenever this proto is
+// modified make sure to regenerate the go_proto file by running
+// `make protos`
+
 // The software inventory and security findings that a scan run found.
 message ScanResult {
   string version = 1;
