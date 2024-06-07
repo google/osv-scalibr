@@ -19,5 +19,4 @@ scalibr-static: protos
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr.go
 
 clean:
-	rm -rf binary/proto/*_go_proto
 	rm -f scalibr
