@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
 	"github.com/google/osv-scalibr/log"
@@ -37,6 +38,7 @@ var (
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = []standalone.Extractor{
+		&ospackages.Extractor{},
 		&regosversion.Extractor{},
 		&regpatchlevel.Extractor{},
 	}
