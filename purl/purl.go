@@ -79,8 +79,6 @@ const (
 	TypeRPM = "rpm"
 	// TypeSwift is pkg:swift purl
 	TypeSwift = "swift"
-	// TypeMicrosoft is pkg:microsoft purl
-	TypeMicrosoft = "microsoft"
 	// TypeGooget is pkg:googet purl
 	TypeGooget = "googet"
 )
@@ -168,7 +166,6 @@ func validType(t string) bool {
 		TypePyPi:      true,
 		TypeRPM:       true,
 		TypeSwift:     true,
-		TypeMicrosoft: true,
 		TypeGooget:    true,
 	}
 

@@ -55,9 +55,10 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	return &purl.PackageURL{
-		Type:    purl.TypeMicrosoft,
-		Name:    i.Name,
-		Version: i.Version,
+		Type:      purl.TypeGeneric,
+		Namespace: "microsoft",
+		Name:      i.Name,
+		Version:   i.Version,
 	}, nil
 }
 
