@@ -1,11 +1,11 @@
 export PATH := $(PATH):$(shell go env GOPATH)/bin
 
-scalibr: protos
+scalibr:
 	# CGO is required for certain dependencies such as
 	# go-sqlite3 used by the RPM extractor.
 	CGO_ENABLED=1 go build binary/scalibr.go
 
-test: protos
+test:
 	CGO_ENABLED=1 go test ./...
 
 protos:
@@ -15,7 +15,7 @@ else
 	./build_protos.sh
 endif
 
-scalibr-static: protos
+scalibr-static:
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr.go
 
 clean:
