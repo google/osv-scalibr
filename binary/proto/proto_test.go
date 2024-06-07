@@ -42,7 +42,7 @@ import (
 
 func TestWrite(t *testing.T) {
 	testDirPath := t.TempDir()
-	var result = &spb.ScanResult{Version: "1.0.0"}
+	var result = &spb.ScanResult{ScannerVersion: "1.0.0"}
 	testCases := []struct {
 		desc           string
 		path           string
@@ -51,7 +51,7 @@ func TestWrite(t *testing.T) {
 		{
 			desc:           "textproto",
 			path:           "output.textproto",
-			expectedPrefix: "version:",
+			expectedPrefix: "scanner_version:",
 		},
 		{
 			desc:           "binproto",
@@ -104,7 +104,7 @@ func TestWrite_InvalidFilename(t *testing.T) {
 
 func TestWriteWithFormat(t *testing.T) {
 	testDirPath := t.TempDir()
-	var result = &spb.ScanResult{Version: "1.0.0"}
+	var result = &spb.ScanResult{ScannerVersion: "1.0.0"}
 	testCases := []struct {
 		desc           string
 		format         string
@@ -113,7 +113,7 @@ func TestWriteWithFormat(t *testing.T) {
 		{
 			desc:           "textproto",
 			format:         "textproto",
-			expectedPrefix: "version:",
+			expectedPrefix: "scanner_version:",
 		},
 		{
 			desc:           "binproto",
@@ -381,10 +381,10 @@ func TestScanResultToProto(t *testing.T) {
 				},
 			},
 			want: &spb.ScanResult{
-				Version:   "1.0.0",
-				StartTime: timestamppb.New(startTime),
-				EndTime:   timestamppb.New(endTime),
-				Status:    successProto,
+				ScannerVersion: "1.0.0",
+				StartTime:      timestamppb.New(startTime),
+				EndTime:        timestamppb.New(endTime),
+				Status:         successProto,
 				PluginStatus: []*spb.PluginStatus{
 					&spb.PluginStatus{
 						Name:    "ext",
@@ -441,10 +441,10 @@ func TestScanResultToProto(t *testing.T) {
 				Inventories: []*extractor.Inventory{purlRPMInventory},
 			},
 			want: &spb.ScanResult{
-				Version:   "1.0.0",
-				StartTime: timestamppb.New(startTime),
-				EndTime:   timestamppb.New(endTime),
-				Status:    successProto,
+				ScannerVersion: "1.0.0",
+				StartTime:      timestamppb.New(startTime),
+				EndTime:        timestamppb.New(endTime),
+				Status:         successProto,
 				PluginStatus: []*spb.PluginStatus{
 					&spb.PluginStatus{
 						Name:    "ext",
@@ -499,10 +499,10 @@ func TestScanResultToProto(t *testing.T) {
 				},
 			},
 			want: &spb.ScanResult{
-				Version:   "1.0.0",
-				StartTime: timestamppb.New(startTime),
-				EndTime:   timestamppb.New(endTime),
-				Status:    successProto,
+				ScannerVersion: "1.0.0",
+				StartTime:      timestamppb.New(startTime),
+				EndTime:        timestamppb.New(endTime),
+				Status:         successProto,
 				PluginStatus: []*spb.PluginStatus{
 					&spb.PluginStatus{
 						Name:    "ext",
@@ -626,10 +626,10 @@ func TestScanResultToProto(t *testing.T) {
 				},
 			},
 			want: &spb.ScanResult{
-				Version:   "1.0.0",
-				StartTime: timestamppb.New(startTime),
-				EndTime:   timestamppb.New(endTime),
-				Status:    failureProto,
+				ScannerVersion: "1.0.0",
+				StartTime:      timestamppb.New(startTime),
+				EndTime:        timestamppb.New(endTime),
+				Status:         failureProto,
 				PluginStatus: []*spb.PluginStatus{
 					&spb.PluginStatus{
 						Name:    "ext",

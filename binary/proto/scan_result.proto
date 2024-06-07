@@ -29,7 +29,7 @@ option java_multiple_files = true;
 
 // The software inventory and security findings that a scan run found.
 message ScanResult {
-  string version = 1;
+  string scanner_version = 1;
   google.protobuf.Timestamp start_time = 2;
   google.protobuf.Timestamp end_time = 3;
   // Status of the overall scan.

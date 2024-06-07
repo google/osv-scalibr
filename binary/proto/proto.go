@@ -166,13 +166,13 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 	}
 
 	return &spb.ScanResult{
-		Version:      r.Version,
-		StartTime:    timestamppb.New(r.StartTime),
-		EndTime:      timestamppb.New(r.EndTime),
-		Status:       scanStatusToProto(r.Status),
-		PluginStatus: pluginStatus,
-		Inventories:  inventories,
-		Findings:     findings,
+		ScannerVersion: r.Version,
+		StartTime:      timestamppb.New(r.StartTime),
+		EndTime:        timestamppb.New(r.EndTime),
+		Status:         scanStatusToProto(r.Status),
+		PluginStatus:   pluginStatus,
+		Inventories:    inventories,
+		Findings:       findings,
 	}, nil
 }
 

@@ -353,7 +353,7 @@ func TestWriteScanResults(t *testing.T) {
 				ResultFile: filepath.Join(testDirPath, "result.textproto"),
 			},
 			wantFilename:      "result.textproto",
-			wantContentPrefix: "version:",
+			wantContentPrefix: "scanner_version:",
 		},
 		{
 			desc: "Create proto using --output flag",
@@ -361,7 +361,7 @@ func TestWriteScanResults(t *testing.T) {
 				Output: []string{"textproto=" + filepath.Join(testDirPath, "result2.textproto")},
 			},
 			wantFilename:      "result2.textproto",
-			wantContentPrefix: "version:",
+			wantContentPrefix: "scanner_version:",
 		},
 		{
 			desc: "Create SPDX 2.3",
