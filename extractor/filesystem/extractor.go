@@ -306,11 +306,10 @@ func stripPathPrefix(paths []string, prefix string) ([]string, error) {
 	result := make([]string, 0, len(paths))
 	for _, p := range paths {
 		// prefix is assumed to already be an absolute path.
-		abs, err := filepath.Abs(filepath.FromSlash(p))
+		abs, err := filepath.Abs(p)
 		if err != nil {
 			return nil, err
 		}
-		prefix = filepath.FromSlash(prefix)
 		if !strings.HasPrefix(abs, prefix) {
 			return nil, fmt.Errorf("%q is not in a subdirectory of %q", abs, prefix)
 		}
@@ -318,7 +317,6 @@ func stripPathPrefix(paths []string, prefix string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		rel = filepath.FromSlash(rel)
 		result = append(result, rel)
 	}
 	return result, nil

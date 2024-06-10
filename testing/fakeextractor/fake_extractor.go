@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"path/filepath"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
@@ -79,7 +80,9 @@ func (e *fakeExtractor) Version() int { return e.version }
 //
 // FileRequired returns true if the path was in requiredFiles and its value is true during
 // construction in New(..., requiredFiles, ...) and false otherwise.
+// Note: because mapfs forces all paths to slash, we have to align with it here.
 func (e *fakeExtractor) FileRequired(path string, mode fs.FileMode) bool {
+	path = filepath.ToSlash(path)
 	return e.requiredFiles[path]
 }
 
@@ -87,9 +90,10 @@ func (e *fakeExtractor) FileRequired(path string, mode fs.FileMode) bool {
 //
 // Extract returns the inventory list and error associated with input.Path from the pathToInventoryErr map used
 // during construction in NewExtractor(..., pathToInventoryErr, ...).
+// Note: because mapfs forces all paths to slash, we have to align with it here.
 func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-
-	namesErr, ok := e.pathToNamesErr[input.Path]
+	path := filepath.ToSlash(input.Path)
+	namesErr, ok := e.pathToNamesErr[path]
 	if !ok {
 		return nil, errors.New("unrecognized path")
 	}
@@ -98,7 +102,7 @@ func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput
 	for _, name := range namesErr.Names {
 		invs = append(invs, &extractor.Inventory{
 			Name:      name,
-			Locations: []string{input.Path},
+			Locations: []string{path},
 		})
 	}
 

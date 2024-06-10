@@ -24,7 +24,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"testing"
 	"testing/fstest"
@@ -39,21 +38,29 @@ import (
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
 )
 
-func TestRun(t *testing.T) {
-	// TODO: b/343906804 - Until we can fix mapfs, we need to skip this test on Windows.
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows")
-	}
+// pathsMapFS provides a hooked version of MapFS that forces slashes. Because depending on the
+// tested system, the path might contain backslashes instead but mapfs doesn't support them.
+type pathsMapFS struct {
+	mapfs fstest.MapFS
+}
 
+func (fsys pathsMapFS) Open(name string) (fs.File, error) {
+	name = filepath.ToSlash(name)
+	return fsys.mapfs.Open(name)
+}
+
+func TestRun(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
-	path1 := filepath.FromSlash("dir1/file1.txt")
-	path2 := filepath.FromSlash("dir2/sub/file2.txt")
-	fsys := fstest.MapFS{
-		".":                  {Mode: fs.ModeDir},
-		"dir1":               {Mode: fs.ModeDir},
-		"dir2":               {Mode: fs.ModeDir},
-		"dir1/file1.txt":     {Data: []byte("Content 1")},
-		"dir2/sub/file2.txt": {Data: []byte("Content 2")},
+	path1 := "dir1/file1.txt"
+	path2 := "dir2/sub/file2.txt"
+	fsys := pathsMapFS{
+		mapfs: fstest.MapFS{
+			".":                  {Mode: fs.ModeDir},
+			"dir1":               {Mode: fs.ModeDir},
+			"dir2":               {Mode: fs.ModeDir},
+			"dir1/file1.txt":     {Data: []byte("Content 1")},
+			"dir2/sub/file2.txt": {Data: []byte("Content 2")},
+		},
 	}
 	name1 := "software1"
 	name2 := "software2"
