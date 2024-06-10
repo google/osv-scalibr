@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
@@ -173,6 +174,16 @@ func TestScanResultToProto(t *testing.T) {
 			AuthorEmail: "author@corp.com",
 		},
 	}
+	pythonRequirementsInventory := &extractor.Inventory{
+		Name:      "foo",
+		Version:   "1.0",
+		Locations: []string{"/file1"},
+		Extractor: requirements.Extractor{},
+		Metadata: &requirements.Metadata{
+			HashCheckingModeValues: []string{"sha256:123"},
+		},
+	}
+
 	purlJavascriptInventory := &extractor.Inventory{
 		Name:    "software",
 		Version: "1.0.0",
@@ -234,6 +245,23 @@ func TestScanResultToProto(t *testing.T) {
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      "author",
 				AuthorEmail: "author@corp.com",
+			},
+		},
+	}
+	pythonRequirementsInventoryProto := &spb.Inventory{
+		Name:    "foo",
+		Version: "1.0",
+		Purl: &spb.Purl{
+			Purl:    "pkg:pypi/foo@1.0",
+			Type:    purl.TypePyPi,
+			Name:    "foo",
+			Version: "1.0",
+		},
+		Locations: []string{"/file1"},
+		Extractor: "python/requirements",
+		Metadata: &spb.Inventory_PythonRequirementsMetadata{
+			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
+				HashCheckingModeValues: []string{"sha256:123"},
 			},
 		},
 	}
@@ -354,7 +382,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, pythonRequirementsInventory, purlJavascriptInventory, cpeInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -397,7 +425,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
+				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, pythonRequirementsInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
 				Findings: []*spb.Finding{
 					&spb.Finding{
 						Adv: &spb.Advisory{

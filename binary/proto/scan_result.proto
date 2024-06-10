@@ -87,6 +87,7 @@ message Inventory {
     SPDXPackageMetadata spdx_metadata = 14;
     JavaArchiveMetadata java_archive_metadata = 15;
     OSVPackageMetadata osv_metadata = 16;
+    PythonRequirementsMetadata python_requirements_metadata = 21;
   }
 }
 
@@ -260,4 +261,8 @@ message OSVPackageMetadata {
   string commit = 2;
   string ecosystem = 3;
   string compare_as = 4;
+}
+
+message PythonRequirementsMetadata {
+  repeated string hash_checking_mode_values = 1;
 }

@@ -66,6 +66,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
+		// Per-requirement options may be present. We extract the --hash options, and discard the others.
+		l, hashOptions := splitPerRequirementOptions(l)
+
 		l = removeWhiteSpaces(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
@@ -99,10 +102,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
+		var metadata any
+		if len(hashOptions) > 0 {
+			metadata = &Metadata{HashCheckingModeValues: hashOptions}
+		}
 		inventory = append(inventory, &extractor.Inventory{
 			Name:      name,
 			Version:   version,
 			Locations: []string{input.Path},
+			Metadata:  metadata,
 		})
 	}
 
@@ -151,6 +159,19 @@ func removeExtras(s string) string {
 
 func hasEnvVariable(s string) bool {
 	return regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`).FindString(s) != ""
+}
+
+// splitPerRequirementOptions removes from the input all text after the first per requirement option
+// and returns the remaining input along with the values of the --hash options. See the documentation
+// in https://pip.pypa.io/en/stable/reference/requirements-file-format/#per-requirement-options.
+func splitPerRequirementOptions(s string) (string, []string) {
+	textAfterFirstOptionInclusive := regexp.MustCompile(`(?:--hash|--global-option|--config-settings|-C).*`)
+	hashOption := regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
+	hashes := []string{}
+	for _, hashOptionMatch := range hashOption.FindAllStringSubmatch(s, -1) {
+		hashes = append(hashes, hashOptionMatch[1])
+	}
+	return textAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

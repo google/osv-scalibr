@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
@@ -314,6 +315,12 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Commit:    m.Commit,
 				Ecosystem: m.Ecosystem,
 				CompareAs: m.CompareAs,
+			},
+		}
+	case *requirements.Metadata:
+		i.Metadata = &spb.Inventory_PythonRequirementsMetadata{
+			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
+				HashCheckingModeValues: m.HashCheckingModeValues,
 			},
 		}
 	}

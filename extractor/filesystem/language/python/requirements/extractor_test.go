@@ -123,6 +123,102 @@ func TestExtract(t *testing.T) {
 			path:          "testdata/invalid.txt",
 			wantInventory: []*extractor.Inventory{},
 		},
+		{
+			name: "per requirement options",
+			path: "testdata/per_req_options.txt",
+			wantInventory: []*extractor.Inventory{
+				{
+					// foo1==1.0 --hash=sha256:123
+					Name:     "foo1",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo2==1.0 --hash=sha256:123 --global-option=foo --config-settings=bar
+					Name:     "foo2",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo3==1.0 --config-settings=bar --global-option=foo --hash=sha256:123
+					Name:     "foo3",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo4==1.0 --hash=wrongformatbutok
+					Name:     "foo4",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"wrongformatbutok"}},
+				},
+				{
+					// foo5==1.0; python_version < "2.7" --hash=sha256:123
+					Name:     "foo5",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo6==1.0 --hash=sha256:123 unexpected_text_after_first_option_does_not_stay_around --global-option=foo
+					Name:     "foo6",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo7==1.0 unexpected_text_before_options_stays_around --hash=sha256:123
+					Name:     "foo7",
+					Version:  "1.0unexpected_text_before_options_stays_around",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}},
+				},
+				{
+					// foo8==1.0 --hash=sha256:123 --hash=sha256:456
+					Name:     "foo8",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123", "sha256:456"}},
+				},
+				{
+					// foo9==1.0 --hash=sha256:123 \
+					// 	--hash=sha256:456
+					Name:     "foo9",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123", "sha256:456"}},
+				},
+
+				// missing a version
+				// foo10== --hash=sha256:123 --hash=sha256:123
+
+				{
+					// foo11==1.0 --hash=sha256:not_base16_encoded_is_ok_;#
+					Name:     "foo11",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:not_base16_encoded_is_ok_;#"}},
+				},
+				{
+					// foo12==1.0 --hash=
+					Name:    "foo12",
+					Version: "1.0",
+				},
+				{
+					// foo13==1.0 --hash sha256:123
+					// The hash in this case is not recognized because it does not use an "=" separator
+					// as specified by https://pip.pypa.io/en/stable/topics/secure-installs/#hash-checking-mode,
+					// but it is dropped from the version.
+					Name:    "foo13",
+					Version: "1.0",
+				},
+				{
+					// foo14=1.0 -C bar
+					// short form for --config-settings flag, see https://pip.pypa.io/en/stable/cli/pip_install/#install-config-settings
+					Name:    "foo14",
+					Version: "1.0",
+				},
+
+				// Per the grammar in https://peps.python.org/pep-0508/#grammar, "--config-settings" may be
+				// a valid version component, but such a string is not allowed as a version by
+				// https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers.
+				//
+				// foo15== --config-settings --hash=sha256:123
+			},
+		},
 	}
 
 	// fill Location and Extractor
@@ -172,6 +268,7 @@ func TestToPURL(t *testing.T) {
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
+		Metadata:  &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123xyz"}},
 	}
 	want := &purl.PackageURL{
 		Type:    purl.TypePyPi,
