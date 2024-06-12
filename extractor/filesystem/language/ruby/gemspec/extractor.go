@@ -48,7 +48,7 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired return true if the specified file matched the .gemspec file
 // pattern.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	return filepath.Ext(path) == ".gemspec"
 }
 

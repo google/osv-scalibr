@@ -55,7 +55,7 @@ var extensionHandlers = map[string]extractFunc{
 }
 
 // FileRequired returns true if the specified file is a supported spdx file.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	_, isSupported := findExtractor(path)
 	return isSupported
 }

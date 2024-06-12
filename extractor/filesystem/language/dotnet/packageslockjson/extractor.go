@@ -59,7 +59,7 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file is marked executable.
-func (e Extractor) FileRequired(path string, mode fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	return filepath.Base(path) == "packages.lock.json"
 }
 

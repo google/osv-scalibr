@@ -94,7 +94,7 @@ var (
 
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	// For Windows
 	path = filepath.ToSlash(path)
 
@@ -146,7 +146,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		if !e.FileRequired(f.Name, f.Mode()) {
+		if !e.FileRequired(f.Name, f.FileInfo()) {
 			continue
 		}
 		i, err := e.openAndExtract(f, input)

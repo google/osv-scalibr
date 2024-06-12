@@ -16,7 +16,9 @@ package packagejson_test
 
 import (
 	"context"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -60,7 +63,10 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			isRequired := e.FileRequired(tt.path, 0)
+			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+			})
 			if isRequired != tt.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
 			}

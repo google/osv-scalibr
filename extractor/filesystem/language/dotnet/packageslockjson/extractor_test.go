@@ -16,7 +16,9 @@ package packageslockjson_test
 
 import (
 	"context"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -55,7 +58,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			isRequired := e.FileRequired(test.path, 0)
+			isRequired := e.FileRequired(test.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(test.path),
+				FileMode: fs.ModePerm,
+			})
 			if isRequired != test.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", test.path, isRequired, test.wantIsRequired)
 			}

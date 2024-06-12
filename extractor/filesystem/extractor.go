@@ -38,11 +38,11 @@ import (
 // from the filesystem such as OS and language packages.
 type Extractor interface {
 	extractor.Extractor
-	// FileRequired should return true if the file described by path and mode is
+	// FileRequired should return true if the file described by path and file info is
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
-	FileRequired(path string, mode fs.FileMode) bool
+	FileRequired(path string, fileinfo fs.FileInfo) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
 	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
@@ -236,7 +236,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			return nil
 		}
 	}
-	s, err := fs.Stat(wc.fs, path)
+	fileinfo, err := fs.Stat(wc.fs, path)
 	if err != nil {
 		log.Warnf("os.Stat(%s): %v", path, err)
 		return nil
@@ -245,7 +245,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	wc.mapInodes[internal.ParentDir(filepath.Dir(path), 3)]++
 
 	for _, ex := range wc.extractors {
-		wc.runExtractor(ex, path, s.Mode())
+		wc.runExtractor(ex, path, fileinfo)
 	}
 	return nil
 }
@@ -260,8 +260,8 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string, mode fs.FileMode) {
-	if !ex.FileRequired(path, mode) {
+func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileInfo) {
+	if !ex.FileRequired(path, fileinfo) {
 		return
 	}
 	rc, err := wc.fs.Open(path)

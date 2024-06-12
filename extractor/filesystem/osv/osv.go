@@ -43,7 +43,7 @@ func (e Wrapper) Name() string { return e.ExtractorName }
 func (e Wrapper) Version() int { return e.ExtractorVersion }
 
 // FileRequired returns true if the specified file matches the extractor pattern.
-func (e Wrapper) FileRequired(path string, _ fs.FileMode) bool {
+func (e Wrapper) FileRequired(path string, _ fs.FileInfo) bool {
 	return e.Extractor.ShouldExtract(path)
 }
 

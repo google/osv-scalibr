@@ -40,7 +40,7 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches javascript Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	return filepath.Base(path) == "package-lock.json"
 }
 

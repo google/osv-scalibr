@@ -77,7 +77,7 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			isRequired := w.FileRequired(tt.path, 0)
+			isRequired := w.FileRequired(tt.path, nil)
 			if isRequired != tt.want {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.want)
 			}

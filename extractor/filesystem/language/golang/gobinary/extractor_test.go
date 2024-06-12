@@ -18,6 +18,7 @@ import (
 	"context"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -77,7 +79,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := e.FileRequired(tt.path, tt.mode); got != tt.want {
+			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: tt.mode,
+			}); got != tt.want {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.want)
 			}
 		})

@@ -81,7 +81,7 @@ func (e *fakeExtractor) Version() int { return e.version }
 // FileRequired returns true if the path was in requiredFiles and its value is true during
 // construction in New(..., requiredFiles, ...) and false otherwise.
 // Note: because mapfs forces all paths to slash, we have to align with it here.
-func (e *fakeExtractor) FileRequired(path string, mode fs.FileMode) bool {
+func (e *fakeExtractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	path = filepath.ToSlash(path)
 	return e.requiredFiles[path]
 }

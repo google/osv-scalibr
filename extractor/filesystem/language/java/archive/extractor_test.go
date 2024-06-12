@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 var (
@@ -114,7 +116,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := e.FileRequired(tt.path, 0); got != tt.want {
+			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+			}); got != tt.want {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.want)
 			}
 		})

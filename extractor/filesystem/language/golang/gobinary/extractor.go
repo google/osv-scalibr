@@ -53,8 +53,8 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file is marked executable.
-func (e Extractor) FileRequired(path string, mode fs.FileMode) bool {
-	if !mode.IsRegular() {
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !fileinfo.Mode().IsRegular() {
 		// Includes dirs, symlinks, sockets, pipes...
 		return false
 	}
@@ -62,7 +62,7 @@ func (e Extractor) FileRequired(path string, mode fs.FileMode) bool {
 	// TODO(b/279138598): Research: Maybe on windows all files have the executable bit set.
 
 	// Either windows .exe or unix executable bit is set.
-	return filepath.Ext(path) == ".exe" || mode&0111 != 0
+	return filepath.Ext(path) == ".exe" || fileinfo.Mode()&0111 != 0
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.

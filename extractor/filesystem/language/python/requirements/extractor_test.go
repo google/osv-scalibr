@@ -16,7 +16,9 @@ package requirements_test
 
 import (
 	"context"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -41,7 +44,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			if got := e.FileRequired(tt.path, 0); got != tt.wantIsRequired {
+			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+			}); got != tt.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantIsRequired)
 			}
 		})

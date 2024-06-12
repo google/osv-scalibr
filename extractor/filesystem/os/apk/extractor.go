@@ -48,7 +48,7 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches apk status file pattern.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	// For Windows
 	path = filepath.ToSlash(path)
 

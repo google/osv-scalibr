@@ -55,7 +55,7 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired always returns false as RPM extractor is not supported on Windows.
-func (e Extractor) FileRequired(path string, _ fs.FileMode) bool {
+func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	return false
 }
 
