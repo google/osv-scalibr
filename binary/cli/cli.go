@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
@@ -94,7 +93,15 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--o %w", err)
 	}
 	if len(flags.Root) == 0 {
-		return errors.New("--root not set")
+		if runtime.GOOS == "windows" {
+			if os.Getenv("SystemDrive") == "" {
+				return errors.New("Cannot retrieve the system drive: SystemDrive env variable not set")
+			}
+
+			flags.Root = os.Getenv("SystemDrive") + string(os.PathSeparator)
+		} else {
+			flags.Root = "/"
+		}
 	}
 	// TODO(b/279413691): Use the Array struct to allow multiple occurrences of a list arg
 	// e.g. --extractors=ex1 --extractors=ex2.
@@ -340,7 +347,11 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 func (f *Flags) dirsToSkip() []string {
 	var paths []string
 	if runtime.GOOS == "windows" {
-		paths = []string{"\\Windows"}
+		systemDrive := os.Getenv("SystemDrive")
+		if systemDrive != "" {
+			windir := systemDrive + string(os.PathSeparator) + "Windows"
+			paths = []string{windir}
+		}
 	} else {
 		paths = []string{"/dev", "/proc", "/sys"}
 	}
@@ -350,12 +361,11 @@ func (f *Flags) dirsToSkip() []string {
 
 	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
-	prefix := filepath.FromSlash(f.Root)
+	prefix := f.Root
 	if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
 		prefix += string(os.PathSeparator)
 	}
 	for _, p := range paths {
-		p = filepath.FromSlash(p)
 		if strings.HasPrefix(p, prefix) {
 			result = append(result, p)
 		}

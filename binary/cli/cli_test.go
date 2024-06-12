@@ -49,11 +49,6 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc:    "Root missing",
-			flags:   &cli.Flags{ResultFile: "result.textproto"},
-			wantErr: cmpopts.AnyError,
-		},
-		{
 			desc:    "Either output flag missing",
 			flags:   &cli.Flags{Root: "/"},
 			wantErr: cmpopts.AnyError,
@@ -186,39 +181,52 @@ func TestValidateFlags(t *testing.T) {
 func TestGetScanConfig_DirsToSkip(t *testing.T) {
 	for _, tc := range []struct {
 		desc           string
-		flags          *cli.Flags
+		flags          map[string]*cli.Flags
 		wantDirsToSkip map[string][]string
 	}{
 		{
 			desc: "Skip default dirs",
-			flags: &cli.Flags{
-				Root: "/",
+			flags: map[string]*cli.Flags{
+				"linux":   &cli.Flags{Root: "/"},
+				"windows": &cli.Flags{Root: "C:\\"},
 			},
 			wantDirsToSkip: map[string][]string{
 				"linux":   []string{"/dev", "/proc", "/sys"},
-				"windows": []string{"\\Windows"},
+				"windows": []string{"C:\\Windows"},
 			},
 		},
 		{
 			desc: "Skip additional dirs",
-			flags: &cli.Flags{
-				Root:       "/",
-				DirsToSkip: "/boot,/mnt",
+			flags: map[string]*cli.Flags{
+				"linux": &cli.Flags{
+					Root:       "/",
+					DirsToSkip: "/boot,/mnt,C:\\boot,C:\\mnt",
+				},
+				"windows": &cli.Flags{
+					Root:       "C:\\",
+					DirsToSkip: "C:\\boot,C:\\mnt",
+				},
 			},
 			wantDirsToSkip: map[string][]string{
 				"linux":   []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
-				"windows": []string{"\\Windows", "\\boot", "\\mnt"},
+				"windows": []string{"C:\\Windows", "C:\\boot", "C:\\mnt"},
 			},
 		},
 		{
 			desc: "Ignore paths outside root",
-			flags: &cli.Flags{
-				Root:       "/root",
-				DirsToSkip: "/root/dir1,/dir2",
+			flags: map[string]*cli.Flags{
+				"linux": &cli.Flags{
+					Root:       "/root",
+					DirsToSkip: "/root/dir1,/dir2",
+				},
+				"windows": &cli.Flags{
+					Root:       "C:\\root",
+					DirsToSkip: "C:\\root\\dir1,c:\\dir2",
+				},
 			},
 			wantDirsToSkip: map[string][]string{
 				"linux":   []string{"/root/dir1"},
-				"windows": []string{"\\root\\dir1"},
+				"windows": []string{"C:\\root\\dir1"},
 			},
 		},
 	} {
@@ -228,12 +236,17 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
 			}
 
-			cfg, err := tc.flags.GetScanConfig()
+			flags, ok := tc.flags[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			cfg, err := flags.GetScanConfig()
 			if err != nil {
-				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
 			}
 			if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
-				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", tc.flags, diff)
+				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", flags, diff)
 			}
 		})
 	}

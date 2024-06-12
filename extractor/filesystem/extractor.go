@@ -325,7 +325,7 @@ func stripPathPrefix(paths []string, prefix string) ([]string, error) {
 func pathStringListToMap(paths []string) map[string]bool {
 	result := make(map[string]bool)
 	for _, p := range paths {
-		result[filepath.FromSlash(p)] = true
+		result[p] = true
 	}
 	return result
 }
