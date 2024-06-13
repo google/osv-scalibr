@@ -76,16 +76,18 @@ func TestRun(t *testing.T) {
 	}
 
 	testCases := []struct {
-		desc           string
-		ex             []filesystem.Extractor
-		filesToExtract []string
-		dirsToSkip     []string
-		skipDirRegex   string
-		maxInodes      int
-		wantErr        error
-		wantInv        []*extractor.Inventory
-		wantStatus     []*plugin.Status
-		wantInodeCount int
+		desc                        string
+		ex                          []filesystem.Extractor
+		filesToExtract              []string
+		dirsToSkip                  []string
+		skipDirRegex                string
+		maxInodes                   int
+		maxFileSize                 int
+		wantErr                     error
+		wantInv                     []*extractor.Inventory
+		wantStatus                  []*plugin.Status
+		wantInodeCount              int
+		wantFilesSkippedBySizeLimit []string
 	}{
 		{
 			desc: "Extractors successful",
@@ -362,6 +364,19 @@ func TestRun(t *testing.T) {
 			},
 			wantInodeCount: 6,
 		},
+		{
+			desc:           "Extract skips files due to file size limit",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			filesToExtract: []string{path1, path2},
+			maxFileSize:    1, // 1 byte
+			wantInv:        []*extractor.Inventory{},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount:              2,
+			wantFilesSkippedBySizeLimit: []string{path1, path2},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -377,6 +392,7 @@ func TestRun(t *testing.T) {
 				DirsToSkip:     tc.dirsToSkip,
 				SkipDirRegex:   skipDirRegex,
 				MaxInodes:      tc.maxInodes,
+				MaxFileSize:    tc.maxFileSize,
 				ScanRoot:       ".",
 				FS:             fsys,
 				Stats:          fc,
@@ -388,6 +404,10 @@ func TestRun(t *testing.T) {
 
 			if fc.AfterInodeVisitedCount != tc.wantInodeCount {
 				t.Errorf("extractor.Run(%v) inodes visisted: got %d, want %d", tc.ex, fc.AfterInodeVisitedCount, tc.wantInodeCount)
+			}
+
+			if cmp.Diff(tc.wantFilesSkippedBySizeLimit, fc.FilesSkippedBySizeLimit, cmpopts.SortSlices(func(a, b string) bool { return a < b })) != "" {
+				t.Errorf("extractor.Run(%v) files skipped by size limit: got %v, want %v", tc.ex, fc.FilesSkippedBySizeLimit, tc.wantFilesSkippedBySizeLimit)
 			}
 
 			// The order of the locations doesn't matter.
@@ -412,10 +432,17 @@ func TestRun(t *testing.T) {
 // To not break the test every time we add a new metric, we inherit from the NoopCollector.
 type fakeCollector struct {
 	stats.NoopCollector
-	AfterInodeVisitedCount int
+	AfterInodeVisitedCount  int
+	FilesSkippedBySizeLimit []string
 }
 
 func (c *fakeCollector) AfterInodeVisited(path string) { c.AfterInodeVisitedCount++ }
+
+func (c *fakeCollector) AfterFileSeen(name string, filestats *stats.FileStats) {
+	if errors.Is(filestats.Error, filesystem.ErrFileSizeLimitExceeded) {
+		c.FilesSkippedBySizeLimit = append(c.FilesSkippedBySizeLimit, filepath.ToSlash(filestats.Path))
+	}
+}
 
 func invLess(i1, i2 *extractor.Inventory) bool {
 	if i1.Name != i2.Name {

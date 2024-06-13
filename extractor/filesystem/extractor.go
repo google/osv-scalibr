@@ -84,6 +84,9 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+	// Optional: Limit for file size to extract from. File larger than the limit will be skipped. If
+	// 0, no limit is applied.
+	MaxFileSize int
 }
 
 // Run runs the specified extractors and returns their extraction results,
@@ -126,6 +129,7 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 		readSymlinks:   config.ReadSymlinks,
 		maxInodes:      config.MaxInodes,
 		inodesVisited:  0,
+		maxFileSize:    config.MaxFileSize,
 
 		lastStatus: time.Now(),
 
@@ -161,6 +165,7 @@ type walkContext struct {
 	skipDirRegex   *regexp.Regexp
 	maxInodes      int
 	inodesVisited  int
+	maxFileSize    int
 
 	// Inventories found.
 	inventory []*extractor.Inventory
@@ -262,6 +267,16 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 
 func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileInfo) {
 	if !ex.FileRequired(path, fileinfo) {
+		return
+	}
+	if wc.maxFileSize > 0 && fileinfo.Size() > int64(wc.maxFileSize) {
+		// We record a stat here because the extractor decided this file is
+		// relevant, but we are skipping it due to the configured file size limit.
+		wc.stats.AfterFileSeen(ex.Name(), &stats.FileStats{
+			Path:          path,
+			Error:         ErrFileSizeLimitExceeded,
+			FileSizeBytes: fileinfo.Size(),
+		})
 		return
 	}
 	rc, err := wc.fs.Open(path)
