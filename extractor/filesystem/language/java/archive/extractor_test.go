@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -39,88 +40,144 @@ var (
 	errAny = errors.New("any error")
 )
 
-func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = archive.New(archive.DefaultConfig())
+type skippedFileCollector struct {
+	stats.NoopCollector
+	skippedFiles []string
+}
 
+func (c *skippedFileCollector) AfterFileSeen(name string, filestats *stats.FileStats) {
+	c.skippedFiles = append(c.skippedFiles, filestats.Path)
+}
+
+func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		name string
-		path string
-		want bool
+		name              string
+		path              string
+		fileSizeBytes     int64
+		maxFileSizeBytes  int64
+		wantRequired      bool
+		wantSkippedMetric bool
 	}{
 		{
-			name: ".jar",
-			path: filepath.FromSlash("some/path/a.jar"),
-			want: true,
+			name:         ".jar",
+			path:         filepath.FromSlash("some/path/a.jar"),
+			wantRequired: true,
 		},
 		{
-			name: ".JAR",
-			path: filepath.FromSlash("some/path/a.JAR"),
-			want: true,
+			name:         ".JAR",
+			path:         filepath.FromSlash("some/path/a.JAR"),
+			wantRequired: true,
 		},
 		{
-			name: ".war",
-			path: filepath.FromSlash("some/path/a.war"),
-			want: true,
+			name:         ".war",
+			path:         filepath.FromSlash("some/path/a.war"),
+			wantRequired: true,
 		},
 		{
-			name: ".ear",
-			path: filepath.FromSlash("some/path/a.ear"),
-			want: true,
+			name:         ".ear",
+			path:         filepath.FromSlash("some/path/a.ear"),
+			wantRequired: true,
 		},
 		{
-			name: ".jmod",
-			path: filepath.FromSlash("some/path/a.jmod"),
-			want: true,
+			name:         ".jmod",
+			path:         filepath.FromSlash("some/path/a.jmod"),
+			wantRequired: true,
 		},
 		{
-			name: ".par",
-			path: filepath.FromSlash("some/path/a.par"),
-			want: true,
+			name:         ".par",
+			path:         filepath.FromSlash("some/path/a.par"),
+			wantRequired: true,
 		},
 		{
-			name: ".sar",
-			path: filepath.FromSlash("some/path/a.sar"),
-			want: true,
+			name:         ".sar",
+			path:         filepath.FromSlash("some/path/a.sar"),
+			wantRequired: true,
 		},
 		{
-			name: ".jpi",
-			path: filepath.FromSlash("some/path/a.jpi"),
-			want: true,
+			name:         ".jpi",
+			path:         filepath.FromSlash("some/path/a.jpi"),
+			wantRequired: true,
 		},
 		{
-			name: ".hpi",
-			path: filepath.FromSlash("some/path/a.hpi"),
-			want: true,
+			name:         ".hpi",
+			path:         filepath.FromSlash("some/path/a.hpi"),
+			wantRequired: true,
 		},
 		{
-			name: ".lpkg",
-			path: filepath.FromSlash("some/path/a.lpkg"),
-			want: true,
+			name:         ".lpkg",
+			path:         filepath.FromSlash("some/path/a.lpkg"),
+			wantRequired: true,
 		},
 		{
-			name: ".nar",
-			path: filepath.FromSlash("some/path/a.nar"),
-			want: true,
+			name:         ".nar",
+			path:         filepath.FromSlash("some/path/a.nar"),
+			wantRequired: true,
 		},
 		{
-			name: "not archive file",
-			path: filepath.FromSlash("some/path/a.txt"),
-			want: false,
+			name:         "not archive file",
+			path:         filepath.FromSlash("some/path/a.txt"),
+			wantRequired: false,
 		},
 		{
-			name: "no extension should be ignored",
-			path: filepath.FromSlash("some/path/a"),
-			want: false,
+			name:         "no extension should be ignored",
+			path:         filepath.FromSlash("some/path/a"),
+			wantRequired: false,
+		},
+		{
+			name:             ".jar required if size less than maxFileSizeBytes",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    100,
+			wantRequired:     true,
+		},
+		{
+			name:             ".war required if size equal to maxFileSizeBytes",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
+		},
+		{
+			name:              ".jar not required if size greater than maxFileSizeBytes",
+			path:              filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes:  100,
+			fileSizeBytes:     1000,
+			wantRequired:      false,
+			wantSkippedMetric: true,
+		},
+		{
+			name:             ".jar required if maxFileSizeBytes explicitly set to 0",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 0,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cfg := archive.DefaultConfig()
+			if tt.maxFileSizeBytes > 0 {
+				cfg.MaxFileSizeBytes = tt.maxFileSizeBytes
+			}
+			collector := &skippedFileCollector{}
+			cfg.Stats = collector
+
+			var e filesystem.Extractor = archive.New(cfg)
 			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
-			}); got != tt.want {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.want)
+				FileSize: tt.fileSizeBytes,
+			}); got != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
+			}
+
+			var wantSkippedFiles []string
+			if tt.wantSkippedMetric {
+				wantSkippedFiles = []string{tt.path}
+			}
+			if diff := cmp.Diff(wantSkippedFiles, collector.skippedFiles); diff != "" {
+				t.Fatalf("FileRequired(%s) recorded a diff in skipped files (-want +got):\n%s", tt.path, diff)
 			}
 		})
 	}

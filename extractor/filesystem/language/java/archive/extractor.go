@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
@@ -63,6 +64,9 @@ type Config struct {
 	// MaxOpenedBytes is the maximum number of bytes recursively read from an archive file.
 	// If this limit is reached, extraction is halted and results so far are returned.
 	MaxOpenedBytes int64
+	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
+	// If this limit is reached, the file is ignored.
+	MaxFileSizeBytes int64
 	// MinZipBytes is use to ignore empty zip files during extraction.
 	// Zip files smaller than minZipBytes are ignored.
 	MinZipBytes int
@@ -70,15 +74,19 @@ type Config struct {
 	ExtractFromFilename bool
 	// HashJars configures if JAR files should be hashed with base64(sha1()), which can be used in deps.dev.
 	HashJars bool
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
 }
 
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
 	maxZipDepth         int
+	maxFileSyzeBytes    int64
 	maxOpenedBytes      int64
 	minZipBytes         int
 	extractFromFilename bool
 	hashJars            bool
+	stats               stats.Collector
 }
 
 // DefaultConfig returns the default configuration for the Java archive extractor.
@@ -86,9 +94,11 @@ func DefaultConfig() Config {
 	return Config{
 		MaxZipDepth:         defaultMaxZipDepth,
 		MaxOpenedBytes:      defaultMaxZipBytes,
+		MaxFileSizeBytes:    0,
 		MinZipBytes:         defaultMinZipBytes,
 		ExtractFromFilename: true,
 		HashJars:            true,
+		Stats:               nil,
 	}
 }
 
@@ -102,9 +112,11 @@ func New(cfg Config) *Extractor {
 	return &Extractor{
 		maxZipDepth:         cfg.MaxZipDepth,
 		maxOpenedBytes:      cfg.MaxOpenedBytes,
+		maxFileSyzeBytes:    cfg.MaxFileSizeBytes,
 		minZipBytes:         cfg.MinZipBytes,
 		extractFromFilename: cfg.ExtractFromFilename,
 		hashJars:            cfg.HashJars,
+		stats:               cfg.Stats,
 	}
 }
 
@@ -115,10 +127,23 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches java archive file patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// For Windows
-	path = filepath.ToSlash(path)
-	return isArchive(path)
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !isArchive(filepath.ToSlash(path)) {
+		return false
+	}
+
+	if e.maxFileSyzeBytes > 0 && fileinfo.Size() > e.maxFileSyzeBytes {
+		if e.stats != nil {
+			e.stats.AfterFileSeen(e.Name(), &stats.FileStats{
+				Path:          path,
+				FileSizeBytes: fileinfo.Size(),
+				Error:         filesystem.ErrFileSizeLimitExceeded,
+			})
+		}
+		return false
+	}
+
+	return true
 }
 
 // Extract extracts java packages from archive files passed through input.

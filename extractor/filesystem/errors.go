@@ -17,6 +17,11 @@ package filesystem
 import "errors"
 
 var (
+	// ErrFileSizeLimitExceeded is logged to an `stats.Collector.AfterFileSeen`
+	// call when an extractor skips a file due to the file's size exceeding a
+	// configured limit.
+	ErrFileSizeLimitExceeded = errors.New("file was skipped due to exceeding the file size limit")
+
 	// ErrExtractorMemoryLimitExceeded is returned when an extractor skips a file
 	// due to the extraction process exceeding a configured memory limit.
 	ErrExtractorMemoryLimitExceeded = errors.New("extraction failed due to extractor exceeding the configured memory limit")
