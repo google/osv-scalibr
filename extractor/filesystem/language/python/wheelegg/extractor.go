@@ -32,33 +32,38 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "python/wheelegg"
 
-	// defaultMaxFileSize is the maximum file size an extractor will unmarshal.
+	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSize = 100 * units.MiB
+	defaultMaxFileSizeBytes = 100 * units.MiB
 )
 
 // Extractor extracts python packages from wheel/egg files.
 type Extractor struct {
-	maxFileSize int64
+	maxFileSizeBytes int64
+	stats            stats.Collector
 }
 
 // Config is the configuration for the Extractor.
 type Config struct {
-	// MaxFileSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	MaxFileSize int64
+	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
+	// `FileRequired` gets a bigger file, it will return false,
+	MaxFileSizeBytes int64
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
 }
 
 // DefaultConfig returns the default configuration for the wheel/egg extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxFileSize: defaultMaxFileSize,
+		MaxFileSizeBytes: defaultMaxFileSizeBytes,
+		Stats:            nil,
 	}
 }
 
@@ -70,7 +75,8 @@ func DefaultConfig() Config {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		maxFileSize: cfg.MaxFileSize,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		stats:            cfg.Stats,
 	}
 }
 
@@ -94,34 +100,57 @@ var (
 
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	// For Windows
-	path = filepath.ToSlash(path)
+	normalizedPath := filepath.ToSlash(path)
 
 	for _, r := range requiredFiles {
-		if strings.HasSuffix(path, r) {
+		if strings.HasSuffix(normalizedPath, r) {
+			// We only want to skip the file for being too large if it is a relevant
+			// file at all, so we check the file size after checking the file suffix.
+			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+				e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+				return false
+			}
+
+			e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
 			return true
 		}
 	}
 	return false
 }
 
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
+}
+
 // Extract extracts packages from wheel/egg files passed through the scan input.
 // For .egg files, input.Info.Size() is required to unzip the file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	if input.Info != nil && input.Info.Size() > e.maxFileSize {
-		return nil, fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
-	}
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
 	if strings.HasSuffix(input.Path, ".egg") {
 		// TODO(b/280417821): In case extractZip returns no inventory, we could parse the filename.
-		return e.extractZip(ctx, input)
+		inventory, err = e.extractZip(ctx, input)
+	} else {
+		var i *extractor.Inventory
+		if i, err = e.extractSingleFile(input.Reader, input.Path); i != nil {
+			inventory = []*extractor.Inventory{i}
+		}
 	}
 
-	i, err := e.extractSingleFile(input.Reader, input.Path)
-	if err != nil {
-		return nil, err
+	if e.stats != nil {
+		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:   input.Path,
+			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		})
 	}
-	return []*extractor.Inventory{i}, nil
+	return inventory, err
 }
 
 // ErrSizeNotSet will trigger when Info.Size() is not set.

@@ -15,6 +15,7 @@
 package wheelegg_test
 
 import (
+	"bytes"
 	"context"
 	"io/fs"
 	"os"
@@ -27,56 +28,113 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = wheelegg.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           ".dist-info/METADATA",
-			path:           "testdata/pip-22.2.2.dist-info/METADATA",
-			wantIsRequired: true,
+			name:             ".dist-info/METADATA",
+			path:             "testdata/pip-22.2.2.dist-info/METADATA",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           ".egg/EGG-INFO/PKG-INFO",
-			path:           "testdata/setuptools-57.4.0-py3.9.egg/EGG-INFO/PKG-INFO",
-			wantIsRequired: true,
+			name:             ".egg/EGG-INFO/PKG-INFO",
+			path:             "testdata/setuptools-57.4.0-py3.9.egg/EGG-INFO/PKG-INFO",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           ".egg-info",
-			path:           "testdata/pycups-2.0.1.egg-info",
-			wantIsRequired: true,
+			name:             ".egg-info",
+			path:             "testdata/pycups-2.0.1.egg-info",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           ".egg-info/PKG-INFO",
-			path:           "testdata/httplib2-0.20.4.egg-info/PKG-INFO",
-			wantIsRequired: true,
+			name:             ".egg-info/PKG-INFO",
+			path:             "testdata/httplib2-0.20.4.egg-info/PKG-INFO",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           ".dist-info/TEST",
-			path:           "testdata/pip-22.2.2.dist-info/TEST",
-			wantIsRequired: false,
+			name:         ".dist-info/TEST",
+			path:         "testdata/pip-22.2.2.dist-info/TEST",
+			wantRequired: false,
 		},
 		{
-			name:           ".egg",
-			path:           "python3.10/site-packages/monotonic-1.6-py3.10.egg",
-			wantIsRequired: true,
+			name:             ".egg",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".egg-info required if size less than maxFileSizeBytes",
+			path:             "testdata/pycups-2.0.1.egg-info",
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    100,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".egg required if size equal to maxFileSizeBytes",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".egg not required if size greater than maxFileSizeBytes",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
+			maxFileSizeBytes: 100,
+			fileSizeBytes:    1000,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             ".egg required if maxFileSizeBytes explicitly set to 0",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
+			maxFileSizeBytes: 0,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			e := wheelegg.New(wheelegg.Config{
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+				Stats:            collector,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
 			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
-			}); got != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantIsRequired)
+				FileSize: fileSizeBytes,
+			}); got != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -84,11 +142,12 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		cfg           wheelegg.Config
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		cfg              wheelegg.Config
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: ".dist-info/METADATA",
@@ -174,14 +233,6 @@ func TestExtract(t *testing.T) {
 			path:          "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
 			wantInventory: []*extractor.Inventory{},
 		},
-		{
-			name: "file size over limit",
-			path: "testdata/distinfo_meta",
-			cfg: wheelegg.Config{
-				MaxFileSize: 5,
-			},
-			wantErr: cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range tests {
@@ -204,6 +255,9 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
+			collector := newTestCollector()
+			tt.cfg.Stats = collector
+
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
@@ -215,6 +269,15 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
+
+			wantResultMetric := tt.wantResultMetric
+			if wantResultMetric == "" && tt.wantErr == nil {
+				wantResultMetric = stats.FileExtractedResultSuccess
+			}
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if gotResultMetric != wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
+			}
 		})
 	}
 }
@@ -223,8 +286,11 @@ func TestExtract(t *testing.T) {
 func defaultConfigWith(cfg wheelegg.Config) wheelegg.Config {
 	newCfg := wheelegg.DefaultConfig()
 
-	if cfg.MaxFileSize > 0 {
-		newCfg.MaxFileSize = cfg.MaxFileSize
+	if cfg.MaxFileSizeBytes > 0 {
+		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
+	}
+	if cfg.Stats != nil {
+		newCfg.Stats = cfg.Stats
 	}
 	return newCfg
 }
@@ -281,6 +347,59 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			want := []*extractor.Inventory{tt.wantInventory}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+		})
+	}
+}
+
+func TestExtractErrorsWithFakeFiles(t *testing.T) {
+	tests := []struct {
+		name             string
+		path             string
+		fakeFileInfo     fs.FileInfo
+		fakeFileBytes    []byte
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
+	}{
+		{
+			name: "invalid zip file",
+			path: "testdata/does_not_exist.egg",
+			fakeFileInfo: fakefs.FakeFileInfo{
+				FileName: "does_not_exist.egg",
+				FileMode: fs.ModePerm,
+				FileSize: 1000,
+			},
+			fakeFileBytes:    []byte("invalid zip file"),
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info := tt.fakeFileInfo
+			r := bytes.NewReader(tt.fakeFileBytes)
+
+			collector := newTestCollector()
+			cfg := wheelegg.Config{Stats: collector}
+
+			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
+			e := wheelegg.New(defaultConfigWith(cfg))
+			_, err := e.Extract(context.Background(), input)
+			if err == nil {
+				t.Fatalf("Extract(%+v) succeeded, want error: %v", tt.name, tt.wantErr)
+			}
+			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("Extract(%+v) error: got %v, want %v", tt.name, err, tt.wantErr)
+			}
+
+			wantResultMetric := tt.wantResultMetric
+			if wantResultMetric == "" && tt.wantErr == nil {
+				wantResultMetric = stats.FileExtractedResultSuccess
+			}
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if gotResultMetric != wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
 			}
 		})
 	}
@@ -344,4 +463,25 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
