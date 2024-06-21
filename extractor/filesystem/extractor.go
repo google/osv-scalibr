@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -68,12 +67,10 @@ type Config struct {
 	FS         fs.FS
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
-	// Note that these are not relative to ScanRoot and thus need to be in
-	// sub-directories of ScanRoot.
+	// Note that these must be relative to ScanRoot.
 	FilesToExtract []string
 	// Optional: Directories that the file system walk should ignore.
-	// Note that these are not relative to ScanRoot and thus need to be
-	// sub-directories of ScanRoot.
+	// Note that these must be relative to ScanRoot.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
@@ -105,26 +102,14 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 		return []*extractor.Inventory{}, []*plugin.Status{}, nil
 	}
 	start := time.Now()
-	scanRoot, err := filepath.Abs(config.ScanRoot)
-	if err != nil {
-		return nil, nil, err
-	}
-	filesToExtract, err := stripPathPrefix(config.FilesToExtract, scanRoot)
-	if err != nil {
-		return nil, nil, err
-	}
-	dirsToSkip, err := stripPathPrefix(config.DirsToSkip, scanRoot)
-	if err != nil {
-		return nil, nil, err
-	}
 	wc := walkContext{
 		ctx:               ctx,
 		stats:             config.Stats,
 		extractors:        config.Extractors,
 		fs:                config.FS,
-		scanRoot:          scanRoot,
-		filesToExtract:    filesToExtract,
-		dirsToSkip:        pathStringListToMap(dirsToSkip),
+		scanRoot:          config.ScanRoot,
+		filesToExtract:    config.FilesToExtract,
+		dirsToSkip:        pathStringListToMap(config.DirsToSkip),
 		skipDirRegex:      config.SkipDirRegex,
 		readSymlinks:      config.ReadSymlinks,
 		maxInodes:         config.MaxInodes,
@@ -141,6 +126,7 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 		mapExtracts: make(map[string]int),
 	}
 
+	var err error
 	if len(wc.filesToExtract) > 0 {
 		err = walkIndividualFiles(config.FS, wc.filesToExtract, wc.handleFile)
 	} else {
@@ -316,26 +302,6 @@ func expandAbsolutePath(scanRoot string, paths []string) []string {
 		locations = append(locations, filepath.Join(scanRoot, l))
 	}
 	return locations
-}
-
-func stripPathPrefix(paths []string, prefix string) ([]string, error) {
-	result := make([]string, 0, len(paths))
-	for _, p := range paths {
-		// prefix is assumed to already be an absolute path.
-		abs, err := filepath.Abs(p)
-		if err != nil {
-			return nil, err
-		}
-		if !strings.HasPrefix(abs, prefix) {
-			return nil, fmt.Errorf("%q is not in a subdirectory of %q", abs, prefix)
-		}
-		rel, err := filepath.Rel(prefix, abs)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, rel)
-	}
-	return result, nil
 }
 
 func pathStringListToMap(paths []string) map[string]bool {

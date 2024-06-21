@@ -19,9 +19,11 @@ package scalibr
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/detector"
@@ -143,16 +145,11 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
-	extractorConfig := &filesystem.Config{
-		Stats:             config.Stats,
-		ReadSymlinks:      config.ReadSymlinks,
-		Extractors:        config.FilesystemExtractors,
-		FilesToExtract:    config.FilesToExtract,
-		DirsToSkip:        config.DirsToSkip,
-		SkipDirRegex:      config.SkipDirRegex,
-		ScanRoot:          config.ScanRoot,
-		MaxInodes:         config.MaxInodes,
-		StoreAbsolutePath: config.StoreAbsolutePath,
+	extractorConfig, err := createFSExtractorsConfig(config)
+	if err != nil {
+		sro.Err = err
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
 	}
 	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
@@ -283,4 +280,50 @@ func cmpString(a, b string) int {
 		return 1
 	}
 	return 0
+}
+
+func createFSExtractorsConfig(config *ScanConfig) (*filesystem.Config, error) {
+	scanRoot, err := filepath.Abs(config.ScanRoot)
+	if err != nil {
+		return nil, err
+	}
+	filesToExtract, err := stripPathPrefix(config.FilesToExtract, scanRoot)
+	if err != nil {
+		return nil, err
+	}
+	dirsToSkip, err := stripPathPrefix(config.DirsToSkip, scanRoot)
+	if err != nil {
+		return nil, err
+	}
+	return &filesystem.Config{
+		Stats:             config.Stats,
+		ReadSymlinks:      config.ReadSymlinks,
+		Extractors:        config.FilesystemExtractors,
+		FilesToExtract:    filesToExtract,
+		DirsToSkip:        dirsToSkip,
+		SkipDirRegex:      config.SkipDirRegex,
+		ScanRoot:          scanRoot,
+		MaxInodes:         config.MaxInodes,
+		StoreAbsolutePath: config.StoreAbsolutePath,
+	}, nil
+}
+
+func stripPathPrefix(paths []string, prefix string) ([]string, error) {
+	result := make([]string, 0, len(paths))
+	for _, p := range paths {
+		// prefix is assumed to already be an absolute path.
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasPrefix(abs, prefix) {
+			return nil, fmt.Errorf("%q is not in a subdirectory of %q", abs, prefix)
+		}
+		rel, err := filepath.Rel(prefix, abs)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, rel)
+	}
+	return result, nil
 }
