@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
@@ -36,15 +37,42 @@ const (
 	Name = "go/binary"
 )
 
-// Extractor extracts packages from buildinfo inside go binaries files.
-type Extractor struct{}
-
-type packageJSON struct {
-	Version string `json:"version"`
-	Name    string `json:"name"`
+// Config is the configuration for the Extractor.
+type Config struct {
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored by returning false for `FileRequired`.
+	MaxFileSizeBytes int64
 }
 
-const permissiveVersionParsing = true
+// Extractor extracts packages from buildinfo inside go binaries files.
+type Extractor struct {
+	stats            stats.Collector
+	maxFileSizeBytes int64
+}
+
+// DefaultConfig returns a default configuration for the extractor.
+func DefaultConfig() Config {
+	return Config{
+		Stats:            nil,
+		MaxFileSizeBytes: 0,
+	}
+}
+
+// New returns a Go binary extractor.
+//
+// For most use cases, initialize with:
+// ```
+// e := New(DefaultConfig())
+// ```
+func New(cfg Config) *Extractor {
+	return &Extractor{
+		stats:            cfg.Stats,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -60,9 +88,29 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	}
 
 	// TODO(b/279138598): Research: Maybe on windows all files have the executable bit set.
+	// Either windows .exe or unix executable bit should be set.
+	if filepath.Ext(path) != ".exe" && fileinfo.Mode()&0111 == 0 {
+		return false
+	}
 
-	// Either windows .exe or unix executable bit is set.
-	return filepath.Ext(path) == ".exe" || fileinfo.Mode()&0111 != 0
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.
@@ -70,9 +118,23 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	binfo, err := buildinfo.Read(input.Reader.(io.ReaderAt))
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)
+		e.reportFileExtracted(input.Path, err)
 		return []*extractor.Inventory{}, nil
 	}
-	return e.extractPackagesFromBuildInfo(binfo, input.Path)
+
+	inventory, err := e.extractPackagesFromBuildInfo(binfo, input.Path)
+	e.reportFileExtracted(input.Path, err)
+	return inventory, err
+}
+
+func (e Extractor) reportFileExtracted(path string, err error) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		Path:   path,
+		Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+	})
 }
 
 func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) ([]*extractor.Inventory, error) {

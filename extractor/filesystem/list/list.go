@@ -56,7 +56,7 @@ var (
 	// Python extractors.
 	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), &requirements.Extractor{}}
 	// Go extractors.
-	Go []filesystem.Extractor = []filesystem.Extractor{&gobinary.Extractor{}}
+	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{&gemspec.Extractor{}}
 	// SBOM extractors.

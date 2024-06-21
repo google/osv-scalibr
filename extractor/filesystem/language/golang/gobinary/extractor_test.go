@@ -27,161 +27,221 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = gobinary.Extractor{}
-
 	tests := []struct {
-		name string
-		path string
-		mode fs.FileMode
-		want bool
+		name             string
+		path             string
+		mode             fs.FileMode
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name: "user executable",
-			path: "some/path/a",
-			mode: 0766,
-			want: true,
+			name:             "user executable",
+			path:             "some/path/a",
+			mode:             0766,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name: "group executable",
-			path: "some/path/a",
-			mode: 0676,
-			want: true,
+			name:             "group executable",
+			path:             "some/path/a",
+			mode:             0676,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name: "other executable",
-			path: "some/path/a",
-			mode: 0667,
-			want: true,
+			name:             "other executable",
+			path:             "some/path/a",
+			mode:             0667,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name: "windows exe",
-			path: "some/path/a.exe",
-			mode: 0666,
-			want: true,
+			name:             "windows exe",
+			path:             "some/path/a.exe",
+			mode:             0666,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name: "not executable bit set",
-			path: "some/path/a",
-			mode: 0640,
-			want: false,
+			name:         "not executable bit set",
+			path:         "some/path/a",
+			mode:         0640,
+			wantRequired: false,
 		},
 		{
-			name: "Non regular file, socket",
-			path: "some/path/a",
-			mode: fs.ModeSocket | 0777,
-			want: false,
+			name:         "Non regular file, socket",
+			path:         "some/path/a",
+			mode:         fs.ModeSocket | 0777,
+			wantRequired: false,
+		},
+		{
+			name:             "executable required if size less than maxFileSizeBytes",
+			path:             "some/path/a",
+			mode:             0766,
+			fileSizeBytes:    100,
+			maxFileSizeBytes: 1000,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "executable required if size equal to maxFileSizeBytes",
+			path:             "some/path/a",
+			mode:             0766,
+			fileSizeBytes:    1000,
+			maxFileSizeBytes: 1000,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "executable not required if size greater than maxFileSizeBytes",
+			path:             "some/path/a",
+			mode:             0766,
+			fileSizeBytes:    1000,
+			maxFileSizeBytes: 100,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "executable required if maxFileSizeBytes explicitly set to 0",
+			path:             "some/path/a",
+			mode:             0766,
+			fileSizeBytes:    1000,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			e := gobinary.New(gobinary.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
 			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: tt.mode,
-			}); got != tt.want {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.want)
+				FileSize: fileSizeBytes,
+			}); got != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
 }
 
 func TestExtract(t *testing.T) {
-	e := gobinary.Extractor{}
-
 	tests := []struct {
-		name    string
-		path    string
-		want    []*extractor.Inventory
-		wantErr error
+		name             string
+		path             string
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "binary_with_module_replacement-darwin-amd64",
-			path: "testdata/binary_with_module_replacement-darwin-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64"),
+			name:          "binary_with_module_replacement-darwin-amd64",
+			path:          "testdata/binary_with_module_replacement-darwin-amd64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64"),
 		},
 		{
-			name: "binary_with_module_replacement-darwin-arm64",
-			path: "testdata/binary_with_module_replacement-darwin-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64"),
+			name:          "binary_with_module_replacement-darwin-arm64",
+			path:          "testdata/binary_with_module_replacement-darwin-arm64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64"),
 		},
 		{
-			name: "binary_with_module_replacement-linux-386",
-			path: "testdata/binary_with_module_replacement-linux-386",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386"),
+			name:          "binary_with_module_replacement-linux-386",
+			path:          "testdata/binary_with_module_replacement-linux-386",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386"),
 		},
 		{
-			name: "binary_with_module_replacement-linux-amd64",
-			path: "testdata/binary_with_module_replacement-linux-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64"),
+			name:          "binary_with_module_replacement-linux-amd64",
+			path:          "testdata/binary_with_module_replacement-linux-amd64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64"),
 		},
 		{
-			name: "binary_with_module_replacement-linux-arm64",
-			path: "testdata/binary_with_module_replacement-linux-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64"),
+			name:          "binary_with_module_replacement-linux-arm64",
+			path:          "testdata/binary_with_module_replacement-linux-arm64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64"),
 		},
 		{
-			name: "binary_with_module_replacement-windows-386",
-			path: "testdata/binary_with_module_replacement-windows-386",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386"),
+			name:          "binary_with_module_replacement-windows-386",
+			path:          "testdata/binary_with_module_replacement-windows-386",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386"),
 		},
 		{
-			name: "binary_with_module_replacement-windows-amd64",
-			path: "testdata/binary_with_module_replacement-windows-amd64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64"),
+			name:          "binary_with_module_replacement-windows-amd64",
+			path:          "testdata/binary_with_module_replacement-windows-amd64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64"),
 		},
 		{
-			name: "binary_with_module_replacement-windows-arm64",
-			path: "testdata/binary_with_module_replacement-windows-arm64",
-			want: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64"),
+			name:          "binary_with_module_replacement-windows-arm64",
+			path:          "testdata/binary_with_module_replacement-windows-arm64",
+			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64"),
 		},
 		{
-			name: "binary_with_modules-darwin-amd64",
-			path: "testdata/binary_with_modules-darwin-amd64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64"),
+			name:          "binary_with_modules-darwin-amd64",
+			path:          "testdata/binary_with_modules-darwin-amd64",
+			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64"),
 		},
 		{
-			name: "binary_with_modules-darwin-arm64",
-			path: "testdata/binary_with_modules-darwin-arm64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64"),
+			name:          "binary_with_modules-darwin-arm64",
+			path:          "testdata/binary_with_modules-darwin-arm64",
+			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64"),
 		},
 		{
-			name: "binary_with_modules-linux-386",
-			path: "testdata/binary_with_modules-linux-386",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386"),
+			name:          "binary_with_modules-linux-386",
+			path:          "testdata/binary_with_modules-linux-386",
+			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386"),
 		},
 		{
-			name: "binary_with_modules-linux-amd64",
-			path: "testdata/binary_with_modules-linux-amd64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64"),
+			name:          "binary_with_modules-linux-amd64",
+			path:          "testdata/binary_with_modules-linux-amd64",
+			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64"),
 		},
 		{
-			name: "binary_with_modules-linux-arm64",
-			path: "testdata/binary_with_modules-linux-arm64",
-			want: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64"),
+			name:          "binary_with_modules-linux-arm64",
+			path:          "testdata/binary_with_modules-linux-arm64",
+			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64"),
 		},
 		{
-			name: "binary_with_modules-windows-386",
-			path: "testdata/binary_with_modules-windows-386",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386"),
+			name:          "binary_with_modules-windows-386",
+			path:          "testdata/binary_with_modules-windows-386",
+			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386"),
 		},
 		{
-			name: "binary_with_modules-windows-amd64",
-			path: "testdata/binary_with_modules-windows-amd64",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64"),
+			name:          "binary_with_modules-windows-amd64",
+			path:          "testdata/binary_with_modules-windows-amd64",
+			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64"),
 		},
 		{
-			name: "binary_with_modules-windows-arm64",
-			path: "testdata/binary_with_modules-windows-arm64",
-			want: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64"),
+			name:          "binary_with_modules-windows-arm64",
+			path:          "testdata/binary_with_modules-windows-arm64",
+			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64"),
 		},
 		{
-			name: "dummy",
-			path: "testdata/dummy",
-			want: []*extractor.Inventory{},
+			name:             "dummy file that fails to parse will log an error metric, but won't fail extraction",
+			path:             "testdata/dummy",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
 
@@ -198,15 +258,27 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("f.Stat() for %q unexpected error: %v", tt.path, err)
 			}
 
+			collector := newTestCollector()
+
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: f}
 
+			e := gobinary.New(gobinary.Config{Stats: collector})
 			got, err := e.Extract(context.Background(), input)
 			if err != tt.wantErr {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
 			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(tt.want, got, cmpopts.SortSlices(sort)); diff != "" {
+			if diff := cmp.Diff(tt.wantInventory, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+
+			wantResultMetric := tt.wantResultMetric
+			if wantResultMetric == "" && tt.wantErr == nil {
+				wantResultMetric = stats.FileExtractedResultSuccess
+			}
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if gotResultMetric != wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
 			}
 		})
 	}
@@ -287,4 +359,25 @@ func createInventories(invs []*extractor.Inventory, location string) []*extracto
 		})
 	}
 	return res
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
