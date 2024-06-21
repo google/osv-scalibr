@@ -29,15 +29,17 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "javascript/packagejson"
 
-	// defaultMaxJSONSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	defaultMaxJSONSize = 100 * units.MiB
+	// defaultMaxFileSizeBytes is the default maximum file size the extractor will
+	// attempt to extract. If a file is encountered that is larger than this
+	// limit, the file is ignored by `FileRequired`.
+	defaultMaxFileSizeBytes = 100 * units.MiB
 )
 
 type packageJSON struct {
@@ -54,21 +56,26 @@ type packageJSON struct {
 
 // Config is the configuration for the Extractor.
 type Config struct {
-	// MaxJSONSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	MaxJSONSize int64
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored by returning false for `FileRequired`.
+	MaxFileSizeBytes int64
 }
 
 // DefaultConfig returns the default configuration for the package.json extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxJSONSize: defaultMaxJSONSize,
+		Stats:            nil,
+		MaxFileSizeBytes: defaultMaxFileSizeBytes,
 	}
 }
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	maxJSONSize int64
+	stats            stats.Collector
+	maxFileSizeBytes int64
 }
 
 // New returns a package.json extractor.
@@ -79,7 +86,8 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		maxJSONSize: cfg.MaxJSONSize,
+		stats:            cfg.Stats,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
 	}
 }
 
@@ -91,25 +99,57 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches javascript Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	return filepath.Base(path) == "package.json"
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if filepath.Base(path) != "package.json" {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	if input.Info != nil && input.Info.Size() > e.maxJSONSize {
-		return nil, fmt.Errorf("package.json file %s is too large: %d", input.Path, input.Info.Size())
-	}
 	i, err := parse(input.Path, input.Reader)
 	if err != nil {
+		e.reportFileExtracted(input.Path, err)
 		return nil, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
 	}
-	if i == nil {
-		return []*extractor.Inventory{}, nil
+
+	inventory := []*extractor.Inventory{}
+	if i != nil {
+		inventory = append(inventory, i)
+		i.Locations = []string{input.Path}
 	}
 
-	i.Locations = []string{input.Path}
-	return []*extractor.Inventory{i}, nil
+	e.reportFileExtracted(input.Path, nil)
+	return inventory, nil
+}
+
+func (e Extractor) reportFileExtracted(path string, err error) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		Path:   path,
+		Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+	})
 }
 
 func parse(path string, r io.Reader) (*extractor.Inventory, error) {

@@ -25,50 +25,106 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = packagejson.New(packagejson.DefaultConfig())
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           "package.json at root",
-			path:           "package.json",
-			wantIsRequired: true,
+			name:             "package.json at root",
+			path:             "package.json",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "top level package.json",
-			path:           "testdata/package.json",
-			wantIsRequired: true,
+			name:             "top level package.json",
+			path:             "testdata/package.json",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "tests library",
-			path:           "testdata/deps/accepts/package.json",
-			wantIsRequired: true,
+			name:             "tests library",
+			path:             "testdata/deps/accepts/package.json",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "not package.json",
-			path:           "testdata/test.js",
-			wantIsRequired: false,
+			name:         "not package.json",
+			path:         "testdata/test.js",
+			wantRequired: false,
+		},
+		{
+			name:             "package.json required if size less than maxFileSizeBytes",
+			path:             "package.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 2000 * units.MiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "package.json required if size equal to maxFileSizeBytes",
+			path:             "package.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 1000 * units.MiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "package.json not required if size greater than maxFileSizeBytes",
+			path:             "package.json",
+			fileSizeBytes:    10000 * units.MiB,
+			maxFileSizeBytes: 1000 * units.MiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "package.json required if maxFileSizeBytes explicitly set to 0",
+			path:             "package.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			e := packagejson.New(packagejson.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1 * units.KiB
+			}
+
 			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
 			})
-			if isRequired != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -76,11 +132,12 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		cfg           packagejson.Config
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		cfg              packagejson.Config
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "top level package.json",
@@ -99,14 +156,6 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-		},
-		{
-			name: "file size over limit",
-			path: "testdata/package.json",
-			cfg: packagejson.Config{
-				MaxJSONSize: 5,
-			},
-			wantErr: cmpopts.AnyError,
 		},
 		{
 			name: "accepts",
@@ -246,9 +295,10 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid packagejson",
-			path:    "testdata/invalid",
-			wantErr: cmpopts.AnyError,
+			name:             "invalid packagejson",
+			path:             "testdata/invalid",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
 
@@ -271,6 +321,9 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			collector := newTestCollector()
+			tt.cfg.Stats = collector
+
 			input := &filesystem.ScanInput{Path: tt.path, Reader: r, Info: info}
 			e := packagejson.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
@@ -286,6 +339,15 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
+
+			wantResultMetric := tt.wantResultMetric
+			if wantResultMetric == "" && tt.wantErr == nil {
+				wantResultMetric = stats.FileExtractedResultSuccess
+			}
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if gotResultMetric != wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
+			}
 		})
 	}
 }
@@ -294,8 +356,11 @@ func TestExtract(t *testing.T) {
 func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
 	newCfg := packagejson.DefaultConfig()
 
-	if cfg.MaxJSONSize > 0 {
-		newCfg.MaxJSONSize = cfg.MaxJSONSize
+	if cfg.Stats != nil {
+		newCfg.Stats = cfg.Stats
+	}
+	if cfg.MaxFileSizeBytes > 0 {
+		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
 	}
 	return newCfg
 }
@@ -319,4 +384,25 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
