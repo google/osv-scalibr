@@ -29,22 +29,24 @@ type Collector interface {
 	AfterExtractorRun(name string, runtime time.Duration, err error)
 	AfterDetectorRun(name string, runtime time.Duration, err error)
 	AfterScan(runtime time.Duration, status *plugin.ScanStatus)
+
 	// AfterResultsExported is called after results have been exported. destination should merely be
 	// a category of where the result was written to (e.g. 'file', 'http'), not the precise location.
 	AfterResultsExported(destination string, bytes int, err error)
-	AfterFileSeen(pluginName string, filestats *FileStats)
-}
 
-// FileStats is a struct containing stats about a file that was extracted. If
-// the file was skipped due to an error during extraction, `Error` will be
-// populated.
-type FileStats struct {
-	Path          string
-	Error         error
-	FileSizeBytes int64
-	// For extractors that unarchive a compressed files, this reports the bytes
-	// that were opened during the unarchiving process.
-	UncompressedBytes int64
+	// AfterFileRequired may be called by individual plugins after the
+	// `FileRequired` method is called on a file. This allows plugins to report
+	// why a certain file may have been skipped. Note that in general, extractor
+	// plugins will not record a metric if a file was skipped because it is deemed
+	// completely irrelevant (e.g. the Python extractor will not report that it
+	// skipped a JAR file).
+	AfterFileRequired(pluginName string, filestats *FileRequiredStats)
+
+	// AfterFileExtracted may be called by individual plugins after a file was seen in
+	// the `Extract` method, as opposed to `AfterExtractorRun`, which is called by
+	// the filesystem handling code. This allows plugins to report internal state
+	// for metric collection.
+	AfterFileExtracted(pluginName string, filestats *FileExtractedStats)
 }
 
 // NoopCollector implements Collector by doing nothing.
@@ -65,5 +67,8 @@ func (c NoopCollector) AfterScan(runtime time.Duration, status *plugin.ScanStatu
 // AfterResultsExported implements Collector by doing nothing.
 func (c NoopCollector) AfterResultsExported(destination string, bytes int, err error) {}
 
-// AfterFileSeen implements Collector by doing nothing.
-func (c NoopCollector) AfterFileSeen(name string, filestats *FileStats) {}
+// AfterFileRequired implements Collector by doing nothing.
+func (c NoopCollector) AfterFileRequired(pluginName string, filestats *FileRequiredStats) {}
+
+// AfterFileExtracted implements Collector by doing nothing.
+func (c NoopCollector) AfterFileExtracted(pluginName string, filestats *FileExtractedStats) {}
