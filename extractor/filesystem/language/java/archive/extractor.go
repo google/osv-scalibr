@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
@@ -60,6 +61,10 @@ type Config struct {
 	// MaxZipDepth is the maximum number of inner zip files within an archive the extractor will unzip.
 	// Once reached, no more inner zip files will be explored during extraction.
 	MaxZipDepth int
+	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored by returning false for `FileRequired`.
+	MaxFileSizeBytes int64
 	// MaxOpenedBytes is the maximum number of bytes recursively read from an archive file.
 	// If this limit is reached, extraction is halted and results so far are returned.
 	MaxOpenedBytes int64
@@ -70,25 +75,31 @@ type Config struct {
 	ExtractFromFilename bool
 	// HashJars configures if JAR files should be hashed with base64(sha1()), which can be used in deps.dev.
 	HashJars bool
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
 }
 
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
 	maxZipDepth         int
+	maxFileSizeBytes    int64
 	maxOpenedBytes      int64
 	minZipBytes         int
 	extractFromFilename bool
 	hashJars            bool
+	stats               stats.Collector
 }
 
 // DefaultConfig returns the default configuration for the Java archive extractor.
 func DefaultConfig() Config {
 	return Config{
 		MaxZipDepth:         defaultMaxZipDepth,
+		MaxFileSizeBytes:    0,
 		MaxOpenedBytes:      defaultMaxZipBytes,
 		MinZipBytes:         defaultMinZipBytes,
 		ExtractFromFilename: true,
 		HashJars:            true,
+		Stats:               nil,
 	}
 }
 
@@ -101,10 +112,12 @@ func DefaultConfig() Config {
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		maxZipDepth:         cfg.MaxZipDepth,
+		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
 		maxOpenedBytes:      cfg.MaxOpenedBytes,
 		minZipBytes:         cfg.MinZipBytes,
 		extractFromFilename: cfg.ExtractFromFilename,
 		hashJars:            cfg.HashJars,
+		stats:               cfg.Stats,
 	}
 }
 
@@ -115,35 +128,62 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches java archive file patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// For Windows
-	path = filepath.ToSlash(path)
-	return isArchive(path)
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !isArchive(filepath.ToSlash(path)) {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts java packages from archive files passed through input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	return e.extractWithMax(ctx, input, 1, 0)
+	inventory, openedBytes, err := e.extractWithMax(ctx, input, 1, 0)
+	if e.stats != nil {
+		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:              input.Path,
+			Result:            filesystem.ExtractorErrorToFileExtractedResult(err),
+			UncompressedBytes: openedBytes,
+		})
+	}
+	return inventory, err
 }
 
 // extractWithMax recursively unzips and extracts packages from archive files starting at input.
 //
 // It returns early with an error if max depth or max opened bytes is reached.
 // Extracted packages are returned even if an error has occurred.
-func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, error) {
+func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, int64, error) {
 	// Return early if any max/min thresholds are hit.
 	if depth > e.maxZipDepth {
-		return nil, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
+		return nil, openedBytes, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
 	}
 	if oBytes := openedBytes + input.Info.Size(); oBytes > e.maxOpenedBytes {
-		return nil, fmt.Errorf(
+		return nil, oBytes, fmt.Errorf(
 			"%w: %s reached max opened bytes of %d at %q",
 			filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), oBytes, input.Path)
 	}
 	if int(input.Info.Size()) < e.minZipBytes {
 		log.Warnf("%s ignoring zip with size %d because it is smaller than min size %d at %q",
 			e.Name(), input.Info.Size(), e.minZipBytes, input.Path)
-		return nil, nil
+		return nil, openedBytes, nil
 	}
 
 	// Create ReaderAt
@@ -153,12 +193,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		log.Debugf("Reader of %s does not implement ReaderAt. Fall back to read to memory.", input.Path)
 		b, err := io.ReadAll(input.Reader)
 		if err != nil {
-			return nil, fmt.Errorf("%s failed to read file at %q: %w", e.Name(), input.Path, err)
+			return nil, openedBytes, fmt.Errorf("%s failed to read file at %q: %w", e.Name(), input.Path, err)
 		}
 		openedBytes += int64(len(b))
 		// Check size again in case input.Info.Size() was not accurate. Return early if hit max.
 		if openedBytes > e.maxOpenedBytes {
-			return nil, fmt.Errorf(
+			return nil, openedBytes, fmt.Errorf(
 				"%w: %s reached max opened bytes of %d at %q",
 				filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), openedBytes, input.Path)
 		}
@@ -183,7 +223,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	// Unzip Jar
 	zipReader, err := zip.NewReader(r, l)
 	if err != nil {
-		return nil, fmt.Errorf("%s invalid archive at %q: %w", e.Name(), input.Path, err)
+		return nil, openedBytes, fmt.Errorf("%s invalid archive at %q: %w", e.Name(), input.Path, err)
 	}
 
 	log.Debugf("extract jar archive: %s", input.Path)
@@ -198,11 +238,11 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		// Return if canceled or exceeding deadline.
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return inventory, fmt.Errorf("%s halted at %q because context deadline exceeded", e.Name(), input.Path)
+			return inventory, openedBytes, fmt.Errorf("%s halted at %q because context deadline exceeded", e.Name(), input.Path)
 		}
 		if errors.Is(ctx.Err(), context.Canceled) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return inventory, fmt.Errorf("%s halted at %q because context was canceled", e.Name(), input.Path)
+			return inventory, openedBytes, fmt.Errorf("%s halted at %q because context was canceled", e.Name(), input.Path)
 		}
 
 		path := filepath.Join(input.Path, file.Name)
@@ -259,7 +299,8 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				// Do not need to handle error from f.Close() because it only happens if the file was previously closed.
 				defer f.Close()
 				subInput := &filesystem.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
-				subInventory, err := e.extractWithMax(ctx, subInput, depth+1, openedBytes)
+				var subInventory []*extractor.Inventory
+				subInventory, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
@@ -322,10 +363,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	// Aggregate errors.
 	err = multierr.Combine(errs...)
 	if err != nil {
-		return inventory, fmt.Errorf("error(s) in extractor %s: %w", e.Name(), err)
+		return inventory, openedBytes, fmt.Errorf("error(s) in extractor %s: %w", e.Name(), err)
 	}
 
-	return inventory, err
+	return inventory, openedBytes, err
 }
 
 // hashJar returns base64(sha1()) of the file. This is compatible to dev.deps.

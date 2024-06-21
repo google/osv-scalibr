@@ -14,10 +14,26 @@
 
 package filesystem
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/google/osv-scalibr/stats"
+)
 
 var (
 	// ErrExtractorMemoryLimitExceeded is returned when an extractor skips a file
 	// due to the extraction process exceeding a configured memory limit.
 	ErrExtractorMemoryLimitExceeded = errors.New("extraction failed due to extractor exceeding the configured memory limit")
 )
+
+// ExtractorErrorToFileExtractedResult converts an error returned by an extractor
+// to a FileExtractedResult for stats collection. Converting the error to a
+// result minimizes the memory used for reporting stats.
+func ExtractorErrorToFileExtractedResult(err error) stats.FileExtractedResult {
+	if err == nil {
+		return stats.FileExtractedResultSuccess
+	} else if errors.Is(err, ErrExtractorMemoryLimitExceeded) {
+		return stats.FileExtractedResultErrorMemoryLimitExceeded
+	}
+	return stats.FileExtractedResultErrorUnknown
+}

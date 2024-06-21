@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -40,87 +41,131 @@ var (
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = archive.New(archive.DefaultConfig())
-
 	tests := []struct {
-		name string
-		path string
-		want bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name: ".jar",
-			path: filepath.FromSlash("some/path/a.jar"),
-			want: true,
+			name:         ".jar",
+			path:         filepath.FromSlash("some/path/a.jar"),
+			wantRequired: true,
 		},
 		{
-			name: ".JAR",
-			path: filepath.FromSlash("some/path/a.JAR"),
-			want: true,
+			name:         ".JAR",
+			path:         filepath.FromSlash("some/path/a.JAR"),
+			wantRequired: true,
 		},
 		{
-			name: ".war",
-			path: filepath.FromSlash("some/path/a.war"),
-			want: true,
+			name:         ".war",
+			path:         filepath.FromSlash("some/path/a.war"),
+			wantRequired: true,
 		},
 		{
-			name: ".ear",
-			path: filepath.FromSlash("some/path/a.ear"),
-			want: true,
+			name:         ".ear",
+			path:         filepath.FromSlash("some/path/a.ear"),
+			wantRequired: true,
 		},
 		{
-			name: ".jmod",
-			path: filepath.FromSlash("some/path/a.jmod"),
-			want: true,
+			name:         ".jmod",
+			path:         filepath.FromSlash("some/path/a.jmod"),
+			wantRequired: true,
 		},
 		{
-			name: ".par",
-			path: filepath.FromSlash("some/path/a.par"),
-			want: true,
+			name:         ".par",
+			path:         filepath.FromSlash("some/path/a.par"),
+			wantRequired: true,
 		},
 		{
-			name: ".sar",
-			path: filepath.FromSlash("some/path/a.sar"),
-			want: true,
+			name:         ".sar",
+			path:         filepath.FromSlash("some/path/a.sar"),
+			wantRequired: true,
 		},
 		{
-			name: ".jpi",
-			path: filepath.FromSlash("some/path/a.jpi"),
-			want: true,
+			name:         ".jpi",
+			path:         filepath.FromSlash("some/path/a.jpi"),
+			wantRequired: true,
 		},
 		{
-			name: ".hpi",
-			path: filepath.FromSlash("some/path/a.hpi"),
-			want: true,
+			name:         ".hpi",
+			path:         filepath.FromSlash("some/path/a.hpi"),
+			wantRequired: true,
 		},
 		{
-			name: ".lpkg",
-			path: filepath.FromSlash("some/path/a.lpkg"),
-			want: true,
+			name:         ".lpkg",
+			path:         filepath.FromSlash("some/path/a.lpkg"),
+			wantRequired: true,
 		},
 		{
-			name: ".nar",
-			path: filepath.FromSlash("some/path/a.nar"),
-			want: true,
+			name:         ".nar",
+			path:         filepath.FromSlash("some/path/a.nar"),
+			wantRequired: true,
 		},
 		{
-			name: "not archive file",
-			path: filepath.FromSlash("some/path/a.txt"),
-			want: false,
+			name:         "not archive file",
+			path:         filepath.FromSlash("some/path/a.txt"),
+			wantRequired: false,
 		},
 		{
-			name: "no extension should be ignored",
-			path: filepath.FromSlash("some/path/a"),
-			want: false,
+			name:         "no extension should be ignored",
+			path:         filepath.FromSlash("some/path/a"),
+			wantRequired: false,
+		},
+		{
+			name:             ".jar required if size less than maxFileSizeBytes",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    100,
+			wantRequired:     true,
+		},
+		{
+			name:             ".war required if size equal to maxFileSizeBytes",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 1000,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
+		},
+		{
+			name:             ".jar not required if size greater than maxFileSizeBytes",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 100,
+			fileSizeBytes:    1000,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             ".jar required if maxFileSizeBytes explicitly set to 0",
+			path:             filepath.FromSlash("some/path/a.jar"),
+			maxFileSizeBytes: 0,
+			fileSizeBytes:    1000,
+			wantRequired:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			cfg := defaultConfigWith(archive.Config{
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+				Stats:            collector,
+			})
+
+			var e filesystem.Extractor = archive.New(cfg)
+
 			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
-			}); got != tt.want {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.want)
+				FileSize: tt.fileSizeBytes,
+			}); got != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if tt.wantResultMetric != "" && tt.wantResultMetric != gotResultMetric {
+				t.Fatalf("FileRequired(%s): recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -128,13 +173,14 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name        string
-		description string
-		cfg         archive.Config
-		path        string
-		contentPath string
-		want        []*extractor.Inventory
-		wantErr     error
+		name             string
+		description      string
+		cfg              archive.Config
+		path             string
+		contentPath      string
+		want             []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "Empty jar file should not return anything",
@@ -297,8 +343,11 @@ func TestExtract(t *testing.T) {
 		{
 			name:        "Ignore inner pom.properties because max opened bytes reached",
 			description: "A jar file with pom.properties at complex.jar/pom.properties and another at complex.jar/BOOT-INF/lib/inner.jar/pom.properties. The inner pom.properties is never extracted because MaxOpenedBytes is reached.",
-			cfg:         archive.Config{MaxOpenedBytes: 700},
-			path:        filepath.FromSlash("testdata/complex.jar"),
+			cfg: archive.Config{
+				MaxOpenedBytes: 700,
+				Stats:          &testCollector{},
+			},
+			path: filepath.FromSlash("testdata/complex.jar"),
 			want: []*extractor.Inventory{{
 				Name:     "package-name",
 				Version:  "1.2.3",
@@ -307,7 +356,8 @@ func TestExtract(t *testing.T) {
 					filepath.FromSlash("testdata/complex.jar/pom.properties"),
 				},
 			}},
-			wantErr: filesystem.ErrExtractorMemoryLimitExceeded,
+			wantErr:          filesystem.ErrExtractorMemoryLimitExceeded,
+			wantResultMetric: stats.FileExtractedResultErrorMemoryLimitExceeded,
 		},
 		{
 			name: "Realistic jar file with pom.properties",
@@ -411,6 +461,9 @@ func TestExtract(t *testing.T) {
 				r = noReaderAt{r: r}
 			}
 
+			collector := newTestCollector()
+			tt.cfg.Stats = collector
+
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
@@ -425,6 +478,11 @@ func TestExtract(t *testing.T) {
 			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
 			if diff := cmp.Diff(tt.want, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if tt.wantResultMetric != "" && tt.wantResultMetric != gotResultMetric {
+				t.Fatalf("Extract(%s): recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -476,6 +534,12 @@ func defaultConfigWith(cfg archive.Config) archive.Config {
 	}
 	if cfg.MinZipBytes > 0 {
 		newCfg.MinZipBytes = cfg.MinZipBytes
+	}
+	if cfg.MaxFileSizeBytes > 0 {
+		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
+	}
+	if cfg.Stats != nil {
+		newCfg.Stats = cfg.Stats
 	}
 	// ignores defaults
 	newCfg.ExtractFromFilename = cfg.ExtractFromFilename
@@ -534,4 +598,25 @@ func mustJar(t *testing.T, path string) *os.File {
 	}
 
 	return jarFile
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
