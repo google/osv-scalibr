@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -126,6 +127,31 @@ func TestRun(t *testing.T) {
 			wantInodeCount: 5,
 		},
 		{
+			desc: "Dir skipped with absolute path",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD
+			dirsToSkip: []string{path.Join(cwd, "dir1")},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: fakeEx2,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 5,
+		},
+		{
+			desc: "Dir skipped not relative to ScanRoot",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD, dirsToSkip is in its parent dir.
+			dirsToSkip: []string{path.Join(filepath.Dir(cwd), "dir1")},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
 			desc:         "Dir skipped using regex",
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: ".*1",
@@ -218,6 +244,31 @@ func TestRun(t *testing.T) {
 				&plugin.Status{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 1,
+		},
+		{
+			desc: "Extract specific file with absolute path",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD
+			filesToExtract: []string{path.Join(cwd, path2)},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: fakeEx2,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 1,
+		},
+		{
+			desc: "Extract specific file not relative to ScanRoot",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD, filepath is in its parent dir.
+			filesToExtract: []string{path.Join(filepath.Dir(cwd), path2)},
+			wantErr:        cmpopts.AnyError,
 		},
 		{
 			desc: "nil result",
@@ -349,7 +400,7 @@ func TestRun(t *testing.T) {
 				DirsToSkip:        tc.dirsToSkip,
 				SkipDirRegex:      skipDirRegex,
 				MaxInodes:         tc.maxInodes,
-				ScanRoot:          cwd,
+				ScanRoot:          ".",
 				FS:                fsys,
 				Stats:             fc,
 				StoreAbsolutePath: tc.storeAbsPath,
