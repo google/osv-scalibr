@@ -75,6 +75,7 @@ type Flags struct {
 	SPDXCreators          string
 	Verbose               bool
 	ExplicitExtractors    bool
+	StoreAbsolutePath     bool
 }
 
 var supportedOutputFormats = []string{
@@ -237,6 +238,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesToExtract:       f.FilesToExtract,
 		DirsToSkip:           f.dirsToSkip(),
 		SkipDirRegex:         skipDirRegex,
+		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
 }
 

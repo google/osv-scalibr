@@ -71,6 +71,9 @@ type ScanConfig struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
+	// is set, the absolute path is stored instead.
+	StoreAbsolutePath bool
 }
 
 // EnableRequiredExtractors adds those extractors to the config that are required by enabled
@@ -141,14 +144,15 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 	extractorConfig := &filesystem.Config{
-		Stats:          config.Stats,
-		ReadSymlinks:   config.ReadSymlinks,
-		Extractors:     config.FilesystemExtractors,
-		FilesToExtract: config.FilesToExtract,
-		DirsToSkip:     config.DirsToSkip,
-		SkipDirRegex:   config.SkipDirRegex,
-		ScanRoot:       config.ScanRoot,
-		MaxInodes:      config.MaxInodes,
+		Stats:             config.Stats,
+		ReadSymlinks:      config.ReadSymlinks,
+		Extractors:        config.FilesystemExtractors,
+		FilesToExtract:    config.FilesToExtract,
+		DirsToSkip:        config.DirsToSkip,
+		SkipDirRegex:      config.SkipDirRegex,
+		ScanRoot:          config.ScanRoot,
+		MaxInodes:         config.MaxInodes,
+		StoreAbsolutePath: config.StoreAbsolutePath,
 	}
 	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {

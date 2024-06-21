@@ -84,6 +84,9 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
+	// is set, the absolute path is stored instead.
+	StoreAbsolutePath bool
 }
 
 // Run runs the specified extractors and returns their extraction results,
@@ -115,17 +118,18 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 		return nil, nil, err
 	}
 	wc := walkContext{
-		ctx:            ctx,
-		stats:          config.Stats,
-		extractors:     config.Extractors,
-		fs:             config.FS,
-		scanRoot:       scanRoot,
-		filesToExtract: filesToExtract,
-		dirsToSkip:     pathStringListToMap(dirsToSkip),
-		skipDirRegex:   config.SkipDirRegex,
-		readSymlinks:   config.ReadSymlinks,
-		maxInodes:      config.MaxInodes,
-		inodesVisited:  0,
+		ctx:               ctx,
+		stats:             config.Stats,
+		extractors:        config.Extractors,
+		fs:                config.FS,
+		scanRoot:          scanRoot,
+		filesToExtract:    filesToExtract,
+		dirsToSkip:        pathStringListToMap(dirsToSkip),
+		skipDirRegex:      config.SkipDirRegex,
+		readSymlinks:      config.ReadSymlinks,
+		maxInodes:         config.MaxInodes,
+		inodesVisited:     0,
+		storeAbsolutePath: config.StoreAbsolutePath,
 
 		lastStatus: time.Now(),
 
@@ -151,16 +155,17 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 }
 
 type walkContext struct {
-	ctx            context.Context
-	stats          stats.Collector
-	extractors     []Extractor
-	fs             fs.FS
-	scanRoot       string
-	filesToExtract []string
-	dirsToSkip     map[string]bool // Anything under these paths should be skipped.
-	skipDirRegex   *regexp.Regexp
-	maxInodes      int
-	inodesVisited  int
+	ctx               context.Context
+	stats             stats.Collector
+	extractors        []Extractor
+	fs                fs.FS
+	scanRoot          string
+	filesToExtract    []string
+	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
+	skipDirRegex      *regexp.Regexp
+	maxInodes         int
+	inodesVisited     int
+	storeAbsolutePath bool
 
 	// Inventories found.
 	inventory []*extractor.Inventory
@@ -297,9 +302,20 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results {
 			r.Extractor = ex
+			if wc.storeAbsolutePath {
+				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
+			}
 			wc.inventory = append(wc.inventory, r)
 		}
 	}
+}
+
+func expandAbsolutePath(scanRoot string, paths []string) []string {
+	var locations []string
+	for _, l := range paths {
+		locations = append(locations, filepath.Join(scanRoot, l))
+	}
+	return locations
 }
 
 func stripPathPrefix(paths []string, prefix string) ([]string, error) {

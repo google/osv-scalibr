@@ -81,6 +81,7 @@ func TestRun(t *testing.T) {
 		filesToExtract []string
 		dirsToSkip     []string
 		skipDirRegex   string
+		storeAbsPath   bool
 		maxInodes      int
 		wantErr        error
 		wantInv        []*extractor.Inventory
@@ -362,6 +363,28 @@ func TestRun(t *testing.T) {
 			},
 			wantInodeCount: 6,
 		},
+		{
+			desc: "Extractors successful store absolute path when requested",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			wantInv: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      name1,
+					Locations: []string{filepath.Join(cwd, path1)},
+					Extractor: fakeEx1,
+				},
+				&extractor.Inventory{
+					Name:      name2,
+					Locations: []string{filepath.Join(cwd, path2)},
+					Extractor: fakeEx2,
+				},
+			},
+			storeAbsPath: true,
+			wantStatus: []*plugin.Status{
+				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 6,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -372,14 +395,15 @@ func TestRun(t *testing.T) {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
 			config := &filesystem.Config{
-				Extractors:     tc.ex,
-				FilesToExtract: tc.filesToExtract,
-				DirsToSkip:     tc.dirsToSkip,
-				SkipDirRegex:   skipDirRegex,
-				MaxInodes:      tc.maxInodes,
-				ScanRoot:       ".",
-				FS:             fsys,
-				Stats:          fc,
+				Extractors:        tc.ex,
+				FilesToExtract:    tc.filesToExtract,
+				DirsToSkip:        tc.dirsToSkip,
+				SkipDirRegex:      skipDirRegex,
+				MaxInodes:         tc.maxInodes,
+				ScanRoot:          ".",
+				FS:                fsys,
+				Stats:             fc,
+				StoreAbsolutePath: tc.storeAbsPath,
 			}
 			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
