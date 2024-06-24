@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 // Regex expressions used for extracting gemspec package name and version.
@@ -37,8 +38,41 @@ var (
 	reVer  = regexp.MustCompile(`\s*\w+\.version\s*=\s*["']([^"']+)["']`)
 )
 
+// Config is the configuration for the Extractor.
+type Config struct {
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
+	// `FileRequired` gets a bigger file, it will return false,
+	MaxFileSizeBytes int64
+}
+
+// DefaultConfig returns the default configuration for the extractor.
+func DefaultConfig() Config {
+	return Config{
+		Stats:            nil,
+		MaxFileSizeBytes: 0,
+	}
+}
+
 // Extractor extracts RubyGem package info from *.gemspec files.
-type Extractor struct{}
+type Extractor struct {
+	stats            stats.Collector
+	maxFileSizeBytes int64
+}
+
+// New returns a Ruby gemspec extractor.
+//
+// For most use cases, initialize with:
+// ```
+// e := New(DefaultConfig())
+// ```
+func New(cfg Config) *Extractor {
+	return &Extractor{
+		stats:            cfg.Stats,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+	}
+}
 
 // Name of the extractor
 func (e Extractor) Name() string { return "ruby/gemspec" }
@@ -48,13 +82,35 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired return true if the specified file matched the .gemspec file
 // pattern.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	return filepath.Ext(path) == ".gemspec"
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if filepath.Ext(path) != ".gemspec" {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts packages from the .gemspec file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	i, err := extract(input.Path, input.Reader)
+	e.reportFileExtracted(input.Path, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
 		return nil, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)
 	}
@@ -64,6 +120,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	i.Locations = []string{input.Path}
 	return []*extractor.Inventory{i}, nil
+}
+
+func (e Extractor) reportFileExtracted(path string, result stats.FileExtractedResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		Path:   path,
+		Result: result,
+	})
 }
 
 // extract searches for the required name and version lines in the gemspec

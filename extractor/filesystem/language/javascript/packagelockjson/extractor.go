@@ -27,10 +27,44 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
+// Config is the configuration for the Extractor.
+type Config struct {
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
+	// `FileRequired` gets a bigger file, it will return false,
+	MaxFileSizeBytes int64
+}
+
+// DefaultConfig returns the default configuration for the extractor.
+func DefaultConfig() Config {
+	return Config{
+		Stats:            nil,
+		MaxFileSizeBytes: 0,
+	}
+}
+
 // Extractor extracts javascript packages from package-lock.json files.
-type Extractor struct{}
+type Extractor struct {
+	stats            stats.Collector
+	maxFileSizeBytes int64
+}
+
+// New returns a package-lock.json extractor.
+//
+// For most use cases, initialize with:
+// ```
+// e := New(DefaultConfig())
+// ```
+func New(cfg Config) *Extractor {
+	return &Extractor{
+		stats:            cfg.Stats,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return "javascript/packagelockjson" }
@@ -40,12 +74,44 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches javascript Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	return filepath.Base(path) == "package-lock.json"
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if filepath.Base(path) != "package-lock.json" {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts packages from package-lock.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	inventory, err := e.extractFromInput(ctx, input)
+	if e.stats != nil {
+		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:   input.Path,
+			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		})
+	}
+	return inventory, err
+}
+
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	osve := lockfile.NpmLockExtractor{}
 	osvpkgs, err := osve.Extract(osv.WrapInput(input))
 	if err != nil {

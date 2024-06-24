@@ -52,17 +52,17 @@ var (
 	// Java extractors.
 	Java []filesystem.Extractor = []filesystem.Extractor{javaarchive.New(javaarchive.DefaultConfig())}
 	// Javascript extractors.
-	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), &packagelockjson.Extractor{}}
+	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), packagelockjson.New(packagelockjson.DefaultConfig())}
 	// Python extractors.
-	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), &requirements.Extractor{}}
+	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), requirements.New(requirements.DefaultConfig())}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
 	// Ruby extractors.
-	Ruby []filesystem.Extractor = []filesystem.Extractor{&gemspec.Extractor{}}
+	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig())}
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
-	Dotnet []filesystem.Extractor = []filesystem.Extractor{&packageslockjson.Extractor{}}
+	Dotnet []filesystem.Extractor = []filesystem.Extractor{packageslockjson.New(packageslockjson.DefaultConfig())}
 
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{

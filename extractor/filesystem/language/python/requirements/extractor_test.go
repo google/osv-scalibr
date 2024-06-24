@@ -24,43 +24,116 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = requirements.Extractor{}
-
 	tests := []struct {
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
-		{"RsaCtfTool/requirements.txt", true},
-		{"RsaCtfTool/optional-requirements.txt", true},
-		{"requirements-asdf/test.txt", false},
-		{"yolo-txt/requirements.md", false},
+		{
+			name:             "requirements.txt",
+			path:             "RsaCtfTool/requirements.txt",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "optional-requirements.txt",
+			path:             "RsaCtfTool/optional-requirements.txt",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "non requirements.txt txt file",
+			path:         "requirements-asdf/test.txt",
+			wantRequired: false,
+		},
+		{
+			name:         "wrong extension",
+			path:         "yolo-txt/requirements.md",
+			wantRequired: false,
+		},
+		{
+			name:             "requirements.txt required if file size < max file size",
+			path:             "RsaCtfTool/requirements.txt",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "requirements.txt required if file size == max file size",
+			path:             "RsaCtfTool/requirements.txt",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "requirements.txt not required if file size > max file size",
+			path:             "RsaCtfTool/requirements.txt",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "requirements.txt required if max file size is 0",
+			path:             "RsaCtfTool/requirements.txt",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = requirements.New(
+				requirements.Config{
+					Stats:            collector,
+					MaxFileSizeBytes: tt.maxFileSizeBytes,
+				},
+			)
+
+			// Set default size if not provided.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 100 * units.KiB
+			}
+
 			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
-			}); got != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantIsRequired)
+				FileSize: fileSizeBytes,
+			}); got != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
 }
 
 func TestExtract(t *testing.T) {
-	var e filesystem.Extractor = requirements.Extractor{}
-
 	tests := []struct {
-		name          string
-		path          string
-		wantInventory []*extractor.Inventory
+		name             string
+		path             string
+		wantInventory    []*extractor.Inventory
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name:          "no version",
@@ -70,6 +143,7 @@ func TestExtract(t *testing.T) {
 				// not GMPY2, because no version pinned
 				// not SymPy, because no version pinned
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "with version",
@@ -84,6 +158,7 @@ func TestExtract(t *testing.T) {
 				{Name: "under_score", Version: "1.3"},
 				{Name: "yolo", Version: "1.0"},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "comments",
@@ -95,6 +170,7 @@ func TestExtract(t *testing.T) {
 				{Name: "requests", Version: "1.0"},
 				{Name: "six", Version: "1.2"},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "pip example",
@@ -107,6 +183,7 @@ func TestExtract(t *testing.T) {
 				// not requests, because it has extras
 				// not urllib3, because it's pinned to a zip file
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "extras",
@@ -115,6 +192,7 @@ func TestExtract(t *testing.T) {
 				{Name: "pyjwt", Version: "2.1.0"},
 				{Name: "celery", Version: "4.4.7"},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "env variable",
@@ -123,11 +201,13 @@ func TestExtract(t *testing.T) {
 				{Name: "asdf", Version: "1.2"},
 				{Name: "another", Version: "1.0"},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid.txt",
-			wantInventory: []*extractor.Inventory{},
+			name:             "invalid",
+			path:             "testdata/invalid.txt",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "per requirement options",
@@ -224,6 +304,7 @@ func TestExtract(t *testing.T) {
 				//
 				// foo15== --config-settings --hash=sha256:123
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
@@ -237,6 +318,9 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = requirements.New(requirements.Config{Stats: collector})
+
 			fsys := os.DirFS(".")
 
 			r, err := fsys.Open(tt.path)
@@ -264,6 +348,11 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
+
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
+			}
 		})
 	}
 }
@@ -288,4 +377,25 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

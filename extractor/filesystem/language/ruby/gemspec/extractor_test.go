@@ -25,52 +25,107 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = gemspec.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           "yaml gemspec",
-			path:           "testdata/yaml-0.2.1.gemspec",
-			wantIsRequired: true,
+			name:             "yaml gemspec",
+			path:             "testdata/yaml-0.2.1.gemspec",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "ruby file",
-			path:           "testdata/test.rb",
-			wantIsRequired: false,
+			name:         "ruby file",
+			path:         "testdata/test.rb",
+			wantRequired: false,
+		},
+		{
+			name:             "yaml gemspec required if file size < max file size",
+			path:             "testdata/yaml-0.2.1.gemspec",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "yaml gemspec required if file size == max file size",
+			path:             "testdata/yaml-0.2.1.gemspec",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "yaml gemspec not required if file size > max file size",
+			path:             "testdata/yaml-0.2.1.gemspec",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "yaml gemspec required if max file size set to 0",
+			path:             "testdata/yaml-0.2.1.gemspec",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = gemspec.New(
+				gemspec.Config{
+					Stats:            collector,
+					MaxFileSizeBytes: test.maxFileSizeBytes,
+				},
+			)
+
+			// Set default size if not provided.
+			fileSizeBytes := test.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 100 * units.KiB
+			}
+
 			isRequired := e.FileRequired(test.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(test.path),
 				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
 			})
-			if isRequired != test.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", test.path, isRequired, test.wantIsRequired)
+			if isRequired != test.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", test.path, isRequired, test.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[test.path]
+			if gotResultMetric != test.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", test.path, gotResultMetric, test.wantResultMetric)
 			}
 		})
 	}
 }
 
 func TestExtract(t *testing.T) {
-	var e filesystem.Extractor = gemspec.Extractor{}
-
 	tests := []struct {
-		name          string
-		path          string
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "yaml gemspec",
@@ -82,6 +137,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/yaml-0.2.1.gemspec"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "rss gemspec",
@@ -93,26 +149,33 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rss-0.2.9.gemspec"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:    "invalid gemspec",
-			path:    "testdata/invalid.gemspec",
-			wantErr: cmpopts.AnyError,
+			name:             "invalid gemspec",
+			path:             "testdata/invalid.gemspec",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:          "empty gemspec",
-			path:          "testdata/empty.gemspec",
-			wantInventory: []*extractor.Inventory{},
+			name:             "empty gemspec",
+			path:             "testdata/empty.gemspec",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "bad definition gemspec",
-			path:          "testdata/badspec.gemspec",
-			wantInventory: []*extractor.Inventory{},
+			name:             "bad definition gemspec",
+			path:             "testdata/badspec.gemspec",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = gemspec.New(gemspec.Config{Stats: collector})
+
 			r, err := os.Open(test.path)
 			defer func() {
 				if err = r.Close(); err != nil {
@@ -137,6 +200,11 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%+v) diff (-want +got):\n%s", test.name, diff)
 			}
+
+			gotResultMetric := collector.fileExtractedResults[test.path]
+			if gotResultMetric != test.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", test.path, gotResultMetric, test.wantResultMetric)
+			}
 		})
 	}
 }
@@ -160,4 +228,25 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
