@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
 package osrelease_test
 
 import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,12 +27,13 @@ import (
 
 func TestGetOSRelease(t *testing.T) {
 	tests := []struct {
-		name    string
-		path    string
-		content string
-		mode    os.FileMode
-		want    map[string]string
-		wantErr error
+		name          string
+		path          string
+		content       string
+		mode          os.FileMode
+		want          map[string]string
+		wantErr       error
+		skipOnWindows bool
 	}{
 		{
 			name:    "location: etc/os-release",
@@ -57,11 +57,12 @@ func TestGetOSRelease(t *testing.T) {
 			wantErr: os.ErrNotExist,
 		},
 		{
-			name:    "permission error",
-			path:    "etc/os-release",
-			content: `ID=ubuntu`,
-			mode:    0,
-			wantErr: os.ErrPermission,
+			name:          "permission error",
+			path:          "etc/os-release",
+			content:       `ID=ubuntu`,
+			mode:          0,
+			wantErr:       os.ErrPermission,
+			skipOnWindows: true,
 		},
 		{
 			name: "ignore comments",
@@ -97,6 +98,10 @@ func TestGetOSRelease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.skipOnWindows && runtime.GOOS == "windows" {
+				t.Skip()
+			}
+
 			d := t.TempDir()
 			os.Mkdir(filepath.Join(d, "etc"), 0744)
 			os.MkdirAll(filepath.Join(d, "usr/lib"), 0744)
