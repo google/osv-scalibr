@@ -14,16 +14,19 @@
 
 package internal
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"regexp"
+)
+
+var windowsDriveRootRegexp = regexp.MustCompile(`^[a-zA-Z]{1}:[\\/]$`)
 
 // BuildTransitiveMaps fills the transitive map with aggregated numbers from subdirs.
 func BuildTransitiveMaps(m map[string]int) map[string]int {
 	transitive := map[string]int{}
 	for p, inodes := range m {
 		d := p
-		// TODO: b/343891566 - Normalize handling of drive letters here. The drive might be different
-		// 										 than C.
-		for d != "." && d != "/" && d != "c:\\" && d != "c:/" {
+		for d != "." && d != "/" && !windowsDriveRootRegexp.MatchString(d) {
 			d = filepath.Dir(d)
 			transitive[d] += inodes
 		}
