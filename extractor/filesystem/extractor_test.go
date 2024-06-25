@@ -411,7 +411,7 @@ func TestRun(t *testing.T) {
 			}
 
 			if fc.AfterInodeVisitedCount != tc.wantInodeCount {
-				t.Errorf("extractor.Run(%v) inodes visisted: got %d, want %d", tc.ex, fc.AfterInodeVisitedCount, tc.wantInodeCount)
+				t.Errorf("extractor.Run(%v) inodes visited: got %d, want %d", tc.ex, fc.AfterInodeVisitedCount, tc.wantInodeCount)
 			}
 
 			// The order of the locations doesn't matter.

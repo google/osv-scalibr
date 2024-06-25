@@ -231,7 +231,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:        "Jar file with pom.properties, IdentifyByFilename enabled",
-			description: "Contains valid pom.properties, won't be identifed by filename.",
+			description: "Contains valid pom.properties, won't be identified by filename.",
 			path:        filepath.FromSlash("testdata/simple.jar"),
 			cfg: archive.Config{
 				ExtractFromFilename: true,
