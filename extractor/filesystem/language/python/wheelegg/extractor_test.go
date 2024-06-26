@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
+	"github.com/google/osv-scalibr/testing/testcollector"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -112,7 +113,7 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := newTestCollector()
+			collector := testcollector.New()
 			e := wheelegg.New(wheelegg.Config{
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 				Stats:            collector,
@@ -132,7 +133,7 @@ func TestFileRequired(t *testing.T) {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 
-			gotResultMetric := collector.fileRequiredResults[tt.path]
+			gotResultMetric := collector.FileRequiredResult(tt.path)
 			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
 				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
@@ -255,7 +256,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			collector := newTestCollector()
+			collector := testcollector.New()
 			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
@@ -274,9 +275,14 @@ func TestExtract(t *testing.T) {
 			if wantResultMetric == "" && tt.wantErr == nil {
 				wantResultMetric = stats.FileExtractedResultSuccess
 			}
-			gotResultMetric := collector.fileExtractedResults[tt.path]
+			gotResultMetric := collector.FileExtractedResult(tt.path)
 			if gotResultMetric != wantResultMetric {
 				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
+			if gotFileSizeMetric != info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
 	}
@@ -380,7 +386,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 			info := tt.fakeFileInfo
 			r := bytes.NewReader(tt.fakeFileBytes)
 
-			collector := newTestCollector()
+			collector := testcollector.New()
 			cfg := wheelegg.Config{Stats: collector}
 
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
@@ -397,9 +403,14 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 			if wantResultMetric == "" && tt.wantErr == nil {
 				wantResultMetric = stats.FileExtractedResultSuccess
 			}
-			gotResultMetric := collector.fileExtractedResults[tt.path]
+			gotResultMetric := collector.FileExtractedResult(tt.path)
 			if gotResultMetric != wantResultMetric {
 				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
+			if gotFileSizeMetric != info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
 	}
@@ -463,25 +474,4 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
-}
-
-type testCollector struct {
-	stats.NoopCollector
-	fileRequiredResults  map[string]stats.FileRequiredResult
-	fileExtractedResults map[string]stats.FileExtractedResult
-}
-
-func newTestCollector() *testCollector {
-	return &testCollector{
-		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
-		fileExtractedResults: make(map[string]stats.FileExtractedResult),
-	}
-}
-
-func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
-	c.fileRequiredResults[filestats.Path] = filestats.Result
-}
-
-func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
-	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

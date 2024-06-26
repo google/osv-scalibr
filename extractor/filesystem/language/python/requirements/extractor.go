@@ -102,9 +102,14 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
+		var fileSizeBytes int64
+		if input.Info != nil {
+			fileSizeBytes = input.Info.Size()
+		}
 		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-			Path:   input.Path,
-			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+			Path:          input.Path,
+			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+			FileSizeBytes: fileSizeBytes,
 		})
 	}
 	return inventory, err

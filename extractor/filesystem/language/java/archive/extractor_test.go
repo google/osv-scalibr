@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
+	"github.com/google/osv-scalibr/testing/testcollector"
 )
 
 var (
@@ -147,7 +148,7 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := newTestCollector()
+			collector := testcollector.New()
 			cfg := defaultConfigWith(archive.Config{
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 				Stats:            collector,
@@ -163,7 +164,7 @@ func TestFileRequired(t *testing.T) {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 
-			gotResultMetric := collector.fileRequiredResults[tt.path]
+			gotResultMetric := collector.FileRequiredResult(tt.path)
 			if tt.wantResultMetric != "" && tt.wantResultMetric != gotResultMetric {
 				t.Fatalf("FileRequired(%s): recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
@@ -345,7 +346,7 @@ func TestExtract(t *testing.T) {
 			description: "A jar file with pom.properties at complex.jar/pom.properties and another at complex.jar/BOOT-INF/lib/inner.jar/pom.properties. The inner pom.properties is never extracted because MaxOpenedBytes is reached.",
 			cfg: archive.Config{
 				MaxOpenedBytes: 700,
-				Stats:          &testCollector{},
+				Stats:          testcollector.New(),
 			},
 			path: filepath.FromSlash("testdata/complex.jar"),
 			want: []*extractor.Inventory{{
@@ -461,7 +462,7 @@ func TestExtract(t *testing.T) {
 				r = noReaderAt{r: r}
 			}
 
-			collector := newTestCollector()
+			collector := testcollector.New()
 			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
@@ -480,9 +481,14 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
-			gotResultMetric := collector.fileExtractedResults[tt.path]
+			gotResultMetric := collector.FileExtractedResult(tt.path)
 			if tt.wantResultMetric != "" && tt.wantResultMetric != gotResultMetric {
 				t.Fatalf("Extract(%s): recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
+			if gotFileSizeMetric != info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
 	}
@@ -598,25 +604,4 @@ func mustJar(t *testing.T, path string) *os.File {
 	}
 
 	return jarFile
-}
-
-type testCollector struct {
-	stats.NoopCollector
-	fileRequiredResults  map[string]stats.FileRequiredResult
-	fileExtractedResults map[string]stats.FileExtractedResult
-}
-
-func newTestCollector() *testCollector {
-	return &testCollector{
-		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
-		fileExtractedResults: make(map[string]stats.FileExtractedResult),
-	}
-}
-
-func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
-	c.fileRequiredResults[filestats.Path] = filestats.Result
-}
-
-func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
-	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

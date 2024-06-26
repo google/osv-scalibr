@@ -128,7 +128,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	i, err := parse(input.Path, input.Reader)
 	if err != nil {
-		e.reportFileExtracted(input.Path, err)
+		e.reportFileExtracted(input.Path, input.Info, err)
 		return nil, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
 	}
 
@@ -138,17 +138,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		i.Locations = []string{input.Path}
 	}
 
-	e.reportFileExtracted(input.Path, nil)
+	e.reportFileExtracted(input.Path, input.Info, nil)
 	return inventory, nil
 }
 
-func (e Extractor) reportFileExtracted(path string, err error) {
+func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
 	if e.stats == nil {
 		return
 	}
+	var fileSizeBytes int64
+	if fileinfo != nil {
+		fileSizeBytes = fileinfo.Size()
+	}
 	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-		Path:   path,
-		Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		Path:          path,
+		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+		FileSizeBytes: fileSizeBytes,
 	})
 }
 

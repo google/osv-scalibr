@@ -118,22 +118,27 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	binfo, err := buildinfo.Read(input.Reader.(io.ReaderAt))
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)
-		e.reportFileExtracted(input.Path, err)
+		e.reportFileExtracted(input.Path, input.Info, err)
 		return []*extractor.Inventory{}, nil
 	}
 
 	inventory, err := e.extractPackagesFromBuildInfo(binfo, input.Path)
-	e.reportFileExtracted(input.Path, err)
+	e.reportFileExtracted(input.Path, input.Info, err)
 	return inventory, err
 }
 
-func (e Extractor) reportFileExtracted(path string, err error) {
+func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
 	if e.stats == nil {
 		return
 	}
+	var fileSizeBytes int64
+	if fileinfo != nil {
+		fileSizeBytes = fileinfo.Size()
+	}
 	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-		Path:   path,
-		Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		Path:          path,
+		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+		FileSizeBytes: fileSizeBytes,
 	})
 }
 

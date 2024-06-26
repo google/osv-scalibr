@@ -110,7 +110,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts packages from the .gemspec file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	i, err := extract(input.Path, input.Reader)
-	e.reportFileExtracted(input.Path, filesystem.ExtractorErrorToFileExtractedResult(err))
+	e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
 		return nil, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)
 	}
@@ -122,13 +122,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return []*extractor.Inventory{i}, nil
 }
 
-func (e Extractor) reportFileExtracted(path string, result stats.FileExtractedResult) {
+func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result stats.FileExtractedResult) {
 	if e.stats == nil {
 		return
 	}
+	var fileSizeBytes int64
+	if fileinfo != nil {
+		fileSizeBytes = fileinfo.Size()
+	}
 	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-		Path:   path,
-		Result: result,
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
 	})
 }
 

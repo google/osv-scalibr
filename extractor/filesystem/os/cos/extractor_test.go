@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
+	"github.com/google/osv-scalibr/testing/testcollector"
 )
 
 const (
@@ -96,7 +97,7 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := newTestCollector()
+			collector := testcollector.New()
 			var e filesystem.Extractor = cos.New(cos.Config{
 				Stats:            collector,
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
@@ -117,7 +118,7 @@ func TestFileRequired(t *testing.T) {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
 			}
 
-			gotResultMetric := collector.fileRequiredResults[tt.path]
+			gotResultMetric := collector.FileRequiredResult(tt.path)
 			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
 				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
@@ -264,7 +265,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := newTestCollector()
+			collector := testcollector.New()
 			var e filesystem.Extractor = cos.New(cos.Config{
 				Stats: collector,
 			})
@@ -282,7 +283,18 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d}
+			info, err := os.Stat(tt.path)
+			if err != nil {
+				t.Fatalf("Failed to stat test file: %v", err)
+			}
+
+			input := &filesystem.ScanInput{
+				Path:     tt.path,
+				Reader:   r,
+				ScanRoot: d,
+				Info:     info,
+			}
+
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
@@ -295,9 +307,14 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
-			gotResultMetric := collector.fileExtractedResults[tt.path]
+			gotResultMetric := collector.FileExtractedResult(tt.path)
 			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
 				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
+			if gotFileSizeMetric != info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
 	}
@@ -384,25 +401,4 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
-}
-
-type testCollector struct {
-	stats.NoopCollector
-	fileRequiredResults  map[string]stats.FileRequiredResult
-	fileExtractedResults map[string]stats.FileExtractedResult
-}
-
-func newTestCollector() *testCollector {
-	return &testCollector{
-		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
-		fileExtractedResults: make(map[string]stats.FileExtractedResult),
-	}
-}
-
-func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
-	c.fileRequiredResults[filestats.Path] = filestats.Result
-}
-
-func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
-	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

@@ -39,8 +39,9 @@ const (
 // the file was skipped due to an error during extraction, `Error` will be
 // populated.
 type FileExtractedStats struct {
-	Path   string
-	Result FileExtractedResult
+	Path          string
+	Result        FileExtractedResult
+	FileSizeBytes int64
 
 	// Optional. For extractors that unarchive a compressed files, this reports
 	// the bytes that were opened during the unarchiving process.

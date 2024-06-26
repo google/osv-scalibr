@@ -145,9 +145,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	if e.stats != nil {
+		var fileSizeBytes int64
+		if input.Info != nil {
+			fileSizeBytes = input.Info.Size()
+		}
 		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-			Path:   input.Path,
-			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+			Path:          input.Path,
+			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+			FileSizeBytes: fileSizeBytes,
 		})
 	}
 	return inventory, err
