@@ -10,24 +10,18 @@ See [here](docs/supported_inventory_types.md) for the list of currently supporte
 
 ## Prerequisites
 
-To build SCALIBR, you'll need to have the following installed:
-
-* `go`: Follow https://go.dev/doc/install
-* `protoc`: Install the appropriate [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
-  * For Mac, you can also [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
-* `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
-
+To build SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/install.
 
 ## How to use
 
 ### As a standalone binary
 
-1. `make`
-1. `./scalibr --result=result.textproto`
+1. `go install github.com/google/osv-scalibr/binary`
+1. `scalibr --result=result.textproto`
 
 See the [result proto definition](/binary/proto/scan_result.proto) for details about the scan result format.
 
-Run `./scalibr --help` for a list of additional CLI args.
+Run `scalibr --help` for a list of additional CLI args.
 
 ### As a library:
 1. Import `github.com/google/osv-scalibr` into your Go project
@@ -46,13 +40,13 @@ See the [run_scalibr_on_image.sh](/run_scalibr_on_image.sh) script for an exampl
 SCALIBR supports generating the result of inventory extraction as an SPDX v2.3 file in json, yaml or tag-value format. Example usage:
 
 ```
-./scalibr -o spdx23-json=result.spdx.json
+scalibr -o spdx23-json=result.spdx.json
 ```
 
 Some fields in the generated SPDX can be overwritten:
 
 ```
-./scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-namespace" --spdx-creators=Organization:Google -o spdx23-json=result.spdx.json
+scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-namespace" --spdx-creators=Organization:Google -o spdx23-json=result.spdx.json
 ```
 
 ## Running built-in plugins
@@ -96,7 +90,7 @@ results := scalibr.New().Scan(context.Background(), cfg)
 ```
 
 ## Custom logging
-You can make the  SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
+You can make the SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
 
 ```
 import (
@@ -112,6 +106,18 @@ log.Info(results)
 
 ## Contributing
 Read how to [contribute to SCALIBR](CONTRIBUTING.md).
+
+To build and test your local changes, run `make` and `make test`. A local `scalibr` binary will be generated in the repo base.
+
+Some of your code contributions might require regenerating protos. This can
+happen when, say, you want to contribute a new inventory type. For such cases,
+you'll need install a few dependencies
+
+* `protoc`: Install the appropriate [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
+  * For Mac, you can also [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
+* `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
+
+and then run `make protos` or `./build_protos.sh`.
 
 ## Disclaimers
 SCALIBR is not an official Google product.
