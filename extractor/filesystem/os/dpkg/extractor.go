@@ -32,15 +32,16 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "os/dpkg"
 
-	// defaultMaxFileSize is the maximum file size an extractor will unmarshal.
+	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSize = 100 * units.MiB
+	defaultMaxFileSizeBytes = 100 * units.MiB
 
 	// defaultIncludeNotInstalled is the default value for the IncludeNotInstalled option.
 	defaultIncludeNotInstalled = false
@@ -48,9 +49,11 @@ const (
 
 // Config is the configuration for the Extractor.
 type Config struct {
-	// MaxFileSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	MaxFileSize int64
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
+	// `FileRequired` gets a bigger file, it will return false,
+	MaxFileSizeBytes int64
 	// IncludeNotInstalled includes packages that are not installed
 	// (e.g. `deinstall`, `purge`, and those missing a status field).
 	IncludeNotInstalled bool
@@ -59,14 +62,15 @@ type Config struct {
 // DefaultConfig returns the default configuration for the DPKG extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxFileSize:         defaultMaxFileSize,
+		MaxFileSizeBytes:    defaultMaxFileSizeBytes,
 		IncludeNotInstalled: defaultIncludeNotInstalled,
 	}
 }
 
 // Extractor extracts packages from DPKG files.
 type Extractor struct {
-	maxFileSize         int64
+	stats               stats.Collector
+	maxFileSizeBytes    int64
 	includeNotInstalled bool
 }
 
@@ -78,7 +82,8 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		maxFileSize:         cfg.MaxFileSize,
+		stats:               cfg.Stats,
+		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
 		includeNotInstalled: cfg.IncludeNotInstalled,
 	}
 }
@@ -86,7 +91,8 @@ func New(cfg Config) *Extractor {
 // Config returns the configuration of the extractor.
 func (e Extractor) Config() Config {
 	return Config{
-		MaxFileSize:         e.maxFileSize,
+		Stats:               e.stats,
+		MaxFileSizeBytes:    e.maxFileSizeBytes,
 		IncludeNotInstalled: e.includeNotInstalled,
 	}
 }
@@ -98,28 +104,46 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches dpkg status file pattern.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// For Windows
-	path = filepath.ToSlash(path)
-
-	// Matches the status file.
-	if path == "var/lib/dpkg/status" {
-		return true
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	// Should either match the status file or be in the status.d directory.
+	normalized := filepath.ToSlash(path)
+	if normalized != "var/lib/dpkg/status" && !strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") {
+		return false
 	}
 
-	// Matches all files in status.d.
-	if strings.HasPrefix(path, "var/lib/dpkg/status.d/") {
-		return true
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
 	}
 
-	return false
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts packages from dpkg status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	if input.Info != nil && input.Info.Size() > e.maxFileSize {
-		return nil, fmt.Errorf("DPKG status file %s is too large: %d", input.Path, input.Info.Size())
+	inventory, err := e.extractFromInput(ctx, input)
+	if e.stats != nil {
+		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:   input.Path,
+			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		})
 	}
+	return inventory, err
+}
+
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	m, err := osrelease.GetOSRelease(input.ScanRoot)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)

@@ -17,6 +17,7 @@ package cos_test
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,8 +26,11 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 const (
@@ -42,55 +46,107 @@ const (
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = cos.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           "package info",
-			path:           "etc/cos-package-info.json",
-			wantIsRequired: true,
+			name:             "package info",
+			path:             "etc/cos-package-info.json",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		}, {
-			name:           "not a package info file",
-			path:           "some/other/file.json",
-			wantIsRequired: false,
+			name:         "not a package info file",
+			path:         "some/other/file.json",
+			wantRequired: false,
+		}, {
+			name:             "package info required if file size < max file size",
+			path:             "etc/cos-package-info.json",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		}, {
+			name:             "package info required if file size == max file size",
+			path:             "etc/cos-package-info.json",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		}, {
+			name:             "package info not required if file size > max file size",
+			path:             "etc/cos-package-info.json",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		}, {
+			name:             "package info required if max file size set to 0",
+			path:             "etc/cos-package-info.json",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isRequired := e.FileRequired(tt.path, nil)
-			if isRequired != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
+			collector := newTestCollector()
+			var e filesystem.Extractor = cos.New(cos.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
+			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			})
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
 }
 
 func TestExtract(t *testing.T) {
-	var e filesystem.Extractor = cos.Extractor{}
-
 	tests := []struct {
-		name          string
-		path          string
-		osrelease     string
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		osrelease        string
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name:      "invalid",
-			path:      "testdata/invalid",
-			osrelease: cosOSRlease,
-			wantErr:   cmpopts.AnyError,
+			name:             "invalid",
+			path:             "testdata/invalid",
+			osrelease:        cosOSRlease,
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty.json",
-			osrelease:     cosOSRlease,
-			wantInventory: []*extractor.Inventory{},
+			name:             "empty",
+			path:             "testdata/empty.json",
+			osrelease:        cosOSRlease,
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "single",
@@ -110,6 +166,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "multiple",
@@ -165,6 +222,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "no version ID",
@@ -200,11 +258,17 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = cos.New(cos.Config{
+				Stats: collector,
+			})
+
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
 
@@ -229,6 +293,11 @@ func TestExtract(t *testing.T) {
 			})
 			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -315,4 +384,25 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

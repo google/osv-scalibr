@@ -17,6 +17,7 @@ package dpkg_test
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -29,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestNew(t *testing.T) {
@@ -41,18 +44,18 @@ func TestNew(t *testing.T) {
 			name: "default",
 			cfg:  dpkg.DefaultConfig(),
 			wantCfg: dpkg.Config{
-				MaxFileSize:         100 * units.MiB,
+				MaxFileSizeBytes:    100 * units.MiB,
 				IncludeNotInstalled: false,
 			},
 		},
 		{
 			name: "custom",
 			cfg: dpkg.Config{
-				MaxFileSize:         10,
+				MaxFileSizeBytes:    10,
 				IncludeNotInstalled: true,
 			},
 			wantCfg: dpkg.Config{
-				MaxFileSize:         10,
+				MaxFileSizeBytes:    10,
 				IncludeNotInstalled: true,
 			},
 		},
@@ -69,35 +72,87 @@ func TestNew(t *testing.T) {
 }
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = dpkg.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           "status file",
-			path:           "var/lib/dpkg/status",
-			wantIsRequired: true,
+			name:             "status file",
+			path:             "var/lib/dpkg/status",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "file in status.d",
-			path:           "var/lib/dpkg/status.d/foo",
-			wantIsRequired: true,
+			name:             "file in status.d",
+			path:             "var/lib/dpkg/status.d/foo",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		}, {
-			name:           "status.d as a file",
-			path:           "var/lib/dpkg/status.d",
-			wantIsRequired: false,
+			name:         "status.d as a file",
+			path:         "var/lib/dpkg/status.d",
+			wantRequired: false,
+		}, {
+			name:             "status file required if file size < max file size",
+			path:             "var/lib/dpkg/status",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		}, {
+			name:             "status file required if file size == max file size",
+			path:             "var/lib/dpkg/status",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		}, {
+			name:             "status file not required if file size > max file size",
+			path:             "var/lib/dpkg/status",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		}, {
+			name:             "status file required if max file size set to 0",
+			path:             "var/lib/dpkg/status",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			isRequired := e.FileRequired(tt.path, nil)
-			if isRequired != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
+			collector := newTestCollector()
+			var e filesystem.Extractor = dpkg.New(dpkg.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
+			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			})
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -112,12 +167,13 @@ ID=debian`
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		osrelease     string
-		cfg           dpkg.Config
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		osrelease        string
+		cfg              dpkg.Config
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name:      "valid status file",
@@ -235,6 +291,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "packages with no version set are skipped",
@@ -268,6 +325,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/noversion"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "packages with no name set are skipped",
@@ -301,6 +359,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/nopackage"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "statusfield",
@@ -347,6 +406,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/statusfield"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "statusfield including not installed",
@@ -447,19 +507,22 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/statusfield"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty",
-			osrelease:     DebianBookworm,
-			wantInventory: []*extractor.Inventory{},
+			name:             "empty",
+			path:             "testdata/empty",
+			osrelease:        DebianBookworm,
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid",
-			osrelease:     DebianBookworm,
-			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
+			name:             "invalid",
+			path:             "testdata/invalid",
+			osrelease:        DebianBookworm,
+			wantInventory:    []*extractor.Inventory{},
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name: "VERSION_CODENAME not set, fallback to VERSION_ID",
@@ -482,6 +545,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/single"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "no version",
@@ -502,6 +566,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/single"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "osrelease id not set",
@@ -522,6 +587,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/single"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "ubuntu",
@@ -547,15 +613,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/single"},
 				},
 			},
-		},
-		{
-			name:      "file size over limit",
-			path:      "testdata/valid",
-			osrelease: DebianBookworm,
-			cfg: dpkg.Config{
-				MaxFileSize: 5,
-			},
-			wantErr: cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "status.d file without Status field set should work",
@@ -577,12 +635,16 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/status.d/foo"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			tt.cfg.Stats = collector
+
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
 
@@ -613,6 +675,11 @@ func TestExtract(t *testing.T) {
 			})
 			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -773,8 +840,12 @@ func createOsRelease(t *testing.T, root string, content string) {
 func defaultConfigWith(cfg dpkg.Config) dpkg.Config {
 	newCfg := dpkg.DefaultConfig()
 
-	if cfg.MaxFileSize > 0 {
-		newCfg.MaxFileSize = cfg.MaxFileSize
+	if cfg.Stats != nil {
+		newCfg.Stats = cfg.Stats
+	}
+
+	if cfg.MaxFileSizeBytes > 0 {
+		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
 	}
 
 	if cfg.IncludeNotInstalled {
@@ -782,4 +853,25 @@ func defaultConfigWith(cfg dpkg.Config) dpkg.Config {
 	}
 
 	return newCfg
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

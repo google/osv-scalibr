@@ -67,9 +67,9 @@ var (
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{
 		dpkg.New(dpkg.DefaultConfig()),
-		&apk.Extractor{},
+		apk.New(apk.DefaultConfig()),
 		rpm.New(rpm.DefaultConfig()),
-		&cos.Extractor{},
+		cos.New(cos.DefaultConfig()),
 	}
 
 	// Collections of extractors.

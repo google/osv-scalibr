@@ -19,6 +19,7 @@ package rpm_test
 import (
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,43 +31,115 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = rpm.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		// BDB
-		{path: "usr/lib/sysimage/rpm/Packages", wantIsRequired: true},
-		{path: "var/lib/rpm/Packages", wantIsRequired: true},
-		{path: "usr/share/rpm/Packages", wantIsRequired: true},
+		{path: "usr/lib/sysimage/rpm/Packages", wantRequired: true},
+		{path: "var/lib/rpm/Packages", wantRequired: true},
+		{path: "usr/share/rpm/Packages", wantRequired: true},
 		// NDB
-		{path: "usr/lib/sysimage/rpm/Packages.db", wantIsRequired: true},
-		{path: "var/lib/rpm/Packages.db", wantIsRequired: true},
-		{path: "usr/share/rpm/Packages.db", wantIsRequired: true},
+		{path: "usr/lib/sysimage/rpm/Packages.db", wantRequired: true},
+		{path: "var/lib/rpm/Packages.db", wantRequired: true},
+		{path: "usr/share/rpm/Packages.db", wantRequired: true},
 		// SQLite3
-		{path: "usr/lib/sysimage/rpm/rpmdb.sqlite", wantIsRequired: true},
-		{path: "var/lib/rpm/rpmdb.sqlite", wantIsRequired: true},
-		{path: "usr/share/rpm/rpmdb.sqlite", wantIsRequired: true},
+		{path: "usr/lib/sysimage/rpm/rpmdb.sqlite", wantRequired: true},
+		{path: "var/lib/rpm/rpmdb.sqlite", wantRequired: true},
+		{path: "usr/share/rpm/rpmdb.sqlite", wantRequired: true},
 		// invalid
-		{path: "rpm/rpmdb.sqlite", wantIsRequired: false},
-		{path: "rpm/Packages.db", wantIsRequired: false},
-		{path: "rpm/Packages", wantIsRequired: false},
-		{path: "foo/var/lib/rpm/rpmdb.sqlite", wantIsRequired: false},
-		{path: "foo/var/lib/rpm/Packages", wantIsRequired: false},
+		{path: "rpm/rpmdb.sqlite", wantRequired: false},
+		{path: "rpm/Packages.db", wantRequired: false},
+		{path: "rpm/Packages", wantRequired: false},
+		{path: "foo/var/lib/rpm/rpmdb.sqlite", wantRequired: false},
+		{path: "foo/var/lib/rpm/Packages", wantRequired: false},
+		{path: "/rpm/rpmdb.sqlite", wantRequired: false},
+		{path: "/rpm/Packages.db", wantRequired: false},
+		{path: "/rpm/Packages", wantRequired: false},
+		{path: "/foo/var/lib/rpm/rpmdb.sqlite", wantRequired: false},
+		{path: "/foo/var/lib/rpm/Packages", wantRequired: false},
+		// File size limits
+		{
+			name:             "Packages file required if file size < max file size",
+			path:             "usr/lib/sysimage/rpm/Packages",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "Packages file required if file size == max file size",
+			path:             "usr/lib/sysimage/rpm/Packages",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "Packages file not required if file size > max file size",
+			path:             "usr/lib/sysimage/rpm/Packages",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "Packages file required if max file size set to 0",
+			path:             "usr/lib/sysimage/rpm/Packages",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			isRequired := e.FileRequired(tt.path, nil)
-			if isRequired != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
+		desc := tt.name
+		if desc == "" {
+			desc = tt.path
+		}
+
+		t.Run(desc, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = rpm.New(rpm.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
+			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			})
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			wantResultMetric := tt.wantResultMetric
+			if wantResultMetric == "" && tt.wantRequired {
+				wantResultMetric = stats.FileRequiredResultOK
+			}
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if wantResultMetric != "" && gotResultMetric != wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
 			}
 		})
 	}
@@ -98,14 +171,16 @@ func TestExtract(t *testing.T) {
 		// rpm -qa --qf "%{NAME}@%{VERSION}-%{RELEASE}\n" |sort |head -n 3
 		wantInventory []*extractor.Inventory
 		// rpm -qa | wc -l
-		wantResults int
-		wantErr     error
+		wantResults      int
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "opensuse/leap:15.5 Packages.db file (NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
-			path:      "testdata/Packages.db",
-			osrelease: fedora38,
+			path:             "testdata/Packages.db",
+			osrelease:        fedora38,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages.db"},
@@ -161,8 +236,9 @@ func TestExtract(t *testing.T) {
 		{
 			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
-			path:      "testdata/Packages",
-			osrelease: fedora38,
+			path:             "testdata/Packages",
+			osrelease:        fedora38,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
@@ -216,39 +292,44 @@ func TestExtract(t *testing.T) {
 			wantResults: 148,
 		},
 		{
-			name:          "file not found",
-			path:          "testdata/foobar",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       os.ErrNotExist,
+			name:             "file not found",
+			path:             "testdata/foobar",
+			wantInventory:    nil,
+			wantResults:      0,
+			wantErr:          os.ErrNotExist,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty.sqlite",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.EOF,
+			name:             "empty",
+			path:             "testdata/empty.sqlite",
+			wantInventory:    nil,
+			wantResults:      0,
+			wantErr:          io.EOF,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.ErrUnexpectedEOF,
+			name:             "invalid",
+			path:             "testdata/invalid",
+			wantInventory:    nil,
+			wantResults:      0,
+			wantErr:          io.ErrUnexpectedEOF,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:          "corrupt db times out",
-			path:          "testdata/timeout/Packages",
-			timeoutval:    1 * time.Second,
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       cmpopts.AnyError,
+			name:             "corrupt db times out",
+			path:             "testdata/timeout/Packages",
+			timeoutval:       1 * time.Second,
+			wantInventory:    nil,
+			wantResults:      0,
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
-			path:      "testdata/rpmdb.sqlite",
-			osrelease: fedora38,
+			path:             "testdata/rpmdb.sqlite",
+			osrelease:        fedora38,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
@@ -307,6 +388,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/rpmdb.sqlite",
 			osrelease: `ID=fedora
 			BUILD_ID=asdf`,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/rpmdb.sqlite"},
@@ -369,6 +451,7 @@ func TestExtract(t *testing.T) {
 			PLATFORM_ID="platform:f32"
 			PRETTY_NAME="Fedora 32 (Container Image)"
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Locations: []string{"testdata/Packages"},
@@ -401,9 +484,16 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("CopyFileToTempDir(%s) error: %v\n", tt.path, err)
 			}
 
-			var e filesystem.Extractor = rpm.New(rpm.Config{Timeout: tt.timeoutval})
+			collector := newTestCollector()
+			var e filesystem.Extractor = rpm.New(rpm.Config{
+				Stats:   collector,
+				Timeout: tt.timeoutval,
+			})
 
-			input := &filesystem.ScanInput{Path: filepath.Base(tmpPath), ScanRoot: filepath.Dir(tmpPath)}
+			input := &filesystem.ScanInput{
+				Path:     filepath.Base(tmpPath),
+				ScanRoot: filepath.Dir(tmpPath),
+			}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tmpPath, err, tt.wantErr)
@@ -422,6 +512,11 @@ func TestExtract(t *testing.T) {
 
 			if len(got) != tt.wantResults {
 				t.Errorf("Extract(%s): got %d results, want %d\n", tmpPath, len(got), tt.wantResults)
+			}
+
+			gotResultMetric := collector.fileExtractedResults[filepath.Base(tmpPath)]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tmpPath, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -547,4 +642,25 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }

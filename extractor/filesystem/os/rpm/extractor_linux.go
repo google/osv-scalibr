@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
 	_ "github.com/mattn/go-sqlite3"
@@ -42,17 +43,48 @@ const Name = "os/rpm"
 
 const defaultTimeout = 5 * time.Minute
 
+var (
+	requiredDirectory = []string{
+		"usr/lib/sysimage/rpm/",
+		"var/lib/rpm/",
+		"usr/share/rpm/",
+	}
+
+	requiredFilename = []string{
+		// Berkley DB (old format)
+		"Packages",
+		// NDB (very rare alternative to sqlite)
+		"Packages.db",
+		// SQLite3 (new format)
+		"rpmdb.sqlite",
+	}
+)
+
 // Config contains RPM specific configuration values
 type Config struct {
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
+	// `FileRequired` gets a bigger file, it will return false,
+	MaxFileSizeBytes int64
+	// Timeout is the timeout duration for parsing the RPM database.
 	Timeout time.Duration
 }
 
 // DefaultConfig returns the default configuration values for the RPM extractor.
-func DefaultConfig() Config { return Config{Timeout: defaultTimeout} }
+func DefaultConfig() Config {
+	return Config{
+		Stats:            nil,
+		MaxFileSizeBytes: 0,
+		Timeout:          defaultTimeout,
+	}
+}
 
 // Extractor extracts rpm packages from rpm database.
 type Extractor struct {
-	Timeout time.Duration
+	stats            stats.Collector
+	maxFileSizeBytes int64
+	Timeout          time.Duration
 }
 
 // New returns an RPM extractor.
@@ -62,7 +94,11 @@ type Extractor struct {
 // e := New(DefaultConfig())
 // ```
 func New(cfg Config) *Extractor {
-	return &Extractor{Timeout: cfg.Timeout}
+	return &Extractor{
+		stats:            cfg.Stats,
+		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		Timeout:          cfg.Timeout,
+	}
 }
 
 // Name of the extractor.
@@ -72,31 +108,45 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches rpm status file pattern.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// For Windows
-	path = filepath.ToSlash(path)
-
-	requiredDirectory := []string{
-		"usr/lib/sysimage/rpm",
-		"var/lib/rpm",
-		"usr/share/rpm",
+func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	dir, filename := filepath.Split(filepath.ToSlash(path))
+	if !slices.Contains(requiredDirectory, dir) || !slices.Contains(requiredFilename, filename) {
+		return false
 	}
 
-	requiredFilename := []string{
-		// Berkley DB (old format)
-		"Packages",
-		// NDB (very rare alternative to sqlite)
-		"Packages.db",
-		// SQLite3 (new format)
-		"rpmdb.sqlite",
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
 	}
 
-	return slices.Contains(requiredDirectory, filepath.Dir(path)) &&
-		slices.Contains(requiredFilename, filepath.Base(path))
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.stats == nil {
+		return
+	}
+	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract extracts packages from rpm status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	inventory, err := e.extractFromInput(ctx, input)
+	if e.stats != nil {
+		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:   input.Path,
+			Result: filesystem.ExtractorErrorToFileExtractedResult(err),
+		})
+	}
+	return inventory, err
+}
+
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	absPath := filepath.Join(input.ScanRoot, input.Path)
 	rpmPkgs, err := e.parseRPMDB(absPath)
 	if err != nil {

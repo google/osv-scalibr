@@ -17,6 +17,7 @@ package apk_test
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,45 +26,98 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = apk.Extractor{}
-
 	tests := []struct {
-		name           string
-		path           string
-		wantIsRequired bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:           "installed file",
-			path:           "lib/apk/db/installed",
-			wantIsRequired: true,
+			name:             "installed file",
+			path:             "lib/apk/db/installed",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:           "sub file",
-			path:           "lib/apk/db/installed/test",
-			wantIsRequired: false,
+			name:         "sub file",
+			path:         "lib/apk/db/installed/test",
+			wantRequired: false,
 		},
 		{
-			name:           "directory",
-			path:           "lib/apk/db/installed/",
-			wantIsRequired: false,
+			name:         "inside other dir",
+			path:         "foo/lib/apk/db/installed",
+			wantRequired: false,
 		},
 		{
-			name:           "inside other dir",
-			path:           "foo/lib/apk/db/installed/",
-			wantIsRequired: false,
+			name:             "installed file required if file size < max file size",
+			path:             "lib/apk/db/installed",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "installed file required if file size == max file size",
+			path:             "lib/apk/db/installed",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "installed file not required if file size > max file size",
+			path:             "lib/apk/db/installed",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "installed file required if max file size set to 0",
+			path:             "lib/apk/db/installed",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isRequired := e.FileRequired(tt.path, nil)
-			if isRequired != tt.wantIsRequired {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
+			collector := newTestCollector()
+			var e filesystem.Extractor = apk.New(apk.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			})
+
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1000
+			}
+
+			isRequired := e.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			})
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.fileRequiredResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -77,14 +131,13 @@ HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"`
 
 func TestExtract(t *testing.T) {
-	var e filesystem.Extractor = apk.Extractor{}
-
 	tests := []struct {
-		name          string
-		path          string
-		osrelease     string
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name             string
+		path             string
+		osrelease        string
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name:      "alpine latest",
@@ -107,6 +160,7 @@ func TestExtract(t *testing.T) {
 				getInventory("testdata/installed", "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only"),
 				getInventory("testdata/installed", "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib"),
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "origin not set",
@@ -115,16 +169,19 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				getInventory("testdata/no-origin", "pkgname", "", "1.2.3", "alpine", "3.18.0", "", "x86_64", "GPL-2.0-only"),
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty",
-			wantInventory: []*extractor.Inventory{},
+			name:             "empty",
+			path:             "testdata/empty",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid",
-			wantInventory: []*extractor.Inventory{},
+			name:             "invalid",
+			path:             "testdata/invalid",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "osrelease openwrt",
@@ -134,6 +191,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "1.2.3", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "osrelease no version",
@@ -142,6 +200,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "no osrelease",
@@ -150,11 +209,17 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only"),
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			collector := newTestCollector()
+			var e filesystem.Extractor = apk.New(apk.Config{
+				Stats: collector,
+			})
+
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
 
@@ -179,6 +244,11 @@ func TestExtract(t *testing.T) {
 			})
 			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+
+			gotResultMetric := collector.fileExtractedResults[tt.path]
+			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -281,4 +351,25 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
+}
+
+type testCollector struct {
+	stats.NoopCollector
+	fileRequiredResults  map[string]stats.FileRequiredResult
+	fileExtractedResults map[string]stats.FileExtractedResult
+}
+
+func newTestCollector() *testCollector {
+	return &testCollector{
+		fileRequiredResults:  make(map[string]stats.FileRequiredResult),
+		fileExtractedResults: make(map[string]stats.FileExtractedResult),
+	}
+}
+
+func (c *testCollector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+	c.fileRequiredResults[filestats.Path] = filestats.Result
+}
+
+func (c *testCollector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+	c.fileExtractedResults[filestats.Path] = filestats.Result
 }
