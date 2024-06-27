@@ -25,6 +25,12 @@ as an example.
 1.  Register your detector in
     [list.go](/detector/list/list.go)
     so you can use it in the CLI.
+1.  If you added new dependencies, regenerate the go.mod file by running
+
+    ```sh
+    $ `go mod tidy`
+    ```
+
 1.  Test your new detector on a local machine, using the plugin `Name()` to
     enable it, e.g.
 
