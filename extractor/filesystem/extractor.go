@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -169,9 +168,6 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []string)
 		inventory: []*extractor.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
-
-		mapInodes:   make(map[string]int),
-		mapExtracts: make(map[string]int),
 	}, nil
 }
 
@@ -195,7 +191,6 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 
 	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
 		wc.inodesVisited, wc.extractCalls, time.Since(start))
-	printAnalyseInodes(wc)
 
 	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
 }
@@ -227,10 +222,6 @@ type walkContext struct {
 	lastInodes   int
 	extractCalls int
 	lastExtracts int
-
-	// Data for analytics.
-	mapInodes   map[string]int
-	mapExtracts map[string]int
 }
 
 func walkIndividualFiles(fsys fs.FS, paths []string, fn fs.WalkDirFunc) error {
@@ -293,8 +284,6 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		return nil
 	}
 
-	wc.mapInodes[internal.ParentDir(filepath.Dir(path), 3)]++
-
 	for _, ex := range wc.extractors {
 		wc.runExtractor(ex, path, fileinfo)
 	}
@@ -328,7 +317,6 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 		return
 	}
 
-	wc.mapExtracts[internal.ParentDir(filepath.Dir(path), 3)]++
 	wc.extractCalls++
 
 	start := time.Now()
@@ -360,7 +348,6 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 func (wc *walkContext) UpdateScanRoot(absRoot string, fs fs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
-	wc.mapInodes = make(map[string]int)
 	return nil
 }
 
@@ -458,55 +445,4 @@ func (wc *walkContext) printStatus(path string) {
 	wc.lastStatus = time.Now()
 	wc.lastInodes = wc.inodesVisited
 	wc.lastExtracts = wc.extractCalls
-}
-
-func printAnalyseInodes(wc *walkContext) {
-	printSizeInformation(wc)
-
-	transitiveInodes := internal.BuildTransitiveMaps(wc.mapInodes)
-	transitiveExtracts := internal.BuildTransitiveMaps(wc.mapExtracts)
-
-	dirs := mapToList(wc, transitiveInodes, transitiveExtracts)
-
-	slices.SortFunc(dirs, func(a, b pathCount) int { return b.inodes - a.inodes })
-
-	printTop10(dirs)
-}
-
-func printSizeInformation(wc *walkContext) {
-	b := 0
-	for p := range wc.mapInodes {
-		b += len(p) + 4
-	}
-	for p := range wc.mapExtracts {
-		b += len(p) + 4
-	}
-	log.Infof("Analytics data: %d dirs in mapInodes, %d dirs in mapExtracts, estimated bytes: %d",
-		len(wc.mapInodes), len(wc.mapExtracts), b)
-}
-
-type pathCount struct {
-	path   string
-	inodes int
-}
-
-func mapToList(wc *walkContext, transitiveInodes, transitiveExtracts map[string]int) []pathCount {
-	dirs := make([]pathCount, 0, len(wc.mapInodes))
-	for p, inodes := range wc.mapInodes {
-		// If the directory contains any Extract calls, filter it out.
-		if wc.mapExtracts[p]+transitiveExtracts[p] > 0 {
-			continue
-		}
-		dirs = append(dirs, pathCount{p, inodes + transitiveInodes[p]})
-	}
-
-	return dirs
-}
-
-func printTop10(dirs []pathCount) {
-	out := ""
-	for _, d := range dirs[:min(len(dirs), 10)] {
-		out += fmt.Sprintf("%9d %s\n", d.inodes, d.path)
-	}
-	log.Infof("Top 10 directories by number of files without Extract calls:\n%s", out)
 }
