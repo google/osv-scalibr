@@ -25,6 +25,7 @@ import (
 
 	// SCALIBR internal extractors.
 
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -63,6 +64,8 @@ var (
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
 	Dotnet []filesystem.Extractor = []filesystem.Extractor{packageslockjson.New(packageslockjson.DefaultConfig())}
+	// Containers extractors.
+	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
 
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{

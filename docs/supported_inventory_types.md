@@ -39,4 +39,8 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Rust
   * Cargo.lock (OSV)
 
+## Container inventory
+
+* Containerd container images that are running on host
+
 If you're a SCALIBR user and are interested in having it support new inventory types we're happy to accept contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
