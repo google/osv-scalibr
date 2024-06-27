@@ -22,6 +22,21 @@ import (
 	dl "github.com/google/osv-scalibr/detector/list"
 )
 
+func TestNames(t *testing.T) {
+	NamesSet := map[string]bool{}
+	names := dl.Names()
+	for _, n := range names {
+		NamesSet[n] = true
+	}
+	if len(NamesSet) != len(names) {
+		t.Errorf("dl.Names() contains duplicate names: %v", names)
+	}
+	names = append(names, "another-name")
+	if len(names) == len(dl.Names()) {
+		t.Errorf("dl.Names() was modified by the user: %v", names)
+	}
+}
+
 func TestDetectorsFromNames(t *testing.T) {
 	testCases := []struct {
 		desc     string
