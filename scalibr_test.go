@@ -71,7 +71,7 @@ func TestScan(t *testing.T) {
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, finding, nil),
 				},
-				ScanRoot: tmp,
+				ScanRoots: []string{tmp},
 			},
 			want: &scalibr.ScanResult{
 				Status: success,
@@ -93,7 +93,7 @@ func TestScan(t *testing.T) {
 						Adv: &detector.Advisory{ID: finding.Adv.ID, Title: "different title"},
 					}, nil),
 				},
-				ScanRoot: tmp,
+				ScanRoots: []string{tmp},
 			},
 			want: &scalibr.ScanResult{
 				Status: &plugin.ScanStatus{
@@ -115,7 +115,7 @@ func TestScan(t *testing.T) {
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
 				},
 				Detectors: []detector.Detector{fd.New("detector", 2, finding, nil)},
-				ScanRoot:  tmp,
+				ScanRoots: []string{tmp},
 			},
 			want: &scalibr.ScanResult{
 				Status: success,
@@ -123,7 +123,7 @@ func TestScan(t *testing.T) {
 					&plugin.Status{Name: "detector", Version: 2, Status: success},
 					&plugin.Status{Name: "python/wheelegg", Version: 1, Status: extFailure},
 				},
-				Inventories: []*extractor.Inventory{},
+				Inventories: nil,
 				Findings:    []*detector.Finding{withDetectorName(finding, "detector")},
 			},
 		},
@@ -134,7 +134,7 @@ func TestScan(t *testing.T) {
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, nil, errors.New(pluginFailure)),
 				},
-				ScanRoot: tmp,
+				ScanRoots: []string{tmp},
 			},
 			want: &scalibr.ScanResult{
 				Status: success,
@@ -143,6 +143,21 @@ func TestScan(t *testing.T) {
 					&plugin.Status{Name: "python/wheelegg", Version: 1, Status: success},
 				},
 				Inventories: []*extractor.Inventory{inventory},
+				Findings:    []*detector.Finding{},
+			},
+		},
+		{
+			desc: "Missing scan roots causes error",
+			cfg: &scalibr.ScanConfig{
+				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+				ScanRoots:            []string{},
+			},
+			want: &scalibr.ScanResult{
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: "no scan root specified",
+				},
+				Inventories: []*extractor.Inventory{},
 				Findings:    []*detector.Finding{},
 			},
 		},

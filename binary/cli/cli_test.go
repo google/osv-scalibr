@@ -178,6 +178,61 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
+func TestGetScanConfig_ScanRoots(t *testing.T) {
+	for _, tc := range []struct {
+		desc          string
+		flags         map[string]*cli.Flags
+		wantScanRoots map[string][]string
+	}{
+		{
+			desc: "Default scan roots",
+			flags: map[string]*cli.Flags{
+				"linux":   &cli.Flags{},
+				"windows": &cli.Flags{},
+			},
+			wantScanRoots: map[string][]string{
+				"linux":   []string{"/"},
+				"windows": []string{"C:\\"},
+			},
+		},
+		{
+			desc: "Scan root are provided and used",
+			flags: map[string]*cli.Flags{
+				"linux": &cli.Flags{
+					Root: "/root",
+				},
+				"windows": &cli.Flags{
+					Root: "C:\\myroot",
+				},
+			},
+			wantScanRoots: map[string][]string{
+				"linux":   []string{"/root"},
+				"windows": []string{"C:\\myroot"},
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			flags, ok := tc.flags[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			cfg, err := flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			}
+			if diff := cmp.Diff(wantScanRoots, cfg.ScanRoots); diff != "" {
+				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+			}
+		})
+	}
+}
+
 func TestGetScanConfig_DirsToSkip(t *testing.T) {
 	for _, tc := range []struct {
 		desc           string

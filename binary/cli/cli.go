@@ -93,17 +93,6 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateOutput(flags.Output); err != nil {
 		return fmt.Errorf("--o %w", err)
 	}
-	if len(flags.Root) == 0 {
-		if runtime.GOOS == "windows" {
-			if os.Getenv("SystemDrive") == "" {
-				return errors.New("Cannot retrieve the system drive: SystemDrive env variable not set")
-			}
-
-			flags.Root = os.Getenv("SystemDrive") + string(os.PathSeparator)
-		} else {
-			flags.Root = "/"
-		}
-	}
 	// TODO(b/279413691): Use the Array struct to allow multiple occurrences of a list arg
 	// e.g. --extractors=ex1 --extractors=ex2.
 	if err := validateListArg(flags.ExtractorsToRun); err != nil {
@@ -213,6 +202,18 @@ func validateDetectorDependency(detectors string, extractors string, requireExtr
 	return nil
 }
 
+func getSystemRoot() (string, error) {
+	switch runtime.GOOS {
+	case "windows":
+		if os.Getenv("SystemDrive") == "" {
+			return "", errors.New("Cannot retrieve the system drive: SystemDrive env variable not set")
+		}
+		return os.Getenv("SystemDrive") + string(os.PathSeparator), nil
+	default:
+		return "/", nil
+	}
+}
+
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	extractors, standaloneExtractors, err := f.extractorsToRun()
@@ -230,13 +231,24 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
+	var scanRoots []string
+	if len(f.Root) == 0 {
+		systemRoot, err := getSystemRoot()
+		if err != nil {
+			return nil, err
+		}
+
+		scanRoots = []string{systemRoot}
+	} else {
+		scanRoots = []string{f.Root}
+	}
 	return &scalibr.ScanConfig{
-		ScanRoot:             f.Root,
+		ScanRoots:            scanRoots,
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
 		FilesToExtract:       f.FilesToExtract,
-		DirsToSkip:           f.dirsToSkip(),
+		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
@@ -346,7 +358,7 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
-func (f *Flags) dirsToSkip() []string {
+func (f *Flags) dirsToSkip(scanRoots []string) []string {
 	var paths []string
 	if runtime.GOOS == "windows" {
 		systemDrive := os.Getenv("SystemDrive")
@@ -363,13 +375,14 @@ func (f *Flags) dirsToSkip() []string {
 
 	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
-	prefix := f.Root
-	if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
-		prefix += string(os.PathSeparator)
-	}
-	for _, p := range paths {
-		if strings.HasPrefix(p, prefix) {
-			result = append(result, p)
+	for _, root := range scanRoots {
+		if !strings.HasSuffix(root, string(os.PathSeparator)) {
+			root += string(os.PathSeparator)
+		}
+		for _, p := range paths {
+			if strings.HasPrefix(p, root) {
+				result = append(result, p)
+			}
 		}
 	}
 	return result

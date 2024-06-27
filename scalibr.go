@@ -36,6 +36,11 @@ import (
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 )
 
+var (
+	errNoScanRoot            = fmt.Errorf("no scan root specified")
+	errFilesWithSeveralRoots = fmt.Errorf("can't extract specific files with several scan roots")
+)
+
 // Scanner is the main entry point of the scanner.
 type Scanner struct{}
 
@@ -48,19 +53,19 @@ type ScanConfig struct {
 	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
-	// ScanRoot is the root dir used by file walking during extraction.
-	// All extractors and detectors will assume files are relative to this dir.
+	// ScanRoots contain the list of root dir used by file walking during extraction.
+	// All extractors and detectors will assume files are relative to these dirs.
 	// Example use case: Scanning a container image or source code repo that is
 	// mounted to a local dir.
-	ScanRoot string
+	ScanRoots []string
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
-	// Note that these are not relative to ScanRoot and thus need to be in
-	// sub-directories of ScanRoot.
+	// Note that these are not relative to the ScanRoots and thus need to be in
+	// sub-directories of one of the ScanRoots.
 	FilesToExtract []string
 	// Optional: Directories that the file system walk should ignore.
-	// Note that these are not relative to ScanRoot and thus need to be
-	// sub-directories of ScanRoot.
+	// Note that these are not relative to the ScanRoots and thus need to be
+	// sub-directories of one of the ScanRoots.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
@@ -143,6 +148,16 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	if len(config.ScanRoots) == 0 {
+		sro.Err = errNoScanRoot
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
+	if len(config.FilesToExtract) > 0 && len(config.ScanRoots) > 1 {
+		sro.Err = errFilesWithSeveralRoots
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
 	extractorConfig := &filesystem.Config{
 		Stats:             config.Stats,
 		ReadSymlinks:      config.ReadSymlinks,
@@ -150,7 +165,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		FilesToExtract:    config.FilesToExtract,
 		DirsToSkip:        config.DirsToSkip,
 		SkipDirRegex:      config.SkipDirRegex,
-		ScanRoot:          config.ScanRoot,
+		ScanRoots:         config.ScanRoots,
 		MaxInodes:         config.MaxInodes,
 		StoreAbsolutePath: config.StoreAbsolutePath,
 	}
@@ -163,9 +178,10 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 
 	sro.Inventories = inventories
 	sro.ExtractorStatus = extractorStatus
+	sysroot := config.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
 		Extractors: config.StandaloneExtractors,
-		ScanRoot:   config.ScanRoot,
+		ScanRoot:   sysroot,
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
 	if err != nil {
@@ -184,7 +200,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 
-	findings, detectorStatus, err := detector.Run(ctx, config.Stats, config.Detectors, config.ScanRoot, ix)
+	findings, detectorStatus, err := detector.Run(ctx, config.Stats, config.Detectors, sysroot, ix)
 	sro.Findings = findings
 	sro.DetectorStatus = detectorStatus
 	if err != nil {

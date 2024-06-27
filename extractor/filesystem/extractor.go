@@ -34,6 +34,12 @@ import (
 	"github.com/google/osv-scalibr/stats"
 )
 
+var (
+	// ErrNotRelativeToScanRoots is returned when one of the file or directory to be retrieved or
+	// skipped is not relative to any of the scan roots.
+	ErrNotRelativeToScanRoots = fmt.Errorf("path not relative to any of the scan roots")
+)
+
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
 // from the filesystem such as OS and language packages.
 type Extractor interface {
@@ -62,16 +68,16 @@ type ScanInput struct {
 // Config stores the config settings for an extraction run.
 type Config struct {
 	Extractors []Extractor
-	ScanRoot   string
+	ScanRoots  []string
 	FS         fs.FS
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
-	// Note that these are not relative to ScanRoot and thus need to be in
-	// sub-directories of ScanRoot.
+	// Note that these are not relative to the ScanRoots and thus need to be
+	// sub-directories of one of the ScanRoots.
 	FilesToExtract []string
 	// Optional: Directories that the file system walk should ignore.
-	// Note that these are not relative to ScanRoot and thus need to be in
-	// sub-directories of ScanRoot.
+	// Note that these are not relative to the ScanRoots and thus need to be
+	// sub-directories of one of the ScanRoots.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
@@ -90,37 +96,66 @@ type Config struct {
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
 func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
-	config.FS = os.DirFS(config.ScanRoot)
-	return RunFS(ctx, config)
-}
-
-// RunFS runs the specified extractors and returns their extraction results,
-// as well as info about whether the plugin runs completed successfully.
-// scanRoot is the location of fsys.
-// This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
 	if len(config.Extractors) == 0 {
 		return []*extractor.Inventory{}, []*plugin.Status{}, nil
 	}
-	start := time.Now()
-	scanRoot, err := filepath.Abs(config.ScanRoot)
+
+	scanRoots, err := expandAllAbsolutePaths(config.ScanRoots)
 	if err != nil {
 		return nil, nil, err
 	}
-	filesToExtract, err := stripPathPrefix(config.FilesToExtract, scanRoot)
+
+	wc, err := InitWalkContext(ctx, config, scanRoots)
 	if err != nil {
 		return nil, nil, err
 	}
-	dirsToSkip, err := stripPathPrefix(config.DirsToSkip, scanRoot)
+
+	var inventory []*extractor.Inventory
+	var status []*plugin.Status
+
+	for _, root := range scanRoots {
+		inv, st, err := runOnScanRoot(ctx, config, root, wc)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		inventory = append(inventory, inv...)
+		status = append(status, st...)
+	}
+
+	return inventory, status, nil
+}
+
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot string, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+	abs, err := filepath.Abs(scanRoot)
 	if err != nil {
 		return nil, nil, err
 	}
-	wc := walkContext{
+	config.FS = os.DirFS(abs)
+	if err := wc.UpdateScanRoot(abs, config.FS); err != nil {
+		return nil, nil, err
+	}
+
+	return RunFS(ctx, config, wc)
+}
+
+// InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
+// are expected to be relative to the scan root.
+// This function is exported for TESTS ONLY.
+func InitWalkContext(ctx context.Context, config *Config, absScanRoots []string) (*walkContext, error) {
+	filesToExtract, err := stripAllPathPrefixes(config.FilesToExtract, absScanRoots)
+	if err != nil {
+		return nil, err
+	}
+	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
+	if err != nil {
+		return nil, err
+	}
+
+	return &walkContext{
 		ctx:               ctx,
 		stats:             config.Stats,
 		extractors:        config.Extractors,
-		fs:                config.FS,
-		scanRoot:          scanRoot,
 		filesToExtract:    filesToExtract,
 		dirsToSkip:        pathStringListToMap(dirsToSkip),
 		skipDirRegex:      config.SkipDirRegex,
@@ -137,8 +172,21 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 
 		mapInodes:   make(map[string]int),
 		mapExtracts: make(map[string]int),
+	}, nil
+}
+
+// RunFS runs the specified extractors and returns their extraction results,
+// as well as info about whether the plugin runs completed successfully.
+// scanRoot is the location of fsys.
+// This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
+func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+	start := time.Now()
+	if wc == nil || wc.fs == nil {
+		return nil, nil, fmt.Errorf("walk context is nil")
 	}
 
+	var err error
+	log.Infof("Starting filesystem walk for root: %v", wc.scanRoot)
 	if len(wc.filesToExtract) > 0 {
 		err = walkIndividualFiles(config.FS, wc.filesToExtract, wc.handleFile)
 	} else {
@@ -147,7 +195,7 @@ func RunFS(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plug
 
 	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
 		wc.inodesVisited, wc.extractCalls, time.Since(start))
-	printAnalyseInodes(&wc)
+	printAnalyseInodes(wc)
 
 	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
 }
@@ -307,6 +355,15 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 	}
 }
 
+// UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
+// currentRoot is expected to be an absolute path.
+func (wc *walkContext) UpdateScanRoot(absRoot string, fs fs.FS) error {
+	wc.scanRoot = absRoot
+	wc.fs = fs
+	wc.mapInodes = make(map[string]int)
+	return nil
+}
+
 func expandAbsolutePath(scanRoot string, paths []string) []string {
 	var locations []string
 	for _, l := range paths {
@@ -315,24 +372,55 @@ func expandAbsolutePath(scanRoot string, paths []string) []string {
 	return locations
 }
 
-func stripPathPrefix(paths []string, prefix string) ([]string, error) {
+func expandAllAbsolutePaths(paths []string) ([]string, error) {
+	var result []string
+	for _, p := range paths {
+		absroot, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, absroot)
+	}
+
+	return result, nil
+}
+
+func stripAllPathPrefixes(paths []string, prefixes []string) ([]string, error) {
 	result := make([]string, 0, len(paths))
 	for _, p := range paths {
-		// prefix is assumed to already be an absolute path.
 		abs, err := filepath.Abs(p)
 		if err != nil {
 			return nil, err
 		}
-		if !strings.HasPrefix(abs, prefix) {
-			return nil, fmt.Errorf("%q is not in a subdirectory of %q", abs, prefix)
-		}
-		rel, err := filepath.Rel(prefix, abs)
+
+		rp, err := stripFromAtLeastOnePrefix(abs, prefixes)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, rel)
+		result = append(result, rp)
 	}
+
 	return result, nil
+}
+
+// stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
+// If the path is not relative to any of the prefixes, an error is returned.
+// The path is expected to be absolute.
+func stripFromAtLeastOnePrefix(path string, prefixes []string) (string, error) {
+	for _, prefix := range prefixes {
+		if !strings.HasPrefix(path, prefix) {
+			continue
+		}
+		rel, err := filepath.Rel(prefix, path)
+		if err != nil {
+			return "", err
+		}
+
+		return rel, nil
+	}
+
+	return "", ErrNotRelativeToScanRoots
 }
 
 func pathStringListToMap(paths []string) map[string]bool {

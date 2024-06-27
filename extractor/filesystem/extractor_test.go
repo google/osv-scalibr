@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"testing"
 	"testing/fstest"
@@ -49,7 +50,83 @@ func (fsys pathsMapFS) Open(name string) (fs.File, error) {
 	return fsys.mapfs.Open(name)
 }
 
-func TestRun(t *testing.T) {
+func TestInitWalkContext(t *testing.T) {
+	testCases := []struct {
+		desc           string
+		scanRoots      map[string][]string
+		filesToExtract map[string][]string
+		dirsToSkip     map[string][]string
+		wantErr        error
+	}{
+		{
+			desc: "valid config with filesToExtract raises no error",
+			scanRoots: map[string][]string{
+				"linux":   []string{"/scanroot/"},
+				"windows": []string{"C:\\scanroot\\"},
+			},
+			filesToExtract: map[string][]string{
+				"linux":   []string{"/scanroot/file1.txt", "/scanroot/file2.txt"},
+				"windows": []string{"C:\\scanroot\\file1.txt", "C:\\scanroot\\file2.txt"},
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "valid config with dirsToSkip raises no error",
+			scanRoots: map[string][]string{
+				"linux":   []string{"/scanroot/", "/someotherroot/"},
+				"windows": []string{"C:\\scanroot\\", "D:\\someotherroot\\"},
+			},
+			dirsToSkip: map[string][]string{
+				"linux":   []string{"/scanroot/mydir/", "/someotherroot/mydir/"},
+				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\someotherroot\\mydir\\"},
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "filesToExtract not relative to any root raises error",
+			scanRoots: map[string][]string{
+				"linux":   []string{"/scanroot/"},
+				"windows": []string{"C:\\scanroot\\"},
+			},
+			filesToExtract: map[string][]string{
+				"linux":   []string{"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
+				"windows": []string{"C:\\scanroot\\myfile.txt", "D:\\myotherroot\\file1.txt"},
+			},
+			wantErr: filesystem.ErrNotRelativeToScanRoots,
+		},
+		{
+			desc: "dirsToSkip not relative to any root raises error",
+			scanRoots: map[string][]string{
+				"linux":   []string{"/scanroot/"},
+				"windows": []string{"C:\\scanroot\\"},
+			},
+			dirsToSkip: map[string][]string{
+				"linux":   []string{"/scanroot/mydir/", "/myotherroot/mydir/"},
+				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\myotherroot\\mydir\\"},
+			},
+			wantErr: filesystem.ErrNotRelativeToScanRoots,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			os := runtime.GOOS
+			if _, ok := tc.scanRoots[os]; !ok {
+				t.Fatalf("system %q not defined in test, please extend the tests", os)
+			}
+			config := &filesystem.Config{
+				FilesToExtract: tc.filesToExtract[os],
+				DirsToSkip:     tc.dirsToSkip[os],
+			}
+			_, err := filesystem.InitWalkContext(context.Background(), config, tc.scanRoots[os])
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("filesystem.InitializeWalkContext(%v) error got diff (-want +got):\n%s", config, diff)
+			}
+		})
+	}
+}
+
+func TestRunFS(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
 	path1 := "dir1/file1.txt"
 	path2 := "dir2/sub/file2.txt"
@@ -143,13 +220,6 @@ func TestRun(t *testing.T) {
 				&plugin.Status{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
-		},
-		{
-			desc: "Dir skipped not relative to ScanRoot",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			// ScanRoot is CWD, dirsToSkip is in its parent dir.
-			dirsToSkip: []string{path.Join(filepath.Dir(cwd), "dir1")},
-			wantErr:    cmpopts.AnyError,
 		},
 		{
 			desc:         "Dir skipped using regex",
@@ -262,13 +332,6 @@ func TestRun(t *testing.T) {
 				&plugin.Status{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 1,
-		},
-		{
-			desc: "Extract specific file not relative to ScanRoot",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			// ScanRoot is CWD, filepath is in its parent dir.
-			filesToExtract: []string{path.Join(filepath.Dir(cwd), path2)},
-			wantErr:        cmpopts.AnyError,
 		},
 		{
 			desc: "nil result",
@@ -400,12 +463,19 @@ func TestRun(t *testing.T) {
 				DirsToSkip:        tc.dirsToSkip,
 				SkipDirRegex:      skipDirRegex,
 				MaxInodes:         tc.maxInodes,
-				ScanRoot:          ".",
+				ScanRoots:         []string{"."},
 				FS:                fsys,
 				Stats:             fc,
 				StoreAbsolutePath: tc.storeAbsPath,
 			}
-			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config)
+			wc, err := filesystem.InitWalkContext(context.Background(), config, []string{cwd})
+			if err != nil {
+				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", cwd, err)
+			}
+			if err = wc.UpdateScanRoot(cwd, config.FS); err != nil {
+				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", cwd, err)
+			}
+			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v) error got diff (-want +got):\n%s", tc.ex, diff)
 			}
@@ -504,7 +574,7 @@ func (fakeDirEntry) IsDir() bool                { return false }
 func (fakeDirEntry) Type() fs.FileMode          { return 0777 }
 func (fakeDirEntry) Info() (fs.FileInfo, error) { return &fakeFileInfo{dir: false}, nil }
 
-func TestRun_ReadError(t *testing.T) {
+func TestRunFS_ReadError(t *testing.T) {
 	ex := []filesystem.Extractor{
 		fe.New("ex1", 1, []string{"file"},
 			map[string]fe.NamesErr{"file": {Names: []string{"software"}, Err: nil}}),
@@ -517,11 +587,18 @@ func TestRun_ReadError(t *testing.T) {
 	config := &filesystem.Config{
 		Extractors: ex,
 		DirsToSkip: []string{},
-		ScanRoot:   ".",
+		ScanRoots:  []string{"."},
 		FS:         &fakeFS{},
 		Stats:      stats.NoopCollector{},
 	}
-	gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config)
+	wc, err := filesystem.InitWalkContext(context.Background(), config, []string{"/"})
+	if err != nil {
+		t.Fatalf("filesystem.InitializeWalkContext(%v): %v", config, err)
+	}
+	if err := wc.UpdateScanRoot("/", config.FS); err != nil {
+		t.Fatalf("wc.UpdateScanRoot(%v): %v", config, err)
+	}
+	gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
 	if err != nil {
 		t.Fatalf("extractor.Run(%v): %v", ex, err)
 	}
