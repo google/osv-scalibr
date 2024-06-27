@@ -30,6 +30,23 @@ import (
 
 )
 
+var (
+	// names is a list of all available detectors and detector lists / groups.
+	names = []string{
+		// Higher level groupings.
+		"all",
+		"default",
+
+		// Domain groupings.
+		"cis",
+		"cve",
+
+		// Detector groupings.
+		"govulncheck",
+		"weakcreds",
+	}
+)
+
 // CIS scanning related detectors.
 var CIS []detector.Detector = []detector.Detector{&etcpasswdpermissions.Detector{}}
 
@@ -66,6 +83,16 @@ func init() {
 	for _, d := range All {
 		register(d)
 	}
+}
+
+// Names returns a list of all available detectors and detector lists / groups.
+func Names() []string {
+	// Defensive copy to avoid user mutation.
+	var ns []string
+	for _, n := range names {
+		ns = append(ns, n)
+	}
+	return ns
 }
 
 func register(d detector.Detector) {
