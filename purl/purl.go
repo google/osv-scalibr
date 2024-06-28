@@ -184,4 +184,5 @@ const (
 	Source        = "source"
 	SourceVersion = "sourceversion"
 	SourceRPM     = "sourcerpm"
+	BuildNumber   = "buildnumber"
 )
