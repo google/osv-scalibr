@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"runtime"
 	"slices"
 	"strings"
 
 	"github.com/spdx/tools-golang/spdx/v2/common"
+	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/converter"
@@ -202,18 +202,6 @@ func validateDetectorDependency(detectors string, extractors string, requireExtr
 	return nil
 }
 
-func getSystemRoot() (string, error) {
-	switch runtime.GOOS {
-	case "windows":
-		if os.Getenv("SystemDrive") == "" {
-			return "", errors.New("Cannot retrieve the system drive: SystemDrive env variable not set")
-		}
-		return os.Getenv("SystemDrive") + string(os.PathSeparator), nil
-	default:
-		return "/", nil
-	}
-}
-
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	extractors, standaloneExtractors, err := f.extractorsToRun()
@@ -233,12 +221,9 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 	var scanRoots []string
 	if len(f.Root) == 0 {
-		systemRoot, err := getSystemRoot()
-		if err != nil {
+		if scanRoots, err = platform.DefaultScanRoots(); err != nil {
 			return nil, err
 		}
-
-		scanRoots = []string{systemRoot}
 	} else {
 		scanRoots = []string{f.Root}
 	}
@@ -359,15 +344,9 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 }
 
 func (f *Flags) dirsToSkip(scanRoots []string) []string {
-	var paths []string
-	if runtime.GOOS == "windows" {
-		systemDrive := os.Getenv("SystemDrive")
-		if systemDrive != "" {
-			windir := systemDrive + string(os.PathSeparator) + "Windows"
-			paths = []string{windir}
-		}
-	} else {
-		paths = []string{"/dev", "/proc", "/sys"}
+	paths, err := platform.DefaultIgnoredDirectories()
+	if err != nil {
+		log.Warnf("Failed to get default ignored directories: %v", err)
 	}
 	if len(f.DirsToSkip) > 0 {
 		paths = append(paths, strings.Split(f.DirsToSkip, ",")...)
