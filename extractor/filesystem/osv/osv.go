@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 // Wrapper contains all the data to wrap a osv extractor to a scalibr extractor.
@@ -34,6 +35,13 @@ type Wrapper struct {
 	ExtractorVersion int
 	PURLType         string
 	Extractor        lockfile.Extractor
+
+	// Optional. A stats.Collector for reporting internal metrics.
+	Stats stats.Collector
+
+	// Optional. A config value for the maximum file size this extractor will
+	// treat as required in `FileRequired`.
+	MaxFileSizeBytes int64
 }
 
 // Name of the extractor.
@@ -43,8 +51,29 @@ func (e Wrapper) Name() string { return e.ExtractorName }
 func (e Wrapper) Version() int { return e.ExtractorVersion }
 
 // FileRequired returns true if the specified file matches the extractor pattern.
-func (e Wrapper) FileRequired(path string, _ fs.FileInfo) bool {
-	return e.Extractor.ShouldExtract(path)
+func (e Wrapper) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !e.Extractor.ShouldExtract(path) {
+		return false
+	}
+
+	if e.MaxFileSizeBytes > 0 && fileinfo.Size() > e.MaxFileSizeBytes {
+		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	return true
+}
+
+func (e Wrapper) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+	if e.Stats == nil {
+		return
+	}
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // Extract wraps the osv Extract method.
@@ -52,6 +81,7 @@ func (e Wrapper) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*e
 	full := filepath.Join(input.ScanRoot, input.Path)
 	osvpkgs, err := e.Extractor.Extract(WrapInput(input))
 	if err != nil {
+		e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 		return nil, fmt.Errorf("osvExtractor.Extract(%s): %w", full, err)
 	}
 
@@ -70,7 +100,23 @@ func (e Wrapper) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*e
 		})
 	}
 
+	e.reportFileExtracted(input.Path, input.Info, stats.FileExtractedResultSuccess)
 	return r, nil
+}
+
+func (e Wrapper) reportFileExtracted(path string, fileinfo fs.FileInfo, result stats.FileExtractedResult) {
+	if e.Stats == nil {
+		return
+	}
+	var fileSizeBytes int64
+	if fileinfo != nil {
+		fileSizeBytes = fileinfo.Size()
+	}
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		Path:          path,
+		Result:        result,
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 // WrapInput returns an implementation of OSVs DepFile using a scalibr ScanInput.
