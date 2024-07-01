@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,8 +29,12 @@ import (
 	"github.com/google/osv-scanner/pkg/lockfile"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/fakefs"
+	"github.com/google/osv-scalibr/testing/testcollector"
 )
 
 func TestName(t *testing.T) {
@@ -59,100 +64,200 @@ func TestVersion(t *testing.T) {
 }
 
 func TestFileRequired(t *testing.T) {
-	w := osv.Wrapper{
-		ExtractorName:    "testname",
-		ExtractorVersion: 123,
-		Extractor:        MockExtractor{},
-		PURLType:         purl.TypeDebian,
-	}
 
 	tests := []struct {
-		path string
-		want bool
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+		wantResultMetric stats.FileRequiredResult
 	}{
-		{path: "match.json", want: true},
-		{path: "foo", want: false},
-		{path: "", want: false},
+		// Basic filename matches.
+		{path: "match.json", wantRequired: true, wantResultMetric: stats.FileRequiredResultOK},
+		{path: "foo", wantRequired: false},
+		{path: "", wantRequired: false},
+		// File size limits.
+		{
+			name:             "file is required if file size < max file size",
+			path:             "match.json",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "file is required if file size = max file size",
+			path:             "match.json",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "file not required if file size > max file size",
+			path:             "match.json",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "file is required if max file size set to 0",
+			path:             "match.json",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			isRequired := w.FileRequired(tt.path, nil)
-			if isRequired != tt.want {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.want)
+		name := tt.name
+		if name == "" {
+			name = tt.path
+		}
+
+		t.Run(name, func(t *testing.T) {
+			collector := testcollector.New()
+			w := osv.Wrapper{
+				ExtractorName:    "testname",
+				ExtractorVersion: 123,
+				Extractor:        MockExtractor{},
+				PURLType:         purl.TypeDebian,
+				Stats:            collector,
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+			}
+
+			// Set default size if not provided.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 100 * units.KiB
+			}
+
+			isRequired := w.FileRequired(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			})
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+
+			gotResultMetric := collector.FileRequiredResult(tt.path)
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
 }
 
+var (
+	errTestMock = fmt.Errorf("test error")
+)
+
 func TestExtract(t *testing.T) {
-	w := osv.Wrapper{
-		ExtractorName:    "testname",
-		ExtractorVersion: 123,
-		Extractor:        MockExtractor{},
-		PURLType:         purl.TypeDebian,
-	}
-	want := []*extractor.Inventory{
-		&extractor.Inventory{
-			Name:      "reader content",
-			Version:   "1.0",
-			Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
-			Locations: []string{"targetfile"},
+	tests := []struct {
+		name             string
+		path             string
+		extractor        lockfile.Extractor
+		purlType         string
+		wantInventory    []*extractor.Inventory
+		wantErr          error
+		wantResultMetric stats.FileExtractedResult
+	}{
+		{
+			name:      "mock extractor",
+			path:      "targetfile",
+			extractor: MockExtractor{},
+			purlType:  purl.TypeDebian,
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      "reader content",
+					Version:   "1.0",
+					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
+					Locations: []string{"targetfile"},
+				},
+				&extractor.Inventory{
+					Name:      "yolo content",
+					Version:   "2.0",
+					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
+					Locations: []string{"targetfile"},
+				},
+				&extractor.Inventory{
+					Name:      "foobar content",
+					Version:   "3.0",
+					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
+					Locations: []string{"targetfile"},
+				},
+				&extractor.Inventory{
+					Name:      "targetfile",
+					Version:   "4.0",
+					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
+					Locations: []string{"targetfile"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
-		&extractor.Inventory{
-			Name:      "yolo content",
-			Version:   "2.0",
-			Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
-			Locations: []string{"targetfile"},
-		},
-		&extractor.Inventory{
-			Name:      "foobar content",
-			Version:   "3.0",
-			Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
-			Locations: []string{"targetfile"},
-		},
-		&extractor.Inventory{
-			Name:      "targetfile",
-			Version:   "4.0",
-			Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
-			Locations: []string{"targetfile"},
+		{
+			name:             "mock extractor error",
+			path:             "targetfile",
+			extractor:        MockExtractor{err: errTestMock},
+			purlType:         purl.TypeDebian,
+			wantErr:          errTestMock,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
 
-	r := strings.NewReader("reader content")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			collector := testcollector.New()
 
-	tmp := t.TempDir()
-	writeFile(t, filepath.Join(tmp, "yolo"), "yolo content")
-	writeFile(t, filepath.Join(tmp, "foo", "bar"), "foobar content")
+			w := osv.Wrapper{
+				ExtractorName:    "testname",
+				ExtractorVersion: 123,
+				Extractor:        test.extractor,
+				PURLType:         test.purlType,
+				Stats:            collector,
+			}
 
-	input := &filesystem.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
+			r := strings.NewReader("reader content")
+			fileSizeBytes := 100 * units.KiB
 
-	got, err := w.Extract(context.Background(), input)
-	if err != nil {
-		t.Fatalf("Extract(): got %v, want nil", err)
-	}
+			tmp := t.TempDir()
+			writeFile(t, filepath.Join(tmp, "yolo"), "yolo content")
+			writeFile(t, filepath.Join(tmp, "foo", "bar"), "foobar content")
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Extract() (-want +got):\n%s", diff)
-	}
-}
+			input := &filesystem.ScanInput{
+				Path:     test.path,
+				Reader:   r,
+				ScanRoot: tmp,
+				Info: fakefs.FakeFileInfo{
+					FileName: filepath.Base(test.path),
+					FileMode: fs.ModePerm,
+					FileSize: fileSizeBytes,
+				},
+			}
 
-func TestExtractErr(t *testing.T) {
-	wantErr := fmt.Errorf("test error")
-	w := osv.Wrapper{
-		ExtractorName:    "testname",
-		ExtractorVersion: 123,
-		Extractor:        MockExtractor{err: wantErr},
-		PURLType:         purl.TypeDebian,
-	}
+			got, err := w.Extract(context.Background(), input)
+			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("Extract() error: got %v, want %v", err, test.wantErr)
+			}
 
-	r := strings.NewReader("reader content")
-	tmp := t.TempDir()
-	input := &filesystem.ScanInput{Path: "targetfile", Reader: r, ScanRoot: tmp}
+			if diff := cmp.Diff(test.wantInventory, got); diff != "" {
+				t.Errorf("Extract() (-want +got):\n%s", diff)
+			}
 
-	_, err := w.Extract(context.Background(), input)
-	if !cmp.Equal(err, wantErr, cmpopts.EquateErrors()) {
-		t.Fatalf("Extract() error: got %v, want %v", err, wantErr)
+			gotResultMetric := collector.FileExtractedResult(test.path)
+			if test.wantResultMetric != "" && gotResultMetric != test.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", test.path, gotResultMetric, test.wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(test.path)
+			if gotFileSizeMetric != fileSizeBytes {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", test.path, gotFileSizeMetric, fileSizeBytes)
+			}
+		})
 	}
 }
 
