@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 
 	bolt "go.etcd.io/bbolt"
 	"github.com/containerd/containerd/metadata"
@@ -44,6 +46,9 @@ const (
 
 	// Prefix of the path for runc state files, used to check if a container is running by runc.
 	runcStateFilePrefix = "run/containerd/runc/"
+
+	// Prefix of the path for runhcs state files, used to check if a container is running by runhcs.
+	runhcsStateFilePrefix = "ProgramData/containerd/state/io.containerd.runtime.v2.task/"
 )
 
 // Config is the configuration for the Extractor.
@@ -87,13 +92,17 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches containerd metadb file pattern.
 func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// TODO(b/349138656): Add support for containerd inventory for Windows.
-	// Only containerd for Linux is supported for now.
-	if runtime.GOOS == "windows" {
-		return false
+	// On Windows the metadb file is expected to be located at the
+	// <scanRoot>/ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db path.
+	switch runtime.GOOS {
+	case "windows":
+		return path == "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db"
+
+	// On Linux the metadb file is expected to be located at the
+	// <scanRoot>/var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db path.
+	default:
+		return path == "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
 	}
-	// Matches the containerd expected metadb file path.
-	return path == "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
 }
 
 // Extract container inventory through the containerd metadb file passed as the scan input.
@@ -170,11 +179,12 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 		}
 
 		// For each container in the namespace
-		// get the pid (only running containers will have it) and the image digest.
+		// get the init process pid (only running containers will have it stored on the file system)
+		// and the image digest.
 		for _, ctr := range ctrs {
-			var pid int
+			var initPID int
 			id := ctr.ID
-			if pid = containerPid(scanRoot, ctr.Runtime.Name, ns, id); pid == -1 {
+			if initPID = containerInitPid(scanRoot, ctr.Runtime.Name, ns, id); initPID == -1 {
 				continue
 			}
 			img, err := imageStore.Get(ctx, ctr.Image)
@@ -183,22 +193,33 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 			}
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
-					ImageName:   img.Name,
-					ImageDigest: img.Target.Digest.String(),
-					PID:         pid})
+					ImageName:      img.Name,
+					ImageDigest:    img.Target.Digest.String(),
+					Runtime:        ctr.Runtime.Name,
+					InitProcessPID: initPID})
 		}
 	}
 	return containersMetadata, nil
 }
 
-func containerPid(scanRoot string, runtimeName string, namespace string, id string) int {
-	// If container is running by runc, the pid is stored in the runc state.json file.
-	// state.json file is located at the
-	// <scanRoot>/<runcStateFilePrefix>/<namespace_name>/<container_id>/state.json path.
-	if runtimeName != "io.containerd.runc.v2" {
-		return -1
+func containerInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+	// A typical Linux case.
+	if runtimeName == "io.containerd.runc.v2" {
+		return runcInitPid(scanRoot, runtimeName, namespace, id)
 	}
 
+	// A typical Windows case.
+	if runtimeName == "io.containerd.runhcs.v1" {
+		return runhcsInitPid(scanRoot, runtimeName, namespace, id)
+	}
+
+	return -1
+}
+
+func runcInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+	// If a container is running by runc, the init pid is stored in the runc state.json file.
+	// state.json file is located at the
+	// <scanRoot>/<runcStateFilePrefix>/<namespace_name>/<container_id>/state.json path.
 	statePath := filepath.Join(scanRoot, runcStateFilePrefix, namespace, id, "state.json")
 	if _, err := os.Stat(statePath); err != nil {
 		log.Info("File state.json does not exists for container %v, error: %v", id, err)
@@ -215,18 +236,43 @@ func containerPid(scanRoot string, runtimeName string, namespace string, id stri
 		log.Errorf("Can't unmarshal state.json for container %v , error: %v", id, err)
 		return -1
 	}
-	runcPID := runcState["init_process_pid"]
-	if runcPID == nil {
+	runcInitPID := runcState["init_process_pid"]
+	if runcInitPID == nil {
 		log.Errorf("Can't find field init_process_pid filed in state.json for container %v", id)
 		return -1
 	}
 
-	var pid int
-	if err := json.Unmarshal(*runcPID, &pid); err != nil {
+	var initPID int
+	if err := json.Unmarshal(*runcInitPID, &initPID); err != nil {
 		log.Errorf("Can't find field init_process_pid in state.json for container %v, error: %v", id, err)
 		return -1
 	}
-	return pid
+
+	return initPID
+}
+
+func runhcsInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+	// If a container is running by runhcs, the init pid is stored in the runhcs shim.pid file.
+	// shim.pid file is located at the
+	// <scanRoot>/<runhcsStateFilePrefix>/<namespace_name>/<container_id>/shim.pid.
+	shimPIDPath := filepath.Join(scanRoot, runhcsStateFilePrefix, namespace, id, "shim.pid")
+	if _, err := os.Stat(shimPIDPath); err != nil {
+		log.Info("File shim.pid does not exists for container %v, error: %v", id, err)
+		return -1
+	}
+
+	shimPIDContent, err := os.ReadFile(shimPIDPath)
+	if err != nil {
+		log.Errorf("Could not read for %s shim.pid for container: %v, error: %v", id, err)
+		return -1
+	}
+	shimPidStr := strings.TrimSpace(string(shimPIDContent))
+	initPID, err := strconv.Atoi(shimPidStr)
+	if err != nil {
+		log.Errorf("Can't convert shim.pid content to int for container %v, error: %v", id, err)
+		return -1
+	}
+	return initPID
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

@@ -40,22 +40,27 @@ func TestFileRequired(t *testing.T) {
 		wantIsRequired bool
 	}{
 		{
-			name:           "containerd metadb",
+			name:           "containerd metadb linux",
 			path:           "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db",
 			onGoos:         "linux",
 			wantIsRequired: true,
 		},
-		// TODO(b/349138656): Change this test when containerd is supported for Windows.
 		{
 			name:           "containerd metadb windows",
-			path:           "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db",
+			path:           "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db",
 			onGoos:         "windows",
+			wantIsRequired: true,
+		},
+		{
+			name:           "random metadb linux",
+			path:           "var/lib/containerd/random/meta.db",
+			onGoos:         "linux",
 			wantIsRequired: false,
 		},
 		{
-			name:           "random metadb",
+			name:           "container metadb freebsd",
 			path:           "var/lib/containerd/random/meta.db",
-			onGoos:         "linux",
+			onGoos:         "freebsd",
 			wantIsRequired: false,
 		},
 	}
@@ -75,19 +80,20 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		stateFilePath string
-		namespace     string
-		containerdID  string
-		cfg           containerd.Config
-		onGoos        string
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name            string
+		path            string
+		stateFilePath   string // path to state.json, will be used for Linux test cases.
+		shimPIDFilePath string // path to shim.pid, will be used for Windows test cases.
+		namespace       string
+		containerdID    string
+		cfg             containerd.Config
+		onGoos          string
+		wantInventory   []*extractor.Inventory
+		wantErr         error
 	}{
 		{
-			name:          "metadb valid",
-			path:          "testdata/meta.db",
+			name:          "metadb valid linux",
+			path:          "testdata/meta_linux.db",
 			stateFilePath: "testdata/state.json",
 			namespace:     "default",
 			containerdID:  "test_pod",
@@ -100,12 +106,13 @@ func TestExtract(t *testing.T) {
 					Name:    "gcr.io/google-samples/hello-app:1.0",
 					Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 					Metadata: &containerd.Metadata{
-						Namespace:   "default",
-						ImageName:   "gcr.io/google-samples/hello-app:1.0",
-						ImageDigest: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
-						PID:         8915,
+						Namespace:      "default",
+						ImageName:      "gcr.io/google-samples/hello-app:1.0",
+						ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+						Runtime:        "io.containerd.runc.v2",
+						InitProcessPID: 8915,
 					},
-					Locations: []string{"testdata/meta.db"},
+					Locations: []string{"testdata/meta_linux.db"},
 				},
 			},
 		},
@@ -124,7 +131,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:          "metadb too large",
-			path:          "testdata/meta.db",
+			path:          "testdata/meta_linux.db",
 			stateFilePath: "testdata/state.json",
 			namespace:     "default",
 			containerdID:  "test_pod",
@@ -137,7 +144,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:          "invalid state json",
-			path:          "testdata/meta.db",
+			path:          "testdata/meta_linux.db",
 			stateFilePath: "testdata/invalid_state.json",
 			namespace:     "default",
 			containerdID:  "test_pod",
@@ -149,7 +156,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:          "invalid state",
-			path:          "testdata/meta.db",
+			path:          "testdata/meta_linux.db",
 			stateFilePath: "testdata/invalid_json",
 			namespace:     "default",
 			containerdID:  "test_pod",
@@ -159,34 +166,61 @@ func TestExtract(t *testing.T) {
 			},
 			wantInventory: []*extractor.Inventory{},
 		},
+		{
+			name:            "metadb valid windows",
+			path:            "testdata/meta_windows.db",
+			shimPIDFilePath: "testdata/shim.pid",
+			namespace:       "default",
+			containerdID:    "test_pod",
+			cfg: containerd.Config{
+				MaxMetaDBFileSize: 500 * units.MiB,
+			},
+			onGoos: "windows",
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "mcr.microsoft.com/windows/nanoserver:ltsc2022",
+					Version: "sha256:31c8aa02d47af7d65c11da9c3a279c8407c32afd3fc6bec2e9a544db8e3715b3",
+					Metadata: &containerd.Metadata{
+						Namespace:      "default",
+						ImageName:      "mcr.microsoft.com/windows/nanoserver:ltsc2022",
+						ImageDigest:    "sha256:31c8aa02d47af7d65c11da9c3a279c8407c32afd3fc6bec2e9a544db8e3715b3",
+						Runtime:        "io.containerd.runhcs.v1",
+						InitProcessPID: 5628,
+					},
+					Locations: []string{"testdata/meta_windows.db"},
+				},
+			},
+		},
+		{
+			name:            "invalid shim pid",
+			path:            "testdata/meta_windows.db",
+			shimPIDFilePath: "testdata/state.json",
+			namespace:       "default",
+			containerdID:    "test_pod",
+			onGoos:          "windows",
+			cfg: containerd.Config{
+				MaxMetaDBFileSize: 500 * units.MiB,
+			},
+			wantInventory: []*extractor.Inventory{},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.onGoos != "" && tt.onGoos != runtime.GOOS {
-				t.Skipf("Skipping test on %s", runtime.GOOS)
-			}
-
+			var input *filesystem.ScanInput
 			d := t.TempDir()
-			createRuncStateFromTestData(t, d, tt.namespace, tt.containerdID, tt.stateFilePath)
-			createContainerdStateFromTestData(t, d, tt.path)
-			tt.wantInventory = modifyInventoryLocationsForTest(tt.wantInventory, d)
-			r, err := os.Open(filepath.Join(d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"))
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+			tt.wantInventory = modifyInventoryLocationsForTest(tt.wantInventory, d, tt.onGoos)
+			if tt.onGoos == "linux" {
+				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
+				createFileFromTestData(t, d, filepath.Join("run/containerd/runc/", tt.namespace, tt.containerdID), "state.json", tt.stateFilePath)
+				input = createScanInput(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
+			}
+			if tt.onGoos == "windows" {
+				createFileFromTestData(t, d, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
+				createFileFromTestData(t, d, filepath.Join("ProgramData/containerd/state/io.containerd.runtime.v2.task/", tt.namespace, tt.containerdID), "shim.pid", tt.shimPIDFilePath)
+				input = createScanInput(t, d, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")
 			}
 
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			input := &filesystem.ScanInput{Path: filepath.Join(d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"), Reader: r, ScanRoot: d, Info: info}
 			e := containerd.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -203,37 +237,48 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func modifyInventoryLocationsForTest(inventory []*extractor.Inventory, root string) []*extractor.Inventory {
+func modifyInventoryLocationsForTest(inventory []*extractor.Inventory, root string, onGoos string) []*extractor.Inventory {
 	for _, i := range inventory {
-		i.Locations = []string{filepath.Join(root, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")}
+		if onGoos == "linux" {
+			i.Locations = []string{filepath.Join(root, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")}
+		} else {
+			i.Locations = []string{filepath.Join(root, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")}
+		}
 	}
 	return inventory
 }
 
-func createRuncStateFromTestData(t *testing.T, root string, namespace string, id string, testDataFilePath string) {
+func createFileFromTestData(t *testing.T, root string, subPath string, fileName string, testDataFilePath string) {
 	t.Helper()
-	os.MkdirAll(filepath.Join(root, "run/containerd/runc/", namespace, id), 0755)
-	stateContent, err := os.ReadFile(testDataFilePath)
+	os.MkdirAll(filepath.Join(root, subPath), 0755)
+	testData, err := os.ReadFile(testDataFilePath)
 	if err != nil {
 		t.Fatalf("read from %s: %v\n", testDataFilePath, err)
 	}
-	err = os.WriteFile(filepath.Join(root, "run/containerd/runc/", namespace, id, "state.json"), []byte(stateContent), 0644)
+	err = os.WriteFile(filepath.Join(root, subPath, fileName), []byte(testData), 0644)
 	if err != nil {
-		t.Fatalf("write to %s: %v\n", filepath.Join(root, "run/containerd/runc/", namespace, id, "state.json"), err)
+		t.Fatalf("write to %s: %v\n", filepath.Join(root, subPath, fileName), err)
 	}
 }
 
-func createContainerdStateFromTestData(t *testing.T, root string, testDataFilePath string) {
-	t.Helper()
-	os.MkdirAll(filepath.Join(root, "/var/lib/containerd/io.containerd.metadata.v1.bolt"), 0755)
-	metaDbContent, err := os.ReadFile(testDataFilePath)
+func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInput {
+	finalPath := filepath.Join(root, path)
+	reader, err := os.Open(finalPath)
+	defer func() {
+		if err = reader.Close(); err != nil {
+			t.Errorf("Close(): %v", err)
+		}
+	}()
 	if err != nil {
-		t.Fatalf("read from %s: %v\n", testDataFilePath, err)
+		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(root, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"), []byte(metaDbContent), 0644)
+
+	info, err := os.Stat(finalPath)
 	if err != nil {
-		t.Fatalf("write to %s: %v\n", "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db", err)
+		t.Fatal(err)
 	}
+	input := &filesystem.ScanInput{Path: finalPath, Reader: reader, ScanRoot: root, Info: info}
+	return input
 }
 
 // defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
