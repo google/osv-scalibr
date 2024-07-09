@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
+//go:build !windows
 
-package dismpatch
+package regosversion
 
 import (
 	"context"
@@ -25,10 +25,10 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Name of the extractor
-const Name = "windows/dismpatch"
+// Name of the Windows version extractor
+const Name = "windows/regosversion"
 
-// Extractor implements the dismpatch extractor.
+// Extractor provides a metadata extractor for the version of Windows.
 type Extractor struct{}
 
 // Name of the extractor.
@@ -37,17 +37,17 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
-// Extract is a no-op for Linux.
+// Extract is a no-op for non-Windows platforms.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	return nil, fmt.Errorf("only supported on Windows")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e *Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	return nil, fmt.Errorf("only supported on Windows")
 }
 
 // ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
+func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return nil, fmt.Errorf("only supported on Windows")
 }

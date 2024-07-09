@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
+//go:build !linux
 
 package etcpasswdpermissions
 
@@ -39,5 +39,5 @@ func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan is a no-op for Windows.
 func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	return nil, fmt.Errorf("Plugin not supported on Windows")
+	return nil, fmt.Errorf("plugin only supported on Linux")
 }

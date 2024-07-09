@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
+//go:build !linux
 
 package rpm
 
@@ -54,22 +54,22 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
-// FileRequired always returns false as RPM extractor is not supported on Windows.
+// FileRequired always returns false as RPM extractor is not supported.
 func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	return false
 }
 
 // Extract extracts packages from rpm status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("Windows is not supported")
+	return nil, fmt.Errorf("not supported")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, fmt.Errorf("Windows is not supported")
+	return nil, fmt.Errorf("not supported")
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return []string{}, fmt.Errorf("Windows is not supported")
+	return []string{}, fmt.Errorf("not supported")
 }

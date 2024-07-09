@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
+//go:build !windows
 
-package ospackages
+package regpatchlevel
 
 import (
 	"context"
@@ -26,9 +26,9 @@ import (
 )
 
 // Name of the extractor
-const Name = "windows/ospackages"
+const Name = "windows/regpatchlevel"
 
-// Extractor implements the ospackages extractor.
+// Extractor implements the regpatchlevel extractor.
 type Extractor struct{}
 
 // Name of the extractor.
