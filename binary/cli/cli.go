@@ -76,6 +76,7 @@ type Flags struct {
 	Verbose               bool
 	ExplicitExtractors    bool
 	StoreAbsolutePath     bool
+	WindowsAllDrives      bool
 }
 
 var supportedOutputFormats = []string{
@@ -221,7 +222,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 	var scanRoots []string
 	if len(f.Root) == 0 {
-		if scanRoots, err = platform.DefaultScanRoots(); err != nil {
+		if scanRoots, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
 			return nil, err
 		}
 	} else {

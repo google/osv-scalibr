@@ -18,8 +18,11 @@ package platform
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
@@ -35,14 +38,62 @@ func SystemRoot() (string, error) {
 	return os.Getenv("SystemDrive") + string(os.PathSeparator), nil
 }
 
+func retrieveAllDrives() ([]string, error) {
+	// first determine the required size of the buffer
+	size, err := windows.GetLogicalDriveStrings(0, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// perform the actual syscall
+	buf := make([]uint16, size)
+	n, err := windows.GetLogicalDriveStrings(size, &buf[0])
+	if err != nil {
+		return nil, err
+	}
+
+	var drives []string
+	var drive string
+	var i uint32 = 0
+
+	// parse the output (null separated strings)
+	for ; i < n; i++ {
+		if buf[i] == 0 {
+			drives = append(drives, drive)
+			drive = ""
+			continue
+		}
+
+		drive += fmt.Sprintf("%c", buf[i])
+	}
+
+	return drives, nil
+}
+
 // DefaultScanRoots returns the default list of directories to be scanned for Windows.
-func DefaultScanRoots() ([]string, error) {
+func DefaultScanRoots(allDrives bool) ([]string, error) {
 	systemDrive, err := SystemRoot()
 	if err != nil {
 		return nil, err
 	}
 
-	return []string{systemDrive}, nil
+	scanRoots := []string{systemDrive}
+
+	if allDrives {
+		drives, err := retrieveAllDrives()
+		if err != nil {
+			return nil, err
+		}
+
+		// add all drives to the scan roots, but we remove the system drive as it's already in the list
+		for _, drive := range drives {
+			if drive != systemDrive {
+				scanRoots = append(scanRoots, drive)
+			}
+		}
+	}
+
+	return scanRoots, nil
 }
 
 // DefaultIgnoredDirectories returns the default list of directories to be ignored for Windows.
