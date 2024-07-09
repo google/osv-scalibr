@@ -45,6 +45,7 @@ func parseFlags() *cli.Flags {
 	spdxCreators := flag.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
 	verbose := flag.Bool("verbose", false, "Enable this to print debug logs")
 	explicitExtractors := flag.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
+	windowsAllDrives := flag.Bool("windows-all-drives", false, "Scan all drives on Windows")
 
 	flag.Parse()
 	filesToExtract := flag.Args()
@@ -64,6 +65,7 @@ func parseFlags() *cli.Flags {
 		SPDXCreators:          *spdxCreators,
 		Verbose:               *verbose,
 		ExplicitExtractors:    *explicitExtractors,
+		WindowsAllDrives:      *windowsAllDrives,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		log.Errorf("Error parsing CLI args: %v", err)

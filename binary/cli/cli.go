@@ -88,6 +88,9 @@ func ValidateFlags(flags *Flags) error {
 	if len(flags.ResultFile) == 0 && len(flags.Output) == 0 {
 		return errors.New("either --result or --o needs to be set")
 	}
+	if flags.Root != "" && flags.WindowsAllDrives {
+		return errors.New("--root and --windows-all-drives cannot be used together")
+	}
 	if err := validateResultPath(flags.ResultFile); err != nil {
 		return fmt.Errorf("--result %w", err)
 	}
