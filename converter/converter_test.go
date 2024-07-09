@@ -19,17 +19,18 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-cmp/cmp"
-	"github.com/spdx/tools-golang/spdx/v2/common"
-	"github.com/spdx/tools-golang/spdx/v2/v2_3"
-	"github.com/google/uuid"
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/purl"
-	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/uuid"
+	"github.com/spdx/tools-golang/spdx/v2/common"
+	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 )
 
 func TestToSPDX23(t *testing.T) {
@@ -317,6 +318,85 @@ func TestToSPDX23(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(v2_3.Package{})); diff != "" {
 				t.Errorf("converter.ToSPDX23(%v): unexpected diff (-want +got):\n%s", tc.scanResult, diff)
+			}
+		})
+	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func TestToCDX(t *testing.T) {
+	// Make UUIDs deterministic
+	uuid.SetRand(rand.New(rand.NewSource(1)))
+	pipEx := wheelegg.New(wheelegg.DefaultConfig())
+	defaultBOM := cyclonedx.NewBOM()
+
+	testCases := []struct {
+		desc       string
+		scanResult *scalibr.ScanResult
+		config     converter.CDXConfig
+		want       *cyclonedx.BOM
+	}{
+		{
+			desc: "Package with custom config",
+			scanResult: &scalibr.ScanResult{
+				Inventories: []*extractor.Inventory{&extractor.Inventory{
+					Name: "software", Version: "1.2.3", Extractor: pipEx,
+				}},
+			},
+			config: converter.CDXConfig{
+				ComponentName:    "sbom-1",
+				ComponentVersion: "1.0.0",
+				Authors:          []string{"author"},
+			},
+			want: &cyclonedx.BOM{
+				Metadata: &cyclonedx.Metadata{
+					Component: &cyclonedx.Component{
+						Name:    "sbom-1",
+						Version: "1.0.0",
+						BOMRef:  "52fdfc07-2182-454f-963f-5f0f9a621d72",
+					},
+					Authors: ptr([]cyclonedx.OrganizationalContact{{Name: "author"}}),
+					Tools: &cyclonedx.ToolsChoice{
+						Tools: &[]cyclonedx.Tool{
+							{
+								Name: "SCALIBR",
+								ExternalReferences: ptr([]cyclonedx.ExternalReference{
+									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
+								}),
+							},
+						},
+					},
+				},
+				Components: ptr([]cyclonedx.Component{
+					{
+						BOMRef:     "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+						Type:       "library",
+						Name:       "software",
+						Version:    "1.2.3",
+						PackageURL: "pkg:pypi/software@1.2.3",
+					},
+				}),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := converter.ToCDX(tc.scanResult, tc.config)
+			// Can't mock time.Now() so skip verifying the timestamp.
+			tc.want.Metadata.Timestamp = got.Metadata.Timestamp
+			// Auto-populated fields
+			tc.want.XMLNS = defaultBOM.XMLNS
+			tc.want.JSONSchema = defaultBOM.JSONSchema
+			tc.want.BOMFormat = defaultBOM.BOMFormat
+			tc.want.SpecVersion = defaultBOM.SpecVersion
+			tc.want.Version = defaultBOM.Version
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.scanResult, diff)
 			}
 		})
 	}

@@ -34,7 +34,7 @@ func parseFlags() *cli.Flags {
 	root := flag.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := flag.String("result", "", "The path of the output scan result file")
 	var output cli.Array
-	flag.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json")
+	flag.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
 	extractorsToRun := flag.String("extractors", "default", "Comma-separated list of extractor plugins to run")
 	detectorsToRun := flag.String("detectors", "default", "Comma-separated list of detectors plugins to run")
 	dirsToSkip := flag.String("skip-dirs", "", "Comma-separated list of file paths to avoid traversing")
@@ -43,6 +43,9 @@ func parseFlags() *cli.Flags {
 	spdxDocumentName := flag.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := flag.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := flag.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
+	cdxComponentName := flag.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
+	cdxComponentVersion := flag.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
+	cdxAuthors := flag.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
 	verbose := flag.Bool("verbose", false, "Enable this to print debug logs")
 	explicitExtractors := flag.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
 
@@ -62,6 +65,9 @@ func parseFlags() *cli.Flags {
 		SPDXDocumentName:      *spdxDocumentName,
 		SPDXDocumentNamespace: *spdxDocumentNamespace,
 		SPDXCreators:          *spdxCreators,
+		CDXComponentName:      *cdxComponentName,
+		CDXComponentVersion:   *cdxComponentVersion,
+		CDXAuthors:            *cdxAuthors,
 		Verbose:               *verbose,
 		ExplicitExtractors:    *explicitExtractors,
 	}

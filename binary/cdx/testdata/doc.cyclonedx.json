@@ -1,0 +1,13 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2006-01-02T15:04:05Z",
+    "component": {
+      "type": "",
+      "name": "BOM name"
+    }
+  }
+}

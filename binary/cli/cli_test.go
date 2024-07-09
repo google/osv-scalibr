@@ -23,10 +23,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/plugin"
-	scalibr "github.com/google/osv-scalibr"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -438,6 +438,14 @@ func TestWriteScanResults(t *testing.T) {
 			},
 			wantFilename:      "result.spdx",
 			wantContentPrefix: "SPDXVersion: SPDX-2.3",
+		},
+		{
+			desc: "Create CDX",
+			flags: &cli.Flags{
+				Output: []string{"cdx-json=" + filepath.Join(testDirPath, "result.cyclonedx.json")},
+			},
+			wantFilename:      "result.cyclonedx.json",
+			wantContentPrefix: "{\n  \"$schema\": \"http://cyclonedx.org/schema/bom-1.5.schema.json\"",
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

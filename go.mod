@@ -3,6 +3,7 @@ module github.com/google/osv-scalibr
 go 1.22
 
 require (
+	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/containerd/containerd v1.7.18
 	github.com/erikvarga/go-rpmdb v0.0.0-20240208180226-b97e041ef9af
