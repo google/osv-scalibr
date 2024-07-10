@@ -23,9 +23,7 @@ import (
 
 var (
 	// windowsFlavorAndBuildToProductName maps a given Windows flavor and build number to a product
-	// name. The list of build numbers can be obtained on Wikipedia:
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
-	// The product name is normalized to be compatible with CPEs found on nvd.nist.gov.
+	// name.
 	windowsFlavorAndBuildToProductName = map[string]map[string]string{
 		"server": {
 			"6.0.6003":   "windows_server_2008",
@@ -33,28 +31,22 @@ var (
 			"6.2.9200":   "windows_server_2012",
 			"6.3.9600":   "windows_server_2012:r2",
 			"10.0.14393": "windows_server_2016",
-			"10.0.16299": "windows_server_1709",
-			"10.0.17134": "windows_server_1803",
 			"10.0.17763": "windows_server_2019",
-			"10.0.18362": "windows_server_1903",
-			"10.0.18363": "windows_server_1909",
-			"10.0.19041": "windows_server_2004",
-			"10.0.19042": "windows_server_20h2",
 			"10.0.20348": "windows_server_2022",
-			"10.0.25398": "windows_server_2022_23H2",
+			"10.0.25398": "windows_server_2022:23H2",
 		},
 		"client": {
 			"5.1.2600":   "windows_xp",
-			"10.0.10240": "windows_10_1507",
-			"10.0.14393": "windows_10_1607",
-			"10.0.17763": "windows_10_1809",
-			"10.0.19042": "windows_10_20H2",
-			"10.0.19043": "windows_10_21H1",
-			"10.0.19044": "windows_10_21H2",
-			"10.0.19045": "windows_10_22H2",
-			"10.0.22000": "windows_11_21H2",
-			"10.0.22621": "windows_11_22H2",
-			"10.0.22631": "windows_11_23H2",
+			"10.0.10240": "windows_10:1507",
+			"10.0.14393": "windows_10:1607",
+			"10.0.17763": "windows_10:1809",
+			"10.0.19042": "windows_10:20H2",
+			"10.0.19043": "windows_10:21H1",
+			"10.0.19044": "windows_10:21H2",
+			"10.0.19045": "windows_10:22H2",
+			"10.0.22000": "windows_11:21H2",
+			"10.0.22621": "windows_11:22H2",
+			"10.0.22631": "windows_11:23H2",
 		},
 	}
 )
