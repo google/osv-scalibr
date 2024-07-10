@@ -45,7 +45,7 @@ func TestInventoryFromOutput(t *testing.T) {
 				&extractor.Inventory{
 					Name:      "windows_server_2019",
 					Version:   "10.0.17763.3406",
-					Locations: []string{"cmd-dism"},
+					Locations: []string{"cmd-dism-osver"},
 				},
 				&extractor.Inventory{
 					Name:      "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1",

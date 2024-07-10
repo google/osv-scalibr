@@ -123,7 +123,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
 		Name:      i.Name,
-		Version:   i.Version,
+		Qualifiers: purl.QualifiersFromMap(map[string]string{
+			purl.BuildNumber: i.Version,
+		}),
 	}, nil
 }
 

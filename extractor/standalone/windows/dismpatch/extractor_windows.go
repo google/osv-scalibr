@@ -20,6 +20,7 @@ package dismpatch
 import (
 	"context"
 	"os/exec"
+	"slices"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -54,12 +55,21 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return &purl.PackageURL{
+	p := &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
 		Name:      i.Name,
-		Version:   i.Version,
-	}, nil
+	}
+
+	if slices.Contains(i.Locations, "cmd-dism-osver") {
+		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
+			purl.BuildNumber: i.Version,
+		})
+	} else {
+		p.Version = i.Version
+	}
+
+	return p, nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.

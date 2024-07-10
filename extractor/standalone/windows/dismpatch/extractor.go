@@ -35,7 +35,7 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 		&extractor.Inventory{
 			Name:      windowsProduct,
 			Version:   imgVersion,
-			Locations: []string{"cmd-dism"},
+			Locations: []string{"cmd-dism-osver"},
 		},
 	}
 
