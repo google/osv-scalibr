@@ -88,6 +88,7 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
+    ContainerdContainerMetadata containerd_container_metadata = 22;
   }
 }
 
@@ -265,4 +266,12 @@ message OSVPackageMetadata {
 
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
+}
+
+message ContainerdContainerMetadata {
+  string namespace_name = 1;
+  string image_name = 2;
+  string image_digest = 3;
+  string runtime = 4;
+  int32 init_process_pid = 5;
 }

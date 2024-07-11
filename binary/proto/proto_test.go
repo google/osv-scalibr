@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -355,6 +356,34 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/rpm",
 	}
+	containerdInventory := &extractor.Inventory{
+		Name:    "gcr.io/google-samples/hello-app:1.0",
+		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Metadata: &containerd.Metadata{
+			Namespace:      "default",
+			ImageName:      "gcr.io/google-samples/hello-app:1.0",
+			ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+			Runtime:        "io.containerd.runc.v2",
+			InitProcessPID: 8915,
+		},
+		Locations: []string{"/file4"},
+		Extractor: &containerd.Extractor{},
+	}
+	containerdInventoryProto := &spb.Inventory{
+		Name:    "gcr.io/google-samples/hello-app:1.0",
+		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Metadata: &spb.Inventory_ContainerdContainerMetadata{
+			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
+				NamespaceName:  "default",
+				ImageName:      "gcr.io/google-samples/hello-app:1.0",
+				ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+				Runtime:        "io.containerd.runc.v2",
+				InitProcessPid: 8915,
+			},
+		},
+		Locations: []string{"/file4"},
+		Extractor: "containers/containerd",
+	}
 
 	testCases := []struct {
 		desc        string
@@ -483,6 +512,40 @@ func TestScanResultToProto(t *testing.T) {
 				Inventories: []*spb.Inventory{purlRPMInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
+			exclWindows: true,
+		},
+		{
+			desc: "Successful containerd scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					&plugin.Status{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{containerdInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					&spb.PluginStatus{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{containerdInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			// TODO(b/349138656): Remove this exclusion when containerd is supported on Windows.
 			exclWindows: true,
 		},
 		{

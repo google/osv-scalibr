@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -291,6 +292,16 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Category:    m.Category,
 				OsVersion:   m.OSVersion,
 				OsVersionId: m.OSVersionID,
+			},
+		}
+	case *containerd.Metadata:
+		i.Metadata = &spb.Inventory_ContainerdContainerMetadata{
+			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
+				NamespaceName:  m.Namespace,
+				ImageName:      m.ImageName,
+				ImageDigest:    m.ImageDigest,
+				Runtime:        m.Runtime,
+				InitProcessPid: int32(m.InitProcessPID),
 			},
 		}
 	case *spdx.Metadata:
