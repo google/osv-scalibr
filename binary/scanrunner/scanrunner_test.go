@@ -12,13 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
 package scanrunner_test
-
-// TODO: b/343368902 - This test file is currently incompatible with Windows. We should revisit
-//                     this once we either have detectors that are supported on both Windows and
-//                     Linux, or we have a way to mock the detectors.
 
 import (
 	"os"
