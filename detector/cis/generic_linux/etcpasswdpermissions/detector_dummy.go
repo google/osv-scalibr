@@ -19,6 +19,7 @@ package etcpasswdpermissions
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/inventoryindex"
@@ -39,5 +40,10 @@ func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan is a no-op for Windows.
 func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+	return nil, fmt.Errorf("plugin only supported on Linux")
+}
+
+// ScanFS starts the scan from a pseudo-filesystem.
+func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	return nil, fmt.Errorf("plugin only supported on Linux")
 }

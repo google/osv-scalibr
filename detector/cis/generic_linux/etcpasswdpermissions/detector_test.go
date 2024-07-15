@@ -12,18 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
-
 package etcpasswdpermissions_test
 
 import (
 	"context"
-	"errors"
 	"io/fs"
-	"os"
-	"syscall"
+	"runtime"
+	"slices"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -41,27 +37,11 @@ type fakeFS struct {
 	gid    uint32
 }
 
-func (f *fakeFS) Open(name string) (fs.File, error) {
-	if name == "etc/passwd" {
-		if f.exists {
-			return &fakeFile{perms: f.perms, uid: f.uid, gid: f.gid}, nil
-		}
-		return nil, os.ErrNotExist
-	}
-	return nil, errors.New("failed to open")
-}
-
 type fakeFile struct {
 	perms fs.FileMode
 	uid   uint32
 	gid   uint32
 }
-
-func (f *fakeFile) Stat() (fs.FileInfo, error) {
-	return &fakeFileInfo{perms: f.perms, uid: f.uid, gid: f.gid}, nil
-}
-func (fakeFile) Read([]byte) (int, error) { return 0, errors.New("failed to read") }
-func (fakeFile) Close() error             { return nil }
 
 type fakeFileInfo struct {
 	perms fs.FileMode
@@ -69,14 +49,11 @@ type fakeFileInfo struct {
 	gid   uint32
 }
 
-func (fakeFileInfo) Name() string         { return "/etc/passwd" }
-func (fakeFileInfo) Size() int64          { return 1 }
-func (i *fakeFileInfo) Mode() fs.FileMode { return i.perms }
-func (fakeFileInfo) ModTime() time.Time   { return time.Now() }
-func (i *fakeFileInfo) IsDir() bool       { return false }
-func (i *fakeFileInfo) Sys() any          { return &syscall.Stat_t{Uid: i.uid, Gid: i.gid} }
-
 func TestScan(t *testing.T) {
+	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+		t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)
+	}
+
 	wantTitle := "Ensure permissions on /etc/passwd are configured"
 	wantDesc := "The /etc/passwd file contains user account information that " +
 		"is used by many system utilities and therefore must be readable for these " +
