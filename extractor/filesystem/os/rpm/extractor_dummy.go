@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"time"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/stats"
 )
 
 // Name is the name for the RPM extractor
@@ -33,7 +35,11 @@ const Name = "os/rpm"
 type Extractor struct{}
 
 // Config contains RPM specific configuration values
-type Config struct{}
+type Config struct {
+	Stats            stats.Collector
+	MaxFileSizeBytes int64
+	Timeout          time.Duration
+}
 
 // DefaultConfig returns the default configuration values for the RPM extractor.
 func DefaultConfig() Config { return Config{} }

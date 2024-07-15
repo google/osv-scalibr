@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
 package rpm_test
 
 import (
@@ -23,6 +21,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"sort"
 	"testing"
 	"time"
@@ -40,6 +40,11 @@ import (
 )
 
 func TestFileRequired(t *testing.T) {
+	// supported OSes
+	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name             string
 		path             string
@@ -163,6 +168,10 @@ SUPPORT_END=2024-05-14
 VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
+	// supported OSes
+	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
 
 	tests := []struct {
 		name       string
@@ -539,6 +548,11 @@ func TestExtract(t *testing.T) {
 }
 
 func TestToPURL(t *testing.T) {
+	// supported OSes
+	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	pkgname := "pkgname"
 	source := "source.rpm"
 	version := "1.2.3"
