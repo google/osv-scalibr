@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
-
 package containerd_test
 
 import (
@@ -48,9 +46,10 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
-			name:           "containerd metadb windows",
-			path:           "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db",
-			onGoos:         "windows",
+			name: "containerd metadb windows",
+			path: "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db",
+			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
+			onGoos:         "ignore",
 			wantIsRequired: true,
 		},
 		{
@@ -177,7 +176,8 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			onGoos: "windows",
+			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
+			onGoos: "ignore",
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:    "mcr.microsoft.com/windows/nanoserver:ltsc2022",
@@ -199,7 +199,8 @@ func TestExtract(t *testing.T) {
 			shimPIDFilePath: "testdata/state.json",
 			namespace:       "default",
 			containerdID:    "test_pod",
-			onGoos:          "windows",
+			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
+			onGoos: "ignore",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
@@ -209,6 +210,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.onGoos != "" && tt.onGoos != runtime.GOOS {
+				t.Skipf("Skipping test on %s", runtime.GOOS)
+			}
+
 			var input *filesystem.ScanInput
 			d := t.TempDir()
 			tt.wantInventory = modifyInventoryLocationsForTest(tt.wantInventory, d, tt.onGoos)
