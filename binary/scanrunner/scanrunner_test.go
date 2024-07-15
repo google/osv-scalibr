@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
 package scanrunner_test
-
-// TODO: b/343368902 - This test file is currently incompatible with Windows. We should revisit
-//                     this once we either have detectors that are supported on both Windows and
-//                     Linux, or we have a way to mock the detectors.
 
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -87,6 +83,7 @@ func TestRunScan(t *testing.T) {
 		wantPluginStatus   []spb.ScanStatus_ScanStatusEnum
 		wantInventoryCount int
 		wantFindingCount   int
+		excludeOS          []string // test will not run on these operating systems
 	}{
 		{
 			desc:               "Successful detector run",
@@ -95,6 +92,8 @@ func TestRunScan(t *testing.T) {
 			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantInventoryCount: 0,
 			wantFindingCount:   1,
+			// TODO: b/343368902: Fix once we have a detector for Windows.
+			excludeOS: []string{"windows"},
 		},
 		{
 			desc:               "Successful extractor run",
@@ -111,11 +110,17 @@ func TestRunScan(t *testing.T) {
 			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
 			wantInventoryCount: 0,
 			wantFindingCount:   0,
+			// TODO: b/343368902: Fix once we have a detector for Windows.
+			excludeOS: []string{"windows"},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
+			if slices.Contains(tc.excludeOS, runtime.GOOS) {
+				t.Skipf("Skipping test on %s", runtime.GOOS)
+			}
+
 			dir := tc.setupFunc(t)
 			resultFile := filepath.Join(dir, "result.textproto")
 			tc.flags.Root = dir
