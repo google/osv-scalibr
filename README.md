@@ -89,6 +89,29 @@ cfg := &scalibr.ScanConfig{
 results := scalibr.New().Scan(context.Background(), cfg)
 ```
 
+### A note on cross-platform
+
+SCALIBR is compatible with Linux and has experimental support for Windows and
+Mac. When a new plugin is implemented for SCALIBR, we need to ensure that it
+will not break other platforms. Our runners will generally catch compatibility
+issue, but to ensure everything is easy when implementing a plugin, here are a
+few recommendations to keep in mind:
+
+*   Ensure you work with file paths using the `filepath` library. For example,
+    avoid using `/my/path` but prefer `filepath.Join('my', 'path')` instead.
+*   If the plugin can only support one system (e.g. a windows-specific
+    detector), the layout will generally be to have two versions of the file:
+    *   `file_system.go`: where `system` is the targeted system (e.g.
+        `file_windows.go`) that contains the code specific to the target system.
+        It must also contain the adequate go build constraint.
+    *   `file_dummy.go`: contains the code for every other system. It generally
+        does nothing and just ensures that the code compiles on that system;
+*   Because of the way our internal automation works, we generally require unit
+    tests to be defined for every platform and be filtered out dynamically if
+    not compatible. In other words, a test should be filtered in/out using
+    `if runtime.GOOS` rather than a `//go:build` constraint. Here is an
+    [example](https://github.com/google/osv-scalibr/commit/7a87679f5c688e7bac4527d29c1823597a52bb40#diff-72efad005e0fbfe34c60e496dfb55ec15fc50f4b12be0934f08a3acaf7733616L79).
+
 ## Custom logging
 You can make the SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
 
