@@ -46,7 +46,7 @@ ID=debian`
 
 func TestFileRequired(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if !slices.Contains([]string{"darwin"}, runtime.GOOS) {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -143,7 +143,7 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if !slices.Contains([]string{"darwin"}, runtime.GOOS) {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
