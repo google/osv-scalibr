@@ -89,6 +89,7 @@ var (
 		Dotnet,
 		SBOM,
 		OS,
+		Containers,
 	)
 
 	// Untested extractors are OSV extractors without tests.
@@ -119,6 +120,7 @@ var (
 
 		"sbom": SBOM,
 		"os":   OS,
+		"containers": Containers,
 
 		// Collections.
 		"default":  Default,
