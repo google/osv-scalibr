@@ -115,7 +115,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return inventory, fmt.Errorf("Containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
 	}
 
-	metaDB, err := bolt.Open(input.Path, 0444, nil)
+	metaDB, err := bolt.Open(filepath.Join(input.ScanRoot, input.Path), 0444, nil)
 	if err != nil {
 		return inventory, fmt.Errorf("Could not read the containerd metadb file: %v", err)
 	}

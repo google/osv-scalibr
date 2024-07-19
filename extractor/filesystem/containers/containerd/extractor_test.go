@@ -113,7 +113,7 @@ func TestExtract(t *testing.T) {
 						Runtime:        "io.containerd.runc.v2",
 						InitProcessPID: 8915,
 					},
-					Locations: []string{"testdata/meta_linux.db"},
+					Locations: []string{"var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"},
 				},
 			},
 		},
@@ -189,7 +189,7 @@ func TestExtract(t *testing.T) {
 						Runtime:        "io.containerd.runhcs.v1",
 						InitProcessPID: 5628,
 					},
-					Locations: []string{"testdata/meta_windows.db"},
+					Locations: []string{"ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db"},
 				},
 			},
 		},
@@ -216,7 +216,6 @@ func TestExtract(t *testing.T) {
 
 			var input *filesystem.ScanInput
 			d := t.TempDir()
-			tt.wantInventory = modifyInventoryLocationsForTest(tt.wantInventory, d, tt.onGoos)
 			if tt.onGoos == "linux" {
 				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
 				createFileFromTestData(t, d, filepath.Join("run/containerd/runc/", tt.namespace, tt.containerdID), "state.json", tt.stateFilePath)
@@ -242,17 +241,6 @@ func TestExtract(t *testing.T) {
 			}
 		})
 	}
-}
-
-func modifyInventoryLocationsForTest(inventory []*extractor.Inventory, root string, onGoos string) []*extractor.Inventory {
-	for _, i := range inventory {
-		if onGoos == "linux" {
-			i.Locations = []string{filepath.Join(root, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")}
-		} else {
-			i.Locations = []string{filepath.Join(root, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")}
-		}
-	}
-	return inventory
 }
 
 func createFileFromTestData(t *testing.T, root string, subPath string, fileName string, testDataFilePath string) {
@@ -284,7 +272,7 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{Path: finalPath, Reader: reader, ScanRoot: root, Info: info}
+	input := &filesystem.ScanInput{Path: path, Reader: reader, ScanRoot: root, Info: info}
 	return input
 }
 
