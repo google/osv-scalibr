@@ -27,6 +27,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 	"github.com/containerd/containerd/metadata"
@@ -114,8 +115,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if input.Info != nil && input.Info.Size() > e.maxMetaDBFileSize {
 		return inventory, fmt.Errorf("Containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
 	}
-
-	metaDB, err := bolt.Open(filepath.Join(input.ScanRoot, input.Path), 0444, nil)
+	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
+	// This will still allow to handle the snapshot of a machine.
+	metaDB, err := bolt.Open(filepath.Join(input.ScanRoot, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return inventory, fmt.Errorf("Could not read the containerd metadb file: %v", err)
 	}
