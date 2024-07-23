@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
@@ -73,6 +74,7 @@ var (
 		apk.New(apk.DefaultConfig()),
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
+		snap.New(snap.DefaultConfig()),
 	}
 
 	// Collections of extractors.

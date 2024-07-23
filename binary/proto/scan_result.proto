@@ -89,6 +89,7 @@ message Inventory {
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
+    SNAPPackageMetadata snap_metadata = 23;
   }
 }
 
@@ -241,6 +242,18 @@ message COSPackageMetadata {
   string category = 3;
   string os_version = 4;
   string os_version_id = 5;
+}
+
+// The additional data found in SNAP packages.
+message SNAPPackageMetadata {
+  string name = 1;
+  string version = 2;
+  string grade = 3;
+  string type = 4;
+  repeated string architectures = 5;
+  string os_id = 6;
+  string os_version_codename = 7;
+  string os_version_id = 8;
 }
 
 // The additional data for packages extracted from SPDX files.

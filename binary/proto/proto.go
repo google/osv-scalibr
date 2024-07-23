@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/plugin"
@@ -267,6 +268,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:       m.OSVersionID,
 				Maintainer:        m.Maintainer,
 				Architecture:      m.Architecture,
+			},
+		}
+	case *snap.Metadata:
+		i.Metadata = &spb.Inventory_SnapMetadata{
+			SnapMetadata: &spb.SNAPPackageMetadata{
+				Name:              m.Name,
+				Version:           m.Version,
+				Grade:             m.Grade,
+				Type:              m.Type,
+				Architectures:     m.Architectures,
+				OsId:              m.OSID,
+				OsVersionCodename: m.OSVersionCodename,
+				OsVersionId:       m.OSVersionID,
 			},
 		}
 	case *rpm.Metadata:
