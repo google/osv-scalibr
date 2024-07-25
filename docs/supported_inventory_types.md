@@ -11,6 +11,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * DPKG (used by e.g. Debian, Ubuntu)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 * SNAP
+* Flatpak
 
 ## Language packages
 

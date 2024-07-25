@@ -51,6 +51,8 @@ const (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
+	// TypeFlatpak is a pkg:flatpak purl.
+	TypeFlatpak = "flatpak"
 	// TypeGem is a pkg:gem purl.
 	TypeGem = "gem"
 	// TypeGeneric is a pkg:generic purl.
@@ -152,6 +154,7 @@ func validType(t string) bool {
 		TypeCran:      true,
 		TypeDebian:    true,
 		TypeDocker:    true,
+		TypeFlatpak:   true,
 		TypeGem:       true,
 		TypeGeneric:   true,
 		TypeGithub:    true,

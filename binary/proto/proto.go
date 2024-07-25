@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -306,6 +307,20 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Category:    m.Category,
 				OsVersion:   m.OSVersion,
 				OsVersionId: m.OSVersionID,
+			},
+		}
+	case *flatpak.Metadata:
+		i.Metadata = &spb.Inventory_FlatpakMetadata{
+			FlatpakMetadata: &spb.FlatpakPackageMetadata{
+				PackageName:    m.PackageName,
+				PackageId:      m.PackageID,
+				PackageVersion: m.PackageVersion,
+				ReleaseDate:    m.ReleaseDate,
+				OsName:         m.OSName,
+				OsId:           m.OSID,
+				OsVersionId:    m.OSVersionID,
+				OsBuildId:      m.OSBuildID,
+				Developer:      m.Developer,
 			},
 		}
 	case *containerd.Metadata:

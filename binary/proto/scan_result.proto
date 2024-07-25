@@ -90,6 +90,7 @@ message Inventory {
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
+    FlatpakPackageMetadata flatpak_metadata = 24;
   }
 }
 
@@ -254,6 +255,19 @@ message SNAPPackageMetadata {
   string os_id = 6;
   string os_version_codename = 7;
   string os_version_id = 8;
+}
+
+// The additional data found in Flatpak packages.
+message FlatpakPackageMetadata {
+  string package_name = 1;
+  string package_id = 2;
+  string package_version = 3;
+  string release_date = 4;
+  string os_name = 5;
+  string os_id = 6;
+  string os_version_id = 7;
+  string os_build_id = 8;
+  string developer = 9;
 }
 
 // The additional data for packages extracted from SPDX files.
