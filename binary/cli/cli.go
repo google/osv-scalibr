@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/spdx/tools-golang/spdx/v2/common"
+	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/binary/spdx"
@@ -73,6 +74,9 @@ type Flags struct {
 	SPDXDocumentName      string
 	SPDXDocumentNamespace string
 	SPDXCreators          string
+	CDXComponentName      string
+	CDXComponentVersion   string
+	CDXAuthors            string
 	Verbose               bool
 	ExplicitExtractors    bool
 	StoreAbsolutePath     bool
@@ -80,7 +84,7 @@ type Flags struct {
 }
 
 var supportedOutputFormats = []string{
-	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml",
+	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml", "cdx-json", "cdx-xml",
 }
 
 // ValidateFlags validates the passed command line flags.
@@ -264,6 +268,15 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 	}
 }
 
+// GetCDXConfig creates an CDXConfig struct based on the CLI flags.
+func (f *Flags) GetCDXConfig() converter.CDXConfig {
+	return converter.CDXConfig{
+		ComponentName:    f.CDXComponentName,
+		ComponentVersion: f.CDXComponentVersion,
+		Authors:          strings.Split(f.CDXAuthors, ","),
+	}
+}
+
 // WriteScanResults writes SCALIBR scan results to files specified by the CLI flags.
 func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 	if len(f.ResultFile) > 0 {
@@ -293,6 +306,11 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 			} else if strings.Contains(oFormat, "spdx23") {
 				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
 				if err := spdx.Write23(doc, oPath, oFormat); err != nil {
+					return err
+				}
+			} else if strings.Contains(oFormat, "cdx") {
+				doc := converter.ToCDX(result, f.GetCDXConfig())
+				if err := cdx.Write(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.6" version="1">
+  <metadata>
+    <timestamp>2006-01-02T15:04:05Z</timestamp>
+    <component type="">
+      <name>BOM name</name>
+    </component>
+  </metadata>
+</bom>

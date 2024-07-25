@@ -439,6 +439,14 @@ func TestWriteScanResults(t *testing.T) {
 			wantFilename:      "result.spdx",
 			wantContentPrefix: "SPDXVersion: SPDX-2.3",
 		},
+		{
+			desc: "Create CDX",
+			flags: &cli.Flags{
+				Output: []string{"cdx-json=" + filepath.Join(testDirPath, "result.cyclonedx.json")},
+			},
+			wantFilename:      "result.cyclonedx.json",
+			wantContentPrefix: "{\n  \"$schema\": \"http://cyclonedx.org/schema/bom-1.6.schema.json\"",
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			if err := tc.flags.WriteScanResults(result); err != nil {

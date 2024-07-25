@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"github.com/google/uuid"
@@ -163,4 +164,78 @@ func toDocElementID(id string) common.DocElementID {
 	return common.DocElementID{
 		ElementRefID: common.ElementID(id),
 	}
+}
+
+// CDXConfig describes custom settings that should be applied to the generated CDX file.
+type CDXConfig struct {
+	ComponentName    string
+	ComponentVersion string
+	Authors          []string
+}
+
+// ToCDX converts the SCALIBR scan results into a CycloneDX document.
+func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
+	bom := cyclonedx.NewBOM()
+	bom.Metadata = &cyclonedx.Metadata{
+		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		Component: &cyclonedx.Component{
+			Name:    c.ComponentName,
+			Version: c.ComponentVersion,
+			BOMRef:  uuid.New().String(),
+		},
+		Tools: &cyclonedx.ToolsChoice{
+			Components: &[]cyclonedx.Component{
+				{
+					Type: cyclonedx.ComponentTypeApplication,
+					Name: "SCALIBR",
+					ExternalReferences: &[]cyclonedx.ExternalReference{
+						{
+							URL:  "https://github.com/google/osv-scalibr",
+							Type: cyclonedx.ERTypeWebsite,
+						},
+					},
+				},
+			},
+		},
+	}
+	if len(c.Authors) > 0 {
+		authors := make([]cyclonedx.OrganizationalContact, 0, len(c.Authors))
+		for _, author := range c.Authors {
+			authors = append(authors, cyclonedx.OrganizationalContact{
+				Name: author,
+			})
+		}
+		bom.Metadata.Authors = &authors
+	}
+
+	comps := make([]cyclonedx.Component, 0, len(r.Inventories))
+	for _, i := range r.Inventories {
+		pkg := cyclonedx.Component{
+			BOMRef:  uuid.New().String(),
+			Type:    cyclonedx.ComponentTypeLibrary,
+			Name:    (*i).Name,
+			Version: (*i).Version,
+		}
+		if p, err := ToPURL(i); err == nil {
+			pkg.PackageURL = p.String()
+		}
+		if cpes, err := ToCPEs(i); err == nil && len(cpes) > 0 {
+			pkg.CPE = cpes[0]
+		}
+		if len((*i).Locations) > 0 {
+			occ := make([]cyclonedx.EvidenceOccurrence, 0, len(((*i).Locations)))
+			for _, loc := range (*i).Locations {
+				occ = append(occ, cyclonedx.EvidenceOccurrence{
+					Location: loc,
+				})
+			}
+			pkg.Evidence = &cyclonedx.Evidence{
+				Occurrences: &occ,
+			}
+		}
+		comps = append(comps, pkg)
+	}
+	bom.Components = &comps
+
+	return bom
 }
