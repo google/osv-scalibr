@@ -36,6 +36,7 @@ import (
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	scalibr "github.com/google/osv-scalibr"
 )
@@ -227,13 +228,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
-	var scanRoots []string
+	var scanRoots []*scalibrfs.ScanRoot
 	if len(f.Root) == 0 {
 		if scanRoots, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
 			return nil, err
 		}
 	} else {
-		scanRoots = []string{f.Root}
+		scanRoots = scalibrfs.RealFSScanRoot(f.Root)
 	}
 	return &scalibr.ScanConfig{
 		ScanRoots:            scanRoots,
@@ -365,7 +366,7 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
-func (f *Flags) dirsToSkip(scanRoots []string) []string {
+func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 	paths, err := platform.DefaultIgnoredDirectories()
 	if err != nil {
 		log.Warnf("Failed to get default ignored directories: %v", err)
@@ -377,11 +378,12 @@ func (f *Flags) dirsToSkip(scanRoots []string) []string {
 	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
 	for _, root := range scanRoots {
-		if !strings.HasSuffix(root, string(os.PathSeparator)) {
-			root += string(os.PathSeparator)
+		path := root.Path
+		if !strings.HasSuffix(path, string(os.PathSeparator)) {
+			path += string(os.PathSeparator)
 		}
 		for _, p := range paths {
-			if strings.HasPrefix(p, root) {
+			if strings.HasPrefix(p, path) {
 				result = append(result, p)
 			}
 		}

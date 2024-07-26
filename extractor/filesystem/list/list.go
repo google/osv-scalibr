@@ -122,8 +122,8 @@ var (
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,
 
-		"sbom": SBOM,
-		"os":   OS,
+		"sbom":       SBOM,
+		"os":         OS,
 		"containers": Containers,
 
 		// Collections.

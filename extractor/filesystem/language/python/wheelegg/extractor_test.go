@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -239,7 +240,7 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			fsys := os.DirFS(".")
+			fsys := scalibrfs.DirFS(".")
 
 			r, err := fsys.Open(tt.path)
 			defer func() {
@@ -259,7 +260,7 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 			tt.cfg.Stats = collector
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -344,7 +345,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: noReadAt}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: noReadAt}
 			got, err := e.Extract(context.Background(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
@@ -389,7 +390,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 			collector := testcollector.New()
 			cfg := wheelegg.Config{Stats: collector}
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(cfg))
 			_, err := e.Extract(context.Background(), input)
 			if err == nil {
@@ -429,7 +430,7 @@ func (r reader) Stat() (fs.FileInfo, error) {
 }
 
 func TestExtractEggWithoutSize(t *testing.T) {
-	fsys := os.DirFS(".")
+	fsys := scalibrfs.DirFS(".")
 	path := "testdata/monotonic-1.6-py3.10.egg"
 
 	r, err := fsys.Open(path)
@@ -446,7 +447,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	// egg file.
 	var info fs.FileInfo = nil
 
-	input := &filesystem.ScanInput{Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
 	_, gotErr := e.Extract(context.Background(), input)
 	wantErr := wheelegg.ErrSizeNotSet

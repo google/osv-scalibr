@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -229,6 +230,7 @@ func TestExtract(t *testing.T) {
 			writeFile(t, filepath.Join(tmp, "foo", "bar"), "foobar content")
 
 			input := &filesystem.ScanInput{
+				FS:       scalibrfs.DirFS(tmp),
 				Path:     test.path,
 				Reader:   r,
 				ScanRoot: tmp,
