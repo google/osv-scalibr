@@ -91,6 +91,8 @@ message Inventory {
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
+    ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
+        25;
   }
 }
 
@@ -301,4 +303,14 @@ message ContainerdContainerMetadata {
   string image_digest = 3;
   string runtime = 4;
   int32 init_process_pid = 5;
+}
+
+message ContainerdRuntimeContainerMetadata {
+  string namespace_name = 1;
+  string image_name = 2;
+  string image_digest = 3;
+  string runtime = 4;
+  string id = 5;
+  int32 pid = 6;
+  string rootfs_path = 7;
 }
