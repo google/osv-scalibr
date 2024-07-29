@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -34,11 +35,14 @@ type Extractor interface {
 // Config for running standalone extractors.
 type Config struct {
 	Extractors []Extractor
-	ScanRoot   string
+	ScanRoot   *scalibrfs.ScanRoot
 }
 
 // ScanInput provides information for the extractor about the scan.
 type ScanInput struct {
+	// FS for file access. This is rooted at ScanRoot.
+	FS scalibrfs.FS
+	// The root directory to start the extraction from.
 	ScanRoot string
 }
 
@@ -47,13 +51,17 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 	var inventories []*extractor.Inventory
 	var statuses []*plugin.Status
 
-	scanRoot, err := filepath.Abs(config.ScanRoot)
-	if err != nil {
-		return nil, nil, err
+	if config.ScanRoot.Path != "" {
+		p, err := filepath.Abs(config.ScanRoot.Path)
+		if err != nil {
+			return nil, nil, err
+		}
+		config.ScanRoot.Path = p
 	}
 
 	scanInput := &ScanInput{
-		ScanRoot: scanRoot,
+		FS:       config.ScanRoot.FS,
+		ScanRoot: config.ScanRoot.Path,
 	}
 
 	for _, extractor := range config.Extractors {

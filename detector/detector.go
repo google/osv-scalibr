@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -37,7 +38,7 @@ type Detector interface {
 	// Scan performs the security scan, considering scanRoot to be the root directory.
 	// Implementations may use InventoryIndex to check if a relevant software package is installed and
 	// terminate early if it's not.
-	Scan(c context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*Finding, error)
+	Scan(c context.Context, fs scalibrfs.FS, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*Finding, error)
 }
 
 // LINT.IfChange
@@ -127,7 +128,7 @@ type TargetDetails struct {
 
 // Run runs the specified detectors and returns their findings,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, c stats.Collector, detectors []Detector, scanRoot string, index *inventoryindex.InventoryIndex) ([]*Finding, []*plugin.Status, error) {
+func Run(ctx context.Context, c stats.Collector, detectors []Detector, fs scalibrfs.FS, scanRoot string, index *inventoryindex.InventoryIndex) ([]*Finding, []*plugin.Status, error) {
 	findings := []*Finding{}
 	status := []*plugin.Status{}
 	for _, d := range detectors {
@@ -135,7 +136,7 @@ func Run(ctx context.Context, c stats.Collector, detectors []Detector, scanRoot 
 			return nil, nil, ctx.Err()
 		}
 		start := time.Now()
-		results, err := d.Scan(ctx, scanRoot, index)
+		results, err := d.Scan(ctx, fs, scanRoot, index)
 		c.AfterDetectorRun(d.Name(), time.Since(start), err)
 		for _, f := range results {
 			f.Detectors = []string{d.Name()}

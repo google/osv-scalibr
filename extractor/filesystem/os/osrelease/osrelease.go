@@ -19,17 +19,17 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
+
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // GetOSRelease tries different os-release locations and parses the first found.
-func GetOSRelease(root string) (map[string]string, error) {
+func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {
 	paths := []string{"etc/os-release", "usr/lib/os-release"}
 
 	for _, p := range paths {
-		p = filepath.Join(root, p)
-		f, err := os.Open(p)
+		f, err := fs.Open(p)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue

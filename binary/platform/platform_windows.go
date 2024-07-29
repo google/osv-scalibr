@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sys/windows"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 var (
@@ -71,13 +72,13 @@ func retrieveAllDrives() ([]string, error) {
 }
 
 // DefaultScanRoots returns the default list of directories to be scanned for Windows.
-func DefaultScanRoots(allDrives bool) ([]string, error) {
+func DefaultScanRoots(allDrives bool) ([]*scalibrfs.ScanRoot, error) {
 	systemDrive, err := SystemRoot()
 	if err != nil {
 		return nil, err
 	}
 
-	scanRoots := []string{systemDrive}
+	scanRoots := scalibrfs.RealFSScanRoot(systemDrive)
 
 	if allDrives {
 		drives, err := retrieveAllDrives()
@@ -88,7 +89,7 @@ func DefaultScanRoots(allDrives bool) ([]string, error) {
 		// add all drives to the scan roots, but we remove the system drive as it's already in the list
 		for _, drive := range drives {
 			if drive != systemDrive {
-				scanRoots = append(scanRoots, drive)
+				scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(drive), Path: drive})
 			}
 		}
 	}

@@ -15,7 +15,21 @@
 // Package plugin collects the common code used by extractor and detector plugins.
 package plugin
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// Requirements lists requirements that the plugin has about the environment its running on.
+// Plugins that don't satisfy the scanning environments's requirements can't be enabled.
+type Requirements struct {
+	// Whether this plugin requires network access.
+	Network bool
+	// Whether this plugin requires a real filesystem. If false, the plugin must use the FS
+	// interface to access the contents of the filesystem. If true, the plugin can open direct
+	// file paths itself.
+	RealFS bool
+}
 
 // Plugin is the part of the plugin interface that's shared between extractors and detectors.
 type Plugin interface {
@@ -23,6 +37,8 @@ type Plugin interface {
 	Name() string
 	// Plugin version, should get bumped whenever major changes are made.
 	Version() int
+	// Requirements about the scanning environment, e.g. "needs to have network access".
+	Requirements() *Requirements
 }
 
 // LINT.IfChange
@@ -52,6 +68,19 @@ const (
 )
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
+
+// ValidateRequirements checks that the specified  scanning capabilities satisfy
+// the requirements of a given plugin.
+func ValidateRequirements(p Plugin, capabs *Requirements) error {
+	errs := []error{}
+	if p.Requirements().Network && !capabs.Network {
+		errs = append(errs, fmt.Errorf("plugin %s can't be enabled: Needs network access but scan environment doesn't provide it", p.Name()))
+	}
+	if p.Requirements().RealFS && !capabs.RealFS {
+		errs = append(errs, fmt.Errorf("plugin %s can't be enabled: Needs direct filesystem access but scan environment doesn't provide it", p.Name()))
+	}
+	return errors.Join(errs...)
+}
 
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
 func StatusFromErr(p Plugin, partial bool, err error) *Status {

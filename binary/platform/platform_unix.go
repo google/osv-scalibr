@@ -17,19 +17,23 @@
 // Package platform provides platform-specific functionality.
 package platform
 
+import (
+	scalibrfs "github.com/google/osv-scalibr/fs"
+)
+
 // SystemRoot returns the root directory of the system.
 func SystemRoot() (string, error) {
 	return "/", nil
 }
 
 // DefaultScanRoots returns the default list of directories to be scanned for Linux.
-func DefaultScanRoots(allDrives bool) ([]string, error) {
+func DefaultScanRoots(allDrives bool) ([]*scalibrfs.ScanRoot, error) {
 	sysroot, err := SystemRoot()
 	if err != nil {
 		return nil, err
 	}
 
-	return []string{sysroot}, nil
+	return scalibrfs.RealFSScanRoot(sysroot), nil
 }
 
 // DefaultIgnoredDirectories returns the default list of directories to be ignored for Linux.

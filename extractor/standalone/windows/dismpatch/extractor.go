@@ -50,3 +50,6 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 
 	return inventory, nil
 }
+
+// Ecosystem returns a synthetic ecosystem since the Inventory is not a software package.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "DISM", nil }

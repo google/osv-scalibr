@@ -226,7 +226,11 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", flags, err)
 			}
-			if diff := cmp.Diff(wantScanRoots, cfg.ScanRoots); diff != "" {
+			gotScanRoots := []string{}
+			for _, r := range cfg.ScanRoots {
+				gotScanRoots = append(gotScanRoots, r.Path)
+			}
+			if diff := cmp.Diff(wantScanRoots, gotScanRoots); diff != "" {
 				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
 			}
 		})

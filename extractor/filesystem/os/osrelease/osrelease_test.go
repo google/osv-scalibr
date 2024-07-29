@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 func TestGetOSRelease(t *testing.T) {
@@ -111,7 +112,7 @@ func TestGetOSRelease(t *testing.T) {
 				t.Fatalf("WriteFile(%s): %v", tt.path, err)
 			}
 
-			got, err := osrelease.GetOSRelease(d)
+			got, err := osrelease.GetOSRelease(scalibrfs.DirFS(d))
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("FileRequired(%s) error: got %v, want %v", tt.path, err, tt.wantErr)
 			}

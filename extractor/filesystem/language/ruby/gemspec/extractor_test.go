@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -192,7 +193,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to stat test file: %v", err)
 			}
 
-			input := &filesystem.ScanInput{Path: test.path, Reader: r, Info: info}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: test.path, Reader: r, Info: info}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)

@@ -27,8 +27,10 @@ import (
 
 	"github.com/google/osv-scalibr/detector/cve/cve202338408/semantic"
 	"github.com/google/osv-scalibr/detector"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 // Detector is a SCALIBR Detector for CVE-2023-38408.
@@ -40,10 +42,14 @@ func (Detector) Name() string { return "cve/CVE-2023-38408" }
 // Version of the detector.
 func (Detector) Version() int { return 0 }
 
+// Requirements of the detector.
+func (Detector) Requirements() *plugin.Requirements { return &plugin.Requirements{RealFS: true} }
+
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
-func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+// Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
+func (d Detector) Scan(ctx context.Context, fs scalibrfs.FS, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	// 1. OpenSSH between and 5.5 and 9.3p1 (inclusive)
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {
@@ -59,7 +65,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.
 
 	// 2. Check ssh config
 	configsWithForward := []fileLocations{}
-	for _, path := range findSSHConfigs() {
+	for _, path := range findSSHConfigs(scanRoot) {
 		ls := sshConfigContainsForward(path)
 		log.Debugf("ssh config: %q %v %v", path, ls)
 		if len(ls) > 0 {
@@ -69,7 +75,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.
 	}
 
 	// 3. Socket present
-	socketFiles, err := filepath.Glob("/tmp/ssh-*/agent.*")
+	socketFiles, err := filepath.Glob(filepath.Join(scanRoot, "tmp/ssh-*/agent.*"))
 	if err != nil {
 		// The only possible returned error is ErrBadPattern, when pattern is malformed
 		return nil, fmt.Errorf("filepath.Glob(\"/tmp/ssh-*/agent.*\"): %w", err)
@@ -81,7 +87,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.
 
 	// 4. check bash history
 	historyLocations := []fileLocations{}
-	for _, path := range findHistoryFiles() {
+	for _, path := range findHistoryFiles(scanRoot) {
 		re := regexp.MustCompile(`ssh (.* )?-\w*A`)
 		ls := findString(path, re)
 		log.Debugf("history file: %q %v %v", path, ls)
@@ -154,22 +160,24 @@ func fileExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func findSSHConfigs() []string {
+func findSSHConfigs(scanRoot string) []string {
 	r := []string{}
 
-	if fileExists("/root/.ssh/config") {
-		r = append(r, "/root/.ssh/config")
+	configPath := filepath.Join(scanRoot, "root/.ssh/config")
+	if fileExists(configPath) {
+		r = append(r, configPath)
 	}
 
-	matches, err := filepath.Glob("/home/*/.ssh/config")
+	matches, err := filepath.Glob(filepath.Join(scanRoot, "home/*/.ssh/config"))
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/home/*/.ssh/config\"): %v", err)
 	} else {
 		r = append(r, matches...)
 	}
 
-	if fileExists("/etc/ssh/ssh_config") {
-		r = append(r, "/etc/ssh/ssh_config")
+	configPath = filepath.Join(scanRoot, "etc/ssh/ssh_config")
+	if fileExists(configPath) {
+		r = append(r, configPath)
 	}
 
 	return r
@@ -214,20 +222,20 @@ func versionLessEqual(lower, upper string) bool {
 	return semantic.ParsePackagistVersion(lower).CompareStr(upper) <= 0
 }
 
-func findHistoryFiles() []string {
-	pHistory, err := filepath.Glob("/home/*/.*history")
+func findHistoryFiles(scanRoot string) []string {
+	pHistory, err := filepath.Glob(filepath.Join(scanRoot, "home/*/.*history"))
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/home/*/.*history\"): %v", err)
 	}
-	pHistfile, err := filepath.Glob("/home/*/.histfile")
+	pHistfile, err := filepath.Glob(filepath.Join(scanRoot, "home/*/.histfile"))
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/home/*/.histfile\"): %v", err)
 	}
-	pRootHistory, err := filepath.Glob("/root/.*history")
+	pRootHistory, err := filepath.Glob(filepath.Join(scanRoot, "root/.*history"))
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/root/.*history\"): %v", err)
 	}
-	pRootHistfile, err := filepath.Glob("/root/.histfile")
+	pRootHistfile, err := filepath.Glob(filepath.Join(scanRoot, "root/.histfile"))
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/root/.histfile\"): %v", err)
 	}

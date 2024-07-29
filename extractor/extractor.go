@@ -27,9 +27,18 @@ type Extractor interface {
 	ToPURL(i *Inventory) (*purl.PackageURL, error)
 	// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
 	ToCPEs(i *Inventory) ([]string, error)
+	// Ecosystem returns the Ecosystem of the given inventory created by this extractor.
+	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
+	Ecosystem(i *Inventory) (string, error)
 }
 
 // LINT.IfChange
+
+// SourceCodeIdentifier lists additional identifiers for source code software packages (e.g. NPM).
+type SourceCodeIdentifier struct {
+	Repo   string
+	Commit string
+}
 
 // Inventory is an instance of a software package or library found by the extractor.
 type Inventory struct {
@@ -42,6 +51,8 @@ type Inventory struct {
 	Name string
 	// The version of this package.
 	Version string
+	// Source code level package identifiers.
+	SourceCode *SourceCodeIdentifier
 
 	// Paths or source of files related to the package.
 	Locations []string
@@ -49,6 +60,12 @@ type Inventory struct {
 	Extractor Extractor
 	// The additional data found in the package.
 	Metadata any
+}
+
+// Ecosystem returns the Ecosystem of the inventory. For software packages this corresponds
+// to an OSV ecosystem value, e.g. PyPI.
+func (i *Inventory) Ecosystem() (string, error) {
+	return i.Extractor.Ecosystem(i)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

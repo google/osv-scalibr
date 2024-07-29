@@ -17,8 +17,62 @@ package plugin_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/plugin"
 )
+
+type fakePlugin struct {
+	reqs *plugin.Requirements
+}
+
+func (fakePlugin) Name() string                         { return "fake-plugin" }
+func (fakePlugin) Version() int                         { return 0 }
+func (p fakePlugin) Requirements() *plugin.Requirements { return p.reqs }
+
+func TestValidateRequirements(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		pluginReqs *plugin.Requirements
+		capabs     *plugin.Requirements
+		wantErr    error
+	}{
+		{
+			desc:       "No requirements",
+			pluginReqs: &plugin.Requirements{},
+			capabs:     &plugin.Requirements{},
+			wantErr:    nil,
+		},
+		{
+			desc:       "All requirements satisfied",
+			pluginReqs: &plugin.Requirements{Network: true, RealFS: true},
+			capabs:     &plugin.Requirements{Network: true, RealFS: true},
+			wantErr:    nil,
+		},
+		{
+			desc:       "One requirement not satisfied",
+			pluginReqs: &plugin.Requirements{Network: true, RealFS: true},
+			capabs:     &plugin.Requirements{Network: true, RealFS: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "No requirement satisfied",
+			pluginReqs: &plugin.Requirements{Network: true, RealFS: true},
+			capabs:     &plugin.Requirements{Network: false, RealFS: false},
+			wantErr:    cmpopts.AnyError,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			p := fakePlugin{reqs: tc.pluginReqs}
+			err := plugin.ValidateRequirements(p, tc.capabs)
+			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("plugin.ValidateRequirements(%v, %v) got error: %v, want: %v\n", tc.pluginReqs, tc.capabs, err, tc.wantErr)
+			}
+		})
+	}
+}
 
 func TestString(t *testing.T) {
 	testCases := []struct {

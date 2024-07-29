@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -248,6 +249,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
+				FS:       scalibrfs.DirFS(d),
 				Path:     tt.path,
 				Reader:   r,
 				ScanRoot: d,
@@ -274,6 +276,42 @@ func TestExtract(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
+			}
+		})
+	}
+}
+
+func TestEcosystem(t *testing.T) {
+	e := snap.Extractor{}
+	tests := []struct {
+		name     string
+		metadata *snap.Metadata
+		want     string
+	}{
+		{
+			name: "OS ID present",
+			metadata: &snap.Metadata{
+				OSID: "ubuntu",
+			},
+			want: "Ubuntu",
+		},
+		{
+			name:     "OS ID not present",
+			metadata: &snap.Metadata{},
+			want:     "Linux",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &extractor.Inventory{
+				Metadata: tt.metadata,
+			}
+			got, err := e.Ecosystem(i)
+			if err != nil {
+				t.Fatalf("Ecosystem(%v): %v", i, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

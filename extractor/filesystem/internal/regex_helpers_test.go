@@ -23,10 +23,10 @@ import (
 
 func TestMatchCaptureGroups(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		pattern  string
-		want map[string]string
+		name    string
+		input   string
+		pattern string
+		want    map[string]string
 	}{
 		{
 			name:    "go-case",

@@ -34,6 +34,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
@@ -49,8 +50,17 @@ func (fsys pathsMapFS) Open(name string) (fs.File, error) {
 	name = filepath.ToSlash(name)
 	return fsys.mapfs.Open(name)
 }
+func (fsys pathsMapFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	name = filepath.ToSlash(name)
+	return fsys.mapfs.ReadDir(name)
+}
+func (fsys pathsMapFS) Stat(name string) (fs.FileInfo, error) {
+	name = filepath.ToSlash(name)
+	return fsys.mapfs.Stat(name)
+}
 
 func TestInitWalkContext(t *testing.T) {
+	dummyFS := scalibrfs.DirFS(".")
 	testCases := []struct {
 		desc           string
 		scanRoots      map[string][]string
@@ -118,7 +128,13 @@ func TestInitWalkContext(t *testing.T) {
 				FilesToExtract: tc.filesToExtract[os],
 				DirsToSkip:     tc.dirsToSkip[os],
 			}
-			_, err := filesystem.InitWalkContext(context.Background(), config, tc.scanRoots[os])
+			scanRoots := []*scalibrfs.ScanRoot{}
+			for _, p := range tc.scanRoots[os] {
+				scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: dummyFS, Path: p})
+			}
+			_, err := filesystem.InitWalkContext(
+				context.Background(), config, scanRoots,
+			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("filesystem.InitializeWalkContext(%v) error got diff (-want +got):\n%s", config, diff)
 			}
@@ -187,9 +203,10 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc:       "Dir skipped",
-			ex:         []filesystem.Extractor{fakeEx1, fakeEx2},
-			dirsToSkip: []string{"dir1"},
+			desc: "Dir skipped",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD
+			dirsToSkip: []string{path.Join(cwd, "dir1")},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
@@ -204,10 +221,9 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 5,
 		},
 		{
-			desc: "Dir skipped with absolute path",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			// ScanRoot is CWD
-			dirsToSkip: []string{path.Join(cwd, "dir1")},
+			desc:       "Dir skipped with absolute path",
+			ex:         []filesystem.Extractor{fakeEx1, fakeEx2},
+			dirsToSkip: []string{"dir1"},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
@@ -299,9 +315,10 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc:           "Extract specific file",
-			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
-			filesToExtract: []string{path2},
+			desc: "Extract specific file",
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
+			// ScanRoot is CWD
+			filesToExtract: []string{path.Join(cwd, path2)},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
@@ -316,10 +333,9 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 1,
 		},
 		{
-			desc: "Extract specific file with absolute path",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			// ScanRoot is CWD
-			filesToExtract: []string{path.Join(cwd, path2)},
+			desc:           "Extract specific file with absolute path",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			filesToExtract: []string{path2},
 			wantInv: []*extractor.Inventory{
 				&extractor.Inventory{
 					Name:      name2,
@@ -458,22 +474,27 @@ func TestRunFS(t *testing.T) {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
 			config := &filesystem.Config{
-				Extractors:        tc.ex,
-				FilesToExtract:    tc.filesToExtract,
-				DirsToSkip:        tc.dirsToSkip,
-				SkipDirRegex:      skipDirRegex,
-				MaxInodes:         tc.maxInodes,
-				ScanRoots:         []string{"."},
-				FS:                fsys,
+				Extractors:     tc.ex,
+				FilesToExtract: tc.filesToExtract,
+				DirsToSkip:     tc.dirsToSkip,
+				SkipDirRegex:   skipDirRegex,
+				MaxInodes:      tc.maxInodes,
+				ScanRoots: []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+					FS: fsys, Path: ".",
+				}},
 				Stats:             fc,
 				StoreAbsolutePath: tc.storeAbsPath,
 			}
-			wc, err := filesystem.InitWalkContext(context.Background(), config, []string{cwd})
+			wc, err := filesystem.InitWalkContext(
+				context.Background(), config, []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+					FS: fsys, Path: cwd,
+				}},
+			)
 			if err != nil {
-				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", cwd, err)
+				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
 			}
-			if err = wc.UpdateScanRoot(cwd, config.FS); err != nil {
-				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", cwd, err)
+			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
 			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
@@ -526,6 +547,9 @@ func (fakeFS) Open(name string) (fs.File, error) {
 		return &fakeDir{dirs: []fs.DirEntry{&fakeDirEntry{}}}, nil
 	}
 	return nil, errors.New("failed to open")
+}
+func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	return nil, errors.New("not implemented")
 }
 func (fakeFS) Stat(name string) (fs.FileInfo, error) {
 	return &fakeFileInfo{dir: true}, nil
@@ -584,18 +608,20 @@ func TestRunFS_ReadError(t *testing.T) {
 			Status: plugin.ScanStatusFailed, FailureReason: "Open(file): failed to open",
 		}},
 	}
+	fsys := &fakeFS{}
 	config := &filesystem.Config{
 		Extractors: ex,
 		DirsToSkip: []string{},
-		ScanRoots:  []string{"."},
-		FS:         &fakeFS{},
-		Stats:      stats.NoopCollector{},
+		ScanRoots: []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+			FS: fsys, Path: ".",
+		}},
+		Stats: stats.NoopCollector{},
 	}
-	wc, err := filesystem.InitWalkContext(context.Background(), config, []string{"/"})
+	wc, err := filesystem.InitWalkContext(context.Background(), config, config.ScanRoots)
 	if err != nil {
 		t.Fatalf("filesystem.InitializeWalkContext(%v): %v", config, err)
 	}
-	if err := wc.UpdateScanRoot("/", config.FS); err != nil {
+	if err := wc.UpdateScanRoot(".", fsys); err != nil {
 		t.Fatalf("wc.UpdateScanRoot(%v): %v", config, err)
 	}
 	gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
