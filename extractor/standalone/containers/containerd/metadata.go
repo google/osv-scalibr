@@ -22,5 +22,5 @@ type Metadata struct {
 	Runtime     string
 	ID          string
 	PID         int
-	RootFS      string
+	Rootfs      string
 }

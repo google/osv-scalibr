@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
-	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -43,7 +43,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	scalibr "github.com/google/osv-scalibr"
@@ -324,7 +323,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Developer:      m.Developer,
 			},
 		}
-	case *ctrdfs.Metadata:
+	case *containerd.Metadata:
 		i.Metadata = &spb.Inventory_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName:  m.Namespace,
@@ -332,18 +331,6 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ImageDigest:    m.ImageDigest,
 				Runtime:        m.Runtime,
 				InitProcessPid: int32(m.InitProcessPID),
-			},
-		}
-	case *ctrdruntime.Metadata:
-		i.Metadata = &spb.Inventory_ContainerdRuntimeContainerMetadata{
-			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
-				NamespaceName: m.Namespace,
-				ImageName:     m.ImageName,
-				ImageDigest:   m.ImageDigest,
-				Runtime:       m.Runtime,
-				Id:            m.ID,
-				Pid:           int32(m.PID),
-				RootfsPath:    m.RootFS,
 			},
 		}
 	case *spdx.Metadata:
