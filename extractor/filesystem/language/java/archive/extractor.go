@@ -324,14 +324,27 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		p := ParseFilename(input.Path)
 		if p != nil {
 			log.Debugf("PropsFromFilename(%q): %+v", input.Path, p)
+			// All Maven packages require a group ID as part of the package name, but
+			// they are usually not part of the filename of the JAR. However, for some
+			// legacy packages that were created before the reverse-domain convention
+			// was established, the group ID is the same as the artifact ID (e.g.
+			// junit:junit or commons-httpclient:commons-httpclient). Unless we find
+			// the group ID from another source, we default to assuming that the group
+			// ID is the artifact ID since that is how vulnerabilities are reported
+			// for these legacy packages (e.g.
+			// https://github.com/advisories/GHSA-3832-9276-x7gf).
 			groupID := p.ArtifactID
 			if p.GroupID != "" {
 				groupID = strings.ToLower(p.GroupID)
 			}
-			// If manifest.mf was found, use GroupID from manifest instead. Then remove manifest from the
-			// Inventory.
+			// If manifest.mf was found, use GroupID from manifest instead, if
+			// present. Then remove manifest from the Inventory.
 			if len(inventoryManifest) == 1 {
-				groupID = inventoryManifest[0].Metadata.(*Metadata).GroupID
+				metadata := inventoryManifest[0].Metadata.(*Metadata)
+				if metadata.GroupID != "" {
+					groupID = metadata.GroupID
+					inventoryManifest = nil
+				}
 			}
 			inventoryFilename = append(inventoryFilename, &extractor.Inventory{
 				Name:    p.ArtifactID,

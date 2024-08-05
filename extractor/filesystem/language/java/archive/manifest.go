@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/textproto"
+	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/log"
@@ -62,6 +63,33 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}, nil
 }
 
+// Transforms for manifest fields that need a little work to extract the group
+// ID. Note that we intentionally do not combine this as part of the `keys` in
+// the `getGroupID` function because we want to maintain ordering of the keys to
+// preserve priority of fields.
+var groupIDTransforms = map[string]func(string) string{
+
+	// The `Implementation-Title` field can have the group ID as the first part of
+	// the value, with other info appended to it.  To extract it, we simply try to
+	// pull out the first domain-like string in the value.
+	//
+	// For example, elasticsearch-8.14.3.jar has a manifest with the following:
+	//
+	//	Implementation-Title: org.elasticsearch#server;8.14.3
+	//
+	// And we simply want to extract `org.elasticsearch`, which would be the first
+	// match for the regex.
+	"Implementation-Title": func(s string) string {
+		groupIDRegex, err := regexp.Compile(`[a-zA-Z0-9-_\.]+`)
+		if err != nil {
+			log.Warnf("Error compiling group ID regex: %v", err)
+		}
+
+		// Get the first match for a domain-like string.
+		return groupIDRegex.FindString(s)
+	},
+}
+
 func getGroupID(h textproto.MIMEHeader) string {
 	keys := []string{
 		"Bundle-SymbolicName",
@@ -89,8 +117,12 @@ func getGroupID(h textproto.MIMEHeader) string {
 
 func getFirstValidGroupID(h textproto.MIMEHeader, names []string) string {
 	for _, n := range names {
-		if validGroupID(h.Get(n)) {
-			return h.Get(n)
+		groupID := h.Get(n)
+		if transform, ok := groupIDTransforms[n]; ok {
+			groupID = transform(groupID)
+		}
+		if validGroupID(groupID) {
+			return strings.ToLower(groupID)
 		}
 	}
 	return ""

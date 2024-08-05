@@ -263,6 +263,48 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
+			name:        "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
+			description: "Contains other files but no pom.properties. Has valid manifest with Group ID. Has valid filename.",
+			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath: filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
+			cfg: archive.Config{
+				ExtractFromFilename: true,
+			},
+			want: []*extractor.Inventory{{
+				Name:    "no_pom_properties",
+				Version: "2.4.0",
+				Metadata: &archive.Metadata{
+					ArtifactID: "no_pom_properties",
+					GroupID:    "org.apache.ivy", // Group ID overridden by manifest.
+				},
+				Locations: []string{
+					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+				},
+			}},
+		},
+		{
+			name:        "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
+			description: "Contains other files but no pom.properties. Has valid manifest without Group ID. Has valid filename.",
+			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath: filepath.FromSlash("testdata/manifest-no-group-id/MANIFEST.MF"),
+			cfg: archive.Config{
+				ExtractFromFilename: true,
+			},
+			want: []*extractor.Inventory{{
+				Name:    "no_pom_properties",
+				Version: "2.4.0",
+				Metadata: &archive.Metadata{
+					ArtifactID: "no_pom_properties",
+					// Group ID defaults to Artifact ID since there was no Group ID in the
+					// manifest.
+					GroupID: "no_pom_properties",
+				},
+				Locations: []string{
+					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+				},
+			}},
+		},
+		{
 			name:        "Jar file with invalid pom.properties and manifest, IdentifyByFilename enabled",
 			description: "Contains a pom.properties which is missing the `groupId` field and so it is ignored. Has no manifest. Has valid filename.",
 			path:        filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
@@ -431,6 +473,24 @@ func TestExtract(t *testing.T) {
 				},
 				Locations: []string{
 					filepath.FromSlash("testdata/ivy-2.4.0.jar"),
+				},
+			}},
+		},
+		{
+			name:        "Test combination of filename and manifest with group ID transform",
+			description: "The manifest has a Implementation-Title field with more data than just the group ID and we want to extract just the group ID.",
+			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath: filepath.FromSlash("testdata/manifest-implementation-title/MANIFEST.MF"),
+			cfg:         archive.Config{ExtractFromFilename: true},
+			want: []*extractor.Inventory{{
+				Name:    "no_pom_properties",
+				Version: "2.4.0",
+				Metadata: &archive.Metadata{
+					ArtifactID: "no_pom_properties",
+					GroupID:    "org.elasticsearch",
+				},
+				Locations: []string{
+					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
 				},
 			}},
 		},

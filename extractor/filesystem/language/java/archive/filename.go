@@ -44,8 +44,12 @@ func ParseFilename(filePath string) *JarProps {
 	groupID := ""
 	i := strings.LastIndex(name, ".")
 	if i >= 0 {
-		// Assume the group ID is in the name, e.g. for org.apache.felix.framework-1.2.3.jar
-		// the group ID is org.apache.felix
+		// Most JAR files only contain the artifact ID in the name, so the group ID
+		// cannot usually be determined strictly from the filename. However, since
+		// the format of artifact ID is arbitrarily determined by developers,
+		// sometimes they are namespaced to the group ID (e.g. for
+		// org.apache.felix.framework-1.2.3.jar the group ID is org.apache.felix).
+		// We attempt to extract such group IDs here.
 		groupID = name[:i]
 	}
 	return &JarProps{ArtifactID: name, Version: version, GroupID: groupID}
