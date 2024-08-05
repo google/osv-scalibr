@@ -61,10 +61,12 @@ func TestInitWalkContext(t *testing.T) {
 		{
 			desc: "valid config with filesToExtract raises no error",
 			scanRoots: map[string][]string{
+				"darwin":  []string{"/scanroot/"},
 				"linux":   []string{"/scanroot/"},
 				"windows": []string{"C:\\scanroot\\"},
 			},
 			filesToExtract: map[string][]string{
+				"darwin":  []string{"/scanroot/file1.txt", "/scanroot/file2.txt"},
 				"linux":   []string{"/scanroot/file1.txt", "/scanroot/file2.txt"},
 				"windows": []string{"C:\\scanroot\\file1.txt", "C:\\scanroot\\file2.txt"},
 			},
@@ -73,10 +75,12 @@ func TestInitWalkContext(t *testing.T) {
 		{
 			desc: "valid config with dirsToSkip raises no error",
 			scanRoots: map[string][]string{
+				"darwin":  []string{"/scanroot/", "/someotherroot/"},
 				"linux":   []string{"/scanroot/", "/someotherroot/"},
 				"windows": []string{"C:\\scanroot\\", "D:\\someotherroot\\"},
 			},
 			dirsToSkip: map[string][]string{
+				"darwin":  []string{"/scanroot/mydir/", "/someotherroot/mydir/"},
 				"linux":   []string{"/scanroot/mydir/", "/someotherroot/mydir/"},
 				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\someotherroot\\mydir\\"},
 			},
@@ -85,10 +89,12 @@ func TestInitWalkContext(t *testing.T) {
 		{
 			desc: "filesToExtract not relative to any root raises error",
 			scanRoots: map[string][]string{
+				"darwin":  []string{"/scanroot/"},
 				"linux":   []string{"/scanroot/"},
 				"windows": []string{"C:\\scanroot\\"},
 			},
 			filesToExtract: map[string][]string{
+				"darwin":  []string{"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
 				"linux":   []string{"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
 				"windows": []string{"C:\\scanroot\\myfile.txt", "D:\\myotherroot\\file1.txt"},
 			},
@@ -97,10 +103,12 @@ func TestInitWalkContext(t *testing.T) {
 		{
 			desc: "dirsToSkip not relative to any root raises error",
 			scanRoots: map[string][]string{
+				"darwin":  []string{"/scanroot/"},
 				"linux":   []string{"/scanroot/"},
 				"windows": []string{"C:\\scanroot\\"},
 			},
 			dirsToSkip: map[string][]string{
+				"darwin":  []string{"/scanroot/mydir/", "/myotherroot/mydir/"},
 				"linux":   []string{"/scanroot/mydir/", "/myotherroot/mydir/"},
 				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\myotherroot\\mydir\\"},
 			},

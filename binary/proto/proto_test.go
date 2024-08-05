@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -386,11 +387,11 @@ func TestScanResultToProto(t *testing.T) {
 	}
 
 	testCases := []struct {
-		desc        string
-		res         *scalibr.ScanResult
-		want        *spb.ScanResult
-		wantErr     error
-		exclWindows bool // should test be skipped on windows
+		desc         string
+		res          *scalibr.ScanResult
+		want         *spb.ScanResult
+		wantErr      error
+		excludeForOS []string // skip test for these operating systems
 	}{
 		{
 			desc: "Successful scan",
@@ -512,7 +513,7 @@ func TestScanResultToProto(t *testing.T) {
 				Inventories: []*spb.Inventory{purlRPMInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
-			exclWindows: true,
+			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
 			desc: "Successful containerd scan linux-only",
@@ -546,7 +547,7 @@ func TestScanResultToProto(t *testing.T) {
 				Findings:    []*spb.Finding{},
 			},
 			// TODO(b/349138656): Remove this exclusion when containerd is supported on Windows.
-			exclWindows: true,
+			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
 			desc: "no inventory target, still works",
@@ -739,8 +740,8 @@ func TestScanResultToProto(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			if tc.exclWindows && runtime.GOOS == "windows" {
-				t.Skipf("Skipping test %q on Windows", tc.desc)
+			if slices.Contains(tc.excludeForOS, runtime.GOOS) {
+				t.Skipf("Skipping test %q on %s", tc.desc, runtime.GOOS)
 			}
 
 			got, err := proto.ScanResultToProto(tc.res)

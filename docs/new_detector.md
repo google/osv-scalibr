@@ -10,7 +10,7 @@ interface and have read access to all files on the filesystem through it.
 
 ## Steps for writing a new detector
 
-See the [CIS benchmark detector](/detector/cis/generic_linux/etcpasswdpermissions/detector_linux.go)
+See the [CIS benchmark detector](/detector/cis/generic_linux/etcpasswdpermissions/detector.go)
 as an example.
 
 1.  Set up your detector package in an [appropriate location](#code-location).

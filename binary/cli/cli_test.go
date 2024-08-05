@@ -187,10 +187,12 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 		{
 			desc: "Default scan roots",
 			flags: map[string]*cli.Flags{
+				"darwin":  &cli.Flags{},
 				"linux":   &cli.Flags{},
 				"windows": &cli.Flags{},
 			},
 			wantScanRoots: map[string][]string{
+				"darwin":  []string{"/"},
 				"linux":   []string{"/"},
 				"windows": []string{"C:\\"},
 			},
@@ -198,14 +200,12 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 		{
 			desc: "Scan root are provided and used",
 			flags: map[string]*cli.Flags{
-				"linux": &cli.Flags{
-					Root: "/root",
-				},
-				"windows": &cli.Flags{
-					Root: "C:\\myroot",
-				},
+				"darwin":  &cli.Flags{Root: "/root"},
+				"linux":   &cli.Flags{Root: "/root"},
+				"windows": &cli.Flags{Root: "C:\\myroot"},
 			},
 			wantScanRoots: map[string][]string{
+				"darwin":  []string{"/root"},
 				"linux":   []string{"/root"},
 				"windows": []string{"C:\\myroot"},
 			},
@@ -242,10 +242,12 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 		{
 			desc: "Skip default dirs",
 			flags: map[string]*cli.Flags{
+				"darwin":  &cli.Flags{Root: "/"},
 				"linux":   &cli.Flags{Root: "/"},
 				"windows": &cli.Flags{Root: "C:\\"},
 			},
 			wantDirsToSkip: map[string][]string{
+				"darwin":  []string{"/dev", "/proc", "/sys"},
 				"linux":   []string{"/dev", "/proc", "/sys"},
 				"windows": []string{"C:\\Windows"},
 			},
@@ -253,6 +255,10 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 		{
 			desc: "Skip additional dirs",
 			flags: map[string]*cli.Flags{
+				"darwin": &cli.Flags{
+					Root:       "/",
+					DirsToSkip: "/boot,/mnt,C:\\boot,C:\\mnt",
+				},
 				"linux": &cli.Flags{
 					Root:       "/",
 					DirsToSkip: "/boot,/mnt,C:\\boot,C:\\mnt",
@@ -263,6 +269,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				},
 			},
 			wantDirsToSkip: map[string][]string{
+				"darwin":  []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
 				"linux":   []string{"/dev", "/proc", "/sys", "/boot", "/mnt"},
 				"windows": []string{"C:\\Windows", "C:\\boot", "C:\\mnt"},
 			},
@@ -270,6 +277,10 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 		{
 			desc: "Ignore paths outside root",
 			flags: map[string]*cli.Flags{
+				"darwin": &cli.Flags{
+					Root:       "/root",
+					DirsToSkip: "/root/dir1,/dir2",
+				},
 				"linux": &cli.Flags{
 					Root:       "/root",
 					DirsToSkip: "/root/dir1,/dir2",
@@ -280,6 +291,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				},
 			},
 			wantDirsToSkip: map[string][]string{
+				"darwin":  []string{"/root/dir1"},
 				"linux":   []string{"/root/dir1"},
 				"windows": []string{"C:\\root\\dir1"},
 			},
