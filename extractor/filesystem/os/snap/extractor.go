@@ -90,10 +90,11 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// the yaml file is found in snap/<app>/<revision>/meta/snap.yaml
+var filePathRegex = regexp.MustCompile(`^snap/[^/]*/[^/]*/meta/snap.yaml$`)
+
 // FileRequired returns true if the specified file matches snap.yaml file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
-	// the yaml file is found in snap/<app>/<revision>/meta/snap.yaml
-	filePathRegex := regexp.MustCompile(`^snap/[^/]*/[^/]*/meta/snap.yaml$`)
 	if match := filePathRegex.FindString(path); match == "" {
 		return false
 	}
