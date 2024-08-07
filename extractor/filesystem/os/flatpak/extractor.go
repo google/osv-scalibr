@@ -101,10 +101,11 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Should be metainfo.xml inside flatpak metainfo dir either globally or for a specific user.
+var filePathRegex = regexp.MustCompile(`flatpak/app/.*/export/share/metainfo/.*metainfo.xml$`)
+
 // FileRequired returns true if the specified file matches the metainfo xml file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
-	// Should be metainfo.xml inside flatpak metainfo dir either globally or for a specific user.
-	filePathRegex := regexp.MustCompile(`flatpak/app/.*/export/share/metainfo/.*metainfo.xml$`)
 	if match := filePathRegex.FindString(path); match == "" {
 		return false
 	}
