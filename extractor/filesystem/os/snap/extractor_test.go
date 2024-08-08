@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -274,6 +275,102 @@ func TestExtract(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
+			}
+		})
+	}
+}
+
+func TestToPURL(t *testing.T) {
+	snapName := "testSnap"
+	snapVersion := "1.2.3"
+	snapGrade := "stable"
+	snapType := "os"
+	architectures := []string{"amd64", "arm64"}
+	osID := "debian"
+	osVersionCodename := "bookworm"
+	osVersionID := "12"
+
+	e := snap.Extractor{}
+	tests := []struct {
+		name     string
+		metadata *snap.Metadata
+		want     *purl.PackageURL
+	}{
+		{
+			name: "Both VERSION_CODENAME and VERSION_ID are set",
+			metadata: &snap.Metadata{
+				Name:              snapName,
+				Version:           snapVersion,
+				Grade:             snapGrade,
+				Type:              snapType,
+				Architectures:     architectures,
+				OSID:              osID,
+				OSVersionCodename: osVersionCodename,
+				OSVersionID:       osVersionID,
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeSnap,
+				Name:      snapName,
+				Namespace: osID,
+				Version:   snapVersion,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: osVersionCodename,
+				}),
+			},
+		},
+		{
+			name: "Only VERSION_ID is set",
+			metadata: &snap.Metadata{
+				Name:          snapName,
+				Version:       snapVersion,
+				Grade:         snapGrade,
+				Type:          snapType,
+				Architectures: architectures,
+				OSID:          osID,
+				OSVersionID:   osVersionID,
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeSnap,
+				Name:      snapName,
+				Namespace: osID,
+				Version:   snapVersion,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: osVersionID,
+				}),
+			},
+		},
+		{
+			name: "OSID, VERSION_CODENAME and VERSION_ID all are not set",
+			metadata: &snap.Metadata{
+				Name:          snapName,
+				Version:       snapVersion,
+				Grade:         snapGrade,
+				Type:          snapType,
+				Architectures: architectures,
+			},
+			want: &purl.PackageURL{
+				Type:       purl.TypeSnap,
+				Name:       snapName,
+				Namespace:  "",
+				Version:    snapVersion,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &extractor.Inventory{
+				Name:      snapName,
+				Version:   snapVersion,
+				Metadata:  tt.metadata,
+				Locations: []string{"location"},
+			}
+			got, err := e.ToPURL(i)
+			if err != nil {
+				t.Fatalf("ToPURL(%v): %v", i, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

@@ -79,6 +79,8 @@ const (
 	TypePyPi = "pypi"
 	// TypeRPM is a pkg:rpm purl.
 	TypeRPM = "rpm"
+	// TypeSnap is a pkg:snap purl.
+	TypeSnap = "snap"
 	// TypeSwift is pkg:swift purl
 	TypeSwift = "swift"
 	// TypeGooget is pkg:googet purl

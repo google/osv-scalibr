@@ -174,8 +174,45 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	return []*extractor.Inventory{inventory}, nil
 }
 
-// ToPURL is not applicable for SNAP as is not a part of the PURL spec.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) { return nil, nil }
+func toNamespace(m *Metadata) string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to ''")
+	return ""
+}
+
+func toDistro(m *Metadata) string {
+	// e.g. jammy
+	if m.OSVersionCodename != "" {
+		return m.OSVersionCodename
+	}
+	// fallback: e.g. 22.04
+	if m.OSVersionID != "" {
+		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+	return ""
+}
+
+// ToPURL converts an inventory created by this extractor into a PURL.
+func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+	m := i.Metadata.(*Metadata)
+	q := map[string]string{}
+	distro := toDistro(m)
+	if distro != "" {
+		q[purl.Distro] = distro
+	}
+
+	return &purl.PackageURL{
+		Type:       purl.TypeSnap,
+		Namespace:  toNamespace(m),
+		Name:       m.Name,
+		Version:    m.Version,
+		Qualifiers: purl.QualifiersFromMap(q),
+	}, nil
+}
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
