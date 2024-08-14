@@ -83,6 +83,7 @@ func TestToSPDX23(t *testing.T) {
 						},
 						PackageDownloadLocation:   converter.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
 							&v2_3.PackageExternalReference{
 								Category: "PACKAGE-MANAGER",
@@ -167,6 +168,7 @@ func TestToSPDX23(t *testing.T) {
 						},
 						PackageDownloadLocation:   converter.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
 							&v2_3.PackageExternalReference{
 								Category: "PACKAGE-MANAGER",
@@ -277,6 +279,7 @@ func TestToSPDX23(t *testing.T) {
 						},
 						PackageDownloadLocation:   converter.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
 							&v2_3.PackageExternalReference{
 								Category: "PACKAGE-MANAGER",
@@ -299,6 +302,148 @@ func TestToSPDX23(t *testing.T) {
 					&v2_3.Relationship{
 						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-softw-re--6325253f-ec73-4dd7-a9e2-8bf921119c16",
+						},
+						RefB: common.DocElementID{
+							SpecialID: converter.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
+		{
+			desc: "One location reported",
+			scanResult: &scalibr.ScanResult{
+				Inventories: []*extractor.Inventory{&extractor.Inventory{
+					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1"},
+				}},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						common.Creator{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					&v2_3.Package{
+						PackageName:               "main",
+						PackageSPDXIdentifier:     "SPDXRef-Package-main-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						PackageVersion:            "0",
+						PackageDownloadLocation:   converter.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					&v2_3.Package{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     converter.NoAssertion,
+							SupplierType: converter.NoAssertion,
+						},
+						PackageDownloadLocation:   converter.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor from /file1",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							&v2_3.PackageExternalReference{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+						},
+						RefB: common.DocElementID{
+							SpecialID: converter.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
+		{
+			desc: "Multiple locations reported",
+			scanResult: &scalibr.ScanResult{
+				Inventories: []*extractor.Inventory{&extractor.Inventory{
+					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1", "/file2", "/file3"},
+				}},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/255aa5b7-d44b-4c40-b84c-892b9bffd436",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						common.Creator{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					&v2_3.Package{
+						PackageName:               "main",
+						PackageSPDXIdentifier:     "SPDXRef-Package-main-172ed857-94bb-458b-8c3b-525da1786f9f",
+						PackageVersion:            "0",
+						PackageDownloadLocation:   converter.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					&v2_3.Package{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     converter.NoAssertion,
+							SupplierType: converter.NoAssertion,
+						},
+						PackageDownloadLocation:   converter.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor from 3 locations, including /file1 and /file2",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							&v2_3.PackageExternalReference{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-172ed857-94bb-458b-8c3b-525da1786f9f",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
 						},
 						RefB: common.DocElementID{
 							SpecialID: converter.NoAssertion,
