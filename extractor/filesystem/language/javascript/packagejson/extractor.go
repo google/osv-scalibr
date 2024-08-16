@@ -52,6 +52,8 @@ type packageJSON struct {
 	// Not an NPM field but present for VSCode Extension Manifest files.
 	Contributes *struct {
 	} `json:"contributes"`
+	// Not an NPM field but present for Unity package files.
+	Unity string `json:"unity"`
 }
 
 // Config is the configuration for the Extractor.
@@ -175,6 +177,10 @@ func parse(path string, r io.Reader) (*extractor.Inventory, error) {
 		log.Debugf("package.json file %s is a Visual Studio Code Extension Manifest, not an NPM package", path)
 		return nil, nil
 	}
+	if p.isUnityPackage() {
+		log.Debugf("package.json file %s is a Unity package, not an NPM package", path)
+		return nil, nil
+	}
 
 	return &extractor.Inventory{
 		Name:    p.Name,
@@ -206,6 +212,17 @@ func (p packageJSON) isVSCodeExtension() bool {
 		}
 	}
 	return p.Contributes != nil
+}
+
+// isUnityPackage returns true if p is a Unity package.
+//
+// Unity (https://docs.unity3d.com/Manual/upm-manifestPkg.html) packages
+// are similar to NPM packages in that they use the same filename share some of
+// the core fields such as name and version.
+// They also have a "unity" field that lists the Unity version. we can use
+// this to differentiate them from NPM packages.
+func (p packageJSON) isUnityPackage() bool {
+	return p.Unity != ""
 }
 
 func removeEmptyPersons(persons []*Person) []*Person {

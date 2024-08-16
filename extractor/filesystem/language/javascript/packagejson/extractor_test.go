@@ -251,6 +251,11 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{},
 		},
 		{
+			name:          "Unity package",
+			path:          "testdata/unity-package.json",
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
 			name: "Undici package with nonstandard contributors parsed correctly",
 			path: "testdata/undici-package.json",
 			wantInventory: []*extractor.Inventory{
