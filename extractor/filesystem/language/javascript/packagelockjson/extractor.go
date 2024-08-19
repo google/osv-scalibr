@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scanner/pkg/lockfile"
@@ -76,6 +77,14 @@ func (e Extractor) Version() int { return 0 }
 // patterns.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	if filepath.Base(path) != "package-lock.json" {
+		return false
+	}
+
+	// Skip lockfiles inside node_modules directories since the packages they list aren't
+	// necessarily installed by the root project. We instead use the more specific top-level
+	// lockfile for the root project dependencies.
+	dir := filepath.ToSlash(filepath.Dir(path))
+	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
 		return false
 	}
 

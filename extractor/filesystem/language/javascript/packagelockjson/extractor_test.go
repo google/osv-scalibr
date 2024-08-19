@@ -64,6 +64,11 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
+			name:         "skip from inside node_modules dir",
+			path:         filepath.FromSlash("foo/node_modules/bar/package-lock.json"),
+			wantRequired: false,
+		},
+		{
 			name:             "package-lock.json required if file size < max file size",
 			path:             "foo/package-lock.json",
 			fileSizeBytes:    100 * units.KiB,
