@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
@@ -43,18 +44,24 @@ var (
 		&regpatchlevel.Extractor{},
 	}
 
+	// Containers standalone extractors.
+	Containers = []standalone.Extractor{
+		containerd.New(containerd.DefaultConfig()),
+	}
+
 	// Default standalone extractors.
 	Default []standalone.Extractor = slices.Concat(Windows)
 	// All standalone extractors.
-	All []standalone.Extractor = slices.Concat(Windows, WindowsExperimental)
+	All []standalone.Extractor = slices.Concat(Windows, WindowsExperimental, Containers)
 
 	extractorNames = map[string][]standalone.Extractor{
 		// Windows
 		"windows": Windows,
 
 		// Collections.
-		"default": Default,
-		"all":     All,
+		"default":    Default,
+		"all":        All,
+		"containers": Containers,
 	}
 )
 
