@@ -148,7 +148,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		pkg := &extractor.Inventory{
 			Name:      ctr.ImageName,
 			Version:   ctr.ImageDigest,
-			Locations: []string{ctr.Rootfs},
+			Locations: []string{ctr.RootFS},
 			Metadata:  &ctr,
 		}
 		inventory = append(inventory, pkg)
@@ -274,7 +274,7 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 		Runtime:     runtime,
 		ID:          task.ID,
 		PID:         pid,
-		Rootfs:      rootfs,
+		RootFS:      rootfs,
 	}
 
 	return md, nil
@@ -282,7 +282,7 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return &purl.PackageURL{}, nil
+	return nil, nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
