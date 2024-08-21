@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -77,6 +78,7 @@ var (
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
+		homebrew.New(homebrew.DefaultConfig()),
 	}
 
 	// Collections of extractors.

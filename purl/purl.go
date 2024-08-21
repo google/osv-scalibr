@@ -31,6 +31,8 @@ const (
 	TypeAlpm = "alpm"
 	// TypeApk is a pkg:apk purl.
 	TypeApk = "apk"
+	// Typebrew is a pkg:brew purl.
+	TypeBrew = "brew"
 	// TypeBitbucket is a pkg:bitbucket purl.
 	TypeBitbucket = "bitbucket"
 	// TypeCocoapods is a pkg:cocoapods purl.
@@ -146,6 +148,7 @@ func validType(t string) bool {
 	types := map[string]bool{
 		TypeAlpm:      true,
 		TypeApk:       true,
+		TypeBrew:      true,
 		TypeBitbucket: true,
 		TypeCargo:     true,
 		TypeCocoapods: true,
