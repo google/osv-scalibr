@@ -220,6 +220,7 @@ func TestScanResultToProto(t *testing.T) {
 				&spb.Qualifier{Key: "distro", Value: "jammy"},
 			},
 		},
+		Ecosystem: "Debian",
 		Metadata: &spb.Inventory_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       "software",
@@ -242,6 +243,7 @@ func TestScanResultToProto(t *testing.T) {
 			Name:    "software",
 			Version: "1.0.0",
 		},
+		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Extractor: "python/wheelegg",
 		Metadata: &spb.Inventory_PythonMetadata{
@@ -260,6 +262,7 @@ func TestScanResultToProto(t *testing.T) {
 			Name:    "foo",
 			Version: "1.0",
 		},
+		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Extractor: "python/requirements",
 		Metadata: &spb.Inventory_PythonRequirementsMetadata{
@@ -277,6 +280,7 @@ func TestScanResultToProto(t *testing.T) {
 			Name:    "software",
 			Version: "1.0.0",
 		},
+		Ecosystem: "npm",
 		Locations: []string{"/file1"},
 		Extractor: "javascript/packagejson",
 		Metadata: &spb.Inventory_JavascriptMetadata{
@@ -341,6 +345,7 @@ func TestScanResultToProto(t *testing.T) {
 				&spb.Qualifier{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
 			},
 		},
+		Ecosystem: "RHEL",
 		Metadata: &spb.Inventory_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  "openssh-clients",
@@ -372,8 +377,9 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: &ctrdfs.Extractor{},
 	}
 	containerdInventoryProto := &spb.Inventory{
-		Name:    "gcr.io/google-samples/hello-app:1.0",
-		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Name:      "gcr.io/google-samples/hello-app:1.0",
+		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Ecosystem: "containerd",
 		Metadata: &spb.Inventory_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName:  "default",
@@ -402,8 +408,9 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: &ctrdruntime.Extractor{},
 	}
 	containerdRuntimeInventoryProto := &spb.Inventory{
-		Name:    "gcr.io/google-samples/hello-app:1.0",
-		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Name:      "gcr.io/google-samples/hello-app:1.0",
+		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+		Ecosystem: "containerd",
 		Metadata: &spb.Inventory_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: "default",

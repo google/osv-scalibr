@@ -24,13 +24,14 @@ import (
 	"path"
 	"strings"
 
+	"golang.org/x/vuln/scan"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
-	"golang.org/x/vuln/scan"
 )
 
 const (
@@ -50,12 +51,18 @@ func (Detector) Name() string { return Name }
 // Version of the detector.
 func (Detector) Version() int { return 0 }
 
+// Requirements of the detector.
+func (d Detector) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{Network: d.OfflineVulnDBPath == "", DirectFS: true}
+}
+
 // RequiredExtractors returns the go binary extractor.
 func (Detector) RequiredExtractors() []string {
 	return []string{gobinary.Name}
 }
 
-func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+// Scan takes the go binaries gathered in the extraction phase and runs govulncheck on them.
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	result := []*detector.Finding{}
 	scanned := make(map[string]bool)
 	var allErrs error = nil
@@ -72,7 +79,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.
 			if ctx.Err() != nil {
 				return result, appendError(allErrs, ctx.Err())
 			}
-			out, err := d.runGovulncheck(ctx, l, scanRoot)
+			out, err := d.runGovulncheck(ctx, l, scanRoot.Path)
 			if err != nil {
 				allErrs = appendError(allErrs, fmt.Errorf("d.runGovulncheck(%s): %w", l, err))
 				continue

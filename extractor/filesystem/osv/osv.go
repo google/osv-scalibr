@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scanner/pkg/lockfile"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
@@ -49,6 +50,9 @@ func (e Wrapper) Name() string { return e.ExtractorName }
 
 // Version of the extractor.
 func (e Wrapper) Version() int { return e.ExtractorVersion }
+
+// Requirements of the extractor.
+func (e Wrapper) Requirements() *plugin.Capabilities { return &plugin.Capabilities{DirectFS: true} }
 
 // FileRequired returns true if the specified file matches the extractor pattern.
 func (e Wrapper) FileRequired(path string, fileinfo fs.FileInfo) bool {
@@ -78,7 +82,7 @@ func (e Wrapper) reportFileRequired(path string, fileSizeBytes int64, result sta
 
 // Extract wraps the osv Extract method.
 func (e Wrapper) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	full := filepath.Join(input.ScanRoot, input.Path)
+	full := filepath.Join(input.Root, input.Path)
 	osvpkgs, err := e.Extractor.Extract(WrapInput(input))
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
@@ -133,9 +137,9 @@ func (fw fileWrapper) Read(p []byte) (n int, err error) {
 	return fw.input.Reader.Read(p)
 }
 func (fw fileWrapper) Open(path string) (lockfile.NestedDepFile, error) {
-	cwd := fw.input.ScanRoot
+	cwd := fw.input.Root
 	if !filepath.IsAbs(path) {
-		cwd = filepath.Join(fw.input.ScanRoot, filepath.Dir(fw.input.Path))
+		cwd = filepath.Join(fw.input.Root, filepath.Dir(fw.input.Path))
 	}
 	return lockfile.OpenLocalDepFile(filepath.Join(cwd, path))
 }
@@ -164,3 +168,8 @@ func (e Wrapper) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Wrapper) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+func (e Wrapper) Ecosystem(i *extractor.Inventory) (string, error) {
+	return i.Metadata.(*Metadata).Ecosystem, nil
+}

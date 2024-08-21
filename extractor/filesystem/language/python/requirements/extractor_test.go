@@ -17,7 +17,6 @@ package requirements_test
 import (
 	"context"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -322,7 +322,7 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 			var e filesystem.Extractor = requirements.New(requirements.Config{Stats: collector})
 
-			fsys := os.DirFS(".")
+			fsys := scalibrfs.DirFS(".")
 
 			r, err := fsys.Open(tt.path)
 			defer func() {
@@ -339,7 +339,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 			got, err := e.Extract(context.Background(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)

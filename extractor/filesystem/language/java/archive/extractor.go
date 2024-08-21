@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
@@ -127,6 +128,9 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // FileRequired returns true if the specified file matches java archive file patterns.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	if !isArchive(filepath.ToSlash(path)) {
@@ -216,11 +220,11 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	if e.hashJars {
 		h, err := hashJar(r.(io.Reader))
 		if err != nil {
-			log.Errorf("HashJar(%q) err: %v", filepath.Join(input.ScanRoot, input.Path), err)
+			log.Errorf("HashJar(%q) err: %v", input.Path, err)
 			// continue extracting even if hashing failed
 		}
 		if _, err := r.(io.Seeker).Seek(0, 0); err != nil {
-			log.Errorf("%q: Failed to seek to the start, after hashing: %v", filepath.Join(input.ScanRoot, input.Path), err)
+			log.Errorf("%q: Failed to seek to the start, after hashing: %v", input.Path, err)
 		}
 		sha1 = h
 	}
@@ -428,3 +432,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "Maven", nil }

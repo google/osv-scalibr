@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -261,7 +262,7 @@ func TestExtract(t *testing.T) {
 
 			collector := testcollector.New()
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: f}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
 
 			e := gobinary.New(gobinary.Config{Stats: collector})
 			got, err := e.Extract(context.Background(), input)

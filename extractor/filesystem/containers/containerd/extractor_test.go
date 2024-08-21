@@ -272,7 +272,7 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{Path: path, Reader: reader, ScanRoot: root, Info: info}
+	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: root, Info: info}
 	return input
 }
 

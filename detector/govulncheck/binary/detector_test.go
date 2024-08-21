@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 )
 
@@ -46,7 +47,7 @@ func TestScan(t *testing.T) {
 		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 	}
 	ix := setupInventoryIndex([]string{binaryName})
-	findings, err := det.Scan(context.Background(), ".", ix)
+	findings, err := det.Scan(context.Background(), scalibrfs.RealFSScanRoot("."), ix)
 	if err != nil {
 		t.Fatalf("detector.Scan(%v): %v", ix, err)
 	}
@@ -104,7 +105,7 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 	}
 	ix := setupInventoryIndex([]string{"nonexistent", binaryName})
-	result, err := det.Scan(context.Background(), ".", ix)
+	result, err := det.Scan(context.Background(), scalibrfs.RealFSScanRoot("."), ix)
 	if err == nil {
 		t.Fatalf("detector.Scan(%v): Expected an error, got none", ix)
 	}

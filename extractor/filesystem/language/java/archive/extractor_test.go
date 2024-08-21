@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -525,7 +526,7 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 			tt.cfg.Stats = collector
 
-			input := &filesystem.ScanInput{Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))

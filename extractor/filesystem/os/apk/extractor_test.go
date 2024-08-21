@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -240,10 +241,11 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				Path:     tt.path,
-				Reader:   r,
-				ScanRoot: d,
-				Info:     info,
+				FS:     scalibrfs.DirFS(d),
+				Path:   tt.path,
+				Reader: r,
+				Root:   d,
+				Info:   info,
 			}
 
 			got, err := e.Extract(context.Background(), input)

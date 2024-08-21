@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -42,6 +43,9 @@ func (e Extractor) Name() string { return "sbom/spdx" }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
+
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 type extractFunc = func(io.Reader) (*spdx.Document, error)
 
@@ -142,4 +146,13 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs converts an inventory created by this extractor into a list of CPEs.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return i.Metadata.(*Metadata).CPEs, nil
+}
+
+// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
+	purl := i.Metadata.(*Metadata).PURL
+	if purl == nil {
+		return "", nil
+	}
+	return purl.Type, nil
 }

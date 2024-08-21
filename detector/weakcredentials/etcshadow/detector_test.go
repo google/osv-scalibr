@@ -16,6 +16,7 @@ package etcshadow_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 )
 
@@ -58,6 +60,12 @@ func (f fakeFS) Open(name string) (fs.File, error) {
 		return &fakeFile{content, 0}, nil
 	}
 	return nil, os.ErrNotExist
+}
+func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	return nil, errors.New("not implemented")
+}
+func (fakeFS) Stat(name string) (fs.FileInfo, error) {
+	return nil, errors.New("not implemented")
 }
 
 type fakeFile struct {
@@ -103,7 +111,7 @@ func TestScan(t *testing.T) {
 	ix, _ := inventoryindex.New([]*extractor.Inventory{})
 	testCases := []struct {
 		desc         string
-		fsys         fs.FS
+		fsys         scalibrfs.FS
 		wantFindings []*detector.Finding
 		wantErr      error
 	}{
@@ -138,7 +146,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			detector := etcshadow.Detector{}
-			findings, err := detector.ScanFS(context.Background(), tc.fsys, ix)
+			findings, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}
@@ -157,7 +165,7 @@ func TestScanCancelled(t *testing.T) {
 	fsys := &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
-	findings, err := detector.ScanFS(ctx, fsys, ix)
+	findings, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, ix)
 	if findings != nil || err != ctx.Err() {
 		t.Errorf("expected scan to be cancelled")
 	}

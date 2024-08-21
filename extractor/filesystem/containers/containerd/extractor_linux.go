@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -93,6 +94,9 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{DirectFS: true} }
+
 // FileRequired returns true if the specified file matches containerd metadb file pattern.
 func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	// On Windows the metadb file is expected to be located at the
@@ -117,14 +121,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
 	// This will still allow to handle the snapshot of a machine.
-	metaDB, err := bolt.Open(filepath.Join(input.ScanRoot, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
+	metaDB, err := bolt.Open(filepath.Join(input.Root, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return inventory, fmt.Errorf("Could not read the containerd metadb file: %v", err)
 	}
 
 	defer metaDB.Close()
 
-	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.ScanRoot)
+	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root)
 	if err != nil {
 		log.Errorf("Could not get container inventory from the containerd metadb file: %v", err)
 		return inventory, err
@@ -284,3 +288,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) { re
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns a synthetic ecosystem since the Inventory is not a software package.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "containerd", nil }

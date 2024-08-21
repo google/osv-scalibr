@@ -19,7 +19,9 @@ import (
 	"context"
 
 	"github.com/google/osv-scalibr/detector"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 // fakeDetector is an Detector implementation to be used in tests.
@@ -55,11 +57,14 @@ func (d *fakeDetector) Name() string { return d.DetName }
 // Version returns the detector's version.
 func (d *fakeDetector) Version() int { return d.DetVersion }
 
+// Requirements returns the detector's requirements.
+func (d *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // RequiredExtractors returns a list of Extractors that this Detector requires.
 func (d *fakeDetector) RequiredExtractors() []string { return d.ReqExtractors }
 
 // Scan always returns the same predefined finding or error.
-func (d *fakeDetector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	if d.Finding == nil {
 		return nil, d.Err
 	}

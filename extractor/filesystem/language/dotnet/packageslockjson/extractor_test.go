@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -210,6 +211,7 @@ func TestExtractor(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
+				FS:     scalibrfs.DirFS("."),
 				Path:   test.path,
 				Reader: r,
 				Info:   info,

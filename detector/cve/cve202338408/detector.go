@@ -27,8 +27,10 @@ import (
 
 	"github.com/google/osv-scalibr/detector/cve/cve202338408/semantic"
 	"github.com/google/osv-scalibr/detector"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 // Detector is a SCALIBR Detector for CVE-2023-38408.
@@ -40,10 +42,16 @@ func (Detector) Name() string { return "cve/CVE-2023-38408" }
 // Version of the detector.
 func (Detector) Version() int { return 0 }
 
+// Requirements of the detector.
+func (Detector) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{DirectFS: true, RunningSystem: true, OS: plugin.OSLinux}
+}
+
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
-func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+// Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	// 1. OpenSSH between and 5.5 and 9.3p1 (inclusive)
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {

@@ -216,13 +216,19 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 	if err != nil {
 		return nil, err
 	}
+	ecosystem, err := i.Ecosystem()
+	if err != nil {
+		return nil, err
+	}
 	inventoryProto := &spb.Inventory{
-		Name:      i.Name,
-		Version:   i.Version,
-		Purl:      purlToProto(p),
-		Cpes:      cpes,
-		Locations: i.Locations,
-		Extractor: i.Extractor.Name(),
+		Name:       i.Name,
+		Version:    i.Version,
+		SourceCode: sourceCodeIdentifierToProto(i.SourceCode),
+		Purl:       purlToProto(p),
+		Cpes:       cpes,
+		Ecosystem:  ecosystem,
+		Locations:  i.Locations,
+		Extractor:  i.Extractor.Name(),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
 	return inventoryProto, nil
@@ -399,6 +405,16 @@ func purlToProto(p *purl.PackageURL) *spb.Purl {
 		Version:    p.Version,
 		Qualifiers: qualifiersToProto(p.Qualifiers),
 		Subpath:    p.Subpath,
+	}
+}
+
+func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceCodeIdentifier {
+	if s == nil {
+		return nil
+	}
+	return &spb.SourceCodeIdentifier{
+		Repo:   s.Repo,
+		Commit: s.Commit,
 	}
 }
 

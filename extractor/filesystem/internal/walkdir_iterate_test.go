@@ -24,6 +24,8 @@ import (
 	"sort"
 	"testing"
 	"testing/fstest"
+
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 type Node struct {
@@ -144,7 +146,7 @@ func TestIssue51617(t *testing.T) {
 	}
 	defer os.Chmod(bad, 0700) // avoid errors on cleanup
 	var saw []string
-	err := WalkDirUnsorted(os.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
+	err := WalkDirUnsorted(scalibrfs.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return filepath.SkipDir
 		}

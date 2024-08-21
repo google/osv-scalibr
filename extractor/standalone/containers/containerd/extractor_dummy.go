@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -56,6 +57,9 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // Extract is a no-op for non-Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	return nil, fmt.Errorf("only supported on Linux")
@@ -69,4 +73,9 @@ func (e *Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs converts an inventory created by this extractor into CPEs, if supported.
 func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return nil, fmt.Errorf("only supported on Linux")
+}
+
+// Ecosystem returns the OSV ecosystem of an inventory created by this extractor.
+func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
+	return "", fmt.Errorf("only supported on Linux")
 }

@@ -64,7 +64,7 @@ import (
   dl "github.com/google/osv-scalibr/detector/list"
 )
 cfg := &scalibr.ScanConfig{
-  ScanRoot:             "/",
+  Root:                 "/",
   FilesystemExtractors: el.Python,
   Detectors:            dl.CIS,
 }
@@ -83,7 +83,7 @@ import (
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{
-  ScanRoot:             "/",
+  Root:                 "/",
   FilesystemExtractors: []extractor.Extractor{&myExtractor{}},
 }
 results := scalibr.New().Scan(context.Background(), cfg)

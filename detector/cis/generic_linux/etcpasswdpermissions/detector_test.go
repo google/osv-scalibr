@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 )
 
@@ -76,7 +77,7 @@ func TestScan(t *testing.T) {
 	ix, _ := inventoryindex.New([]*extractor.Inventory{})
 	testCases := []struct {
 		desc         string
-		fsys         fs.FS
+		fsys         scalibrfs.FS
 		wantFindings []*detector.Finding
 		wantErr      error
 	}{
@@ -122,7 +123,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			det := etcpasswdpermissions.Detector{}
-			findings, err := det.ScanFS(context.Background(), tc.fsys, ix)
+			findings, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -234,7 +235,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to stat test file: %v", err)
 			}
 
-			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d, Info: info}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info}
 
 			e := flatpak.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)

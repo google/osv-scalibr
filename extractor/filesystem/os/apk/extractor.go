@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
@@ -81,6 +82,9 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // FileRequired returns true if the specified file matches apk status file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	// Should match the status file.
@@ -126,7 +130,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	m, err := osrelease.GetOSRelease(input.ScanRoot)
+	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
@@ -222,3 +226,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "Alpine", nil }

@@ -18,6 +18,7 @@ package scalibr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -28,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -53,19 +55,22 @@ type ScanConfig struct {
 	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
+	// Capabilities that the scanning environment satisfies, e.g. whether there's
+	// network access. Some plugins can only run if certain requirements are met.
+	Capabilities *plugin.Capabilities
 	// ScanRoots contain the list of root dir used by file walking during extraction.
 	// All extractors and detectors will assume files are relative to these dirs.
 	// Example use case: Scanning a container image or source code repo that is
 	// mounted to a local dir.
-	ScanRoots []string
+	ScanRoots []*scalibrfs.ScanRoot
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
-	// Note that these are not relative to the ScanRoots and thus need to be in
-	// sub-directories of one of the ScanRoots.
+	// Note that on real filesystems these are not relative to the ScanRoots and
+	// thus need to be in sub-directories of one of the ScanRoots.
 	FilesToExtract []string
 	// Optional: Directories that the file system walk should ignore.
-	// Note that these are not relative to the ScanRoots and thus need to be
-	// sub-directories of one of the ScanRoots.
+	// Note that on real filesystems these are not relative to the ScanRoots and
+	// thus need to be in sub-directories of one of the ScanRoots.
 	// TODO(b/279413691): Also skip local paths, e.g. "Skip all .git dirs"
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
@@ -113,6 +118,28 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 	return nil
 }
 
+// ValidatePluginRequirements checks that the scanning environment's capabilities satisfy
+// the requirements of all enabled plugin.
+func (cfg *ScanConfig) ValidatePluginRequirements() error {
+	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors))
+	for _, p := range cfg.FilesystemExtractors {
+		plugins = append(plugins, p)
+	}
+	for _, p := range cfg.StandaloneExtractors {
+		plugins = append(plugins, p)
+	}
+	for _, p := range cfg.Detectors {
+		plugins = append(plugins, p)
+	}
+	errs := []error{}
+	for _, p := range plugins {
+		if err := plugin.ValidateRequirements(p, cfg.Capabilities); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // LINT.IfChange
 
 // ScanResult stores the software inventory and security findings that a scan run found.
@@ -145,16 +172,14 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 	if err := config.EnableRequiredExtractors(); err != nil {
 		sro.Err = err
-		sro.EndTime = time.Now()
-		return newScanResult(sro)
-	}
-	if len(config.ScanRoots) == 0 {
+	} else if err := config.ValidatePluginRequirements(); err != nil {
+		sro.Err = err
+	} else if len(config.ScanRoots) == 0 {
 		sro.Err = errNoScanRoot
-		sro.EndTime = time.Now()
-		return newScanResult(sro)
-	}
-	if len(config.FilesToExtract) > 0 && len(config.ScanRoots) > 1 {
+	} else if len(config.FilesToExtract) > 0 && len(config.ScanRoots) > 1 {
 		sro.Err = errFilesWithSeveralRoots
+	}
+	if sro.Err != nil {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
@@ -181,7 +206,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sysroot := config.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
 		Extractors: config.StandaloneExtractors,
-		ScanRoot:   sysroot,
+		ScanRoot:   &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path},
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
 	if err != nil {
@@ -200,7 +225,9 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 
-	findings, detectorStatus, err := detector.Run(ctx, config.Stats, config.Detectors, sysroot, ix)
+	findings, detectorStatus, err := detector.Run(
+		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, ix,
+	)
 	sro.Findings = findings
 	sro.DetectorStatus = detectorStatus
 	if err != nil {

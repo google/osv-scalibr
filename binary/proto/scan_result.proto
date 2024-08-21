@@ -66,11 +66,16 @@ message Inventory {
   string name = 11;
   // Version of the package.
   string version = 12;
+  // Source code level package identifiers.
+  SourceCodeIdentifier source_code = 26;
   // Package URL of the software.
   Purl purl = 1;
   // Common Platform Enumerator
   // https://csrc.nist.gov/Projects/Security-Content-Automation-Protocol/Specifications/cpe
   repeated string cpes = 4;
+  // Ecosystem - For software packages this corresponds to an OSV ecosystem
+  // value, e.g. PyPI.
+  string ecosystem = 27;
   // Paths or source of files related to the package.
   repeated string locations = 2;
   // The name of the Extractor that found this software. Set by the
@@ -94,6 +99,12 @@ message Inventory {
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
   }
+}
+
+// Additional identifiers for source code software packages (e.g. NPM).
+message SourceCodeIdentifier {
+  string repo = 1;
+  string commit = 2;
 }
 
 // Package URL, see https://github.com/package-url/purl-spec

@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -54,11 +55,13 @@ type Extractor interface {
 
 // ScanInput describes one file to extract from.
 type ScanInput struct {
-	// The path of the file to extract, relative to ScanRoot.
+	// FS for file access. This is rooted at Root.
+	FS scalibrfs.FS
+	// The path of the file to extract, relative to Root.
 	Path string
 	// The root directory where the extraction file walking started from.
-	ScanRoot string
-	Info     fs.FileInfo
+	Root string
+	Info fs.FileInfo
 	// A reader for accessing contents of the file.
 	// Note that the file is closed by the core library, not the plugin.
 	Reader io.Reader
@@ -67,8 +70,7 @@ type ScanInput struct {
 // Config stores the config settings for an extraction run.
 type Config struct {
 	Extractors []Extractor
-	ScanRoots  []string
-	FS         fs.FS
+	ScanRoots  []*scalibrfs.ScanRoot
 	// Optional: Individual files to extract inventory from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
 	// Note that these are not relative to the ScanRoots and thus need to be
@@ -125,13 +127,16 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 	return inventory, status, nil
 }
 
-func runOnScanRoot(ctx context.Context, config *Config, scanRoot string, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
-	abs, err := filepath.Abs(scanRoot)
-	if err != nil {
-		return nil, nil, err
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+	abs := ""
+	var err error
+	if !scanRoot.IsVirtual() {
+		abs, err = filepath.Abs(scanRoot.Path)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-	config.FS = os.DirFS(abs)
-	if err := wc.UpdateScanRoot(abs, config.FS); err != nil {
+	if err = wc.UpdateScanRoot(abs, scanRoot.FS); err != nil {
 		return nil, nil, err
 	}
 
@@ -141,7 +146,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot string, wc *wal
 // InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
 // are expected to be relative to the scan root.
 // This function is exported for TESTS ONLY.
-func InitWalkContext(ctx context.Context, config *Config, absScanRoots []string) (*walkContext, error) {
+func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalibrfs.ScanRoot) (*walkContext, error) {
 	filesToExtract, err := stripAllPathPrefixes(config.FilesToExtract, absScanRoots)
 	if err != nil {
 		return nil, err
@@ -184,9 +189,9 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 	var err error
 	log.Infof("Starting filesystem walk for root: %v", wc.scanRoot)
 	if len(wc.filesToExtract) > 0 {
-		err = walkIndividualFiles(config.FS, wc.filesToExtract, wc.handleFile)
+		err = walkIndividualFiles(wc.fs, wc.filesToExtract, wc.handleFile)
 	} else {
-		err = internal.WalkDirUnsorted(config.FS, ".", wc.handleFile)
+		err = internal.WalkDirUnsorted(wc.fs, ".", wc.handleFile)
 	}
 
 	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
@@ -199,7 +204,7 @@ type walkContext struct {
 	ctx               context.Context
 	stats             stats.Collector
 	extractors        []Extractor
-	fs                fs.FS
+	fs                scalibrfs.FS
 	scanRoot          string
 	filesToExtract    []string
 	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
@@ -224,7 +229,7 @@ type walkContext struct {
 	lastExtracts int
 }
 
-func walkIndividualFiles(fsys fs.FS, paths []string, fn fs.WalkDirFunc) error {
+func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) error {
 	for _, p := range paths {
 		info, err := fs.Stat(fsys, p)
 		if err != nil {
@@ -321,10 +326,11 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 
 	start := time.Now()
 	results, err := ex.Extract(wc.ctx, &ScanInput{
-		Path:     path,
-		ScanRoot: wc.scanRoot,
-		Info:     info,
-		Reader:   rc,
+		FS:     wc.fs,
+		Path:   path,
+		Root:   wc.scanRoot,
+		Info:   info,
+		Reader: rc,
 	})
 	wc.stats.AfterExtractorRun(ex.Name(), time.Since(start), err)
 	if err != nil {
@@ -345,7 +351,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 
 // UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
 // currentRoot is expected to be an absolute path.
-func (wc *walkContext) UpdateScanRoot(absRoot string, fs fs.FS) error {
+func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	return nil
@@ -359,21 +365,24 @@ func expandAbsolutePath(scanRoot string, paths []string) []string {
 	return locations
 }
 
-func expandAllAbsolutePaths(paths []string) ([]string, error) {
-	var result []string
-	for _, p := range paths {
-		absroot, err := filepath.Abs(p)
+func expandAllAbsolutePaths(scanRoots []*scalibrfs.ScanRoot) ([]*scalibrfs.ScanRoot, error) {
+	var result []*scalibrfs.ScanRoot
+	for _, r := range scanRoots {
+		abs, err := r.WithAbsolutePath()
 		if err != nil {
 			return nil, err
 		}
-
-		result = append(result, absroot)
+		result = append(result, abs)
 	}
 
 	return result, nil
 }
 
-func stripAllPathPrefixes(paths []string, prefixes []string) ([]string, error) {
+func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]string, error) {
+	if len(scanRoots) > 0 && scanRoots[0].IsVirtual() {
+		// We're using a virtual filesystem with no real absolute paths.
+		return paths, nil
+	}
 	result := make([]string, 0, len(paths))
 	for _, p := range paths {
 		abs, err := filepath.Abs(p)
@@ -381,7 +390,7 @@ func stripAllPathPrefixes(paths []string, prefixes []string) ([]string, error) {
 			return nil, err
 		}
 
-		rp, err := stripFromAtLeastOnePrefix(abs, prefixes)
+		rp, err := stripFromAtLeastOnePrefix(abs, scanRoots)
 		if err != nil {
 			return nil, err
 		}
@@ -394,12 +403,12 @@ func stripAllPathPrefixes(paths []string, prefixes []string) ([]string, error) {
 // stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
 // If the path is not relative to any of the prefixes, an error is returned.
 // The path is expected to be absolute.
-func stripFromAtLeastOnePrefix(path string, prefixes []string) (string, error) {
-	for _, prefix := range prefixes {
-		if !strings.HasPrefix(path, prefix) {
+func stripFromAtLeastOnePrefix(path string, scanRoots []*scalibrfs.ScanRoot) (string, error) {
+	for _, r := range scanRoots {
+		if !strings.HasPrefix(path, r.Path) {
 			continue
 		}
-		rel, err := filepath.Rel(prefix, path)
+		rel, err := filepath.Rel(r.Path, path)
 		if err != nil {
 			return "", err
 		}

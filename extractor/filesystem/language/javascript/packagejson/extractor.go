@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
@@ -98,6 +99,9 @@ func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
+
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches javascript Metadata file
 // patterns.
@@ -246,3 +250,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "npm", nil }

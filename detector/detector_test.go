@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -150,7 +151,10 @@ func TestRun(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			ix, _ := inventoryindex.New([]*extractor.Inventory{})
-			gotFindings, gotStatus, err := detector.Run(context.Background(), stats.NoopCollector{}, tc.det, t.TempDir(), ix)
+			tmp := t.TempDir()
+			gotFindings, gotStatus, err := detector.Run(
+				context.Background(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), ix,
+			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
 			}

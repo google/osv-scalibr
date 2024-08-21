@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -41,6 +42,11 @@ func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
+
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{RunningSystem: true}
+}
 
 // Extract retrieves the patch level from the DISM command line tool.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {

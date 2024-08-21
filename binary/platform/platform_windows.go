@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sys/windows"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 var (
@@ -105,4 +106,9 @@ func DefaultIgnoredDirectories() ([]string, error) {
 
 	windir := filepath.Join(systemDrive, "Windows")
 	return []string{windir}, nil
+}
+
+// OS returns the OS the SCALIBR binary was build on.
+func OS() plugin.OS {
+	return plugin.OSWindows
 }

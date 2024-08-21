@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -75,6 +76,9 @@ func (e *fakeExtractor) Name() string { return e.name }
 // Version returns the extractor's version.
 func (e *fakeExtractor) Version() int { return e.version }
 
+// Requirements returns the extractor's requirements.
+func (e *fakeExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // FileRequired should return true if the file described by path and mode is
 // relevant for the extractor.
 //
@@ -120,3 +124,8 @@ func (e *fakeExtractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error)
 
 // ToCPEs always returns an empty array.
 func (e *fakeExtractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+
+// Ecosystem returns a fake ecosystem.
+func (e *fakeExtractor) Ecosystem(i *extractor.Inventory) (string, error) {
+	return "FakeEcosystem", nil
+}

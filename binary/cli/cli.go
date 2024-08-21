@@ -36,7 +36,9 @@ import (
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	scalibr "github.com/google/osv-scalibr"
 )
 
@@ -227,19 +229,24 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
-	var scanRoots []string
+	var scanRoots []*scalibrfs.ScanRoot
 	if len(f.Root) == 0 {
-		if scanRoots, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
+		var scanRootPaths []string
+		if scanRootPaths, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
 			return nil, err
 		}
+		for _, r := range scanRootPaths {
+			scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
+		}
 	} else {
-		scanRoots = []string{f.Root}
+		scanRoots = scalibrfs.RealFSScanRoots(f.Root)
 	}
 	return &scalibr.ScanConfig{
 		ScanRoots:            scanRoots,
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
+		Capabilities:         capabilities(),
 		FilesToExtract:       f.FilesToExtract,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
@@ -365,7 +372,17 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
-func (f *Flags) dirsToSkip(scanRoots []string) []string {
+// All capabilities are enabled when running SCALIBR as a binary.
+func capabilities() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		OS:            platform.OS(),
+		Network:       true,
+		DirectFS:      true,
+		RunningSystem: true,
+	}
+}
+
+func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 	paths, err := platform.DefaultIgnoredDirectories()
 	if err != nil {
 		log.Warnf("Failed to get default ignored directories: %v", err)
@@ -377,11 +394,12 @@ func (f *Flags) dirsToSkip(scanRoots []string) []string {
 	// Ignore paths that are not under Root.
 	result := make([]string, 0, len(paths))
 	for _, root := range scanRoots {
-		if !strings.HasSuffix(root, string(os.PathSeparator)) {
-			root += string(os.PathSeparator)
+		path := root.Path
+		if !strings.HasSuffix(path, string(os.PathSeparator)) {
+			path += string(os.PathSeparator)
 		}
 		for _, p := range paths {
-			if strings.HasPrefix(p, root) {
+			if strings.HasPrefix(p, path) {
 				result = append(result, p)
 			}
 		}

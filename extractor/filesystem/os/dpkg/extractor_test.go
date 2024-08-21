@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -664,7 +665,9 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to stat test file: %v", err)
 			}
 
-			input := &filesystem.ScanInput{Path: tt.path, Reader: r, ScanRoot: d, Info: info}
+			input := &filesystem.ScanInput{
+				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
+			}
 
 			e := dpkg.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
@@ -726,7 +729,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Note that we didn't create any OS release file.
-	input := &filesystem.ScanInput{Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 
 	e := dpkg.New(dpkg.DefaultConfig())
 	got, err := e.Extract(context.Background(), input)
@@ -829,6 +832,42 @@ func TestToPURL(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+			}
+		})
+	}
+}
+
+func TestEcosystem(t *testing.T) {
+	e := dpkg.Extractor{}
+	tests := []struct {
+		name     string
+		metadata *dpkg.Metadata
+		want     string
+	}{
+		{
+			name: "OS ID present",
+			metadata: &dpkg.Metadata{
+				OSID: "debian",
+			},
+			want: "Debian",
+		},
+		{
+			name:     "OS ID not present",
+			metadata: &dpkg.Metadata{},
+			want:     "Linux",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &extractor.Inventory{
+				Metadata: tt.metadata,
+			}
+			got, err := e.Ecosystem(i)
+			if err != nil {
+				t.Fatalf("Ecosystem(%v): %v", i, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

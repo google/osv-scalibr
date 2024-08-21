@@ -22,7 +22,9 @@ import (
 	"io/fs"
 
 	"github.com/google/osv-scalibr/detector"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 // Detector is a SCALIBR Detector for the CIS check "Ensure permissions on /etc/passwd- are configured"
@@ -35,11 +37,14 @@ func (Detector) Name() string { return "cis/generic_linux/etcpasswdpermissions" 
 // Version of the detector.
 func (Detector) Version() int { return 0 }
 
+// Requirements of the detector.
+func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan is a no-op for Windows.
-func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	return nil, fmt.Errorf("plugin only supported on Linux")
 }
 

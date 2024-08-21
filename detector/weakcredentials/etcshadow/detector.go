@@ -26,7 +26,9 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 // Detector is a SCALIBR Detector for weak/guessable passwords from /etc/shadow.
@@ -38,17 +40,15 @@ func (Detector) Name() string { return "weakcredentials/etcshadow" }
 // Version of the detector.
 func (Detector) Version() int { return 0 }
 
+// Requirements of the detector.
+func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSUnix} }
+
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot string, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	return d.ScanFS(ctx, os.DirFS(scanRoot), ix)
-}
-
-// ScanFS starts the scan from a pseudo-filesystem.
-func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	f, err := fs.Open("etc/shadow")
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+	f, err := scanRoot.FS.Open("etc/shadow")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// File doesn't exist, check not applicable.

@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -506,9 +507,10 @@ func TestExtract(t *testing.T) {
 			})
 
 			input := &filesystem.ScanInput{
-				Path:     filepath.Base(tmpPath),
-				ScanRoot: filepath.Dir(tmpPath),
-				Info:     info,
+				FS:   scalibrfs.DirFS(filepath.Dir(tmpPath)),
+				Path: filepath.Base(tmpPath),
+				Root: filepath.Dir(tmpPath),
+				Info: info,
 			}
 			got, err := e.Extract(context.Background(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -642,6 +644,53 @@ func TestToPURL(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+			}
+		})
+	}
+}
+
+func TestEcosystem(t *testing.T) {
+	// supported OSes
+	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+	e := rpm.Extractor{}
+	tests := []struct {
+		name     string
+		metadata *rpm.Metadata
+		want     string
+	}{
+		{
+			name: "OS ID present",
+			metadata: &rpm.Metadata{
+				OSID: "fedora",
+			},
+			want: "Fedora",
+		},
+		{
+			name: "RHEL",
+			metadata: &rpm.Metadata{
+				OSID: "rhel",
+			},
+			want: "RHEL",
+		},
+		{
+			name:     "OS ID not present",
+			metadata: &rpm.Metadata{},
+			want:     "Linux",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &extractor.Inventory{
+				Metadata: tt.metadata,
+			}
+			got, err := e.Ecosystem(i)
+			if err != nil {
+				t.Fatalf("Ecosystem(%v): %v", i, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}
