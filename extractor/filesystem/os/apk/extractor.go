@@ -166,6 +166,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		maintainer := h.Get("m")
 		arch := h.Get("A")
 		license := h.Get("L")
+		commit := h.Get("c")
+		var sourceCode *extractor.SourceCodeIdentifier
+		if commit != "" {
+			sourceCode = &extractor.SourceCodeIdentifier{
+				Commit: commit,
+			}
+		}
 		pkgs = append(pkgs, &extractor.Inventory{
 			Name:    pkgName,
 			Version: version,
@@ -178,6 +185,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Architecture: arch,
 				License:      license,
 			},
+			SourceCode: sourceCode,
 			Locations: []string{input.Path},
 		})
 	}
@@ -228,4 +236,21 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) { return "Alpine", nil }
+func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
+	version := toDistro(i.Metadata.(*Metadata))
+	if version == "" {
+		return "Alpine", nil
+	}
+	return "Alpine:" + trimDistroVersion(version), nil
+}
+
+// The Alpine OS info might include minor versions such as 3.12.1 while advisories are
+// only published against the minor and major versions, i.e. v3.12. Therefore we trim
+// any minor versions before putting the value into the Ecosystem.
+func trimDistroVersion(distro string) string {
+	parts := strings.Split(distro, ".")
+	if len(parts) < 2 {
+		return "v" + distro
+	}
+	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
+}
