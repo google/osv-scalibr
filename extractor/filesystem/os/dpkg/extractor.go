@@ -317,10 +317,9 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
 	m := i.Metadata.(*Metadata)
-	if m.OSID != "" {
-		// Capitalize first letter for the Ecosystem string.
-		return cases.Title(language.English).String(m.OSID), nil
+	osID := cases.Title(language.English).String(toNamespace(m))
+	if m.OSVersionID == "" {
+		return osID, nil
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'Linux'")
-	return "Linux", nil
+	return osID + ":" + m.OSVersionID, nil
 }
