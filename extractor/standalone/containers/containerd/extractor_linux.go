@@ -201,7 +201,7 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 	return nss, nil
 }
 
-func containersMetadata(ctx context.Context, client CtrdClient, namespace string, rootfsPathPrefix string) ([]Metadata, error) {
+func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) ([]Metadata, error) {
 	var containersMetadata []Metadata
 
 	taskService := client.TaskService()
@@ -214,7 +214,7 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 
 	// For each running task, get the container information associated with it.
 	for _, task := range listTasksResp.Tasks {
-		md, err := taskMetadata(ctx, client, task, namespace, rootfsPathPrefix)
+		md, err := taskMetadata(ctx, client, task, namespace, defaultAbsoluteToBundlePath)
 		if err != nil {
 			log.Errorf("Failed to get task metadata for task %v: %v", task.ID, err)
 			continue
@@ -225,7 +225,7 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 	return containersMetadata, nil
 }
 
-func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, rootfsPathPrefix string) (Metadata, error) {
+func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {
 	var md Metadata
 
 	container, err := client.LoadContainer(ctx, task.ID)
@@ -258,17 +258,18 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 		log.Errorf("Failed to obtain containerd container task spec for container %v, error: %v", task.ID, err)
 		return md, err
 	}
-
-	rootfs := spec.Root.Path
-	// Rootfs is an optional field in the OCI runtime spec and can be empty.
-	// In this case, extractor fallbacks into the default rootfs path prefix.
-	//
-	// Alternatively this information can be obtained from the runc state.json file, but it requires
-	// to process a file for each task. For standalone extractor the fallback is used, but it can
-	// be changed in the future.
-	if rootfs == "" {
-		log.Infof("Rootfs is empty for a container %v, using default rootfs path prefix", task.ID)
-		rootfs = filepath.Join(rootfsPathPrefix, namespace, task.ID, "rootfs")
+	// Defined in https://github.com/opencontainers/runtime-spec/blob/main/config.md#root. For POSIX
+	// platforms, path is either an absolute path or a relative path to the bundle. examples as below:
+	// "/run/containerd/io.containerd.runtime.v2.task/default/nginx-test/rootfs" or "rootfs".
+	rootfs := ""
+	if filepath.IsAbs(spec.Root.Path) {
+		rootfs = spec.Root.Path
+	} else if spec.Root.Path != "" {
+		log.Infof("Rootfs is a relative path for a container: %v, concatenating rootfs path prefix", task.ID)
+		rootfs = filepath.Join(defaultAbsoluteToBundlePath, namespace, task.ID, spec.Root.Path)
+	} else {
+		log.Infof("Rootfs is empty for a container: %v, using default rootfs path prefix", task.ID)
+		rootfs = filepath.Join(defaultAbsoluteToBundlePath, namespace, task.ID, "rootfs")
 	}
 
 	name := info.Image

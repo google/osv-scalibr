@@ -126,6 +126,43 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "valid with tasks and relative-path-only rootfs",
+			onGoos:     []string{"linux"},
+			nssTaskIds: map[string][]string{"default": []string{"123456788"}, "k8s.io": []string{"567890122"}},
+			tsks:       []*task.Process{&task.Process{ID: "123456788", ContainerID: "", Pid: 12346}, &task.Process{ID: "567890122", ContainerID: "", Pid: 5677}},
+			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:      "image1",
+					Version:   "digest1",
+					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"},
+					Metadata: &plugin.Metadata{
+						Namespace:   "default",
+						ImageName:   "image1",
+						ImageDigest: "digest1",
+						Runtime:     "fake_runc",
+						ID:          "123456788",
+						PID:         12346,
+						RootFS:      "/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs",
+					},
+				},
+				{
+					Name:      "image2",
+					Version:   "digest2",
+					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs"},
+					Metadata: &plugin.Metadata{
+						Namespace:   "k8s.io",
+						ImageName:   "image2",
+						ImageDigest: "digest2",
+						ID:          "567890122",
+						Runtime:     "fake_runc",
+						PID:         5677,
+						RootFS:      "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
