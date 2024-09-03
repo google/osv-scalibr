@@ -16,17 +16,18 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type PipenvPackage struct {
+type pipenvPackage struct {
 	Version string `json:"version"`
 }
 
-type PipenvLock struct {
-	Packages    map[string]PipenvPackage `json:"default"`
-	PackagesDev map[string]PipenvPackage `json:"develop"`
+type pipenvLock struct {
+	Packages    map[string]pipenvPackage `json:"default"`
+	PackagesDev map[string]pipenvPackage `json:"develop"`
 }
 
-const PipenvEcosystem = "PyPI"
+const pipenvEcosystem = "PyPI"
 
+// Extractor extracts python packages from Pipfile.lock files.
 type Extractor struct{}
 
 // Name of the extractor
@@ -35,16 +36,19 @@ func (e Extractor) Name() string { return "python/pipfilelock" }
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
+// FileRequired returns true if the specified file matches Pipenv lockfile patterns.
 func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 	return filepath.Base(path) == "Pipfile.lock"
 }
 
+// Extract extracts packages from Pipfile.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockfile *PipenvLock
+	var parsedLockfile *pipenvLock
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
@@ -64,7 +68,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return maps.Values(details), nil
 }
 
-func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]PipenvPackage, group string) {
+func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]pipenvPackage, group string) {
 	for name, pipenvPackage := range packages {
 		if pipenvPackage.Version == "" {
 			continue
@@ -105,8 +109,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
+// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return PipenvEcosystem, nil
+	return pipenvEcosystem, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

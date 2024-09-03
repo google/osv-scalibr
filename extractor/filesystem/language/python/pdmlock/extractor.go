@@ -14,20 +14,21 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-type PdmLockPackage struct {
+type pdmLockPackage struct {
 	Name     string   `toml:"name"`
 	Version  string   `toml:"version"`
 	Groups   []string `toml:"groups"`
 	Revision string   `toml:"revision"`
 }
 
-type PdmLockFile struct {
+type pdmLockFile struct {
 	Version  string           `toml:"lock-version"`
-	Packages []PdmLockPackage `toml:"package"`
+	Packages []pdmLockPackage `toml:"package"`
 }
 
-const PDMEcosystem = "PyPI"
+const pdmEcosystem = "PyPI"
 
+// Extractor extracts python packages from pdm.lock files.
 type Extractor struct{}
 
 // Name of the extractor
@@ -36,16 +37,19 @@ func (e Extractor) Name() string { return "python/pdmlock" }
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
+// FileRequired returns true if the specified file matches PDM lockfile patterns.
 func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 	return filepath.Base(path) == "pdm.lock"
 }
 
+// Extract extracts packages from pdm.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockFile *PdmLockFile
+	var parsedLockFile *pdmLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockFile)
 	if err != nil {
@@ -103,8 +107,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
+// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return PDMEcosystem, nil
+	return pdmEcosystem, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

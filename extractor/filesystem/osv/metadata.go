@@ -22,6 +22,7 @@ type Metadata struct {
 	CompareAs string
 }
 
+// DepGroups provides access to the dependency groups property in some metadata objects
 type DepGroups interface {
 	DepGroups() []string
 }
@@ -33,6 +34,7 @@ type DepGroupMetadata struct {
 
 var _ DepGroups = DepGroupMetadata{}
 
+// DepGroups return the dependency groups property in the metadata
 func (dgm DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
 }

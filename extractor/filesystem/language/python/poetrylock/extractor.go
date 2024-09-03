@@ -14,25 +14,26 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-type PoetryLockPackageSource struct {
+type poetryLockPackageSource struct {
 	Type   string `toml:"type"`
 	Commit string `toml:"resolved_reference"`
 }
 
-type PoetryLockPackage struct {
+type poetryLockPackage struct {
 	Name     string                  `toml:"name"`
 	Version  string                  `toml:"version"`
 	Optional bool                    `toml:"optional"`
-	Source   PoetryLockPackageSource `toml:"source"`
+	Source   poetryLockPackageSource `toml:"source"`
 }
 
-type PoetryLockFile struct {
+type poetryLockFile struct {
 	Version  int                 `toml:"version"`
-	Packages []PoetryLockPackage `toml:"package"`
+	Packages []poetryLockPackage `toml:"package"`
 }
 
-const PoetryEcosystem = "PyPI"
+const poetryEcosystem = "PyPI"
 
+// Extractor extracts python packages from poetry.lock files.
 type Extractor struct{}
 
 // Name of the extractor
@@ -41,16 +42,19 @@ func (e Extractor) Name() string { return "python/poetrylock" }
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
 
+// Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
+// FileRequired returns true if the specified file matches poetry lockfile patterns
 func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 	return filepath.Base(path) == "poetry.lock"
 }
 
+// Extract extracts packages from poetry.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockfile *PoetryLockFile
+	var parsedLockfile *poetryLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
@@ -96,8 +100,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
+// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return PoetryEcosystem, nil
+	return poetryEcosystem, nil
 }
 
 var _ filesystem.Extractor = Extractor{}
