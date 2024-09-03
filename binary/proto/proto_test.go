@@ -184,6 +184,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: requirements.Extractor{},
 		Metadata: &requirements.Metadata{
 			HashCheckingModeValues: []string{"sha256:123"},
+			VersionComparator:      ">=",
 		},
 	}
 
@@ -268,6 +269,7 @@ func TestScanResultToProto(t *testing.T) {
 		Metadata: &spb.Inventory_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: []string{"sha256:123"},
+				VersionComparator:      ">=",
 			},
 		},
 	}

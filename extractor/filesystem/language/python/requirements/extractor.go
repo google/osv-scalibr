@@ -195,13 +195,7 @@ func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path s
 			continue
 		}
 
-		if isVersionRanges(l) {
-			// Ignore version ranges
-			// TODO(b/286213823): Implement metric
-			continue
-		}
-
-		name, version := getPinnedVersion(l)
+		name, version, comp := getLowestVersion(l)
 		if name == "" || version == "" {
 			// Either empty
 			continue
@@ -211,15 +205,14 @@ func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path s
 			continue
 		}
 
-		var metadata any
-		if len(hashOptions) > 0 {
-			metadata = &Metadata{HashCheckingModeValues: hashOptions}
-		}
 		inventory = append(inventory, &extractor.Inventory{
 			Name:      name,
 			Version:   version,
 			Locations: []string{path},
-			Metadata:  metadata,
+			Metadata: &Metadata{
+				HashCheckingModeValues: hashOptions,
+				VersionComparator:      comp,
+			},
 		})
 	}
 
@@ -231,23 +224,33 @@ func removeComments(s string) string {
 	return regexp.MustCompile(`(^|\s+)#.*$`).ReplaceAllString(s, "")
 }
 
-func getPinnedVersion(s string) (name, version string) {
+func getLowestVersion(s string) (name, version, comparator string) {
+	// We currently don't handle:
+	// * Version wildcards (*)
+	// * Less than (<)
+	// * Multiple constraints (,)
+	// TODO(b/286213823): Implement metric
+	if regexp.MustCompile(`\*|<|,`).FindString(s) != "" {
+		return "", "", ""
+	}
+
 	t := []string{}
-	if strings.Contains(s, "===") {
-		t = strings.SplitN(s, "===", 2)
-	} else if strings.Contains(s, "==") {
-		t = strings.SplitN(s, "==", 2)
+	separators := []string{"===", "==", ">=", "~="}
+	comp := ""
+	for _, sep := range separators {
+		if strings.Contains(s, sep) {
+			t = strings.SplitN(s, sep, 2)
+			comp = sep
+			break
+		}
 	}
 
 	if len(t) != 2 {
-		return "", ""
+		return "", "", ""
 	}
 
-	return t[0], t[1]
-}
-
-func isVersionRanges(s string) bool {
-	return regexp.MustCompile(`\*|>|<|,`).FindString(s) != ""
+	// For all other separators the lowest version is the one we found.
+	return t[0], t[1], comp
 }
 
 func removeWhiteSpaces(s string) string {

@@ -9,6 +9,14 @@ docopt == 0.6.1
 requests [security] >= 2.8.1, == 2.8.* ; python_version < "2.7"
 urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip
 
+# Minimum version 4.1.1
+keyring >= 4.1.1
+# Version Exclusion. Anything except version 3.5
+coverage != 3.5
+# Compatible release. Same as >= 1.1, == 1.*
+Mopidy-Dirble ~= 1.1
+
+
 # It is possible to refer to other requirement files or constraints files.
 -r other-requirements.txt
 -c constraints.txt

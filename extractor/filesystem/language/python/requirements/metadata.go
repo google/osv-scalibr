@@ -19,4 +19,6 @@ type Metadata struct {
 	// The values from the --hash flags, as in https://pip.pypa.io/en/stable/topics/secure-installs/#hash-checking-mode.
 	// These are the hashes of the distributions of the package.
 	HashCheckingModeValues []string
+	// The comparator used to compare the package version, e.g. ==, ~=, >=
+	VersionComparator string
 }
