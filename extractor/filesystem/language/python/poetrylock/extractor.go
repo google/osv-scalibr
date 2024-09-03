@@ -1,3 +1,4 @@
+// Package poetrylock extracts poetry.lock files.
 package poetrylock
 
 import (

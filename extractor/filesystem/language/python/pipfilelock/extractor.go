@@ -1,3 +1,4 @@
+// Package pipfilelock extracts Pipfile.lock files.
 package pipfilelock
 
 import (

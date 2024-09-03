@@ -1,3 +1,4 @@
+// Package pdmlock extracts pdm.lock files.
 package pdmlock
 
 import (
