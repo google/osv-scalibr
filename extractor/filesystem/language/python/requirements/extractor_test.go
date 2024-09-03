@@ -181,8 +181,14 @@ func TestExtract(t *testing.T) {
 				// not pytest-cov, because no version
 				// not beautifulsoup4, because no version
 				{Name: "docopt", Version: "0.6.1"},
+				// not coverage, because it uses != for version pinning.
 				// not requests, because it has extras
 				// not urllib3, because it's pinned to a zip file
+				{
+					Name:      "transitive-req",
+					Version:   "1",
+					Locations: []string{"testdata/example.txt:testdata/other-requirements.txt"},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -312,7 +318,9 @@ func TestExtract(t *testing.T) {
 	// fill Location and Extractor
 	for _, t := range tests {
 		for _, i := range t.wantInventory {
-			i.Locations = []string{t.path}
+			if i.Locations == nil {
+				i.Locations = []string{t.path}
+			}
 		}
 	}
 
