@@ -13,51 +13,39 @@ func TestExtractor_FileRequired(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		inputConfig sharedtesthelpers.ScanInputMockConfig
-		want        bool
+		name      string
+		inputPath string
+		want      bool
 	}{
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "",
-			},
-			want: false,
+			name:      "",
+			inputPath: "",
+			want:      false,
 		},
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "poetry.lock",
-			},
-			want: true,
+			name:      "",
+			inputPath: "poetry.lock",
+			want:      true,
 		},
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "path/to/my/poetry.lock",
-			},
-			want: true,
+			name:      "",
+			inputPath: "path/to/my/poetry.lock",
+			want:      true,
 		},
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "path/to/my/poetry.lock/file",
-			},
-			want: false,
+			name:      "",
+			inputPath: "path/to/my/poetry.lock/file",
+			want:      false,
 		},
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "path/to/my/poetry.lock.file",
-			},
-			want: false,
+			name:      "",
+			inputPath: "path/to/my/poetry.lock.file",
+			want:      false,
 		},
 		{
-			name: "",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "path.to.my.poetry.lock",
-			},
-			want: false,
+			name:      "",
+			inputPath: "path.to.my.poetry.lock",
+			want:      false,
 		},
 	}
 	for _, tt := range tests {
@@ -65,9 +53,9 @@ func TestExtractor_FileRequired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			e := poetrylock.Extractor{}
-			got := e.FileRequired(tt.inputConfig.Path, sharedtesthelpers.GenerateFileInfoMock(t, tt.inputConfig))
+			got := e.FileRequired(tt.inputPath, nil)
 			if got != tt.want {
-				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputConfig.Path, got, tt.want)
+				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
 			}
 		})
 	}

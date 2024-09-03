@@ -13,58 +13,44 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		inputConfig sharedtesthelpers.ScanInputMockConfig
-		want        bool
+		name      string
+		inputPath string
+		want      bool
 	}{
 		{
-			name: "empty",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "",
-			},
-			want: false,
+			name:      "empty",
+			inputPath: "",
+			want:      false,
 		},
 		{
-			name: "plain",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "pdm.lock",
-			},
-			want: true,
+			name:      "plain",
+			inputPath: "pdm.lock",
+			want:      true,
 		},
 		{
-			name: "absolute",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "/path/to/pdm.lock",
-			},
-			want: true,
+			name:      "absolute",
+			inputPath: "/path/to/pdm.lock",
+			want:      true,
 		},
 		{
-			name: "relative",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "../../pdm.lock",
-			},
-			want: true,
+			name:      "relative",
+			inputPath: "../../pdm.lock",
+			want:      true,
 		},
 		{
-			name: "in-path",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "/path/with/pdm.lock/in/middle",
-			},
-			want: false,
+			name:      "in-path",
+			inputPath: "/path/with/pdm.lock/in/middle",
+			want:      false,
 		},
 		{
-			name: "invalid-suffix",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "pdm.lock.file",
-			},
-			want: false,
+			name:      "invalid-suffix",
+			inputPath: "pdm.lock.file",
+			want:      false,
 		},
 		{
-			name: "invalid-prefix",
-			inputConfig: sharedtesthelpers.ScanInputMockConfig{
-				Path: "project.name.pdm.lock",
-			},
-			want: false,
+			name:      "invalid-prefix",
+			inputPath: "project.name.pdm.lock",
+			want:      false,
 		},
 	}
 
@@ -73,9 +59,9 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			e := pdmlock.Extractor{}
-			got := e.FileRequired(tt.inputConfig.Path, sharedtesthelpers.GenerateFileInfoMock(t, tt.inputConfig))
+			got := e.FileRequired(tt.inputPath, nil)
 			if got != tt.want {
-				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputConfig.Path, got, tt.want)
+				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
 			}
 		})
 	}
