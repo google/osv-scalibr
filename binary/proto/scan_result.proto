@@ -322,7 +322,9 @@ message ContainerdContainerMetadata {
   string image_name = 2;
   string image_digest = 3;
   string runtime = 4;
-  int32 init_process_pid = 5;
+  int32 pid = 5;
+  string rootfs_path = 6;
+  string id = 7;
 }
 
 message ContainerdRuntimeContainerMetadata {

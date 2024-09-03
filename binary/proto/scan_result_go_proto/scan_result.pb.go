@@ -22,11 +22,12 @@
 package scan_result_go_proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -2428,11 +2429,13 @@ type ContainerdContainerMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	NamespaceName  string `protobuf:"bytes,1,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
-	ImageName      string `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
-	ImageDigest    string `protobuf:"bytes,3,opt,name=image_digest,json=imageDigest,proto3" json:"image_digest,omitempty"`
-	Runtime        string `protobuf:"bytes,4,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	InitProcessPid int32  `protobuf:"varint,5,opt,name=init_process_pid,json=initProcessPid,proto3" json:"init_process_pid,omitempty"`
+	NamespaceName string `protobuf:"bytes,1,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
+	ImageName     string `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
+	ImageDigest   string `protobuf:"bytes,3,opt,name=image_digest,json=imageDigest,proto3" json:"image_digest,omitempty"`
+	Runtime       string `protobuf:"bytes,4,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	Pid           int32  `protobuf:"varint,5,opt,name=init_process_pid,json=initProcessPid,proto3" json:"init_process_pid,omitempty"`
+	RootfsPath    string `protobuf:"bytes,6,opt,name=rootfs_path,json=rootfs,proto3" json:"rootfs,omitempty"`
+	Id            string `protobuf:"bytes,7,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (x *ContainerdContainerMetadata) Reset() {
@@ -2497,9 +2500,23 @@ func (x *ContainerdContainerMetadata) GetRuntime() string {
 
 func (x *ContainerdContainerMetadata) GetInitProcessPid() int32 {
 	if x != nil {
-		return x.InitProcessPid
+		return x.Pid
 	}
 	return 0
+}
+
+func (x *ContainerdContainerMetadata) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ContainerdContainerMetadata) GetRootfsPath() string {
+	if x != nil {
+		return x.RootfsPath
+	}
+	return ""
 }
 
 type ContainerdRuntimeContainerMetadata struct {

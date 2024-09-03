@@ -37,7 +37,8 @@ type Extractor struct{}
 type Config struct {
 	// MaxMetaDBFileSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	MaxMetaDBFileSize int64
+	MaxMetaDBFileSize    int64
+	MaxStateJSONFileSize int64
 }
 
 // DefaultConfig returns the default configuration values.
