@@ -337,7 +337,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ImageName:      m.ImageName,
 				ImageDigest:    m.ImageDigest,
 				Runtime:        m.Runtime,
-				InitProcessPid: int32(m.InitProcessPID),
+				InitProcessPid: int32(m.PID),
 			},
 		}
 	case *ctrdruntime.Metadata:

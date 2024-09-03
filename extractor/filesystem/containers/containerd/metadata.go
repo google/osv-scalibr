@@ -16,9 +16,9 @@ package containerd
 
 // Metadata holds parsing information for a container running on the containerd runtime.
 type Metadata struct {
-	Namespace      string
-	ImageName      string
-	ImageDigest    string
-	Runtime        string
-	InitProcessPID int
+	Namespace   string
+	ImageName   string
+	ImageDigest string
+	Runtime     string
+	PID         int
 }

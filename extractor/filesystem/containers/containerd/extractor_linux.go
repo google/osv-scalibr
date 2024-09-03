@@ -201,10 +201,10 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 			}
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
-					ImageName:      img.Name,
-					ImageDigest:    img.Target.Digest.String(),
-					Runtime:        ctr.Runtime.Name,
-					InitProcessPID: initPID})
+					ImageName:   img.Name,
+					ImageDigest: img.Target.Digest.String(),
+					Runtime:     ctr.Runtime.Name,
+					PID:         initPID})
 		}
 	}
 	return containersMetadata, nil
