@@ -3,16 +3,18 @@ package extracttest
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
-	"github.com/google/osv-scalibr/testing/internal/errormatcher"
-	"github.com/google/osv-scalibr/testing/internal/pkgmatcher"
+	"github.com/google/osv-scalibr/testing/internal/inventorysorter"
 )
 
 // ScanInputMockConfig is used to quickly configure building a mock ScanInput
@@ -40,17 +42,39 @@ func ExtractionTester(t *testing.T, extractor filesystem.Extractor, tt TestTable
 	wrapper := generateScanInputMock(t, tt.InputConfig)
 	got, err := extractor.Extract(context.Background(), &wrapper.ScanInput)
 	wrapper.close()
-	if tt.WantErrIs != nil {
-		errormatcher.ExpectErrIs(t, err, tt.WantErrIs)
-	}
-	if tt.WantErrContaining != "" {
-		errormatcher.ExpectErrContaining(t, err, tt.WantErrContaining)
+
+	// Check if expected errors match
+	if tt.WantErrContaining == "" && tt.WantErrIs == nil {
+		if err != nil {
+			t.Errorf("Got error when expecting none: '%s'", err)
+			return got, err
+		}
+	} else {
+		if err == nil {
+			t.Errorf("Expected to get error, but did not.")
+			return got, err
+		}
 	}
 
-	if tt.WantErrContaining == "" && tt.WantErrIs == nil && err != nil {
-		t.Errorf("Got error when expecting none: '%s'", err)
-	} else {
-		pkgmatcher.ExpectPackages(t, got, tt.WantInventory)
+	if tt.WantErrIs != nil {
+		if !errors.Is(err, tt.WantErrIs) {
+			t.Errorf("Expected to get \"%v\" error but got \"%v\" instead", tt.WantErrIs, err)
+		}
+		return got, err
+	}
+
+	if tt.WantErrContaining != "" {
+		if !strings.Contains(err.Error(), tt.WantErrContaining) {
+			t.Errorf("Expected to get \"%s\" error, but got \"%v\"", tt.WantErrContaining, err)
+		}
+		return got, err
+	}
+
+	// Check if result match if no errors
+	inventorysorter.Sort(got)
+	inventorysorter.Sort(tt.WantInventory)
+	if !cmp.Equal(got, tt.WantInventory) {
+		t.Errorf("%s.Extract(%s) diff: \n%s", extractor.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
 	}
 
 	return got, err
