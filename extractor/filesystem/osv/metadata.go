@@ -22,7 +22,9 @@ type Metadata struct {
 	CompareAs string
 }
 
-// DepGroups provides access to the dependency groups property in some metadata objects
+// DepGroups provides access to the list of dependency groups an inventory item belongs to.
+// Dependency groups are used by many language package managers as a way to organize
+// dependencies (e.g. development dependencies will be in the "dev" group)
 type DepGroups interface {
 	DepGroups() []string
 }
