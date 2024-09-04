@@ -45,10 +45,10 @@ VERSION_CODENAME=bookworm
 ID=debian`
 
 func TestFileRequired(t *testing.T) {
-	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
+	// // supported OSes
+	// if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	// 	t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	// }
 
 	tests := []struct {
 		name             string
@@ -143,9 +143,9 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
+	// if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	// 	t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	// }
 
 	tests := []struct {
 		name             string
