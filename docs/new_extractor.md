@@ -30,25 +30,26 @@ requirements/ <- extractor
 ## What you need to implement
 
 They have to implement the
-[Extractor](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L38)
+[Extractor](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L45)
 interface.
 
-# See extractor/filesystem/extractor.go symbol Extractor
+# See extractor/filesystem/extractor.go symbol \bExtractor\b
 
 # See plugin/plugin.go symbol Plugin
 
 Here is a simplified version of how SCALIBR will call the filesystem extractor
 like this
-([actual code](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L108)):
+([actual code](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L99)):
 
-```
+```py
 for f in walk.files:
-  for e in extractors:
+  for e in filesystemExtractors:
     if e.FileRequired(f):
       fh = open(f)
       inventory.add(e.Extract(fh))
       fh.close()
-deduplicate(inventory)
+for e in standaloneExtractors:
+  inventory.add(e.Extract(fs))
 ```
 
 `FileRequired` should pre filter the files by their filename and fileMode.
@@ -60,7 +61,7 @@ will take care of this.
 ## Input
 
 SCALIBR will call `Extract` with
-[ScanInput](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L54),
+[ScanInput](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L55),
 which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
 # See extractor/filesystem/extractor.go symbol ScanInput
@@ -68,9 +69,9 @@ which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 ## Output
 
 The `Extract` method should return a list of
-[Inventory](https://github.com/google/osv-scalibr/blob/43da57c6/extractor/filesystem/extractor.go#L85).
+[Inventory](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
 
-# See extractor/filesystem/extractor.go symbol extractor.Inventory\b
+# See extractor/extractor.go symbol \bInventory\b
 
 You can return an empty list in case you don't find inventory in the file or
 multiple Inventory entries in case there are multiple in one file.
@@ -139,8 +140,8 @@ extractor as an example.
     select your extractor. For the `packagejson` extractor it would look like
     this:
 
-    ```
-    scalibr --extractors=javascript/packagejson ...
+    ```sh
+    $ scalibr --extractors=javascript/packagejson ...
     ```
 
     You can find more details on how to run scalibr in
