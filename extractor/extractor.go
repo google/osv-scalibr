@@ -60,7 +60,26 @@ type Inventory struct {
 	Extractor Extractor
 	// The additional data found in the package.
 	Metadata any
+
+	Annotations []Annotation
 }
+
+// Annotation are additional information about the inventory.
+type Annotation int64
+
+const (
+	// Unknown is the default value for the annotation.
+	Unknown Annotation = iota
+	// Transitional packages just point to other packages without having actual code in them. This
+	// happens for example when packages are renamed.
+	Transitional
+	// InsideOSPackage is set for packages that are found inside an OS package.
+	// TODO(b/364536788): Annotation for language packages inside OS packages.
+	InsideOSPackage
+	// InsideCacheDir is set for packages that are found inside a cache directory.
+	// TODO(b/364539671): Annotation for packages inside cache directories.
+	InsideCacheDir
+)
 
 // Ecosystem returns the Ecosystem of the inventory. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.

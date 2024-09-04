@@ -221,14 +221,15 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		return nil, err
 	}
 	inventoryProto := &spb.Inventory{
-		Name:       i.Name,
-		Version:    i.Version,
-		SourceCode: sourceCodeIdentifierToProto(i.SourceCode),
-		Purl:       purlToProto(p),
-		Cpes:       cpes,
-		Ecosystem:  ecosystem,
-		Locations:  i.Locations,
-		Extractor:  i.Extractor.Name(),
+		Name:        i.Name,
+		Version:     i.Version,
+		SourceCode:  sourceCodeIdentifierToProto(i.SourceCode),
+		Purl:        purlToProto(p),
+		Cpes:        cpes,
+		Ecosystem:   ecosystem,
+		Locations:   i.Locations,
+		Extractor:   i.Extractor.Name(),
+		Annotations: annotationsToProto(i.Annotations),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
 	return inventoryProto, nil
@@ -407,6 +408,32 @@ func purlToProto(p *purl.PackageURL) *spb.Purl {
 		Qualifiers: qualifiersToProto(p.Qualifiers),
 		Subpath:    p.Subpath,
 	}
+}
+
+func annotationsToProto(as []extractor.Annotation) []spb.Inventory_AnnotationEnum {
+	if as == nil {
+		return nil
+	}
+	ps := []spb.Inventory_AnnotationEnum{}
+	for _, a := range as {
+		ps = append(ps, annotationToProto(a))
+	}
+	return ps
+}
+
+func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
+	var e spb.Inventory_AnnotationEnum
+	switch s {
+	case extractor.Transitional:
+		e = spb.Inventory_TRANSITIONAL
+	case extractor.InsideOSPackage:
+		e = spb.Inventory_INSIDE_OS_PACKAGE
+	case extractor.InsideCacheDir:
+		e = spb.Inventory_INSIDE_CACHE_DIR
+	default:
+		e = spb.Inventory_UNSPECIFIED
+	}
+	return e
 }
 
 func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceCodeIdentifier {

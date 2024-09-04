@@ -99,6 +99,14 @@ message Inventory {
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
   }
+
+  repeated AnnotationEnum annotations = 28;
+  enum AnnotationEnum {
+    UNSPECIFIED = 0;
+    TRANSITIONAL = 1;
+    INSIDE_OS_PACKAGE = 2;
+    INSIDE_CACHE_DIR = 3;
+  }
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
