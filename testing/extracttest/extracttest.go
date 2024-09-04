@@ -15,7 +15,9 @@ import (
 	"github.com/google/osv-scalibr/testing/internal/pkgmatcher"
 )
 
+// ScanInputMockConfig is used to quickly configure building a mock ScanInput
 type ScanInputMockConfig struct {
+	// Path of the file ScanInput will read, relative to the ScanRoot
 	Path string
 	// FakeScanRoot allows you to set a custom scanRoot, can be relative or absolute,
 	// and will be translated to an absolute path
