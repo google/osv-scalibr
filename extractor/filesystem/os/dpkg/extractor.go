@@ -175,6 +175,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				// so return only after it's been parsed.
 				eof = true
 			} else {
+				if strings.Contains(input.Path, "status.d") {
+					log.Warnf("Failed to read MIME header from %q: %v", input.Path, err)
+					return []*extractor.Inventory{}, nil
+				}
 				return pkgs, err
 			}
 		}

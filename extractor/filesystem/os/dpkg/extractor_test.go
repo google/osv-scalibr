@@ -640,6 +640,13 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name:             "status.d file without Status field set should work",
+			path:             "testdata/status.d/foo.md5sums",
+			osrelease:        DebianBookworm,
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name:      "transitional packages should be annotated",
 			path:      "testdata/transitional",
 			osrelease: DebianBookworm,
