@@ -175,6 +175,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				// so return only after it's been parsed.
 				eof = true
 			} else {
+				if strings.Contains(input.Path, "status.d") {
+					log.Warnf("Failed to read MIME header from %q: %v", input.Path, err)
+					return []*extractor.Inventory{}, nil
+				}
 				return pkgs, err
 			}
 		}
@@ -203,8 +207,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			}
 			continue
 		}
-		maintainer := h.Get("Maintainer")
-		arch := h.Get("Architecture")
+
+		var annotations []extractor.Annotation
+		if strings.Contains(strings.ToLower(h.Get("Description")), "transitional package") {
+			annotations = append(annotations, extractor.Transitional)
+		}
 
 		i := &extractor.Inventory{
 			Name:    pkgName,
@@ -216,10 +223,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				OSID:              m["ID"],
 				OSVersionCodename: m["VERSION_CODENAME"],
 				OSVersionID:       m["VERSION_ID"],
-				Maintainer:        maintainer,
-				Architecture:      arch,
+				Maintainer:        h.Get("Maintainer"),
+				Architecture:      h.Get("Architecture"),
 			},
-			Locations: []string{input.Path},
+			Locations:   []string{input.Path},
+			Annotations: annotations,
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))
 		if err != nil {

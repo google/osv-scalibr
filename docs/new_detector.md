@@ -4,7 +4,7 @@ Detectors are plugins that SCALIBR uses to detect security findings such as
 vulnerabilities on the scanned artifact. They all implement the `Detector`
 interface and have read access to all files on the filesystem through it.
 
-# See detector/detector.go symbol Detector
+# See detector/detector.go symbol \bDetector\b
 
 # See plugin/plugin.go symbol Plugin
 
@@ -80,7 +80,7 @@ software found, or exit early if none are installed. For an example use case see
 ## Output format
 
 Detectors return their vulnerability findings in the
-[`Finding`](https://github.com/google/osv-scalibr/blob/43da57c6/detector/detector.go#46)
+[`Finding`](https://github.com/google/osv-scalibr/blob/28397d99/detector/detector.go#L47)
 struct. See the comments in the `Finding` struct and
 [existing Detector implementations](/detector/govulncheck/binary/detector.go)
 for guidance on how to fill it out. Keep in mind that findings are uniquely

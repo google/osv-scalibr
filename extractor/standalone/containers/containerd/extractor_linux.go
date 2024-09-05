@@ -262,12 +262,13 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	// platforms, path is either an absolute path or a relative path to the bundle. examples as below:
 	// "/run/containerd/io.containerd.runtime.v2.task/default/nginx-test/rootfs" or "rootfs".
 	rootfs := ""
-	if filepath.IsAbs(spec.Root.Path) {
+	switch {
+	case filepath.IsAbs(spec.Root.Path):
 		rootfs = spec.Root.Path
-	} else if spec.Root.Path != "" {
+	case spec.Root.Path != "":
 		log.Infof("Rootfs is a relative path for a container: %v, concatenating rootfs path prefix", task.ID)
 		rootfs = filepath.Join(defaultAbsoluteToBundlePath, namespace, task.ID, spec.Root.Path)
-	} else {
+	case spec.Root.Path == "":
 		log.Infof("Rootfs is empty for a container: %v, using default rootfs path prefix", task.ID)
 		rootfs = filepath.Join(defaultAbsoluteToBundlePath, namespace, task.ID, "rootfs")
 	}

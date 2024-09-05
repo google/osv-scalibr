@@ -167,6 +167,21 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: dpkg.New(dpkg.DefaultConfig()),
 	}
+	purlDPKGAnnotationInventory := &extractor.Inventory{
+		Name:    "software",
+		Version: "1.0.0",
+		Metadata: &dpkg.Metadata{
+			PackageName:       "software",
+			PackageVersion:    "1.0.0",
+			OSID:              "debian",
+			OSVersionCodename: "jammy",
+			Maintainer:        "maintainer",
+			Architecture:      "amd64",
+		},
+		Locations:   []string{"/file1"},
+		Extractor:   dpkg.New(dpkg.DefaultConfig()),
+		Annotations: []extractor.Annotation{extractor.Transitional},
+	}
 	purlPythonInventory := &extractor.Inventory{
 		Name:      "software",
 		Version:   "1.0.0",
@@ -184,6 +199,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: requirements.Extractor{},
 		Metadata: &requirements.Metadata{
 			HashCheckingModeValues: []string{"sha256:123"},
+			VersionComparator:      ">=",
 		},
 	}
 
@@ -234,6 +250,35 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/dpkg",
 	}
+	purlDPKGAnnotationInventoryProto := &spb.Inventory{
+		Name:    "software",
+		Version: "1.0.0",
+		Purl: &spb.Purl{
+			Purl:      "pkg:deb/debian/software@1.0.0?arch=amd64&distro=jammy",
+			Type:      purl.TypeDebian,
+			Namespace: "debian",
+			Name:      "software",
+			Version:   "1.0.0",
+			Qualifiers: []*spb.Qualifier{
+				&spb.Qualifier{Key: "arch", Value: "amd64"},
+				&spb.Qualifier{Key: "distro", Value: "jammy"},
+			},
+		},
+		Ecosystem: "Debian",
+		Metadata: &spb.Inventory_DpkgMetadata{
+			DpkgMetadata: &spb.DPKGPackageMetadata{
+				PackageName:       "software",
+				PackageVersion:    "1.0.0",
+				OsId:              "debian",
+				OsVersionCodename: "jammy",
+				Maintainer:        "maintainer",
+				Architecture:      "amd64",
+			},
+		},
+		Locations:   []string{"/file1"},
+		Extractor:   "os/dpkg",
+		Annotations: []spb.Inventory_AnnotationEnum{spb.Inventory_TRANSITIONAL},
+	}
 	purlPythonInventoryProto := &spb.Inventory{
 		Name:    "software",
 		Version: "1.0.0",
@@ -268,6 +313,7 @@ func TestScanResultToProto(t *testing.T) {
 		Metadata: &spb.Inventory_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: []string{"sha256:123"},
+				VersionComparator:      ">=",
 			},
 		},
 	}
@@ -452,7 +498,14 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, pythonRequirementsInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{
+					purlDPKGInventory,
+					purlDPKGAnnotationInventory,
+					purlPythonInventory,
+					pythonRequirementsInventory,
+					purlJavascriptInventory,
+					cpeInventory,
+				},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -495,7 +548,14 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, pythonRequirementsInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
+				Inventories: []*spb.Inventory{
+					purlDPKGInventoryProto,
+					purlDPKGAnnotationInventoryProto,
+					purlPythonInventoryProto,
+					pythonRequirementsInventoryProto,
+					purlJavascriptInventoryProto,
+					cpeInventoryProto,
+				},
 				Findings: []*spb.Finding{
 					&spb.Finding{
 						Adv: &spb.Advisory{

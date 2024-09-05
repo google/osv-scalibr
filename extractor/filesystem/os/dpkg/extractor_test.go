@@ -639,6 +639,38 @@ func TestExtract(t *testing.T) {
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
+		{
+			name:             "status.d file without Status field set should work",
+			path:             "testdata/status.d/foo.md5sums",
+			osrelease:        DebianBookworm,
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "transitional packages should be annotated",
+			path:      "testdata/transitional",
+			osrelease: DebianBookworm,
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "iceweasel",
+					Version: "78.13.0esr-1~deb10u1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "iceweasel",
+						Status:            "install ok installed",
+						PackageVersion:    "78.13.0esr-1~deb10u1",
+						SourceName:        "firefox-esr",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+						Maintainer:        "Maintainers of Mozilla-related packages <team+pkg-mozilla@tracker.debian.org>",
+						Architecture:      "all",
+					},
+					Locations:   []string{"testdata/transitional"},
+					Annotations: []extractor.Annotation{extractor.Transitional},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 	}
 
 	for _, tt := range tests {

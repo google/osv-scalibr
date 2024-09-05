@@ -18,6 +18,7 @@ package requirements
 import (
 	"bufio"
 	"context"
+	"io"
 	"io/fs"
 	"path/filepath"
 	"regexp"
@@ -25,6 +26,8 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -104,7 +107,11 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from requirements files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	// File paths with inventories already found in this extraction.
+	// We store these to remove duplicates in diamond depednency cases and prevent
+	// infinite loops in misconfigured lockfiles with cyclical deps.
+	var found = map[string]struct{}{}
+	inventory, err := e.extractFromPath(ctx, input.Reader, input.Path, input.FS, found)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -119,9 +126,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path string, fs scalibrfs.FS, found map[string]struct{}) ([]*extractor.Inventory, error) {
+	// Prevent infinite loop on dep cycles.
+	if _, ok := found[path]; ok {
+		return nil, nil
+	}
+	found[path] = struct{}{}
+
 	inventory := []*extractor.Inventory{}
-	s := bufio.NewScanner(input.Reader)
+	s := bufio.NewScanner(reader)
 	carry := ""
 	for s.Scan() {
 		l := carry + s.Text()
@@ -151,21 +164,38 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
+		// Parse referenced requirements.txt files as well.
+		if strings.HasPrefix(l, "-r") {
+			p := strings.TrimPrefix(l, "-r")
+			// Path is relative to the current requirement file's dir.
+			p = filepath.Join(filepath.Dir(path), p)
+			r, err := fs.Open(filepath.ToSlash(p))
+			if err != nil {
+				log.Warnf("Open(%s): %w", p, err)
+				continue
+			}
+			invs, err := e.extractFromPath(ctx, r, p, fs, found)
+			if err != nil {
+				log.Warnf("extractFromPath(%s): %w", p, err)
+				continue
+			}
+			for _, i := range invs {
+				// Note the path through which we refer to this requirements.txt file.
+				i.Locations[0] = path + ":" + filepath.ToSlash(i.Locations[0])
+				// Also note original file as an OSV dependency group.
+				inventory = append(inventory, i)
+			}
+			continue
+		}
+
 		if strings.HasPrefix("-", l) {
-			// Global options are not implemented
+			// Global options other than -r are not implemented.
 			// https://pip.pypa.io/en/stable/reference/requirements-file-format/#global-options
-			// The -r might be the most interesting, as it includes other requirements files.
 			// TODO(b/286213823): Implement metric
 			continue
 		}
 
-		if isVersionRanges(l) {
-			// Ignore version ranges
-			// TODO(b/286213823): Implement metric
-			continue
-		}
-
-		name, version := getPinnedVersion(l)
+		name, version, comp := getLowestVersion(l)
 		if name == "" || version == "" {
 			// Either empty
 			continue
@@ -175,15 +205,14 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		var metadata any
-		if len(hashOptions) > 0 {
-			metadata = &Metadata{HashCheckingModeValues: hashOptions}
-		}
 		inventory = append(inventory, &extractor.Inventory{
 			Name:      name,
 			Version:   version,
-			Locations: []string{input.Path},
-			Metadata:  metadata,
+			Locations: []string{path},
+			Metadata: &Metadata{
+				HashCheckingModeValues: hashOptions,
+				VersionComparator:      comp,
+			},
 		})
 	}
 
@@ -195,23 +224,33 @@ func removeComments(s string) string {
 	return regexp.MustCompile(`(^|\s+)#.*$`).ReplaceAllString(s, "")
 }
 
-func getPinnedVersion(s string) (name, version string) {
+func getLowestVersion(s string) (name, version, comparator string) {
+	// We currently don't handle:
+	// * Version wildcards (*)
+	// * Less than (<)
+	// * Multiple constraints (,)
+	// TODO(b/286213823): Implement metric
+	if regexp.MustCompile(`\*|<|,`).FindString(s) != "" {
+		return "", "", ""
+	}
+
 	t := []string{}
-	if strings.Contains(s, "===") {
-		t = strings.SplitN(s, "===", 2)
-	} else if strings.Contains(s, "==") {
-		t = strings.SplitN(s, "==", 2)
+	separators := []string{"===", "==", ">=", "~="}
+	comp := ""
+	for _, sep := range separators {
+		if strings.Contains(s, sep) {
+			t = strings.SplitN(s, sep, 2)
+			comp = sep
+			break
+		}
 	}
 
 	if len(t) != 2 {
-		return "", ""
+		return "", "", ""
 	}
 
-	return t[0], t[1]
-}
-
-func isVersionRanges(s string) bool {
-	return regexp.MustCompile(`\*|>|<|,`).FindString(s) != ""
+	// For all other separators the lowest version is the one we found.
+	return t[0], t[1], comp
 }
 
 func removeWhiteSpaces(s string) string {

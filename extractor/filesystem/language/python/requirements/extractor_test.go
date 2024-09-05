@@ -152,12 +152,20 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{
 				{Name: "nltk", Version: "3.2.2"},
 				{Name: "tabulate", Version: "0.7.7"},
-				// not newspaper3k, because it's a version range
+				{
+					Name:     "newspaper3k",
+					Version:  "0.2.2",
+					Metadata: &requirements.Metadata{VersionComparator: ">="},
+				},
 				// not asdf, since it has a version glob
 				{Name: "qwerty", Version: "0.1"},
 				{Name: "hy-phen", Version: "1.2"},
 				{Name: "under_score", Version: "1.3"},
-				{Name: "yolo", Version: "1.0"},
+				{
+					Name:     "yolo",
+					Version:  "1.0",
+					Metadata: &requirements.Metadata{VersionComparator: "==="},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -181,8 +189,24 @@ func TestExtract(t *testing.T) {
 				// not pytest-cov, because no version
 				// not beautifulsoup4, because no version
 				{Name: "docopt", Version: "0.6.1"},
+				{
+					Name:     "keyring",
+					Version:  "4.1.1",
+					Metadata: &requirements.Metadata{VersionComparator: ">="},
+				},
+				// not coverage, because it uses != for version pinning.
+				{
+					Name:     "Mopidy-Dirble",
+					Version:  "1.1",
+					Metadata: &requirements.Metadata{VersionComparator: "~="},
+				},
 				// not requests, because it has extras
 				// not urllib3, because it's pinned to a zip file
+				{
+					Name:      "transitive-req",
+					Version:   "1",
+					Locations: []string{"testdata/example.txt:testdata/other-requirements.txt"},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -312,7 +336,18 @@ func TestExtract(t *testing.T) {
 	// fill Location and Extractor
 	for _, t := range tests {
 		for _, i := range t.wantInventory {
-			i.Locations = []string{t.path}
+			if i.Locations == nil {
+				i.Locations = []string{t.path}
+			}
+			if i.Metadata == nil {
+				i.Metadata = &requirements.Metadata{}
+			}
+			if i.Metadata.(*requirements.Metadata).HashCheckingModeValues == nil {
+				i.Metadata.(*requirements.Metadata).HashCheckingModeValues = []string{}
+			}
+			if i.Metadata.(*requirements.Metadata).VersionComparator == "" {
+				i.Metadata.(*requirements.Metadata).VersionComparator = "=="
+			}
 		}
 	}
 
