@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -98,11 +99,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    i.Name,
-		Version: i.Version,
-	}, nil
+	return pypipurl.MakePackageURL(i), nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
