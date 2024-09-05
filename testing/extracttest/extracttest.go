@@ -3,13 +3,14 @@ package extracttest
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -27,12 +28,28 @@ type ScanInputMockConfig struct {
 	FakeFileInfo *fakefs.FakeFileInfo
 }
 
+// TestTableEntry is a entry to pass to ExtractionTester
 type TestTableEntry struct {
-	Name              string
-	InputConfig       ScanInputMockConfig
-	WantInventory     []*extractor.Inventory
-	WantErrIs         error
-	WantErrContaining string
+	Name          string
+	InputConfig   ScanInputMockConfig
+	WantInventory []*extractor.Inventory
+	WantErr       error
+}
+
+type String = string
+
+// ContainsErrStr is an error that matches other errors that contains
+// `str` in their error string.
+type ContainsErrStr struct {
+	Str String
+}
+
+// Error returns the error string
+func (e ContainsErrStr) Error() string { return fmt.Sprintf("error contains: '%s'", e.Str) }
+
+// Is checks whether the input error contains the string in ContainsErrStr
+func (e ContainsErrStr) Is(err error) bool {
+	return strings.Contains(err.Error(), e.Str)
 }
 
 // ExtractionTester tests common properties of a extractor, and returns the raw values from running extract
@@ -43,30 +60,13 @@ func ExtractionTester(t *testing.T, extractor filesystem.Extractor, tt TestTable
 	got, err := extractor.Extract(context.Background(), &wrapper.ScanInput)
 	wrapper.close()
 
-	// Check if expected errors match
-	if tt.WantErrContaining == "" && tt.WantErrIs == nil {
-		if err != nil {
-			t.Errorf("Got error when expecting none: '%s'", err)
-			return got, err
-		}
-	} else {
-		if err == nil {
-			t.Errorf("Expected to get error, but did not.")
-			return got, err
-		}
-	}
-
-	if tt.WantErrIs != nil {
-		if !errors.Is(err, tt.WantErrIs) {
-			t.Errorf("Expected to get \"%v\" error but got \"%v\" instead", tt.WantErrIs, err)
-		}
-		return got, err
-	}
-
-	if tt.WantErrContaining != "" {
-		if !strings.Contains(err.Error(), tt.WantErrContaining) {
-			t.Errorf("Expected to get \"%s\" error, but got \"%v\"", tt.WantErrContaining, err)
-		}
+	if !cmp.Equal(err, tt.WantErr, cmpopts.EquateErrors()) {
+		t.Errorf(
+			"%s.Extract(%s) error diff:\n%s",
+			extractor.Name(),
+			tt.InputConfig.Path,
+			cmp.Diff(err, tt.WantErr, cmpopts.EquateErrors()),
+		)
 		return got, err
 	}
 
@@ -74,7 +74,7 @@ func ExtractionTester(t *testing.T, extractor filesystem.Extractor, tt TestTable
 	inventorysorter.Sort(got)
 	inventorysorter.Sort(tt.WantInventory)
 	if !cmp.Equal(got, tt.WantInventory) {
-		t.Errorf("%s.Extract(%s) diff: \n%s", extractor.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
+		t.Errorf("%s.Extract(%s) diff:\n%s", extractor.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
 	}
 
 	return got, err
