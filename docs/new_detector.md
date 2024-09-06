@@ -4,9 +4,9 @@ Detectors are plugins that SCALIBR uses to detect security findings such as
 vulnerabilities on the scanned artifact. They all implement the `Detector`
 interface and have read access to all files on the filesystem through it.
 
-# See detector/detector.go symbol \bDetector\b
+<!--  See detector/detector.go symbol \bDetector\b -->
 
-# See plugin/plugin.go symbol Plugin
+<!--  See plugin/plugin.go symbol Plugin -->
 
 ## Steps for writing a new detector
 

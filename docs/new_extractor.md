@@ -33,9 +33,9 @@ They have to implement the
 [Extractor](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L45)
 interface.
 
-# See extractor/filesystem/extractor.go symbol \bExtractor\b
+<!--  See extractor/filesystem/extractor.go symbol \bExtractor\b -->
 
-# See plugin/plugin.go symbol Plugin
+<!--  See plugin/plugin.go symbol Plugin -->
 
 Here is a simplified version of how SCALIBR will call the filesystem extractor
 like this
@@ -64,14 +64,14 @@ SCALIBR will call `Extract` with
 [ScanInput](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L55),
 which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
-# See extractor/filesystem/extractor.go symbol ScanInput
+<!--  See extractor/filesystem/extractor.go symbol ScanInput -->
 
 ## Output
 
 The `Extract` method should return a list of
 [Inventory](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
 
-# See extractor/extractor.go symbol \bInventory\b
+<!--  See extractor/extractor.go symbol \bInventory\b -->
 
 You can return an empty list in case you don't find inventory in the file or
 multiple Inventory entries in case there are multiple in one file.
