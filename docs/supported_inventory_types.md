@@ -12,6 +12,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 * SNAP
 * Flatpak
+* Homebrew (used by OS X)
 
 ## Language packages
 
