@@ -104,6 +104,20 @@ var (
 		// Containers,
 	)
 
+	// Default extractors that are recommended to be enabled for Linux.
+	AllLinux []filesystem.Extractor = concat(
+		Java,
+		Javascript,
+		Python,
+		Go,
+		Ruby,
+		Dotnet,
+		SBOM,
+		// Default OS and Other OS
+		OS,
+		// Containers,
+	)
+
 	// Untested extractors are OSV extractors without tests.
 	// TODO(b/307735923): Add tests for these and move them into All.
 	Untested []filesystem.Extractor = []filesystem.Extractor{
