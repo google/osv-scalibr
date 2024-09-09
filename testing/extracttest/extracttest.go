@@ -36,12 +36,10 @@ type TestTableEntry struct {
 	WantErr       error
 }
 
-type String = string
-
 // ContainsErrStr is an error that matches other errors that contains
 // `str` in their error string.
 type ContainsErrStr struct {
-	Str String
+	Str string
 }
 
 // Error returns the error string
@@ -71,8 +69,8 @@ func ExtractionTester(t *testing.T, extractor filesystem.Extractor, tt TestTable
 	}
 
 	// Check if result match if no errors
-	inventorysorter.Sort(got)
-	inventorysorter.Sort(tt.WantInventory)
+	inventorysorter.Sort(got, extractor)
+	inventorysorter.Sort(tt.WantInventory, extractor)
 	if !cmp.Equal(got, tt.WantInventory) {
 		t.Errorf("%s.Extract(%s) diff:\n%s", extractor.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
 	}
