@@ -1,4 +1,5 @@
 // Package pypipurl converts an inventory to a PyPI type PackageURL.
+// TODO(#173): Replace with purl.New() which will contain mapping of all ecosystems
 package pypipurl
 
 import (
