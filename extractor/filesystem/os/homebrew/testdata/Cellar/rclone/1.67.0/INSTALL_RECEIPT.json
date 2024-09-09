@@ -1,0 +1,46 @@
+{
+  "homebrew_version": "4.3.5-104-g540c9f9",
+  "used_options": [
+
+  ],
+  "unused_options": [
+
+  ],
+  "built_as_bottle": true,
+  "poured_from_bottle": true,
+  "loaded_from_api": true,
+  "installed_as_dependency": false,
+  "installed_on_request": true,
+  "changed_files": [
+    "share/man/man1/rclone.1"
+  ],
+  "time": 1722991679,
+  "source_modified_time": 1718377491,
+  "compiler": "clang",
+  "aliases": [
+
+  ],
+  "runtime_dependencies": [
+
+  ],
+  "source": {
+    "spec": "stable",
+    "versions": {
+      "stable": "1.67.0",
+      "head": null,
+      "version_scheme": 0
+    },
+    "path": "/Users/emat/Library/Caches/Homebrew/api/formula.jws.json",
+    "tap_git_head": null,
+    "tap": "homebrew/core"
+  },
+  "arch": "x86_64",
+  "built_on": {
+    "os": "Macintosh",
+    "os_version": "macOS 14.4",
+    "cpu_family": "penryn",
+    "xcode": "15.3",
+    "clt": "15.3.0.0.1.1708646388",
+    "preferred_perl": "5.34"
+  }
+}

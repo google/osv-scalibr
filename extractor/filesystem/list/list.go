@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -76,8 +77,14 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
-		flatpak.New(flatpak.DefaultConfig()),
-	}
+		flatpak.New(flatpak.DefaultConfig())}
+
+	ALLOS []filesystem.Extractor = concat(
+		// Homebrew for MacOS
+		[]filesystem.Extractor{homebrew.Extractor{}},
+		// Default OS Extractors
+		OS,
+	)
 
 	// Collections of extractors.
 
@@ -92,7 +99,8 @@ var (
 		Ruby,
 		Dotnet,
 		SBOM,
-		OS,
+		// Default OS and Other OS
+		ALLOS,
 		// Containers,
 	)
 
