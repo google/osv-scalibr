@@ -1,0 +1,64 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package image provides functionality to scan a container image by layers for software
+// inventory.
+package image
+
+import (
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+)
+
+// Layer is a filesystem derived from a container layer that can be scanned for software inventory.
+// It also holds metadata about the container layer such as whether it is empty, its diffID, index,
+// and command.
+type Layer interface {
+	// FS outputs a filesystem that consist of the files found in the layer. This includes files that
+	// were added or modified. Whiteout files are also included in the filesystem if files or
+	// directories from previous layers were removed.
+	FS() scalibrfs.FS
+	// IsEmpty signifies whether the layer is empty. This should correspond with an empty filesystem
+	// produced by the FS method.
+	IsEmpty() bool
+	// DiffID is the hash of the uncompressed layer. Will be an empty string if the layer is empty.
+	DiffID() string
+	// Command is the specific command that produced the layer.
+	Command() string
+}
+
+// ChainLayer is a filesystem derived from container layers that can be scanned for software
+// inventory. It holds all the files found in layer 0, layer 1, ..., layer n (where n is the layer
+// index). It also holds metadata about the latest container layer such as whether it is empty, its
+// diffID, command, and index.
+type ChainLayer interface {
+	// FS output an filesystem that consist of the files found in the layer n and all previous layers
+	// (layer 0, layer 1, ..., layer n).
+	FS() scalibrfs.FS
+	// Index is the index of the latest layer in the layer chain.
+	Index() int
+	// Layer is the latest layer in the layer chain.
+	Layer() Layer
+}
+
+// Image is a container image that can be scanned for software inventory. It is composed of a set of
+// layers that can be scanned for software inventory.
+type Image interface {
+	Layer(index int) (Layer, error)
+	Layers() ([]Layer, error)
+	ChainLayer(index int) (ChainLayer, error)
+	ChainLayers() ([]ChainLayer, error)
+	ConfigFile() *v1.ConfigFile
+	FileHistory(filepath string) History
+}
