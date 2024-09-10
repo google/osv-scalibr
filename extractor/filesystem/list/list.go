@@ -43,6 +43,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
@@ -64,7 +65,7 @@ var (
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig())}
 	// SBOM extractors.
-	SBOM []filesystem.Extractor = []filesystem.Extractor{&spdx.Extractor{}}
+	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
 	Dotnet []filesystem.Extractor = []filesystem.Extractor{packageslockjson.New(packageslockjson.DefaultConfig())}
 	// Containers extractors.

@@ -98,6 +98,7 @@ message Inventory {
     FlatpakPackageMetadata flatpak_metadata = 24;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
+    CDXPackageMetadata cdx_metadata = 29;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -293,6 +294,12 @@ message FlatpakPackageMetadata {
 
 // The additional data for packages extracted from SPDX files.
 message SPDXPackageMetadata {
+  Purl purl = 1;
+  repeated string cpes = 2;
+}
+
+// The additional data for packages extracted from CDX files.
+message CDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
 }

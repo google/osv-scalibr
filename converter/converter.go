@@ -224,7 +224,7 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 			Name:    (*i).Name,
 			Version: (*i).Version,
 		}
-		if p, err := ToPURL(i); err == nil {
+		if p, err := ToPURL(i); err == nil && p != nil {
 			pkg.PackageURL = p.String()
 		}
 		if cpes, err := ToCPEs(i); err == nil && len(cpes) > 0 {
