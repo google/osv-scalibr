@@ -2,10 +2,12 @@
 package extracttest
 
 import (
+	ordercmp "cmp"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
-	"github.com/google/osv-scalibr/testing/internal/inventorysorter"
 )
 
 // ScanInputMockConfig is used to quickly configure building a mock ScanInput
@@ -51,28 +52,35 @@ func (e ContainsErrStr) Is(err error) bool {
 }
 
 // ExtractionTester tests common properties of a extractor, and returns the raw values from running extract
-func ExtractionTester(t *testing.T, extractor filesystem.Extractor, tt TestTableEntry) ([]*extractor.Inventory, error) {
+func ExtractionTester(t *testing.T, extr filesystem.Extractor, tt TestTableEntry) ([]*extractor.Inventory, error) {
 	t.Helper()
 
 	wrapper := generateScanInputMock(t, tt.InputConfig)
-	got, err := extractor.Extract(context.Background(), &wrapper.ScanInput)
+	got, err := extr.Extract(context.Background(), &wrapper.ScanInput)
 	wrapper.close()
 
 	if !cmp.Equal(err, tt.WantErr, cmpopts.EquateErrors()) {
 		t.Errorf(
 			"%s.Extract(%s) error diff:\n%s",
-			extractor.Name(),
+			extr.Name(),
 			tt.InputConfig.Path,
 			cmp.Diff(err, tt.WantErr, cmpopts.EquateErrors()),
 		)
 		return got, err
 	}
 
-	// Check if result match if no errors
-	inventorysorter.Sort(got, extractor)
-	inventorysorter.Sort(tt.WantInventory, extractor)
+	// Sort the results before comparing to ensure same order.
+	sortFunc := func(a, b *extractor.Inventory) int {
+		purlA, _ := extr.ToPURL(a)
+		purlB, _ := extr.ToPURL(b)
+
+		return ordercmp.Compare(purlA.String(), purlB.String())
+	}
+	slices.SortFunc(got, sortFunc)
+	slices.SortFunc(tt.WantInventory, sortFunc)
+
 	if !cmp.Equal(got, tt.WantInventory) {
-		t.Errorf("%s.Extract(%s) diff:\n%s", extractor.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
+		t.Errorf("%s.Extract(%s) diff:\n%s", extr.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
 	}
 
 	return got, err
