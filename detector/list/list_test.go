@@ -20,7 +20,27 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	dl "github.com/google/osv-scalibr/detector/list"
+	"github.com/google/osv-scalibr/plugin"
 )
+
+func TestFromCapabilities(t *testing.T) {
+	found := false
+	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
+	want := "cis/generic_linux/etcpasswdpermissions" // Doesn't need direct FS access.
+	dontWant := "govulncheck/binary"                 // Needs direct FS access.
+	for _, ex := range dl.FromCapabilities(capab) {
+		if ex.Name() == want {
+			found = true
+			break
+		}
+		if ex.Name() == dontWant {
+			t.Errorf("dl.FromCapabilities(%v): %q included in results, shouldn't be", capab, dontWant)
+		}
+	}
+	if !found {
+		t.Errorf("dl.FromCapabilities(%v): %q not included in results, should be", capab, want)
+	}
+}
 
 func TestDetectorsFromNames(t *testing.T) {
 	testCases := []struct {

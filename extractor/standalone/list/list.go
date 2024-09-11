@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 )
 
 var (
@@ -79,6 +80,19 @@ func register(d standalone.Extractor) {
 	}
 
 	extractorNames[strings.ToLower(d.Name())] = []standalone.Extractor{d}
+}
+
+// FromCapabilities returns all extractors that can run under the specified
+// capabilities (OS, direct filesystem access, network access, etc.) of the
+// scanning environment.
+func FromCapabilities(capabs *plugin.Capabilities) []standalone.Extractor {
+	result := []standalone.Extractor{}
+	for _, ex := range All {
+		if err := plugin.ValidateRequirements(ex, capabs); err == nil {
+			result = append(result, ex)
+		}
+	}
+	return result
 }
 
 // ExtractorFromName returns a single extractor based on its exact name.

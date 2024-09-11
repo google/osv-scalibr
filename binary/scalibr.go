@@ -48,6 +48,7 @@ func parseFlags() *cli.Flags {
 	cdxAuthors := flag.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
 	verbose := flag.Bool("verbose", false, "Enable this to print debug logs")
 	explicitExtractors := flag.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
+	filterByCapabilities := flag.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
 	windowsAllDrives := flag.Bool("windows-all-drives", false, "Scan all drives on Windows")
 
 	flag.Parse()
@@ -71,6 +72,7 @@ func parseFlags() *cli.Flags {
 		CDXAuthors:            *cdxAuthors,
 		Verbose:               *verbose,
 		ExplicitExtractors:    *explicitExtractors,
+		FilterByCapabilities:  *filterByCapabilities,
 		WindowsAllDrives:      *windowsAllDrives,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {

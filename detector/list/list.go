@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 
 )
 
@@ -74,6 +75,19 @@ func register(d detector.Detector) {
 		os.Exit(1)
 	}
 	detectorNames[strings.ToLower(d.Name())] = []detector.Detector{d}
+}
+
+// FromCapabilities returns all detectors that can run under the specified
+// capabilities (OS, direct filesystem access, network access, etc.) of the
+// scanning environment.
+func FromCapabilities(capabs *plugin.Capabilities) []detector.Detector {
+	result := []detector.Detector{}
+	for _, det := range All {
+		if err := plugin.ValidateRequirements(det, capabs); err == nil {
+			result = append(result, det)
+		}
+	}
+	return result
 }
 
 // DetectorsFromNames returns a deduplicated list of detectors from a list of names.

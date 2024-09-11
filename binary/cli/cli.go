@@ -81,6 +81,7 @@ type Flags struct {
 	CDXAuthors            string
 	Verbose               bool
 	ExplicitExtractors    bool
+	FilterByCapabilities  bool
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
 }
@@ -222,6 +223,10 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	capab := capabilities()
+	if f.FilterByCapabilities {
+		extractors, standaloneExtractors, detectors = filterByCapabilities(extractors, standaloneExtractors, detectors, capab)
+	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
 		skipDirRegex, err = regexp.Compile(f.SkipDirRegex)
@@ -246,7 +251,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
-		Capabilities:         capabilities(),
+		Capabilities:         capab,
 		FilesToExtract:       f.FilesToExtract,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
@@ -380,6 +385,33 @@ func capabilities() *plugin.Capabilities {
 		DirectFS:      true,
 		RunningSystem: true,
 	}
+}
+
+// Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors)
+// by removing all plugins that don't satisfy the specified capabilities.
+func filterByCapabilities(
+	f []filesystem.Extractor, s []standalone.Extractor,
+	d []detector.Detector, capab *plugin.Capabilities) (
+	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector) {
+	ff := make([]filesystem.Extractor, 0, len(f))
+	sf := make([]standalone.Extractor, 0, len(s))
+	df := make([]detector.Detector, 0, len(d))
+	for _, ex := range f {
+		if err := plugin.ValidateRequirements(ex, capab); err == nil {
+			ff = append(ff, ex)
+		}
+	}
+	for _, ex := range s {
+		if err := plugin.ValidateRequirements(ex, capab); err == nil {
+			sf = append(sf, ex)
+		}
+	}
+	for _, det := range d {
+		if err := plugin.ValidateRequirements(det, capab); err == nil {
+			df = append(df, det)
+		}
+	}
+	return ff, sf, df
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {

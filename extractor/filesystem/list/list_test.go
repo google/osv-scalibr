@@ -20,7 +20,27 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	"github.com/google/osv-scalibr/plugin"
 )
+
+func TestFromCapabilities(t *testing.T) {
+	found := false
+	capab := &plugin.Capabilities{OS: plugin.OSLinux}
+	want := "os/snap"         // For Linux
+	dontWant := "os/homebrew" // For Mac
+	for _, ex := range el.FromCapabilities(capab) {
+		if ex.Name() == want {
+			found = true
+			break
+		}
+		if ex.Name() == dontWant {
+			t.Errorf("el.FromCapabilities(%v): %q included in results, shouldn't be", capab, dontWant)
+		}
+	}
+	if !found {
+		t.Errorf("el.FromCapabilities(%v): %q not included in results, should be", capab, want)
+	}
+}
 
 func TestExtractorsFromNames(t *testing.T) {
 	testCases := []struct {

@@ -18,6 +18,7 @@ package list
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	// OSV extractors.
@@ -45,6 +46,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
 )
@@ -79,7 +81,7 @@ var (
 		snap.New(snap.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig())}
 
-	ALLOS []filesystem.Extractor = concat(
+	ALLOS []filesystem.Extractor = slices.Concat(
 		// Homebrew for MacOS
 		[]filesystem.Extractor{homebrew.Extractor{}},
 		// Default OS Extractors
@@ -89,9 +91,9 @@ var (
 	// Collections of extractors.
 
 	// Default extractors that are recommended to be enabled.
-	Default []filesystem.Extractor = concat(Java, Javascript, Python, Go, OS)
+	Default []filesystem.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR. These don't include the untested extractors which can be enabled manually.
-	All []filesystem.Extractor = concat(
+	All []filesystem.Extractor = slices.Concat(
 		Java,
 		Javascript,
 		Python,
@@ -158,6 +160,19 @@ func register(d filesystem.Extractor) {
 	extractorNames[strings.ToLower(d.Name())] = []filesystem.Extractor{d}
 }
 
+// FromCapabilities returns all extractors that can run under the specified
+// capabilities (OS, direct filesystem access, network access, etc.) of the
+// scanning environment.
+func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
+	result := []filesystem.Extractor{}
+	for _, ex := range slices.Concat(All, Untested) {
+		if err := plugin.ValidateRequirements(ex, capabs); err == nil {
+			result = append(result, ex)
+		}
+	}
+	return result
+}
+
 // ExtractorsFromNames returns a deduplicated list of extractors from a list of names.
 func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 	resultMap := make(map[string]filesystem.Extractor)
@@ -189,17 +204,4 @@ func ExtractorFromName(name string) (filesystem.Extractor, error) {
 		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
 	}
 	return es[0], nil
-}
-
-// Returns a new slice that concatenates the values of two or more slices without modifying them.
-func concat(exs ...[]filesystem.Extractor) []filesystem.Extractor {
-	length := 0
-	for _, e := range exs {
-		length += len(e)
-	}
-	result := make([]filesystem.Extractor, 0, length)
-	for _, e := range exs {
-		result = append(result, e...)
-	}
-	return result
 }
