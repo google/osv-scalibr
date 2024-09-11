@@ -59,9 +59,9 @@ func ExtractionTester(t *testing.T, extr filesystem.Extractor, tt TestTableEntry
 	got, err := extr.Extract(context.Background(), &wrapper.ScanInput)
 	wrapper.close()
 
-	if !cmp.Equal(err, tt.WantErr, cmpopts.EquateErrors()) {
+	if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 		t.Errorf(
-			"%s.Extract(%s) error diff:\n%s",
+			"%s.Extract(%q) returned unexpected error diff (-want +got):\n%s",
 			extr.Name(),
 			tt.InputConfig.Path,
 			cmp.Diff(err, tt.WantErr, cmpopts.EquateErrors()),
@@ -79,8 +79,8 @@ func ExtractionTester(t *testing.T, extr filesystem.Extractor, tt TestTableEntry
 	slices.SortFunc(got, sortFunc)
 	slices.SortFunc(tt.WantInventory, sortFunc)
 
-	if !cmp.Equal(got, tt.WantInventory) {
-		t.Errorf("%s.Extract(%s) diff:\n%s", extr.Name(), tt.InputConfig.Path, cmp.Diff(got, tt.WantInventory))
+	if diff := cmp.Diff(tt.WantInventory, got); diff != "" {
+		t.Errorf("%s.Extract(%q) returned unexpected diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 	}
 
 	return got, err

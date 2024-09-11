@@ -60,7 +60,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	packages := make([]*extractor.Inventory, 0, len(parsedLockFile.Packages))
 
 	for _, pkg := range parsedLockFile.Packages {
-		details := &extractor.Inventory{
+		inventory := &extractor.Inventory{
 			Name:      pkg.Name,
 			Version:   pkg.Version,
 			Locations: []string{input.Path},
@@ -81,17 +81,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			depGroups = append(depGroups, "optional")
 		}
 
-		details.Metadata = osv.DepGroupMetadata{
+		inventory.Metadata = osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
 		}
 
 		if pkg.Revision != "" {
-			details.SourceCode = &extractor.SourceCodeIdentifier{
+			inventory.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: pkg.Revision,
 			}
 		}
 
-		packages = append(packages, details)
+		packages = append(packages, inventory)
 	}
 
 	return packages, nil

@@ -61,7 +61,7 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 			e := pdmlock.Extractor{}
 			got := e.FileRequired(tt.inputPath, nil)
 			if got != tt.want {
-				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
+				t.Errorf("FileRequired(%q, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
 			}
 		})
 	}

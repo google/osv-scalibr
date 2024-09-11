@@ -2,9 +2,9 @@
 package pypipurl_test
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/purl"
@@ -86,8 +86,9 @@ func TestMakePackageURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := pypipurl.MakePackageURL(&tt.arg); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MakePackageURL() = %v, want %v", got, tt.want)
+			got := pypipurl.MakePackageURL(&tt.arg)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("MakePackageURL() returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
 	}

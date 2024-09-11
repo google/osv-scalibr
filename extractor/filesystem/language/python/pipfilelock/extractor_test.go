@@ -55,7 +55,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 			e := pipfilelock.Extractor{}
 			got := e.FileRequired(tt.inputPath, nil)
 			if got != tt.want {
-				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
+				t.Errorf("FileRequired(%q, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
 			}
 		})
 	}

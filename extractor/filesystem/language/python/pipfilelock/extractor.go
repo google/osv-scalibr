@@ -22,7 +22,7 @@ type pipenvPackage struct {
 	Version string `json:"version"`
 }
 
-type pipenvLock struct {
+type pipenvLockFile struct {
 	Packages    map[string]pipenvPackage `json:"default"`
 	PackagesDev map[string]pipenvPackage `json:"develop"`
 }
@@ -50,7 +50,7 @@ func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 
 // Extract extracts packages from Pipfile.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockfile *pipenvLock
+	var parsedLockfile *pipenvLockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 

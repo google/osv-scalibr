@@ -12,7 +12,7 @@ import (
 
 // MakePackageURL returns a package URL following the purl PyPI spec:
 // - Name is lowercased
-// - Replaces all runs of ` _ , - ` with -
+// - Replaces all runs of ` _ . - ` with -
 //
 // See: https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#pypi
 // And: https://peps.python.org/pep-0503/#normalized-names

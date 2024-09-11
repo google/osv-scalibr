@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -32,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	scalibr "github.com/google/osv-scalibr"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
 )
