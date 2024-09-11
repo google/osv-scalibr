@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Implementation-Title: spring-web
+Automatic-Module-Name: spring.web
+Implementation-Version: 5.3.26
+Created-By: 1.8.0_345 (Oracle Corporation)

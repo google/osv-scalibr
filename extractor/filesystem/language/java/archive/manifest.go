@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/groupid"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -56,9 +57,16 @@ func parseManifest(f *zip.File) (manifest, error) {
 		return manifest{}, fmt.Errorf("failed to read MIME header: %w", err)
 	}
 
+	artifactID := getArtifactID(h)
+	groupID := getGroupID(h)
+	// Some known packages have incorrect group IDs. Check if this is the case and update the group ID.
+	if newGroupID := groupid.FromArtifactID(artifactID); newGroupID != "" {
+		groupID = newGroupID
+	}
+
 	return manifest{
-		GroupID:    getGroupID(h),
-		ArtifactID: getArtifactID(h),
+		GroupID:    groupID,
+		ArtifactID: artifactID,
 		Version:    getVersion(h),
 	}, nil
 }

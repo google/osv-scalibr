@@ -461,6 +461,22 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
+			name:        "Test artifact ID that is mapped to a known group ID",
+			path:        filepath.FromSlash("testdata/known-group-id"),
+			contentPath: filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
+			want: []*extractor.Inventory{{
+				Name:    "spring-web",
+				Version: "5.3.26",
+				Metadata: &archive.Metadata{
+					ArtifactID: "spring-web",
+					GroupID:    "org.springframework",
+				},
+				Locations: []string{
+					filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
+				},
+			}},
+		},
+		{
 			name:        "Test combination of manifest and filename",
 			path:        filepath.FromSlash("testdata/ivy-2.4.0.jar"),
 			contentPath: filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
