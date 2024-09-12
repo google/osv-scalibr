@@ -17,7 +17,15 @@
 package image
 
 import (
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/osv-scalibr/artifact/image/require"
+	"github.com/google/osv-scalibr/artifact/image/unpack"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -61,4 +69,47 @@ type Image interface {
 	ChainLayers() ([]ChainLayer, error)
 	ConfigFile() *v1.ConfigFile
 	FileHistory(filepath string) History
+}
+
+// NewFromRemoteName pulls a remote container and creates a
+// SCALIBR filesystem for scanning it.
+func NewFromRemoteName(imageName string, auth remote.Option) (scalibrfs.FS, error) {
+	ref, err := name.NewDigest(strings.TrimPrefix(imageName, "https://"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse digest: %w", err)
+	}
+	descriptor, err := remote.Get(ref, auth)
+	if err != nil {
+		return nil, fmt.Errorf("couldn’t pull remote image %s: %v", ref, err)
+	}
+	image, err := descriptor.Image()
+	if err != nil {
+		return nil, fmt.Errorf("couldn’t parse image manifest %s: %v", ref, err)
+	}
+	return NewFromImage(image)
+}
+
+// NewFromImage creates a SCALIBR filesystem for scanning a container
+// from its image descriptor.
+func NewFromImage(image v1.Image) (scalibrfs.FS, error) {
+	outDir, err := os.MkdirTemp(os.TempDir(), "scalibr-container-")
+	if err != nil {
+		return nil, fmt.Errorf("couldn’t create tmp dir for image: %v", err)
+	}
+	// Squash the image's final layer into a directory.
+	cfg := &unpack.UnpackerConfig{
+		SymlinkResolution:  unpack.SymlinkRetain,
+		SymlinkErrStrategy: unpack.SymlinkErrLog,
+		MaxPass:            unpack.DefaultMaxPass,
+		MaxFileBytes:       unpack.DefaultMaxFileBytes,
+		Requirer:           &require.FileRequirerAll{},
+	}
+	unpacker, err := unpack.NewUnpacker(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create image unpacker: %w", err)
+	}
+	if err = unpacker.UnpackSquashed(outDir, image); err != nil {
+		return nil, fmt.Errorf("failed to unpack image into directory %q: %w", outDir, err)
+	}
+	return scalibrfs.DirFS(outDir), nil
 }
