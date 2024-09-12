@@ -1,5 +1,7 @@
 # OSV-SCALIBR
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/google/osv-scalibr.svg)](https://pkg.go.dev/github.com/google/osv-scalibr)
+
 **Note:** The code in this repo is subject to change in the near future as we're merging SCALIBR with [OSV-scanner](https://github.com/google/osv-scanner) to provide a single tool that unifies the two scanners' extraction and vuln scanning capabilities.
 
 SCALIBR (Software Composition Analysis Library) is an extensible file system scanner used to extract software inventory data (e.g. installed language packages) and detect vulnerabilities.
