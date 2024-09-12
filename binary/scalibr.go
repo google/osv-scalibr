@@ -39,6 +39,7 @@ func parseFlags() *cli.Flags {
 	detectorsToRun := flag.String("detectors", "default", "Comma-separated list of detectors plugins to run")
 	dirsToSkip := flag.String("skip-dirs", "", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := flag.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
+	remoteImage := flag.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	govulncheckDBPath := flag.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
 	spdxDocumentName := flag.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := flag.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
@@ -63,6 +64,7 @@ func parseFlags() *cli.Flags {
 		FilesToExtract:        filesToExtract,
 		DirsToSkip:            *dirsToSkip,
 		SkipDirRegex:          *skipDirRegex,
+		RemoteImage:           *remoteImage,
 		GovulncheckDBPath:     *govulncheckDBPath,
 		SPDXDocumentName:      *spdxDocumentName,
 		SPDXDocumentNamespace: *spdxDocumentNamespace,

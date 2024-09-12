@@ -23,7 +23,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spdx/tools-golang/spdx/v2/common"
+	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
@@ -72,6 +75,7 @@ type Flags struct {
 	FilesToExtract        []string
 	DirsToSkip            string
 	SkipDirRegex          string
+	RemoteImage           string
 	GovulncheckDBPath     string
 	SPDXDocumentName      string
 	SPDXDocumentNamespace string
@@ -223,7 +227,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	capab := capabilities()
+	capab := f.capabilities()
 	if f.FilterByCapabilities {
 		extractors, standaloneExtractors, detectors = filterByCapabilities(extractors, standaloneExtractors, detectors, capab)
 	}
@@ -234,18 +238,12 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
-	var scanRoots []*scalibrfs.ScanRoot
-	if len(f.Root) == 0 {
-		var scanRootPaths []string
-		if scanRootPaths, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
-			return nil, err
-		}
-		for _, r := range scanRootPaths {
-			scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
-		}
-	} else {
-		scanRoots = scalibrfs.RealFSScanRoots(f.Root)
+
+	scanRoots, err := f.scanRoots()
+	if err != nil {
+		return nil, err
 	}
+
 	return &scalibr.ScanConfig{
 		ScanRoots:            scanRoots,
 		FilesystemExtractors: extractors,
@@ -377,8 +375,45 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
+func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
+	if f.RemoteImage != "" {
+		fs, err := scalibrimage.NewFromRemoteName(
+			f.RemoteImage, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		if err != nil {
+			return nil, err
+		}
+		// We're scanning a virtual filesystem that describes the remote container.
+		return []*scalibrfs.ScanRoot{{FS: fs, Path: ""}}, nil
+	}
+
+	if len(f.Root) != 0 {
+		return scalibrfs.RealFSScanRoots(f.Root), nil
+	}
+
+	// Compute the default scan roots.
+	var scanRoots []*scalibrfs.ScanRoot
+	var scanRootPaths []string
+	var err error
+	if scanRootPaths, err = platform.DefaultScanRoots(f.WindowsAllDrives); err != nil {
+		return nil, err
+	}
+	for _, r := range scanRootPaths {
+		scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
+	}
+	return scanRoots, nil
+}
+
 // All capabilities are enabled when running SCALIBR as a binary.
-func capabilities() *plugin.Capabilities {
+func (f *Flags) capabilities() *plugin.Capabilities {
+	if f.RemoteImage != "" {
+		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
+		return &plugin.Capabilities{
+			OS:            plugin.OSLinux,
+			Network:       true,
+			DirectFS:      true,
+			RunningSystem: false,
+		}
+	}
 	return &plugin.Capabilities{
 		OS:            platform.OS(),
 		Network:       true,
