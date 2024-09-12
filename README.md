@@ -37,7 +37,9 @@ See below for an example code snippet.
 
 Add the `--remote-image` flag to scan a remote container image. Example:
 
+```
 scalibr --result=result.textproto --remote-image=alpine@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5
+```
 
 ### SPDX generation
 
