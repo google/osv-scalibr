@@ -72,6 +72,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		for _, gr := range pkg.Groups {
 			// depGroups can either be:
 			// [], [dev], [optional]
+			// All packages not in the default group (or the dev group)
+			// are optional.
 			if gr == "dev" {
 				depGroups = append(depGroups, "dev")
 				optional = false
