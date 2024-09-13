@@ -70,6 +70,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 		var optional = true
 		for _, gr := range pkg.Groups {
+			// depGroups can either be:
+			// [], [dev], [optional]
 			if gr == "dev" {
 				depGroups = append(depGroups, "dev")
 				optional = false
