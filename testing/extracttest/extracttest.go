@@ -2,12 +2,10 @@
 package extracttest
 
 import (
-	ordercmp "cmp"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -70,16 +68,14 @@ func ExtractionTester(t *testing.T, extr filesystem.Extractor, tt TestTableEntry
 	}
 
 	// Sort the results before comparing to ensure same order.
-	sortFunc := func(a, b *extractor.Inventory) int {
+	lessFunc := func(a, b *extractor.Inventory) bool {
 		purlA, _ := extr.ToPURL(a)
 		purlB, _ := extr.ToPURL(b)
 
-		return ordercmp.Compare(purlA.String(), purlB.String())
+		return purlA.String() < purlB.String()
 	}
-	slices.SortFunc(got, sortFunc)
-	slices.SortFunc(tt.WantInventory, sortFunc)
 
-	if diff := cmp.Diff(tt.WantInventory, got); diff != "" {
+	if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(lessFunc)); diff != "" {
 		t.Errorf("%s.Extract(%q) returned unexpected diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 	}
 
