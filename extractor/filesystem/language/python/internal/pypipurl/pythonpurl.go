@@ -3,10 +3,10 @@
 package pypipurl
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/cachedregexp"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -20,7 +20,7 @@ import (
 // This function does *not* handle package names with invalid characters, and will
 // return them as is.
 func MakePackageURL(i *extractor.Inventory) *purl.PackageURL {
-	specialCharRunFinder := cachedregexp.MustCompile("[-_.]+")
+	specialCharRunFinder := regexp.MustCompile("[-_.]+")
 	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(i.Name), "-")
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
