@@ -29,7 +29,7 @@ type DepGroups interface {
 	DepGroups() []string
 }
 
-// osv.DepGroupMetadata is a metadata struct that only supports DepGroups
+// DepGroupMetadata is a metadata struct that only supports DepGroups
 type DepGroupMetadata struct {
 	DepGroupVals []string
 }
