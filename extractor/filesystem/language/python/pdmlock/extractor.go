@@ -66,24 +66,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Locations: []string{input.Path},
 		}
 
-		depGroups := []string{}
-
-		var optional = true
-		for _, gr := range pkg.Groups {
-			// depGroups can either be:
-			// [], [dev], [optional]
-			// All packages not in the default group (or the dev group)
-			// are optional.
-			if gr == "dev" {
-				depGroups = append(depGroups, "dev")
-				optional = false
-			} else if gr == "default" {
-				optional = false
-			}
-		}
-		if optional {
-			depGroups = append(depGroups, "optional")
-		}
+		depGroups := parseGroupsToDepGroups(pkg.Groups)
 
 		inventory.Metadata = osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
@@ -99,6 +82,30 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	return packages, nil
+}
+
+// parseGroupsToDepGroups converts pdm lockfile groups to the standard DepGroups
+func parseGroupsToDepGroups(groups []string) []string {
+	depGroups := []string{}
+
+	var optional = true
+	for _, gr := range groups {
+		// depGroups can either be:
+		// [], [dev], [optional]
+		// All packages not in the default group (or the dev group)
+		// are optional.
+		if gr == "dev" {
+			depGroups = append(depGroups, "dev")
+			optional = false
+		} else if gr == "default" {
+			optional = false
+		}
+	}
+	if optional {
+		depGroups = append(depGroups, "optional")
+	}
+
+	return depGroups
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
