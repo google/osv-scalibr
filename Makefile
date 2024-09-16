@@ -3,7 +3,7 @@ export PATH := $(PATH):$(shell go env GOPATH)/bin
 scalibr:
 	# CGO is required for certain dependencies such as
 	# go-sqlite3 used by the RPM extractor.
-	CGO_ENABLED=1 go build binary/scalibr.go
+	CGO_ENABLED=1 go build binary/scalibr/scalibr.go
 
 test:
 	CGO_ENABLED=1 go test ./...
@@ -16,7 +16,7 @@ else
 endif
 
 scalibr-static:
-	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr.go
+	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr/scalibr.go
 
 clean:
 	rm -f scalibr

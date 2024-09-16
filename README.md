@@ -18,7 +18,7 @@ To build SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/
 
 ### As a standalone binary
 
-1. `go install github.com/google/osv-scalibr/binary`
+1. `go install github.com/google/osv-scalibr/binary/scalibr@latest`
 1. `scalibr --result=result.textproto`
 
 See the [result proto definition](/binary/proto/scan_result.proto) for details about the scan result format.
