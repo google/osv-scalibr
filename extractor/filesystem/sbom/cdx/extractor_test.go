@@ -112,7 +112,7 @@ func TestExtract(t *testing.T) {
 					Name:    "openssl",
 					Version: "1.1.1",
 					Metadata: &cdx.Metadata{
-						PURL: getPURL("openssl", "1.1.1"),
+						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.json"},
 				},
@@ -134,7 +134,7 @@ func TestExtract(t *testing.T) {
 					Name:    "openssl",
 					Version: "1.1.1",
 					Metadata: &cdx.Metadata{
-						PURL: getPURL("openssl", "1.1.1"),
+						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.xml"},
 				},
@@ -227,11 +227,10 @@ func invLess(i1, i2 *extractor.Inventory) bool {
 	return i1.Name < i2.Name
 }
 
-func getPURL(name, version string) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:       purl.TypeGeneric,
-		Name:       name,
-		Version:    version,
-		Qualifiers: purl.Qualifiers{},
+func purlFromString(t *testing.T, purlStr string) *purl.PackageURL {
+	res, err := purl.FromString(purlStr)
+	if err != nil {
+		t.Fatalf("purlFromString(%s): %v", purlStr, err)
 	}
+	return &res
 }

@@ -117,6 +117,9 @@ func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) 
 				if inv.Name == "" {
 					inv.Name = packageURL.Name
 				}
+				if inv.Version == "" {
+					inv.Version = packageURL.Version
+				}
 			}
 		}
 		inv.Metadata = m
