@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
@@ -357,6 +358,42 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file3"},
 		Extractor: "sbom/spdx",
 	}
+	cdxInventory := &extractor.Inventory{
+		Name:    "openssl",
+		Version: "1.1.1",
+		Metadata: &cdx.Metadata{
+			PURL: &purl.PackageURL{
+				Type:    purl.TypeGeneric,
+				Name:    "openssl",
+				Version: "1.1.1",
+			},
+		},
+		Locations: []string{"/openssl"},
+		Extractor: &cdx.Extractor{},
+	}
+	cdxInventoryProto := &spb.Inventory{
+		Name:      "openssl",
+		Version:   "1.1.1",
+		Ecosystem: "generic",
+		Purl: &spb.Purl{
+			Purl:    "pkg:generic/openssl@1.1.1",
+			Type:    purl.TypeGeneric,
+			Name:    "openssl",
+			Version: "1.1.1",
+		},
+		Metadata: &spb.Inventory_CdxMetadata{
+			CdxMetadata: &spb.CDXPackageMetadata{
+				Purl: &spb.Purl{
+					Purl:    "pkg:generic/openssl@1.1.1",
+					Type:    purl.TypeGeneric,
+					Name:    "openssl",
+					Version: "1.1.1",
+				},
+			},
+		},
+		Locations: []string{"/openssl"},
+		Extractor: "sbom/cdx",
+	}
 	purlRPMInventory := &extractor.Inventory{
 		Name:    "openssh-clients",
 		Version: "5.3p1",
@@ -505,6 +542,7 @@ func TestScanResultToProto(t *testing.T) {
 					pythonRequirementsInventory,
 					purlJavascriptInventory,
 					cpeInventory,
+					cdxInventory,
 				},
 				Findings: []*detector.Finding{
 					&detector.Finding{
@@ -555,6 +593,7 @@ func TestScanResultToProto(t *testing.T) {
 					pythonRequirementsInventoryProto,
 					purlJavascriptInventoryProto,
 					cpeInventoryProto,
+					cdxInventoryProto,
 				},
 				Findings: []*spb.Finding{
 					&spb.Finding{
@@ -704,7 +743,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -743,7 +782,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto},
+				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto, cdxInventoryProto},
 				Findings: []*spb.Finding{
 					&spb.Finding{
 						Adv: &spb.Advisory{
@@ -785,7 +824,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Adv: &detector.Advisory{
@@ -824,7 +863,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory},
+				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
 					&detector.Finding{
 						Extra: "extra details",

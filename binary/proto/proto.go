@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
@@ -356,6 +357,13 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 	case *spdx.Metadata:
 		i.Metadata = &spb.Inventory_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
+				Purl: purlToProto(m.PURL),
+				Cpes: m.CPEs,
+			},
+		}
+	case *cdx.Metadata:
+		i.Metadata = &spb.Inventory_CdxMetadata{
+			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
