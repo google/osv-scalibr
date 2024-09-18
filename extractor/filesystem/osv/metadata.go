@@ -21,3 +21,22 @@ type Metadata struct {
 	Ecosystem string
 	CompareAs string
 }
+
+// DepGroups provides access to the list of dependency groups an inventory item belongs to.
+// Dependency groups are used by many language package managers as a way to organize
+// dependencies (e.g. development dependencies will be in the "dev" group)
+type DepGroups interface {
+	DepGroups() []string
+}
+
+// DepGroupMetadata is a metadata struct that only supports DepGroups
+type DepGroupMetadata struct {
+	DepGroupVals []string
+}
+
+var _ DepGroups = DepGroupMetadata{}
+
+// DepGroups return the dependency groups property in the metadata
+func (dgm DepGroupMetadata) DepGroups() []string {
+	return dgm.DepGroupVals
+}

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -288,11 +289,7 @@ func splitPerRequirementOptions(s string) (string, []string) {
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}, nil
+	return pypipurl.MakePackageURL(i), nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
