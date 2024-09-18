@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -73,6 +74,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]pipenvPackage, group string) {
 	for name, pipenvPackage := range packages {
 		if pipenvPackage.Version == "" {
+			continue
+		}
+
+		// All pipenv versions should be pinned with a ==
+		// If it is not, this lockfile is not in the format we expect.
+		if !strings.HasPrefix("==", pipenvPackage.Version) || len(pipenvPackage.Version) < 3 {
+			// Potentially log a warning here
 			continue
 		}
 
