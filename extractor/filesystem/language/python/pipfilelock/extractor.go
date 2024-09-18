@@ -77,9 +77,9 @@ func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]
 			continue
 		}
 
-		// All pipenv versions should be pinned with a ==
+		// All pipenv package versions should be pinned with a ==
 		// If it is not, this lockfile is not in the format we expect.
-		if !strings.HasPrefix("==", pipenvPackage.Version) || len(pipenvPackage.Version) < 3 {
+		if !strings.HasPrefix(pipenvPackage.Version, "==") || len(pipenvPackage.Version) < 3 {
 			// Potentially log a warning here
 			continue
 		}
