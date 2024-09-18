@@ -74,17 +74,32 @@ type Image interface {
 // NewFromRemoteName pulls a remote container and creates a
 // SCALIBR filesystem for scanning it.
 func NewFromRemoteName(imageName string, auth remote.Option) (scalibrfs.FS, error) {
-	ref, err := name.NewDigest(strings.TrimPrefix(imageName, "https://"))
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse digest: %w", err)
-	}
-	descriptor, err := remote.Get(ref, auth)
-	if err != nil {
-		return nil, fmt.Errorf("couldn’t pull remote image %s: %v", ref, err)
-	}
-	image, err := descriptor.Image()
-	if err != nil {
-		return nil, fmt.Errorf("couldn’t parse image manifest %s: %v", ref, err)
+	imageName = strings.TrimPrefix(imageName, "https://")
+	var image v1.Image
+	if strings.Contains(imageName, "@") {
+		// Pull from a digest name.
+		ref, err := name.NewDigest(strings.TrimPrefix(imageName, "https://"))
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse digest: %w", err)
+		}
+		descriptor, err := remote.Get(ref, auth)
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", ref, err)
+		}
+		image, err = descriptor.Image()
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t parse image manifest %s: %v", ref, err)
+		}
+	} else {
+		// Pull from a tag.
+		tag, err := name.NewTag(strings.TrimPrefix(imageName, "https://"))
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse image reference: %w", err)
+		}
+		image, err = remote.Image(tag, auth)
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", tag, err)
+		}
 	}
 	return NewFromImage(image)
 }
