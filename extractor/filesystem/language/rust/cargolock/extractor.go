@@ -38,7 +38,6 @@ func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches Cargo lockfile patterns.
 func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	// TODO: File size check?
 	return filepath.Base(path) == "Cargo.lock"
 }
 
