@@ -31,7 +31,7 @@ const cargoEcosystem string = "crates.io"
 type Extractor struct{}
 
 // Name of the extractor
-func (e Extractor) Name() string { return "rust/cargolock" }
+func (e Extractor) Name() string { return "rust/Cargolock" }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
