@@ -21,7 +21,9 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 )
 
-// InventoryCmpLess returns whether Inventory a is less than b.
+// InventoryCmpLess is a comparator function for Inventories, to be used in
+// tests with cmp.Diff to disregard the order in which the Inventories
+// are reported.
 func InventoryCmpLess(a, b *extractor.Inventory) bool {
 	aLoc := fmt.Sprintf("%v", a.Locations)
 	bLoc := fmt.Sprintf("%v", b.Locations)
