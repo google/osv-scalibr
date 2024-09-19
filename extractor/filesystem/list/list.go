@@ -25,8 +25,8 @@ import (
 	"github.com/google/osv-scanner/pkg/lockfile"
 
 	// SCALIBR internal extractors.
-
 	"github.com/google/osv-scalibr/extractor/filesystem"
+
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
