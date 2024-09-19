@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -89,16 +90,16 @@ var (
 
 // extractPnpmPackageNameAndVersion parses a dependency path, attempting to
 // extract the name and version of the package it represents
-func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion float64) (string, string) {
+func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion float64) (string, string, error) {
 	// file dependencies must always have a name property to be installed,
 	// and their dependency path never has the version encoded, so we can
 	// skip trying to extract either from their dependency path
 	if strings.HasPrefix(dependencyPath, "file:") {
-		return "", ""
+		return "", "", nil
 	}
 
 	// v9.0 specifies the dependencies as <package>@<version> rather than as a path
-	if lockfileVersion == 9.0 {
+	if lockfileVersion >= 9.0 {
 		dependencyPath = strings.Trim(dependencyPath, "'")
 		dependencyPath, isScoped := strings.CutPrefix(dependencyPath, "@")
 
@@ -108,10 +109,13 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 			name = "@" + name
 		}
 
-		return name, version
+		return name, version, nil
 	}
 
 	parts := strings.Split(dependencyPath, "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid depdendency path: %v", dependencyPath)
+	}
 	var name string
 
 	parts = parts[1:]
@@ -135,7 +139,7 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 	}
 
 	if version == "" || !numberMatcher.MatchString(version) {
-		return "", ""
+		return "", "", nil
 	}
 
 	underscoreIndex := strings.Index(version, "_")
@@ -144,7 +148,7 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 		version = strings.Split(version, "_")[0]
 	}
 
-	return name, version
+	return name, version, nil
 }
 
 func parseNameAtVersion(value string) (name string, version string) {
@@ -157,11 +161,17 @@ func parseNameAtVersion(value string) (name string, version string) {
 	return matches[1], matches[2]
 }
 
-func parsePnpmLock(lockfile pnpmLockfile) []*extractor.Inventory {
+func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
 	packages := make([]*extractor.Inventory, 0, len(lockfile.Packages))
+	errs := []error{}
 
 	for s, pkg := range lockfile.Packages {
-		name, version := extractPnpmPackageNameAndVersion(s, lockfile.Version)
+		name, version, err := extractPnpmPackageNameAndVersion(s, lockfile.Version)
+		if err != nil {
+			errs = append(errs, err)
+			log.Errorf("failed to extract package version from %q: %v", pkg, err)
+			continue
+		}
 
 		// "name" is only present if it's not in the dependency path and takes
 		// priority over whatever name we think we've extracted (if any)
@@ -207,7 +217,7 @@ func parsePnpmLock(lockfile pnpmLockfile) []*extractor.Inventory {
 		})
 	}
 
-	return packages
+	return packages, errors.Join(errs...)
 }
 
 // Extractor extracts pnpm-lock.yaml files.
@@ -242,19 +252,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		parsedLockfile = &pnpmLockfile{}
 	}
 
-	inventories := parsePnpmLock(*parsedLockfile)
+	inventories, err := parsePnpmLock(*parsedLockfile)
 	for i := range inventories {
 		inventories[i].Locations = []string{input.Path}
 	}
 
-	return inventories, nil
+	return inventories, err
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 	return &purl.PackageURL{
 		Type:    purl.TypeNPM,
-		Name:    i.Name,
+		Name:    strings.ToLower(i.Name),
 		Version: i.Version,
 	}, nil
 }

@@ -87,6 +87,14 @@ func TestExtractor_Extract(t *testing.T) {
 			WantInventory: []*extractor.Inventory{},
 		},
 		{
+			Name: "invalid dep path",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid-path.yaml",
+			},
+			WantErr:       extracttest.ContainsErrStr{Str: "invalid depdendency path"},
+			WantInventory: []*extractor.Inventory{},
+		},
+		{
 			Name: "empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.yaml",
