@@ -35,7 +35,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Composer (OSV)
 * Python
   * Installed PyPI packages (global and venv)
-  * Lockfiles: requirements.txt, poetry (OSV), Pipfile.lock (OSV)
+  * Lockfiles: requirements.txt, poetry, Pipfile.lock, pdm.lock
 * Ruby
   * Installed Gem packages
   * Lockfiles: Gemfile.lock (OSV)

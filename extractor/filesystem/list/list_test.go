@@ -52,17 +52,17 @@ func TestExtractorsFromNames(t *testing.T) {
 		{
 			desc:     "Find all extractors of a type",
 			names:    []string{"python"},
-			wantExts: []string{"python/wheelegg", "python/requirements"},
+			wantExts: []string{"python/wheelegg", "python/requirements", "python/pdmlock", "python/pipfilelock", "python/poetrylock"},
 		},
 		{
 			desc:     "Case-insensitive",
 			names:    []string{"Python"},
-			wantExts: []string{"python/wheelegg", "python/requirements"},
+			wantExts: []string{"python/wheelegg", "python/requirements", "python/pdmlock", "python/pipfilelock", "python/poetrylock"},
 		},
 		{
 			desc:     "Remove duplicates",
 			names:    []string{"python", "python"},
-			wantExts: []string{"python/wheelegg", "python/requirements"},
+			wantExts: []string{"python/wheelegg", "python/requirements", "python/pdmlock", "python/pipfilelock", "python/poetrylock"},
 		},
 		{
 			desc:     "Nonexistent plugin",
@@ -111,11 +111,6 @@ func TestExtractorFromName(t *testing.T) {
 			desc:    "Not an exact name",
 			name:    "python",
 			wantErr: cmpopts.AnyError,
-		},
-		{
-			desc:    "Works for upper case names",
-			name:    "python/Pipfile",
-			wantExt: "python/Pipfile",
 		},
 	}
 
