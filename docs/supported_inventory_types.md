@@ -30,7 +30,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles (OSV): pom.xml, gradle.lockfile
 * Javascript
   * Installed NPM packages (package.json)
-  * Lockfiles: package-lock.json, yarn.lock (OSV), pnpm-lock.yaml (OSV)
+  * Lockfiles: package-lock.json, yarn.lock (OSV), pnpm-lock.yaml
 * PHP:
   * Composer (OSV)
 * Python
