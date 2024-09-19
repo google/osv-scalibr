@@ -33,6 +33,7 @@ import (
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -59,7 +60,7 @@ var (
 	// Java extractors.
 	Java []filesystem.Extractor = []filesystem.Extractor{javaarchive.New(javaarchive.DefaultConfig())}
 	// Javascript extractors.
-	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), packagelockjson.New(packagelockjson.DefaultConfig())}
+	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), packagelockjson.New(packagelockjson.DefaultConfig()), &pnpmlock.Extractor{}}
 	// Python extractors.
 	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), requirements.New(requirements.DefaultConfig())}
 	// Go extractors.
@@ -117,7 +118,6 @@ var (
 		osv.Wrapper{ExtractorName: "go/gomod", ExtractorVersion: 0, PURLType: purl.TypeGolang, Extractor: lockfile.GoLockExtractor{}},
 		osv.Wrapper{ExtractorName: "java/gradle", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.GradleLockExtractor{}},
 		osv.Wrapper{ExtractorName: "java/pomxml", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.MavenLockExtractor{}},
-		osv.Wrapper{ExtractorName: "javascript/pnpm", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.PnpmLockExtractor{}},
 		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
 		osv.Wrapper{ExtractorName: "php/composer", ExtractorVersion: 0, PURLType: purl.TypeComposer, Extractor: lockfile.ComposerLockExtractor{}},
 		osv.Wrapper{ExtractorName: "python/Pipfile", ExtractorVersion: 0, PURLType: purl.TypePyPi, Extractor: lockfile.PipenvLockExtractor{}},
