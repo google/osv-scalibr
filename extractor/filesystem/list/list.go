@@ -103,6 +103,7 @@ var (
 		Python,
 		Go,
 		Ruby,
+		Rust,
 		Dotnet,
 		SBOM,
 		// Default OS and Other OS
