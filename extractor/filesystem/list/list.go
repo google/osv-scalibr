@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -52,7 +53,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
 )
 
 // LINT.IfChange
@@ -67,6 +67,8 @@ var (
 	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), requirements.New(requirements.DefaultConfig())}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
+	// R extractors
+	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig())}
 	// Rust extractors.
@@ -107,6 +109,7 @@ var (
 		Python,
 		Go,
 		PHP,
+		R,
 		Ruby,
 		Rust,
 		Dotnet,
@@ -136,6 +139,7 @@ var (
 		"javascript": Javascript,
 		"python":     Python,
 		"go":         Go,
+		"r":          R,
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,
 		"php":        PHP,
