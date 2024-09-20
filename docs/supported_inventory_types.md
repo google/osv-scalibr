@@ -32,7 +32,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Installed NPM packages (package.json)
   * Lockfiles: package-lock.json, yarn.lock (OSV), pnpm-lock.yaml
 * PHP:
-  * Composer (OSV)
+  * Composer
 * Python
   * Installed PyPI packages (global and venv)
   * Lockfiles: requirements.txt, poetry (OSV), Pipfile.lock (OSV)
