@@ -114,7 +114,7 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 
 	parts := strings.Split(dependencyPath, "/")
 	if len(parts) < 2 {
-		return "", "", fmt.Errorf("invalid depdendency path: %v", dependencyPath)
+		return "", "", fmt.Errorf("invalid dependency path: %v", dependencyPath)
 	}
 	var name string
 

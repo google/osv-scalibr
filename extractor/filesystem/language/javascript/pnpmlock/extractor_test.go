@@ -91,7 +91,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-path.yaml",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "invalid depdendency path"},
+			WantErr:       extracttest.ContainsErrStr{Str: "invalid dependency path"},
 			WantInventory: []*extractor.Inventory{},
 		},
 		{
