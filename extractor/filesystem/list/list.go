@@ -25,9 +25,9 @@ import (
 	"github.com/google/osv-scanner/pkg/lockfile"
 
 	// SCALIBR internal extractors.
+	"github.com/google/osv-scalibr/extractor/filesystem"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -68,6 +69,8 @@ var (
 	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig())}
+	// Rust extractors.
+	Rust []filesystem.Extractor = []filesystem.Extractor{cargolock.Extractor{}}
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
@@ -105,6 +108,7 @@ var (
 		Go,
 		PHP,
 		Ruby,
+		Rust,
 		Dotnet,
 		SBOM,
 		// Default OS and Other OS
@@ -124,7 +128,6 @@ var (
 		osv.Wrapper{ExtractorName: "python/Pipfile", ExtractorVersion: 0, PURLType: purl.TypePyPi, Extractor: lockfile.PipenvLockExtractor{}},
 		osv.Wrapper{ExtractorName: "python/poetry", ExtractorVersion: 0, PURLType: purl.TypePyPi, Extractor: lockfile.PoetryLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
-		osv.Wrapper{ExtractorName: "rust/cargo", ExtractorVersion: 0, PURLType: purl.TypeCargo, Extractor: lockfile.CargoLockExtractor{}},
 	}
 
 	extractorNames = map[string][]filesystem.Extractor{
@@ -136,6 +139,7 @@ var (
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,
 		"php":        PHP,
+		"rust":       Rust,
 
 		"sbom":       SBOM,
 		"os":         OS,
