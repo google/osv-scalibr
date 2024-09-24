@@ -35,7 +35,7 @@ type mavenLockDependency struct {
 
 func (mld mavenLockDependency) parseResolvedVersion(version string) string {
 	results := versionRequirementReg.FindStringSubmatch(version)
-
+	// First capture group will always exist, but might be empty
 	if results == nil || results[1] == "" {
 		return "0"
 	}
@@ -44,6 +44,7 @@ func (mld mavenLockDependency) parseResolvedVersion(version string) string {
 }
 
 func (mld mavenLockDependency) resolveVersionValue(lockfile mavenLockFile) string {
+	// results will always either be nil or have a length of 2
 	results := interpolationReg.FindStringSubmatch(mld.Version)
 
 	// no interpolation, so just return the version as-is
