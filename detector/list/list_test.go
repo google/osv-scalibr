@@ -42,6 +42,23 @@ func TestFromCapabilities(t *testing.T) {
 	}
 }
 
+func TestFilterByCapabilities(t *testing.T) {
+	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
+	dets, err := dl.DetectorsFromNames([]string{"cis/generic_linux/etcpasswdpermissions", "govulncheck/binary"})
+	if err != nil {
+		t.Fatalf("dl.DetectorsFromNames: %v", err)
+	}
+	got := dl.FilterByCapabilities(dets, capab)
+	if len(got) != 1 {
+		t.Fatalf("dl.FilterCapabilities(%v, %v): want 1 plugin, got %d", dets, capab, len(got))
+	}
+	gotName := got[0].Name()
+	wantName := "cis/generic_linux/etcpasswdpermissions" // govulncheck/binary needs direct FS access.
+	if gotName != wantName {
+		t.Fatalf("dl.FilterCapabilities(%v, %v): want plugin %q, got %q", dets, capab, wantName, gotName)
+	}
+}
+
 func TestDetectorsFromNames(t *testing.T) {
 	testCases := []struct {
 		desc     string

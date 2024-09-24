@@ -86,8 +86,15 @@ func register(d standalone.Extractor) {
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []standalone.Extractor {
+	return FilterByCapabilities(All, capabs)
+}
+
+// FilterByCapabilities returns all extractors from the given list that can run
+// under the specified capabilities (OS, direct filesystem access, network
+// access, etc.) of the scanning environment.
+func FilterByCapabilities(exs []standalone.Extractor, capabs *plugin.Capabilities) []standalone.Extractor {
 	result := []standalone.Extractor{}
-	for _, ex := range All {
+	for _, ex := range exs {
 		if err := plugin.ValidateRequirements(ex, capabs); err == nil {
 			result = append(result, ex)
 		}

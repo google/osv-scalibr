@@ -42,6 +42,23 @@ func TestFromCapabilities(t *testing.T) {
 	}
 }
 
+func TestFilterByCapabilities(t *testing.T) {
+	capab := &plugin.Capabilities{OS: plugin.OSLinux}
+	exs, err := el.ExtractorsFromNames([]string{"os/snap", "os/homebrew"})
+	if err != nil {
+		t.Fatalf("el.ExtractorsFromNames: %v", err)
+	}
+	got := el.FilterByCapabilities(exs, capab)
+	if len(got) != 1 {
+		t.Fatalf("el.FilterCapabilities(%v, %v): want 1 plugin, got %d", exs, capab, len(got))
+	}
+	gotName := got[0].Name()
+	wantName := "os/snap" // os/homebrew is for Mac only
+	if gotName != wantName {
+		t.Fatalf("el.FilterCapabilities(%v, %v): want plugin %q, got %q", exs, capab, wantName, gotName)
+	}
+}
+
 func TestExtractorsFromNames(t *testing.T) {
 	testCases := []struct {
 		desc     string

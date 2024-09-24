@@ -81,8 +81,15 @@ func register(d detector.Detector) {
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []detector.Detector {
+	return FilterByCapabilities(All, capabs)
+}
+
+// FilterByCapabilities returns all detectors from the given list that can run
+// under the specified capabilities (OS, direct filesystem access, network
+// access, etc.) of the scanning environment.
+func FilterByCapabilities(dets []detector.Detector, capabs *plugin.Capabilities) []detector.Detector {
 	result := []detector.Detector{}
-	for _, det := range All {
+	for _, det := range dets {
 		if err := plugin.ValidateRequirements(det, capabs); err == nil {
 			result = append(result, det)
 		}

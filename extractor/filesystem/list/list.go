@@ -96,14 +96,8 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
-		flatpak.New(flatpak.DefaultConfig())}
-
-	ALLOS []filesystem.Extractor = slices.Concat(
-		// Homebrew for MacOS
-		[]filesystem.Extractor{homebrew.Extractor{}},
-		// Default OS Extractors
-		OS,
-	)
+		flatpak.New(flatpak.DefaultConfig()),
+		homebrew.Extractor{}}
 
 	// Collections of extractors.
 
@@ -120,8 +114,7 @@ var (
 		Rust,
 		Dotnet,
 		SBOM,
-		// Default OS and Other OS
-		ALLOS,
+		OS,
 		// Containers,
 	)
 
@@ -180,8 +173,15 @@ func register(d filesystem.Extractor) {
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
+	return FilterByCapabilities(slices.Concat(All, Untested), capabs)
+}
+
+// FilterByCapabilities returns all extractors from the given list that can run
+// under the specified capabilities (OS, direct filesystem access, network
+// access, etc.) of the scanning environment.
+func FilterByCapabilities(exs []filesystem.Extractor, capabs *plugin.Capabilities) []filesystem.Extractor {
 	result := []filesystem.Extractor{}
-	for _, ex := range slices.Concat(All, Untested) {
+	for _, ex := range exs {
 		if err := plugin.ValidateRequirements(ex, capabs); err == nil {
 			result = append(result, ex)
 		}
