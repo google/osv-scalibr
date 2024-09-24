@@ -48,7 +48,7 @@ const pipenvEcosystem = "PyPI"
 type Extractor struct{}
 
 // Name of the extractor
-func (e Extractor) Name() string { return "python/pipfilelock" }
+func (e Extractor) Name() string { return "python/Pipfilelock" }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

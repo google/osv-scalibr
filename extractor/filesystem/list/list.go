@@ -35,6 +35,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -64,7 +67,13 @@ var (
 	// Javascript extractors.
 	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), packagelockjson.New(packagelockjson.DefaultConfig()), &pnpmlock.Extractor{}}
 	// Python extractors.
-	Python []filesystem.Extractor = []filesystem.Extractor{wheelegg.New(wheelegg.DefaultConfig()), requirements.New(requirements.DefaultConfig())}
+	Python []filesystem.Extractor = []filesystem.Extractor{
+		wheelegg.New(wheelegg.DefaultConfig()),
+		requirements.New(requirements.DefaultConfig()),
+		pipfilelock.Extractor{},
+		pdmlock.Extractor{},
+		poetrylock.Extractor{},
+	}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
 	// Ruby extractors.
@@ -125,8 +134,6 @@ var (
 		osv.Wrapper{ExtractorName: "java/gradle", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.GradleLockExtractor{}},
 		osv.Wrapper{ExtractorName: "java/pomxml", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.MavenLockExtractor{}},
 		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
-		osv.Wrapper{ExtractorName: "python/Pipfile", ExtractorVersion: 0, PURLType: purl.TypePyPi, Extractor: lockfile.PipenvLockExtractor{}},
-		osv.Wrapper{ExtractorName: "python/poetry", ExtractorVersion: 0, PURLType: purl.TypePyPi, Extractor: lockfile.PoetryLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
 	}
 
