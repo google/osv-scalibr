@@ -146,7 +146,6 @@ func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 
 // Scan checks for the presence of the airflow CVE-2020-11978 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	isVulnerable := false
 	isVulnVersion := false
 
 	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
@@ -192,16 +191,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 
 	log.Infof("Version %q is vulnerable", airflowVersion)
-	isVulnerable = true
 
 	err := os.Remove(randFilePath)
 	if err != nil {
 		log.Infof("Error removing file: %v", err)
-	}
-
-	if !isVulnerable {
-		log.Infof("Version %q not vulnerable", airflowVersion)
-		return nil, nil
 	}
 
 	return []*detector.Finding{&detector.Finding{

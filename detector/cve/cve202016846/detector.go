@@ -123,14 +123,13 @@ func findSaltVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inv
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	cherrypyPresence := false
 	exploitReturn := false
-	isVulnerable := false
-	isVulnVersion := false
 
 	saltVersion, inventory, affectedVersions := findSaltVersions(ix)
 	if saltVersion == "" {
 		log.Infof("No Salt version found")
 		return nil, nil
 	}
+	isVulnVersion := false
 	for _, r := range affectedVersions {
 		if strings.Contains(saltVersion, r) {
 			isVulnVersion = true
@@ -156,25 +155,17 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		return nil, nil
 	}
 
-	if cherrypyPresence && exploitReturn {
-		log.Infof("Exploit successful")
-	}
+	log.Infof("Exploit successful")
 
 	if !fileExists(scanRoot.FS, randFilePath) {
 		return nil, nil
 	}
 
 	log.Infof("Version %q is vulnerable", saltVersion)
-	isVulnerable = true
 
 	err := os.Remove(randFilePath)
 	if err != nil {
 		log.Infof("Error removing file: %v", err)
-	}
-
-	if !isVulnerable {
-		log.Infof("Version %q not vulnerable", saltVersion)
-		return nil, nil
 	}
 
 	return []*detector.Finding{&detector.Finding{

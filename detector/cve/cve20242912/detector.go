@@ -160,10 +160,7 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 
 // Scan checks for the presence of the BentoML CVE-2024-2912 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	isAccessible := false
-	isVulnerable := false
 	isVulnVersion := false
-	exploitReturn := false
 
 	bentomlVersion, inventory, fixedVersion := findBentomlVersions(ix)
 	if bentomlVersion == "" {
@@ -194,28 +191,23 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
 	}
 
-	isAccessible = CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort)
-	if !isAccessible {
+	if !CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML server not accessible")
 		return nil, nil
 	}
 
-	exploitReturn = ExploitBentoml(ctx, bentomlServerIP, bentomlServerPort)
-	if !exploitReturn {
+	if !ExploitBentoml(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML exploit unsuccessful")
 		return nil, nil
 	}
 
-	if isAccessible && exploitReturn {
-		log.Infof("Exploit complete")
-	}
+	log.Infof("Exploit complete")
 
 	if !fileExists(scanRoot.FS, payloadPath) {
 		log.Infof("No POC file detected")
 		return nil, nil
 	}
 
-	isVulnerable = true
 	log.Infof("BentoML version %q vulnerable", bentomlVersion)
 
 	err := os.Remove(payloadPath)
@@ -223,11 +215,6 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Error removing file: %v", err)
 	}
 	log.Infof("Payload file removed")
-
-	if !isVulnerable {
-		log.Infof("Version %q not vulnerable", bentomlVersion)
-		return nil, nil
-	}
 
 	return []*detector.Finding{&detector.Finding{
 		Adv: &detector.Advisory{
