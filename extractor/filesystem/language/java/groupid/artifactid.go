@@ -21,4 +21,6 @@ var artifactIDToGroupID = map[string]string{
 	"spring-webmvc-portlet": "org.springframework",
 	"spring-webmvc-struts":  "org.springframework",
 	"spring-websocket":      "org.springframework",
+	"org/apache/axis":       "org.apache.axis",
+	"axis":                  "org.apache.axis",
 }

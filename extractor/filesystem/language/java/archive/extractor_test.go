@@ -511,6 +511,23 @@ func TestExtract(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name:        "Apache Axis package with incorrect artifact and group ID and space in version",
+			description: "The MANIFEST.MF file has 4 main issues: 1) The Name field is `org/apache/axis` which is incorrect. 2) The Implementation-Title field is `Apache Axis` which is incorrect. 3) The Implementation-Version field is has spaces `1.4 1855 April 22 2006`. 4) There is a blank new line in the file.",
+			path:        filepath.FromSlash("testdata/axis"),
+			contentPath: filepath.FromSlash("testdata/axis/MANIFEST.MF"),
+			cfg: archive.Config{
+				ExtractFromFilename: true,
+			},
+			want: []*extractor.Inventory{{
+				Name:     "axis",
+				Version:  "1.4",
+				Metadata: &archive.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
+				Locations: []string{
+					filepath.FromSlash("testdata/axis/MANIFEST.MF"),
+				},
+			}},
+		},
 	}
 
 	for _, tt := range tests {

@@ -28,6 +28,12 @@ import (
 	"github.com/google/osv-scalibr/log"
 )
 
+var (
+	nameToArtifactID = map[string]string{
+		"org/apache/axis": "axis",
+	}
+)
+
 // manifest for identifying Maven package.
 type manifest struct {
 	GroupID    string
@@ -49,7 +55,7 @@ func parseManifest(f *zip.File) (manifest, error) {
 
 	log.Debugf("Parsing manifest file %s\n", f.Name)
 
-	rd := textproto.NewReader(bufio.NewReader(file))
+	rd := textproto.NewReader((bufio.NewReader(NewOmitEmptyLinesReader(file))))
 	h, err := rd.ReadMIMEHeader()
 	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
 	// parsed correctly anyway, so skip the error and continue.
@@ -146,6 +152,11 @@ func getArtifactID(h textproto.MIMEHeader) string {
 		return id
 	}
 
+	id = getKnownArtifactIDFromName(h)
+	if id != "" {
+		return id
+	}
+
 	keys := []string{
 		"Name",
 		"Implementation-Title",
@@ -172,7 +183,14 @@ func getVersion(h textproto.MIMEHeader) string {
 	for _, k := range keys {
 		log.Debugf("  %s: %s\n", k, h.Get(k))
 	}
-	return getFirst(h, keys)
+
+	// Some versions contain extra information like the buld number or date.
+	// For example "1.4 1855 April 22 2006"
+	// We only want the first part.
+	version := getFirst(h, keys)
+	version = strings.Split(version, " ")[0]
+
+	return version
 }
 
 func getFirst(h textproto.MIMEHeader, names []string) string {
@@ -208,6 +226,17 @@ func getArtifactIDForBundlePlugin(h textproto.MIMEHeader) string {
 	return ""
 }
 
+// getKnownArtifactIDFromName returns the artifact ID known packages that have an incorrect artifact ID.
+//
+// For example, the Apache Axis package has the following Name in it's manifest:
+//
+//	Name: org/apache/axis
+//
+// But the correct artifact ID is `axis`.
+func getKnownArtifactIDFromName(h textproto.MIMEHeader) string {
+	return nameToArtifactID[h.Get("Name")]
+}
+
 func getFirstValidArtifactID(h textproto.MIMEHeader, names []string) string {
 	for _, n := range names {
 		if validArtifactID(h.Get(n)) {
@@ -235,4 +264,25 @@ func validArtifactID(name string) bool {
 	}
 
 	return true
+}
+
+// NewOmitEmptyLinesReader returns a new reader that omits empty lines from the input reader.
+func NewOmitEmptyLinesReader(r io.Reader) io.Reader {
+	pr, pw := io.Pipe()
+
+	go func() {
+		defer pw.Close()
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if line != "" {
+				pw.Write([]byte(line + "\n"))
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			pw.CloseWithError(err)
+		}
+	}()
+
+	return pr
 }
