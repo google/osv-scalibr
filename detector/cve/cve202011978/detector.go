@@ -45,16 +45,18 @@ type airflowPackageNames struct {
 	affectedVersions []string
 }
 
-var (
-	filesys           scalibrfs.FS
-	seededRand        = rand.New(rand.NewSource(time.Now().UnixNano()))
+const (
+	airflowServerIP   = "127.0.0.1"
 	airflowServerPort = 8080
 	defaultTimeout    = 5 * time.Second
 	schedulerTimeout  = 10 * time.Second
 	loopTimeout       = 2 * time.Minute
-	randFilePath      = fmt.Sprintf("/tmp/%s", randomString(16))
-	airflowServerIP   = "127.0.0.1"
-	airflowPackages   = []airflowPackageNames{
+)
+
+var (
+	seededRand      = rand.New(rand.NewSource(time.Now().UnixNano()))
+	randFilePath    = fmt.Sprintf("/tmp/%s", randomString(16))
+	airflowPackages = []airflowPackageNames{
 		{
 			packageType: "pypi",
 			name:        "apache-airflow",

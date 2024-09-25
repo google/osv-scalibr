@@ -44,8 +44,11 @@ type sparkUIPackageNames struct {
 	affectedVersions []string
 }
 
+const (
+	defaultTimeout = 5 * time.Second
+)
+
 var (
-	defaultTimeout    = 5 * time.Second
 	seededRand        = rand.New(rand.NewSource(time.Now().UnixNano()))
 	sparkServersPorts = []int{4040, 8080}
 	sparkUIPackages   = []sparkUIPackageNames{

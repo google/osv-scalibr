@@ -48,16 +48,18 @@ type bentomlPackageNames struct {
 	fixedVersion string
 }
 
-var (
-	filesys scalibrfs.FS
-	// Base64 encoded payload b'\x80\x04\x95?\x00\x00\x00\x00\x00\x00\x00\x8c\x05posix\x94\x8c\x06system\x94\x93\x94\x8c$touch /tmp/bentoml-poc-CVE-2024-2912\x94\x85\x94R\x94.'
-	pickledPayload    = []byte("gASVPwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjCR0b3VjaCAvdG1wL2JlbnRvbWwtcG9jLUNWRS0yMDI0LTI5MTKUhZRSlC4=")
+const (
 	payloadPath       = "/tmp/bentoml-poc-CVE-2024-2912"
 	bentomlServerPort = 3000
 	defaultTimeout    = 5 * time.Second
 	schedulerTimeout  = 40 * time.Second
 	bentomlServerIP   = "127.0.0.1"
-	bentomlPackages   = []bentomlPackageNames{
+)
+
+var (
+	// Base64 encoded payload b'\x80\x04\x95?\x00\x00\x00\x00\x00\x00\x00\x8c\x05posix\x94\x8c\x06system\x94\x93\x94\x8c$touch /tmp/bentoml-poc-CVE-2024-2912\x94\x85\x94R\x94.'
+	pickledPayload  = []byte("gASVPwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjCR0b3VjaCAvdG1wL2JlbnRvbWwtcG9jLUNWRS0yMDI0LTI5MTKUhZRSlC4=")
+	bentomlPackages = []bentomlPackageNames{
 		{
 			packageType:  "pypi",
 			name:         "bentoml",
@@ -192,7 +194,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
 	}
 
-	isAccessible = CheckAccessibility(ctx,bentomlServerIP, bentomlServerPort)
+	isAccessible = CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort)
 	if !isAccessible {
 		log.Infof("BentoML server not accessible")
 		return nil, nil

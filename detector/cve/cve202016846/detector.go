@@ -55,14 +55,16 @@ type saltPackageNames struct {
 	affectedVersions []string
 }
 
-var (
-	filesys        scalibrfs.FS
-	seededRand     = rand.New(rand.NewSource(time.Now().UnixNano()))
+const (
 	saltServerPort = 8000
 	defaultTimeout = 5 * time.Second
-	randFilePath   = fmt.Sprintf("/tmp/%s", randomString(16))
 	saltServerIP   = "127.0.0.1"
-	saltPackages   = []saltPackageNames{
+)
+
+var (
+	seededRand   = rand.New(rand.NewSource(time.Now().UnixNano()))
+	randFilePath = fmt.Sprintf("/tmp/%s", randomString(16))
+	saltPackages = []saltPackageNames{
 		{
 			packageType: "pypi",
 			name:        "salt",
