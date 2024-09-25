@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
@@ -69,6 +70,8 @@ import (
 var (
 	// Language extractors.
 
+	// C++ extractors.
+	Cpp []filesystem.Extractor = []filesystem.Extractor{conanlock.Extractor{}}
 	// Java extractors.
 	Java []filesystem.Extractor = []filesystem.Extractor{
 		gradlelockfile.Extractor{},
@@ -131,6 +134,7 @@ var (
 	Default []filesystem.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR. These don't include the untested extractors which can be enabled manually.
 	All []filesystem.Extractor = slices.Concat(
+		Cpp,
 		Java,
 		Javascript,
 		Python,
@@ -150,12 +154,12 @@ var (
 	// Untested extractors are OSV extractors without tests.
 	// TODO(b/307735923): Add tests for these and move them into All.
 	Untested []filesystem.Extractor = []filesystem.Extractor{
-		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
 	}
 
 	extractorNames = map[string][]filesystem.Extractor{
 		// Languages.
+		"cpp":        Cpp,
 		"java":       Java,
 		"javascript": Javascript,
 		"python":     Python,
