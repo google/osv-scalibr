@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
@@ -66,6 +67,8 @@ import (
 var (
 	// Language extractors.
 
+	// C++ extractors.
+	Cpp []filesystem.Extractor = []filesystem.Extractor{conanlock.Extractor{}}
 	// Java extractors.
 	Java []filesystem.Extractor = []filesystem.Extractor{
 		gradlelockfile.Extractor{},
@@ -136,7 +139,6 @@ var (
 	// Untested extractors are OSV extractors without tests.
 	// TODO(b/307735923): Add tests for these and move them into All.
 	Untested []filesystem.Extractor = []filesystem.Extractor{
-		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
 		osv.Wrapper{ExtractorName: "dart/pubspec", ExtractorVersion: 0, PURLType: purl.TypePub, Extractor: lockfile.PubspecLockExtractor{}},
 		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
@@ -144,6 +146,7 @@ var (
 
 	extractorNames = map[string][]filesystem.Extractor{
 		// Languages.
+		"cpp":        Cpp,
 		"java":       Java,
 		"javascript": Javascript,
 		"python":     Python,
