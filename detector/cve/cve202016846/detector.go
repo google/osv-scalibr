@@ -121,9 +121,6 @@ func findSaltVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inv
 
 // Scan checks for the presence of the Salt CVE-2020-16846 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	cherrypyPresence := false
-	exploitReturn := false
-
 	saltVersion, inventory, affectedVersions := findSaltVersions(ix)
 	if saltVersion == "" {
 		log.Infof("No Salt version found")
@@ -143,14 +140,12 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	log.Infof("Found Potentially vulnerable Salt version %v", saltVersion)
 
-	cherrypyPresence = CheckForCherrypy(saltServerIP, saltServerPort)
-	if !cherrypyPresence {
+	if !CheckForCherrypy(saltServerIP, saltServerPort) {
 		log.Infof("Cherry py not found. Version %q not vulnerable", saltVersion)
 		return nil, nil
 	}
 
-	exploitReturn = ExploitSalt(ctx, saltServerIP, saltServerPort)
-	if !exploitReturn {
+	if !ExploitSalt(ctx, saltServerIP, saltServerPort) {
 		log.Infof("Version %q not vulnerable", saltVersion)
 		return nil, nil
 	}

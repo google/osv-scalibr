@@ -146,13 +146,13 @@ func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 
 // Scan checks for the presence of the airflow CVE-2020-11978 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	isVulnVersion := false
-
 	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
 	if airflowVersion == "" {
 		log.Infof("No airflow version found")
 		return nil, nil
 	}
+
+	isVulnVersion := false
 	for _, r := range affectedVersions {
 		if strings.Contains(airflowVersion, r) {
 			isVulnVersion = true
@@ -233,7 +233,6 @@ func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
 // CheckForBashTask checks if the airflow server has a bash task.
 func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	target := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/tasks/bash_task", airflowIP, airflowServerPort)
-	BashTaskPresence := false
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
@@ -243,7 +242,7 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	}
 	defer resp.Body.Close()
 
-	BashTaskPresence = resp.StatusCode == 200
+	BashTaskPresence := resp.StatusCode == 200
 	if !BashTaskPresence {
 		return false
 	}

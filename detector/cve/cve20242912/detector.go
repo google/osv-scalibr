@@ -160,8 +160,6 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 
 // Scan checks for the presence of the BentoML CVE-2024-2912 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	isVulnVersion := false
-
 	bentomlVersion, inventory, fixedVersion := findBentomlVersions(ix)
 	if bentomlVersion == "" {
 		log.Infof("No BentoML version found")
@@ -176,6 +174,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 
 	// Check if the installed version is lower than the fixed.
+	isVulnVersion := false
 	if bv[0] < fbv[0] {
 		isVulnVersion = true
 	} else if bv[0] == fbv[0] && bv[1] < fbv[1] {
