@@ -53,7 +53,6 @@ type conanLockFile struct {
 	PythonRequires []string `json:"python_requires,omitempty"`
 }
 
-// TODO this is tentative and subject to change depending on the OSV schema
 const conanEcosystem string = "ConanCenter"
 
 func parseConanRenference(ref string) conanReference {
