@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
@@ -76,7 +77,10 @@ var (
 		poetrylock.Extractor{},
 	}
 	// Go extractors.
-	Go []filesystem.Extractor = []filesystem.Extractor{gobinary.New(gobinary.DefaultConfig())}
+	Go []filesystem.Extractor = []filesystem.Extractor{
+		gobinary.New(gobinary.DefaultConfig()),
+		&gomod.Extractor{},
+	}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
@@ -127,7 +131,6 @@ var (
 	Untested []filesystem.Extractor = []filesystem.Extractor{
 		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
 		osv.Wrapper{ExtractorName: "dart/pubspec", ExtractorVersion: 0, PURLType: purl.TypePub, Extractor: lockfile.PubspecLockExtractor{}},
-		osv.Wrapper{ExtractorName: "go/gomod", ExtractorVersion: 0, PURLType: purl.TypeGolang, Extractor: lockfile.GoLockExtractor{}},
 		osv.Wrapper{ExtractorName: "java/gradle", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.GradleLockExtractor{}},
 		osv.Wrapper{ExtractorName: "java/pomxml", ExtractorVersion: 0, PURLType: purl.TypeMaven, Extractor: lockfile.MavenLockExtractor{}},
 		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
