@@ -1,40 +1,24 @@
-// Copyright 2024 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package packagelockjson_test
 
 import (
 	"context"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
 
-func TestFileRequired(t *testing.T) {
+func TestExtractor_FileRequired(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
@@ -44,24 +28,35 @@ func TestFileRequired(t *testing.T) {
 		wantResultMetric stats.FileRequiredResult
 	}{
 		{
+			name:         "Empty path",
+			path:         filepath.FromSlash(""),
+			wantRequired: false,
+		},
+		{
 			name:             "package-lock.json",
-			path:             "foo/package-lock.json",
+			path:             filepath.FromSlash("package-lock.json"),
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:         "package.json",
-			path:         "foo/package.json",
+			name:             "package-lock.json at the end of a path",
+			path:             filepath.FromSlash("path/to/my/package-lock.json"),
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "package-lock.json as path segment",
+			path:         filepath.FromSlash("path/to/my/package-lock.json/file"),
 			wantRequired: false,
 		},
 		{
-			name:         "asdf.json",
-			path:         "foo/asdf.json",
+			name:         "package-lock.json.file (wrong extension)",
+			path:         filepath.FromSlash("path/to/my/package-lock.json.file"),
 			wantRequired: false,
 		},
 		{
-			name:         "foo-package-lock.json",
-			path:         "foo-package-lock.json",
+			name:         "path.to.my.package-lock.json",
+			path:         filepath.FromSlash("path.to.my.package-lock.json"),
 			wantRequired: false,
 		},
 		{
@@ -136,106 +131,6 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		wantInventory    []*extractor.Inventory
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
-	}{
-		{
-			name: "package-lock.v1",
-			path: "testdata/package-lock.v1.json",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					Locations: []string{"testdata/package-lock.v1.json"},
-				},
-				&extractor.Inventory{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					Locations: []string{"testdata/package-lock.v1.json"},
-				},
-			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
-		},
-		{
-			name: "package-lock.v2",
-			path: "testdata/package-lock.v2.json",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					Locations: []string{"testdata/package-lock.v2.json"},
-				},
-				&extractor.Inventory{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					Locations: []string{"testdata/package-lock.v2.json"},
-				},
-			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
-		},
-		{
-			name:             "invalid json",
-			path:             "testdata/invalid.json",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
-		},
-		{
-			name:             "not json",
-			path:             "testdata/notjson",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			collector := testcollector.New()
-			var e filesystem.Extractor = packagelockjson.New(packagelockjson.Config{Stats: collector})
-
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatalf("Failed to stat test file: %v", err)
-			}
-
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Reader: r, Info: info}
-			got, err := e.Extract(context.Background(), input)
-			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
-				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
-			}
-
-			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(tt.wantInventory, got, cmpopts.SortSlices(sort)); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
-			}
-
-			gotResultMetric := collector.FileExtractedResult(tt.path)
-			if gotResultMetric != tt.wantResultMetric {
-				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
-			}
-
-			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
-			if gotFileSizeMetric != info.Size() {
-				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
-			}
-		})
-	}
-}
-
 func TestToPURL(t *testing.T) {
 	e := packagelockjson.Extractor{}
 	i := &extractor.Inventory{
@@ -254,5 +149,55 @@ func TestToPURL(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+	}
+}
+
+func TestMetricCollector(t *testing.T) {
+	tests := []struct {
+		name             string
+		inputConfig      extracttest.ScanInputMockConfig
+		wantResultMetric stats.FileExtractedResult
+	}{
+		{
+			name: "invalid package-lock.json",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/not-json.txt",
+			},
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name: "valid package-lock.json",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/one-package.v1.json",
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			collector := testcollector.New()
+			extr := packagelockjson.New(packagelockjson.Config{
+				Stats: collector,
+			})
+
+			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			// Results are tested in the other files
+			_, _ = extr.Extract(context.Background(), &scanInput)
+
+			gotResultMetric := collector.FileExtractedResult(tt.inputConfig.Path)
+			if gotResultMetric != tt.wantResultMetric {
+				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.inputConfig.Path, gotResultMetric, tt.wantResultMetric)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.inputConfig.Path)
+			if gotFileSizeMetric != scanInput.Info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.inputConfig.Path, gotFileSizeMetric, scanInput.Info.Size())
+			}
+		})
 	}
 }
