@@ -27,14 +27,11 @@ type conanReference struct {
 	TimeStamp       string
 }
 
+// conanGraphNode contains a subset of a graph entry that includes inventory information
 type conanGraphNode struct {
-	Pref      string `json:"pref"`
-	Ref       string `json:"ref"`
-	Options   string `json:"options"`
-	PackageID string `json:"package_id"`
-	Prev      string `json:"prev"`
-	Path      string `json:"path"`
-	Context   string `json:"context"`
+	Pref string `json:"pref"`
+	Ref  string `json:"ref"`
+	Path string `json:"path"`
 }
 
 type conanGraphLock struct {
@@ -44,9 +41,7 @@ type conanGraphLock struct {
 type conanLockFile struct {
 	Version string `json:"version"`
 	// conan v0.4- lockfiles use "graph_lock", "profile_host" and "profile_build"
-	GraphLock    conanGraphLock `json:"graph_lock,omitempty"`
-	ProfileHost  string         `json:"profile_host,omitempty"`
-	ProfileBuild string         `json:"profile_build,omitempty"`
+	GraphLock conanGraphLock `json:"graph_lock,omitempty"`
 	// conan v0.5+ lockfiles use "requires", "build_requires" and "python_requires"
 	Requires       []string `json:"requires,omitempty"`
 	BuildRequires  []string `json:"build_requires,omitempty"`
@@ -84,9 +79,9 @@ func parseConanRenference(ref string) conanReference {
 	parts = strings.SplitN(ref, "@", 2)
 	if len(parts) == 2 {
 		ref = parts[0]
-		UsernameChannel := parts[1]
+		usernameChannel := parts[1]
 
-		parts = strings.SplitN(UsernameChannel, "/", 2)
+		parts = strings.SplitN(usernameChannel, "/", 2)
 		reference.Username = parts[0]
 		if len(parts) == 2 {
 			reference.Channel = parts[1]
@@ -129,6 +124,7 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Inventory {
 		if reference.Name == "" {
 			continue
 		}
+
 		packages = append(packages, &extractor.Inventory{
 			Name:    reference.Name,
 			Version: reference.Version,
