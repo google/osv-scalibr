@@ -1,3 +1,17 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package packagelockjson extracts yarn.lock files.
 package packagelockjson
 
@@ -65,8 +79,6 @@ type packageDetails struct {
 	Commit    string
 	DepGroups []string
 }
-
-const npmEcosystem string = "npm"
 
 type npmPackageDetailsMap map[string]packageDetails
 
@@ -336,7 +348,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	packages := maps.Values(parseNpmLock(*parsedLockfile))
@@ -377,7 +389,7 @@ func (e Extractor) ToCPEs(_ *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(_ *extractor.Inventory) (string, error) {
-	return npmEcosystem, nil
+	return "npm", nil
 }
 
 var _ filesystem.Extractor = Extractor{}
