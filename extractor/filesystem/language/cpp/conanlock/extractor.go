@@ -48,8 +48,6 @@ type conanLockFile struct {
 	PythonRequires []string `json:"python_requires,omitempty"`
 }
 
-const conanEcosystem string = "ConanCenter"
-
 func parseConanRenference(ref string) conanReference {
 	// very flexible format name/version[@username[/channel]][#rrev][:pkgid[#prev]][%timestamp]
 	var reference conanReference
@@ -229,7 +227,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('ConanCenter') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return conanEcosystem, nil
+	return "ConanCenter", nil
 }
 
 var _ filesystem.Extractor = Extractor{}
