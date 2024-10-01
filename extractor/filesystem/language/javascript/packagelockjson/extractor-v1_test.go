@@ -37,8 +37,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
-			WantInventory: []*extractor.Inventory{},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "no packages",
