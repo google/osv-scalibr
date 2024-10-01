@@ -38,8 +38,6 @@ type renvLockfile struct {
 	Packages map[string]renvPackage `json:"Packages"`
 }
 
-const cranEcosystem string = "CRAN"
-
 // Extractor extracts CRAN packages from renv.lock files.
 type Extractor struct{}
 
@@ -73,7 +71,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	for _, pkg := range parsedLockfile.Packages {
 		// currently we only support CRAN
-		if pkg.Repository != string(cranEcosystem) {
+		if pkg.Repository != "CRAN" {
 			continue
 		}
 
@@ -101,7 +99,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('CRAN') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return cranEcosystem, nil
+	return "CRAN", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

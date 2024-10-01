@@ -39,8 +39,6 @@ type cargoLockFile struct {
 	Packages []cargoLockPackage `toml:"package"`
 }
 
-const cargoEcosystem string = "crates.io"
-
 // Extractor extracts crates.io packages from Cargo.lock files.
 type Extractor struct{}
 
@@ -97,7 +95,7 @@ func (e Extractor) ToCPEs(_ *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(_ *extractor.Inventory) (string, error) {
-	return cargoEcosystem, nil
+	return "crates.io", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

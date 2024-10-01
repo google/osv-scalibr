@@ -42,8 +42,6 @@ type pipenvLockFile struct {
 	PackagesDev map[string]pipenvPackage `json:"develop"`
 }
 
-const pipenvEcosystem = "PyPI"
-
 // Extractor extracts python packages from Pipfile.lock files.
 type Extractor struct{}
 
@@ -131,7 +129,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return pipenvEcosystem, nil
+	return "PyPI", nil
 }
 
 var _ filesystem.Extractor = Extractor{}
