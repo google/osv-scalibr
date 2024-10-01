@@ -1,9 +1,24 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package commitextractor provides a function to extract commit hash from the full git URL
 package commitextractor
 
 import (
 	"net/url"
 	"regexp"
+	"slices"
 )
 
 // language=GoRegExp
@@ -25,6 +40,7 @@ var matchers = []*regexp.Regexp{
 
 // TryExtractCommit tries to extract the commit hash from a full git url.
 func TryExtractCommit(resolution string) string {
+	// Test with regexes first
 	for _, re := range matchers {
 		matched := re.FindStringSubmatch(resolution)
 
@@ -33,30 +49,31 @@ func TryExtractCommit(resolution string) string {
 		}
 	}
 
+	// Otherwise, check if we can retrieve the hash from either the fragment or
+	// the query ref
 	u, err := url.Parse(resolution)
 
-	if err == nil {
-		gitRepoHosts := []string{
-			"bitbucket.org",
-			"github.com",
-			"gitlab.com",
-		}
+	if err != nil {
+		return ""
+	}
 
-		for _, host := range gitRepoHosts {
-			if u.Host != host {
-				continue
-			}
+	gitRepoHosts := []string{
+		"bitbucket.org",
+		"github.com",
+		"gitlab.com",
+	}
 
-			if u.RawQuery != "" {
-				queries := u.Query()
+	if !slices.Contains(gitRepoHosts, u.Host) {
+		return ""
+	}
 
-				if queries.Has("ref") {
-					return queries.Get("ref")
-				}
-			}
+	if u.RawQuery == "" {
+		return u.Fragment
+	}
 
-			return u.Fragment
-		}
+	queries := u.Query()
+	if queries.Has("ref") {
+		return queries.Get("ref")
 	}
 
 	return ""
