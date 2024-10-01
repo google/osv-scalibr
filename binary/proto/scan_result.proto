@@ -91,6 +91,7 @@ message Inventory {
     COSPackageMetadata cos_metadata = 13;
     SPDXPackageMetadata spdx_metadata = 14;
     JavaArchiveMetadata java_archive_metadata = 15;
+    JavaLockfileMetadata java_lockfile_metadata = 31;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
@@ -309,6 +310,13 @@ message JavaArchiveMetadata {
   string artifact_id = 2;
   string group_id = 3;
   string sha1 = 4;
+}
+
+// The additional data found in Java lockfiles.
+message JavaLockfileMetadata {
+  string artifact_id = 1;
+  string group_id = 2;
+  repeated string dep_group_vals = 3;
 }
 
 // The additional data for packages extracted by an OSV extractor wrapper.
