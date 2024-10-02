@@ -63,7 +63,7 @@ func (Detector) RequiredExtractors() []string {
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	rayVersion, inventory := findRayPackage(ix)
 	if rayVersion == "" {
-		log.Infof("No Ray version found")
+		log.Debugf("No Ray version found")
 		return nil, nil
 	}
 	log.Infof("Ray version found")
