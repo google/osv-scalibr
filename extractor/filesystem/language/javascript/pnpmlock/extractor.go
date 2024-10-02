@@ -79,9 +79,6 @@ func (l *pnpmLockfile) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// PnpmEcosystem is the OSV ecpsystem for pnpm-lock.yaml files.
-const PnpmEcosystem = "npm"
-
 var (
 	numberMatcher = regexp.MustCompile(`^\d`)
 	// Looks for the pattern "name@version", where name is allowed to contain zero or more "@"
@@ -274,7 +271,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return PnpmEcosystem, nil
+	return "npm", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

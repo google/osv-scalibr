@@ -36,8 +36,6 @@ const (
 	gradleLockFileEmptyPrefix   = "empty="
 )
 
-const mavenEcosystem string = "Maven"
-
 func isGradleLockFileDepLine(line string) bool {
 	ret := strings.HasPrefix(line, gradleLockFileCommentPrefix) ||
 		strings.HasPrefix(line, gradleLockFileEmptyPrefix)
@@ -132,7 +130,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return mavenEcosystem, nil
+	return "Maven", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

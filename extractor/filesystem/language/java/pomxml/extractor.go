@@ -97,8 +97,6 @@ type mavenLockFile struct {
 	ManagedDependencies []mavenLockDependency `xml:"dependencyManagement>dependencies>dependency"`
 }
 
-const mavenEcosystem string = "Maven"
-
 type mavenLockProperties struct {
 	m map[string]string
 }
@@ -222,7 +220,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return mavenEcosystem, nil
+	return "Maven", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

@@ -42,8 +42,6 @@ type pdmLockFile struct {
 	Packages []pdmLockPackage `toml:"package"`
 }
 
-const pdmEcosystem = "PyPI"
-
 // Extractor extracts python packages from pdm.lock files.
 type Extractor struct{}
 
@@ -132,7 +130,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return pdmEcosystem, nil
+	return "PyPI", nil
 }
 
 var _ filesystem.Extractor = Extractor{}
