@@ -273,13 +273,13 @@ func New(cfg Config) *Extractor {
 	}
 }
 
-// Name of the extractor
+// Name of the extractor.
 func (e Extractor) Name() string { return "javascript/packagelockjson" }
 
-// Version of the extractor
+// Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
-// Requirements of the extractor
+// Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
@@ -342,7 +342,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
 	packages := maps.Values(parseNpmLock(*parsedLockfile))
