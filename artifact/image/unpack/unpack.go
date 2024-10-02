@@ -37,9 +37,6 @@ import (
 const (
 	// SymlinkRetain specifies that the symlink should be retained as a symlink.
 	SymlinkRetain SymlinkResolution = "symlink_retain"
-	// SymlinkCopy specifies that the content of the target is copied to the symlink path,
-	// converting the symlink to a regular file.
-	SymlinkCopy SymlinkResolution = "symlink_copy"
 	// SymlinkIgnore specifies that the symlink should be ignored.
 	SymlinkIgnore SymlinkResolution = "symlink_ignore"
 
@@ -156,7 +153,7 @@ func NewUnpacker(cfg *UnpackerConfig) (*Unpacker, error) {
 
 // UnpackSquashed squashes the layers of image then copies its contents to dir.
 func (u *Unpacker) UnpackSquashed(dir string, image v1.Image) error {
-	if u.SymlinkResolution == SymlinkIgnore || u.SymlinkResolution == SymlinkCopy {
+	if u.SymlinkResolution == SymlinkIgnore {
 		return fmt.Errorf("symlink resolution strategy %q is not supported", u.SymlinkResolution)
 	}
 
@@ -230,7 +227,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 // The returned list contains the digests of the image layers from in order oldest/base layer first, and most-recent/top layer last.
 func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 
-	if u.SymlinkResolution == SymlinkIgnore || u.SymlinkResolution == SymlinkCopy {
+	if u.SymlinkResolution == SymlinkIgnore {
 		return nil, fmt.Errorf("symlink resolution strategy %q is not supported", u.SymlinkResolution)
 	}
 

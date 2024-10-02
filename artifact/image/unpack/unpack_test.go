@@ -62,28 +62,28 @@ func TestNewUnpacker(t *testing.T) {
 	}, {
 		name: "missing SymlinkErrStrategy",
 		cfg: &unpack.UnpackerConfig{
-			SymlinkResolution: unpack.SymlinkCopy,
+			SymlinkResolution: unpack.SymlinkRetain,
 			Requirer:          &require.FileRequirerAll{},
 		},
 		wantErr: cmpopts.AnyError,
 	}, {
 		name: "missing Requirer",
 		cfg: &unpack.UnpackerConfig{
-			SymlinkResolution:  unpack.SymlinkCopy,
+			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 		},
 		wantErr: cmpopts.AnyError,
 	}, {
 		name: "0 MaxFileBytes bytes",
 		cfg: &unpack.UnpackerConfig{
-			SymlinkResolution:  unpack.SymlinkCopy,
+			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 			MaxPass:            100,
 			MaxFileBytes:       0,
 			Requirer:           &require.FileRequirerAll{},
 		},
 		want: &unpack.Unpacker{
-			SymlinkResolution:  unpack.SymlinkCopy,
+			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 			MaxPass:            100,
 			MaxSizeBytes:       1024 * 1024 * 1024 * 1024, // 1TB
@@ -92,14 +92,14 @@ func TestNewUnpacker(t *testing.T) {
 	}, {
 		name: "all fields populated",
 		cfg: &unpack.UnpackerConfig{
-			SymlinkResolution:  unpack.SymlinkCopy,
+			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 			MaxPass:            100,
 			MaxFileBytes:       1024 * 1024 * 5, // 5MB
 			Requirer:           &require.FileRequirerAll{},
 		},
 		want: &unpack.Unpacker{
-			SymlinkResolution:  unpack.SymlinkCopy,
+			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 			MaxPass:            100,
 			MaxSizeBytes:       1024 * 1024 * 5, // 5MB
@@ -282,12 +282,6 @@ func TestUnpackSquashed(t *testing.T) {
 		dir:   mustMkdirTemp(t),
 		image: mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
 		want:  map[string]contentAndMode{},
-	}, {
-		name:    "return error for unimplemented symlink copy resolution strategy",
-		cfg:     unpack.DefaultUnpackerConfig().WithSymlinkResolution(unpack.SymlinkCopy),
-		dir:     mustMkdirTemp(t),
-		image:   mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
-		wantErr: cmpopts.AnyError,
 	}, {
 		name:    "return error for unimplemented symlink ignore resolution strategy",
 		cfg:     unpack.DefaultUnpackerConfig().WithSymlinkResolution(unpack.SymlinkIgnore),
