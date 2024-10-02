@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -374,6 +375,13 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ArtifactId: m.ArtifactID,
 				GroupId:    m.GroupID,
 				Sha1:       m.SHA1,
+			},
+		}
+	case *javalockfile.Metadata:
+		i.Metadata = &spb.Inventory_JavaLockfileMetadata{
+			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
+				ArtifactId: m.ArtifactID,
+				GroupId:    m.GroupID,
 			},
 		}
 	case *osv.Metadata:

@@ -25,6 +25,8 @@ import (
 	"io"
 	"io/fs"
 	"path"
+
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // walkDirUnsorted recursively descends path, calling walkDirFn. From caller side this function
@@ -35,7 +37,7 @@ import (
 // during the walk, which is then not seen by the walk. That problem existed also with fs.WalkDir,
 // which would return files which do not exist anymore. More details for unix:
 // https://man7.org/linux/man-pages/man2/getdents.2.html
-func walkDirUnsorted(fsys fs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc) error {
+func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc) error {
 	// This is the main call to walkDirFn for files and directories, without errors.
 	if err := walkDirFn(name, d, nil); err != nil || !d.IsDir() {
 		if err == fs.SkipDir && d.IsDir() {
@@ -101,7 +103,7 @@ func walkDirUnsorted(fsys fs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDi
 //
 // WalkDirUnsorted does not follow symbolic links found in directories,
 // but if root itself is a symbolic link, its target will be walked.
-func WalkDirUnsorted(fsys fs.FS, root string, fn fs.WalkDirFunc) error {
+func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc) error {
 	info, err := fs.Stat(fsys, root)
 	if err != nil {
 		err = fn(root, nil, err)
@@ -115,7 +117,7 @@ func WalkDirUnsorted(fsys fs.FS, root string, fn fs.WalkDirFunc) error {
 }
 
 // readDir reads the named directory and returns an iterator over the directory entries.
-func readDir(fsys fs.FS, name string) (*dirIterator, error) {
+func readDir(fsys scalibrfs.FS, name string) (*dirIterator, error) {
 	file, err := fsys.Open(name)
 	if err != nil {
 		return nil, err
@@ -123,20 +125,38 @@ func readDir(fsys fs.FS, name string) (*dirIterator, error) {
 
 	dir, ok := file.(fs.ReadDirFile)
 	if !ok {
+		// Fallback if ReadDirFile is not implemented: Use fs.DirFS's ReadDir().
+		// (Uses more memory since it reads all subdirs at once.)
 		file.Close()
-		return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
+		files, err := fsys.ReadDir(name)
+		if err != nil {
+			return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
+		}
+		return &dirIterator{files: files, curr: 0}, nil
 	}
-	return &dirIterator{dir}, nil
+	return &dirIterator{dir: dir}, nil
 }
 
 type dirIterator struct {
 	// dir is used to iterate directory entries
 	dir fs.ReadDirFile
+	// if dir doesn't implement fs.ReadDirFile, file and curr are used as
+	// fallback to iterate through a preloaded list of files
+	files []fs.DirEntry
+	curr  int
 }
 
 // next returns the next fs.DirEntry from the directory. If error is nil, there will be a
 // fs.DirEntry returned.
 func (i *dirIterator) next() (fs.DirEntry, error) {
+	if i.files != nil {
+		if i.curr >= len(i.files) {
+			return nil, io.EOF
+		}
+		i.curr++
+		return i.files[i.curr-1], nil
+	}
+
 	list, err := i.dir.ReadDir(1)
 	if err != nil {
 		return nil, err
@@ -147,5 +167,8 @@ func (i *dirIterator) next() (fs.DirEntry, error) {
 
 // close closes the directory file.
 func (i *dirIterator) close() error {
+	if i.dir == nil {
+		return nil
+	}
 	return i.dir.Close()
 }

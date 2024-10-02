@@ -42,9 +42,6 @@ type composerLock struct {
 	PackagesDev []composerPackage `json:"packages-dev"`
 }
 
-// ComposerEcosystem is the OSV ecosystem for packages described in composer.lock files.
-const ComposerEcosystem string = "Packagist"
-
 // Extractor extracts composer.lock files.
 type Extractor struct{}
 
@@ -128,7 +125,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return ComposerEcosystem, nil
+	return "Packagist", nil
 }
 
 var _ filesystem.Extractor = Extractor{}

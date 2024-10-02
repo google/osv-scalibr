@@ -47,6 +47,10 @@ type Collector interface {
 	// the filesystem handling code. This allows plugins to report internal state
 	// for metric collection.
 	AfterFileExtracted(pluginName string, filestats *FileExtractedStats)
+
+	// MaxRSS is called when the scan is finished. It is used to report the maximum resident
+	// memory usage of the scan.
+	MaxRSS(maxRSS int64)
 }
 
 // NoopCollector implements Collector by doing nothing.
@@ -72,3 +76,6 @@ func (c NoopCollector) AfterFileRequired(pluginName string, filestats *FileRequi
 
 // AfterFileExtracted implements Collector by doing nothing.
 func (c NoopCollector) AfterFileExtracted(pluginName string, filestats *FileExtractedStats) {}
+
+// MaxRSS implements Collector by doing nothing.
+func (c NoopCollector) MaxRSS(maxRSS int64) {}

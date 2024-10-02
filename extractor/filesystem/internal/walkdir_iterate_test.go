@@ -16,6 +16,8 @@
 package internal
 
 import (
+	"errors"
+	"io"
 	"io/fs"
 	"os"
 	pathpkg "path"
@@ -24,6 +26,7 @@ import (
 	"sort"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
@@ -67,7 +70,7 @@ func walkTree(n *Node, path string, f func(path string, n *Node)) {
 	}
 }
 
-func makeTree() fs.FS {
+func makeTree() scalibrfs.FS {
 	fsys := fstest.MapFS{}
 	walkTree(tree, tree.name, func(path string, n *Node) {
 		if n.entries == nil {
@@ -82,7 +85,7 @@ func makeTree() fs.FS {
 // Assumes that each node name is unique. Good enough for a test.
 // If clear is true, any incoming error is cleared before return. The errors
 // are always accumulated, though.
-func mark(entry fs.DirEntry, err error, errors *[]error, clear bool) error {
+func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clear bool) error {
 	name := entry.Name()
 	walkTree(tree, tree.name, func(path string, n *Node) {
 		if n.name == name {
@@ -115,7 +118,7 @@ func TestWalkDir(t *testing.T) {
 	errors := make([]error, 0, 10)
 	clear := true
 	markFn := func(path string, entry fs.DirEntry, err error) error {
-		return mark(entry, err, &errors, clear)
+		return mark(tree, entry, err, &errors, clear)
 	}
 	// Expect no errors.
 	err = WalkDirUnsorted(fsys, ".", markFn)
@@ -163,4 +166,80 @@ func TestIssue51617(t *testing.T) {
 	if !reflect.DeepEqual(saw, want) {
 		t.Errorf("got directories %v, want %v", saw, want)
 	}
+}
+
+// FS implementation that doesn't implement ReadDirFile on the sub-directories.
+type fakeFS struct{}
+
+func (f fakeFS) Open(name string) (fs.File, error) {
+	return &fakeFile{}, nil
+}
+func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if name == "." { // root dir
+		return []fs.DirEntry{
+			&fakeDirEntry{name: "file1.txt", isDir: false},
+			&fakeDirEntry{name: "dir", isDir: true},
+		}, nil
+	} else if name == "dir" {
+		return []fs.DirEntry{&fakeDirEntry{name: "file2.txt", isDir: false}}, nil
+	}
+	return nil, errors.New("file not found")
+}
+func (fakeFS) Stat(name string) (fs.FileInfo, error) {
+	return &fakeDirEntry{name: name, isDir: name == "." || name == "dir"}, nil
+}
+
+type fakeFile struct{}
+
+func (f *fakeFile) Stat() (fs.FileInfo, error)                { return nil, nil }
+func (f *fakeFile) Read(buffer []byte) (count int, err error) { return 0, io.EOF }
+func (*fakeFile) Close() error                                { return nil }
+
+var fakeFSTree = &Node{
+	".",
+	[]*Node{
+		{"file1.txt", nil, 0},
+		{
+			"dir",
+			[]*Node{{"file2.txt", nil, 0}},
+			0,
+		},
+	},
+	0,
+}
+
+type fakeDirEntry struct {
+	name  string
+	isDir bool
+}
+
+func (f *fakeDirEntry) Name() string               { return f.name }
+func (f *fakeDirEntry) Size() int64                { return 0 }
+func (f *fakeDirEntry) Mode() fs.FileMode          { return 0 }
+func (f *fakeDirEntry) ModTime() time.Time         { return time.Time{} }
+func (f *fakeDirEntry) IsDir() bool                { return f.isDir }
+func (f *fakeDirEntry) Type() fs.FileMode          { return 0 }
+func (f *fakeDirEntry) Info() (fs.FileInfo, error) { return nil, errors.New("not implemented") }
+func (f *fakeDirEntry) Sys() any                   { return nil }
+
+func TestWalkDirFallbackToDirFS(t *testing.T) {
+	fsys := &fakeFS{}
+	errors := make([]error, 0, 10)
+	clear := true
+	markFn := func(path string, entry fs.DirEntry, err error) error {
+		return mark(fakeFSTree, entry, err, &errors, clear)
+	}
+	// Expect no errors.
+	if err := WalkDirUnsorted(fsys, ".", markFn); err != nil {
+		t.Fatalf("no error expected, found: %s", err)
+	}
+	if len(errors) != 0 {
+		t.Fatalf("unexpected errors: %s", errors)
+	}
+	walkTree(fakeFSTree, fakeFSTree.name, func(path string, n *Node) {
+		if n.mark != 1 {
+			t.Errorf("node %s mark = %d; expected 1", path, n.mark)
+		}
+		n.mark = 0
+	})
 }

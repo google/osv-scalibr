@@ -72,9 +72,12 @@ func TestDetectorsFromNames(t *testing.T) {
 			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
 		},
 		{
-			desc:     "Find weak credentials detectors",
-			names:    []string{"weakcreds"},
-			wantDets: []string{"weakcredentials/etcshadow"},
+			desc:  "Find weak credentials detectors",
+			names: []string{"weakcreds"},
+			wantDets: []string{
+				"weakcredentials/etcshadow",
+				"weakcredentials/filebrowser",
+			},
 		},
 		{
 			desc:     "Case-insensitive",
@@ -104,7 +107,7 @@ func TestDetectorsFromNames(t *testing.T) {
 			for _, d := range got {
 				gotNames = append(gotNames, d.Name())
 			}
-			if diff := cmp.Diff(tc.wantDets, gotNames); diff != "" {
+			if diff := cmp.Diff(tc.wantDets, gotNames, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
 				t.Errorf("dl.DetectorsFromNames(%v): got diff (-want +got):\n%s", tc.names, diff)
 			}
 		})

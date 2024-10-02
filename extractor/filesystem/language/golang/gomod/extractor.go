@@ -31,8 +31,6 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-const goEcosystem string = "Go"
-
 // Extractor extracts go packages from a go.mod file,
 // including the stdlib version by using the top level go version
 //
@@ -147,7 +145,7 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return goEcosystem, nil
+	return "Go", nil
 }
 
 var _ filesystem.Extractor = Extractor{}
