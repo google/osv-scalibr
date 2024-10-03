@@ -44,9 +44,13 @@ const (
 	// Name is the unique name of this extractor.
 	Name = "containers/containerd"
 
-	// defaultMaxMetaDBFileSize is the maximum metadb size .
+	// defaultMaxMetaDBFileSize is the maximum metadb size.
 	// If Extract gets a bigger metadb file, it will return an error.
 	defaultMaxMetaDBFileSize = 500 * units.MiB
+
+	// defaultMaxStateJsonFileSize is the maximum state.json size.
+	// If Extract gets a bigger state.json file, it will return an error.
+	defaultMaxStateJSONFileSize = 5 * units.MiB
 
 	// Prefix of the path for runc state files, used to check if a container is running by runc.
 	runcStateFilePrefix = "run/containerd/runc/"
@@ -59,32 +63,37 @@ const (
 type Config struct {
 	// MaxMetaDBFileSize is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	MaxMetaDBFileSize int64
+	MaxMetaDBFileSize    int64
+	MaxStateJSONFileSize int64
 }
 
 // DefaultConfig returns the default configuration for the containerd extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxMetaDBFileSize: defaultMaxMetaDBFileSize,
+		MaxMetaDBFileSize:    defaultMaxMetaDBFileSize,
+		MaxStateJSONFileSize: defaultMaxStateJSONFileSize,
 	}
 }
 
 // Extractor extracts containers from the containerd metadb file.
 type Extractor struct {
-	maxMetaDBFileSize int64
+	maxMetaDBFileSize    int64
+	maxStateJSONFileSize int64
 }
 
 // New returns a containerd container inventory extractor.
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		maxMetaDBFileSize: cfg.MaxMetaDBFileSize,
+		maxMetaDBFileSize:    cfg.MaxMetaDBFileSize,
+		maxStateJSONFileSize: cfg.MaxStateJSONFileSize,
 	}
 }
 
 // Config returns the configuration of the extractor.
 func (e Extractor) Config() Config {
 	return Config{
-		MaxMetaDBFileSize: e.maxMetaDBFileSize,
+		MaxMetaDBFileSize:    e.maxMetaDBFileSize,
+		MaxStateJSONFileSize: e.maxStateJSONFileSize,
 	}
 }
 
@@ -119,6 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if input.Info != nil && input.Info.Size() > e.maxMetaDBFileSize {
 		return inventory, fmt.Errorf("Containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
 	}
+
 	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
 	// This will still allow to handle the snapshot of a machine.
 	metaDB, err := bolt.Open(filepath.Join(input.Root, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
@@ -128,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	defer metaDB.Close()
 
-	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root)
+	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root, e.maxStateJSONFileSize)
 	if err != nil {
 		log.Errorf("Could not get container inventory from the containerd metadb file: %v", err)
 		return inventory, err
@@ -167,7 +177,7 @@ func namespacesFromMetaDB(ctx context.Context, metaDB *bolt.DB) ([]string, error
 	return namespaces, nil
 }
 
-func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string) ([]Metadata, error) {
+func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string, maxStateJSONFileSize int64) ([]Metadata, error) {
 	var containersMetadata []Metadata
 
 	// Get list of namespaces from the containerd metadb file.
@@ -192,7 +202,8 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 		for _, ctr := range ctrs {
 			var initPID int
 			id := ctr.ID
-			if initPID = containerInitPid(scanRoot, ctr.Runtime.Name, ns, id); initPID == -1 {
+			var rootfs string
+			if initPID, rootfs = containerInitPidAndRootfs(scanRoot, ctr.Runtime.Name, ns, id, maxStateJSONFileSize); initPID == -1 {
 				continue
 			}
 			img, err := imageStore.Get(ctx, ctr.Image)
@@ -201,62 +212,94 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 			}
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
-					ImageName:      img.Name,
-					ImageDigest:    img.Target.Digest.String(),
-					Runtime:        ctr.Runtime.Name,
-					InitProcessPID: initPID})
+					ImageName:   img.Name,
+					ImageDigest: img.Target.Digest.String(),
+					Runtime:     ctr.Runtime.Name,
+					PID:         initPID,
+					RootFS:      rootfs,
+					ID:          ctr.ID})
 		}
 	}
 	return containersMetadata, nil
 }
 
-func containerInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+func containerInitPidAndRootfs(scanRoot string, runtimeName string, namespace string, id string, maxStateJSONFileSize int64) (int, string) {
 	// A typical Linux case.
 	if runtimeName == "io.containerd.runc.v2" {
-		return runcInitPid(scanRoot, runtimeName, namespace, id)
+		return runcInitPidAndRootfs(scanRoot, runtimeName, namespace, id, maxStateJSONFileSize)
 	}
 
 	// A typical Windows case.
 	if runtimeName == "io.containerd.runhcs.v1" {
-		return runhcsInitPid(scanRoot, runtimeName, namespace, id)
+		return runhcsInitPid(scanRoot, runtimeName, namespace, id), ""
 	}
 
-	return -1
+	return -1, ""
 }
 
-func runcInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+func runcInitPidAndRootfs(scanRoot string, runtimeName string, namespace string, id string, maxStateJSONFileSize int64) (int, string) {
 	// If a container is running by runc, the init pid is stored in the runc state.json file.
 	// state.json file is located at the
 	// <scanRoot>/<runcStateFilePrefix>/<namespace_name>/<container_id>/state.json path.
 	statePath := filepath.Join(scanRoot, runcStateFilePrefix, namespace, id, "state.json")
+	// Collect the fileinfo for the state.json file.
+	fileInfo, err := os.Stat(statePath)
+	if err != nil {
+		log.Info("File state.json does not exists for container %v, error: %v", id, err)
+		return -1, ""
+	}
+	if fileInfo.Size() > maxStateJSONFileSize {
+		log.Errorf("Containerd Json state file %s is too large: %d", statePath, fileInfo.Size())
+		return -1, ""
+	}
 	if _, err := os.Stat(statePath); err != nil {
 		log.Info("File state.json does not exists for container %v, error: %v", id, err)
-		return -1
+		return -1, ""
 	}
 
 	stateContent, err := os.ReadFile(statePath)
 	if err != nil {
 		log.Errorf("Could not read for %s state.json for container: %v, error: %v", id, err)
-		return -1
+		return -1, ""
 	}
 	var runcState map[string]*json.RawMessage
 	if err := json.Unmarshal([]byte(stateContent), &runcState); err != nil {
 		log.Errorf("Can't unmarshal state.json for container %v , error: %v", id, err)
-		return -1
+		return -1, ""
 	}
 	runcInitPID := runcState["init_process_pid"]
 	if runcInitPID == nil {
 		log.Errorf("Can't find field init_process_pid filed in state.json for container %v", id)
-		return -1
+		return -1, ""
 	}
 
 	var initPID int
 	if err := json.Unmarshal(*runcInitPID, &initPID); err != nil {
 		log.Errorf("Can't find field init_process_pid in state.json for container %v, error: %v", id, err)
-		return -1
+		return -1, ""
 	}
 
-	return initPID
+	// Below get the rootfs path from the state.json file.
+	config := runcState["config"]
+	if config == nil {
+		log.Errorf("Can't find field config filed in state.json for container %v", id)
+		return initPID, ""
+	}
+	var configFields map[string]*json.RawMessage
+	if err := json.Unmarshal(*config, &configFields); err != nil {
+		log.Errorf("Can't unmarshal field config in state.json for container %v, error: %v", id, err)
+		return initPID, ""
+	}
+	var rootfs string
+	// rootfs field is in config: state[config][rootfs]
+	if rootfsField := configFields["rootfs"]; rootfsField != nil {
+		if err := json.Unmarshal(*rootfsField, &rootfs); err != nil {
+			log.Errorf("Can't unmarshal field rootfs in state.json for container %v, error: %v", id, err)
+			return initPID, ""
+		}
+	}
+
+	return initPID, rootfs
 }
 
 func runhcsInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
