@@ -205,7 +205,7 @@ func TestUnpackSquashed(t *testing.T) {
 			os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("some secret\n"), 0644)
 			return innerDir
 		}(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			filepath.FromSlash("dir1/chain-symlink.txt"):                     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -225,7 +225,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			filepath.FromSlash("dir1/sample.txt"):           {content: "sample text\n", mode: fs.FileMode(0644)},
@@ -238,7 +238,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			filepath.FromSlash("dir1/chain-symlink.txt"):    {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -252,7 +252,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want:  map[string]contentAndMode{},
 	}, {
 		name: "image built from scratch (not through a tool like Docker)",
@@ -386,7 +386,7 @@ func TestUnpackLayers(t *testing.T) {
 		name:  "symlink",
 		cfg:   unpack.DefaultUnpackerConfig(),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: []digestAndContent{{
 			digest: "SQUASHED",
 			content: map[string]contentAndMode{
