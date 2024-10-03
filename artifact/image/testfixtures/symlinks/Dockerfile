@@ -13,10 +13,12 @@ RUN ln -s ./sample.txt /dir1/relative-dot-symlink.txt
 RUN ln -s sample.txt /dir1/relative-symlink.txt
 RUN ln -s absolute-symlink.txt /dir1/chain-symlink.txt
 RUN ln -s ../../secret.txt /dir1/attack-symlink.txt
+RUN ln -s /../secret.txt /dir1/attack-symlink-absolute.txt
 
 RUN ln -s ../../dir1/sample.txt /dir2/dir3/relative-subfolder-symlink.txt
 RUN ln -s /dir1/sample.txt /dir2/dir3/absolute-subfolder-symlink.txt
 RUN ln -s /dir1/chain-symlink.txt /dir2/dir3/absolute-chain-symlink.txt
+RUN ln -s /dir2/../dir1/sample.txt /dir2/dir3/absolute-symlink-inside-root.txt
 
 # - root
 #   - dir1
@@ -26,11 +28,13 @@ RUN ln -s /dir1/chain-symlink.txt /dir2/dir3/absolute-chain-symlink.txt
 #     - relative-symlink.txt -> sample.txt
 #     - chain-symlink.txt -> absolute-symlink.txt
 #     - attack-symlink.txt -> ../../secret.txt
+#     - attack-symlink-absolute.txt -> /../secret.txt
 #   - dir2
 #     - dir3
 #       - relative-subfolder-symlink.txt -> ../../dir1/sample.txt
 #       - absolute-subfolder-symlink.txt -> /dir1/sample.txt
 #       - absolute-chain-symlink.txt -> /dir1/chain-symlink.txt
+#       - absolute-symlink-inside-root.txt -> /dir2/../dir1/sample.txt
 
 FROM scratch
 

@@ -382,7 +382,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			target := header.Linkname
 			targetPath := target
 
-			if !filepath.IsAbs(target) && symlink.TargetOutsideRoot(cleanPath, target) {
+			if symlink.TargetOutsideRoot(cleanPath, target) {
 				log.Warnf("Found symlink that points outside the root, skipping: %q -> %q", cleanPath, target)
 				continue
 			}
