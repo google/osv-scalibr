@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/uuid"
 )
 
 // RemoveObsoleteSymlinks removes symlinks that point to a destination file or directory path that

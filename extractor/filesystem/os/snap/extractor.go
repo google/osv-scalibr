@@ -21,8 +21,6 @@ import (
 	"io/fs"
 	"regexp"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"github.com/go-yaml/yaml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -32,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (

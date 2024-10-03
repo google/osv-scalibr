@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/binary/cdx"
 )
 

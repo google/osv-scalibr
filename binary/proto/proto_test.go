@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/testing/protocmp"
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
@@ -39,10 +39,10 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	scalibr "github.com/google/osv-scalibr"
+	"google.golang.org/protobuf/testing/protocmp"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestWrite(t *testing.T) {

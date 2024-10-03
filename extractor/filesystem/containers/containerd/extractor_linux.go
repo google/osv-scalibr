@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	bolt "go.etcd.io/bbolt"
 	"github.com/containerd/containerd/metadata"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/google/osv-scalibr/extractor"
@@ -38,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	bolt "go.etcd.io/bbolt"
 )
 
 const (

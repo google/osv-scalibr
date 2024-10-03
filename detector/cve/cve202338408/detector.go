@@ -25,8 +25,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/detector/cve/cve202338408/semantic"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/cve/cve202338408/semantic"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"

@@ -23,12 +23,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/exp/maps"
-	"golang.org/x/mod/modfile"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/exp/maps"
+	"golang.org/x/mod/modfile"
 )
 
 // Extractor extracts go packages from a go.mod file,

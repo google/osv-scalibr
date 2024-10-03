@@ -27,8 +27,6 @@ import (
 	"time"
 
 	rpmdb "github.com/erikvarga/go-rpmdb/pkg"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
@@ -36,6 +34,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
 	_ "github.com/mattn/go-sqlite3"

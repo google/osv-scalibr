@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/sys/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/sys/windows/registry"
 )
 
 const (

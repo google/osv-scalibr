@@ -23,13 +23,13 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/osv-scanner/pkg/lockfile"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scanner/pkg/lockfile"
 )
 
 // Config is the configuration for the Extractor.

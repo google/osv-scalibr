@@ -24,14 +24,14 @@ import (
 	"slices"
 	"testing"
 
+	containerd "github.com/containerd/containerd"
+	"github.com/containerd/containerd/api/types/task"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/containerd/containerd/api/types/task"
-	containerd "github.com/containerd/containerd"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/standalone"
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd/fakeclient"
-	"github.com/google/osv-scalibr/extractor/standalone"
 )
 
 func TestExtract(t *testing.T) {

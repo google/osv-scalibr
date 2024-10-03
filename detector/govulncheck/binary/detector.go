@@ -24,7 +24,6 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/vuln/scan"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -32,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/vuln/scan"
 )
 
 const (

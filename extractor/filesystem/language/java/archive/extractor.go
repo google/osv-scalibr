@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.uber.org/multierr"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -36,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"go.uber.org/multierr"
 )
 
 const (
