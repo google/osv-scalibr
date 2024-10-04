@@ -110,7 +110,6 @@ func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int
 
 // checkAccessibility checks if the filebrowser instance is accessible given an IP and port.
 func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
-
 	client := &http.Client{Timeout: requestTimeout}
 	targetURL := fmt.Sprintf("http://%s:%d/", fileBrowserIP, fileBrowserPort)
 
@@ -125,7 +124,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 		if errors.Is(err, context.DeadlineExceeded) {
 			log.Infof(fmt.Sprintf("Timeout exceeded when accessing %s", targetURL))
 		} else {
-			log.Infof(fmt.Sprintf("Error when sending request %s to the server: %v", targetURL, err))
+			log.Debugf("Error when sending request %s to the server: %v", targetURL, err)
 		}
 		return false
 	}
