@@ -44,13 +44,20 @@ const (
 	// Name is the unique name of this extractor.
 	Name = "containers/containerd"
 
-	// defaultMaxMetaDBFileSize is the maximum metadb size .
-	// If Extract gets a bigger metadb file, it will return an error.
-	defaultMaxMetaDBFileSize = 500 * units.MiB
+	// defaultMaxFileSize is the maximum file size.
+	// If Extract gets a bigger file, it will return an error.
+	defaultMaxFileSize = 500 * units.MiB
 
-	// Prefix of the path for runc state files, used to check if a container is running by runc.
-	runcStateFilePrefix = "run/containerd/runc/"
+	// Prefix of the path for container's grpc container status file, used to collect pid for a container.
+	criPluginStatusFilePrefix = "var/lib/containerd/io.containerd.grpc.v1.cri/containers/"
 
+	// Prefix of the path for snapshotter overlayfs snapshots folders.
+	overlayfsSnapshotsPath = "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots"
+	// The path for the metadata.db file which will be used to parse the mapping between folders and container's mount points.
+	snapshotterMetadataDBPath = "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/metadata.db"
+
+	// The path for the meta.db file which will be used to parse container metadata on Linux systems.
+	linuxMetaDBPath = "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
 	// Prefix of the path for runhcs state files, used to check if a container is running by runhcs.
 	runhcsStateFilePrefix = "ProgramData/containerd/state/io.containerd.runtime.v2.task/"
 )
@@ -65,7 +72,7 @@ type Config struct {
 // DefaultConfig returns the default configuration for the containerd extractor.
 func DefaultConfig() Config {
 	return Config{
-		MaxMetaDBFileSize: defaultMaxMetaDBFileSize,
+		MaxMetaDBFileSize: defaultMaxFileSize,
 	}
 }
 
@@ -97,7 +104,7 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{DirectFS: true} }
 
-// FileRequired returns true if the specified file matches containerd metadb file pattern.
+// FileRequired returns true if the specified file matches containerd metaDB file pattern.
 func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	// On Windows the metadb file is expected to be located at the
 	// <scanRoot>/ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db path.
@@ -108,7 +115,7 @@ func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
 	// On Linux the metadb file is expected to be located at the
 	// <scanRoot>/var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db path.
 	default:
-		return path == "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
+		return path == linuxMetaDBPath
 	}
 }
 
@@ -128,7 +135,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	defer metaDB.Close()
 
-	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root)
+	var snapshotsMetadata []SnapshotMetadata
+	// If it's linux, parse the default overlayfs snapshotter metadata.db file.
+	if input.Path == linuxMetaDBPath {
+		fullMetadataDBPath := filepath.Join(input.Root, snapshotterMetadataDBPath)
+		snapshotsMetadata, err = snapshotsMetadataFromDB(fullMetadataDBPath, e.maxMetaDBFileSize, "overlayfs")
+		if err != nil {
+			return inventory, fmt.Errorf("Could not collect snapshots metadata from DB: %v", err)
+		}
+	}
+
+	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root, snapshotsMetadata)
 	if err != nil {
 		log.Errorf("Could not get container inventory from the containerd metadb file: %v", err)
 		return inventory, err
@@ -143,10 +160,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 		inventory = append(inventory, pkg)
 	}
-
 	return inventory, nil
 }
 
+// This method checks if the given file is valid to be opened, and make sure it's not oversized.
+func fileSizeCheck(filepath string, maxFileSize int64) (err error) {
+	fileInfo, err := os.Stat(filepath)
+	if err != nil {
+		return err
+	}
+	if fileInfo.Size() > maxFileSize {
+		return fmt.Errorf("File %s is too large: %d", filepath, fileInfo.Size())
+	}
+	return nil
+}
+
+// namespacesFromMetaDB returns the list of namespaces stored in the containerd metaDB file.
 func namespacesFromMetaDB(ctx context.Context, metaDB *bolt.DB) ([]string, error) {
 	var namespaces []string
 
@@ -167,9 +196,8 @@ func namespacesFromMetaDB(ctx context.Context, metaDB *bolt.DB) ([]string, error
 	return namespaces, nil
 }
 
-func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string) ([]Metadata, error) {
+func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string, snapshotsMetadata []SnapshotMetadata) ([]Metadata, error) {
 	var containersMetadata []Metadata
-
 	// Get list of namespaces from the containerd metadb file.
 	nss, err := namespacesFromMetaDB(ctx, metaDB)
 	if err != nil {
@@ -199,21 +227,190 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string)
 			if err != nil {
 				log.Errorf("Could not find the image for container %v, error: %v", id, err)
 			}
+
+			var lowerDir, upperDir, workDir string
+			// If the filesystem is overlayfs, then parse overlayfs metadata.db
+			if ctr.Snapshotter == "overlayfs" {
+				lowerDir, upperDir, workDir = collectDirs(scanRoot, snapshotsMetadata, ctr.SnapshotKey)
+			}
+
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
 					ImageName:      img.Name,
 					ImageDigest:    img.Target.Digest.String(),
 					Runtime:        ctr.Runtime.Name,
-					InitProcessPID: initPID})
+					InitProcessPID: initPID,
+					Snapshotter:    ctr.Snapshotter,
+					SnapshotKey:    ctr.SnapshotKey,
+					LowerDir:       lowerDir,
+					UpperDir:       upperDir,
+					WorkDir:        workDir})
 		}
 	}
 	return containersMetadata, nil
 }
 
+// Trim the snapshot digest to match the snapshot key in the metadata.db file.
+func digestSnapshotInfoMapping(snapshotsMetadata []SnapshotMetadata) map[string]SnapshotMetadata {
+	digestSnapshotInfoMapping := make(map[string]SnapshotMetadata)
+	for _, snapshotMetadata := range snapshotsMetadata {
+		// The snapshotMetadata.Digest is in the format of ".*/<digest>".
+		// The snapshotKey in the metadata.db file is the "<digest>" part.
+		// If the snapshotMetadata.Digest does not have the "/" or "/" is the last character, then it's
+		// not a valid snapshot digest.
+		digestSplitterIndex := strings.LastIndex(snapshotMetadata.Digest, "/")
+		if digestSplitterIndex == -1 || digestSplitterIndex == len(snapshotMetadata.Digest)-1 {
+			continue
+		}
+		shorterDigest := snapshotMetadata.Digest[digestSplitterIndex+1:]
+		digestSnapshotInfoMapping[shorterDigest] = snapshotMetadata
+	}
+	return digestSnapshotInfoMapping
+}
+
+// Format the lowerDir, upperDir and workDir for the container.
+func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string) (string, string, string) {
+	var lowerDirs []string
+	var parentSnapshotIDs []int
+	parentSnapshotIDs = getParentSnapshotIDByDigest(snapshotsMetadata, snapshotKey, parentSnapshotIDs)
+	for _, parentSnapshotID := range parentSnapshotIDs {
+		log.Infof("parentSnapshotID: %v", parentSnapshotID)
+		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(parentSnapshotID), "fs"))
+	}
+	// Sample lowerDir: lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs
+	lowerDir := strings.Join(lowerDirs, ":")
+	for _, snapshotMetadata := range snapshotsMetadata {
+		if strings.Contains(snapshotMetadata.Digest, snapshotKey) {
+			upperDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "fs")
+			workDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "work")
+			return lowerDir, upperDir, workDir
+		}
+	}
+	return lowerDir, "", ""
+}
+
+// Collect the parent snapshot ids of the given snapshot.
+func getParentSnapshotIDByDigest(snapshotsMetadata []SnapshotMetadata, digest string, parentIDList []int) []int {
+	snapshotMetadataDict := digestSnapshotInfoMapping(snapshotsMetadata)
+	if _, ok := snapshotMetadataDict[digest]; !ok {
+		log.Errorf("Could not find the parent snapshot info in the metadata.db file for digest: %v", digest)
+		return parentIDList
+	}
+	parentSnapshotMetadata := snapshotMetadataDict[digest]
+	if strings.Contains(digest, "sha256:") {
+		// start from its parent snapshots.
+		parentIDList = append(parentIDList, parentSnapshotMetadata.ID)
+	}
+	if parentSnapshotMetadata.Parent == "" {
+		return parentIDList
+	}
+	shorterDigest := parentSnapshotMetadata.Parent[strings.LastIndex(snapshotMetadataDict[digest].Parent, "/")+1:]
+	return getParentSnapshotIDByDigest(snapshotsMetadata, shorterDigest, parentIDList)
+}
+
+// Parse the snapshots information from Metadata.db if db file is valid and not too large.
+func snapshotsMetadataFromDB(fullMetadataDBPath string, maxMetaDBFileSize int64, fileSystemDriver string) ([]SnapshotMetadata, error) {
+	// extracted snapshots metadata from the metadata.db file.
+	var snapshotsMetadata []SnapshotMetadata
+
+	// Check if the file is valid to be opened, and make sure it's not too large.
+	err := fileSizeCheck(fullMetadataDBPath, maxMetaDBFileSize)
+	if err != nil {
+		return nil, fmt.Errorf("Could not read the containerd metadb file: %v", err)
+	}
+
+	metadataDB, err := bolt.Open(fullMetadataDBPath, 0444, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return nil, fmt.Errorf("Could not read the containerd metadb file: %v", err)
+	}
+	defer metadataDB.Close()
+	err = metadataDB.View(func(tx *bolt.Tx) error {
+		snapshotsBucketByDigest, err := snapshotsBucketByDigest(tx)
+		if err != nil {
+			return fmt.Errorf("Not able to grab the names of the snapshot buckets: %v", err)
+		}
+		// Store the important info of the snapshots into snapshotMetadata struct.
+		snapshotsMetadata = snapshotMetadataFromSnapshotsBuckets(tx, snapshotsBucketByDigest, snapshotsMetadata, fileSystemDriver)
+		return nil
+	})
+	if err != nil {
+		log.Errorf("Not able to view the db: %v", err)
+		return nil, err
+	}
+	return snapshotsMetadata, nil
+}
+
+// List the names of the snapshot buckets that are stored in the metadata.db file.
+func snapshotsBucketByDigest(tx *bolt.Tx) ([]string, error) {
+	// List of bucket names.These buckets stores snapshots information. Normally its name
+	// is the digest.
+	var snapshotsBucketByDigest []string
+	//  metadata db structure: v1-> snapshots -> <snapshot_digest> -> <snapshot_info_fields>
+	if tx == nil {
+		return snapshotsBucketByDigest, fmt.Errorf("The transaction is nil")
+	}
+	if tx.Bucket([]byte("v1")) == nil {
+		return snapshotsBucketByDigest, fmt.Errorf("Could not find the v1 bucket in the metadata.db file")
+	}
+	if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")) == nil {
+		return snapshotsBucketByDigest, fmt.Errorf("Could not find the snapshots bucket in the metadata.db file")
+	}
+	snapshotsMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots"))
+	err := snapshotsMetadataBucket.ForEach(func(k []byte, v []byte) error {
+		// When the value is nil, it means it's a bucket. In this case, we would like to grab the
+		// bucket name and visit it later.
+		if v == nil {
+			snapshotsBucketByDigest = append(snapshotsBucketByDigest, string(k))
+		}
+		return nil
+	})
+	return snapshotsBucketByDigest, err
+}
+
+func snapshotMetadataFromSnapshotsBuckets(tx *bolt.Tx, snapshotsBucketByDigest []string, snapshotsMetadata []SnapshotMetadata, fileSystemDriver string) []SnapshotMetadata {
+	for _, shaDigest := range snapshotsBucketByDigest {
+		if tx == nil {
+			return snapshotsMetadata
+		}
+		if tx.Bucket([]byte("v1")) == nil {
+			return snapshotsMetadata
+		}
+		if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")) == nil {
+			return snapshotsMetadata
+		}
+		if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")).Bucket([]byte(shaDigest)) == nil {
+			return snapshotsMetadata
+		}
+		// Get the bucket by digest.
+		snapshotMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")).Bucket([]byte(shaDigest))
+		// This id is the corresponding folder name in overlayfs/snapshots folder.
+		id := -1
+		idByte := snapshotMetadataBucket.Get([]byte("id"))
+		if idByte != nil {
+			id = int(idByte[0])
+		}
+		// The status of the snapshot.
+		kind := -1
+		kindByte := snapshotMetadataBucket.Get([]byte("kind"))
+		if kindByte != nil {
+			kind = int(kindByte[0])
+		}
+		// The parent snapshot of the snapshot.
+		parent := ""
+		parentByte := snapshotMetadataBucket.Get([]byte("parent"))
+		if parentByte != nil {
+			parent = string(parentByte)
+		}
+
+		snapshotsMetadata = append(snapshotsMetadata, SnapshotMetadata{Digest: shaDigest, ID: id, Kind: kind, Parent: parent, FilesystemType: fileSystemDriver})
+	}
+	return snapshotsMetadata
+}
+
 func containerInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
 	// A typical Linux case.
 	if runtimeName == "io.containerd.runc.v2" {
-		return runcInitPid(scanRoot, runtimeName, namespace, id)
+		return runcInitPid(scanRoot, runtimeName, id)
 	}
 
 	// A typical Windows case.
@@ -224,35 +421,40 @@ func containerInitPid(scanRoot string, runtimeName string, namespace string, id 
 	return -1
 }
 
-func runcInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
-	// If a container is running by runc, the init pid is stored in the runc state.json file.
-	// state.json file is located at the
-	// <scanRoot>/<runcStateFilePrefix>/<namespace_name>/<container_id>/state.json path.
-	statePath := filepath.Join(scanRoot, runcStateFilePrefix, namespace, id, "state.json")
-	if _, err := os.Stat(statePath); err != nil {
-		log.Info("File state.json does not exists for container %v, error: %v", id, err)
+func runcInitPid(scanRoot string, runtimeName string, id string) int {
+	// If a container is running by runc, the init pid is stored in the grpc status file.
+	// status file is located at the
+	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/state.json path.
+	statusPath := filepath.Join(scanRoot, criPluginStatusFilePrefix, id, "status")
+	if _, err := os.Stat(statusPath); err != nil {
+		log.Info("File status does not exists for container %v, error: %v", id, err)
 		return -1
 	}
 
-	stateContent, err := os.ReadFile(statePath)
+	err := fileSizeCheck(statusPath, defaultMaxFileSize)
 	if err != nil {
-		log.Errorf("Could not read for %s state.json for container: %v, error: %v", id, err)
-		return -1
-	}
-	var runcState map[string]*json.RawMessage
-	if err := json.Unmarshal([]byte(stateContent), &runcState); err != nil {
-		log.Errorf("Can't unmarshal state.json for container %v , error: %v", id, err)
-		return -1
-	}
-	runcInitPID := runcState["init_process_pid"]
-	if runcInitPID == nil {
-		log.Errorf("Can't find field init_process_pid filed in state.json for container %v", id)
 		return -1
 	}
 
-	var initPID int
-	if err := json.Unmarshal(*runcInitPID, &initPID); err != nil {
-		log.Errorf("Can't find field init_process_pid in state.json for container %v, error: %v", id, err)
+	initPID := -1
+
+	statusContent, err := os.ReadFile(statusPath)
+	if err != nil {
+		log.Errorf("Could not read for %s status for container: %v, error: %v", id, err)
+		return -1
+	}
+	var grpcContainerStatus map[string]*json.RawMessage
+	if err := json.Unmarshal([]byte(statusContent), &grpcContainerStatus); err != nil {
+		log.Errorf("Can't unmarshal status for container %v , error: %v", id, err)
+		return -1
+	}
+
+	if _, ok := grpcContainerStatus["Pid"]; !ok {
+		log.Errorf("Can't find field pid filed in status for container %v", id)
+		return -1
+	}
+	if err := json.Unmarshal(*grpcContainerStatus["Pid"], &initPID); err != nil {
+		log.Errorf("Can't unmarshal pid in status for container %v, error: %v", id, err)
 		return -1
 	}
 

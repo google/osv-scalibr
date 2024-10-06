@@ -14,17 +14,11 @@
 
 package containerd
 
-type Metadata struct {
-	Namespace      string
-	ImageName      string
-	ImageDigest    string
-	Runtime        string
-	InitProcessPID int
-	// the type of filesystem implementation. For example, overlayfs
-	Snapshotter string
-	// string that is the sha digest
-	SnapshotKey string
-	LowerDir    string
-	UpperDir    string
-	WorkDir     string
+// SnapshotMetadata recovers the mount point of a container from snapshotter metadata.db file.
+type SnapshotMetadata struct {
+	FilesystemType string
+	Digest         string
+	ID             int
+	Kind           int
+	Parent         string
 }

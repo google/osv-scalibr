@@ -338,6 +338,11 @@ message ContainerdContainerMetadata {
   string image_digest = 3;
   string runtime = 4;
   int32 init_process_pid = 5;
+  string snapshotter = 6;
+  string snapshot_key = 7;
+  string lower_dir = 8;
+  string upper_dir = 9;
+  string work_dir = 10;
 }
 
 message ContainerdRuntimeContainerMetadata {
