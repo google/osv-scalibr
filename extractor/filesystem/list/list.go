@@ -152,6 +152,7 @@ var (
 		"javascript": Javascript,
 		"python":     Python,
 		"go":         Go,
+		"erlang":     Erlang,
 		"r":          R,
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,
