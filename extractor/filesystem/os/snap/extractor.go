@@ -21,7 +21,6 @@ import (
 	"io/fs"
 	"regexp"
 
-	"github.com/go-yaml/yaml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -32,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 )
 
 const (
