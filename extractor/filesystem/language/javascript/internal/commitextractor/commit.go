@@ -72,9 +72,7 @@ func TryExtractCommit(resolution string) string {
 	}
 
 	queries := u.Query()
-	if queries.Has("ref") {
-		return queries.Get("ref")
-	}
 
-	return ""
+	// Returns an empty string if there is no ref
+	return queries.Get("ref")
 }
