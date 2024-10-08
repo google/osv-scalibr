@@ -26,13 +26,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"gopkg.in/yaml.v3"
 )
 
 type pnpmLockPackageResolution struct {
