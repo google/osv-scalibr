@@ -110,22 +110,21 @@ func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int
 
 // checkAccessibility checks if the filebrowser instance is accessible given an IP and port.
 func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
-
 	client := &http.Client{Timeout: requestTimeout}
 	targetURL := fmt.Sprintf("http://%s:%d/", fileBrowserIP, fileBrowserPort)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
-		log.Infof(fmt.Sprintf("Error while constructing request %s to the server: %v", targetURL, err))
+		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Infof(fmt.Sprintf("Timeout exceeded when accessing %s", targetURL))
+			log.Infof("Timeout exceeded when accessing %s", targetURL)
 		} else {
-			log.Infof(fmt.Sprintf("Error when sending request %s to the server: %v", targetURL, err))
+			log.Debugf("Error when sending request %s to the server: %v", targetURL, err)
 		}
 		return false
 	}
@@ -137,13 +136,13 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 
 	// Expected size for the response is around 6 kilobytes.
 	if resp.ContentLength > 20*1024 {
-		log.Infof(fmt.Sprintf("Filesize is too large: %d bytes", resp.ContentLength))
+		log.Infof("Filesize is too large: %d bytes", resp.ContentLength)
 		return false
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Infof(fmt.Sprintf("Error reading response body: %v", err))
+		log.Infof("Error reading response body: %v", err)
 		return false
 	}
 
@@ -170,7 +169,7 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 
 	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
 	if err != nil {
-		log.Infof(fmt.Sprintf("Error while constructing request %s to the server: %v", targetURL, err))
+		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -178,9 +177,9 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 	resp, err := client.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Infof(fmt.Sprintf("Timeout exceeded when accessing %s", targetURL))
+			log.Infof("Timeout exceeded when accessing %s", targetURL)
 		} else {
-			log.Infof(fmt.Sprintf("Error when sending request %s to the server: %v", targetURL, err))
+			log.Infof("Error when sending request %s to the server: %v", targetURL, err)
 		}
 		return false
 	}

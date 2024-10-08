@@ -21,18 +21,18 @@ import (
 	"context"
 	"fmt"
 
+	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
 	"github.com/containerd/containerd/cio"
-	containerd "github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
-	"google.golang.org/grpc"
+	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/opencontainers/go-digest"
 	imagespecs "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespecs "github.com/opencontainers/runtime-spec/specs-go"
-	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"google.golang.org/grpc"
 )
 
 // CtrdClient is a fake implementation of CtrdClient for testing purposes.

@@ -123,7 +123,7 @@ func findSaltVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inv
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	saltVersion, inventory, affectedVersions := findSaltVersions(ix)
 	if saltVersion == "" {
-		log.Infof("No Salt version found")
+		log.Debugf("No Salt version found")
 		return nil, nil
 	}
 	isVulnVersion := false

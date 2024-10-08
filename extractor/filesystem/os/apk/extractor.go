@@ -186,7 +186,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				License:      license,
 			},
 			SourceCode: sourceCode,
-			Locations: []string{input.Path},
+			Locations:  []string{input.Path},
 		})
 	}
 	return pkgs, nil

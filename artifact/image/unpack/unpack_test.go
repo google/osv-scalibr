@@ -28,10 +28,10 @@ import (
 	"archive/tar"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/unpack"
 )
@@ -205,16 +205,17 @@ func TestUnpackSquashed(t *testing.T) {
 			os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("some secret\n"), 0644)
 			return innerDir
 		}(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
-			filepath.FromSlash("dir1/absolute-symlink.txt"):                {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir1/chain-symlink.txt"):                   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir1/relative-dot-symlink.txt"):            {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir1/relative-symlink.txt"):                {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir1/sample.txt"):                          {content: "sample text\n", mode: fs.FileMode(0644)},
-			filepath.FromSlash("dir2/dir3/absolute-chain-symlink.txt"):     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir1/absolute-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir1/chain-symlink.txt"):                     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir1/relative-dot-symlink.txt"):              {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir1/relative-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir1/sample.txt"):                            {content: "sample text\n", mode: fs.FileMode(0644)},
+			filepath.FromSlash("dir2/dir3/absolute-chain-symlink.txt"):       {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir2/dir3/absolute-symlink-inside-root.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+			filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 		},
 	}, {
 		name: "image with absolute path symlink but only the symlink is required",
@@ -224,7 +225,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			filepath.FromSlash("dir1/sample.txt"):           {content: "sample text\n", mode: fs.FileMode(0644)},
@@ -237,7 +238,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			filepath.FromSlash("dir1/chain-symlink.txt"):    {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -251,7 +252,7 @@ func TestUnpackSquashed(t *testing.T) {
 			}),
 		),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want:  map[string]contentAndMode{},
 	}, {
 		name: "image built from scratch (not through a tool like Docker)",
@@ -385,21 +386,22 @@ func TestUnpackLayers(t *testing.T) {
 		name:  "symlink",
 		cfg:   unpack.DefaultUnpackerConfig(),
 		dir:   mustMkdirTemp(t),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlink.tar")),
+		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: []digestAndContent{{
 			digest: "SQUASHED",
 			content: map[string]contentAndMode{
-				filepath.FromSlash("dir1/absolute-symlink.txt"):                {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/chain-symlink.txt"):                   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-dot-symlink.txt"):            {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-symlink.txt"):                {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/sample.txt"):                          {content: "sample text\n", mode: fs.FileMode(0644)},
-				"dir2/dir3/absolute-chain-symlink.txt":                         {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir1/absolute-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir1/chain-symlink.txt"):                     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir1/relative-dot-symlink.txt"):              {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir1/relative-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir1/sample.txt"):                            {content: "sample text\n", mode: fs.FileMode(0644)},
+				"dir2/dir3/absolute-chain-symlink.txt":                           {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/absolute-symlink-inside-root.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			},
 		}, {
-			digest: "sha256:5f09ece72b3eedea1a910b4b7450134b993c1c9196d46d5a258a21c16bc608f1",
+			digest: "sha256:db9f8289eaba906083fe31e9a2ba276097a6ba1d2e9482ddf06398644393ac12",
 			content: map[string]contentAndMode{
 				filepath.FromSlash("dir1/absolute-symlink.txt"):     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 				filepath.FromSlash("dir1/chain-symlink.txt"):        {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -408,11 +410,12 @@ func TestUnpackLayers(t *testing.T) {
 				filepath.FromSlash("dir1/sample.txt"):               {content: "sample text\n", mode: fs.FileMode(0644)},
 			},
 		}, {
-			digest: "sha256:685207dee3dc9ffe6690c5eaa3a0e43c45f6493513e72b8ba6118931725c2436",
+			digest: "sha256:1c7d64a26513bdb1e2d899938b14150e4ed3bc74afc23e9cb23442a282b7af4c",
 			content: map[string]contentAndMode{
-				filepath.FromSlash("dir2/dir3/absolute-chain-symlink.txt"):     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/absolute-chain-symlink.txt"):       {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/absolute-symlink-inside-root.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
+				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 			},
 		}},
 	}, {

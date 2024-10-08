@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/uuid"
 )
 
 // RemoveObsoleteSymlinks removes symlinks that point to a destination file or directory path that
@@ -199,11 +199,15 @@ func removeLayerPathPrefix(path, layerPath string) string {
 // this function would return true because the target file is outside of the root directory.
 func TargetOutsideRoot(path, target string) bool {
 
+	// Create a marker directory as root to check if the target path is outside of the root directory.
+	markerDir := uuid.New().String()
 	if filepath.IsAbs(target) {
-		return false
+		// Absolute paths may still point outside of the root directory.
+		// e.g. "/../file.txt"
+		markerTarget := filepath.Join(markerDir, target)
+		return !strings.Contains(markerTarget, markerDir)
 	}
 
-	markerDir := uuid.New().String()
 	markerTargetAbs := filepath.Join(markerDir, filepath.Dir(path), target)
 	return !strings.Contains(markerTargetAbs, markerDir)
 }

@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/encoding/prototext"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/binary/scanrunner"
+	"google.golang.org/protobuf/encoding/prototext"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )

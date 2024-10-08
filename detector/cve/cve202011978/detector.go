@@ -148,7 +148,7 @@ func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
 	if airflowVersion == "" {
-		log.Infof("No airflow version found")
+		log.Debugf("No airflow version found")
 		return nil, nil
 	}
 

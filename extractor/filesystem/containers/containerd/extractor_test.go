@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 )
 
@@ -81,49 +81,57 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name            string
-		path            string
-		stateFilePath   string // path to state.json, will be used for Linux test cases.
-		shimPIDFilePath string // path to shim.pid, will be used for Windows test cases.
-		namespace       string
-		containerdID    string
-		cfg             containerd.Config
-		onGoos          string
-		wantInventory   []*extractor.Inventory
-		wantErr         error
+		name              string
+		path              string
+		snapshotterdbpath string // path to metadata.db file, will be used for Linux test cases.
+		statusFilePath    string // path to status file, will be used for Linux test cases.
+		shimPIDFilePath   string // path to shim.pid, will be used for Windows test cases.
+		namespace         string
+		containerdID      string
+		cfg               containerd.Config
+		onGoos            string
+		wantInventory     []*extractor.Inventory
+		wantErr           error
 	}{
 		{
-			name:          "metadb valid linux",
-			path:          "testdata/meta_linux.db",
-			stateFilePath: "testdata/state.json",
-			namespace:     "default",
-			containerdID:  "test_pod",
+			name:              "metadb valid linux",
+			path:              "testdata/meta_linux_test_single.db",
+			snapshotterdbpath: "testdata/metadata_linux_test.db",
+			statusFilePath:    "testdata/status",
+			namespace:         "default",
+			containerdID:      "a24fc689ea380bf71604d7ade8f5655b8de66bbbd1befa6c326797f01ce569ce",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
 			onGoos: "linux",
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
-					Name:    "gcr.io/google-samples/hello-app:1.0",
-					Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+					Name:    "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
+					Version: "sha256:832ad48c9872fdcae32f2ea369d9874fa34f2ea369d9874fa34f271b4dbc58ce04393c757befa462",
 					Metadata: &containerd.Metadata{
-						Namespace:      "default",
-						ImageName:      "gcr.io/google-samples/hello-app:1.0",
-						ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+						Namespace:      "k8s.io",
+						ImageName:      "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
+						ImageDigest:    "sha256:832ad48c9872fdcae32f2ea369d9874fa34f2ea369d9874fa34f271b4dbc58ce04393c757befa462",
 						Runtime:        "io.containerd.runc.v2",
-						InitProcessPID: 8915,
+						InitProcessPID: 3530,
+						Snapshotter:    "overlayfs",
+						SnapshotKey:    "b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c",
+						LowerDir:       "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs",
+						UpperDir:       "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs",
+						WorkDir:        "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/work",
 					},
 					Locations: []string{"var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"},
 				},
 			},
 		},
 		{
-			name:          "metadb invalid",
-			path:          "testdata/invalid_meta.db",
-			stateFilePath: "testdata/state.json",
-			namespace:     "default",
-			containerdID:  "test_pod",
-			onGoos:        "linux",
+			name:              "metadb invalid",
+			path:              "testdata/invalid_meta.db",
+			statusFilePath:    "testdata/status",
+			snapshotterdbpath: "testdata/metadata_linux_test.db",
+			namespace:         "default",
+			containerdID:      "test_pod",
+			onGoos:            "linux",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
@@ -131,12 +139,13 @@ func TestExtract(t *testing.T) {
 			wantErr:       cmpopts.AnyError,
 		},
 		{
-			name:          "metadb too large",
-			path:          "testdata/meta_linux.db",
-			stateFilePath: "testdata/state.json",
-			namespace:     "default",
-			containerdID:  "test_pod",
-			onGoos:        "linux",
+			name:              "metadb too large",
+			path:              "testdata/meta_linux_too_big.db",
+			statusFilePath:    "testdata/status",
+			snapshotterdbpath: "testdata/metadata_linux_test.db",
+			namespace:         "default",
+			containerdID:      "test_pod",
+			onGoos:            "linux",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 1 * units.KiB,
 			},
@@ -144,24 +153,13 @@ func TestExtract(t *testing.T) {
 			wantErr:       cmpopts.AnyError,
 		},
 		{
-			name:          "invalid state json",
-			path:          "testdata/meta_linux.db",
-			stateFilePath: "testdata/invalid_state.json",
-			namespace:     "default",
-			containerdID:  "test_pod",
-			onGoos:        "linux",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			wantInventory: []*extractor.Inventory{},
-		},
-		{
-			name:          "invalid state",
-			path:          "testdata/meta_linux.db",
-			stateFilePath: "testdata/invalid_json",
-			namespace:     "default",
-			containerdID:  "test_pod",
-			onGoos:        "linux",
+			name:              "invalid status file",
+			path:              "testdata/meta_linux_test_single.db",
+			statusFilePath:    "testdata/invalid_status",
+			snapshotterdbpath: "testdata/metadata_linux_test.db",
+			namespace:         "default",
+			containerdID:      "test_pod",
+			onGoos:            "linux",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
@@ -215,10 +213,11 @@ func TestExtract(t *testing.T) {
 			}
 
 			var input *filesystem.ScanInput
-			d := t.TempDir()
+			d := "/tmp/TestExtractmetadb_valid_linux1567346986/001"
 			if tt.onGoos == "linux" {
 				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
-				createFileFromTestData(t, d, filepath.Join("run/containerd/runc/", tt.namespace, tt.containerdID), "state.json", tt.stateFilePath)
+				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
+				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.grpc.v1.cri/containers/b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c", "status", tt.statusFilePath)
 				input = createScanInput(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
 			}
 			if tt.onGoos == "windows" {

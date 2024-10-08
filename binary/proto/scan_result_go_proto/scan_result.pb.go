@@ -22,11 +22,12 @@
 package scan_result_go_proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -2581,6 +2582,11 @@ type ContainerdContainerMetadata struct {
 	ImageDigest    string `protobuf:"bytes,3,opt,name=image_digest,json=imageDigest,proto3" json:"image_digest,omitempty"`
 	Runtime        string `protobuf:"bytes,4,opt,name=runtime,proto3" json:"runtime,omitempty"`
 	InitProcessPid int32  `protobuf:"varint,5,opt,name=init_process_pid,json=initProcessPid,proto3" json:"init_process_pid,omitempty"`
+	Snapshotter    string `protobuf:"bytes,6,opt,name=snapshotter,proto3" json:"snapshotter,omitempty"`
+	SnapshotKey    string `protobuf:"bytes,7,opt,name=snapshot_key,json=snapshotKey,proto3" json:"snapshot_key,omitempty"`
+	LowerDir       string `protobuf:"bytes,8,opt,name=lower_dir,json=lowerDir,proto3" json:"lower_dir,omitempty"`
+	UpperDir       string `protobuf:"bytes,9,opt,name=upper_dir,json=upperDir,proto3" json:"upper_dir,omitempty"`
+	WorkDir        string `protobuf:"bytes,10,opt,name=work_dir,json=workDir,proto3" json:"work_dir,omitempty"`
 }
 
 func (x *ContainerdContainerMetadata) Reset() {

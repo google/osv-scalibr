@@ -22,8 +22,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"golang.org/x/sys/windows"
 	"github.com/google/osv-scalibr/plugin"
+	"golang.org/x/sys/windows"
 )
 
 var (

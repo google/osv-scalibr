@@ -23,9 +23,9 @@ import (
 	"os"
 	"path/filepath"
 
+	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	containerd "github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"

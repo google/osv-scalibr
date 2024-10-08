@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"github.com/google/osv-scalibr/binary/spdx"
+	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 )
 
 var doc = &v2_3.Document{

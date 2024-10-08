@@ -18,10 +18,10 @@ package scanrunner
 import (
 	"context"
 
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	scalibr "github.com/google/osv-scalibr"
 )
 
 // RunScan executes the scan with the given CLI flags

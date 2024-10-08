@@ -23,16 +23,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spdx/tools-golang/json"
-	"github.com/spdx/tools-golang/rdf"
-	"github.com/spdx/tools-golang/spdx"
-	"github.com/spdx/tools-golang/tagvalue"
-	"github.com/spdx/tools-golang/yaml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/spdx/tools-golang/json"
+	"github.com/spdx/tools-golang/rdf"
+	"github.com/spdx/tools-golang/spdx"
+	"github.com/spdx/tools-golang/tagvalue"
+	"github.com/spdx/tools-golang/yaml"
 )
 
 // Extractor extracts software dependencies from an spdx SBOM.

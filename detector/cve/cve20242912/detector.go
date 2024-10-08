@@ -162,7 +162,7 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	bentomlVersion, inventory, fixedVersion := findBentomlVersions(ix)
 	if bentomlVersion == "" {
-		log.Infof("No BentoML version found")
+		log.Debugf("No BentoML version found")
 		return nil, nil
 	}
 

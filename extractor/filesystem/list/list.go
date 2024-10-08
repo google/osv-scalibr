@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -88,6 +89,8 @@ var (
 		gobinary.New(gobinary.DefaultConfig()),
 		&gomod.Extractor{},
 	}
+	// Erlang extractors.
+	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
@@ -123,6 +126,7 @@ var (
 		Javascript,
 		Python,
 		Go,
+		Erlang,
 		PHP,
 		R,
 		Ruby,
@@ -148,6 +152,7 @@ var (
 		"javascript": Javascript,
 		"python":     Python,
 		"go":         Go,
+		"erlang":     Erlang,
 		"r":          R,
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,

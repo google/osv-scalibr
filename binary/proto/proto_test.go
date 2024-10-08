@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/testing/protocmp"
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
@@ -39,10 +39,10 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	scalibr "github.com/google/osv-scalibr"
+	"google.golang.org/protobuf/testing/protocmp"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestWrite(t *testing.T) {
@@ -455,6 +455,11 @@ func TestScanResultToProto(t *testing.T) {
 			ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 			Runtime:        "io.containerd.runc.v2",
 			InitProcessPID: 8915,
+			Snapshotter:    "overlayfs",
+			SnapshotKey:    "abcweraweroiuojgawer1",
+			LowerDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs",
+			UpperDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs",
+			WorkDir:        "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
 		},
 		Locations: []string{"/file4"},
 		Extractor: &ctrdfs.Extractor{},
@@ -470,6 +475,11 @@ func TestScanResultToProto(t *testing.T) {
 				ImageDigest:    "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 				Runtime:        "io.containerd.runc.v2",
 				InitProcessPid: 8915,
+				Snapshotter:    "overlayfs",
+				SnapshotKey:    "abcweraweroiuojgawer1",
+				LowerDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs",
+				UpperDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs",
+				WorkDir:        "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
 			},
 		},
 		Locations: []string{"/file4"},

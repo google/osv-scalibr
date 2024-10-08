@@ -14,11 +14,17 @@
 
 package containerd
 
-// Metadata holds parsing information for a container running on the containerd runtime.
 type Metadata struct {
 	Namespace      string
 	ImageName      string
 	ImageDigest    string
 	Runtime        string
 	InitProcessPID int
+	// the type of filesystem implementation. For example, overlayfs
+	Snapshotter string
+	// string that is the sha digest
+	SnapshotKey string
+	LowerDir    string
+	UpperDir    string
+	WorkDir     string
 }

@@ -22,6 +22,8 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Conan packages (OSV)
 * Dart
   * pub packages (OSV)
+* Erlang
+  * mix.lock
 * Go
   * Go binaries
   * go.mod (OSV)

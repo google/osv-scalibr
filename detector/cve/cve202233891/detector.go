@@ -93,7 +93,7 @@ func (Detector) RequiredExtractors() []string {
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	sparkUIVersion, inventory, affectedVersions := findApacheSparkUIPackage(ix)
 	if sparkUIVersion == "" {
-		log.Infof("No Apache Spark UI version found")
+		log.Debugf("No Apache Spark UI version found")
 		return nil, nil
 	}
 

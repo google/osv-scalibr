@@ -23,12 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"google.golang.org/protobuf/encoding/prototext"
-	"google.golang.org/protobuf/proto"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/log"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -48,10 +49,9 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	scalibr "github.com/google/osv-scalibr"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // fileType represents the type of a proto result file.
@@ -341,6 +341,11 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ImageDigest:    m.ImageDigest,
 				Runtime:        m.Runtime,
 				InitProcessPid: int32(m.InitProcessPID),
+				Snapshotter:    m.Snapshotter,
+				SnapshotKey:    m.SnapshotKey,
+				LowerDir:       m.LowerDir,
+				UpperDir:       m.UpperDir,
+				WorkDir:        m.WorkDir,
 			},
 		}
 	case *ctrdruntime.Metadata:
