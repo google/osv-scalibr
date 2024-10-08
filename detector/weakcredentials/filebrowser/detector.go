@@ -39,10 +39,11 @@ import (
 const (
 	fileBrowserIP  = "127.0.0.1"
 	requestTimeout = 2 * time.Second
-	title          = "Filebrowser is vulnerable to weak credentials using admin/admin"
-	description    = "With access to FileBrowser with weak credentials" +
-		"an attacker can execute arbitrary code."
-	recommendation = "Stop the filebrowser service and uninstall it or change the credentials."
+	title          = "Filebrowser default credentials"
+	description    = "Filebrowser is a self-hosted web application to manage files and folders." +
+		"It has been detected that the default credentials are in use, which can be exploited by an" +
+		" attacker to execute arbitrary commands on the affected system."
+	recommendation = "Change the credentials and restart the filebrowser service, or uninstall it."
 )
 
 var (
