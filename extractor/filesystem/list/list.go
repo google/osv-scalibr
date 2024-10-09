@@ -138,7 +138,7 @@ var (
 		Dotnet,
 		SBOM,
 		OS,
-		// Containers,
+		Containers,
 	)
 
 	// Untested extractors are OSV extractors without tests.
