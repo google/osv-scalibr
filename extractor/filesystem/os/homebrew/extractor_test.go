@@ -62,6 +62,21 @@ func TestFileRequired(t *testing.T) {
 			path:           "testdata/Caskroom/testapp/1.1.1/testapp.app/Contents/PkgInfo",
 			wantIsRequired: false,
 		},
+		{
+			name:           "caskroom.other.variation",
+			path:           "testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
+			wantIsRequired: true,
+		},
+		{
+			name:           "caskroom.null.folder",
+			path:           "testdata/Caskroom/somefolder/1.1/",
+			wantIsRequired: false,
+		},
+		{
+			name:           "caskroom.null.variation",
+			path:           "testdata/Caskroom/somefolder/2.2",
+			wantIsRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -104,6 +119,22 @@ func TestExtract(t *testing.T) {
 					Name:      "testapp",
 					Version:   "1.1.1",
 					Locations: []string{"testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"},
+				},
+			},
+		},
+		{
+			name:          "caskroom.null.variation",
+			path:          "testdata/Caskroom/somefolder/2.2",
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
+			name: "caskroom.other.variation",
+			path: "testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "android-platform-tools",
+					Version:   "35.0.2",
+					Locations: []string{"testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"},
 				},
 			},
 		},
@@ -179,6 +210,17 @@ func TestSplitPath(t *testing.T) {
 				AppName:    "rclone",
 				AppVersion: "1.67.0",
 				AppFile:    "install_receipt.json",
+				AppExt:     "install_receipt.json",
+			},
+		},
+		{
+			name: "caskroom_path",
+			path: "testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
+			want: &homebrew.BrewPath{
+				AppName:    "testapp",
+				AppVersion: "1.1.1",
+				AppFile:    "testapp.wrapper.sh",
+				AppExt:     "testapp.wrapper.sh",
 			},
 		},
 	}

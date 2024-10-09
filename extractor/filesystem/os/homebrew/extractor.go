@@ -31,7 +31,9 @@ const (
 	caskPath       = "caskroom"
 	cellarPath     = "cellar"
 	cellarFileName = "install_receipt.json"
-	caskFileName   = ".wrapper.sh"
+	caskFileName1  = ".wrapper.sh"
+	caskFileName2  = ".app"
+	caskFileName3  = "source.properties"
 )
 
 // BrewPath struct holds homebrew package information from homebrew package path.
@@ -41,9 +43,10 @@ type BrewPath struct {
 	AppName    string
 	AppVersion string
 	AppFile    string
+	AppExt     string
 }
 
-var r = regexp.MustCompile(`(\bcellar|\bcaskroom)\/\w+\/[^A-Za-z \/]+\/(\binstall_receipt.json|(\w+.\bwrapper.sh))`)
+var r = regexp.MustCompile(`(\bcellar|\bcaskroom)\/(.*)\/[^A-Za-z \/]+\/`)
 
 // Extractor extracts software details from a OSX Homebrew package path.
 type Extractor struct{}
@@ -68,10 +71,12 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	}
 
 	p := SplitPath(filePath)
+	// Ensure the file path is a valid homebrew Cellar file.
 	if strings.Contains(filePath, cellarPath) && p.AppFile != cellarFileName {
 		return false
 	}
-	if strings.Contains(filePath, caskPath) && p.AppFile != (p.AppName+caskFileName) {
+	// Ensure the file path is a valid homebrew Caskroom file.
+	if strings.Contains(filePath, caskPath) && !strings.Contains(p.AppExt, caskFileName1) && !strings.Contains(p.AppExt, caskFileName2) && !strings.Contains(p.AppExt, caskFileName3) {
 		return false
 	}
 	return true
@@ -80,6 +85,9 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 // Extract parses the recognised Homebrew file path and returns information about the installed package.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	p := SplitPath(input.Path)
+	if p == nil {
+		return []*extractor.Inventory{}, nil
+	}
 	return []*extractor.Inventory{
 		&extractor.Inventory{
 			Name:      p.AppName,
@@ -91,12 +99,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 // SplitPath takes the package path and splits it into its recognised struct components
 func SplitPath(path string) *BrewPath {
+	path = strings.ToLower(path)
 	pathParts := strings.Split(path, "/")
-	return &BrewPath{
-		AppName:    strings.ToLower(pathParts[len(pathParts)-3]),
-		AppVersion: strings.ToLower(pathParts[len(pathParts)-2]),
-		AppFile:    strings.ToLower(pathParts[len(pathParts)-1]),
+	for i, pathPart := range pathParts {
+		// Check if the path is a homebrew path and if the path is of a valid length.
+		if len(pathParts) > (i+3) && (pathPart == caskPath || pathPart == cellarPath) {
+			return &BrewPath{
+				AppName:    pathParts[i+1],
+				AppVersion: pathParts[i+2],
+				AppFile:    pathParts[i+3],
+				AppExt:     pathParts[len(pathParts)-1],
+			}
+		}
 	}
+	return nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
