@@ -236,15 +236,16 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
-					ImageName:      img.Name,
-					ImageDigest:    img.Target.Digest.String(),
-					Runtime:        ctr.Runtime.Name,
-					InitProcessPID: initPID,
-					Snapshotter:    ctr.Snapshotter,
-					SnapshotKey:    ctr.SnapshotKey,
-					LowerDir:       lowerDir,
-					UpperDir:       upperDir,
-					WorkDir:        workDir})
+					ImageName:   img.Name,
+					ImageDigest: img.Target.Digest.String(),
+					Runtime:     ctr.Runtime.Name,
+					ID:          id,
+					PID:         initPID,
+					Snapshotter: ctr.Snapshotter,
+					SnapshotKey: ctr.SnapshotKey,
+					LowerDir:    lowerDir,
+					UpperDir:    upperDir,
+					WorkDir:     workDir})
 		}
 	}
 	return containersMetadata, nil
