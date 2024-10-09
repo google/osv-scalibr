@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -89,6 +90,8 @@ var (
 		gobinary.New(gobinary.DefaultConfig()),
 		&gomod.Extractor{},
 	}
+	// Dart extractors.
+	Dart []filesystem.Extractor = []filesystem.Extractor{pubspec.Extractor{}}
 	// Erlang extractors.
 	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
 	// R extractors
@@ -126,6 +129,7 @@ var (
 		Javascript,
 		Python,
 		Go,
+		Dart,
 		Erlang,
 		PHP,
 		R,
@@ -141,7 +145,6 @@ var (
 	// TODO(b/307735923): Add tests for these and move them into All.
 	Untested []filesystem.Extractor = []filesystem.Extractor{
 		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
-		osv.Wrapper{ExtractorName: "dart/pubspec", ExtractorVersion: 0, PURLType: purl.TypePub, Extractor: lockfile.PubspecLockExtractor{}},
 		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
 	}
@@ -152,6 +155,7 @@ var (
 		"javascript": Javascript,
 		"python":     Python,
 		"go":         Go,
+		"dart":       Dart,
 		"erlang":     Erlang,
 		"r":          R,
 		"ruby":       Ruby,
