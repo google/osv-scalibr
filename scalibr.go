@@ -17,6 +17,7 @@
 package scalibr
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -286,26 +287,23 @@ func sortResults(results *ScanResult) {
 	}
 
 	slices.SortFunc(results.PluginStatus, cmpStatus)
-	slices.SortFunc(results.Inventories, cmpInventories)
+	slices.SortFunc(results.Inventories, CmpInventories)
 	slices.SortFunc(results.Findings, cmpFindings)
 }
 
-func cmpInventories(a, b *extractor.Inventory) int {
+// CmpInventories is a comparison helper fun to be used for sorting Inventory structs.
+func CmpInventories(a, b *extractor.Inventory) int {
+	res := cmp.Or(
+		cmp.Compare(a.Name, b.Name),
+		cmp.Compare(a.Version, b.Version),
+		cmp.Compare(a.Extractor.Name(), b.Extractor.Name()),
+	)
+	if res != 0 {
+		return res
+	}
 	aloc := fmt.Sprintf("%v", a.Locations)
 	bloc := fmt.Sprintf("%v", b.Locations)
-	if aloc != bloc {
-		return cmpString(aloc, bloc)
-	}
-	if a.Name != b.Name {
-		return cmpString(a.Name, b.Name)
-	}
-	if a.Version != b.Version {
-		return cmpString(a.Version, b.Version)
-	}
-	if a.Extractor.Name() != b.Extractor.Name() {
-		return cmpString(a.Extractor.Name(), b.Extractor.Name())
-	}
-	return 0
+	return cmp.Compare(aloc, bloc)
 }
 
 func cmpStatus(a, b *plugin.Status) int {
