@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	golog "log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -30,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -186,6 +188,8 @@ func TestExtract(t *testing.T) {
 		wantInventory    []*extractor.Inventory
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
+		wantLogWarn      int
+		wantLogErr       int
 	}{
 		{
 			name:      "valid status file",
@@ -338,6 +342,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
 		},
 		{
 			name:      "packages with no name set are skipped",
@@ -372,6 +377,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
 		},
 		{
 			name:      "statusfield",
@@ -419,6 +425,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
 		},
 		{
 			name:      "statusfield including not installed",
@@ -628,6 +635,34 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "ubuntu",
+			path: "testdata/trailingnewlines",
+			osrelease: `VERSION_ID="22.04"
+			VERSION_CODENAME=jammy
+			ID=ubuntu
+			ID_LIKE=debian`,
+			wantInventory: []*extractor.Inventory{
+				&extractor.Inventory{
+					Name:    "acl",
+					Version: "2.3.1-3",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "acl",
+						PackageVersion:    "2.3.1-3",
+						Status:            "install ok installed",
+						OSID:              "ubuntu",
+						OSVersionCodename: "jammy",
+						OSVersionID:       "22.04",
+						Maintainer:        "Guillem Jover <guillem@debian.org>",
+						Architecture:      "amd64",
+					},
+					Locations: []string{"testdata/trailingnewlines"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      0,
+			wantLogErr:       0,
+		},
+		{
 			name:      "status.d file without Status field set should work",
 			path:      "testdata/status.d/foo",
 			osrelease: DebianBookworm,
@@ -655,6 +690,7 @@ func TestExtract(t *testing.T) {
 			osrelease:        DebianBookworm,
 			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
 		},
 		{
 			name:      "transitional packages should be annotated",
@@ -686,6 +722,9 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
+			logger := &testLogger{}
+			scalibrlog.SetLogger(logger)
+
 			collector := testcollector.New()
 			tt.cfg.Stats = collector
 
@@ -733,7 +772,70 @@ func TestExtract(t *testing.T) {
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
+
+			if logger.warnings != tt.wantLogWarn {
+				t.Errorf("Extract(%s) recorded %d warnings, want %d warnings", tt.path, logger.warnings, tt.wantLogWarn)
+			}
+			if logger.errors != tt.wantLogErr {
+				t.Errorf("Extract(%s) recorded %d errors, want %d errors", tt.path, logger.errors, tt.wantLogErr)
+			}
 		})
+	}
+}
+
+var _ scalibrlog.Logger = &testLogger{}
+
+type testLogger struct {
+	Verbose  bool
+	warnings int
+	errors   int
+}
+
+// Errorf is the formatted error logging function.
+func (l *testLogger) Errorf(format string, args ...any) {
+	golog.Printf(format, args...)
+	l.errors++
+}
+
+// Warnf is the formatted warning logging function.
+func (l *testLogger) Warnf(format string, args ...any) {
+	golog.Printf(format, args...)
+	l.warnings++
+}
+
+// Infof is the formatted info logging function.
+func (testLogger) Infof(format string, args ...any) {
+	golog.Printf(format, args...)
+}
+
+// Debugf is the formatted debug logging function.
+func (l *testLogger) Debugf(format string, args ...any) {
+	if l.Verbose {
+		golog.Printf(format, args...)
+	}
+}
+
+// Error is the error logging function.
+func (l *testLogger) Error(args ...any) {
+	golog.Println(args...)
+	l.errors++
+}
+
+// Warn is the warning logging function.
+func (l *testLogger) Warn(args ...any) {
+	golog.Println(args...)
+	l.warnings++
+}
+
+// Info is the info logging function.
+func (testLogger) Info(args ...any) {
+	golog.Println(args...)
+}
+
+// Debug is the debug logging function.
+func (l *testLogger) Debug(args ...any) {
+	if l.Verbose {
+		golog.Println(args...)
 	}
 }
 

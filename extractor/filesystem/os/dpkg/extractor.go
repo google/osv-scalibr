@@ -193,6 +193,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			}
 		}
 
+		// Skip empty lines
+		if len(h) == 0 {
+			continue
+		}
+
 		// Distroless distributions have their packages in status.d, which does not contain the Status
 		// value.
 		if !e.includeNotInstalled && (!strings.Contains(input.Path, "status.d") || h.Get("Status") != "") {
