@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+var specialCharRunFinder = regexp.MustCompile("[-_.]+")
+
 // MakePackageURL returns a package URL following the purl PyPI spec:
 // - Name is lowercased
 // - Replaces all runs of ` _ . - ` with -
@@ -34,7 +36,6 @@ import (
 // This function does *not* handle package names with invalid characters, and will
 // return them as is.
 func MakePackageURL(i *extractor.Inventory) *purl.PackageURL {
-	specialCharRunFinder := regexp.MustCompile("[-_.]+")
 	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(i.Name), "-")
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,

@@ -21,6 +21,14 @@ import (
 	"strings"
 )
 
+var (
+	reSpecChar = regexp.MustCompile(`[-_+]`)
+	// Matches a non-digit character followed by a digit.
+	reNotDigitDigit = regexp.MustCompile(`([^\d.])(\d)`)
+	// Matches a digit followed by a non-digit character.
+	reDigitNotDigit = regexp.MustCompile(`(\d)([^\d.])`)
+)
+
 func canonicalizePackagistVersion(v string) string {
 	// todo: decide how to handle this - without it, we're 1:1 with the native
 	//   PHP version_compare function, but composer removes it; arguably this
@@ -30,9 +38,9 @@ func canonicalizePackagistVersion(v string) string {
 	//   the trimming...)
 	v = strings.TrimPrefix(strings.TrimPrefix(v, "v"), "V")
 
-	v = regexp.MustCompile(`[-_+]`).ReplaceAllString(v, ".")
-	v = regexp.MustCompile(`([^\d.])(\d)`).ReplaceAllString(v, "$1.$2")
-	v = regexp.MustCompile(`(\d)([^\d.])`).ReplaceAllString(v, "$1.$2")
+	v = reSpecChar.ReplaceAllString(v, ".")
+	v = reNotDigitDigit.ReplaceAllString(v, "$1.$2")
+	v = reDigitNotDigit.ReplaceAllString(v, "$1.$2")
 
 	return v
 }

@@ -34,6 +34,23 @@ import (
 	"github.com/google/osv-scalibr/stats"
 )
 
+var (
+	// Regex matching comments in requirements files.
+	// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L492
+	reComment = regexp.MustCompile(`(^|\s+)#.*$`)
+	// We currently don't handle the following constraints.
+	// * Version wildcards (*)
+	// * Less than (<)
+	// * Multiple constraints (,)
+	reUnsupportedConstraints        = regexp.MustCompile(`\*|<|,`)
+	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
+	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
+	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
+	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
+	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:--hash|--global-option|--config-settings|-C).*`)
+	reHashOption                    = regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
+)
+
 // Config is the configuration for the Extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
@@ -109,7 +126,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts packages from requirements files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// File paths with inventories already found in this extraction.
-	// We store these to remove duplicates in diamond depednency cases and prevent
+	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
 	var found = map[string]struct{}{}
 	inventory, err := e.extractFromPath(ctx, input.Reader, input.Path, input.FS, found)
@@ -220,18 +237,13 @@ func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path s
 	return inventory, s.Err()
 }
 
-// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L492
 func removeComments(s string) string {
-	return regexp.MustCompile(`(^|\s+)#.*$`).ReplaceAllString(s, "")
+	return reComment.ReplaceAllString(s, "")
 }
 
 func getLowestVersion(s string) (name, version, comparator string) {
-	// We currently don't handle:
-	// * Version wildcards (*)
-	// * Less than (<)
-	// * Multiple constraints (,)
 	// TODO(b/286213823): Implement metric
-	if regexp.MustCompile(`\*|<|,`).FindString(s) != "" {
+	if reUnsupportedConstraints.FindString(s) != "" {
 		return "", "", ""
 	}
 
@@ -255,7 +267,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 }
 
 func removeWhiteSpaces(s string) string {
-	return regexp.MustCompile(`[ \t\r]`).ReplaceAllString(s, "")
+	return reWhitespace.ReplaceAllString(s, "")
 }
 
 func ignorePythonSpecifier(s string) string {
@@ -263,28 +275,26 @@ func ignorePythonSpecifier(s string) string {
 }
 
 func isValidPackage(s string) bool {
-	return regexp.MustCompile(`^\w(\w|-)+$`).MatchString(s)
+	return reValidPkg.MatchString(s)
 }
 
 func removeExtras(s string) string {
-	return regexp.MustCompile(`\[[^\[\]]*\]`).ReplaceAllString(s, "")
+	return reExtras.ReplaceAllString(s, "")
 }
 
 func hasEnvVariable(s string) bool {
-	return regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`).FindString(s) != ""
+	return reEnvVar.FindString(s) != ""
 }
 
 // splitPerRequirementOptions removes from the input all text after the first per requirement option
 // and returns the remaining input along with the values of the --hash options. See the documentation
 // in https://pip.pypa.io/en/stable/reference/requirements-file-format/#per-requirement-options.
 func splitPerRequirementOptions(s string) (string, []string) {
-	textAfterFirstOptionInclusive := regexp.MustCompile(`(?:--hash|--global-option|--config-settings|-C).*`)
-	hashOption := regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
 	hashes := []string{}
-	for _, hashOptionMatch := range hashOption.FindAllStringSubmatch(s, -1) {
+	for _, hashOptionMatch := range reHashOption.FindAllStringSubmatch(s, -1) {
 		hashes = append(hashes, hashOptionMatch[1])
 	}
-	return textAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
+	return reTextAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

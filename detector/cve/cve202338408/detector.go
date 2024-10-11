@@ -33,6 +33,15 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+var (
+	// Regex matching the "ssh -A" command.
+	sshRegex = regexp.MustCompile(`ssh (.* )?-\w*A`)
+	// Regex matching the OpenSSH version.
+	openSSHVersionRegex = regexp.MustCompile(`OpenSSH_([^,]+),`)
+	// Regex matching the "forwardagent yes" line in ssh config.
+	forwardAgentRegex = regexp.MustCompile(`^forwardagent\s+yes`)
+)
+
 // Detector is a SCALIBR Detector for CVE-2023-38408.
 type Detector struct{}
 
@@ -90,8 +99,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	// 4. check bash history
 	historyLocations := []fileLocations{}
 	for _, path := range findHistoryFiles() {
-		re := regexp.MustCompile(`ssh (.* )?-\w*A`)
-		ls := findString(path, re)
+		ls := findString(path, sshRegex)
 		log.Debugf("history file: %q %v %v", path, ls)
 		if len(ls) > 0 {
 			historyLocations = append(historyLocations, fileLocations{Path: path, LineNumbers: ls})
@@ -136,8 +144,7 @@ func getOpenSSHVersion() string {
 		return ""
 	}
 
-	re := regexp.MustCompile(`OpenSSH_([^,]+),`)
-	matches := re.FindStringSubmatch(string(out))
+	matches := openSSHVersionRegex.FindStringSubmatch(string(out))
 	if len(matches) >= 2 {
 		return matches[1]
 	}
@@ -194,7 +201,6 @@ func sshConfigContainsForward(path string) []int {
 
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
-	reForwardAgent := regexp.MustCompile(`^forwardagent\s+yes`)
 	r := []int{}
 	i := -1
 	for scanner.Scan() {
@@ -204,7 +210,7 @@ func sshConfigContainsForward(path string) []int {
 		if strings.HasPrefix(line, "#") {
 			continue
 		}
-		if reForwardAgent.MatchString(strings.ToLower(line)) {
+		if forwardAgentRegex.MatchString(strings.ToLower(line)) {
 			r = append(r, i)
 		}
 	}

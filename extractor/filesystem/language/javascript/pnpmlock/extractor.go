@@ -83,6 +83,8 @@ var (
 	numberMatcher = regexp.MustCompile(`^\d`)
 	// Looks for the pattern "name@version", where name is allowed to contain zero or more "@"
 	nameVersionRegexp = regexp.MustCompile(`^(.+)@([\d.]+)$`)
+
+	codeLoadURLRegexp = regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+){2}/tar\.gz/(\w+)$`)
 )
 
 // extractPnpmPackageNameAndVersion parses a dependency path, attempting to
@@ -189,8 +191,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
 		commit := pkg.Resolution.Commit
 
 		if strings.HasPrefix(pkg.Resolution.Tarball, "https://codeload.github.com") {
-			re := regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+){2}/tar\.gz/(\w+)$`)
-			matched := re.FindStringSubmatch(pkg.Resolution.Tarball)
+			matched := codeLoadURLRegexp.FindStringSubmatch(pkg.Resolution.Tarball)
 
 			if matched != nil {
 				commit = matched[1]
