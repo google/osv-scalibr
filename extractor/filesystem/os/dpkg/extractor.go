@@ -111,9 +111,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file matches dpkg status file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
-	// Should either match the status file or be in the status.d directory.
-	normalized := filepath.ToSlash(path)
-	if normalized != "var/lib/dpkg/status" && !strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") {
+	if !fileRequired(path) {
 		return false
 	}
 
@@ -124,6 +122,18 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
+}
+
+func fileRequired(path string) bool {
+	normalized := filepath.ToSlash(path)
+
+	// Normal status file
+	if normalized == "var/lib/dpkg/status" {
+		return true
+	}
+
+	// Should only match status files in status.d directory.
+	return strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") && !strings.HasSuffix(normalized, ".md5sums")
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {

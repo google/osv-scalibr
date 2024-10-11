@@ -93,32 +93,42 @@ func TestFileRequired(t *testing.T) {
 			path:             "var/lib/dpkg/status.d/foo",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
-		}, {
+		},
+		{
+			name:         "ignore md5sums file",
+			path:         "var/lib/dpkg/status.d/foo.md5sums",
+			wantRequired: false,
+		},
+		{
 			name:         "status.d as a file",
 			path:         "var/lib/dpkg/status.d",
 			wantRequired: false,
-		}, {
+		},
+		{
 			name:             "status file required if file size < max file size",
 			path:             "var/lib/dpkg/status",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
-		}, {
+		},
+		{
 			name:             "status file required if file size == max file size",
 			path:             "var/lib/dpkg/status",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
-		}, {
+		},
+		{
 			name:             "status file not required if file size > max file size",
 			path:             "var/lib/dpkg/status",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
 			wantRequired:     false,
 			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
-		}, {
+		},
+		{
 			name:             "status file required if max file size set to 0",
 			path:             "var/lib/dpkg/status",
 			fileSizeBytes:    100 * units.KiB,
