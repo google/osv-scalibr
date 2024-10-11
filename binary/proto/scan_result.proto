@@ -60,7 +60,7 @@ message PluginStatus {
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
 message Inventory {
-  reserved 3,17,18,19;
+  reserved 3,17,18,19,32;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
