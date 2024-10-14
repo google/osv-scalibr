@@ -40,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
@@ -76,7 +77,12 @@ var (
 		pomxml.Extractor{},
 	}
 	// Javascript extractors.
-	Javascript []filesystem.Extractor = []filesystem.Extractor{packagejson.New(packagejson.DefaultConfig()), packagelockjson.New(packagelockjson.DefaultConfig()), &pnpmlock.Extractor{}}
+	Javascript []filesystem.Extractor = []filesystem.Extractor{
+		packagejson.New(packagejson.DefaultConfig()),
+		packagelockjson.New(packagelockjson.DefaultConfig()),
+		&pnpmlock.Extractor{},
+		&yarnlock.Extractor{},
+	}
 	// Python extractors.
 	Python []filesystem.Extractor = []filesystem.Extractor{
 		wheelegg.New(wheelegg.DefaultConfig()),
@@ -145,7 +151,6 @@ var (
 	// TODO(b/307735923): Add tests for these and move them into All.
 	Untested []filesystem.Extractor = []filesystem.Extractor{
 		osv.Wrapper{ExtractorName: "cpp/conan", ExtractorVersion: 0, PURLType: purl.TypeConan, Extractor: lockfile.ConanLockExtractor{}},
-		osv.Wrapper{ExtractorName: "javascript/yarn", ExtractorVersion: 0, PURLType: purl.TypeNPM, Extractor: lockfile.YarnLockExtractor{}},
 		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
 	}
 
