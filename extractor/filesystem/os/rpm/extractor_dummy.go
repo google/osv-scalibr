@@ -84,7 +84,5 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return []string{}, fmt.Errorf("not supported")
 }
 
-// Ecosystem is not implemented.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return "", fmt.Errorf("not supported")
-}
+// Ecosystem is not defined.
+func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

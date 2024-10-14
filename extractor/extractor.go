@@ -29,7 +29,7 @@ type Extractor interface {
 	ToCPEs(i *Inventory) ([]string, error)
 	// Ecosystem returns the Ecosystem of the given inventory created by this extractor.
 	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
-	Ecosystem(i *Inventory) (string, error)
+	Ecosystem(i *Inventory) string
 }
 
 // LINT.IfChange
@@ -83,7 +83,7 @@ const (
 
 // Ecosystem returns the Ecosystem of the inventory. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
-func (i *Inventory) Ecosystem() (string, error) {
+func (i *Inventory) Ecosystem() string {
 	return i.Extractor.Ecosystem(i)
 }
 

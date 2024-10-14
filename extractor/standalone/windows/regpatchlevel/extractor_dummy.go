@@ -57,6 +57,6 @@ func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 }
 
 // Ecosystem returns the ecosystem of the Inventory.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return "", fmt.Errorf("only supported on Windows")
+func (Extractor) Ecosystem(i *extractor.Inventory) string {
+	return "Registry patch level"
 }

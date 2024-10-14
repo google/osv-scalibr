@@ -685,10 +685,7 @@ func TestEcosystem(t *testing.T) {
 			i := &extractor.Inventory{
 				Metadata: tt.metadata,
 			}
-			got, err := e.Ecosystem(i)
-			if err != nil {
-				t.Fatalf("Ecosystem(%v): %v", i, err)
-			}
+			got := e.Ecosystem(i)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}

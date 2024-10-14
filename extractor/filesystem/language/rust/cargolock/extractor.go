@@ -94,8 +94,8 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 func (e Extractor) ToCPEs(_ *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) (string, error) {
-	return "crates.io", nil
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+	return "crates.io"
 }
 
 var _ filesystem.Extractor = Extractor{}

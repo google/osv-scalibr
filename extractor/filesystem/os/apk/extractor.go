@@ -236,12 +236,12 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
+func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	version := toDistro(i.Metadata.(*Metadata))
 	if version == "" {
-		return "Alpine", nil
+		return "Alpine"
 	}
-	return "Alpine:" + trimDistroVersion(version), nil
+	return "Alpine:" + trimDistroVersion(version)
 }
 
 // The Alpine OS info might include minor versions such as 3.12.1 while advisories are

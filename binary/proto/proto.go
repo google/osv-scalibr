@@ -218,17 +218,13 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 	if err != nil {
 		return nil, err
 	}
-	ecosystem, err := i.Ecosystem()
-	if err != nil {
-		return nil, err
-	}
 	inventoryProto := &spb.Inventory{
 		Name:        i.Name,
 		Version:     i.Version,
 		SourceCode:  sourceCodeIdentifierToProto(i.SourceCode),
 		Purl:        purlToProto(p),
 		Cpes:        cpes,
-		Ecosystem:   ecosystem,
+		Ecosystem:   i.Ecosystem(),
 		Locations:   i.Locations,
 		Extractor:   i.Extractor.Name(),
 		Annotations: annotationsToProto(i.Annotations),

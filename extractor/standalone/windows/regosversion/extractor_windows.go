@@ -139,6 +139,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
 // Ecosystem returns a synthetic ecosystem since the Inventory is not a software package.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return "Registry OS version", nil
+func (Extractor) Ecosystem(i *extractor.Inventory) string {
+	return "Registry OS version"
 }

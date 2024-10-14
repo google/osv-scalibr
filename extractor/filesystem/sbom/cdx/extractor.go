@@ -148,10 +148,10 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
+func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	purl := i.Metadata.(*Metadata).PURL
 	if purl == nil {
-		return "", nil
+		return ""
 	}
-	return purl.Type, nil
+	return purl.Type
 }

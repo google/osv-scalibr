@@ -124,8 +124,8 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) (string, error) {
-	return "Packagist", nil
+func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+	return "Packagist"
 }
 
 var _ filesystem.Extractor = Extractor{}
