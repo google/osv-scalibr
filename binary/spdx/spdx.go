@@ -62,5 +62,5 @@ func writeSPDX23YAML(doc *v2_3.Document, w io.Writer) error {
 }
 
 func writeSPDX23JSON(doc *v2_3.Document, w io.Writer) error {
-	return json.Write(doc, w)
+	return json.Write(doc, w, json.Indent("  "))
 }
