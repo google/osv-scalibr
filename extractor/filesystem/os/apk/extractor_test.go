@@ -160,7 +160,7 @@ func TestExtract(t *testing.T) {
 				getInventory("testdata/installed", "musl-utils", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT AND BSD-2-Clause AND GPL-2.0-or-later", "b0d8a9d948174e28a4aefcee4ef6be872225ccce"),
 				getInventory("testdata/installed", "scanelf", "pax-utils", "1.3.7-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
 				getInventory("testdata/installed", "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
-				getInventory("testdata/installed", "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib", "84a227baf001b6e0208e3352b294e4d7a40e93de")
+				getInventory("testdata/installed", "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
