@@ -18,11 +18,8 @@ package apk
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
-	"net/textproto"
 	"path/filepath"
 	"strings"
 
@@ -129,67 +126,94 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
+func groupApkPackageLines(scanner *bufio.Scanner) ([][]string, error) {
+	var groups [][]string
+	var group []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if line != "" {
+			group = append(group, line)
+			continue
+		}
+		if len(group) > 0 {
+			groups = append(groups, group)
+		}
+		group = make([]string, 0)
+	}
+
+	if len(group) > 0 {
+		groups = append(groups, group)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error while scanning: %w", err)
+	}
+
+	return groups, nil
+}
+
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	rd := textproto.NewReader(bufio.NewReader(input.Reader))
-	pkgs := []*extractor.Inventory{}
-	for eof := false; !eof; {
-		// Return if canceled or exceeding deadline.
-		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+	scanner := bufio.NewScanner(input.Reader)
+	packageGroups, err := groupApkPackageLines(scanner)
+	inventories := make([]*extractor.Inventory, 0, len(packageGroups))
+
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing apk status file: %w", err)
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+	}
+
+	for _, group := range packageGroups {
+		var metadata = &Metadata{
+			OSID:        m["ID"],
+			OSVersionID: m["VERSION_ID"],
+		}
+		var pkg = &extractor.Inventory{
+			Metadata:  metadata,
+			Locations: []string{input.Path},
 		}
 
-		h, err := rd.ReadMIMEHeader()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				// We might still have one more line of data
-				// so return only after it's been parsed.
-				eof = true
-			} else {
-				log.Errorf("Failed to extract all APK packages: %v", err)
-				return pkgs, nil
+		// File SPECS: https://wiki.alpinelinux.org/wiki/Apk_spec
+		for _, line := range group {
+			switch {
+			case strings.HasPrefix(line, "P:"):
+				pkg.Name = strings.TrimPrefix(line, "P:")
+				metadata.PackageName = pkg.Name
+			case strings.HasPrefix(line, "V:"):
+				pkg.Version = strings.TrimPrefix(line, "V:")
+			case strings.HasPrefix(line, "c:"):
+				pkg.SourceCode = &extractor.SourceCodeIdentifier{
+					Commit: strings.TrimPrefix(line, "c:"),
+				}
+			case strings.HasPrefix(line, "o:"):
+				metadata.OriginName = strings.TrimPrefix(line, "o:")
+			case strings.HasPrefix(line, "A:"):
+				metadata.Architecture = strings.TrimPrefix(line, "A:")
+			case strings.HasPrefix(line, "L:"):
+				metadata.License = strings.TrimPrefix(line, "L:")
+			case strings.HasPrefix(line, "m:"):
+				metadata.Maintainer = strings.TrimPrefix(line, "m:")
 			}
 		}
-		pkgName := h.Get("P")
-		version := h.Get("V")
-		if pkgName == "" || version == "" {
-			if !eof { // Expected when reaching the last line.
-				log.Warnf("APK package name or version is empty (name: %q, version: %q)", pkgName, version)
-			}
+
+		if pkg.Name == "" || pkg.Version == "" {
+			log.Warnf("APK package name or version is empty (name: %q, version: %q)", pkg.Name, pkg.Version)
 			continue
 		}
-		originName := h.Get("o")
-		maintainer := h.Get("m")
-		arch := h.Get("A")
-		license := h.Get("L")
-		commit := h.Get("c")
-		var sourceCode *extractor.SourceCodeIdentifier
-		if commit != "" {
-			sourceCode = &extractor.SourceCodeIdentifier{
-				Commit: commit,
-			}
-		}
-		pkgs = append(pkgs, &extractor.Inventory{
-			Name:    pkgName,
-			Version: version,
-			Metadata: &Metadata{
-				PackageName:  pkgName,
-				OriginName:   originName,
-				OSID:         m["ID"],
-				OSVersionID:  m["VERSION_ID"],
-				Maintainer:   maintainer,
-				Architecture: arch,
-				License:      license,
-			},
-			SourceCode: sourceCode,
-			Locations:  []string{input.Path},
-		})
+
+		inventories = append(inventories, pkg)
 	}
-	return pkgs, nil
+
+	return inventories, nil
 }
 
 func toNamespace(m *Metadata) string {
