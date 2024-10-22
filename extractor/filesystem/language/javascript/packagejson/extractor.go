@@ -252,4 +252,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// OSV requires the name field to be a npm package. This is a javascript extractor, there is no
+// guarantee that the package is an npm package.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "npm" }

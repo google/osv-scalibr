@@ -428,7 +428,7 @@ func TestScanResultToProto(t *testing.T) {
 				&spb.Qualifier{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
 			},
 		},
-		Ecosystem: "RHEL",
+		Ecosystem: "Red Hat",
 		Metadata: &spb.Inventory_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  "openssh-clients",
@@ -467,7 +467,7 @@ func TestScanResultToProto(t *testing.T) {
 	containerdInventoryProto := &spb.Inventory{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
-		Ecosystem: "containerd",
+		Ecosystem: "",
 		Metadata: &spb.Inventory_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName: "default",
@@ -503,7 +503,7 @@ func TestScanResultToProto(t *testing.T) {
 	containerdRuntimeInventoryProto := &spb.Inventory{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
-		Ecosystem: "containerd",
+		Ecosystem: "",
 		Metadata: &spb.Inventory_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: "default",

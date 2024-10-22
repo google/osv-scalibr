@@ -56,7 +56,5 @@ func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return nil, fmt.Errorf("only supported on Windows")
 }
 
-// Ecosystem returns the ecosystem of the Inventory.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "Registry patch level"
-}
+// Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
+func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

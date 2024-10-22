@@ -395,7 +395,7 @@ func TestEcosystem(t *testing.T) {
 		{
 			name:     "OS ID not present",
 			metadata: &snap.Metadata{},
-			want:     "Linux",
+			want:     "",
 		},
 	}
 	for _, tt := range tests {

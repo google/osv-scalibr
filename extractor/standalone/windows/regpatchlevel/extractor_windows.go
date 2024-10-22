@@ -136,7 +136,5 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
 func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
 
-// Ecosystem returns a synthetic ecosystem since the Inventory is not a software package.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "Registry patch level"
-}
+// Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
+func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

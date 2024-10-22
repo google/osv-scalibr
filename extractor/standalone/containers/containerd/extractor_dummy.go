@@ -75,7 +75,5 @@ func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
 	return nil, fmt.Errorf("only supported on Linux")
 }
 
-// Ecosystem returns a synthetic ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "containerd"
-}
+// Ecosystem returns no ecosystem since the Inventory is not a software package.
+func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

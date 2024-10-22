@@ -34,8 +34,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
 	_ "github.com/mattn/go-sqlite3"
@@ -313,12 +311,10 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	m := i.Metadata.(*Metadata)
 	if m.OSID == "rhel" {
-		return "RHEL"
+		return "Red Hat"
+	} else if m.OSID == "rocky" {
+		return "Rocky Linux"
+	} else {
+		return ""
 	}
-	if m.OSID != "" {
-		// Capitalize first letter for the Ecosystem string.
-		return cases.Title(language.English).String(m.OSID)
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'Linux'")
-	return "Linux"
 }

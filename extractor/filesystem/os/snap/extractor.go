@@ -29,8 +29,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
 
@@ -228,10 +226,9 @@ func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []s
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	m := i.Metadata.(*Metadata)
-	if m.OSID != "" {
-		// Capitalize first letter for the Ecosystem string.
-		return cases.Title(language.English).String(m.OSID)
+	if m.OSID == "ubuntu" {
+		return "Ubuntu"
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'Linux'")
-	return "Linux"
+	log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
+	return ""
 }

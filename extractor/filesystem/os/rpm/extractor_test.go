@@ -661,23 +661,23 @@ func TestEcosystem(t *testing.T) {
 		want     string
 	}{
 		{
-			name: "OS ID present",
-			metadata: &rpm.Metadata{
-				OSID: "fedora",
-			},
-			want: "Fedora",
-		},
-		{
 			name: "RHEL",
 			metadata: &rpm.Metadata{
 				OSID: "rhel",
 			},
-			want: "RHEL",
+			want: "Red Hat",
+		},
+		{
+			name: "rocky",
+			metadata: &rpm.Metadata{
+				OSID: "rocky",
+			},
+			want: "Rocky Linux",
 		},
 		{
 			name:     "OS ID not present",
 			metadata: &rpm.Metadata{},
-			want:     "Linux",
+			want:     "",
 		},
 	}
 	for _, tt := range tests {

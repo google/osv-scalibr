@@ -154,5 +154,6 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	if purl == nil {
 		return ""
 	}
+	// This is a heuristic. In most cases, the ecosystem _not_ the same as the PURL type.
 	return purl.Type
 }
