@@ -195,10 +195,7 @@ func TestToPURL(t *testing.T) {
 		},
 		Locations: []string{"location"},
 	}
-	got, err := e.ToPURL(i)
-	if err != nil {
-		t.Fatalf("ToPURL(%v): %v", i, err)
-	}
+	got := e.ToPURL(i)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
@@ -214,10 +211,7 @@ func TestToCPEs(t *testing.T) {
 		},
 		Locations: []string{"location"},
 	}
-	got, err := e.ToCPEs(i)
-	if err != nil {
-		t.Fatalf("ToCPEs(%v): %v", i, err)
-	}
+	got := e.ToCPEs(i)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToCPEs(%v) (-want +got):\n%s", i, diff)
 	}

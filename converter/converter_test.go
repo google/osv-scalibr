@@ -554,7 +554,6 @@ func TestToPURL(t *testing.T) {
 		desc      string
 		inventory *extractor.Inventory
 		want      *purl.PackageURL
-		wantErr   bool
 		onGoos    string
 	}{
 		{
@@ -579,8 +578,8 @@ func TestToPURL(t *testing.T) {
 				Locations: []string{"irrelevant"},
 				Version:   "irrelevant",
 			},
-			wantErr: true,
-			onGoos:  "linux",
+			want:   nil,
+			onGoos: "linux",
 		},
 	}
 
@@ -590,14 +589,7 @@ func TestToPURL(t *testing.T) {
 				t.Skipf("Skipping test on %s", runtime.GOOS)
 			}
 
-			got, err := converter.ToPURL(tc.inventory)
-			if err != nil && !tc.wantErr || err == nil && tc.wantErr {
-				t.Fatalf("converter.ToPURL(%v): %v", tc.inventory, err)
-			}
-
-			if tc.wantErr == true {
-				return
-			}
+			got := converter.ToPURL(tc.inventory)
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
@@ -611,7 +603,6 @@ func TestToCPEs(t *testing.T) {
 		desc      string
 		inventory *extractor.Inventory
 		want      []string
-		wantErr   bool
 	}{
 		{
 			desc: "Valid fileststem extractor",
@@ -628,14 +619,7 @@ func TestToCPEs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := converter.ToCPEs(tc.inventory)
-			if err != nil && !tc.wantErr || err == nil && tc.wantErr {
-				t.Fatalf("converter.ToCPEs(%v): %v", tc.inventory, err)
-			}
-
-			if tc.wantErr == true {
-				return
-			}
+			got := converter.ToCPEs(tc.inventory)
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("converter.ToCPEs(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)

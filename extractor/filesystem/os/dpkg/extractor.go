@@ -309,7 +309,7 @@ func toDistro(m *Metadata) string {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*Metadata)
 	q := map[string]string{}
 	distro := toDistro(m)
@@ -331,11 +331,11 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 		Namespace:  toNamespace(m),
 		Version:    i.Version,
 		Qualifiers: purl.QualifiersFromMap(q),
-	}, nil
+	}
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(i *extractor.Inventory) string {

@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"runtime"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -75,13 +77,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, fmt.Errorf("not supported")
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	log.Warnf("Trying to use rpm on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return []string{}, fmt.Errorf("not supported")
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string {
+	log.Warnf("Trying to use rpm on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // Ecosystem is not defined.
