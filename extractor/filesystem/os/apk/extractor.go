@@ -154,7 +154,7 @@ func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
 		}
 	}
 
-	// Err() will only be non nil when Scan() returns false
+	// Err() could only be non nil when Scan() returns false
 	return group, scanner.Err()
 }
 
