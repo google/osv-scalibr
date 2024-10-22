@@ -182,7 +182,8 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "invalid",
 			path:             "testdata/invalid",
-			wantInventory:    []*extractor.Inventory{},
+			wantInventory:    nil,
+			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
