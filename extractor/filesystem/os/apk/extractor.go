@@ -126,32 +126,36 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func groupApkPackageLines(scanner *bufio.Scanner) ([][]string, error) {
-	var groups [][]string
-	var group []string
+// parseSingleApkRecord reads from the scanner a single record,
+// returns nil, nil when scanner ends.
+func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
+	// There is currently 26 keys defined here (Under "Installed Database V2"):
+	// https://wiki.alpinelinux.org/wiki/Apk_spec
+	var group map[string]string = make(map[string]string, 30)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		if line != "" {
-			group = append(group, line)
+			key, val, found := strings.Cut(line, ":")
+
+			if !found {
+				return nil, fmt.Errorf("invalid line: %q", line)
+			}
+
+			group[key] = val
 			continue
 		}
-		if len(group) > 0 {
-			groups = append(groups, group)
+
+		// check both that line is empty and we have filled out data in group
+		// this avoids double empty lines returning early
+		if line == "" && len(group) > 0 {
+			return group, nil
 		}
-		group = make([]string, 0)
 	}
 
-	if len(group) > 0 {
-		groups = append(groups, group)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error while scanning: %w", err)
-	}
-
-	return groups, nil
+	// Err() will only be non nil when Scan() returns false
+	return group, scanner.Err()
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
@@ -161,47 +165,40 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	scanner := bufio.NewScanner(input.Reader)
-	packageGroups, err := groupApkPackageLines(scanner)
-	inventories := make([]*extractor.Inventory, 0, len(packageGroups))
+	inventories := make([]*extractor.Inventory, 0)
 
-	if err != nil {
-		return nil, fmt.Errorf("error while parsing apk status file: %w", err)
-	}
-
-	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
-	}
-
-	for _, group := range packageGroups {
-		var metadata = &Metadata{
-			OSID:        m["ID"],
-			OSVersionID: m["VERSION_ID"],
+	for eof := false; !eof; {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
 		}
+
+		record, err := parseSingleApkRecord(scanner)
+		if err != nil {
+			return nil, fmt.Errorf("error while parsing apk status file %q: %w", input.Path, err)
+		}
+
+		if len(record) == 0 {
+			break
+		}
+
 		var pkg = &extractor.Inventory{
-			Metadata:  metadata,
+			Name:    record["P"],
+			Version: record["V"],
+			Metadata: &Metadata{
+				OSID:         m["ID"],
+				OSVersionID:  m["VERSION_ID"],
+				PackageName:  record["P"],
+				OriginName:   record["o"],
+				Architecture: record["A"],
+				License:      record["L"],
+				Maintainer:   record["m"],
+			},
 			Locations: []string{input.Path},
 		}
 
-		// File SPECS: https://wiki.alpinelinux.org/wiki/Apk_spec
-		for _, line := range group {
-			switch {
-			case strings.HasPrefix(line, "P:"):
-				pkg.Name = strings.TrimPrefix(line, "P:")
-				metadata.PackageName = pkg.Name
-			case strings.HasPrefix(line, "V:"):
-				pkg.Version = strings.TrimPrefix(line, "V:")
-			case strings.HasPrefix(line, "c:"):
-				pkg.SourceCode = &extractor.SourceCodeIdentifier{
-					Commit: strings.TrimPrefix(line, "c:"),
-				}
-			case strings.HasPrefix(line, "o:"):
-				metadata.OriginName = strings.TrimPrefix(line, "o:")
-			case strings.HasPrefix(line, "A:"):
-				metadata.Architecture = strings.TrimPrefix(line, "A:")
-			case strings.HasPrefix(line, "L:"):
-				metadata.License = strings.TrimPrefix(line, "L:")
-			case strings.HasPrefix(line, "m:"):
-				metadata.Maintainer = strings.TrimPrefix(line, "m:")
+		if commit, ok := record["c"]; ok {
+			pkg.SourceCode = &extractor.SourceCodeIdentifier{
+				Commit: commit,
 			}
 		}
 

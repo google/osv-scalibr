@@ -183,7 +183,7 @@ func TestExtract(t *testing.T) {
 			name:             "invalid",
 			path:             "testdata/invalid",
 			wantInventory:    []*extractor.Inventory{},
-			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name: "osrelease openwrt",
