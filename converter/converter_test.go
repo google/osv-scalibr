@@ -571,7 +571,7 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			desc: "Windows-only returns error on Linux",
+			desc: "Windows-only returns nil on Linux",
 			inventory: &extractor.Inventory{
 				Name:      "irrelevant",
 				Extractor: dismpatch.Extractor{},
