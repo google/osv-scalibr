@@ -114,16 +114,16 @@ func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput
 }
 
 // ToPURL returns a fake PURL based on the inventory name+version.
-func (e *fakeExtractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e *fakeExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
 		Name:    i.Name,
 		Version: i.Version,
-	}, nil
+	}
 }
 
 // ToCPEs always returns an empty array.
-func (e *fakeExtractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e *fakeExtractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns a fake ecosystem.
 func (e *fakeExtractor) Ecosystem(i *extractor.Inventory) string {

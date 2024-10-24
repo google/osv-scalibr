@@ -210,14 +210,8 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 	if i == nil {
 		return nil, nil
 	}
-	p, err := converter.ToPURL(i)
-	if err != nil {
-		return nil, err
-	}
-	cpes, err := converter.ToCPEs(i)
-	if err != nil {
-		return nil, err
-	}
+	p := converter.ToPURL(i)
+	cpes := converter.ToCPEs(i)
 	inventoryProto := &spb.Inventory{
 		Name:        i.Name,
 		Version:     i.Version,

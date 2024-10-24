@@ -116,16 +116,16 @@ func SplitPath(path string) *BrewPath {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeBrew,
 		Name:    i.Name,
 		Version: i.Version,
-	}, nil
+	}
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

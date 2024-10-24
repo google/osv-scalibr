@@ -279,10 +279,7 @@ func TestToPURL(t *testing.T) {
 		Namespace: "namespace",
 		Version:   "1.2.3",
 	}
-	got, err := e.ToPURL(i)
-	if err != nil {
-		t.Fatalf("ToPURL(%v): %v", i, err)
-	}
+	got := e.ToPURL(i)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}

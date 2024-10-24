@@ -42,12 +42,12 @@ const (
 var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 
 // ToPURL converts a SCALIBR inventory structure into a package URL.
-func ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return i.Extractor.ToPURL(i)
 }
 
 // ToCPEs converts a SCALIBR inventory structure into CPEs, if they're present in the inventory.
-func ToCPEs(i *extractor.Inventory) ([]string, error) {
+func ToCPEs(i *extractor.Inventory) []string {
 	return i.Extractor.ToCPEs(i)
 }
 
@@ -75,11 +75,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 	relationships := make([]*v2_3.Relationship, 0, 2*len(r.Inventories))
 
 	for _, i := range r.Inventories {
-		p, err := ToPURL(i)
-		if err != nil {
-			log.Warnf("ToPURL(%v): %v, skipping", i, err)
-			continue
-		}
+		p := ToPURL(i)
 		if p == nil {
 			log.Warnf("Inventory %v has no PURL, skipping", i)
 			continue
@@ -224,10 +220,10 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 			Name:    (*i).Name,
 			Version: (*i).Version,
 		}
-		if p, err := ToPURL(i); err == nil && p != nil {
+		if p := ToPURL(i); p != nil {
 			pkg.PackageURL = p.String()
 		}
-		if cpes, err := ToCPEs(i); err == nil && len(cpes) > 0 {
+		if cpes := ToCPEs(i); len(cpes) > 0 {
 			pkg.CPE = cpes[0]
 		}
 		if len((*i).Locations) > 0 {

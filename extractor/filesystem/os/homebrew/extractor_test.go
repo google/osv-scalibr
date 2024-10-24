@@ -185,10 +185,7 @@ func TestToPURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = homebrew.Extractor{}
 			for _, i := range tt.inventory {
-				got, err := e.ToPURL(i)
-				if err != nil {
-					t.Fatalf("ToPURL(%v): %v", i, err)
-				}
+				got := e.ToPURL(i)
 				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 				}

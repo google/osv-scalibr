@@ -31,10 +31,7 @@ type InventoryIndex struct {
 func New(inv []*extractor.Inventory) (*InventoryIndex, error) {
 	invMap := make(map[string]map[string][]*extractor.Inventory)
 	for _, i := range inv {
-		p, err := toPURL(i)
-		if err != nil {
-			return nil, err
-		}
+		p := toPURL(i)
 		if p == nil {
 			continue
 		}
@@ -85,6 +82,6 @@ func (ix *InventoryIndex) GetSpecific(name string, packageType string) []*extrac
 	return i
 }
 
-func toPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func toPURL(i *extractor.Inventory) *purl.PackageURL {
 	return i.Extractor.ToPURL(i)
 }

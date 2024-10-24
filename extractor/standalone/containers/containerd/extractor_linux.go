@@ -292,12 +292,12 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, nil
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	return nil
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

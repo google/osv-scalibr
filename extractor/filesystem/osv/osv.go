@@ -149,7 +149,7 @@ func (fw fileWrapper) Path() string {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Wrapper) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Wrapper) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*Metadata)
 	name := i.Name
 	namespace := ""
@@ -163,11 +163,11 @@ func (e Wrapper) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 		Namespace: namespace,
 		Name:      name,
 		Version:   i.Version,
-	}, nil
+	}
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Wrapper) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Wrapper) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Wrapper) Ecosystem(i *extractor.Inventory) string {

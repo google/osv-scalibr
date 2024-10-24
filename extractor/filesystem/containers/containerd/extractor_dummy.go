@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"runtime"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -68,13 +70,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 // ToPURL not implemented.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, fmt.Errorf("not supported")
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	log.Warnf("Trying to use containerd on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // ToCPEs not implemented.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return []string{}, fmt.Errorf("not supported")
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string {
+	log.Warnf("Trying to use containerd on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // Ecosystem not defined.

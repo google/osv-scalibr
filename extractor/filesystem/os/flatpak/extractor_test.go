@@ -355,10 +355,7 @@ func TestToPURL(t *testing.T) {
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got, err := e.ToPURL(i)
-			if err != nil {
-				t.Fatalf("ToPURL(%v): %v", i, err)
-			}
+			got := e.ToPURL(i)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 			}
