@@ -40,10 +40,16 @@ const (
 	fileBrowserIP  = "127.0.0.1"
 	requestTimeout = 2 * time.Second
 	title          = "Filebrowser default credentials"
-	description    = "Filebrowser is a self-hosted web application to manage files and folders." +
+	description    = "Filebrowser is a self-hosted web application to manage files and folders. " +
 		"It has been detected that the default credentials are in use, which can be exploited by an" +
 		" attacker to execute arbitrary commands on the affected system."
-	recommendation = "Change the credentials and restart the filebrowser service, or uninstall it."
+	recommendation = "If you have devlify installed, run 'devlify update' to apply the fix." +
+		" Follow the prompts until you get a 'Configuration is done!' message." +
+		" If the update succeeded, the output of the 'podman ps' command should no longer" +
+		" show the File Browser container." +
+		" In all other instances where filebrowser is installed as a stand-alone, the vulnerability" +
+		" can be remediated by changing the default credentials through the Web UI and restarting the service" +
+		" or by uninstalling the filebrowser service/container."
 )
 
 var (
