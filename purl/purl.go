@@ -67,6 +67,8 @@ const (
 	TypeHackage = "hackage"
 	// TypeHex is a pkg:hex purl.
 	TypeHex = "hex"
+	// TypeMacApps is a pkg:macos purl.
+	TypeMacApps = "macos"
 	// TypeMaven is a pkg:maven purl.
 	TypeMaven = "maven"
 	// TypeNPM is a pkg:npm purl.
@@ -166,6 +168,7 @@ func validType(t string) bool {
 		TypeGolang:    true,
 		TypeHackage:   true,
 		TypeHex:       true,
+		TypeMacApps:   true,
 		TypeMaven:     true,
 		TypeNPM:       true,
 		TypeNuget:     true,

@@ -97,6 +97,7 @@ message Inventory {
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
+    MacOSPackageMetadata macos_metadata = 33;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
     CDXPackageMetadata cdx_metadata = 30;
@@ -330,6 +331,20 @@ message OSVPackageMetadata {
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
   string version_comparator = 2;
+}
+
+// The additional data found in MacOS packages.
+message MacOSPackageMetadata {
+  string package_name = 1;
+  string package_id = 2;
+  string package_version = 3;
+  string bundle_executable = 4;
+  string bundle_name = 5;
+  string bundle_package_type = 6;
+  string bundle_signature = 7;
+  string bundle_version = 8;
+  string ks_product_id = 9;
+  string ks_update_url = 10;
 }
 
 message ContainerdContainerMetadata {
