@@ -131,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
 	// There is currently 26 keys defined here (Under "Installed Database V2"):
 	// https://wiki.alpinelinux.org/wiki/Apk_spec
-	var group map[string]string = make(map[string]string, 30)
+	group := map[string]string{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -150,11 +150,12 @@ func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
 		// check both that line is empty and we have filled out data in group
 		// this avoids double empty lines returning early
 		if line == "" && len(group) > 0 {
+			// scanner.Err() could only be non nil when Scan() returns false
+			// so we can return nil directly here
 			return group, nil
 		}
 	}
 
-	// Err() could only be non nil when Scan() returns false
 	return group, scanner.Err()
 }
 
@@ -165,7 +166,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	scanner := bufio.NewScanner(input.Reader)
-	inventories := make([]*extractor.Inventory, 0)
+	inventories := []*extractor.Inventory{}
 
 	for eof := false; !eof; {
 		if err := ctx.Err(); err != nil {
@@ -181,6 +182,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			break
 		}
 
+		var sourceCode *extractor.SourceCodeIdentifier
+		if commit, ok := record["c"]; ok {
+			sourceCode = &extractor.SourceCodeIdentifier{
+				Commit: commit,
+			}
+		}
+
 		var pkg = &extractor.Inventory{
 			Name:    record["P"],
 			Version: record["V"],
@@ -193,13 +201,8 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				License:      record["L"],
 				Maintainer:   record["m"],
 			},
-			Locations: []string{input.Path},
-		}
-
-		if commit, ok := record["c"]; ok {
-			pkg.SourceCode = &extractor.SourceCodeIdentifier{
-				Commit: commit,
-			}
+			SourceCode: sourceCode,
+			Locations:  []string{input.Path},
 		}
 
 		if pkg.Name == "" || pkg.Version == "" {
