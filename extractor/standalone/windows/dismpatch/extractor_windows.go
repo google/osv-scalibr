@@ -60,7 +60,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	p := &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
@@ -75,11 +75,11 @@ func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
 		p.Version = i.Version
 	}
 
-	return p, nil
+	return p
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // runDISM executes the dism command line tool.
 func runDISM(ctx context.Context) (string, error) {

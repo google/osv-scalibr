@@ -19,9 +19,11 @@ package regpatchlevel
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -47,13 +49,15 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e *Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, fmt.Errorf("only supported on Windows")
+func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	log.Warnf("Trying to use regpatchlevel on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-func (e *Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return nil, fmt.Errorf("only supported on Windows")
+func (e *Extractor) ToCPEs(i *extractor.Inventory) []string {
+	log.Warnf("Trying to use regpatchlevel on %s, which is not supported", runtime.GOOS)
+	return nil
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.

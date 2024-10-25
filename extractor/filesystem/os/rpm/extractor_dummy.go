@@ -75,14 +75,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return nil, fmt.Errorf("not supported")
-}
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return []string{}, fmt.Errorf("not supported")
-}
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return nil }
 
 // Ecosystem is not defined.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

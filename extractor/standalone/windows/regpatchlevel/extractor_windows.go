@@ -124,17 +124,17 @@ func (e *Extractor) handleKey(registryPath, keyName string) (*extractor.Inventor
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
 		Name:      i.Name,
 		Version:   i.Version,
-	}, nil
+	}
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

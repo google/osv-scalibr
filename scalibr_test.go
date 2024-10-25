@@ -276,9 +276,9 @@ func (fakeExNeedsNetwork) FileRequired(path string, fileinfo fs.FileInfo) bool {
 func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
 	return nil, nil
 }
-func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) { return nil, nil }
-func (e fakeExNeedsNetwork) ToCPEs(i *extractor.Inventory) ([]string, error)         { return nil, nil }
-func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string                 { return "" }
+func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
+func (e fakeExNeedsNetwork) ToCPEs(i *extractor.Inventory) []string         { return nil }
+func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string        { return "" }
 
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: true}

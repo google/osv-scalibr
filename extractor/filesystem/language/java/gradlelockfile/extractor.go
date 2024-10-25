@@ -115,18 +115,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*javalockfile.Metadata)
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),
 		Name:      strings.ToLower(m.ArtifactID),
 		Version:   i.Version,
-	}, nil
+	}
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) { return []string{}, nil }
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string {

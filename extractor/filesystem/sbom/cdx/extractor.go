@@ -138,13 +138,13 @@ func hasFileExtension(path string, extension string) bool {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) (*purl.PackageURL, error) {
-	return i.Metadata.(*Metadata).PURL, nil
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	return i.Metadata.(*Metadata).PURL
 }
 
 // ToCPEs converts an inventory created by this extractor into a list of CPEs.
-func (e Extractor) ToCPEs(i *extractor.Inventory) ([]string, error) {
-	return i.Metadata.(*Metadata).CPEs, nil
+func (e Extractor) ToCPEs(i *extractor.Inventory) []string {
+	return i.Metadata.(*Metadata).CPEs
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
