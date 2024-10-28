@@ -451,7 +451,6 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name: "custom rpm",
-			// XXX
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
