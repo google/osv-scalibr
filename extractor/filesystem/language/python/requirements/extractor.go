@@ -123,87 +123,91 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 	})
 }
 
+type pathQueue []string
+
 // Extract extracts packages from requirements files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	// Additional paths to recursive files found during extraction.
+	var extraPaths pathQueue
+	var inv []*extractor.Inventory
+	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path, input.FS)
+	if err != nil {
+		return nil, err
+	}
+	if e.stats != nil {
+		e.exportStats(input, err)
+	}
+	extraPaths = append(extraPaths, newPaths...)
+	inv = append(inv, newRepos...)
+
+	// Process all the recursive files that we found.
+	extraInv := extractFromExtraPaths(input.Path, extraPaths, input.FS)
+	inv = append(inv, extraInv...)
+
+	return inv, nil
+}
+
+func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS) []*extractor.Inventory {
 	// File paths with inventories already found in this extraction.
 	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
-	var found = map[string]struct{}{}
-	inventory, err := e.extractFromPath(ctx, input.Reader, input.Path, input.FS, found)
-	if e.stats != nil {
-		var fileSizeBytes int64
-		if input.Info != nil {
-			fileSizeBytes = input.Info.Size()
+	var found = map[string]bool{initPath: true}
+	var inv []*extractor.Inventory
+
+	for len(extraPaths) > 0 {
+		path := extraPaths[0]
+		extraPaths = extraPaths[1:]
+		if _, exists := found[path]; exists {
+			continue
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
-			Path:          input.Path,
-			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
-			FileSizeBytes: fileSizeBytes,
-		})
+		newInv, newPaths, err := openAndExtractFromFile(path, fs)
+		if err != nil {
+			log.Warnf("openAndExtractFromFile(%s): %w", path, err)
+			continue
+		}
+		found[path] = true
+		extraPaths = append(extraPaths, newPaths...)
+		for _, i := range newInv {
+			// Note the path through which we refer to this requirements.txt file.
+			i.Locations[0] = initPath + ":" + filepath.ToSlash(i.Locations[0])
+		}
+		inv = append(inv, newInv...)
 	}
-	return inventory, err
+
+	return inv
 }
 
-func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path string, fs scalibrfs.FS, found map[string]struct{}) ([]*extractor.Inventory, error) {
-	// Prevent infinite loop on dep cycles.
-	if _, ok := found[path]; ok {
-		return nil, nil
+func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventory, pathQueue, error) {
+	reader, err := fs.Open(filepath.ToSlash(path))
+	if err != nil {
+		return nil, nil, err
 	}
-	found[path] = struct{}{}
+	defer reader.Close()
+	return extractFromPath(reader, path, fs)
+}
 
-	inventory := []*extractor.Inventory{}
+func extractFromPath(reader io.Reader, path string, fs scalibrfs.FS) ([]*extractor.Inventory, pathQueue, error) {
+	var inv []*extractor.Inventory
+	var extraPaths pathQueue
 	s := bufio.NewScanner(reader)
-	carry := ""
 	for s.Scan() {
-		l := carry + s.Text()
-		carry = ""
-		l = removeComments(l)
-		if strings.HasSuffix(l, `\`) {
-			carry = l[:len(l)-1]
-			continue
-		}
-
-		if hasEnvVariable(l) {
-			// Ignore env variables
-			// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L503
-			// TODO(b/286213823): Implement metric
-			continue
-		}
-
+		l := readLine(s, &strings.Builder{})
 		// Per-requirement options may be present. We extract the --hash options, and discard the others.
 		l, hashOptions := splitPerRequirementOptions(l)
-
 		l = removeWhiteSpaces(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
 
 		if len(l) == 0 {
-			// Ignore empty lines
 			continue
 		}
 
-		// Parse referenced requirements.txt files as well.
+		// Extract paths to referenced requirements.txt files for further processing.
 		if strings.HasPrefix(l, "-r") {
 			p := strings.TrimPrefix(l, "-r")
 			// Path is relative to the current requirement file's dir.
 			p = filepath.Join(filepath.Dir(path), p)
-			r, err := fs.Open(filepath.ToSlash(p))
-			if err != nil {
-				log.Warnf("Open(%s): %w", p, err)
-				continue
-			}
-			invs, err := e.extractFromPath(ctx, r, p, fs, found)
-			if err != nil {
-				log.Warnf("extractFromPath(%s): %w", p, err)
-				continue
-			}
-			for _, i := range invs {
-				// Note the path through which we refer to this requirements.txt file.
-				i.Locations[0] = path + ":" + filepath.ToSlash(i.Locations[0])
-				// Also note original file as an OSV dependency group.
-				inventory = append(inventory, i)
-			}
-			continue
+			extraPaths = append(extraPaths, p)
 		}
 
 		if strings.HasPrefix("-", l) {
@@ -223,7 +227,7 @@ func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path s
 			continue
 		}
 
-		inventory = append(inventory, &extractor.Inventory{
+		inv = append(inv, &extractor.Inventory{
 			Name:      name,
 			Version:   version,
 			Locations: []string{path},
@@ -234,11 +238,43 @@ func (e Extractor) extractFromPath(ctx context.Context, reader io.Reader, path s
 		})
 	}
 
-	return inventory, s.Err()
+	return inv, extraPaths, s.Err()
 }
 
-func removeComments(s string) string {
-	return reComment.ReplaceAllString(s, "")
+// readLine reads a line from the scanner, removes comments and joins it with
+// the next line if it ends with a backslash.
+func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
+	l := scanner.Text()
+	l = removeComments(l)
+
+	if hasEnvVariable(l) {
+		// Ignore env variables
+		// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L503
+		// TODO(b/286213823): Implement metric
+		return ""
+	}
+
+	if strings.HasSuffix(l, `\`) {
+		builder.WriteString(l[:len(l)-1])
+		scanner.Scan()
+		return readLine(scanner, builder)
+	} else {
+		builder.WriteString(l)
+	}
+
+	return builder.String()
+}
+
+func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
+	var fileSizeBytes int64
+	if input.Info != nil {
+		fileSizeBytes = input.Info.Size()
+	}
+	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		Path:          input.Path,
+		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+		FileSizeBytes: fileSizeBytes,
+	})
 }
 
 func getLowestVersion(s string) (name, version, comparator string) {
@@ -264,6 +300,10 @@ func getLowestVersion(s string) (name, version, comparator string) {
 
 	// For all other separators the lowest version is the one we found.
 	return t[0], t[1], comp
+}
+
+func removeComments(s string) string {
+	return reComment.ReplaceAllString(s, "")
 }
 
 func removeWhiteSpaces(s string) string {

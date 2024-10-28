@@ -137,13 +137,17 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name:          "no version",
-			path:          "testdata/no_version.txt",
-			wantInventory: []*extractor.Inventory{
-				// not PyCrypto, because no version pinned
-				// not GMPY2, because no version pinned
-				// not SymPy, because no version pinned
-			},
+			name: "no version",
+			path: "testdata/no_version.txt",
+			// not PyCrypto, because no version pinned
+			// not GMPY2, because no version pinned
+			// not SymPy, because no version pinned
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "infinite_loop",
+			path: "testdata/loop.txt",
+			// Makes sure we don't get stuck in an infinite loop.
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
@@ -231,7 +235,6 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "invalid",
 			path:             "testdata/invalid.txt",
-			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
