@@ -200,7 +200,6 @@ func sshConfigContainsForward(path string) []int {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	scanner.Split(bufio.ScanLines)
 	r := []int{}
 	i := -1
 	for scanner.Scan() {
@@ -257,7 +256,6 @@ func findString(path string, re *regexp.Regexp) []int {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	scanner.Split(bufio.ScanLines)
 	r := []int{}
 	i := -1
 	for scanner.Scan() {
