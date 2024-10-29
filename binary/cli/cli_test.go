@@ -41,9 +41,9 @@ func TestValidateFlags(t *testing.T) {
 				Root:            "/",
 				ResultFile:      "result.textproto",
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
-				ExtractorsToRun: "java,python",
-				DetectorsToRun:  "cve,cis",
-				DirsToSkip:      "path1,path2",
+				ExtractorsToRun: []string{"java,python", "javascript"},
+				DetectorsToRun:  []string{"cve,cis"},
+				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
 			wantErr: nil,
@@ -99,7 +99,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: ",python",
+				ExtractorsToRun: []string{",python"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -108,7 +108,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: "asdf",
+				ExtractorsToRun: []string{"asdf"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -117,7 +117,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:           "/",
 				ResultFile:     "result.textproto",
-				DetectorsToRun: "cve,",
+				DetectorsToRun: []string{"cve,"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -126,7 +126,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:           "/",
 				ResultFile:     "result.textproto",
-				DetectorsToRun: "asdf",
+				DetectorsToRun: []string{"asdf"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -135,8 +135,8 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:               "/",
 				ResultFile:         "result.textproto",
-				ExtractorsToRun:    "python,javascript",
-				DetectorsToRun:     "govulncheck", // Needs the Go binary extractor.
+				ExtractorsToRun:    []string{"python,javascript"},
+				DetectorsToRun:     []string{"govulncheck"}, // Needs the Go binary extractor.
 				ExplicitExtractors: true,
 			},
 			wantErr: cmpopts.AnyError,
@@ -146,8 +146,8 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: "python,javascript",
-				DetectorsToRun:  "govulncheck", // Needs the Go binary extractor.
+				ExtractorsToRun: []string{"python,javascript"},
+				DetectorsToRun:  []string{"govulncheck"}, // Needs the Go binary extractor.
 			},
 			wantErr: nil,
 		},
@@ -156,7 +156,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:       "/",
 				ResultFile: "result.textproto",
-				DirsToSkip: "path1,,path3",
+				DirsToSkip: []string{"path1,,path3"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -261,15 +261,15 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 			flags: map[string]*cli.Flags{
 				"darwin": &cli.Flags{
 					Root:       "/",
-					DirsToSkip: "/boot,/mnt,C:\\boot,C:\\mnt",
+					DirsToSkip: []string{"/boot,/mnt,C:\\boot", "C:\\mnt"},
 				},
 				"linux": &cli.Flags{
 					Root:       "/",
-					DirsToSkip: "/boot,/mnt,C:\\boot,C:\\mnt",
+					DirsToSkip: []string{"/boot,/mnt", "C:\\boot,C:\\mnt"},
 				},
 				"windows": &cli.Flags{
 					Root:       "C:\\",
-					DirsToSkip: "C:\\boot,C:\\mnt",
+					DirsToSkip: []string{"C:\\boot,C:\\mnt"},
 				},
 			},
 			wantDirsToSkip: map[string][]string{
@@ -283,15 +283,15 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 			flags: map[string]*cli.Flags{
 				"darwin": &cli.Flags{
 					Root:       "/root",
-					DirsToSkip: "/root/dir1,/dir2",
+					DirsToSkip: []string{"/root/dir1,/dir2"},
 				},
 				"linux": &cli.Flags{
 					Root:       "/root",
-					DirsToSkip: "/root/dir1,/dir2",
+					DirsToSkip: []string{"/root/dir1,/dir2"},
 				},
 				"windows": &cli.Flags{
 					Root:       "C:\\root",
-					DirsToSkip: "C:\\root\\dir1,c:\\dir2",
+					DirsToSkip: []string{"C:\\root\\dir1,c:\\dir2"},
 				},
 			},
 			wantDirsToSkip: map[string][]string{
@@ -371,14 +371,14 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 		{
 			desc: "Create an extractor",
 			flags: &cli.Flags{
-				ExtractorsToRun: "python/wheelegg",
+				ExtractorsToRun: []string{"python/wheelegg"},
 			},
 			wantExtractorCount: 1,
 		},
 		{
 			desc: "Create a detector",
 			flags: &cli.Flags{
-				DetectorsToRun: "cis",
+				DetectorsToRun: []string{"cis"},
 			},
 			wantDetectorCount: 1,
 		},
@@ -401,8 +401,8 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 func TestGetScanConfig_GovulncheckParams(t *testing.T) {
 	dbPath := "path/to/db"
 	flags := &cli.Flags{
-		ExtractorsToRun:   "go",
-		DetectorsToRun:    binary.Detector{}.Name(),
+		ExtractorsToRun:   []string{"go"},
+		DetectorsToRun:    []string{binary.Detector{}.Name()},
 		GovulncheckDBPath: dbPath,
 	}
 

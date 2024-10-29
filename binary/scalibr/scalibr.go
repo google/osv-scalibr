@@ -35,9 +35,12 @@ func parseFlags() *cli.Flags {
 	resultFile := flag.String("result", "", "The path of the output scan result file")
 	var output cli.Array
 	flag.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
-	extractorsToRun := flag.String("extractors", "default", "Comma-separated list of extractor plugins to run")
-	detectorsToRun := flag.String("detectors", "default", "Comma-separated list of detectors plugins to run")
-	dirsToSkip := flag.String("skip-dirs", "", "Comma-separated list of file paths to avoid traversing")
+	extractorsToRun := cli.NewStringListFlag([]string{"default"})
+	flag.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
+	detectorsToRun := cli.NewStringListFlag([]string{"default"})
+	flag.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
+	var dirsToSkip cli.StringListFlag
+	flag.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := flag.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
 	remoteImage := flag.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	govulncheckDBPath := flag.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
@@ -59,10 +62,10 @@ func parseFlags() *cli.Flags {
 		Root:                  *root,
 		ResultFile:            *resultFile,
 		Output:                output,
-		ExtractorsToRun:       *extractorsToRun,
-		DetectorsToRun:        *detectorsToRun,
+		ExtractorsToRun:       extractorsToRun.GetSlice(),
+		DetectorsToRun:        detectorsToRun.GetSlice(),
 		FilesToExtract:        filesToExtract,
-		DirsToSkip:            *dirsToSkip,
+		DirsToSkip:            dirsToSkip.GetSlice(),
 		SkipDirRegex:          *skipDirRegex,
 		RemoteImage:           *remoteImage,
 		GovulncheckDBPath:     *govulncheckDBPath,

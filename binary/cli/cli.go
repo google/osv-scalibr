@@ -65,15 +65,56 @@ func (i *Array) Get() any {
 	return i
 }
 
+// StringListFlag is a type to be passed to flag.Var that supports list flags passed as repeated
+// flags, e.g. ./scalibr -o a -o b,c the library will call arr.Set("a") then arr.Set("a,b").
+type StringListFlag struct {
+	set          bool
+	value        []string
+	defaultValue []string
+}
+
+// NewStringListFlag creates a new StringListFlag with the given default value.
+func NewStringListFlag(defaultValue []string) StringListFlag {
+	return StringListFlag{defaultValue: defaultValue}
+}
+
+// Set gets called whenever an a new instance of a flag is read during CLI arg parsing.
+// For example, in the case of -o foo -o bar the library will call arr.Set("foo") then arr.Set("bar").
+func (s *StringListFlag) Set(x string) error {
+	s.value = append(s.value, strings.Split(x, ",")...)
+	s.set = true
+	return nil
+}
+
+// Get returns the underlying []string value stored by this flag struct.
+func (s *StringListFlag) Get() any {
+	return s.GetSlice()
+}
+
+// GetSlice returns the underlying []string value stored by this flag struct.
+func (s *StringListFlag) GetSlice() []string {
+	if s.set {
+		return s.value
+	}
+	return s.defaultValue
+}
+
+func (s *StringListFlag) String() string {
+	if len(s.value) == 0 {
+		return ""
+	}
+	return fmt.Sprint(s.value)
+}
+
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
 	Root                  string
 	ResultFile            string
 	Output                Array
-	ExtractorsToRun       string
-	DetectorsToRun        string
+	ExtractorsToRun       []string
+	DetectorsToRun        []string
 	FilesToExtract        []string
-	DirsToSkip            string
+	DirsToSkip            []string
 	SkipDirRegex          string
 	RemoteImage           string
 	GovulncheckDBPath     string
@@ -110,20 +151,20 @@ func ValidateFlags(flags *Flags) error {
 	}
 	// TODO(b/279413691): Use the Array struct to allow multiple occurrences of a list arg
 	// e.g. --extractors=ex1 --extractors=ex2.
-	if err := validateListArg(flags.ExtractorsToRun); err != nil {
+	if err := validateMultiStringArg(flags.ExtractorsToRun); err != nil {
 		return fmt.Errorf("--extractors: %w", err)
 	}
-	if err := validateListArg(flags.DetectorsToRun); err != nil {
+	if err := validateMultiStringArg(flags.DetectorsToRun); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
-	if err := validateListArg(flags.DirsToSkip); err != nil {
+	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
 	}
 	if err := validateRegex(flags.SkipDirRegex); err != nil {
 		return fmt.Errorf("--skip-dir-regex: %w", err)
 	}
 	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
-		return fmt.Errorf("--detectors: %w", err)
+		return err
 	}
 	return nil
 }
@@ -165,13 +206,18 @@ func validateSPDXCreators(creators string) error {
 	return nil
 }
 
-func validateListArg(arg string) error {
+func validateMultiStringArg(arg []string) error {
 	if len(arg) == 0 {
 		return nil
 	}
-	for _, item := range strings.Split(arg, ",") {
+	for _, item := range arg {
 		if len(item) == 0 {
-			return fmt.Errorf("list item cannot be left empty")
+			continue
+		}
+		for _, item := range strings.Split(item, ",") {
+			if len(item) == 0 {
+				return fmt.Errorf("list item cannot be left empty")
+			}
 		}
 	}
 	return nil
@@ -185,7 +231,7 @@ func validateRegex(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors string, extractors string, requireExtractors bool) error {
+func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
@@ -339,7 +385,7 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 	var standaloneExtractors []standalone.Extractor
 
 	// We need to check extractors individually as they may be defined in one or both lists.
-	for _, name := range strings.Split(f.ExtractorsToRun, ",") {
+	for _, name := range multiStringToList(f.ExtractorsToRun) {
 		ex, err := el.ExtractorsFromNames([]string{name})
 		stex, sterr := sl.ExtractorsFromNames([]string{name})
 
@@ -363,7 +409,7 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	if len(f.DetectorsToRun) == 0 {
 		return []detector.Detector{}, nil
 	}
-	dets, err := dl.DetectorsFromNames(strings.Split(f.DetectorsToRun, ","))
+	dets, err := dl.DetectorsFromNames(multiStringToList(f.DetectorsToRun))
 	if err != nil {
 		return []detector.Detector{}, err
 	}
@@ -373,6 +419,14 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 		}
 	}
 	return dets, nil
+}
+
+func multiStringToList(arg []string) []string {
+	var result []string
+	for _, item := range arg {
+		result = append(result, strings.Split(item, ",")...)
+	}
+	return result
 }
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
@@ -455,7 +509,7 @@ func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 		log.Warnf("Failed to get default ignored directories: %v", err)
 	}
 	if len(f.DirsToSkip) > 0 {
-		paths = append(paths, strings.Split(f.DirsToSkip, ",")...)
+		paths = append(paths, multiStringToList(f.DirsToSkip)...)
 	}
 
 	// Ignore paths that are not under Root.

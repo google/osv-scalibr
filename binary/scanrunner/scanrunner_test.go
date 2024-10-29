@@ -88,7 +88,7 @@ func TestRunScan(t *testing.T) {
 		{
 			desc:               "Successful detector run",
 			setupFunc:          createDetectorTestFiles,
-			flags:              &cli.Flags{DetectorsToRun: "cis"},
+			flags:              &cli.Flags{DetectorsToRun: []string{"cis"}},
 			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantInventoryCount: 0,
 			wantFindingCount:   1,
@@ -98,7 +98,7 @@ func TestRunScan(t *testing.T) {
 		{
 			desc:               "Successful extractor run",
 			setupFunc:          createExtractorTestFiles,
-			flags:              &cli.Flags{ExtractorsToRun: "python/wheelegg"},
+			flags:              &cli.Flags{ExtractorsToRun: []string{"python/wheelegg"}},
 			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantInventoryCount: 1,
 			wantFindingCount:   0,
@@ -106,7 +106,7 @@ func TestRunScan(t *testing.T) {
 		{
 			desc:               "Unsuccessful plugin run",
 			setupFunc:          createFailingDetectorTestFiles,
-			flags:              &cli.Flags{DetectorsToRun: "cis"},
+			flags:              &cli.Flags{DetectorsToRun: []string{"cis"}},
 			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
 			wantInventoryCount: 0,
 			wantFindingCount:   0,
