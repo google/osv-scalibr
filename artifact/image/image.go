@@ -73,7 +73,7 @@ type Image interface {
 
 // NewFromRemoteName pulls a remote container and creates a
 // SCALIBR filesystem for scanning it.
-func NewFromRemoteName(imageName string, auth remote.Option) (scalibrfs.FS, error) {
+func NewFromRemoteName(imageName string, imageOptions... remote.Option) (scalibrfs.FS, error) {
 	imageName = strings.TrimPrefix(imageName, "https://")
 	var image v1.Image
 	if strings.Contains(imageName, "@") {
@@ -82,7 +82,7 @@ func NewFromRemoteName(imageName string, auth remote.Option) (scalibrfs.FS, erro
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse digest: %w", err)
 		}
-		descriptor, err := remote.Get(ref, auth)
+		descriptor, err := remote.Get(ref, imageOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", ref, err)
 		}
@@ -96,7 +96,7 @@ func NewFromRemoteName(imageName string, auth remote.Option) (scalibrfs.FS, erro
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse image reference: %w", err)
 		}
-		image, err = remote.Image(tag, auth)
+		image, err = remote.Image(tag, imageOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", tag, err)
 		}

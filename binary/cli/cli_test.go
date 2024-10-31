@@ -168,6 +168,13 @@ func TestValidateFlags(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			desc: "Image Platform without Remote Image",
+			flags: &cli.Flags{
+				ImagePlatform: "linux/amd64",
+			},
+			wantErr: cmpopts.AnyError,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := cli.ValidateFlags(tc.flags)

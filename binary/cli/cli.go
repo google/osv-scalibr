@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	scalibr "github.com/google/osv-scalibr"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
@@ -117,6 +118,7 @@ type Flags struct {
 	DirsToSkip            []string
 	SkipDirRegex          string
 	RemoteImage           string
+	ImagePlatform         string
 	GovulncheckDBPath     string
 	SPDXDocumentName      string
 	SPDXDocumentNamespace string
@@ -143,11 +145,17 @@ func ValidateFlags(flags *Flags) error {
 	if flags.Root != "" && flags.WindowsAllDrives {
 		return errors.New("--root and --windows-all-drives cannot be used together")
 	}
+	if flags.ImagePlatform != "" && len(flags.RemoteImage) == 0 {
+		return errors.New("--image-platform cannot be used without --remote-image")
+	}
 	if err := validateResultPath(flags.ResultFile); err != nil {
 		return fmt.Errorf("--result %w", err)
 	}
 	if err := validateOutput(flags.Output); err != nil {
 		return fmt.Errorf("--o %w", err)
+	}
+	if err := validateImagePlatform(flags.ImagePlatform); err != nil {
+		return fmt.Errorf("--image-platform %w", err)
 	}
 	// TODO(b/279413691): Use the Array struct to allow multiple occurrences of a list arg
 	// e.g. --extractors=ex1 --extractors=ex2.
@@ -189,6 +197,17 @@ func validateOutput(output []string) error {
 		if !slices.Contains(supportedOutputFormats, oFormat) {
 			return fmt.Errorf("output format %q not recognized, supported formats are %v", oFormat, supportedOutputFormats)
 		}
+	}
+	return nil
+}
+
+func validateImagePlatform(imagePlatform string) error {
+	if (len(imagePlatform) == 0) {
+		return nil
+	}
+	platformDetails := strings.Split(imagePlatform, "/")
+	if len(platformDetails) < 2 {
+		return fmt.Errorf("Image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
 	}
 	return nil
 }
@@ -431,8 +450,11 @@ func multiStringToList(arg []string) []string {
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	if f.RemoteImage != "" {
-		fs, err := scalibrimage.NewFromRemoteName(
-			f.RemoteImage, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		imageOptions, err := f.scanRemoteImageOptions()
+		if err != nil {
+			return nil, err
+		}
+		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
 		if err != nil {
 			return nil, err
 		}
@@ -455,6 +477,22 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 		scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
 	}
 	return scanRoots, nil
+}
+
+func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
+	imageOptions := []remote.Option{
+		remote.WithAuthFromKeychain(authn.DefaultKeychain),
+	}
+	if f.ImagePlatform != "" {
+		platformDetails := strings.Split(f.ImagePlatform, "/")
+		imageOptions = append(imageOptions, remote.WithPlatform(
+			v1.Platform{
+				OS:           platformDetails[0],
+				Architecture: platformDetails[1],
+			},
+		))
+	}
+	return &imageOptions, nil
 }
 
 // All capabilities are enabled when running SCALIBR as a binary.
