@@ -18,11 +18,8 @@ package apk
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
-	"net/textproto"
 	"path/filepath"
 	"strings"
 
@@ -129,67 +126,94 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
+// parseSingleApkRecord reads from the scanner a single record,
+// returns nil, nil when scanner ends.
+func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
+	// There is currently 26 keys defined here (Under "Installed Database V2"):
+	// https://wiki.alpinelinux.org/wiki/Apk_spec
+	group := map[string]string{}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if line != "" {
+			key, val, found := strings.Cut(line, ":")
+
+			if !found {
+				return nil, fmt.Errorf("invalid line: %q", line)
+			}
+
+			group[key] = val
+			continue
+		}
+
+		// check both that line is empty and we have filled out data in group
+		// this avoids double empty lines returning early
+		if line == "" && len(group) > 0 {
+			// scanner.Err() could only be non nil when Scan() returns false
+			// so we can return nil directly here
+			return group, nil
+		}
+	}
+
+	return group, scanner.Err()
+}
+
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	rd := textproto.NewReader(bufio.NewReader(input.Reader))
-	pkgs := []*extractor.Inventory{}
+	scanner := bufio.NewScanner(input.Reader)
+	inventories := []*extractor.Inventory{}
+
 	for eof := false; !eof; {
-		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return nil, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
 		}
 
-		h, err := rd.ReadMIMEHeader()
+		record, err := parseSingleApkRecord(scanner)
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				// We might still have one more line of data
-				// so return only after it's been parsed.
-				eof = true
-			} else {
-				log.Errorf("Failed to extract all APK packages: %v", err)
-				return pkgs, nil
-			}
+			return nil, fmt.Errorf("error while parsing apk status file %q: %w", input.Path, err)
 		}
-		pkgName := h.Get("P")
-		version := h.Get("V")
-		if pkgName == "" || version == "" {
-			if !eof { // Expected when reaching the last line.
-				log.Warnf("APK package name or version is empty (name: %q, version: %q)", pkgName, version)
-			}
-			continue
+
+		if len(record) == 0 {
+			break
 		}
-		originName := h.Get("o")
-		maintainer := h.Get("m")
-		arch := h.Get("A")
-		license := h.Get("L")
-		commit := h.Get("c")
+
 		var sourceCode *extractor.SourceCodeIdentifier
-		if commit != "" {
+		if commit, ok := record["c"]; ok {
 			sourceCode = &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			}
 		}
-		pkgs = append(pkgs, &extractor.Inventory{
-			Name:    pkgName,
-			Version: version,
+
+		var pkg = &extractor.Inventory{
+			Name:    record["P"],
+			Version: record["V"],
 			Metadata: &Metadata{
-				PackageName:  pkgName,
-				OriginName:   originName,
 				OSID:         m["ID"],
 				OSVersionID:  m["VERSION_ID"],
-				Maintainer:   maintainer,
-				Architecture: arch,
-				License:      license,
+				PackageName:  record["P"],
+				OriginName:   record["o"],
+				Architecture: record["A"],
+				License:      record["L"],
+				Maintainer:   record["m"],
 			},
 			SourceCode: sourceCode,
 			Locations:  []string{input.Path},
-		})
+		}
+
+		if pkg.Name == "" || pkg.Version == "" {
+			log.Warnf("APK package name or version is empty (name: %q, version: %q)", pkg.Name, pkg.Version)
+			continue
+		}
+
+		inventories = append(inventories, pkg)
 	}
-	return pkgs, nil
+
+	return inventories, nil
 }
 
 func toNamespace(m *Metadata) string {
