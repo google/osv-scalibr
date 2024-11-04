@@ -175,6 +175,15 @@ func TestValidateFlags(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			desc: "Image Platform with Remote Image",
+			flags: &cli.Flags{
+				RemoteImage: "docker",
+				ImagePlatform: "linux/amd64",
+				ResultFile: "result.textproto",
+			},
+			wantErr: nil,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := cli.ValidateFlags(tc.flags)
