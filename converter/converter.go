@@ -65,9 +65,13 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 	// Add a main package that contains all other top-level packages.
 	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
 	packages = append(packages, &v2_3.Package{
-		PackageName:               "main",
-		PackageSPDXIdentifier:     common.ElementID(mainPackageID),
-		PackageVersion:            "0",
+		PackageName:           "main",
+		PackageSPDXIdentifier: common.ElementID(mainPackageID),
+		PackageVersion:        "0",
+		PackageSupplier: &common.Supplier{
+			Supplier:     NoAssertion,
+			SupplierType: NoAssertion,
+		},
 		PackageDownloadLocation:   NoAssertion,
 		IsFilesAnalyzedTagPresent: false,
 	})
