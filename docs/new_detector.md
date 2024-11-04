@@ -16,11 +16,12 @@ as an example.
 1.  Set up your detector package in an [appropriate location](#code-location).
 1.  Create a struct that implements
     [`Detector`](/detector/detector.go):
-    *   Implement `Name()` to return a unique name, e.g. `cve/nginxldapauth`.
+    *  Implement `Name()` to return a unique name, e.g. `cve/nginxldapauth`.
     *   Implement `Version()` to return 0. Increase it in the future whenever
         larger changes are made to the detector.
     *   Implement `Scan()` (see [param list](#scan-parameters)) to run your
         detection logic and [return](#output-format) the security findings.
+1.  Appropriately fill the "Description" and "Recommendation" advisory fields
 1.  Write tests.
 1.  Register your detector in
     [list.go](/detector/list/list.go)

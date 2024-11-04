@@ -59,11 +59,17 @@ type Finding struct {
 // information specific to the target (e.g. which files were found vulnerable).
 type Advisory struct {
 	// A unique ID for the finding.
-	ID          *AdvisoryID
-	Type        TypeEnum
-	Title       string
+	ID   *AdvisoryID
+	Type TypeEnum
+	// Title, short description and recommendation steps for the finding. Users should be able to rely
+	// on these fields to understand the vulnerability and remediate it.
+	// Title of the finding, e.g. "CVE-2024-1234 - RCE Vulnerability on Foo".
+	Title string
+	// Description of the finding, e.g. "Foo prior to version 1.2.3 is affected by a Remote Code
+	// Execution vulnerability.".
 	Description string
-	// Remediation instructions, e.g. "update to latest version".
+	// Recommendation for how to remediate the finding, e.g. "Upgrade Foo to version 1.2.4 or
+	// higher.".
 	Recommendation string
 	Sev            *Severity
 }
