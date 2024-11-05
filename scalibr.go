@@ -85,6 +85,8 @@ type ScanConfig struct {
 	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
 	// is set, the absolute path is stored instead.
 	StoreAbsolutePath bool
+	// Optional: If true, print a detailed analysis of the duration of each extractor.
+	PrintDurationAnalysis bool
 }
 
 // EnableRequiredExtractors adds those extractors to the config that are required by enabled
@@ -185,15 +187,16 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 	extractorConfig := &filesystem.Config{
-		Stats:             config.Stats,
-		ReadSymlinks:      config.ReadSymlinks,
-		Extractors:        config.FilesystemExtractors,
-		FilesToExtract:    config.FilesToExtract,
-		DirsToSkip:        config.DirsToSkip,
-		SkipDirRegex:      config.SkipDirRegex,
-		ScanRoots:         config.ScanRoots,
-		MaxInodes:         config.MaxInodes,
-		StoreAbsolutePath: config.StoreAbsolutePath,
+		Stats:                 config.Stats,
+		ReadSymlinks:          config.ReadSymlinks,
+		Extractors:            config.FilesystemExtractors,
+		FilesToExtract:        config.FilesToExtract,
+		DirsToSkip:            config.DirsToSkip,
+		SkipDirRegex:          config.SkipDirRegex,
+		ScanRoots:             config.ScanRoots,
+		MaxInodes:             config.MaxInodes,
+		StoreAbsolutePath:     config.StoreAbsolutePath,
+		PrintDurationAnalysis: config.PrintDurationAnalysis,
 	}
 	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
