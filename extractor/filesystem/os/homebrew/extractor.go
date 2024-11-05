@@ -63,6 +63,12 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file path matches the homebrew path.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	filePath := strings.ToLower(path)
+
+	// Heuristic to take load from the regex matching.
+	if !strings.Contains(filePath, cellarPath) && !strings.Contains(filePath, caskPath) {
+		return false
+	}
+
 	// Homebrew installs reference paths  /usr/local/Cellar/ and /usr/local/Caskroom
 	// Ensure correct Homebrew path regex before attempting to split the path into its components:
 	// ../Cellar/${appName}/${version}/INSTALL_RECEIPT.json or ../Caskroom/${appName}/${version}/${appName.wrapper.sh}
