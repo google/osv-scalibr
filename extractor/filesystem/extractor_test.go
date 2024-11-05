@@ -71,56 +71,56 @@ func TestInitWalkContext(t *testing.T) {
 		{
 			desc: "valid config with filesToExtract raises no error",
 			scanRoots: map[string][]string{
-				"darwin":  []string{"/scanroot/"},
-				"linux":   []string{"/scanroot/"},
-				"windows": []string{"C:\\scanroot\\"},
+				"darwin":  {"/scanroot/"},
+				"linux":   {"/scanroot/"},
+				"windows": {"C:\\scanroot\\"},
 			},
 			filesToExtract: map[string][]string{
-				"darwin":  []string{"/scanroot/file1.txt", "/scanroot/file2.txt"},
-				"linux":   []string{"/scanroot/file1.txt", "/scanroot/file2.txt"},
-				"windows": []string{"C:\\scanroot\\file1.txt", "C:\\scanroot\\file2.txt"},
+				"darwin":  {"/scanroot/file1.txt", "/scanroot/file2.txt"},
+				"linux":   {"/scanroot/file1.txt", "/scanroot/file2.txt"},
+				"windows": {"C:\\scanroot\\file1.txt", "C:\\scanroot\\file2.txt"},
 			},
 			wantErr: nil,
 		},
 		{
 			desc: "valid config with dirsToSkip raises no error",
 			scanRoots: map[string][]string{
-				"darwin":  []string{"/scanroot/", "/someotherroot/"},
-				"linux":   []string{"/scanroot/", "/someotherroot/"},
-				"windows": []string{"C:\\scanroot\\", "D:\\someotherroot\\"},
+				"darwin":  {"/scanroot/", "/someotherroot/"},
+				"linux":   {"/scanroot/", "/someotherroot/"},
+				"windows": {"C:\\scanroot\\", "D:\\someotherroot\\"},
 			},
 			dirsToSkip: map[string][]string{
-				"darwin":  []string{"/scanroot/mydir/", "/someotherroot/mydir/"},
-				"linux":   []string{"/scanroot/mydir/", "/someotherroot/mydir/"},
-				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\someotherroot\\mydir\\"},
+				"darwin":  {"/scanroot/mydir/", "/someotherroot/mydir/"},
+				"linux":   {"/scanroot/mydir/", "/someotherroot/mydir/"},
+				"windows": {"C:\\scanroot\\mydir\\", "D:\\someotherroot\\mydir\\"},
 			},
 			wantErr: nil,
 		},
 		{
 			desc: "filesToExtract not relative to any root raises error",
 			scanRoots: map[string][]string{
-				"darwin":  []string{"/scanroot/"},
-				"linux":   []string{"/scanroot/"},
-				"windows": []string{"C:\\scanroot\\"},
+				"darwin":  {"/scanroot/"},
+				"linux":   {"/scanroot/"},
+				"windows": {"C:\\scanroot\\"},
 			},
 			filesToExtract: map[string][]string{
-				"darwin":  []string{"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
-				"linux":   []string{"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
-				"windows": []string{"C:\\scanroot\\myfile.txt", "D:\\myotherroot\\file1.txt"},
+				"darwin":  {"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
+				"linux":   {"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
+				"windows": {"C:\\scanroot\\myfile.txt", "D:\\myotherroot\\file1.txt"},
 			},
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
 		{
 			desc: "dirsToSkip not relative to any root raises error",
 			scanRoots: map[string][]string{
-				"darwin":  []string{"/scanroot/"},
-				"linux":   []string{"/scanroot/"},
-				"windows": []string{"C:\\scanroot\\"},
+				"darwin":  {"/scanroot/"},
+				"linux":   {"/scanroot/"},
+				"windows": {"C:\\scanroot\\"},
 			},
 			dirsToSkip: map[string][]string{
-				"darwin":  []string{"/scanroot/mydir/", "/myotherroot/mydir/"},
-				"linux":   []string{"/scanroot/mydir/", "/myotherroot/mydir/"},
-				"windows": []string{"C:\\scanroot\\mydir\\", "D:\\myotherroot\\mydir\\"},
+				"darwin":  {"/scanroot/mydir/", "/myotherroot/mydir/"},
+				"linux":   {"/scanroot/mydir/", "/myotherroot/mydir/"},
+				"windows": {"C:\\scanroot\\mydir\\", "D:\\myotherroot\\mydir\\"},
 			},
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
@@ -193,20 +193,20 @@ func TestRunFS(t *testing.T) {
 			desc: "Extractors successful",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -216,15 +216,15 @@ func TestRunFS(t *testing.T) {
 			// ScanRoot is CWD
 			dirsToSkip: []string{path.Join(cwd, "dir1")},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
 		},
@@ -233,15 +233,15 @@ func TestRunFS(t *testing.T) {
 			ex:         []filesystem.Extractor{fakeEx1, fakeEx2},
 			dirsToSkip: []string{"dir1"},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
 		},
@@ -250,15 +250,15 @@ func TestRunFS(t *testing.T) {
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: ".*1",
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
 		},
@@ -267,15 +267,15 @@ func TestRunFS(t *testing.T) {
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "/sub$",
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 5,
 		},
@@ -284,20 +284,20 @@ func TestRunFS(t *testing.T) {
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "asdf",
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -305,20 +305,20 @@ func TestRunFS(t *testing.T) {
 			desc: "Duplicate inventory results kept separate",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithInv1},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path2},
 					Extractor: fakeEx2WithInv1,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -328,15 +328,15 @@ func TestRunFS(t *testing.T) {
 			// ScanRoot is CWD
 			filesToExtract: []string{path.Join(cwd, path2)},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 1,
 		},
@@ -345,15 +345,15 @@ func TestRunFS(t *testing.T) {
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			filesToExtract: []string{path2},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 1,
 		},
@@ -365,7 +365,7 @@ func TestRunFS(t *testing.T) {
 			},
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -373,14 +373,14 @@ func TestRunFS(t *testing.T) {
 			desc: "Extraction fails with partial results",
 			ex:   []filesystem.Extractor{fakeExWithPartialResult},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeExWithPartialResult,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
+				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status: plugin.ScanStatusPartiallySucceeded, FailureReason: fmt.Sprintf("%s: extraction failed", path1),
 				}},
 			},
@@ -393,7 +393,7 @@ func TestRunFS(t *testing.T) {
 			},
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
+				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status: plugin.ScanStatusFailed, FailureReason: fmt.Sprintf("%s: extraction failed", path1),
 				}},
 			},
@@ -409,7 +409,7 @@ func TestRunFS(t *testing.T) {
 			},
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
+				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: fmt.Sprintf("%s: extraction failed\n%s: extraction failed", path1, path2),
 				}},
@@ -422,8 +422,8 @@ func TestRunFS(t *testing.T) {
 			maxInodes: 2,
 			wantInv:   []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 2,
 			wantErr:        cmpopts.AnyError,
@@ -433,20 +433,20 @@ func TestRunFS(t *testing.T) {
 			ex:        []filesystem.Extractor{fakeEx1, fakeEx2},
 			maxInodes: 6,
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -454,12 +454,12 @@ func TestRunFS(t *testing.T) {
 			desc: "Extractors successful store absolute path when requested",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantInv: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      name1,
 					Locations: []string{filepath.Join(cwd, path1)},
 					Extractor: fakeEx1,
 				},
-				&extractor.Inventory{
+				{
 					Name:      name2,
 					Locations: []string{filepath.Join(cwd, path2)},
 					Extractor: fakeEx2,
@@ -467,8 +467,8 @@ func TestRunFS(t *testing.T) {
 			},
 			storeAbsPath: true,
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "ex1", Version: 1, Status: success},
-				&plugin.Status{Name: "ex2", Version: 2, Status: success},
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 6,
 		},
@@ -487,14 +487,14 @@ func TestRunFS(t *testing.T) {
 				DirsToSkip:     tc.dirsToSkip,
 				SkipDirRegex:   skipDirRegex,
 				MaxInodes:      tc.maxInodes,
-				ScanRoots: []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
 				Stats:             fc,
 				StoreAbsolutePath: tc.storeAbsPath,
 			}
 			wc, err := filesystem.InitWalkContext(
-				context.Background(), config, []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+				context.Background(), config, []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: cwd,
 				}},
 			)
@@ -612,7 +612,7 @@ func TestRunFS_ReadError(t *testing.T) {
 			map[string]fe.NamesErr{"file": {Names: []string{"software"}, Err: nil}}),
 	}
 	wantStatus := []*plugin.Status{
-		&plugin.Status{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
+		{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 			Status: plugin.ScanStatusFailed, FailureReason: "Open(file): failed to open",
 		}},
 	}
@@ -620,7 +620,7 @@ func TestRunFS_ReadError(t *testing.T) {
 	config := &filesystem.Config{
 		Extractors: ex,
 		DirsToSkip: []string{},
-		ScanRoots: []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{
+		ScanRoots: []*scalibrfs.ScanRoot{{
 			FS: fsys, Path: ".",
 		}},
 		Stats: stats.NoopCollector{},

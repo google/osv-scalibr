@@ -155,7 +155,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single.json",
 			osrelease: cosOSRlease,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},
@@ -175,7 +175,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/multiple.json",
 			osrelease: cosOSRlease,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/multiple.json"},
@@ -187,7 +187,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID: "101",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "zlib",
 					Version:   "17162.336.17",
 					Locations: []string{"testdata/multiple.json"},
@@ -199,7 +199,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID: "101",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "baselayout",
 					Version:   "17162.336.18",
 					Locations: []string{"testdata/multiple.json"},
@@ -211,7 +211,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID: "101",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "ncurses",
 					Version:   "17162.336.19",
 					Locations: []string{"testdata/multiple.json"},
@@ -231,7 +231,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single.json",
 			osrelease: cosOSRleaseNoVersionID,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},
@@ -249,7 +249,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single.json",
 			osrelease: cosOSRleaseNoVersions,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
 					Locations: []string{"testdata/single.json"},

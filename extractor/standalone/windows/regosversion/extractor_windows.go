@@ -79,7 +79,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	fullVersion := fmt.Sprintf("%s.%s.%d", currentVersion, buildNumber, revision)
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
 	return []*extractor.Inventory{
-		&extractor.Inventory{
+		{
 			Name:      winproduct,
 			Version:   fullVersion,
 			Locations: []string{"registry"},

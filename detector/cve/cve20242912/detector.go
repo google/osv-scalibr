@@ -215,7 +215,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 	log.Infof("Payload file removed")
 
-	return []*detector.Finding{&detector.Finding{
+	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
 				Publisher: "SCALIBR",

@@ -197,7 +197,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Error removing file: %v", err)
 	}
 
-	return []*detector.Finding{&detector.Finding{
+	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
 				Publisher: "SCALIBR",

@@ -134,7 +134,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "File with hashes, some cracked",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}},
-			wantFindings: []*detector.Finding{&detector.Finding{
+			wantFindings: []*detector.Finding{{
 				Adv:    wantAdv,
 				Target: &detector.TargetDetails{Location: []string{"/etc/shadow"}},
 				Extra: "The following users have weak passwords:\n" +

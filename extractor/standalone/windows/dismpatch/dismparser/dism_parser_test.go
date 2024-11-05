@@ -37,42 +37,42 @@ func TestParse(t *testing.T) {
 	}
 
 	want := []DismPkg{
-		DismPkg{
+		{
 			PackageIdentity: "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1",
 			PackageVersion:  "10.0.17763.1",
 			State:           "Installed",
 			ReleaseType:     "Feature Pack",
 			InstallTime:     "9/15/2018 9:08 AM",
 		},
-		DismPkg{
+		{
 			PackageIdentity: "Package_for_KB4470788~31bf3856ad364e35~amd64~~17763.164.1.1",
 			PackageVersion:  "17763.164.1.1",
 			State:           "Installed",
 			ReleaseType:     "Security Update",
 			InstallTime:     "3/12/2019 6:27 AM",
 		},
-		DismPkg{
+		{
 			PackageIdentity: "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.3406.1.5",
 			PackageVersion:  "17763.3406.1.5",
 			State:           "Installed",
 			ReleaseType:     "Security Update",
 			InstallTime:     "9/13/2022 11:06 PM",
 		},
-		DismPkg{
+		{
 			PackageIdentity: "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.379.1.11",
 			PackageVersion:  "17763.379.1.11",
 			State:           "Superseded",
 			ReleaseType:     "Security Update",
 			InstallTime:     "3/12/2019 6:31 AM",
 		},
-		DismPkg{
+		{
 			PackageIdentity: "Package_for_ServicingStack_3232~31bf3856ad364e35~amd64~~17763.3232.1.1",
 			PackageVersion:  "17763.3232.1.1",
 			State:           "Installed",
 			ReleaseType:     "Update",
 			InstallTime:     "9/13/2022 10:46 PM",
 		},
-		DismPkg{
+		{
 			PackageIdentity: "Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1",
 			PackageVersion:  "10.0.19041.1",
 			State:           "Installed",

@@ -94,7 +94,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Permissions incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 0},
-			wantFindings: []*detector.Finding{&detector.Finding{
+			wantFindings: []*detector.Finding{{
 				Adv:    wantAdv,
 				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
 				Extra:  "file permissions 777, expected 644\n",
@@ -103,7 +103,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Permissions and uid incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 10, gid: 0},
-			wantFindings: []*detector.Finding{&detector.Finding{
+			wantFindings: []*detector.Finding{{
 				Adv:    wantAdv,
 				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
 				Extra:  "file permissions 777, expected 644\nfile owner 10, expected 0/root\n",
@@ -112,7 +112,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Permissions and gid incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 10},
-			wantFindings: []*detector.Finding{&detector.Finding{
+			wantFindings: []*detector.Finding{{
 				Adv:    wantAdv,
 				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
 				Extra:  "file permissions 777, expected 644\nfile group 10, expected 0/root\n",
