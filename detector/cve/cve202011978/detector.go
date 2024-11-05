@@ -285,7 +285,7 @@ func CheckForPause(airflowIP string, airflowServerPort int) bool {
 	return resp.StatusCode == 200
 }
 
-// triggerandWaitForDAG achieves command execution via DAG scheduling using the example bash task from above.
+// triggerAndWaitForDAG achieves command execution via DAG scheduling using the example bash task from above.
 func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPort int) bool {
 	dagURL := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/dag_runs", airflowIP, airflowServerPort)
 	payload := map[string]any{

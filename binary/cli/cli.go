@@ -54,7 +54,7 @@ func (i *Array) String() string {
 	return strings.Join(*i, ",")
 }
 
-// Set gets called whenever an a new instance of a flag is read during CLI arg parsing.
+// Set gets called whenever a new instance of a flag is read during CLI arg parsing.
 // For example, in the case of -o foo -o bar the library will call arr.Set("foo") then arr.Set("bar").
 func (i *Array) Set(value string) error {
 	*i = append(*i, strings.TrimSpace(value))
@@ -79,7 +79,7 @@ func NewStringListFlag(defaultValue []string) StringListFlag {
 	return StringListFlag{defaultValue: defaultValue}
 }
 
-// Set gets called whenever an a new instance of a flag is read during CLI arg parsing.
+// Set gets called whenever a new instance of a flag is read during CLI arg parsing.
 // For example, in the case of -o foo -o bar the library will call arr.Set("foo") then arr.Set("bar").
 func (s *StringListFlag) Set(x string) error {
 	s.value = append(s.value, strings.Split(x, ",")...)

@@ -58,7 +58,7 @@ scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-name
 ## Running built-in plugins
 
 ### With the standalone binary
-The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors (fs)](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
+The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the definition files for a list of all built-in plugins and their CLI flags ([extractors (fs)](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
 
 ### With the library
 A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.

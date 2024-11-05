@@ -53,7 +53,7 @@ linters:
     - loggercheck
     - makezero
     - mirror
-#    - misspell
+    - misspell
 #    - musttag
     - nakedret
 #    - nilerr

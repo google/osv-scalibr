@@ -22,7 +22,7 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 )
 
-// Write writes an CDX document into a file in the choosen format.
+// Write writes an CDX document into a file in the chosen format.
 func Write(doc *cyclonedx.BOM, path string, format string) error {
 	var cdxFormat cyclonedx.BOMFileFormat
 	switch format {

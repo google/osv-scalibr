@@ -184,7 +184,7 @@ func getVersion(h textproto.MIMEHeader) string {
 		log.Debugf("  %s: %s\n", k, h.Get(k))
 	}
 
-	// Some versions contain extra information like the buld number or date.
+	// Some versions contain extra information like the build number or date.
 	// For example "1.4 1855 April 22 2006"
 	// We only want the first part.
 	version := getFirst(h, keys)
