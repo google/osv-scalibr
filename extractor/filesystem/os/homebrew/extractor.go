@@ -89,7 +89,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return []*extractor.Inventory{}, nil
 	}
 	return []*extractor.Inventory{
-		&extractor.Inventory{
+		{
 			Name:      p.AppName,
 			Version:   p.AppVersion,
 			Locations: []string{input.Path},

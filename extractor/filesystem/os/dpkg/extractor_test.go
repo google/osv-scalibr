@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/valid",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "accountsservice",
 					Version: "22.08.8-6",
 					Metadata: &dpkg.Metadata{
@@ -211,7 +211,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/valid"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -226,7 +226,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/valid"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "adduser",
 					Version: "3.131",
 					Metadata: &dpkg.Metadata{
@@ -241,7 +241,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/valid"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "admin-session",
 					Version: "2023.06.26.c543406313-00",
 					Metadata: &dpkg.Metadata{
@@ -256,7 +256,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/valid"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "attr",
 					Version: "1:2.5.1-4",
 					Metadata: &dpkg.Metadata{
@@ -272,7 +272,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 				// Expect source name.
-				&extractor.Inventory{
+				{
 					Name:    "libacl1",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -289,7 +289,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 				// Expect source name and version.
-				&extractor.Inventory{
+				{
 					Name:    "util-linux-extra",
 					Version: "2.38.1-5+b1",
 					Metadata: &dpkg.Metadata{
@@ -314,7 +314,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/noversion",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "foo",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -327,7 +327,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/noversion"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "bar",
 					Version: "2.0",
 					Metadata: &dpkg.Metadata{
@@ -349,7 +349,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/nopackage",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "foo",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -362,7 +362,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/nopackage"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "bar",
 					Version: "2.0",
 					Metadata: &dpkg.Metadata{
@@ -384,7 +384,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/statusfield",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -397,7 +397,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantdeinstall_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -410,7 +410,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantpurge_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -435,7 +435,7 @@ func TestExtract(t *testing.T) {
 				IncludeNotInstalled: true,
 			},
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -448,7 +448,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantdeinstall_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -461,7 +461,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantdeinstall_configfiles",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -474,7 +474,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantinstall_unpacked",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -487,7 +487,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantpurge_installed",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -500,7 +500,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantinstall_halfinstalled",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -513,7 +513,7 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
-				&extractor.Inventory{
+				{
 					Name:    "wantnostatus",
 					Version: "1.0",
 					Metadata: &dpkg.Metadata{
@@ -549,7 +549,7 @@ func TestExtract(t *testing.T) {
 			osrelease: `VERSION_ID="12"
 			ID=debian`,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -571,7 +571,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single",
 			osrelease: `ID=debian`,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -592,7 +592,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single",
 			osrelease: "VERSION_CODENAME=bookworm",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -616,7 +616,7 @@ func TestExtract(t *testing.T) {
 			ID=ubuntu
 			ID_LIKE=debian`,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -642,7 +642,7 @@ func TestExtract(t *testing.T) {
 			ID=ubuntu
 			ID_LIKE=debian`,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "acl",
 					Version: "2.3.1-3",
 					Metadata: &dpkg.Metadata{
@@ -667,7 +667,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/status.d/foo",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "foo",
 					Version: "1.2.3",
 					Metadata: &dpkg.Metadata{
@@ -697,7 +697,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/transitional",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "iceweasel",
 					Version: "78.13.0esr-1~deb10u1",
 					Metadata: &dpkg.Metadata{
@@ -842,7 +842,7 @@ func (l *testLogger) Debug(args ...any) {
 func TestExtractNonexistentOSRelease(t *testing.T) {
 	path := "testdata/single"
 	want := []*extractor.Inventory{
-		&extractor.Inventory{
+		{
 			Name:    "acl",
 			Version: "2.3.1-3",
 			Metadata: &dpkg.Metadata{

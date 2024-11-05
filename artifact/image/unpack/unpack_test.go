@@ -171,8 +171,8 @@ func TestUnpackSquashed(t *testing.T) {
 		dir:   mustMkdirTemp(t),
 		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
 		want: map[string]contentAndMode{
-			"sample.txt":        contentAndMode{content: "sample text file\n", mode: fs.FileMode(0644)},
-			"larger-sample.txt": contentAndMode{content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
+			"sample.txt":        {content: "sample text file\n", mode: fs.FileMode(0644)},
+			"larger-sample.txt": {content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
 		},
 	}, {
 		name:  "large files are skipped",
@@ -180,7 +180,7 @@ func TestUnpackSquashed(t *testing.T) {
 		dir:   mustMkdirTemp(t),
 		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
 		want: map[string]contentAndMode{
-			"sample.txt": contentAndMode{content: "sample text file\n", mode: fs.FileMode(0644)},
+			"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0644)},
 		},
 	}, {
 		name:  "image with restricted file permissions",
@@ -188,7 +188,7 @@ func TestUnpackSquashed(t *testing.T) {
 		dir:   mustMkdirTemp(t),
 		image: mustImageFromPath(t, filepath.Join("testdata", "permissions.tar")),
 		want: map[string]contentAndMode{
-			"sample.txt": contentAndMode{content: "sample text file\n", mode: fs.FileMode(0600)},
+			"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
 		},
 	}, {
 		name: "image with symlinks",
@@ -352,12 +352,12 @@ func TestUnpackLayers(t *testing.T) {
 		want: []digestAndContent{{
 			digest: "SQUASHED",
 			content: map[string]contentAndMode{
-				"sample.txt": contentAndMode{content: "sample text file\n", mode: fs.FileMode(0600)},
+				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
 			},
 		}, {
 			digest: "sha256:854d994f7942ac6711ff410417b58270562d322a251be74df7829c15ec31e369",
 			content: map[string]contentAndMode{
-				"sample.txt": contentAndMode{content: "sample text file\n", mode: fs.FileMode(0600)},
+				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
 			},
 		}},
 	}, {
@@ -368,18 +368,18 @@ func TestUnpackLayers(t *testing.T) {
 		want: []digestAndContent{{
 			digest: "SQUASHED",
 			content: map[string]contentAndMode{
-				"sample.txt":        contentAndMode{content: "sample text file\n", mode: fs.FileMode(0644)},
-				"larger-sample.txt": contentAndMode{content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
+				"sample.txt":        {content: "sample text file\n", mode: fs.FileMode(0644)},
+				"larger-sample.txt": {content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
 			},
 		}, {
 			digest: "sha256:abfb541589db284238458b23f1607a184905159aa161c7325b725b4e2eaa1c2c",
 			content: map[string]contentAndMode{
-				"sample.txt": contentAndMode{content: "sample text file\n", mode: fs.FileMode(0644)},
+				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0644)},
 			},
 		}, {
 			digest: "sha256:c2df653a81c5c96005972035fa076987c9e450e54a03de57aabdadc00e4939c4",
 			content: map[string]contentAndMode{
-				"larger-sample.txt": contentAndMode{content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
+				"larger-sample.txt": {content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
 			},
 		}},
 	}, {

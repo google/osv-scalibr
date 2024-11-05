@@ -37,9 +37,9 @@ func TestGetAll(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	inv := []*extractor.Inventory{
-		&extractor.Inventory{Name: "software1", Extractor: npmEx},
-		&extractor.Inventory{Name: "software2", Extractor: pipEx},
-		&extractor.Inventory{Name: "software3", Extractor: pipEx},
+		{Name: "software1", Extractor: npmEx},
+		{Name: "software2", Extractor: pipEx},
+		{Name: "software3", Extractor: pipEx},
 	}
 	want := inv
 
@@ -58,13 +58,13 @@ func TestGetAllOfType(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	inv := []*extractor.Inventory{
-		&extractor.Inventory{Name: "software1", Extractor: npmEx},
-		&extractor.Inventory{Name: "software2", Extractor: pipEx},
-		&extractor.Inventory{Name: "software3", Extractor: pipEx},
+		{Name: "software1", Extractor: npmEx},
+		{Name: "software2", Extractor: pipEx},
+		{Name: "software3", Extractor: pipEx},
 	}
 	want := []*extractor.Inventory{
-		&extractor.Inventory{Name: "software2", Extractor: pipEx},
-		&extractor.Inventory{Name: "software3", Extractor: pipEx},
+		{Name: "software2", Extractor: pipEx},
+		{Name: "software3", Extractor: pipEx},
 	}
 
 	ix, err := inventoryindex.New(inv)

@@ -47,7 +47,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:          "valid with no tasks",
 			onGoos:        []string{"linux"},
-			nssTaskIds:    map[string][]string{"default": []string{}, "k8s.io": []string{}},
+			nssTaskIds:    map[string][]string{"default": {}, "k8s.io": {}},
 			tsks:          []*task.Process{},
 			ctrs:          []containerd.Container{},
 			wantInventory: []*extractor.Inventory{},
@@ -55,11 +55,11 @@ func TestExtract(t *testing.T) {
 		{
 			name:       "valid with tasks and rootfs",
 			onGoos:     []string{"linux"},
-			nssTaskIds: map[string][]string{"default": []string{"123456789"}, "k8s.io": []string{"567890123"}},
-			tsks:       []*task.Process{&task.Process{ID: "123456789", ContainerID: "", Pid: 12345}, &task.Process{ID: "567890123", ContainerID: "", Pid: 5678}},
+			nssTaskIds: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
+			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", "/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs")},
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
@@ -92,11 +92,11 @@ func TestExtract(t *testing.T) {
 		{
 			name:       "valid with tasks and no rootfs",
 			onGoos:     []string{"linux"},
-			nssTaskIds: map[string][]string{"default": []string{"123456789"}, "k8s.io": []string{"567890123"}},
-			tsks:       []*task.Process{&task.Process{ID: "123456789", ContainerID: "", Pid: 12345}, &task.Process{ID: "567890123", ContainerID: "", Pid: 5678}},
+			nssTaskIds: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
+			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", ""), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "")},
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
@@ -129,11 +129,11 @@ func TestExtract(t *testing.T) {
 		{
 			name:       "valid with tasks and relative-path-only rootfs",
 			onGoos:     []string{"linux"},
-			nssTaskIds: map[string][]string{"default": []string{"123456788"}, "k8s.io": []string{"567890122"}},
-			tsks:       []*task.Process{&task.Process{ID: "123456788", ContainerID: "", Pid: 12346}, &task.Process{ID: "567890122", ContainerID: "", Pid: 5677}},
+			nssTaskIds: map[string][]string{"default": {"123456788"}, "k8s.io": {"567890122"}},
+			tsks:       []*task.Process{{ID: "123456788", ContainerID: "", Pid: 12346}, {ID: "567890122", ContainerID: "", Pid: 5677}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"},

@@ -167,7 +167,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/single-arch.yaml",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
 					Locations: []string{"testdata/single-arch.yaml"},
@@ -190,7 +190,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/multi-arch.yaml",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
 					Locations: []string{"testdata/multi-arch.yaml"},

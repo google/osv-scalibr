@@ -95,7 +95,7 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.Invento
 	recommendation := "Run the following command to set permissions on /etc/passwd :\n" +
 		"# chown root:root /etc/passwd\n" +
 		"# chmod 644 /etc/passwd"
-	return []*detector.Finding{&detector.Finding{
+	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
 				Publisher: "CIS",

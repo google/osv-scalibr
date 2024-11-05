@@ -42,37 +42,37 @@ func TestInventoryFromOutput(t *testing.T) {
 			flavor: "server",
 			output: string(dismTestData),
 			want: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "windows_server_2019",
 					Version:   "10.0.17763.3406",
 					Locations: []string{"cmd-dism-osver"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1",
 					Version:   "10.0.17763.1",
 					Locations: []string{"cmd-dism"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Package_for_KB4470788~31bf3856ad364e35~amd64~~17763.164.1.1",
 					Version:   "17763.164.1.1",
 					Locations: []string{"cmd-dism"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.3406.1.5",
 					Version:   "17763.3406.1.5",
 					Locations: []string{"cmd-dism"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.379.1.11",
 					Version:   "17763.379.1.11",
 					Locations: []string{"cmd-dism"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Package_for_ServicingStack_3232~31bf3856ad364e35~amd64~~17763.3232.1.1",
 					Version:   "17763.3232.1.1",
 					Locations: []string{"cmd-dism"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1",
 					Version:   "10.0.19041.1",
 					Locations: []string{"cmd-dism"},

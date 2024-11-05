@@ -167,7 +167,7 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "cask_firefox",
 			inventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "firefox",
 					Version:   "129.0",
 					Locations: []string{"System/Volumes/Data/usr/local/Caskroom/firefox/129.0/firefox.wrapper.sh"},
