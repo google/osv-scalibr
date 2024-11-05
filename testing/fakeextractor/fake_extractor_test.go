@@ -118,10 +118,13 @@ func TestFileRequired(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.extractor.FileRequired(test.args.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(test.args.path),
-				FileMode: test.args.mode,
-			})
+			stat := func() (fs.FileInfo, error) {
+				return fakefs.FakeFileInfo{
+					FileName: filepath.Base(test.args.path),
+					FileMode: test.args.mode,
+				}, nil
+			}
+			got := test.extractor.FileRequired(test.args.path, stat)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Fatalf("extractor.FileRequired(%v, %v) returned unexpected result; diff (-want +got):\n%s", test.args.path, test.args.mode, diff)
 			}

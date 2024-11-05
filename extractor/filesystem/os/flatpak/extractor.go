@@ -109,8 +109,13 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 var filePathRegex = regexp.MustCompile(`flatpak/app/.*/export/share/metainfo/.*metainfo.xml$`)
 
 // FileRequired returns true if the specified file matches the metainfo xml file pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	if match := filePathRegex.FindString(path); match == "" {
+		return false
+	}
+
+	fileinfo, err := stat()
+	if err != nil {
 		return false
 	}
 

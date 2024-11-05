@@ -62,7 +62,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches poetry lockfile patterns
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	return filepath.Base(path) == "poetry.lock"
 }
 

@@ -54,7 +54,7 @@ var cdxExtensions = map[string]cyclonedx.BOMFileFormat{
 }
 
 // FileRequired returns true if the specified file is a supported cdx file.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	return findExtractor(path) != nil
 }
 

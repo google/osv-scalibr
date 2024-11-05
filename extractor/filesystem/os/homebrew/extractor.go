@@ -61,7 +61,7 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSMac} }
 
 // FileRequired returns true if the specified file path matches the homebrew path.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	filePath := strings.ToLower(path)
 
 	// Heuristic to take load from the regex matching.

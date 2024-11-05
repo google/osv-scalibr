@@ -85,7 +85,11 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file is marked executable.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
+	fileinfo, err := stat()
+	if err != nil {
+		return false
+	}
 	if !fileinfo.Mode().IsRegular() {
 		// Includes dirs, symlinks, sockets, pipes...
 		return false

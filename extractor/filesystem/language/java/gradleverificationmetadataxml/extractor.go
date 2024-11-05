@@ -53,7 +53,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches Gradle verification metadata lockfile patterns.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	return filepath.Base(filepath.Dir(path)) == "gradle" && filepath.Base(path) == "verification-metadata.xml"
 }
 

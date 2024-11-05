@@ -285,7 +285,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches npm lockfile patterns.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	if filepath.Base(path) != "package-lock.json" {
 		return false
 	}
@@ -294,6 +294,11 @@ func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 	// lockfile for the root project dependencies.
 	dir := filepath.ToSlash(filepath.Dir(path))
 	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
+		return false
+	}
+
+	fileInfo, err := stat()
+	if err != nil {
 		return false
 	}
 

@@ -48,7 +48,7 @@ type Extractor interface {
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
-	FileRequired(path string, fileinfo fs.FileInfo) bool
+	FileRequired(path string, stat func() (fs.FileInfo, error)) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
 	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
@@ -329,16 +329,26 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	}
 	wc.filterDuration += time.Since(startFilter)
 
-	startStat := time.Now()
-	fileinfo, err := fs.Stat(wc.fs, path)
-	wc.statDuration += time.Since(startStat)
-	if err != nil {
-		log.Warnf("os.Stat(%s): %v", path, err)
-		return nil
+	statCalled := false
+	var info fs.FileInfo
+	var statErr error
+	lazyStat := func() (fs.FileInfo, error) {
+		if !statCalled {
+			startStat := time.Now()
+			i, err := fs.Stat(wc.fs, path)
+			if err != nil {
+				log.Warnf("os.Stat(%s): %v", path, err)
+			}
+			wc.statDuration += time.Since(startStat)
+			statCalled = true
+			info = i
+			statErr = err
+		}
+		return info, statErr
 	}
 
 	for _, ex := range wc.extractors {
-		wc.runExtractor(ex, path, fileinfo)
+		wc.runExtractor(ex, path, lazyStat)
 	}
 	return nil
 }
@@ -353,9 +363,9 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileInfo) {
+func (wc *walkContext) runExtractor(ex Extractor, path string, lazyStat func() (fs.FileInfo, error)) {
 	startRequired := time.Now()
-	required := ex.FileRequired(path, fileinfo)
+	required := ex.FileRequired(path, lazyStat)
 	wc.requiredDuration += time.Since(startRequired)
 	wc.requiredDurationPerExtractor[ex.Name()] += time.Since(startRequired)
 	if !required {

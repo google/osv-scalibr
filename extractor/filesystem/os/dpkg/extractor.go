@@ -110,8 +110,13 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches dpkg status file pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	if !fileRequired(path) {
+		return false
+	}
+
+	fileinfo, err := stat()
+	if err != nil {
 		return false
 	}
 
