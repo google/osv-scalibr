@@ -10,51 +10,29 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build-for-linux:
-    runs-on: ubuntu-latest
+  tests:
+    stragegy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.22.x
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.x
 
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v3
-      with:
-        version: "23.x"
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "23.x"
 
-    - name: Set up protoc-gen-go
-      run: go install google.golang.org/protobuf/cmd/protoc-gen-go
+      - name: Set up protoc-gen-go
+        run: go install google.golang.org/protobuf/cmd/protoc-gen-go
 
-    - name: Build
-      run: make
+      - name: Build
+        run: make
 
-    - name: Test
-      run: make test
-
-  build-for-windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.22.x
-
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v3
-      with:
-        version: "23.x"
-
-    - name: Set up protoc-gen-go
-      run: go install google.golang.org/protobuf/cmd/protoc-gen-go
-
-    - name: Build
-      run: make
-
-    - name: Test
-      run: make test
+      - name: Test
+        run: make test
