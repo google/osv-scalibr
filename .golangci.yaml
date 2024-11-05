@@ -1,0 +1,7 @@
+output:
+  sort-results: true
+linters:
+  # todo: currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
+  enable:
+    - bodyclose
+  disable-all: true
