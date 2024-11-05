@@ -105,7 +105,7 @@ func TestExtract(t *testing.T) {
 			},
 			onGoos: "linux",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
 					Version: "sha256:832ad48c9872fdcae32f2ea369d9874fa34f2ea369d9874fa34f271b4dbc58ce04393c757befa462",
 					Metadata: &containerd.Metadata{
@@ -178,7 +178,7 @@ func TestExtract(t *testing.T) {
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos: "ignore",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "mcr.microsoft.com/windows/nanoserver:ltsc2022",
 					Version: "sha256:31c8aa02d47af7d65c11da9c3a279c8407c32afd3fc6bec2e9a544db8e3715b3",
 					Metadata: &containerd.Metadata{

@@ -154,7 +154,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/valid.xml",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "org.gimp.GIMP",
 					Version: "2.10.38",
 					Metadata: &flatpak.Metadata{
@@ -177,7 +177,7 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/noname.xml",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "org.gimp.GIMP",
 					Version: "2.10.38",
 					Metadata: &flatpak.Metadata{

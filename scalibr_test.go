@@ -50,7 +50,7 @@ func TestScan(t *testing.T) {
 	}
 
 	tmp := t.TempDir()
-	tmpRoot := []*scalibrfs.ScanRoot{&scalibrfs.ScanRoot{FS: scalibrfs.DirFS(tmp), Path: tmp}}
+	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
 	os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 
 	invName := "software"
@@ -82,8 +82,8 @@ func TestScan(t *testing.T) {
 			want: &scalibr.ScanResult{
 				Status: success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{Name: "detector", Version: 2, Status: success},
-					&plugin.Status{Name: "python/wheelegg", Version: 1, Status: success},
+					{Name: "detector", Version: 2, Status: success},
+					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
 				Inventories: []*extractor.Inventory{inventory},
 				Findings:    []*detector.Finding{withDetectorName(finding, "detector")},
@@ -107,8 +107,8 @@ func TestScan(t *testing.T) {
 					FailureReason: "multiple non-identical advisories with ID &{ CVE-1234}",
 				},
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{Name: "detector", Version: 2, Status: success},
-					&plugin.Status{Name: "detector", Version: 3, Status: success},
+					{Name: "detector", Version: 2, Status: success},
+					{Name: "detector", Version: 3, Status: success},
 				},
 				Inventories: []*extractor.Inventory{},
 				Findings:    []*detector.Finding{},
@@ -126,8 +126,8 @@ func TestScan(t *testing.T) {
 			want: &scalibr.ScanResult{
 				Status: success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{Name: "detector", Version: 2, Status: success},
-					&plugin.Status{Name: "python/wheelegg", Version: 1, Status: extFailure},
+					{Name: "detector", Version: 2, Status: success},
+					{Name: "python/wheelegg", Version: 1, Status: extFailure},
 				},
 				Inventories: nil,
 				Findings:    []*detector.Finding{withDetectorName(finding, "detector")},
@@ -145,8 +145,8 @@ func TestScan(t *testing.T) {
 			want: &scalibr.ScanResult{
 				Status: success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{Name: "detector", Version: 2, Status: detFailure},
-					&plugin.Status{Name: "python/wheelegg", Version: 1, Status: success},
+					{Name: "detector", Version: 2, Status: detFailure},
+					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
 				Inventories: []*extractor.Inventory{inventory},
 				Findings:    []*detector.Finding{},

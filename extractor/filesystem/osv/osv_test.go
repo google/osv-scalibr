@@ -173,25 +173,25 @@ func TestExtract(t *testing.T) {
 			extractor: MockExtractor{},
 			purlType:  purl.TypeDebian,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "reader content",
 					Version:   "1.0",
 					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
 					Locations: []string{"targetfile"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "yolo content",
 					Version:   "2.0",
 					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
 					Locations: []string{"targetfile"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "foobar content",
 					Version:   "3.0",
 					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},
 					Locations: []string{"targetfile"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "targetfile",
 					Version:   "4.0",
 					Metadata:  &osv.Metadata{PURLType: purl.TypeDebian},

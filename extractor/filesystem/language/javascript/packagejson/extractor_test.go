@@ -145,7 +145,7 @@ func TestExtract(t *testing.T) {
 			name: "top level package.json",
 			path: "testdata/package.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "testdata",
 					Version:   "10.46.8",
 					Locations: []string{"testdata/package.json"},
@@ -163,17 +163,17 @@ func TestExtract(t *testing.T) {
 			name: "accepts",
 			path: "testdata/deps/accepts/package.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "accepts",
 					Version:   "1.3.8",
 					Locations: []string{"testdata/deps/accepts/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
-							&packagejson.Person{
+							{
 								Name:  "Douglas Christopher Wilson",
 								Email: "doug@somethingdoug.com",
 							},
-							&packagejson.Person{
+							{
 								Name:  "Jonathan Ong",
 								Email: "me@jongleberry.com",
 								URL:   "http://jongleberry.com",
@@ -187,13 +187,13 @@ func TestExtract(t *testing.T) {
 			name: "no person name",
 			path: "testdata/deps/no-person-name/package.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "accepts",
 					Version:   "1.3.8",
 					Locations: []string{"testdata/deps/no-person-name/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
-							&packagejson.Person{
+							{
 								Name:  "Jonathan Ong",
 								Email: "me@jongleberry.com",
 								URL:   "http://jongleberry.com",
@@ -207,17 +207,17 @@ func TestExtract(t *testing.T) {
 			name: "nested acorn",
 			path: "testdata/deps/with/deps/acorn/package.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "acorn",
 					Version:   "1.2.2",
 					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Maintainers: []*packagejson.Person{
-							&packagejson.Person{
+							{
 								Name:  "Marijn Haverbeke",
 								Email: "marijnh@gmail.com",
 							},
-							&packagejson.Person{
+							{
 								Name:  "Ingvar Stepanyan",
 								Email: "me@rreverser.com",
 							},
@@ -260,7 +260,7 @@ func TestExtract(t *testing.T) {
 			name: "Undici package with nonstandard contributors parsed correctly",
 			path: "testdata/undici-package.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:    "undici",
 					Version: "5.28.3",
 					Locations: []string{
@@ -268,15 +268,15 @@ func TestExtract(t *testing.T) {
 					},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
-							&packagejson.Person{
+							{
 								Name: "Daniele Belardi",
 								URL:  "https://github.com/dnlup",
 							},
-							&packagejson.Person{
+							{
 								Name: "Tomas Della Vedova",
 								URL:  "https://github.com/delvedor",
 							},
-							&packagejson.Person{
+							{
 								Name: "Invalid URL NoCrash",
 							},
 						},
@@ -288,7 +288,7 @@ func TestExtract(t *testing.T) {
 			name: "npm package with engine field set",
 			path: "testdata/not-vscode.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "jsonparse",
 					Version:   "1.3.1",
 					Locations: []string{"testdata/not-vscode.json"},

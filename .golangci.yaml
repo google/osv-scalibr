@@ -34,7 +34,7 @@ linters:
 #    - gochecknoinits
     - gochecksumtype
 #    - gocritic
-#    - gofmt
+    - gofmt
     - goheader
 #    - goimports
     - gomoddirectives

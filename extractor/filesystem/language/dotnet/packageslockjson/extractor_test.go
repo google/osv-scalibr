@@ -139,42 +139,42 @@ func TestExtractor(t *testing.T) {
 			name: "valid packages.lock.json",
 			path: "testdata/valid/packages.lock.json",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "Core.Dep",
 					Version:   "1.24.0",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Dep.One",
 					Version:   "1.1.1",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Dep.Two",
 					Version:   "4.6.0",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Dep.Three",
 					Version:   "1.0.2",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Dep.Four",
 					Version:   "4.5.0",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Longer.Name.Dep",
 					Version:   "4.7.2",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Some.Dep.Five",
 					Version:   "4.7.2",
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
-				&extractor.Inventory{
+				{
 					Name:      "Another.Longer.Name.Dep",
 					Version:   "4.5.4",
 					Locations: []string{"testdata/valid/packages.lock.json"},
