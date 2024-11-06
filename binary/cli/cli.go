@@ -107,6 +107,12 @@ func (s *StringListFlag) String() string {
 	return fmt.Sprint(s.value)
 }
 
+// Reset resets the flag to its default value.
+func (s *StringListFlag) Reset() {
+	s.set = false
+	s.value = nil
+}
+
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
 	Root                  string
