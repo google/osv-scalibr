@@ -110,7 +110,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 			IsFilesAnalyzedTagPresent: false,
 			PackageSourceInfo:         pSourceInfo,
 			PackageExternalReferences: []*v2_3.PackageExternalReference{
-				&v2_3.PackageExternalReference{
+				{
 					Category: "PACKAGE-MANAGER",
 					RefType:  "purl",
 					Locator:  p.String(),
@@ -138,7 +138,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		namespace = "https://spdx.google/" + uuid.New().String()
 	}
 	creators := []common.Creator{
-		common.Creator{
+		{
 			CreatorType: "Tool",
 			Creator:     "SCALIBR",
 		},

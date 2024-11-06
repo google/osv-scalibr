@@ -21,8 +21,6 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 )
 
-var ()
-
 func TestTargetOutsideRoot(t *testing.T) {
 
 	tests := []struct {

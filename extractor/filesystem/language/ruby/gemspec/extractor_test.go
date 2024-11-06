@@ -133,7 +133,7 @@ func TestExtract(t *testing.T) {
 			name: "yaml gemspec",
 			path: "testdata/yaml-0.2.1.gemspec",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "yaml",
 					Version:   "0.2.1",
 					Locations: []string{"testdata/yaml-0.2.1.gemspec"},
@@ -145,7 +145,7 @@ func TestExtract(t *testing.T) {
 			name: "rss gemspec",
 			path: "testdata/rss-0.2.9.gemspec",
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Name:      "rss",
 					Version:   "0.2.9",
 					Locations: []string{"testdata/rss-0.2.9.gemspec"},

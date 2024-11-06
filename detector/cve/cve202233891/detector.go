@@ -52,7 +52,7 @@ var (
 	seededRand        = rand.New(rand.NewSource(time.Now().UnixNano()))
 	sparkServersPorts = []int{4040, 8080}
 	sparkUIPackages   = []sparkUIPackageNames{
-		sparkUIPackageNames{
+		{
 			packageType: "pypi",
 			name:        "pyspark",
 			affectedVersions: []string{
@@ -135,7 +135,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	if !vulnerable {
 		return nil, nil
 	}
-	return []*detector.Finding{&detector.Finding{
+	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
 				Publisher: "SCALIBR",

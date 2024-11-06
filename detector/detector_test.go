@@ -79,8 +79,8 @@ func TestRun(t *testing.T) {
 				withDetectorName(finding2, "det2"),
 			},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
-				&plugin.Status{Name: "det2", Version: 2, Status: success},
+				{Name: "det1", Version: 1, Status: success},
+				{Name: "det2", Version: 2, Status: success},
 			},
 		},
 		{
@@ -91,8 +91,8 @@ func TestRun(t *testing.T) {
 			},
 			wantFindings: []*detector.Finding{withDetectorName(finding1, "det1")},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
-				&plugin.Status{Name: "det2", Version: 2, Status: &plugin.ScanStatus{
+				{Name: "det1", Version: 1, Status: success},
+				{Name: "det2", Version: 2, Status: &plugin.ScanStatus{
 					Status: plugin.ScanStatusFailed, FailureReason: "detection failed",
 				}},
 			},
@@ -105,8 +105,8 @@ func TestRun(t *testing.T) {
 			},
 			wantFindings: []*detector.Finding{withDetectorName(finding1, "det1"), withDetectorName(finding1, "det2")},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
-				&plugin.Status{Name: "det2", Version: 2, Status: success},
+				{Name: "det1", Version: 1, Status: success},
+				{Name: "det2", Version: 2, Status: success},
 			},
 		},
 		{
@@ -119,8 +119,8 @@ func TestRun(t *testing.T) {
 			},
 			wantFindings: []*detector.Finding{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
-				&plugin.Status{Name: "det2", Version: 2, Status: success},
+				{Name: "det1", Version: 1, Status: success},
+				{Name: "det2", Version: 2, Status: success},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -131,7 +131,7 @@ func TestRun(t *testing.T) {
 			},
 			wantFindings: []*detector.Finding{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
+				{Name: "det1", Version: 1, Status: success},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -142,7 +142,7 @@ func TestRun(t *testing.T) {
 			},
 			wantFindings: []*detector.Finding{},
 			wantStatus: []*plugin.Status{
-				&plugin.Status{Name: "det1", Version: 1, Status: success},
+				{Name: "det1", Version: 1, Status: success},
 			},
 			wantErr: cmpopts.AnyError,
 		},

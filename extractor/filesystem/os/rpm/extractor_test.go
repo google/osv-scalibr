@@ -193,7 +193,7 @@ func TestExtract(t *testing.T) {
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
@@ -209,7 +209,7 @@ func TestExtract(t *testing.T) {
 						License:      "GPL-2.0+",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
@@ -225,7 +225,7 @@ func TestExtract(t *testing.T) {
 						License:      "GPL-3.0-or-later",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
@@ -251,7 +251,7 @@ func TestExtract(t *testing.T) {
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
@@ -267,7 +267,7 @@ func TestExtract(t *testing.T) {
 						License:      "GPLv2+",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
@@ -283,7 +283,7 @@ func TestExtract(t *testing.T) {
 						License:      "LGPLv2+",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
@@ -342,7 +342,7 @@ func TestExtract(t *testing.T) {
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
@@ -358,7 +358,7 @@ func TestExtract(t *testing.T) {
 						License:      "GPLv2",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
@@ -374,7 +374,7 @@ func TestExtract(t *testing.T) {
 						License:      "LGPLv2+",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
@@ -401,7 +401,7 @@ func TestExtract(t *testing.T) {
 			BUILD_ID=asdf`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
@@ -416,7 +416,7 @@ func TestExtract(t *testing.T) {
 						License:      "GPLv2",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
@@ -431,7 +431,7 @@ func TestExtract(t *testing.T) {
 						License:      "LGPLv2+",
 					},
 				},
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
@@ -463,7 +463,7 @@ func TestExtract(t *testing.T) {
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "hello",
 					Version:   "0.0.1-rls",

@@ -86,7 +86,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		if !isVulnerable(ctx, fileBrowserIP, fileBrowserPort) {
 			continue
 		}
-		return []*detector.Finding{&detector.Finding{
+		return []*detector.Finding{{
 			Adv: &detector.Advisory{
 				ID: &detector.AdvisoryID{
 					Publisher: "SCALIBR",

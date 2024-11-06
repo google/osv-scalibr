@@ -209,12 +209,12 @@ func TestScanResultToProto(t *testing.T) {
 		Version: "1.0.0",
 		Metadata: &packagejson.JavascriptPackageJSONMetadata{
 			Maintainers: []*packagejson.Person{
-				&packagejson.Person{
+				{
 					Name:  "maintainer1",
 					Email: "maintainer1@corp.com",
 					URL:   "https://blog.maintainer1.com",
 				},
-				&packagejson.Person{
+				{
 					Name:  "maintainer2",
 					Email: "maintainer2@corp.com",
 				},
@@ -233,8 +233,8 @@ func TestScanResultToProto(t *testing.T) {
 			Name:      "software",
 			Version:   "1.0.0",
 			Qualifiers: []*spb.Qualifier{
-				&spb.Qualifier{Key: "arch", Value: "amd64"},
-				&spb.Qualifier{Key: "distro", Value: "jammy"},
+				{Key: "arch", Value: "amd64"},
+				{Key: "distro", Value: "jammy"},
 			},
 		},
 		Ecosystem: "Debian",
@@ -261,8 +261,8 @@ func TestScanResultToProto(t *testing.T) {
 			Name:      "software",
 			Version:   "1.0.0",
 			Qualifiers: []*spb.Qualifier{
-				&spb.Qualifier{Key: "arch", Value: "amd64"},
-				&spb.Qualifier{Key: "distro", Value: "jammy"},
+				{Key: "arch", Value: "amd64"},
+				{Key: "distro", Value: "jammy"},
 			},
 		},
 		Ecosystem: "Debian",
@@ -422,10 +422,10 @@ func TestScanResultToProto(t *testing.T) {
 			Name:      "openssh-clients",
 			Version:   "5.3p1",
 			Qualifiers: []*spb.Qualifier{
-				&spb.Qualifier{Key: "arch", Value: "x86_64"},
-				&spb.Qualifier{Key: "distro", Value: "rhel-8.9"},
-				&spb.Qualifier{Key: "epoch", Value: "2"},
-				&spb.Qualifier{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
+				{Key: "arch", Value: "x86_64"},
+				{Key: "distro", Value: "rhel-8.9"},
+				{Key: "epoch", Value: "2"},
+				{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
 			},
 		},
 		Ecosystem: "Red Hat",
@@ -534,12 +534,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
 					},
-					&plugin.Status{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  success,
@@ -555,7 +555,7 @@ func TestScanResultToProto(t *testing.T) {
 					cdxInventory,
 				},
 				Findings: []*detector.Finding{
-					&detector.Finding{
+					{
 						Adv: &detector.Advisory{
 							ID: &detector.AdvisoryID{
 								Publisher: "CVE",
@@ -585,12 +585,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  successProto,
 					},
-					&spb.PluginStatus{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  successProto,
@@ -606,7 +606,7 @@ func TestScanResultToProto(t *testing.T) {
 					cdxInventoryProto,
 				},
 				Findings: []*spb.Finding{
-					&spb.Finding{
+					{
 						Adv: &spb.Advisory{
 							Id: &spb.AdvisoryId{
 								Publisher: "CVE",
@@ -639,7 +639,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
@@ -653,7 +653,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  successProto,
@@ -672,7 +672,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
@@ -686,7 +686,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  successProto,
@@ -707,7 +707,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
@@ -721,7 +721,7 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  successProto,
@@ -742,12 +742,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
 					},
-					&plugin.Status{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  success,
@@ -755,7 +755,7 @@ func TestScanResultToProto(t *testing.T) {
 				},
 				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
-					&detector.Finding{
+					{
 						Adv: &detector.Advisory{
 							ID: &detector.AdvisoryID{
 								Publisher: "CVE",
@@ -781,12 +781,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  successProto,
 					},
-					&spb.PluginStatus{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  successProto,
@@ -794,7 +794,7 @@ func TestScanResultToProto(t *testing.T) {
 				},
 				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cpeInventoryProto, cdxInventoryProto},
 				Findings: []*spb.Finding{
-					&spb.Finding{
+					{
 						Adv: &spb.Advisory{
 							Id: &spb.AdvisoryId{
 								Publisher: "CVE",
@@ -823,12 +823,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
 					},
-					&plugin.Status{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  success,
@@ -836,7 +836,7 @@ func TestScanResultToProto(t *testing.T) {
 				},
 				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
-					&detector.Finding{
+					{
 						Adv: &detector.Advisory{
 							Type:           detector.TypeVulnerability,
 							Title:          "Title",
@@ -862,12 +862,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    success,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  success,
 					},
-					&plugin.Status{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  success,
@@ -875,7 +875,7 @@ func TestScanResultToProto(t *testing.T) {
 				},
 				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cpeInventory, cdxInventory},
 				Findings: []*detector.Finding{
-					&detector.Finding{
+					{
 						Extra: "extra details",
 					},
 				},
@@ -890,12 +890,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   endTime,
 				Status:    failure,
 				PluginStatus: []*plugin.Status{
-					&plugin.Status{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  failure,
 					},
-					&plugin.Status{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  failure,
@@ -908,12 +908,12 @@ func TestScanResultToProto(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    failureProto,
 				PluginStatus: []*spb.PluginStatus{
-					&spb.PluginStatus{
+					{
 						Name:    "ext",
 						Version: 2,
 						Status:  failureProto,
 					},
-					&spb.PluginStatus{
+					{
 						Name:    "det",
 						Version: 3,
 						Status:  failureProto,

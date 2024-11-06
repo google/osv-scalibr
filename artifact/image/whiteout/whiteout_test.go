@@ -52,7 +52,7 @@ func TestWhiteout(t *testing.T) {
 			},
 			dirs: []string{},
 			want: map[string]struct{}{
-				".wh.hello_world.txt": struct{}{},
+				".wh.hello_world.txt": {},
 			},
 		},
 		{
@@ -64,8 +64,8 @@ func TestWhiteout(t *testing.T) {
 			},
 			dirs: []string{},
 			want: map[string]struct{}{
-				".wh.foo.txt": struct{}{},
-				".wh.bar.txt": struct{}{},
+				".wh.foo.txt": {},
+				".wh.bar.txt": {},
 			},
 		},
 		{
@@ -80,8 +80,8 @@ func TestWhiteout(t *testing.T) {
 				"dir2",
 			},
 			want: map[string]struct{}{
-				"dir1/.wh.foo.txt": struct{}{},
-				"dir2/.wh.bar.txt": struct{}{},
+				"dir1/.wh.foo.txt": {},
+				"dir2/.wh.bar.txt": {},
 			},
 		},
 		{
@@ -93,7 +93,7 @@ func TestWhiteout(t *testing.T) {
 				"dir1",
 			},
 			want: map[string]struct{}{
-				".wh..wh..opa.dir1": struct{}{},
+				".wh..wh..opa.dir1": {},
 			},
 		},
 		{
@@ -110,9 +110,9 @@ func TestWhiteout(t *testing.T) {
 				"dir3/dir4",
 			},
 			want: map[string]struct{}{
-				".wh..wh..opa.dir1":     struct{}{},
-				".wh..wh..opa.dir2":     struct{}{},
-				"dir3/dir4/.wh.bar.txt": struct{}{},
+				".wh..wh..opa.dir1":     {},
+				".wh..wh..opa.dir2":     {},
+				"dir3/dir4/.wh.bar.txt": {},
 			},
 		},
 	}

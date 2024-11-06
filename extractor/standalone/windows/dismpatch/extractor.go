@@ -32,7 +32,7 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 	imgVersion = strings.TrimSpace(imgVersion)
 	windowsProduct := winproducts.WindowsProductFromVersion(flavor, imgVersion)
 	inventory := []*extractor.Inventory{
-		&extractor.Inventory{
+		{
 			Name:      windowsProduct,
 			Version:   imgVersion,
 			Locations: []string{"cmd-dism-osver"},
