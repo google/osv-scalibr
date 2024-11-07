@@ -87,6 +87,8 @@ type ScanConfig struct {
 	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
+	// TestProp is a test property.
+	TestProp bool
 }
 
 // EnableRequiredExtractors adds those extractors to the config that are required by enabled
