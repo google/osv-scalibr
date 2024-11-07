@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
@@ -617,51 +616,6 @@ func TestToPURL(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
-			}
-		})
-	}
-}
-
-func TestToCPEs(t *testing.T) {
-	tests := []struct {
-		desc      string
-		inventory *extractor.Inventory
-		want      []string
-		onGoos    string
-	}{
-		{
-			desc: "Valid fileststem extractor",
-			inventory: &extractor.Inventory{
-				Name: "nginx",
-				Metadata: &spdx.Metadata{
-					CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
-				},
-				Extractor: &spdx.Extractor{},
-			},
-			want: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
-		},
-		{
-			desc: "Windows-only returns nil on Linux",
-			inventory: &extractor.Inventory{
-				Name:      "irrelevant",
-				Extractor: dismpatch.Extractor{},
-				Locations: []string{"irrelevant"},
-				Version:   "irrelevant",
-			},
-			want:   nil,
-			onGoos: "linux",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.desc, func(t *testing.T) {
-			if tc.onGoos != "" && tc.onGoos != runtime.GOOS {
-				t.Skipf("Skipping test on %s", runtime.GOOS)
-			}
-			got := converter.ToCPEs(tc.inventory)
-
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("converter.ToCPEs(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
 			}
 		})
 	}

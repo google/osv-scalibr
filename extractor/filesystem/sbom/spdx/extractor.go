@@ -143,11 +143,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return i.Metadata.(*Metadata).PURL
 }
 
-// ToCPEs converts an inventory created by this extractor into a list of CPEs.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string {
-	return i.Metadata.(*Metadata).CPEs
-}
-
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	purl := i.Metadata.(*Metadata).PURL

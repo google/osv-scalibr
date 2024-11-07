@@ -248,9 +248,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 }
 
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
-
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 // OSV requires the name field to be a npm package. This is a javascript extractor, there is no
 // guarantee that the package is an npm package.

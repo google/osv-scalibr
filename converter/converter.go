@@ -24,6 +24,8 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
+	cdxe "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
+	spdxe "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
@@ -44,11 +46,6 @@ var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 // ToPURL converts a SCALIBR inventory structure into a package URL.
 func ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return i.Extractor.ToPURL(i)
-}
-
-// ToCPEs converts a SCALIBR inventory structure into CPEs, if they're present in the inventory.
-func ToCPEs(i *extractor.Inventory) []string {
-	return i.Extractor.ToCPEs(i)
 }
 
 // SPDXConfig describes custom settings that should be applied to the generated SPDX file.
@@ -227,7 +224,7 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		if p := ToPURL(i); p != nil {
 			pkg.PackageURL = p.String()
 		}
-		if cpes := ToCPEs(i); len(cpes) > 0 {
+		if cpes := extractCPEs(i); len(cpes) > 0 {
 			pkg.CPE = cpes[0]
 		}
 		if len((*i).Locations) > 0 {
@@ -246,4 +243,15 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 	bom.Components = &comps
 
 	return bom
+}
+
+func extractCPEs(i *extractor.Inventory) []string {
+	// Only the two SBOM inventory types support storing CPEs.
+	if m, ok := i.Metadata.(*spdxe.Metadata); ok {
+		return m.CPEs
+	}
+	if m, ok := i.Metadata.(*cdxe.Metadata); ok {
+		return m.CPEs
+	}
+	return nil
 }

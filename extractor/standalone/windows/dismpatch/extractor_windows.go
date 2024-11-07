@@ -78,9 +78,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return p
 }
 
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
-
 // runDISM executes the dism command line tool.
 func runDISM(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(ctx, "dism", "/online", "/get-packages", "/format:list")

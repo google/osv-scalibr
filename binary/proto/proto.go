@@ -211,13 +211,11 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		return nil, nil
 	}
 	p := converter.ToPURL(i)
-	cpes := converter.ToCPEs(i)
 	inventoryProto := &spb.Inventory{
 		Name:        i.Name,
 		Version:     i.Version,
 		SourceCode:  sourceCodeIdentifierToProto(i.SourceCode),
 		Purl:        purlToProto(p),
-		Cpes:        cpes,
 		Ecosystem:   i.Ecosystem(),
 		Locations:   i.Locations,
 		Extractor:   i.Extractor.Name(),

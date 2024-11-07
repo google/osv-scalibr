@@ -54,11 +54,5 @@ func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return nil
 }
 
-// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-func (e *Extractor) ToCPEs(i *extractor.Inventory) []string {
-	log.Warnf("Trying to use regpatchlevel on %s, which is not supported", runtime.GOOS)
-	return nil
-}
-
 // Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

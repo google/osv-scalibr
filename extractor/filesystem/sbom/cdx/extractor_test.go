@@ -201,22 +201,6 @@ func TestToPURL(t *testing.T) {
 	}
 }
 
-func TestToCPEs(t *testing.T) {
-	e := cdx.Extractor{}
-	want := []string{"cpe1", "cpe2"}
-	i := &extractor.Inventory{
-		Name: "name",
-		Metadata: &cdx.Metadata{
-			CPEs: want,
-		},
-		Locations: []string{"location"},
-	}
-	got := e.ToCPEs(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToCPEs(%v) (-want +got):\n%s", i, diff)
-	}
-}
-
 func invLess(i1, i2 *extractor.Inventory) bool {
 	return i1.Name < i2.Name
 }

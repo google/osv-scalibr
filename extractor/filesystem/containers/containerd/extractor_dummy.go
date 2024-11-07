@@ -70,8 +70,5 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 // ToPURL not implemented.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
 
-// ToCPEs not implemented.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return nil }
-
 // Ecosystem not defined.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

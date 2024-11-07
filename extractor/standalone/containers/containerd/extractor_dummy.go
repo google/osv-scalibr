@@ -70,10 +70,5 @@ func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return nil
 }
 
-// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-func (e *Extractor) ToCPEs(i *extractor.Inventory) []string {
-	return nil
-}
-
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

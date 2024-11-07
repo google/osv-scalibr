@@ -122,9 +122,6 @@ func (e *fakeExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 }
 
-// ToCPEs always returns an empty array.
-func (e *fakeExtractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
-
 // Ecosystem returns a fake ecosystem.
 func (e *fakeExtractor) Ecosystem(i *extractor.Inventory) string {
 	return "FakeEcosystem"

@@ -130,8 +130,5 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 }
 
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return []string{} }
-
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

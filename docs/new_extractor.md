@@ -129,7 +129,7 @@ extractor as an example.
     $ `go mod tidy`
     ```
 
-1.  Implement `ToPURL` and `ToCPE` to generate PURLs and CPEs from the Inventory
+1.  Implement `ToPURL` to generate PURLs from the Inventory
     extracted. If your extractor doesn't support CPEs feel free to return an empty
     list.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid

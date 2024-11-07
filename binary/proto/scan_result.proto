@@ -60,7 +60,7 @@ message PluginStatus {
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
 message Inventory {
-  reserved 3,17,18,19,32;
+  reserved 3, 4;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -70,9 +70,6 @@ message Inventory {
   SourceCodeIdentifier source_code = 26;
   // Package URL of the software.
   Purl purl = 1;
-  // Common Platform Enumerator
-  // https://csrc.nist.gov/Projects/Security-Content-Automation-Protocol/Specifications/cpe
-  repeated string cpes = 4;
   // Ecosystem - For software packages this corresponds to an OSV ecosystem
   // value, e.g. PyPI.
   string ecosystem = 27;

@@ -25,8 +25,6 @@ type Extractor interface {
 	plugin.Plugin
 	// ToPURL converts an inventory created by this extractor into a PURL.
 	ToPURL(i *Inventory) *purl.PackageURL
-	// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-	ToCPEs(i *Inventory) []string
 	// Ecosystem returns the Ecosystem of the given inventory created by this extractor.
 	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
 	Ecosystem(i *Inventory) string

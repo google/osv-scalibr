@@ -277,7 +277,6 @@ func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInp
 	return nil, nil
 }
 func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
-func (e fakeExNeedsNetwork) ToCPEs(i *extractor.Inventory) []string         { return nil }
 func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string        { return "" }
 
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {

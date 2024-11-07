@@ -53,9 +53,3 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	log.Warnf("Trying to use dismpatch on %s, which is not supported", runtime.GOOS)
 	return nil
 }
-
-// ToCPEs converts an inventory created by this extractor into CPEs, if supported.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string {
-	log.Warnf("Trying to use dismpatch on %s, which is not supported", runtime.GOOS)
-	return nil
-}
