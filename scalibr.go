@@ -26,6 +26,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -76,6 +77,8 @@ type ScanConfig struct {
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
+	// Optional: If the glob matches a directory, it will be skipped.
+	SkipDirGlob glob.Glob
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
 	// Optional: Whether to read symlinks.
@@ -193,6 +196,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		FilesToExtract:        config.FilesToExtract,
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
+		SkipDirGlob:           config.SkipDirGlob,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,

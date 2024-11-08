@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -83,6 +84,8 @@ type Config struct {
 	DirsToSkip []string
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
+	// Optional: If the regex matches a glob, it will be skipped.
+	SkipDirGlob glob.Glob
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
 	// Optional: Whether to read symlinks.
@@ -165,6 +168,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		filesToExtract:    filesToExtract,
 		dirsToSkip:        pathStringListToMap(dirsToSkip),
 		skipDirRegex:      config.SkipDirRegex,
+		skipDirGlob:       config.SkipDirGlob,
 		readSymlinks:      config.ReadSymlinks,
 		maxInodes:         config.MaxInodes,
 		inodesVisited:     0,
@@ -233,6 +237,7 @@ type walkContext struct {
 	filesToExtract    []string
 	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
 	skipDirRegex      *regexp.Regexp
+	skipDirGlob       glob.Glob
 	maxInodes         int
 	inodesVisited     int
 	storeAbsolutePath bool
@@ -349,6 +354,9 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	}
 	if wc.skipDirRegex != nil {
 		return wc.skipDirRegex.MatchString(path)
+	}
+	if wc.skipDirGlob != nil {
+		return wc.skipDirGlob.Match(path)
 	}
 	return false
 }
