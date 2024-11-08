@@ -1,4 +1,4 @@
-# todo: this should match the configuration of osv-scanner for the most part
+# TODO(#274): this should match the configuration of osv-scanner for the most part
 #   currently it does not because using that config raises type errors,
 #   in addition to some of the rules having violations that need addressing,
 #   so the current focus is on getting as many linters as possible running
@@ -6,7 +6,7 @@
 output:
   sort-results: true
 linters:
-  # todo: currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
+  # TODO(#274): currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
   enable:
     - asasalint
     - asciicheck
