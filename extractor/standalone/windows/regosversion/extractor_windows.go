@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -80,9 +81,12 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
 	return []*extractor.Inventory{
 		{
-			Name:      winproduct,
-			Version:   fullVersion,
-			Locations: []string{"registry"},
+			Name:    winproduct,
+			Version: fullVersion,
+			Metadata: metadata.OSVersion{
+				Product:     winproduct,
+				FullVersion: fullVersion,
+			},
 		},
 	}, nil
 }
@@ -125,13 +129,22 @@ func (e Extractor) windowsRevision(key registry.Key) (uint64, error) {
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	var qualifiers purl.Qualifiers
+
+	switch i.Metadata.(type) {
+	case *metadata.OSVersion:
+		qualifiers = purl.QualifiersFromMap(map[string]string{
+			purl.BuildNumber: i.Metadata.(*metadata.OSVersion).FullVersion,
+		})
+	default:
+		return nil
+	}
+
 	return &purl.PackageURL{
-		Type:      purl.TypeGeneric,
-		Namespace: "microsoft",
-		Name:      i.Name,
-		Qualifiers: purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Version,
-		}),
+		Type:       purl.TypeGeneric,
+		Namespace:  "microsoft",
+		Name:       i.Name,
+		Qualifiers: qualifiers,
 	}
 }
 

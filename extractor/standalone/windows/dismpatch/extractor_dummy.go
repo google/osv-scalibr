@@ -19,13 +19,10 @@ package dismpatch
 import (
 	"context"
 	"fmt"
-	"runtime"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // Name of the extractor
@@ -46,10 +43,4 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // Extract is a no-op for Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	return nil, fmt.Errorf("only supported on Windows")
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	log.Warnf("Trying to use dismpatch on %s, which is not supported", runtime.GOOS)
-	return nil
 }

@@ -97,6 +97,7 @@ message Inventory {
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
     CDXPackageMetadata cdx_metadata = 30;
+    WindowsOSVersion windows_os_version_metadata = 33;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -351,4 +352,9 @@ message ContainerdRuntimeContainerMetadata {
   string id = 5;
   int32 pid = 6;
   string rootfs_path = 7;
+}
+
+message WindowsOSVersion {
+  string product = 1;
+  string full_version = 2;
 }

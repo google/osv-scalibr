@@ -18,8 +18,10 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/dismparser"
+	"github.com/google/osv-scalibr/purl"
 )
 
 // inventoryFromOutput parses the output of DISM and produces inventory entries from it.
@@ -33,18 +35,20 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 	windowsProduct := winproducts.WindowsProductFromVersion(flavor, imgVersion)
 	inventory := []*extractor.Inventory{
 		{
-			Name:      windowsProduct,
-			Version:   imgVersion,
-			Locations: []string{"cmd-dism-osver"},
+			Name:    windowsProduct,
+			Version: imgVersion,
+			Metadata: metadata.OSVersion{
+				Product:     windowsProduct,
+				FullVersion: imgVersion,
+			},
 		},
 	}
 
 	// extract KB informations
 	for _, pkg := range packages {
 		inventory = append(inventory, &extractor.Inventory{
-			Name:      pkg.PackageIdentity,
-			Version:   pkg.PackageVersion,
-			Locations: []string{"cmd-dism"},
+			Name:    pkg.PackageIdentity,
+			Version: pkg.PackageVersion,
 		})
 	}
 
@@ -53,3 +57,23 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 
 // Ecosystem returns no ecosystem since OSV does ont support dism patches yet.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+
+// ToPURL converts an inventory created by this extractor into a PURL.
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	p := &purl.PackageURL{
+		Type:      purl.TypeGeneric,
+		Namespace: "microsoft",
+		Name:      i.Name,
+	}
+
+	switch i.Metadata.(type) {
+	case *metadata.OSVersion:
+		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
+			purl.BuildNumber: i.Metadata.(*metadata.OSVersion).FullVersion,
+		})
+	default:
+		p.Version = i.Version
+	}
+
+	return p
+}

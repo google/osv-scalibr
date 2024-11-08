@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
@@ -592,17 +591,6 @@ func TestToPURL(t *testing.T) {
 				Name:    "software",
 				Version: "1.0.0",
 			},
-		},
-		{
-			desc: "Windows-only returns nil on Linux",
-			inventory: &extractor.Inventory{
-				Name:      "irrelevant",
-				Extractor: dismpatch.Extractor{},
-				Locations: []string{"irrelevant"},
-				Version:   "irrelevant",
-			},
-			want:   nil,
-			onGoos: "linux",
 		},
 	}
 

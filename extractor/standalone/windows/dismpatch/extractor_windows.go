@@ -20,13 +20,11 @@ package dismpatch
 import (
 	"context"
 	"os/exec"
-	"slices"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -57,25 +55,6 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 
 	flavor := winproducts.WindowsFlavorFromRegistry()
 	return inventoryFromOutput(flavor, output)
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	p := &purl.PackageURL{
-		Type:      purl.TypeGeneric,
-		Namespace: "microsoft",
-		Name:      i.Name,
-	}
-
-	if slices.Contains(i.Locations, "cmd-dism-osver") {
-		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Version,
-		})
-	} else {
-		p.Version = i.Version
-	}
-
-	return p
 }
 
 // runDISM executes the dism command line tool.

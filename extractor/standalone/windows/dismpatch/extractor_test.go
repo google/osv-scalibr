@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/dismparser"
 )
 
@@ -43,39 +44,36 @@ func TestInventoryFromOutput(t *testing.T) {
 			output: string(dismTestData),
 			want: []*extractor.Inventory{
 				{
-					Name:      "windows_server_2019",
-					Version:   "10.0.17763.3406",
-					Locations: []string{"cmd-dism-osver"},
+					Name:    "windows_server_2019",
+					Version: "10.0.17763.3406",
+					Metadata: metadata.OSVersion{
+						Product:     "windows_server_2019",
+						FullVersion: "10.0.17763.3406",
+					},
 				},
 				{
-					Name:      "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1",
-					Version:   "10.0.17763.1",
-					Locations: []string{"cmd-dism"},
+					Name:    "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1",
+					Version: "10.0.17763.1",
 				},
 				{
-					Name:      "Package_for_KB4470788~31bf3856ad364e35~amd64~~17763.164.1.1",
-					Version:   "17763.164.1.1",
-					Locations: []string{"cmd-dism"},
+					Name:    "Package_for_KB4470788~31bf3856ad364e35~amd64~~17763.164.1.1",
+					Version: "17763.164.1.1",
 				},
 				{
-					Name:      "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.3406.1.5",
-					Version:   "17763.3406.1.5",
-					Locations: []string{"cmd-dism"},
+					Name:    "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.3406.1.5",
+					Version: "17763.3406.1.5",
 				},
 				{
-					Name:      "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.379.1.11",
-					Version:   "17763.379.1.11",
-					Locations: []string{"cmd-dism"},
+					Name:    "Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.379.1.11",
+					Version: "17763.379.1.11",
 				},
 				{
-					Name:      "Package_for_ServicingStack_3232~31bf3856ad364e35~amd64~~17763.3232.1.1",
-					Version:   "17763.3232.1.1",
-					Locations: []string{"cmd-dism"},
+					Name:    "Package_for_ServicingStack_3232~31bf3856ad364e35~amd64~~17763.3232.1.1",
+					Version: "17763.3232.1.1",
 				},
 				{
-					Name:      "Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1",
-					Version:   "10.0.19041.1",
-					Locations: []string{"cmd-dism"},
+					Name:    "Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1",
+					Version: "10.0.19041.1",
 				},
 			},
 			wantErr: nil,

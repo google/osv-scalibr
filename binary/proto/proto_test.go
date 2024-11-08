@@ -36,6 +36,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -202,7 +204,6 @@ func TestScanResultToProto(t *testing.T) {
 			VersionComparator:      ">=",
 		},
 	}
-
 	purlJavascriptInventory := &extractor.Inventory{
 		Name:    "software",
 		Version: "1.0.0",
@@ -222,6 +223,16 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: &packagejson.Extractor{},
 	}
+	windowsInventory := &extractor.Inventory{
+		Name:    "windows_server_2019",
+		Version: "10.0.17763.3406",
+		Metadata: &winmetadata.OSVersion{
+			Product:     "windows_server_2019",
+			FullVersion: "10.0.17763.3406",
+		},
+		Extractor: &dismpatch.Extractor{},
+	}
+
 	purlDPKGInventoryProto := &spb.Inventory{
 		Name:    "software",
 		Version: "1.0.0",
@@ -498,6 +509,29 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file7"},
 		Extractor: "containers/containerd-runtime",
 	}
+	windowsInventoryProto := &spb.Inventory{
+		Name:    "windows_server_2019",
+		Version: "10.0.17763.3406",
+		Metadata: &spb.Inventory_WindowsOsVersionMetadata{
+			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
+				Product:     "windows_server_2019",
+				FullVersion: "10.0.17763.3406",
+			},
+		},
+		Purl: &spb.Purl{
+			Purl:      "pkg:generic/microsoft/windows_server_2019?buildnumber=10.0.17763.3406",
+			Type:      purl.TypeGeneric,
+			Namespace: "microsoft",
+			Name:      "windows_server_2019",
+			Qualifiers: []*spb.Qualifier{
+				{
+					Key:   "buildnumber",
+					Value: "10.0.17763.3406",
+				},
+			},
+		},
+		Extractor: "windows/dismpatch",
+	}
 
 	testCases := []struct {
 		desc         string
@@ -532,6 +566,7 @@ func TestScanResultToProto(t *testing.T) {
 					pythonRequirementsInventory,
 					purlJavascriptInventory,
 					cdxInventory,
+					windowsInventory,
 				},
 				Findings: []*detector.Finding{
 					{
@@ -582,6 +617,7 @@ func TestScanResultToProto(t *testing.T) {
 					pythonRequirementsInventoryProto,
 					purlJavascriptInventoryProto,
 					cdxInventoryProto,
+					windowsInventoryProto,
 				},
 				Findings: []*spb.Finding{
 					{

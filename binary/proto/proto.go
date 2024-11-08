@@ -47,6 +47,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -392,6 +393,13 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
+			},
+		}
+	case *winmetadata.OSVersion:
+		i.Metadata = &spb.Inventory_WindowsOsVersionMetadata{
+			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
+				Product:     m.Product,
+				FullVersion: m.FullVersion,
 			},
 		}
 	}

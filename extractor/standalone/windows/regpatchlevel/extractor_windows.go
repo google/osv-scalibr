@@ -117,9 +117,8 @@ func (e *Extractor) handleKey(registryPath, keyName string) (*extractor.Inventor
 	}
 
 	return &extractor.Inventory{
-		Name:      keyName,
-		Version:   submatch[1],
-		Locations: []string{"windows-registry"},
+		Name:    keyName,
+		Version: submatch[1],
 	}, nil
 }
 
