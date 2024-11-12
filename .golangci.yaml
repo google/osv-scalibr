@@ -1,0 +1,92 @@
+# TODO(#274): this should match the configuration of osv-scanner for the most part
+#   currently it does not because using that config raises type errors,
+#   in addition to some of the rules having violations that need addressing,
+#   so the current focus is on getting as many linters as possible running
+
+output:
+  sort-results: true
+linters:
+  # TODO(#274): currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+#    - containedctx
+#    - contextcheck
+#    - copyloopvar
+    - decorder
+#    - depguard
+    - dogsled
+#    - dupl
+#    - dupword
+    - durationcheck
+#    - errcheck
+#    - errchkjson
+#    - errname
+#    - errorlint
+#    - exhaustive
+#    - fatcontext
+#    - forbidigo
+    - ginkgolinter
+    - gocheckcompilerdirectives
+#    - gochecknoinits
+    - gochecksumtype
+#    - gocritic
+#    - gofmt
+    - goheader
+#    - goimports
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+#    - gosec
+#    - gosimple
+    - gosmopolitan
+#    - govet
+    - grouper
+    - importas
+#    - inamedparam
+#    - ineffassign
+    - interfacebloat
+#    - intrange
+    - loggercheck
+    - makezero
+    - mirror
+#    - misspell
+#    - musttag
+    - nakedret
+#    - nilerr
+#    - nilnil
+#    - nlreturn
+#    - noctx
+    - nolintlint
+#    - nosprintfhostport
+#    - paralleltest
+#    - perfsprint
+#    - prealloc
+#    - predeclared
+    - promlinter
+#    - protogetter
+    - reassign
+#    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+#    - staticcheck
+#    - stylecheck
+    - tagalign
+    - tenv
+    - testableexamples
+    - testifylint
+#    - thelper
+#    - tparallel
+#    - unconvert
+#    - unparam
+#    - unused
+#    - usestdlibvars
+#    - wastedassign
+#    - whitespace
+    - zerologlint
+  disable-all: true

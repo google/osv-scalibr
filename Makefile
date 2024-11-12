@@ -5,6 +5,9 @@ scalibr:
 	# go-sqlite3 used by the RPM extractor.
 	CGO_ENABLED=1 go build binary/scalibr/scalibr.go
 
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 run ./... --max-same-issues 0
+
 test:
 	CGO_ENABLED=1 go test ./...
 
