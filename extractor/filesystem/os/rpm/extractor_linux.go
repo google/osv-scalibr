@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -109,7 +110,7 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{DirectFS: true} }
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches rpm status file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
@@ -156,7 +157,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	absPath := filepath.Join(input.Root, input.Path)
+	absPath, err := input.GetRealPath()
+	if err != nil {
+		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
+	}
+	if input.Root == "" {
+		// The file got copied to a temporary dir, remove it at the end.
+		defer func() {
+			dir := filepath.Base(absPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Errorf("os.RemoveAll(%q%): %w", dir, err)
+			}
+		}()
+	}
 	rpmPkgs, err := e.parseRPMDB(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("ParseRPMDB(%s): %w", absPath, err)

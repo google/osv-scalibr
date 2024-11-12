@@ -516,3 +516,28 @@ func (wc *walkContext) printStatus(path string) {
 	wc.lastInodes = wc.inodesVisited
 	wc.lastExtracts = wc.extractCalls
 }
+
+// GetRealPath returns the real absolute path of the file on the scanning host's filesystem.
+// If the file is on a virtual filesystem (e.g. a remote container), it is first copied into a
+// temporary directory on the scanning host's filesystem. It's up to the caller to delete the
+// directory once they're done using it.
+func (i *ScanInput) GetRealPath() (string, error) {
+	if i.Root != "" {
+		return filepath.Join(i.Root, i.Path), nil
+	}
+
+	// No scan root set, this is a virtual filesystem.
+	// Move the file to the scanning hosts's filesystem.
+	dir, err := os.MkdirTemp("", "scalibr-tmp")
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, "file")
+	f, err := os.Create(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	io.Copy(f, i.Reader)
+	return path, nil
+}
