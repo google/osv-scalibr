@@ -27,6 +27,7 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           version: "23.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up protoc-gen-go
         run: go install google.golang.org/protobuf/cmd/protoc-gen-go
