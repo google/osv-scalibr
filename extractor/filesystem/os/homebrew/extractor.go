@@ -18,7 +18,6 @@ package homebrew
 import (
 	"context"
 	"io/fs"
-	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -32,8 +31,8 @@ const (
 	cellarPath     = "cellar"
 	cellarFileName = "install_receipt.json"
 	caskFileName1  = ".wrapper.sh"
-	caskFileName2  = ".app"
-	caskFileName3  = "source.properties"
+	caskFileName2  = "source.properties"
+	caskFileName3  = ".app"
 )
 
 // BrewPath struct holds homebrew package information from homebrew package path.
@@ -45,8 +44,6 @@ type BrewPath struct {
 	AppFile    string
 	AppExt     string
 }
-
-var r = regexp.MustCompile(`(\bcellar|\bcaskroom)\/(.*)\/[^A-Za-z \/]+\/`)
 
 // Extractor extracts software details from a OSX Homebrew package path.
 type Extractor struct{}
@@ -63,29 +60,31 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file path matches the homebrew path.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 	filePath := strings.ToLower(path)
+	// Homebrew installs are in the following paths:
+	// ../Cellar/${appName}/${version}/... or ../Caskroom/${appName}/${version}/...
+	// Example of paths:
+	// /usr/local/Cellar/... ; /opt/homebrew/Caskroom/... ; /usr/local/Caskroom/...;
+	// /Users/emat/homebrew/Caskroom/... etc.
+	// Ensure correct Homebrew path and file-name relationships are met for both Cellar and Caskroom.
+	return isCellar(filePath) || isCaskroom(filePath)
+}
 
-	// Heuristic to take load from the regex matching.
-	if !strings.Contains(filePath, cellarPath) && !strings.Contains(filePath, caskPath) {
+// isCellar verifies Path to filename relationship.
+func isCellar(filePath string) bool {
+	// ../Cellar/${appName}/${version}/INSTALL_RECEIPT.json
+	return strings.HasSuffix(filePath, cellarFileName) && strings.Contains(filePath, cellarPath)
+}
+
+// isCaskroom verifiesPath to filename relationships.
+func isCaskroom(filePath string) bool {
+	// ../Caskroom/${appName}/${version}/${appName}.wrapper.sh
+	// or ../Caskroom/${appName}/${version}/${folder/source.properties|source.properties}
+	// or ../Caskroom/${appName}/${version}/${appName}.app
+	if !(strings.HasSuffix(filePath, caskFileName1) || strings.HasSuffix(filePath, caskFileName2) || strings.HasSuffix(filePath, caskFileName3)) {
 		return false
 	}
 
-	// Homebrew installs reference paths  /usr/local/Cellar/ and /usr/local/Caskroom
-	// Ensure correct Homebrew path regex before attempting to split the path into its components:
-	// ../Cellar/${appName}/${version}/INSTALL_RECEIPT.json or ../Caskroom/${appName}/${version}/${appName.wrapper.sh}
-	if !r.MatchString(filePath) {
-		return false
-	}
-
-	p := SplitPath(filePath)
-	// Ensure the file path is a valid homebrew Cellar file.
-	if strings.Contains(filePath, cellarPath) && p.AppFile != cellarFileName {
-		return false
-	}
-	// Ensure the file path is a valid homebrew Caskroom file.
-	if strings.Contains(filePath, caskPath) && !strings.Contains(p.AppExt, caskFileName1) && !strings.Contains(p.AppExt, caskFileName2) && !strings.Contains(p.AppExt, caskFileName3) {
-		return false
-	}
-	return true
+	return strings.Contains(filePath, caskPath)
 }
 
 // Extract parses the recognised Homebrew file path and returns information about the installed package.
@@ -109,7 +108,7 @@ func SplitPath(path string) *BrewPath {
 	pathParts := strings.Split(path, "/")
 	for i, pathPart := range pathParts {
 		// Check if the path is a homebrew path and if the path is of a valid length.
-		if len(pathParts) > (i+3) && (pathPart == caskPath || pathPart == cellarPath) {
+		if (pathPart == cellarPath || pathPart == caskPath) && len(pathParts) > (i+3) {
 			return &BrewPath{
 				AppName:    pathParts[i+1],
 				AppVersion: pathParts[i+2],

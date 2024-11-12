@@ -33,48 +33,63 @@ func TestFileRequired(t *testing.T) {
 		wantIsRequired bool
 	}{
 		{
-			name:           "wrong.path.json",
-			path:           "testdata/otherfile.json",
-			wantIsRequired: false,
-		},
-		{
 			name:           "cellar.valid.json",
-			path:           "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
+			path:           "somefolder/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
 			wantIsRequired: true,
 		},
 		{
-			name:           "cellar.invalid.json",
-			path:           "testdata/Cellar/rclone/1.67.0/other.json",
+			name:           "cellar.invalid.json.filename",
+			path:           "somefolder/Cellar/rclone/1.67.0/other.json",
 			wantIsRequired: false,
 		},
 		{
-			name:           "cellar.invalid.json2",
-			path:           "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json2",
+			name:           "cellar.invalid.json.extension",
+			path:           "somefolder/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json2",
 			wantIsRequired: false,
 		},
 		{
-			name:           "caskroom.valid.json",
-			path:           "testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
+			name:           "Caskroom.nonstandard.version.folder.check",
+			path:           "somefolder/Caskroom/somefolder/latest/somefolder-app/source.properties",
 			wantIsRequired: true,
 		},
 		{
-			name:           "regex.invalid.json",
-			path:           "testdata/Caskroom/testapp/1.1.1/testapp.app/Contents/PkgInfo",
-			wantIsRequired: false,
-		},
-		{
-			name:           "caskroom.other.variation",
-			path:           "testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
+			name:           "caskroom.wrapper.sh.variation",
+			path:           "somefolder/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
 			wantIsRequired: true,
 		},
 		{
-			name:           "caskroom.null.folder",
-			path:           "testdata/Caskroom/somefolder/1.1/",
+			name:           "caskroom.source.properties.longer.path.variation",
+			path:           "somefolder/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
+			wantIsRequired: true,
+		},
+		{
+			name:           "caskroom.app.variation",
+			path:           "somefolder/Caskroom/firefox/130.0.1/firefox.app",
+			wantIsRequired: true,
+		},
+		{
+			name:           "caskroom.missing.folder.failure",
+			path:           "somefolder/Caskroom/somefolder/2.3",
 			wantIsRequired: false,
 		},
 		{
-			name:           "caskroom.null.variation",
-			path:           "testdata/Caskroom/somefolder/2.2",
+			name:           "caskroom.missing.file.failure",
+			path:           "somefolder/Caskroom/somefolder/1.1/",
+			wantIsRequired: false,
+		},
+		{
+			name:           "Caskroom.invalid.json.filename",
+			path:           "somefolder/Caskroom/rclone/1.67.0/INSTALL_RECEIPT.json",
+			wantIsRequired: false,
+		},
+		{
+			name:           "generally.wrong.path",
+			path:           "somefolder/otherfile.json",
+			wantIsRequired: false,
+		},
+		{
+			name:           "caskroom.invalid.suffix",
+			path:           "somefolder/Caskroom/testapp/1.1.1/testapp.app/Contents/PkgInfo",
 			wantIsRequired: false,
 		},
 	}
