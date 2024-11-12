@@ -24,6 +24,7 @@ import (
 
 var (
 	errFailedToReadClassName = errors.New("failed to read class name")
+	errFailedToOpenKey       = errors.New("failed to open key")
 )
 
 // OfflineRegistry wraps the regparser library to provide offline (from file) parsing of the Windows
@@ -50,8 +51,13 @@ func NewFromFile(path string) (*OfflineRegistry, error) {
 }
 
 // OpenKey open the requested registry key.
-func (o *OfflineRegistry) OpenKey(path string) Key {
-	return &OfflineKey{o.registry.OpenKey(path)}
+func (o *OfflineRegistry) OpenKey(path string) (Key, error) {
+	key := o.registry.OpenKey(path)
+	if key == nil {
+		return nil, errFailedToOpenKey
+	}
+
+	return &OfflineKey{key: key}, nil
 }
 
 // Close closes the underlying reader.
@@ -70,14 +76,30 @@ func (o *OfflineKey) Name() string {
 	return o.key.Name()
 }
 
+// SubkeyNames returns the names of the subkeys of the key.
+func (o *OfflineKey) SubkeyNames() ([]string, error) {
+	var names []string
+	for _, subkey := range o.key.Subkeys() {
+		names = append(names, subkey.Name())
+	}
+
+	return names, nil
+}
+
 // Subkeys returns the subkeys of the key.
-func (o *OfflineKey) Subkeys() []Key {
+func (o *OfflineKey) Subkeys() ([]Key, error) {
 	var subkeys []Key
 	for _, subkey := range o.key.Subkeys() {
 		subkeys = append(subkeys, &OfflineKey{subkey})
 	}
 
-	return subkeys
+	return subkeys, nil
+}
+
+// Close closes the key.
+// For offline keys, this is a no-op.
+func (o *OfflineKey) Close() error {
+	return nil
 }
 
 // ClassName returns the class name of the key.
@@ -96,13 +118,13 @@ func (o *OfflineKey) ClassName() ([]byte, error) {
 }
 
 // Values returns the different values contained in the key.
-func (o *OfflineKey) Values() []Value {
+func (o *OfflineKey) Values() ([]Value, error) {
 	var values []Value
 	for _, value := range o.key.Values() {
 		values = append(values, &OfflineValue{value})
 	}
 
-	return values
+	return values, nil
 }
 
 // OfflineValue wraps a regparser.CM_KEY_VALUE to provide an implementation of the registry.Value
@@ -117,6 +139,6 @@ func (o *OfflineValue) Name() string {
 }
 
 // Data returns the data contained in the value.
-func (o *OfflineValue) Data() []byte {
-	return o.value.ValueData().Data
+func (o *OfflineValue) Data() ([]byte, error) {
+	return o.value.ValueData().Data, nil
 }

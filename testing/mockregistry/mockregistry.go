@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	errFailedToReadClassName = errors.New("failed to read class name")
+	errFailedToOpenKey = errors.New("failed to open key")
 )
 
 // MockRegistry mocks registry access.
@@ -31,12 +31,12 @@ type MockRegistry struct {
 }
 
 // OpenKey open the requested registry key.
-func (o *MockRegistry) OpenKey(path string) registry.Key {
+func (o *MockRegistry) OpenKey(path string) (registry.Key, error) {
 	if key, ok := o.Keys[path]; ok {
-		return key
+		return key, nil
 	}
 
-	return nil
+	return nil, errFailedToOpenKey
 }
 
 // Close does nothing when mocking.
@@ -57,9 +57,24 @@ func (o *MockKey) Name() string {
 	return o.KName
 }
 
+// Close does nothing when mocking.
+func (o *MockKey) Close() error {
+	return nil
+}
+
+// SubkeyNames returns the names of the subkeys of the key.
+func (o *MockKey) SubkeyNames() ([]string, error) {
+	var names []string
+	for _, subkey := range o.KSubkeys {
+		names = append(names, subkey.Name())
+	}
+
+	return names, nil
+}
+
 // Subkeys returns the subkeys of the key.
-func (o *MockKey) Subkeys() []registry.Key {
-	return o.KSubkeys
+func (o *MockKey) Subkeys() ([]registry.Key, error) {
+	return o.KSubkeys, nil
 }
 
 // ClassName returns the class name of the key.
@@ -68,8 +83,8 @@ func (o *MockKey) ClassName() ([]byte, error) {
 }
 
 // Values returns the different values contained in the key.
-func (o *MockKey) Values() []registry.Value {
-	return o.KValues
+func (o *MockKey) Values() ([]registry.Value, error) {
+	return o.KValues, nil
 }
 
 // MockValue mocks a registry.Value.
@@ -84,6 +99,6 @@ func (o *MockValue) Name() string {
 }
 
 // Data returns the data contained in the value.
-func (o *MockValue) Data() []byte {
-	return o.VData
+func (o *MockValue) Data() ([]byte, error) {
+	return o.VData, nil
 }

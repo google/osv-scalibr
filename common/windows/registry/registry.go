@@ -20,7 +20,7 @@ package registry
 // Registry represents an open registry hive.
 type Registry interface {
 	// OpenKey returns a Key for the given path.
-	OpenKey(path string) Key
+	OpenKey(path string) (Key, error)
 
 	// Close closes the registry hive.
 	Close() error
@@ -31,14 +31,20 @@ type Key interface {
 	// Name returns the name of the key.
 	Name() string
 
+	// Close closes the key.
+	Close() error
+
 	// ClassName returns the name of the class for the key.
 	ClassName() ([]byte, error)
 
-	// Subkeys returns the subkeys of the key.
-	Subkeys() []Key
+	// Subkeys returns the opened subkeys of the key.
+	Subkeys() ([]Key, error)
+
+	// SubkeyNames returns the names of the subkeys of the key.
+	SubkeyNames() ([]string, error)
 
 	// Values returns the different values of the key.
-	Values() []Value
+	Values() ([]Value, error)
 }
 
 // Value represents a value inside a specific key.
@@ -47,5 +53,5 @@ type Value interface {
 	Name() string
 
 	// Data returns the data of the value.
-	Data() []byte
+	Data() ([]byte, error)
 }

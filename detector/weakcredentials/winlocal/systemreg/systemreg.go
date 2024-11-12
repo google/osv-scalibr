@@ -26,7 +26,6 @@ import (
 var (
 	syskeyPaths = []string{"JD", "Skew1", "GBG", "Data"}
 
-	errNoSelectKey         = fmt.Errorf("system hive: failed to open `Select` key")
 	errNoCurrentControlSet = fmt.Errorf("system hive: failed to find CurrentControlSet")
 )
 
@@ -58,9 +57,9 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 	var syskey string
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
 	for _, k := range syskeyPaths {
-		key := s.OpenKey(currentControlSet + k)
-		if key == nil {
-			return nil, fmt.Errorf("failed to open key: %v", currentControlSet+k)
+		key, err := s.OpenKey(currentControlSet + k)
+		if err != nil {
+			return nil, err
 		}
 
 		class, err := key.ClassName()
@@ -92,14 +91,24 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 }
 
 func (s *SystemRegistry) currentControlSet() (uint32, error) {
-	key := s.OpenKey(`Select`)
-	if key == nil {
-		return 0, errNoSelectKey
+	key, err := s.OpenKey(`Select`)
+	if err != nil {
+		return 0, err
 	}
 
-	for _, value := range key.Values() {
+	values, err := key.Values()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, value := range values {
 		if value.Name() == "Current" {
-			return uint32(value.Data()[0]), nil
+			data, err := value.Data()
+			if err != nil {
+				return 0, err
+			}
+
+			return uint32(data[0]), nil
 		}
 	}
 

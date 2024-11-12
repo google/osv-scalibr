@@ -133,7 +133,7 @@ func TestSyskey(t *testing.T) {
 				},
 			},
 			wantErr:     true,
-			wantErrText: `failed to open key: ControlSet001\Control\Lsa\Skew1`,
+			wantErrText: `failed to open key`,
 		},
 		{
 			name: "The key does not decode as hexadecimal",
@@ -170,7 +170,7 @@ func TestSyskey(t *testing.T) {
 				Keys: map[string]registry.Key{},
 			},
 			wantErr:     true,
-			wantErrText: errNoSelectKey.Error(),
+			wantErrText: `failed to open key`,
 		},
 		{
 			name: "Current control set not found",
