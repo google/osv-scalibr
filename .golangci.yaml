@@ -31,7 +31,7 @@ linters:
 #    - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
-#    - gochecknoinits
+    - gochecknoinits
     - gochecksumtype
 #    - gocritic
 #    - gofmt

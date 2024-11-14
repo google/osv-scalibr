@@ -28,6 +28,7 @@ import (
 
 var doc *cyclonedx.BOM
 
+//nolint:gochecknoinits
 func init() {
 	doc = cyclonedx.NewBOM()
 	doc.Metadata = &cyclonedx.Metadata{

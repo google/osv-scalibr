@@ -178,6 +178,7 @@ var (
 
 // LINT.ThenChange(/docs/supported_inventory_types.md)
 
+//nolint:gochecknoinits
 func init() {
 	for _, e := range All {
 		register(e)
