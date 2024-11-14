@@ -47,7 +47,7 @@ linters:
     - grouper
     - importas
 #    - inamedparam
-#    - ineffassign
+    - ineffassign
     - interfacebloat
 #    - intrange
     - loggercheck
