@@ -86,7 +86,7 @@ linters:
 #    - unparam
 #    - unused
 #    - usestdlibvars
-#    - wastedassign
+    - wastedassign
     - whitespace
     - zerologlint
   disable-all: true
