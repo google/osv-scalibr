@@ -94,6 +94,7 @@ message Inventory {
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
+    MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
         25;
     CDXPackageMetadata cdx_metadata = 30;
@@ -289,6 +290,20 @@ message FlatpakPackageMetadata {
   string os_version_id = 7;
   string os_build_id = 8;
   string developer = 9;
+}
+
+// The additional data found in Mac Applications.
+message MacAppsMetadata {
+  string bundle_display_name = 1;
+  string bundle_identifier = 2;
+  string bundle_short_version_string = 3;
+  string bundle_executable = 4;
+  string bundle_name = 5;
+  string bundle_package_type = 6;
+  string bundle_signature = 7;
+  string bundle_version = 8;
+  string product_id = 9;
+  string update_url = 10;
 }
 
 // The additional data for packages extracted from SPDX files.

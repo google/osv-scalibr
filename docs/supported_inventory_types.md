@@ -13,6 +13,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * SNAP
 * Flatpak
 * Homebrew (used by OS X)
+* Applications (Installed on OS X)
 * Windows
   * Build number (using either the registry or DISM)
   * DISM-like hotpatches (using either the registry or DISM)

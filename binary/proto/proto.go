@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -320,6 +321,21 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:    m.OSVersionID,
 				OsBuildId:      m.OSBuildID,
 				Developer:      m.Developer,
+			},
+		}
+	case *macapps.Metadata:
+		i.Metadata = &spb.Inventory_MacAppsMetadata{
+			MacAppsMetadata: &spb.MacAppsMetadata{
+				BundleDisplayName:        m.CFBundleDisplayName,
+				BundleIdentifier:         m.CFBundleIdentifier,
+				BundleShortVersionString: m.CFBundleShortVersionString,
+				BundleExecutable:         m.CFBundleExecutable,
+				BundleName:               m.CFBundleName,
+				BundlePackageType:        m.CFBundlePackageType,
+				BundleSignature:          m.CFBundleSignature,
+				BundleVersion:            m.CFBundleVersion,
+				ProductId:                m.KSProductID,
+				UpdateUrl:                m.KSUpdateURL,
 			},
 		}
 	case *ctrdfs.Metadata:
