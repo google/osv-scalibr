@@ -18,6 +18,7 @@ package image
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/unpack"
+
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -44,6 +46,8 @@ type Layer interface {
 	DiffID() string
 	// Command is the specific command that produced the layer.
 	Command() string
+	// Uncompressed gives the uncompressed tar as a file reader.
+	Uncompressed() (io.ReadCloser, error)
 }
 
 // ChainLayer is a filesystem derived from container layers that can be scanned for software
