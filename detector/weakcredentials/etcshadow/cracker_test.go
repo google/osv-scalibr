@@ -24,7 +24,7 @@ import (
 // All the hashes below are for the string "Password123" and where obtained
 // running: 'mkpasswd -m METHOD PASSWORD'.
 //
-// Note the the obsolete descrypt will limit password to 8 characters and
+// Note the obsolete descrypt will limit password to 8 characters and
 // there will be cracked as the value 'Password'.
 var testHashes = map[string]string{
 	"yescrypt":      "$y$j9T$huXYrFRxr5.EtlA/GqJQg1$R36Nu5MbY5YM0SzRaWbBPyGpM7KMcWtbUmBq5gDZA9B",

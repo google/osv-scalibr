@@ -59,7 +59,7 @@ type pnpmLockfileV6 struct {
 	Packages map[string]pnpmLockPackage `yaml:"packages,omitempty"`
 }
 
-// UnmarshalYAML is a custom unmarshaling function for handling v6 lockfiles.
+// UnmarshalYAML is a custom unmarshalling function for handling v6 lockfiles.
 func (l *pnpmLockfile) UnmarshalYAML(unmarshal func(any) error) error {
 	var lockfileV6 pnpmLockfileV6
 

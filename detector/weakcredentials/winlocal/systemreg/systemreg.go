@@ -47,7 +47,7 @@ func NewFromFile(path string) (*SystemRegistry, error) {
 // Syskey returns the syskey used to decrypt user hashes.
 // The syskey is stored as UTF16-le encoded hexadecimal in the class name of the 4 registry keys
 // denoted by `syskeyPaths`. Once the hexadecimal is decoded, the result is still obfuscated and
-// the order of the bytes needs to be swapped using the indexes denotated in the `transforms` table.
+// the order of the bytes needs to be swapped using the indexes detonated in the `transforms` table.
 func (s *SystemRegistry) Syskey() ([]byte, error) {
 	currentSet, err := s.currentControlSet()
 	if err != nil {

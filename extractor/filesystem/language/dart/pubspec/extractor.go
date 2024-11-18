@@ -36,7 +36,7 @@ type pubspecLockDescription struct {
 
 var _ yaml.Unmarshaler = &pubspecLockDescription{}
 
-// UnmarshalYAML is a custom unmarshals function for pubspecLockDescription.
+// UnmarshalYAML is a custom unmarshalling function for pubspecLockDescription.
 // We need this because descriptions can have two different formats.
 func (pld *pubspecLockDescription) UnmarshalYAML(value *yaml.Node) error {
 	// Duplicating the struct to decode nested fields as a
