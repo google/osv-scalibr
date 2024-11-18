@@ -17,7 +17,6 @@ package samreg
 
 import (
 	"fmt"
-
 	"github.com/google/osv-scalibr/common/windows/registry"
 )
 
