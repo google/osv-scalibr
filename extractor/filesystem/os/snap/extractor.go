@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -101,6 +102,10 @@ var filePathRegex = regexp.MustCompile(`^snap/[^/]*/[^/]*/meta/snap.yaml$`)
 
 // FileRequired returns true if the specified file matches snap.yaml file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !strings.HasSuffix(path, "snap.yaml") {
+		return false
+	}
+
 	if match := filePathRegex.FindString(path); match == "" {
 		return false
 	}

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -110,6 +111,10 @@ var filePathRegex = regexp.MustCompile(`flatpak/app/.*/export/share/metainfo/.*m
 
 // FileRequired returns true if the specified file matches the metainfo xml file pattern.
 func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+	if !strings.HasSuffix(path, "metainfo.xml") {
+		return false
+	}
+
 	if match := filePathRegex.FindString(path); match == "" {
 		return false
 	}
