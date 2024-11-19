@@ -300,7 +300,9 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	}
 
 	for _, ex := range wc.extractors {
-		wc.runExtractor(ex, path, fileinfo)
+		if ex.FileRequired(path, fileinfo) {
+			wc.runExtractor(ex, path)
+		}
 	}
 	return nil
 }
@@ -318,12 +320,7 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileInfo) {
-	required := ex.FileRequired(path, fileinfo)
-	if !required {
-		return
-	}
-
+func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	rc, err := wc.fs.Open(path)
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %v", path, err))
