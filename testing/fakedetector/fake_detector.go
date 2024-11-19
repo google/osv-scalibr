@@ -38,15 +38,15 @@ type fakeDetector struct {
 //
 // The detector returns the specified Finding or error.
 func New(name string, version int, finding *detector.Finding, err error) detector.Detector {
-	var copy *detector.Finding
+	var c *detector.Finding
 	if finding != nil {
-		copy = &detector.Finding{}
-		*copy = *finding
+		c = &detector.Finding{}
+		*c = *finding
 	}
 	return &fakeDetector{
 		DetName:    name,
 		DetVersion: version,
-		Finding:    copy,
+		Finding:    c,
 		Err:        err,
 	}
 }

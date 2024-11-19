@@ -185,9 +185,9 @@ func TestScan(t *testing.T) {
 }
 
 func withDetectorName(f *detector.Finding, det string) *detector.Finding {
-	copy := *f
-	copy.Detectors = []string{det}
-	return &copy
+	c := *f
+	c.Detectors = []string{det}
+	return &c
 }
 
 func TestEnableRequiredExtractors(t *testing.T) {
