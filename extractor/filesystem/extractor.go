@@ -222,8 +222,8 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 		}
 	}
 
-	log.Infof("End status: %d inodes visited, %d Extract calls, %s elapsed",
-		wc.inodesVisited, wc.extractCalls, time.Since(start))
+	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed",
+		wc.dirsVisited, wc.inodesVisited, wc.extractCalls, time.Since(start))
 
 	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
 }
@@ -240,6 +240,7 @@ type walkContext struct {
 	skipDirGlob       glob.Glob
 	maxInodes         int
 	inodesVisited     int
+	dirsVisited       int
 	storeAbsolutePath bool
 
 	// Inventories found.
@@ -315,6 +316,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		return nil
 	}
 	if d.Type().IsDir() {
+		wc.dirsVisited++
 		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
 			return fs.SkipDir
 		}
