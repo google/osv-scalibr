@@ -113,11 +113,14 @@ func TestFileRequired(t *testing.T) {
 				fileSizeBytes = 100 * units.KiB
 			}
 
-			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: fileSizeBytes,
-			}); got != tt.wantRequired {
+			stat := func() (fs.FileInfo, error) {
+				return fakefs.FakeFileInfo{
+					FileName: filepath.Base(tt.path),
+					FileMode: fs.ModePerm,
+					FileSize: fileSizeBytes,
+				}, nil
+			}
+			if got := e.FileRequired(tt.path, stat); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 

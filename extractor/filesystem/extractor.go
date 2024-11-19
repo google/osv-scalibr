@@ -49,7 +49,9 @@ type Extractor interface {
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
-	FileRequired(path string, fileinfo fs.FileInfo) bool
+	// The plugin can call stat to get the file info, which contains the file size. This is a
+	// function, such that Stat can be called lazily.
+	FileRequired(path string, stat func() (fs.FileInfo, error)) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
 	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
@@ -197,7 +199,23 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 	if len(wc.filesToExtract) > 0 {
 		err = walkIndividualFiles(wc.fs, wc.filesToExtract, wc.handleFile)
 	} else {
+		ticker := time.NewTicker(2 * time.Second)
+		quit := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					wc.printStatus()
+				case <-quit:
+					ticker.Stop()
+					return
+				}
+			}
+		}()
+
 		err = internal.WalkDirUnsorted(wc.fs, ".", wc.handleFile)
+
+		close(quit)
 	}
 
 	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed",
@@ -235,6 +253,8 @@ type walkContext struct {
 	lastInodes   int
 	extractCalls int
 	lastExtracts int
+
+	currentPath string
 }
 
 func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) error {
@@ -253,7 +273,7 @@ func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) e
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
-	wc.printStatus(path)
+	wc.currentPath = path
 
 	wc.inodesVisited++
 	if wc.maxInodes > 0 && wc.inodesVisited > wc.maxInodes {
@@ -293,14 +313,24 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
-	fileinfo, err := fs.Stat(wc.fs, path)
-	if err != nil {
-		log.Warnf("os.Stat(%s): %v", path, err)
-		return nil
+	statCalled := false
+	var info fs.FileInfo
+	var statErr error
+	lazyStat := func() (fs.FileInfo, error) {
+		if !statCalled {
+			i, err := fs.Stat(wc.fs, path)
+			if err != nil {
+				log.Warnf("os.Stat(%s): %v", path, err)
+			}
+			statCalled = true
+			info = i
+			statErr = err
+		}
+		return info, statErr
 	}
 
 	for _, ex := range wc.extractors {
-		if ex.FileRequired(path, fileinfo) {
+		if ex.FileRequired(path, lazyStat) {
 			wc.runExtractor(ex, path)
 		}
 	}
@@ -456,14 +486,12 @@ func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, erro
 	return result
 }
 
-func (wc *walkContext) printStatus(path string) {
-	if time.Since(wc.lastStatus) < 2*time.Second {
-		return
-	}
+func (wc *walkContext) printStatus() {
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),
-		wc.extractCalls-wc.lastExtracts, path)
+		wc.extractCalls-wc.lastExtracts, wc.currentPath)
+
 	wc.lastStatus = time.Now()
 	wc.lastInodes = wc.inodesVisited
 	wc.lastExtracts = wc.extractCalls

@@ -231,7 +231,7 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches pnpm-lock.yaml files.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	return filepath.Base(path) == "pnpm-lock.yaml"
 }
 
