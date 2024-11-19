@@ -30,6 +30,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
@@ -181,6 +182,7 @@ func TestRunFS(t *testing.T) {
 		ex             []filesystem.Extractor
 		filesToExtract []string
 		dirsToSkip     []string
+		skipDirGlob    string
 		skipDirRegex   string
 		storeAbsPath   bool
 		maxInodes      int
@@ -283,6 +285,67 @@ func TestRunFS(t *testing.T) {
 			desc:         "skip regex set but not match",
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "asdf",
+			wantInv: []*extractor.Inventory{
+				{
+					Name:      name1,
+					Locations: []string{path1},
+					Extractor: fakeEx1,
+				},
+				{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: fakeEx2,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 6,
+		},
+		{
+			desc:        "Dirs skipped using glob",
+			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
+			skipDirGlob: "dir*",
+			wantInv:     []*extractor.Inventory{},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 3,
+		},
+		{
+			desc:        "Subdirectory skipped using glob",
+			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
+			skipDirGlob: "**/sub",
+			wantInv: []*extractor.Inventory{
+				{
+					Name:      name1,
+					Locations: []string{path1},
+					Extractor: fakeEx1,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 5,
+		},
+		{
+			desc:        "Dirs skipped using glob pattern lists",
+			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
+			skipDirGlob: "{dir1,dir2}",
+			wantInv:     []*extractor.Inventory{},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 3,
+		},
+		{
+			desc:        "No directories matched using glob",
+			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
+			skipDirGlob: "none",
 			wantInv: []*extractor.Inventory{
 				{
 					Name:      name1,
@@ -478,14 +541,19 @@ func TestRunFS(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			fc := &fakeCollector{}
 			var skipDirRegex *regexp.Regexp
+			var skipDirGlob glob.Glob
 			if tc.skipDirRegex != "" {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
+			}
+			if tc.skipDirGlob != "" {
+				skipDirGlob = glob.MustCompile(tc.skipDirGlob)
 			}
 			config := &filesystem.Config{
 				Extractors:     tc.ex,
 				FilesToExtract: tc.filesToExtract,
 				DirsToSkip:     tc.dirsToSkip,
 				SkipDirRegex:   skipDirRegex,
+				SkipDirGlob:    skipDirGlob,
 				MaxInodes:      tc.maxInodes,
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",

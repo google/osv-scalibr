@@ -161,6 +161,15 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
+			desc: "Invalid glob for skipping directories",
+			flags: &cli.Flags{
+				Root:        "/",
+				ResultFile:  "result.textproto",
+				SkipDirGlob: "[",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
 			desc: "Invalid SPDX creator format",
 			flags: &cli.Flags{
 				Root:         "/",

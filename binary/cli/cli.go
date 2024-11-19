@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -123,6 +124,7 @@ type Flags struct {
 	FilesToExtract        []string
 	DirsToSkip            []string
 	SkipDirRegex          string
+	SkipDirGlob           string
 	RemoteImage           string
 	ImagePlatform         string
 	GovulncheckDBPath     string
@@ -176,6 +178,9 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if err := validateRegex(flags.SkipDirRegex); err != nil {
 		return fmt.Errorf("--skip-dir-regex: %w", err)
+	}
+	if err := validateGlob(flags.SkipDirGlob); err != nil {
+		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return err
@@ -256,6 +261,11 @@ func validateRegex(arg string) error {
 	return err
 }
 
+func validateGlob(arg string) error {
+	_, err := glob.Compile(arg)
+	return err
+}
+
 func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
@@ -309,6 +319,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
+	var skipDirGlob glob.Glob
+	if f.SkipDirGlob != "" {
+		skipDirGlob, err = glob.Compile(f.SkipDirGlob)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	scanRoots, err := f.scanRoots()
 	if err != nil {
@@ -324,6 +341,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesToExtract:       f.FilesToExtract,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
+		SkipDirGlob:          skipDirGlob,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
 }
