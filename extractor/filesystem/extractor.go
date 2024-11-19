@@ -179,8 +179,6 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		inventory: []*extractor.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
-
-		requiredDurationPerExtractor: make(map[string]time.Duration),
 	}, nil
 }
 
@@ -199,27 +197,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 	if len(wc.filesToExtract) > 0 {
 		err = walkIndividualFiles(wc.fs, wc.filesToExtract, wc.handleFile)
 	} else {
-		wc.beforeWalkDir = time.Now()
 		err = internal.WalkDirUnsorted(wc.fs, ".", wc.handleFile)
-		wc.walkDirDuration += time.Since(wc.beforeWalkDir)
-
-		if config.PrintDurationAnalysis {
-
-			log.Infof("FS extractors:          %6.3f s", time.Since(start).Seconds())
-			log.Infof("  walkDirDuration:      %6.3f s", wc.walkDirDuration.Seconds())
-			log.Infof("  handleDuration:       %6.3f s", wc.handleDuration.Seconds())
-			log.Infof("    filterDuration:     %6.3f s", wc.filterDuration.Seconds())
-			log.Infof("    statDuration:       %6.3f s", wc.statDuration.Seconds())
-			log.Infof("    FileRequired()")
-			log.Infof("      requiredDuration: %6.3f s", wc.requiredDuration.Seconds())
-			for k, v := range wc.requiredDurationPerExtractor {
-				log.Infof("        FileRequired(%s): %6.3f s", k, v.Seconds())
-			}
-			log.Infof("    Extract()")
-			log.Infof("      openDuration:     %6.3f s", wc.openDuration.Seconds())
-			log.Infof("      extractDuration:  %6.3f s", wc.extractDuration.Seconds())
-			log.Infof("      storageDuration:  %6.3f s", wc.storageDuration.Seconds())
-		}
 	}
 
 	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed",
@@ -257,17 +235,6 @@ type walkContext struct {
 	lastInodes   int
 	extractCalls int
 	lastExtracts int
-
-	beforeWalkDir                time.Time
-	walkDirDuration              time.Duration
-	handleDuration               time.Duration
-	statDuration                 time.Duration
-	filterDuration               time.Duration
-	requiredDuration             time.Duration
-	requiredDurationPerExtractor map[string]time.Duration
-	openDuration                 time.Duration
-	extractDuration              time.Duration
-	storageDuration              time.Duration
 }
 
 func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) error {
@@ -286,15 +253,6 @@ func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) e
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
-	wc.walkDirDuration += time.Since(wc.beforeWalkDir)
-	start := time.Now()
-	defer func() {
-		wc.handleDuration += time.Since(start)
-		wc.beforeWalkDir = time.Now()
-	}()
-
-	startFilter := time.Now()
-
 	wc.printStatus(path)
 
 	wc.inodesVisited++
@@ -334,11 +292,8 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			return nil
 		}
 	}
-	wc.filterDuration += time.Since(startFilter)
 
-	startStat := time.Now()
 	fileinfo, err := fs.Stat(wc.fs, path)
-	wc.statDuration += time.Since(startStat)
 	if err != nil {
 		log.Warnf("os.Stat(%s): %v", path, err)
 		return nil
@@ -364,15 +319,10 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 }
 
 func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileInfo) {
-	startRequired := time.Now()
 	required := ex.FileRequired(path, fileinfo)
-	wc.requiredDuration += time.Since(startRequired)
-	wc.requiredDurationPerExtractor[ex.Name()] += time.Since(startRequired)
 	if !required {
 		return
 	}
-
-	openStart := time.Now()
 
 	rc, err := wc.fs.Open(path)
 	if err != nil {
@@ -387,8 +337,6 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 		return
 	}
 
-	wc.openDuration += time.Since(openStart)
-
 	wc.extractCalls++
 
 	start := time.Now()
@@ -399,10 +347,8 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 		Info:   info,
 		Reader: rc,
 	})
-	wc.extractDuration += time.Since(start)
 	wc.stats.AfterExtractorRun(ex.Name(), time.Since(start), err)
 
-	start = time.Now()
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
 	}
@@ -417,7 +363,6 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, fileinfo fs.FileI
 			wc.inventory = append(wc.inventory, r)
 		}
 	}
-	wc.storageDuration += time.Since(start)
 }
 
 // UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
