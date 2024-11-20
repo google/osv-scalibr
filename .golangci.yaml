@@ -65,7 +65,7 @@ linters:
 #    - paralleltest
 #    - perfsprint
 #    - prealloc
-#    - predeclared
+    - predeclared
     - promlinter
 #    - protogetter
     - reassign
