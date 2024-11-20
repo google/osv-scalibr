@@ -1,0 +1,15 @@
+# proto-file: testing/leakr/proto/leakr.proto
+# proto-message: FileTypeRecipe
+
+name: "scalibr_file_recipe"
+desc: "This file type recipe is used for scalibr. It should be used after the default recipe is applied."
+
+file_config:{
+  name: "Generic TAR based archive"
+  target_type: ARCHIVE_DEFAULT
+  ext: "tar"
+  compression: COMPRESSION_TAR
+  scan_mode: SCAN_SKIP
+  viable_target: true
+  file_group: FG_ARCHIVE_TAR
+}

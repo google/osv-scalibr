@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package image provides functionality to scan a container image by layers for software
-// inventory.
 package image
 
 import (
