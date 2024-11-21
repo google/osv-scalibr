@@ -214,14 +214,15 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 	}
 	p := converter.ToPURL(i)
 	inventoryProto := &spb.Inventory{
-		Name:        i.Name,
-		Version:     i.Version,
-		SourceCode:  sourceCodeIdentifierToProto(i.SourceCode),
-		Purl:        purlToProto(p),
-		Ecosystem:   i.Ecosystem(),
-		Locations:   i.Locations,
-		Extractor:   i.Extractor.Name(),
-		Annotations: annotationsToProto(i.Annotations),
+		Name:         i.Name,
+		Version:      i.Version,
+		SourceCode:   sourceCodeIdentifierToProto(i.SourceCode),
+		Purl:         purlToProto(p),
+		Ecosystem:    i.Ecosystem(),
+		Locations:    i.Locations,
+		Extractor:    i.Extractor.Name(),
+		Annotations:  annotationsToProto(i.Annotations),
+		LayerDetails: layerDetailsToProto(i.LayerDetails),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
 	return inventoryProto, nil
@@ -468,6 +469,18 @@ func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
 		e = spb.Inventory_UNSPECIFIED
 	}
 	return e
+}
+
+func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
+	if ld == nil {
+		return nil
+	}
+	return &spb.LayerDetails{
+		Index:       int32(ld.Index),
+		DiffId:      ld.DiffID,
+		Command:     ld.Command,
+		InBaseImage: ld.InBaseImage,
+	}
 }
 
 func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceCodeIdentifier {

@@ -532,6 +532,47 @@ func TestScanResultToProto(t *testing.T) {
 		},
 		Extractor: "windows/dismpatch",
 	}
+	purlPythonInventoryWithLayerDetails := &extractor.Inventory{
+		Name:      "software",
+		Version:   "1.0.0",
+		Locations: []string{"/file1"},
+		Extractor: wheelegg.New(wheelegg.DefaultConfig()),
+		Metadata: &wheelegg.PythonPackageMetadata{
+			Author:      "author",
+			AuthorEmail: "author@corp.com",
+		},
+		LayerDetails: &extractor.LayerDetails{
+			Index:       0,
+			DiffID:      "hash1",
+			Command:     "command1",
+			InBaseImage: true,
+		},
+	}
+	purlPythonInventoryWithLayerDetailsProto := &spb.Inventory{
+		Name:    "software",
+		Version: "1.0.0",
+		Purl: &spb.Purl{
+			Purl:    "pkg:pypi/software@1.0.0",
+			Type:    purl.TypePyPi,
+			Name:    "software",
+			Version: "1.0.0",
+		},
+		Ecosystem: "PyPI",
+		Locations: []string{"/file1"},
+		Extractor: "python/wheelegg",
+		Metadata: &spb.Inventory_PythonMetadata{
+			PythonMetadata: &spb.PythonPackageMetadata{
+				Author:      "author",
+				AuthorEmail: "author@corp.com",
+			},
+		},
+		LayerDetails: &spb.LayerDetails{
+			Index:       0,
+			DiffId:      "hash1",
+			Command:     "command1",
+			InBaseImage: true,
+		},
+	}
 
 	testCases := []struct {
 		desc         string
@@ -567,6 +608,7 @@ func TestScanResultToProto(t *testing.T) {
 					purlJavascriptInventory,
 					cdxInventory,
 					windowsInventory,
+					purlPythonInventoryWithLayerDetails,
 				},
 				Findings: []*detector.Finding{
 					{
@@ -618,6 +660,7 @@ func TestScanResultToProto(t *testing.T) {
 					purlJavascriptInventoryProto,
 					cdxInventoryProto,
 					windowsInventoryProto,
+					purlPythonInventoryWithLayerDetailsProto,
 				},
 				Findings: []*spb.Finding{
 					{

@@ -108,12 +108,24 @@ message Inventory {
     INSIDE_OS_PACKAGE = 2;
     INSIDE_CACHE_DIR = 3;
   }
+
+  // Details about the layer a package was found in. This should be set only for
+  // container image scanning.
+  LayerDetails layer_details = 35;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
 message SourceCodeIdentifier {
   string repo = 1;
   string commit = 2;
+}
+
+// Details about the layer a package was found in.
+message LayerDetails {
+  int32 index = 1;
+  string diff_id = 2;
+  string command = 3;
+  bool in_base_image = 4;
 }
 
 // Package URL, see https://github.com/package-url/purl-spec

@@ -38,6 +38,14 @@ type SourceCodeIdentifier struct {
 	Commit string
 }
 
+// LayerDetails stores details about the layer a package was found in.
+type LayerDetails struct {
+	Index       int
+	DiffID      string
+	Command     string
+	InBaseImage bool
+}
+
 // Inventory is an instance of a software package or library found by the extractor.
 type Inventory struct {
 	// A human-readable name representation of the package. Note that this field
@@ -51,15 +59,16 @@ type Inventory struct {
 	Version string
 	// Source code level package identifiers.
 	SourceCode *SourceCodeIdentifier
-
 	// Paths or source of files related to the package.
 	Locations []string
 	// The Extractor that found this software instance. Set by the core library.
 	Extractor Extractor
+	// Annotations are additional information about the package that is useful for matching.
+	Annotations []Annotation
+	// Details about the layer that the package was attributed to.
+	LayerDetails *LayerDetails
 	// The additional data found in the package.
 	Metadata any
-
-	Annotations []Annotation
 }
 
 // Annotation are additional information about the inventory.
