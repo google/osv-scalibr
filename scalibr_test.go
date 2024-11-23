@@ -270,9 +270,9 @@ func TestEnableRequiredExtractors(t *testing.T) {
 type fakeExNeedsNetwork struct {
 }
 
-func (fakeExNeedsNetwork) Name() string                                        { return "fake-extractor" }
-func (fakeExNeedsNetwork) Version() int                                        { return 0 }
-func (fakeExNeedsNetwork) FileRequired(path string, fileinfo fs.FileInfo) bool { return false }
+func (fakeExNeedsNetwork) Name() string                                                 { return "fake-extractor" }
+func (fakeExNeedsNetwork) Version() int                                                 { return 0 }
+func (fakeExNeedsNetwork) FileRequired(path string, _ func() (fs.FileInfo, error)) bool { return false }
 func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
 	return nil, nil
 }

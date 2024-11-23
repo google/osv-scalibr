@@ -157,11 +157,14 @@ func TestFileRequired(t *testing.T) {
 
 			var e filesystem.Extractor = archive.New(cfg)
 
-			if got := e.FileRequired(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: tt.fileSizeBytes,
-			}); got != tt.wantRequired {
+			stat := func() (fs.FileInfo, error) {
+				return fakefs.FakeFileInfo{
+					FileName: filepath.Base(tt.path),
+					FileMode: fs.ModePerm,
+					FileSize: tt.fileSizeBytes,
+				}, nil
+			}
+			if got := e.FileRequired(tt.path, stat); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 

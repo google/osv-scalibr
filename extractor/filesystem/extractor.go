@@ -49,7 +49,9 @@ type Extractor interface {
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
-	FileRequired(path string, fileinfo fs.FileInfo) bool
+	// The plugin can call stat to get the file info, which contains the file size. This is a
+	// function, such that Stat can be called lazily.
+	FileRequired(path string, stat func() (fs.FileInfo, error)) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
 	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
 }
@@ -311,14 +313,24 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
-	fileinfo, err := fs.Stat(wc.fs, path)
-	if err != nil {
-		log.Warnf("os.Stat(%s): %v", path, err)
-		return nil
+	statCalled := false
+	var info fs.FileInfo
+	var statErr error
+	lazyStat := func() (fs.FileInfo, error) {
+		if !statCalled {
+			i, err := fs.Stat(wc.fs, path)
+			if err != nil {
+				log.Warnf("os.Stat(%s): %v", path, err)
+			}
+			statCalled = true
+			info = i
+			statErr = err
+		}
+		return info, statErr
 	}
 
 	for _, ex := range wc.extractors {
-		if ex.FileRequired(path, fileinfo) {
+		if ex.FileRequired(path, lazyStat) {
 			wc.runExtractor(ex, path)
 		}
 	}

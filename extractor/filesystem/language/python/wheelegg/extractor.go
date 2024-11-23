@@ -105,12 +105,16 @@ var (
 
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	// For Windows
 	normalizedPath := filepath.ToSlash(path)
 
 	for _, r := range requiredFiles {
 		if strings.HasSuffix(normalizedPath, r) {
+			fileinfo, err := stat()
+			if err != nil {
+				return false
+			}
 			// We only want to skip the file for being too large if it is a relevant
 			// file at all, so we check the file size after checking the file suffix.
 			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
@@ -185,7 +189,8 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		if !e.FileRequired(f.Name, f.FileInfo()) {
+		stat := func() (fs.FileInfo, error) { return f.FileInfo(), nil }
+		if !e.FileRequired(f.Name, stat) {
 			continue
 		}
 		i, err := e.openAndExtract(f, input)

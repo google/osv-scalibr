@@ -55,11 +55,15 @@ func (e Wrapper) Version() int { return e.ExtractorVersion }
 func (e Wrapper) Requirements() *plugin.Capabilities { return &plugin.Capabilities{DirectFS: true} }
 
 // FileRequired returns true if the specified file matches the extractor pattern.
-func (e Wrapper) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Wrapper) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	if !e.Extractor.ShouldExtract(path) {
 		return false
 	}
 
+	fileinfo, err := stat()
+	if err != nil {
+		return false
+	}
 	if e.MaxFileSizeBytes > 0 && fileinfo.Size() > e.MaxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false

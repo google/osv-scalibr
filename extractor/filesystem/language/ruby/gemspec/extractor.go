@@ -86,11 +86,15 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file matched the .gemspec file
 // pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, stat func() (fs.FileInfo, error)) bool {
 	if filepath.Ext(path) != ".gemspec" {
 		return false
 	}
 
+	fileinfo, err := stat()
+	if err != nil {
+		return false
+	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false

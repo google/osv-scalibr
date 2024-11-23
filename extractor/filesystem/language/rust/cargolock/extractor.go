@@ -49,7 +49,7 @@ func (e Extractor) Name() string { return "rust/Cargolock" }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches Cargo lockfile patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
+func (e Extractor) FileRequired(path string, _ func() (fs.FileInfo, error)) bool {
 	return filepath.Base(path) == "Cargo.lock"
 }
 
