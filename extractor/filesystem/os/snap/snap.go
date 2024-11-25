@@ -18,7 +18,6 @@ package snap
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"regexp"
 	"strings"
 
@@ -101,7 +100,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 var filePathRegex = regexp.MustCompile(`^snap/[^/]*/[^/]*/meta/snap.yaml$`)
 
 // FileRequired returns true if the specified file matches snap.yaml file pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
 	if !strings.HasSuffix(path, "snap.yaml") {
 		return false
 	}
@@ -110,6 +110,10 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 		return false
 	}
 
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false

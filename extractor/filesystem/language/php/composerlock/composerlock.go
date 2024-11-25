@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -57,8 +56,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches composer.lock files.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "composer.lock"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "composer.lock"
 }
 
 // Extract extracts packages from a composer.lock file passed through the scan input.

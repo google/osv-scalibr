@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"path"
 	"path/filepath"
 	"slices"
@@ -285,7 +284,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches npm lockfile patterns.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
 	if filepath.Base(path) != "package-lock.json" {
 		return false
 	}
@@ -297,6 +297,10 @@ func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
 		return false
 	}
 
+	fileInfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
 	if e.maxFileSizeBytes > 0 && fileInfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileInfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false

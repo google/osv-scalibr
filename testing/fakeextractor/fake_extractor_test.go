@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
@@ -118,10 +119,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.extractor.FileRequired(test.args.path, fakefs.FakeFileInfo{
+			got := test.extractor.FileRequired(simplefileapi.New(test.args.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(test.args.path),
 				FileMode: test.args.mode,
-			})
+			}))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Fatalf("extractor.FileRequired(%v, %v) returned unexpected result; diff (-want +got):\n%s", test.args.path, test.args.mode, diff)
 			}

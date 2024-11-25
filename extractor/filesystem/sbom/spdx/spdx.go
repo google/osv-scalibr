@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -59,8 +58,8 @@ var extensionHandlers = map[string]extractFunc{
 }
 
 // FileRequired returns true if the specified file is a supported spdx file.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	_, isSupported := findExtractor(path)
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	_, isSupported := findExtractor(api.Path())
 	return isSupported
 }
 

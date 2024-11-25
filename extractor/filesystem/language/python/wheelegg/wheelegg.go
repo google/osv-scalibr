@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/textproto"
 	"path/filepath"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -105,12 +105,18 @@ var (
 
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
 	// For Windows
 	normalizedPath := filepath.ToSlash(path)
 
 	for _, r := range requiredFiles {
 		if strings.HasSuffix(normalizedPath, r) {
+			fileinfo, err := api.Stat()
+			if err != nil {
+				return false
+			}
+
 			// We only want to skip the file for being too large if it is a relevant
 			// file at all, so we check the file size after checking the file suffix.
 			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
@@ -185,7 +191,8 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		if !e.FileRequired(f.Name, f.FileInfo()) {
+
+		if !e.FileRequired(simplefileapi.New(f.Name, f.FileInfo())) {
 			continue
 		}
 		i, err := e.openAndExtract(f, input)

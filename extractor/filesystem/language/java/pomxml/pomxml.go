@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -143,8 +142,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches Maven POM lockfile patterns.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "pom.xml"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "pom.xml"
 }
 
 // Extract extracts packages from pom.xml files passed through the scan input.

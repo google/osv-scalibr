@@ -18,7 +18,6 @@ package cargolock
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -49,8 +48,8 @@ func (e Extractor) Name() string { return "rust/Cargolock" }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file matches Cargo lockfile patterns.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	return filepath.Base(path) == "Cargo.lock"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "Cargo.lock"
 }
 
 // Requirements of the extractor

@@ -85,7 +85,16 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file is marked executable.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+
+	// TODO(b/380419487): This is inefficient, it would be better if gobinary would filter out common
+	// non executable by their file extension.
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
+
 	if !fileinfo.Mode().IsRegular() {
 		// Includes dirs, symlinks, sockets, pipes...
 		return false

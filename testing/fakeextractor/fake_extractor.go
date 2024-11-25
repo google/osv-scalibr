@@ -18,7 +18,6 @@ package fakeextractor
 import (
 	"context"
 	"errors"
-	"io/fs"
 	"path/filepath"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,9 +84,8 @@ func (e *fakeExtractor) Requirements() *plugin.Capabilities { return &plugin.Cap
 // FileRequired returns true if the path was in requiredFiles and its value is true during
 // construction in New(..., requiredFiles, ...) and false otherwise.
 // Note: because mapfs forces all paths to slash, we have to align with it here.
-func (e *fakeExtractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
-	path = filepath.ToSlash(path)
-	return e.requiredFiles[path]
+func (e *fakeExtractor) FileRequired(api filesystem.FileAPI) bool {
+	return e.requiredFiles[filepath.ToSlash(api.Path())]
 }
 
 // Extract extracts inventory data relevant for the extractor from a given file.

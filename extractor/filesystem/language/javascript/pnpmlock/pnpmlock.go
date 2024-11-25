@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -231,8 +230,8 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches pnpm-lock.yaml files.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "pnpm-lock.yaml"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "pnpm-lock.yaml"
 }
 
 // Extract extracts packages from a pnpm-lock.yaml file passed through the scan input.

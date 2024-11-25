@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -110,11 +111,11 @@ func TestFileRequired(t *testing.T) {
 				fileSizeBytes = 100 * units.KiB
 			}
 
-			isRequired := e.FileRequired(test.path, fakefs.FakeFileInfo{
+			isRequired := e.FileRequired(simplefileapi.New(test.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(test.path),
 				FileMode: fs.ModePerm,
 				FileSize: fileSizeBytes,
-			})
+			}))
 			if isRequired != test.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", test.path, isRequired, test.wantRequired)
 			}

@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -54,8 +53,8 @@ var cdxExtensions = map[string]cyclonedx.BOMFileFormat{
 }
 
 // FileRequired returns true if the specified file is a supported cdx file.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
-	return findExtractor(path) != nil
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return findExtractor(api.Path()) != nil
 }
 
 // Extract parses the CycloneDX SBOM and returns a list purls from the SBOM.

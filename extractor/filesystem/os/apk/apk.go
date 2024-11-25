@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -83,18 +82,22 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file matches apk status file pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// Should match the status file.
-	if filepath.ToSlash(path) != "lib/apk/db/installed" {
+	if filepath.ToSlash(api.Path()) != "lib/apk/db/installed" {
 		return false
 	}
 
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 

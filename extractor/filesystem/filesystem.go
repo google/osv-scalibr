@@ -49,9 +49,16 @@ type Extractor interface {
 	// relevant for the extractor.
 	// Note that the plugin doesn't traverse the filesystem itself but relies on the core
 	// library for that.
-	FileRequired(path string, fileinfo fs.FileInfo) bool
+	FileRequired(api FileAPI) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
 	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
+}
+
+// FileAPI is the interface for accessing file information and path.
+type FileAPI interface {
+	// Stat returns the file info for the file.
+	Stat() (fs.FileInfo, error)
+	Path() string
 }
 
 // ScanInput describes one file to extract from.
@@ -179,6 +186,8 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		inventory: []*extractor.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
+
+		fileAPI: &lazyFileAPI{},
 	}, nil
 }
 
@@ -253,6 +262,7 @@ type walkContext struct {
 	lastExtracts int
 
 	currentPath string
+	fileAPI     *lazyFileAPI
 }
 
 func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) error {
@@ -311,18 +321,34 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
-	fileinfo, err := fs.Stat(wc.fs, path)
-	if err != nil {
-		log.Warnf("os.Stat(%s): %v", path, err)
-		return nil
-	}
+	wc.fileAPI.currentPath = path
+	wc.fileAPI.currentStatCalled = false
 
 	for _, ex := range wc.extractors {
-		if ex.FileRequired(path, fileinfo) {
+		if ex.FileRequired(wc.fileAPI) {
 			wc.runExtractor(ex, path)
 		}
 	}
 	return nil
+}
+
+type lazyFileAPI struct {
+	fs                scalibrfs.FS
+	currentPath       string
+	currentFileInfo   fs.FileInfo
+	currentStatErr    error
+	currentStatCalled bool
+}
+
+func (api *lazyFileAPI) Path() string {
+	return api.currentPath
+}
+func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
+	if !api.currentStatCalled {
+		api.currentStatCalled = true
+		api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
+	}
+	return api.currentFileInfo, api.currentStatErr
 }
 
 func (wc *walkContext) shouldSkipDir(path string) bool {
@@ -385,6 +411,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
+	wc.fileAPI.fs = fs
 	return nil
 }
 

@@ -19,7 +19,6 @@ package rpm
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -65,7 +64,7 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired always returns false as RPM extractor is not supported.
-func (e Extractor) FileRequired(path string, _ fs.FileInfo) bool {
+func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 	return false
 }
 

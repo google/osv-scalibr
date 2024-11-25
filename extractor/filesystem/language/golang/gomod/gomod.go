@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -49,8 +48,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches go.mod files.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "go.mod"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "go.mod"
 }
 
 // Extract extracts packages from a go.mod file passed through the scan input.

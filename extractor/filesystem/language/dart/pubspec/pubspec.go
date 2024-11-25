@@ -18,7 +18,6 @@ package pubspec
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -78,8 +77,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file is a pubspec.lock
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "pubspec.lock"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "pubspec.lock"
 }
 
 // Extract extracts Dart packages from pubspec.lock files passed through the input.

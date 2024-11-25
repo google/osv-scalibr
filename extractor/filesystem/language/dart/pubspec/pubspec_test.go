@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -60,7 +61,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
 			e := pubspec.Extractor{}
-			got := e.FileRequired(tt.inputPath, nil)
+			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
 			}

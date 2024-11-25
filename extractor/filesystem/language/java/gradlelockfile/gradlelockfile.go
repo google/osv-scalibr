@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -80,8 +79,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches Gradle lockfile patterns.
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	base := filepath.Base(path)
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	base := filepath.Base(api.Path())
 
 	return slices.Contains([]string{"buildscript-gradle.lockfile", "gradle.lockfile"}, base)
 }

@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io/fs"
 	"regexp"
 	"strings"
 
@@ -110,7 +109,8 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 var filePathRegex = regexp.MustCompile(`flatpak/app/.*/export/share/metainfo/.*metainfo.xml$`)
 
 // FileRequired returns true if the specified file matches the metainfo xml file pattern.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
 	if !strings.HasSuffix(path, "metainfo.xml") {
 		return false
 	}
@@ -119,6 +119,10 @@ func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
 		return false
 	}
 
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false

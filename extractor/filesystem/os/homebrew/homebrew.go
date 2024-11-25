@@ -17,7 +17,6 @@ package homebrew
 
 import (
 	"context"
-	"io/fs"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -58,8 +57,8 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSMac} }
 
 // FileRequired returns true if the specified file path matches the homebrew path.
-func (e Extractor) FileRequired(path string, fileinfo fs.FileInfo) bool {
-	filePath := strings.ToLower(path)
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	filePath := strings.ToLower(api.Path())
 	// Homebrew installs are in the following paths:
 	// ../Cellar/${appName}/${version}/... or ../Caskroom/${appName}/${version}/...
 	// Example of paths:

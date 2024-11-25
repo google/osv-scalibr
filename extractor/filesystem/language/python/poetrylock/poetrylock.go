@@ -18,7 +18,6 @@ package poetrylock
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -62,8 +61,8 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches poetry lockfile patterns
-func (e Extractor) FileRequired(path string, fileInfo fs.FileInfo) bool {
-	return filepath.Base(path) == "poetry.lock"
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "poetry.lock"
 }
 
 // Extract extracts packages from poetry.lock files passed through the scan input.

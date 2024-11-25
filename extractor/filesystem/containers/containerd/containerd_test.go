@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -71,7 +72,7 @@ func TestFileRequired(t *testing.T) {
 				t.Skipf("Skipping test on %s", runtime.GOOS)
 			}
 
-			isRequired := e.FileRequired(tt.path, nil)
+			isRequired := e.FileRequired(simplefileapi.New(tt.path, nil))
 			if isRequired != tt.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantIsRequired)
 			}
