@@ -10,7 +10,7 @@ interface and have read access to all files on the filesystem through it.
 
 ## Steps for writing a new detector
 
-See the [CIS benchmark detector](/detector/cis/generic_linux/etcpasswdpermissions/detector.go)
+See the [CIS benchmark detector](/detector/cis/generic_linux/etcpasswdpermissions/etcpasswdpermissions.go)
 as an example.
 
 1.  Set up your detector package in an [appropriate location](#code-location).
@@ -76,14 +76,14 @@ Detectors also receive an
 param that can be used to query the software inventory that the extraction step
 found on the filesystem. This can be used to run the detection logic on each relevant
 software found, or exit early if none are installed. For an example use case see the
-[govulncheck Detector](/detector/govulncheck/binary/detector.go).
+[govulncheck Detector](/detector/govulncheck/binary/binary.go).
 
 ## Output format
 
 Detectors return their vulnerability findings in the
 [`Finding`](https://github.com/google/osv-scalibr/blob/28397d99/detector/detector.go#L47)
 struct. See the comments in the `Finding` struct and
-[existing Detector implementations](/detector/govulncheck/binary/detector.go)
+[existing Detector implementations](/detector/govulncheck/binary/binary.go)
 for guidance on how to fill it out. Keep in mind that findings are uniquely
 identified by the `AdvisoryID` and each detector should return a unique
 `AdvisoryID` for their findings.

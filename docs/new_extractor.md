@@ -8,7 +8,7 @@ There should be one Extractor per parsing logic. In python for example there are
 multiple files to represent installed packages. `PKG-INFO`, `egg-info` and
 `METADATA` have the same format (MIME type) and therefore same parsing logic.
 Therefore there is one extractor
-([wheelegg](/extractor/filesystem/language/python/wheelegg/extractor.go))
+([wheelegg](/extractor/filesystem/language/python/wheelegg/wheelegg.go))
 for all of them. `.egg` files are zip files which contain one of the previously
 mentioned files, thus `.egg` is also handled by this extractor. On the other
 side, there are files which have a different format, e.g. `requirements.txt`,
@@ -33,7 +33,7 @@ They have to implement the
 [Extractor](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L45)
 interface.
 
-<!--  See extractor/filesystem/extractor.go symbol \bExtractor\b -->
+<!--  See extractor/filesystem/filesystem.go symbol \bExtractor\b -->
 
 <!--  See plugin/plugin.go symbol Plugin -->
 
@@ -64,7 +64,7 @@ SCALIBR will call `Extract` with
 [ScanInput](https://github.com/google/osv-scalibr/blob/28397d99/extractor/filesystem/extractor.go#L55),
 which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
-<!--  See extractor/filesystem/extractor.go symbol ScanInput -->
+<!--  See extractor/filesystem/filesystem.go symbol ScanInput -->
 
 ## Output
 
@@ -108,7 +108,7 @@ Use this decision tree to identify where to add the extractor.
 
 ## Step by step
 
-You can take the [package.json](/extractor/filesystem/language/javascript/packagejson/extractor.go)
+You can take the [package.json](/extractor/filesystem/language/javascript/packagejson/packagejson.go)
 extractor as an example.
 
 1.  Implement `Name()` to return a unique name. Best practice is to use the path
