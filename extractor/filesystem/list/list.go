@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	// OSV extractors.
-	"github.com/google/osv-scanner/pkg/lockfile"
 
 	// SCALIBR internal extractors.
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -49,6 +48,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -59,12 +59,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // LINT.IfChange
@@ -107,7 +105,7 @@ var (
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
-	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig())}
+	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig()), &gemfilelock.Extractor{}}
 	// Rust extractors.
 	Rust []filesystem.Extractor = []filesystem.Extractor{cargolock.Extractor{}}
 	// SBOM extractors.
@@ -153,12 +151,6 @@ var (
 		Containers,
 	)
 
-	// Untested extractors are OSV extractors without tests.
-	// TODO(b/307735923): Add tests for these and move them into All.
-	Untested []filesystem.Extractor = []filesystem.Extractor{
-		osv.Wrapper{ExtractorName: "ruby/gemfile", ExtractorVersion: 0, PURLType: purl.TypeGem, Extractor: lockfile.GemfileLockExtractor{}},
-	}
-
 	extractorNames = map[string][]filesystem.Extractor{
 		// Languages.
 		"cpp":        Cpp,
@@ -179,16 +171,15 @@ var (
 		"containers": Containers,
 
 		// Collections.
-		"default":  Default,
-		"all":      All,
-		"untested": Untested,
+		"default": Default,
+		"all":     All,
 	}
 )
 
 // LINT.ThenChange(/docs/supported_inventory_types.md)
 
 func init() {
-	for _, e := range append(All, Untested...) {
+	for _, e := range All {
 		register(e)
 	}
 }
@@ -206,7 +197,7 @@ func register(d filesystem.Extractor) {
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
-	return FilterByCapabilities(slices.Concat(All, Untested), capabs)
+	return FilterByCapabilities(All, capabs)
 }
 
 // FilterByCapabilities returns all extractors from the given list that can run
