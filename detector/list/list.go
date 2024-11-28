@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
+	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -44,6 +45,7 @@ var Govulncheck []detector.Detector = []detector.Detector{&binary.Detector{}}
 var Weakcreds []detector.Detector = []detector.Detector{
 	&etcshadow.Detector{},
 	&filebrowser.Detector{},
+	&winlocal.Detector{},
 }
 
 // Default detectors that are recommended to be enabled.

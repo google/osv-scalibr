@@ -77,6 +77,7 @@ func TestDetectorsFromNames(t *testing.T) {
 			wantDets: []string{
 				"weakcredentials/etcshadow",
 				"weakcredentials/filebrowser",
+				"weakcredentials/winlocal",
 			},
 		},
 		{
