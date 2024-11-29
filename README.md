@@ -18,6 +18,8 @@ To build SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/
 
 ### As a standalone binary
 
+**Note:** This binary is a thin wrapper around the OSV-SCALIBR library. In the near future the [`osv-scanner`](https://github.com/google/osv-scanner) CLI will make all capabilities of OSV-SCALIBR available with convenience features such as vuln matching through OSV.dev.
+
 1. `go install github.com/google/osv-scalibr/binary/scalibr@latest`
 1. `scalibr --result=result.textproto`
 
