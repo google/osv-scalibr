@@ -225,8 +225,10 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 		close(quit)
 	}
 
-	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed",
-		wc.dirsVisited, wc.inodesVisited, wc.extractCalls, time.Since(start))
+	// On Windows, elapsed and wall time are probably the same. On Linux and Mac they are different,
+	// if Scalibr was suspended during runtime.
+	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed, %s wall time",
+		wc.dirsVisited, wc.inodesVisited, wc.extractCalls, time.Since(start), time.Duration(time.Now().UnixNano()-start.UnixNano()))
 
 	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
 }
