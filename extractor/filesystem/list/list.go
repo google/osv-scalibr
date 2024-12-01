@@ -51,6 +51,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
@@ -105,6 +106,7 @@ var (
 		pdmlock.Extractor{},
 		poetrylock.Extractor{},
 		condameta.Extractor{},
+		uvlock.Extractor{},
 	}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{
