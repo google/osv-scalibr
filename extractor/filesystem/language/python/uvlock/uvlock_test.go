@@ -147,6 +147,25 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "source git",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/source-git.lock",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "ruff",
+					Version:   "0.8.1",
+					Locations: []string{"testdata/source-git.lock"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "84748be16341b76e073d117329f7f5f4ee2941ad",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "grouped packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/grouped-packages.lock",
