@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -32,6 +33,7 @@ import (
 
 type uvLockPackageSource struct {
 	Virtual  string `toml:"virtual"`
+	Git      string `toml:"git"`
 	Registry string `toml:"registry"`
 }
 
@@ -100,12 +102,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
+		_, commit, _ := strings.Cut(lockPackage.Source.Git, "#")
+
 		pkgDetails := &extractor.Inventory{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
 			SourceCode: &extractor.SourceCodeIdentifier{
-				Commit: "",
+				Commit: commit,
 			},
 		}
 
