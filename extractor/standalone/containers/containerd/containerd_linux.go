@@ -238,7 +238,6 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	if err != nil {
 		log.Errorf("Failed to obtain container info for container %v, error: %v", task.ID, err)
 		return md, err
-
 	}
 
 	image, err := container.Image(ctx)

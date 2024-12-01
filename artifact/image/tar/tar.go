@@ -28,7 +28,6 @@ import (
 
 // SaveToTarball saves a container image to a tarball.
 func SaveToTarball(path string, image v1.Image) error {
-
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create tar file %q: %w", path, err)

@@ -211,7 +211,6 @@ func (c *Container) Info(ctx context.Context, opts ...containerd.InfoOpts) (cont
 
 func (c *Container) Task(context.Context, cio.Attach) (containerd.Task, error) {
 	return NewFakeTask(c.rootfs), nil
-
 }
 
 // Image returns the underlying container Image object with a given digest.

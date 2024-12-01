@@ -121,7 +121,6 @@ func (cfg *UnpackerConfig) WithRequirer(requirer require.FileRequirer) *Unpacker
 
 // NewUnpacker creates a new Unpacker.
 func NewUnpacker(cfg *UnpackerConfig) (*Unpacker, error) {
-
 	if cfg.SymlinkResolution == "" {
 		return nil, errors.New("cfg.SymlinkResolution was not specified")
 	}
@@ -226,7 +225,6 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 // Each layer is unpacked into a subdirectory of dir where the sub-directory name is the layer digest.
 // The returned list contains the digests of the image layers from in order oldest/base layer first, and most-recent/top layer last.
 func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
-
 	if u.SymlinkResolution == SymlinkIgnore {
 		return nil, fmt.Errorf("symlink resolution strategy %q is not supported", u.SymlinkResolution)
 	}
@@ -292,7 +290,6 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 }
 
 func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, symlinkErrStrategy SymlinkErrStrategy, requirer require.FileRequirer, requiredTargets map[string]bool, finalPass bool, maxSizeBytes int64) (map[string]bool, error) {
-
 	tarReader := tar.NewReader(reader)
 
 	// Defensive copy of requiredTargets to avoid modifying the original.

@@ -50,7 +50,6 @@ var AllowUnexported = cmp.AllowUnexported(fakeExtractor{})
 // The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
 // The fakeExtractor returns the inventory and error from pathToNamesErr given the same path to Extract(...).
 func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
-
 	rfs := map[string]bool{}
 	for _, path := range requiredFiles {
 		rfs[path] = true
