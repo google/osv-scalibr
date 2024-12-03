@@ -28,6 +28,7 @@ import (
 
 	"archive/tar"
 	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
@@ -85,22 +86,32 @@ func (img *Image) CleanUp() error {
 	return os.RemoveAll(img.ExtractDir)
 }
 
-// LoadFrom takes in a tarPath and produces an Image.
-func LoadFrom(tarPath string, config *Config) (*Image, error) {
+// FromRemoteName creates an Image from a remote container image name.
+func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Option) (*Image, error) {
+	v1Image, err := scalibrImage.V1ImageFromRemoteName(imageName, imageOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
+	}
+	return FromV1Image(v1Image, config)
+}
+
+// FromTarball creates an Image from a tarball file that stores a container image.
+func FromTarball(tarPath string, config *Config) (*Image, error) {
 	v1Image, err := tarball.ImageFromPath(tarPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from tarball with path %q: %w", tarPath, err)
 	}
-	return Load(v1Image, config)
+	return FromV1Image(v1Image, config)
 }
 
-// Load takes in v1.Image produces an layer-scannable Image. The steps taken are as follows:
+// FromV1Image takes a v1.Image and produces a layer-scannable Image. The steps taken are as
+// follows:
 //
 //		(1) Retrieves v1.Layers, configFile. Creates tempPath to store the image files.
 //		(2) Initializes the output image and the chain layers.
 //		(3) Unpacks the layers by looping through the layers in reverse, while filling in the files
 //	      into the appropriate chain layer.
-func Load(v1Image v1.Image, config *Config) (*Image, error) {
+func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	configFile, err := v1Image.ConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file: %w", err)
@@ -191,6 +202,10 @@ func Load(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 	return &outputImage, nil
 }
+
+// ========================================================
+// Helper functions
+// ========================================================
 
 // initializeChainLayers initializes the chain layers based on the config file history and the
 // v1.Layers found in the image from the tarball.
