@@ -67,10 +67,9 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:             "Valid_DeepDir_File_Path_for_Info.plist",
-			path:             "Applications/GoogleChrome.app/Contents/Helpers/Applications/Contents/Info.plist",
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
+			name:         "no_sub_packages",
+			path:         "Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/Info.plist",
+			wantRequired: false,
 		},
 		{
 			name:             "Info.plist_file_required_if_file_size<max_file_size",

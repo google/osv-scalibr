@@ -99,6 +99,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
+	// Skip sub packages.
+	if strings.Count(path, "/Contents/") != 1 {
+		return false
+	}
+
 	fileinfo, err := api.Stat()
 	if err != nil {
 		return false
