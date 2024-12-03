@@ -72,7 +72,6 @@ func (fakeV1Layer *fakeV1Layer) MediaType() (types.MediaType, error) {
 }
 
 func TestConvertV1Layer(t *testing.T) {
-
 	reader := io.NopCloser(nil)
 	tests := []struct {
 		name      string
@@ -306,7 +305,6 @@ func TestChainFSOpen(t *testing.T) {
 			if diff := cmp.Diff(gotFile, tc.wantNode, cmp.AllowUnexported(fileNode{})); tc.wantNode != nil && diff != "" {
 				t.Errorf("Open(%v) returned file: %v, want file: %v", tc.path, gotFile, tc.wantNode)
 			}
-
 		})
 	}
 }

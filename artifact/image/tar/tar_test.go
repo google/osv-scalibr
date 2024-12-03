@@ -80,7 +80,6 @@ func filesMatch(t *testing.T, path1, path2 string) bool {
 }
 
 func mustHashFile(t *testing.T, path string) string {
-
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatalf("os.Open(%q) error: %v", path, err)

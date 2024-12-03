@@ -102,7 +102,6 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 
 	return nil, nil
-
 }
 
 func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
@@ -164,7 +163,6 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 
 // checkLogin checks if the login with default credentials is successful.
 func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
-
 	client := &http.Client{Timeout: requestTimeout}
 	targetURL := fmt.Sprintf("http://%s:%d/api/login", fileBrowserIP, fileBrowserPort)
 

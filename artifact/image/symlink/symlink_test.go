@@ -22,7 +22,6 @@ import (
 )
 
 func TestTargetOutsideRoot(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		path   string
@@ -78,5 +77,4 @@ func TestTargetOutsideRoot(t *testing.T) {
 			}
 		})
 	}
-
 }

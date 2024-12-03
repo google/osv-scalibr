@@ -328,7 +328,6 @@ func TestLoadFrom(t *testing.T) {
 
 				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries)
 			}
-
 		})
 	}
 }

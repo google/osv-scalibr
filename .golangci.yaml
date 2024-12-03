@@ -87,6 +87,6 @@ linters:
 #    - unused
 #    - usestdlibvars
 #    - wastedassign
-#    - whitespace
+    - whitespace
     - zerologlint
   disable-all: true

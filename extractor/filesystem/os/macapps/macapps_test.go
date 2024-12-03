@@ -36,7 +36,6 @@ import (
 )
 
 func TestFileRequired(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		path             string
@@ -129,7 +128,6 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		path             string

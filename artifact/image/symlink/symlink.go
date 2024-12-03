@@ -198,7 +198,6 @@ func removeLayerPathPrefix(path, layerPath string) string {
 // For example, if a symlink with path `a/symlink.txt“ points to “../../file.text“, then
 // this function would return true because the target file is outside of the root directory.
 func TargetOutsideRoot(path, target string) bool {
-
 	// Create a marker directory as root to check if the target path is outside of the root directory.
 	markerDir := uuid.New().String()
 	if filepath.IsAbs(target) {

@@ -313,7 +313,6 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-
 			r, err := os.Open(tt.path)
 			defer func() {
 				if err = r.Close(); err != nil {
