@@ -91,6 +91,20 @@ func TestExtractor_Extract(t *testing.T) {
 			WantInventory: []*extractor.Inventory{},
 		},
 		{
+			Name: "empty file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty.lock",
+			},
+			WantInventory: []*extractor.Inventory{},
+		},
+		{
+			Name: "no dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty.lock",
+			},
+			WantInventory: []*extractor.Inventory{},
+		},
+		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
