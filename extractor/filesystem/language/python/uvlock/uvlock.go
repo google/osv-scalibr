@@ -97,6 +97,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	for _, lockPackage := range parsedLockfile.Packages {
+		// skip including the root "package", since its name and version are most likely arbitrary
 		if lockPackage.Source.Virtual == "." {
 			continue
 		}
