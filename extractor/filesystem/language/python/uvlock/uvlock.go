@@ -52,9 +52,8 @@ type uvOptionalDependency struct {
 	Name string `toml:"name"`
 }
 type uvLockFile struct {
-	Version  int                               `toml:"version"`
-	Packages []uvLockPackage                   `toml:"package"`
-	Groups   map[string][]uvOptionalDependency `toml:"package.optional-dependencies"`
+	Version  int             `toml:"version"`
+	Packages []uvLockPackage `toml:"package"`
 }
 
 // Extractor extracts python packages from uv.lock files.
