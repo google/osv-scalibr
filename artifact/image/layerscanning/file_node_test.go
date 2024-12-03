@@ -16,6 +16,8 @@ package image
 
 import (
 	"io/fs"
+	"os"
+	"path"
 	"testing"
 )
 
@@ -50,17 +52,236 @@ var (
 	}
 )
 
-// TODO: b/377551664 - Add tests for the Stat, Read, and Close methods for the fileNode type.
+// TODO: b/377551664 - Add tests for the Stat method for the fileNode type.
 func TestStat(t *testing.T) {
 	return
 }
 
 func TestRead(t *testing.T) {
-	return
+	const bufferSize = 20
+
+	tempDir := t.TempDir()
+	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+
+	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
+	}
+	// Close the file after the test. The file should be closed via the fileNode.Close method,
+	// however, this test explicitly closes the file since the fileNode.Close method is tested in a
+	// separate test.
+	defer openedRootFile.Close()
+
+	os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
+	os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
+
+	fileNodeWithUnopenedFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/bar",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+	fileNodeWithOpenedFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/baz",
+		isWhiteout:    false,
+		mode:          filePermission,
+		file:          openedRootFile,
+	}
+	fileNodeNonRootFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/dir1/foo",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+	fileNodeNonExistentFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/dir1/xyz",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+	fileNodeWhiteoutFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/dir1/abc",
+		isWhiteout:    true,
+		mode:          filePermission,
+	}
+	tests := []struct {
+		name    string
+		node    *fileNode
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "unopened root file",
+			node: fileNodeWithUnopenedFile,
+			want: "bar",
+		},
+		{
+			name: "opened root file",
+			node: fileNodeWithOpenedFile,
+			want: "baz",
+		},
+		{
+			name: "non-root file",
+			node: fileNodeNonRootFile,
+			want: "foo",
+		},
+		{
+			name:    "non-existent file",
+			node:    fileNodeNonExistentFile,
+			wantErr: true,
+		},
+		{
+			name:    "whiteout file",
+			node:    fileNodeWhiteoutFile,
+			wantErr: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotBytes := make([]byte, bufferSize)
+			gotNumBytesRead, gotErr := tc.node.Read(gotBytes)
+
+			if gotErr != nil {
+				if tc.wantErr {
+					return
+				}
+				t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+			}
+
+			gotContent := string(gotBytes[:gotNumBytesRead])
+			if gotContent != tc.want {
+				t.Errorf("Read(%v) = %v, want: %v", tc.node, gotContent, tc.want)
+			}
+
+			// Close the file. The Close method is tested in a separate test.
+			tc.node.Close()
+		})
+	}
 }
 
 func TestClose(t *testing.T) {
-	return
+	const bufferSize = 20
+
+	tempDir := t.TempDir()
+	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+
+	fileNodeWithUnopenedFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/bar",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+	fileNodeNonExistentFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/dir1/xyz",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+
+	tests := []struct {
+		name string
+		node *fileNode
+	}{
+		{
+			name: "unopened root file",
+			node: fileNodeWithUnopenedFile,
+		},
+		{
+			name: "non-existent file",
+			node: fileNodeNonExistentFile,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotErr := tc.node.Close()
+
+			if gotErr != nil {
+				t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+			}
+		})
+	}
+}
+
+func TestReadingAfterClose(t *testing.T) {
+	const bufferSize = 20
+	const readAndCloseEvents = 2
+
+	tempDir := t.TempDir()
+	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
+	}
+
+	fileNodeWithUnopenedFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/bar",
+		isWhiteout:    false,
+		mode:          filePermission,
+	}
+	fileNodeWithOpenedFile := &fileNode{
+		extractDir:    tempDir,
+		originLayerID: "",
+		virtualPath:   "/baz",
+		isWhiteout:    false,
+		mode:          filePermission,
+		file:          openedRootFile,
+	}
+
+	tests := []struct {
+		name    string
+		node    *fileNode
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "unopened root file",
+			node: fileNodeWithUnopenedFile,
+			want: "bar",
+		},
+		{
+			name: "opened root file",
+			node: fileNodeWithOpenedFile,
+			want: "baz",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i := 0; i < readAndCloseEvents; i++ {
+				gotBytes := make([]byte, bufferSize)
+				gotNumBytesRead, gotErr := tc.node.Read(gotBytes)
+
+				if gotErr != nil {
+					if tc.wantErr {
+						return
+					}
+					t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+				}
+
+				gotContent := string(gotBytes[:gotNumBytesRead])
+				if gotContent != tc.want {
+					t.Errorf("Read(%v) = %v, want: %v", tc.node, gotContent, tc.want)
+				}
+
+				err = tc.node.Close()
+				if err != nil {
+					t.Fatalf("Close(%v) returned error: %v", tc.node, err)
+				}
+			}
+		})
+	}
 }
 
 func TestRealFilePath(t *testing.T) {
