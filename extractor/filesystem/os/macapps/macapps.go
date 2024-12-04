@@ -185,7 +185,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	i := &extractor.Inventory{
-		Name:      metadata.CFBundleDisplayName,
+		Name:      metadata.CFBundleName,
 		Version:   metadata.CFBundleShortVersionString,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
