@@ -146,8 +146,8 @@ func TestFileRequired(t *testing.T) {
 				wantResultMetric = stats.FileRequiredResultOK
 			}
 			gotResultMetric := collector.FileRequiredResult(tt.path)
-			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
-				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
+			if wantResultMetric != "" && gotResultMetric != wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
 			}
 		})
 	}

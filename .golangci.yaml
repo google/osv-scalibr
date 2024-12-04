@@ -47,7 +47,7 @@ linters:
     - grouper
     - importas
 #    - inamedparam
-#    - ineffassign
+    - ineffassign
     - interfacebloat
 #    - intrange
     - loggercheck
@@ -86,7 +86,7 @@ linters:
 #    - unparam
 #    - unused
 #    - usestdlibvars
-#    - wastedassign
+    - wastedassign
     - whitespace
     - zerologlint
   disable-all: true

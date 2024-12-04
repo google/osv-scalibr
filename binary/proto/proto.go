@@ -78,7 +78,7 @@ func typeForPath(filePath string) (*fileType, error) {
 		}
 	}
 
-	isBinProto := false
+	var isBinProto bool
 	switch ext {
 	case ".binproto":
 		isBinProto = true
