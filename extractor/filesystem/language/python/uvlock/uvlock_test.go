@@ -116,9 +116,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "emoji",
 					Version:   "2.14.0",
 					Locations: []string{"testdata/one-package.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -135,9 +132,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "emoji",
 					Version:   "2.14.0",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -146,9 +140,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "protobuf",
 					Version:   "4.25.5",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -184,9 +175,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "emoji",
 					Version:   "2.14.0",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -195,9 +183,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "click",
 					Version:   "8.1.7",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"cli"},
 					},
@@ -206,9 +191,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "colorama",
 					Version:   "0.4.6",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -217,9 +199,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "black",
 					Version:   "24.10.0",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
@@ -228,9 +207,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "flake8",
 					Version:   "7.1.1",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"test"},
 					},
@@ -239,9 +215,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "mccabe",
 					Version:   "0.7.0",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -250,9 +223,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "mypy-extensions",
 					Version:   "1.0.0",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -261,9 +231,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "packaging",
 					Version:   "24.2",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -272,9 +239,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "pathspec",
 					Version:   "0.12.1",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -283,9 +247,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "platformdirs",
 					Version:   "4.3.6",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -294,9 +255,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "pycodestyle",
 					Version:   "2.12.1",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -305,9 +263,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "pyflakes",
 					Version:   "3.2.0",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -316,9 +271,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "tomli",
 					Version:   "2.2.1",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -327,9 +279,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "typing-extensions",
 					Version:   "4.12.2",
 					Locations: []string{"testdata/grouped-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},

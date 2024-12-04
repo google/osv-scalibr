@@ -108,9 +108,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
-			SourceCode: &extractor.SourceCodeIdentifier{
+		}
+
+		if commit != "" {
+			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: commit,
-			},
+			}
 		}
 
 		depGroupVals := []string{}
