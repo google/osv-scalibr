@@ -75,11 +75,11 @@ func comparePackagistSpecialVersions(a, b string) int {
 }
 
 func comparePackagistComponents(a, b []string) int {
-	min := minInt(len(a), len(b))
+	minLen := minInt(len(a), len(b))
 
 	var compare int
 
-	for i := 0; i < min; i++ {
+	for i := 0; i < minLen; i++ {
 		ai, aIsNumber := convertToBigInt(a[i])
 		bi, bIsNumber := convertToBigInt(b[i])
 
