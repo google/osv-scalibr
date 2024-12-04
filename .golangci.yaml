@@ -20,7 +20,7 @@ linters:
 #    - depguard
     - dogsled
 #    - dupl
-#    - dupword
+    - dupword
     - durationcheck
 #    - errcheck
 #    - errchkjson
