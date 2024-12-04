@@ -27,6 +27,19 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
+func inventory(t *testing.T, name string, version string, location string) *extractor.Inventory {
+	t.Helper()
+
+	return &extractor.Inventory{
+		Name:      name,
+		Version:   version,
+		Locations: []string{location},
+		Metadata: osv.DepGroupMetadata{
+			DepGroupVals: []string{},
+		},
+	}
+}
+
 func TestExtractor_FileRequired(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -112,14 +125,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/one-package.lock",
 			},
 			WantInventory: []*extractor.Inventory{
-				{
-					Name:      "emoji",
-					Version:   "2.14.0",
-					Locations: []string{"testdata/one-package.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
+				inventory(t, "emoji", "2.14.0", "testdata/one-package.lock"),
 			},
 		},
 		{
@@ -128,22 +134,8 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/two-packages.lock",
 			},
 			WantInventory: []*extractor.Inventory{
-				{
-					Name:      "emoji",
-					Version:   "2.14.0",
-					Locations: []string{"testdata/two-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "protobuf",
-					Version:   "4.25.5",
-					Locations: []string{"testdata/two-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
+				inventory(t, "emoji", "2.14.0", "testdata/two-packages.lock"),
+				inventory(t, "protobuf", "4.25.5", "testdata/two-packages.lock"),
 			},
 		},
 		{
@@ -171,14 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/grouped-packages.lock",
 			},
 			WantInventory: []*extractor.Inventory{
-				{
-					Name:      "emoji",
-					Version:   "2.14.0",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
+				inventory(t, "emoji", "2.14.0", "testdata/grouped-packages.lock"),
 				{
 					Name:      "click",
 					Version:   "8.1.7",
@@ -187,14 +172,7 @@ func TestExtractor_Extract(t *testing.T) {
 						DepGroupVals: []string{"cli"},
 					},
 				},
-				{
-					Name:      "colorama",
-					Version:   "0.4.6",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
+				inventory(t, "colorama", "0.4.6", "testdata/grouped-packages.lock"),
 				{
 					Name:      "black",
 					Version:   "24.10.0",
@@ -211,78 +189,15 @@ func TestExtractor_Extract(t *testing.T) {
 						DepGroupVals: []string{"test"},
 					},
 				},
-				{
-					Name:      "mccabe",
-					Version:   "0.7.0",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "mypy-extensions",
-					Version:   "1.0.0",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "packaging",
-					Version:   "24.2",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "pathspec",
-					Version:   "0.12.1",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "platformdirs",
-					Version:   "4.3.6",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "pycodestyle",
-					Version:   "2.12.1",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "pyflakes",
-					Version:   "3.2.0",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "tomli",
-					Version:   "2.2.1",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
-					Name:      "typing-extensions",
-					Version:   "4.12.2",
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
+				inventory(t, "mccabe", "0.7.0", "testdata/grouped-packages.lock"),
+				inventory(t, "mypy-extensions", "1.0.0", "testdata/grouped-packages.lock"),
+				inventory(t, "packaging", "24.2", "testdata/grouped-packages.lock"),
+				inventory(t, "pathspec", "0.12.1", "testdata/grouped-packages.lock"),
+				inventory(t, "platformdirs", "4.3.6", "testdata/grouped-packages.lock"),
+				inventory(t, "pycodestyle", "2.12.1", "testdata/grouped-packages.lock"),
+				inventory(t, "pyflakes", "3.2.0", "testdata/grouped-packages.lock"),
+				inventory(t, "tomli", "2.2.1", "testdata/grouped-packages.lock"),
+				inventory(t, "typing-extensions", "4.12.2", "testdata/grouped-packages.lock"),
 			},
 		},
 	}
