@@ -66,6 +66,7 @@ var (
 	}
 )
 
+//nolint:gochecknoinits
 func init() {
 	for _, e := range All {
 		register(e)

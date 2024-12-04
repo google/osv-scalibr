@@ -68,6 +68,7 @@ var detectorNames = map[string][]detector.Detector{
 	"all":         All,
 }
 
+//nolint:gochecknoinits
 func init() {
 	for _, d := range All {
 		register(d)
