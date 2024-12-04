@@ -107,9 +107,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "numpy",
 					Version:   "1.23.3",
 					Locations: []string{"testdata/one-package.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -126,9 +123,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "proto-plus",
 					Version:   "1.22.0",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -137,9 +131,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "protobuf",
 					Version:   "4.21.5",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -156,9 +147,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "emoji",
 					Version:   "2.0.0",
 					Locations: []string{"testdata/one-package-with-metadata.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -194,9 +182,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "appdirs",
 					Version:   "1.4.4",
 					Locations: []string{"testdata/source-legacy.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -213,9 +198,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "numpy",
 					Version:   "1.23.3",
 					Locations: []string{"testdata/optional-package.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
