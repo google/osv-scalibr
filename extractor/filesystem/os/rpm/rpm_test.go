@@ -970,6 +970,8 @@ func TestEcosystem(t *testing.T) {
 
 // CopyFileToTempDir copies the passed in file to a temporary directory, then returns the new file path.
 func CopyFileToTempDir(t *testing.T, filepath, root string) (string, error) {
+	t.Helper()
+
 	filename := path.Base(filepath)
 	newfile := path.Join(root, filename)
 

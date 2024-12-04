@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"archive/tar"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -584,6 +585,8 @@ func mustReadSubDirs(t *testing.T, dir string) []digestAndContent {
 // This image may not contain parent directories because it is constructed from an intermediate tarball.
 // This is useful for testing the parent directory creation logic of unpack.
 func mustNewSquashedImage(t *testing.T, pathsToContent map[string]contentAndMode) v1.Image {
+	t.Helper()
+
 	// Squash layers into a single layer.
 	files := make(map[string]contentAndMode)
 	for path, contentAndMode := range pathsToContent {
