@@ -132,7 +132,7 @@ var (
 
 	// Default extractors that are recommended to be enabled.
 	Default []filesystem.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
-	// All extractors available from SCALIBR. These don't include the untested extractors which can be enabled manually.
+	// All extractors available from SCALIBR.
 	All []filesystem.Extractor = slices.Concat(
 		Cpp,
 		Java,
