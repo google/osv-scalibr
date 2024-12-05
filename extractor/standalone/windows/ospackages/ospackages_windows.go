@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -39,11 +39,33 @@ const (
 	googetPrefix = "GooGet -"
 )
 
+// Configuration for the extractor.
+type Configuration struct {
+	// Registry is the registry engine to use (offline, live or mock).
+	Registry registry.Registry
+}
+
+// DefaultConfiguration for the extractor. It uses the live registry of the running system.
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Registry: registry.NewLive(),
+	}
+}
+
 // Name of the extractor
 const Name = "windows/ospackages"
 
 // Extractor implements the ospackages extractor.
-type Extractor struct{}
+type Extractor struct {
+	registry registry.Registry
+}
+
+// New creates a new Extractor from a given configuration.
+func New(config Configuration) *Extractor {
+	return &Extractor{
+		registry: config.Registry,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -64,7 +86,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	inventory := e.allSoftwaresInfo(registry.LOCAL_MACHINE, sysKeys)
+	inventory := e.allSoftwaresInfo("HKLM", sysKeys)
 
 	// Then we extract user-level installed software.
 	userKeys, err := e.installedUserSoftware()
@@ -72,19 +94,19 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	inv := e.allSoftwaresInfo(registry.USERS, userKeys)
+	inv := e.allSoftwaresInfo("HKU", userKeys)
 	return append(inventory, inv...), nil
 }
 
 // allSoftwaresInfo builds the inventory of name/version for installed software from the given registry
 // keys. This function cannot return an error.
-func (e *Extractor) allSoftwaresInfo(key registry.Key, paths []string) []*extractor.Inventory {
+func (e *Extractor) allSoftwaresInfo(hive string, paths []string) []*extractor.Inventory {
 	var inventory []*extractor.Inventory
 
 	for _, p := range paths {
 		// Silently swallow errors as some software might not have a name or version.
 		// For example, paint will be a subkey of the registry key, but it does not have a version.
-		if inv, err := e.softwareInfo(key, p); err == nil {
+		if inv, err := e.softwareInfo(hive, p); err == nil {
 			inventory = append(inventory, inv)
 		}
 	}
@@ -92,36 +114,36 @@ func (e *Extractor) allSoftwaresInfo(key registry.Key, paths []string) []*extrac
 	return inventory
 }
 
-func (e *Extractor) softwareInfo(key registry.Key, path string) (*extractor.Inventory, error) {
-	key, err := registry.OpenKey(key, path, registry.QUERY_VALUE)
+func (e *Extractor) softwareInfo(hive string, path string) (*extractor.Inventory, error) {
+	key, err := e.registry.OpenKey(hive, path)
 	if err != nil {
 		return nil, err
 	}
 	defer key.Close()
 
-	name, _, err := key.GetStringValue("DisplayName")
+	displayName, err := key.ValueString("DisplayName")
 	if err != nil {
 		return nil, err
 	}
 
-	version, _, err := key.GetStringValue("DisplayVersion")
+	displayVersion, err := key.ValueString("DisplayVersion")
 	if err != nil {
 		return nil, err
 	}
 
 	return &extractor.Inventory{
-		Name:    name,
-		Version: version,
+		Name:    displayName,
+		Version: displayVersion,
 	}, nil
 }
 
 func (e *Extractor) installedSystemSoftware() ([]string, error) {
-	keys, err := e.enumerateSubkeys(registry.LOCAL_MACHINE, regUninstallRootDefault)
+	keys, err := e.enumerateSubkeys("HKLM", regUninstallRootDefault)
 	if err != nil {
 		return nil, err
 	}
 
-	k, err := e.enumerateSubkeys(registry.LOCAL_MACHINE, regUninstallRootWow64)
+	k, err := e.enumerateSubkeys("HKLM", regUninstallRootWow64)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +154,7 @@ func (e *Extractor) installedSystemSoftware() ([]string, error) {
 func (e *Extractor) installedUserSoftware() ([]string, error) {
 	var keys []string
 
-	userHives, err := e.enumerateSubkeys(registry.USERS, "")
+	userHives, err := e.enumerateSubkeys("HKU", "")
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +165,7 @@ func (e *Extractor) installedUserSoftware() ([]string, error) {
 
 		// Note that the key might not exist or be accessible for all users, so we silently ignore
 		// errors here.
-		if k, err := e.enumerateSubkeys(registry.USERS, regPath); err == nil {
+		if k, err := e.enumerateSubkeys("HKU", regPath); err == nil {
 			keys = append(keys, k...)
 		}
 	}
@@ -151,14 +173,14 @@ func (e *Extractor) installedUserSoftware() ([]string, error) {
 	return keys, nil
 }
 
-func (e *Extractor) enumerateSubkeys(key registry.Key, path string) ([]string, error) {
-	key, err := registry.OpenKey(key, path, registry.ENUMERATE_SUB_KEYS)
+func (e *Extractor) enumerateSubkeys(hive string, path string) ([]string, error) {
+	key, err := e.registry.OpenKey(hive, path)
 	if err != nil {
 		return nil, err
 	}
 	defer key.Close()
 
-	subkeys, err := key.ReadSubKeyNames(0)
+	subkeys, err := key.SubkeyNames()
 	if err != nil {
 		return nil, err
 	}
