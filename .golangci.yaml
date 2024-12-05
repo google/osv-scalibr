@@ -82,7 +82,7 @@ linters:
     - testifylint
 #    - thelper
 #    - tparallel
-#    - unconvert
+    - unconvert
 #    - unparam
 #    - unused
 #    - usestdlibvars
