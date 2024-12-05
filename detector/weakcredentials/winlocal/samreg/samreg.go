@@ -48,7 +48,7 @@ func NewFromFile(path string) (*SAMRegistry, error) {
 
 // UsersRIDs returns the list of local user RIDs.
 func (s *SAMRegistry) UsersRIDs() ([]string, error) {
-	key, err := s.OpenKey(samRegistryPathUsers)
+	key, err := s.OpenKey("HKLM", samRegistryPathUsers)
 	if err != nil {
 		return nil, errFailedToParseUsers
 	}
@@ -73,7 +73,7 @@ func (s *SAMRegistry) UsersRIDs() ([]string, error) {
 // UserInfo returns the UserInfo for a given user RID.
 func (s *SAMRegistry) UserInfo(userRID string) (*UserInfo, error) {
 	keyPath := fmt.Sprintf(`%s\%s`, samRegistryPathUsers, userRID)
-	key, err := s.OpenKey(keyPath)
+	key, err := s.OpenKey("HKLM", keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("SAM hive: failed to load user registry for RID %q", userRID)
 	}
@@ -125,7 +125,7 @@ func (s *SAMRegistry) UserInfo(userRID string) (*UserInfo, error) {
 // DeriveSyskey loads the domain F structure from the SAM hive and then uses it to derive the
 // syskey.
 func (s *SAMRegistry) DeriveSyskey(syskey []byte) ([]byte, error) {
-	key, err := s.OpenKey(samRegistryPathDomains)
+	key, err := s.OpenKey("HKLM", samRegistryPathDomains)
 	if err != nil {
 		return nil, errFailedToOpenDomain
 	}

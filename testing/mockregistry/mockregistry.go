@@ -23,6 +23,7 @@ import (
 
 var (
 	errFailedToOpenKey = errors.New("failed to open key")
+	errValueNotFound   = errors.New("value not found")
 )
 
 // MockRegistry mocks registry access.
@@ -31,7 +32,8 @@ type MockRegistry struct {
 }
 
 // OpenKey open the requested registry key.
-func (o *MockRegistry) OpenKey(path string) (registry.Key, error) {
+// Note that for mock registry, the hive is not used.
+func (o *MockRegistry) OpenKey(_ string, path string) (registry.Key, error) {
 	if key, ok := o.Keys[path]; ok {
 		return key, nil
 	}
@@ -82,6 +84,17 @@ func (o *MockKey) ClassName() ([]byte, error) {
 	return []byte(o.KClassName), nil
 }
 
+// Value returns the value with the given name.
+func (o *MockKey) Value(name string) (registry.Value, error) {
+	for _, value := range o.KValues {
+		if value.Name() == name {
+			return value, nil
+		}
+	}
+
+	return nil, errValueNotFound
+}
+
 // Values returns the different values contained in the key.
 func (o *MockKey) Values() ([]registry.Value, error) {
 	return o.KValues, nil
@@ -89,8 +102,9 @@ func (o *MockKey) Values() ([]registry.Value, error) {
 
 // MockValue mocks a registry.Value.
 type MockValue struct {
-	VName string
-	VData []byte
+	VName       string
+	VData       []byte
+	VDataString string
 }
 
 // Name returns the name of the value.
@@ -101,4 +115,9 @@ func (o *MockValue) Name() string {
 // Data returns the data contained in the value.
 func (o *MockValue) Data() ([]byte, error) {
 	return o.VData, nil
+}
+
+// DataString returns the data contained in the value as a string.
+func (o *MockValue) DataString() (string, error) {
+	return o.VDataString, nil
 }

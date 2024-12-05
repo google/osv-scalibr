@@ -57,7 +57,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 	var syskey string
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
 	for _, k := range syskeyPaths {
-		key, err := s.OpenKey(currentControlSet + k)
+		key, err := s.OpenKey("HKLM", currentControlSet+k)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 }
 
 func (s *SystemRegistry) currentControlSet() (uint32, error) {
-	key, err := s.OpenKey(`Select`)
+	key, err := s.OpenKey("HKLM", `Select`)
 	if err != nil {
 		return 0, err
 	}
