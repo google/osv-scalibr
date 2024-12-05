@@ -71,7 +71,7 @@ func transformRID(key []byte) []byte {
 	outputKey = append(outputKey, ((key[5]&0x3F)<<1)|(key[6]>>7))
 	outputKey = append(outputKey, key[6]&0x7F)
 
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		outputKey[i] = (outputKey[i] << 1) & 0xfe
 	}
 

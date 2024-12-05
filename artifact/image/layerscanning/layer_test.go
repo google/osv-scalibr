@@ -474,7 +474,7 @@ func TestChainFSReadDir(t *testing.T) {
 				return strings.Compare(a.Name(), b.Name())
 			})
 
-			for i := range len(wantDirEntries) {
+			for i := range wantDirEntries {
 				gotEntry := gotDirEntries[i]
 				wantEntry := wantDirEntries[i]
 				if gotEntry.Name() != wantEntry.Name() {

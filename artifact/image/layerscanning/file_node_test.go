@@ -259,7 +259,7 @@ func TestReadingAfterClose(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			for i := 0; i < readAndCloseEvents; i++ {
+			for range readAndCloseEvents {
 				gotBytes := make([]byte, bufferSize)
 				gotNumBytesRead, gotErr := tc.node.Read(gotBytes)
 

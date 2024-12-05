@@ -194,7 +194,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 	// requiredTargets stores targets that symlinks point to.
 	// This is needed because the symlink may be required by u.requirer, but the target may not be.
 	requiredTargets := make(map[string]bool)
-	for pass := 0; pass < u.MaxPass; pass++ {
+	for pass := range u.MaxPass {
 		finalPass := false
 		// Resolve symlinks on the last pass once all potential target files have been unpacked.
 		if pass == u.MaxPass-1 {
@@ -262,7 +262,7 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 		// requiredTargets stores targets that symlinks point to.
 		// This is needed because the symlink may be required by u.requirer, but the target may not be.
 		requiredTargets := make(map[string]bool)
-		for pass := 0; pass < u.MaxPass; pass++ {
+		for pass := range u.MaxPass {
 			finalPass := false
 			// Resolve symlinks on the last pass once all potential target files have been unpacked.
 			if pass == u.MaxPass-1 {
