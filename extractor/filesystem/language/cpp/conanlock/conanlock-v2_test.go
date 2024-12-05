@@ -159,7 +159,6 @@ func TestExtractor_Extract_v2(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
 			t.Parallel()
 			extr := conanlock.Extractor{}
