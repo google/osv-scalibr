@@ -46,7 +46,7 @@ linters:
 #    - govet
     - grouper
     - importas
-#    - inamedparam
+    - inamedparam
     - ineffassign
     - interfacebloat
 #    - intrange

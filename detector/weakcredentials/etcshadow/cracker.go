@@ -29,7 +29,7 @@ var ErrNotCracked = errors.New("not cracked")
 // Cracker interface is implemented by types which know how to crack hashes.
 type Cracker interface {
 	// Crack returns (password,nil) on success and ("", ErrNotCracked) on failure.
-	Crack(context.Context, string) (string, error)
+	Crack(ctx context.Context, hash string) (string, error)
 }
 
 type passwordCracker struct {
