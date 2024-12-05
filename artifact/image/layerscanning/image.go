@@ -27,7 +27,8 @@ import (
 	"strings"
 
 	"archive/tar"
-	"github.com/google/go-containerregistry/pkg/v1"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
