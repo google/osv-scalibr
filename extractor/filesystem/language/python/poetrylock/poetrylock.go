@@ -82,9 +82,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
-			SourceCode: &extractor.SourceCodeIdentifier{
+		}
+		if lockPackage.Source.Commit != "" {
+			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: lockPackage.Source.Commit,
-			},
+			}
 		}
 		if lockPackage.Optional {
 			pkgDetails.Metadata = osv.DepGroupMetadata{
