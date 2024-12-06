@@ -98,6 +98,7 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 
 // FromTarball creates an Image from a tarball file that stores a container image.
 func FromTarball(tarPath string, config *Config) (*Image, error) {
+	// TODO b/381251067: Look into supporting OCI images.
 	v1Image, err := tarball.ImageFromPath(tarPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from tarball with path %q: %w", tarPath, err)
