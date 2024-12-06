@@ -36,7 +36,7 @@ linters:
 #    - gocritic
 #    - gofmt
     - goheader
-#    - goimports
+    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
