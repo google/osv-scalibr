@@ -42,7 +42,7 @@ var (
 	WindowsExperimental = []standalone.Extractor{
 		&ospackages.Extractor{},
 		&regosversion.Extractor{},
-		&regpatchlevel.Extractor{},
+		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
 	}
 
 	// Containers standalone extractors.
