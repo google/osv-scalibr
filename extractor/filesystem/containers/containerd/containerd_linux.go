@@ -445,7 +445,7 @@ func runcInitPid(scanRoot string, runtimeName string, id string) int {
 		return -1
 	}
 	var grpcContainerStatus map[string]*json.RawMessage
-	if err := json.Unmarshal([]byte(statusContent), &grpcContainerStatus); err != nil {
+	if err := json.Unmarshal(statusContent, &grpcContainerStatus); err != nil {
 		log.Errorf("Can't unmarshal status for container %v , error: %v", id, err)
 		return -1
 	}

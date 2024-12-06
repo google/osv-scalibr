@@ -26,7 +26,7 @@ import (
 
 // inventoryFromOutput parses the output of DISM and produces inventory entries from it.
 func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) {
-	packages, imgVersion, err := dismparser.Parse(string(output))
+	packages, imgVersion, err := dismparser.Parse(output)
 	if err != nil {
 		return nil, err
 	}
