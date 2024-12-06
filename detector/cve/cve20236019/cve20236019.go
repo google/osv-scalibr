@@ -219,7 +219,7 @@ func generateRandomString(length int) string {
 
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := make([]byte, length)
-	for i := 0; i < length; i++ {
+	for i := range length {
 		bytes[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(bytes)

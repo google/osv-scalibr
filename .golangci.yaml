@@ -49,7 +49,7 @@ linters:
 #    - inamedparam
     - ineffassign
     - interfacebloat
-#    - intrange
+    - intrange
     - loggercheck
     - makezero
     - mirror

@@ -83,7 +83,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 	transforms := []int{8, 5, 4, 2, 11, 9, 13, 3, 0, 6, 1, 12, 14, 10, 15, 7}
 	var resultKey []byte
 
-	for i := range len(unhexKey) {
+	for i := range unhexKey {
 		resultKey = append(resultKey, unhexKey[transforms[i]])
 	}
 
