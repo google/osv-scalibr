@@ -259,6 +259,8 @@ func createFileFromTestData(t *testing.T, root string, subPath string, fileName 
 }
 
 func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInput {
+	t.Helper()
+
 	finalPath := filepath.Join(root, path)
 	reader, err := os.Open(finalPath)
 	defer func() {

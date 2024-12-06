@@ -80,7 +80,7 @@ linters:
     - tenv
     - testableexamples
     - testifylint
-#    - thelper
+    - thelper
 #    - tparallel
     - unconvert
 #    - unparam
