@@ -95,6 +95,26 @@ func (o *MockKey) Value(name string) (registry.Value, error) {
 	return nil, errValueNotFound
 }
 
+// ValueBytes directly returns the content (as bytes) of the named value.
+func (o *MockKey) ValueBytes(name string) ([]byte, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return value.Data()
+}
+
+// ValueString directly returns the content (as string) of the named value.
+func (o *MockKey) ValueString(name string) (string, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return "", err
+	}
+
+	return value.DataString()
+}
+
 // Values returns the different values contained in the key.
 func (o *MockKey) Values() ([]registry.Value, error) {
 	return o.KValues, nil
