@@ -46,6 +46,12 @@ type Key interface {
 	// Value returns the value with the given name.
 	Value(name string) (Value, error)
 
+	// ValueBytes directly returns the content (as bytes) of the named value.
+	ValueBytes(name string) ([]byte, error)
+
+	// ValueString directly returns the content (as string) of the named value.
+	ValueString(name string) (string, error)
+
 	// Values returns the different values of the key.
 	Values() ([]Value, error)
 }
