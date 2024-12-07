@@ -27,17 +27,20 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 var (
@@ -244,6 +247,56 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 
 	sro.EndTime = time.Now()
 	return newScanResult(sro)
+}
+
+// ScanContainer scans the provided container image for inventory and security findings using the
+// provided scan config. It populates the LayerDetails field of the inventory with the origin layer
+// details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
+// the artifact/image/layerscanning/image package.
+func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
+	defer img.CleanUp()
+
+	chainLayers, err := img.ChainLayers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain layers: %w", err)
+	}
+
+	if len(chainLayers) == 0 {
+		return nil, fmt.Errorf("no chain layers found")
+	}
+
+	finalChainLayer := chainLayers[len(chainLayers)-1]
+	chainfs := finalChainLayer.FS()
+
+	if config.ScanRoots != nil && len(config.ScanRoots) > 0 {
+		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
+	}
+	// Overwrite the scan roots with the chain layer filesystem.
+	config.ScanRoots = []*scalibrfs.ScanRoot{
+		&scalibrfs.ScanRoot{
+			FS: chainfs,
+		},
+	}
+
+	scanResult := s.Scan(ctx, config)
+	inventory := scanResult.Inventories
+	extractorConfig := &filesystem.Config{
+		Stats:                 config.Stats,
+		ReadSymlinks:          config.ReadSymlinks,
+		Extractors:            config.FilesystemExtractors,
+		FilesToExtract:        config.FilesToExtract,
+		DirsToSkip:            config.DirsToSkip,
+		SkipDirRegex:          config.SkipDirRegex,
+		SkipDirGlob:           config.SkipDirGlob,
+		ScanRoots:             config.ScanRoots,
+		MaxInodes:             config.MaxInodes,
+		StoreAbsolutePath:     config.StoreAbsolutePath,
+		PrintDurationAnalysis: config.PrintDurationAnalysis,
+	}
+
+	// Populate the LayerDetails field of the inventory by tracing the layer origins.
+	trace.PopulateLayerDetails(ctx, inventory, chainLayers, extractorConfig)
+	return scanResult, nil
 }
 
 type newScanResultOptions struct {
