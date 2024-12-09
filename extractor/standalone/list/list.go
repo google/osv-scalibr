@@ -41,7 +41,7 @@ var (
 	// dangerous.
 	WindowsExperimental = []standalone.Extractor{
 		&ospackages.Extractor{},
-		&regosversion.Extractor{},
+		regosversion.New(regosversion.DefaultConfiguration()),
 		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
 	}
 
