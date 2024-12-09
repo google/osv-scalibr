@@ -31,8 +31,21 @@ import (
 // Name of the extractor
 const Name = "windows/ospackages"
 
+// Configuration for the extractor.
+type Configuration struct{}
+
+// DefaultConfiguration for the extractor. On non-windows, it contains nothing.
+func DefaultConfiguration() Configuration {
+	return Configuration{}
+}
+
 // Extractor implements the ospackages extractor.
 type Extractor struct{}
+
+// New creates a new Extractor from a given configuration.
+func New(config Configuration) *Extractor {
+	return &Extractor{}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
