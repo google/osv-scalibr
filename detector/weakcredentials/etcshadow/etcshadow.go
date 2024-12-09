@@ -72,10 +72,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	// and running as user can be done locally with the 'su' command).
 	var problemUsers []string
 	for user, hash := range users {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return nil, ctx.Err()
-		default: // keep cracking
 		}
 		if _, err := cracker.Crack(ctx, hash); err == nil { // if cracked
 			// Report only user name to avoid PII leakage.

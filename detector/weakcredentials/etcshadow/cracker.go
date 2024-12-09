@@ -61,10 +61,8 @@ type bcryptCracker struct {
 
 func (c bcryptCracker) Crack(ctx context.Context, hash string) (string, error) {
 	for _, v := range topPasswords {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return "", ctx.Err()
-		default: // keep cracking
 		}
 		err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(v))
 		if err == nil {
@@ -81,10 +79,8 @@ type sha512CryptCracker struct {
 func (c sha512CryptCracker) Crack(ctx context.Context, hash string) (string, error) {
 	crypter := sha512_crypt.New()
 	for _, v := range topPasswords {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return "", ctx.Err()
-		default: // keep cracking
 		}
 		err := crypter.Verify(hash, []byte(v))
 		if err == nil {
