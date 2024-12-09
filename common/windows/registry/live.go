@@ -22,14 +22,21 @@ import (
 	winregistry "golang.org/x/sys/windows/registry"
 )
 
-// LiveRegistry wraps the windows registry library to provide live parsing of the Windows registry.
-type LiveRegistry struct {
+// LiveOpener is an opener for the live registry.
+type LiveOpener struct{}
+
+// NewLiveOpener creates a new LiveOpener, allowing to open the live registry.
+func NewLiveOpener() *LiveOpener {
+	return &LiveOpener{}
 }
 
-// NewLive creates a new LiveRegistry.
-func NewLive() *LiveRegistry {
-	return &LiveRegistry{}
+// Open the live registry.
+func (o *LiveOpener) Open() (Registry, error) {
+	return &LiveRegistry{}, nil
 }
+
+// LiveRegistry wraps the windows registry library to provide live parsing of the Windows registry.
+type LiveRegistry struct{}
 
 // OpenKey open the requested registry key.
 func (o *LiveRegistry) OpenKey(hive string, path string) (Key, error) {

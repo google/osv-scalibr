@@ -17,6 +17,12 @@
 // of testing.
 package registry
 
+// Opener is an interface to be able to open an actual registry.
+// It was implemented as a way to delay the time between configuring and closing/using the registry.
+type Opener interface {
+	Open() (Registry, error)
+}
+
 // Registry represents an open registry hive.
 type Registry interface {
 	// OpenKey returns a Key for the given path in a specific hive.

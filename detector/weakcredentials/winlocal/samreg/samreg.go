@@ -37,8 +37,11 @@ type SAMRegistry struct {
 }
 
 // NewFromFile creates a new SAMRegistry from a file.
+// Note that it is the responsibility of the caller to close the registry once it is no longer
+// needed.
 func NewFromFile(path string) (*SAMRegistry, error) {
-	reg, err := registry.NewFromFile(path)
+	opener := registry.NewOfflineOpener(path)
+	reg, err := opener.Open()
 	if err != nil {
 		return nil, err
 	}

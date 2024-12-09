@@ -28,16 +28,19 @@ var (
 	errFailedToFindValue     = errors.New("could not find value")
 )
 
-// OfflineRegistry wraps the regparser library to provide offline (from file) parsing of the Windows
-// registry.
-type OfflineRegistry struct {
-	registry *regparser.Registry
-	reader   io.ReadCloser
+// OfflineOpener is an opener for the offline registry.
+type OfflineOpener struct {
+	Filepath string
 }
 
-// NewFromFile creates a new offline registry abstraction from a file.
-func NewFromFile(path string) (*OfflineRegistry, error) {
-	f, err := os.Open(path)
+// NewOfflineOpener creates a new OfflineOpener, allowing to open a registry from a file.
+func NewOfflineOpener(filepath string) *OfflineOpener {
+	return &OfflineOpener{filepath}
+}
+
+// Open the offline registry.
+func (o *OfflineOpener) Open() (Registry, error) {
+	f, err := os.Open(o.Filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +52,13 @@ func NewFromFile(path string) (*OfflineRegistry, error) {
 	}
 
 	return &OfflineRegistry{reg, f}, nil
+}
+
+// OfflineRegistry wraps the regparser library to provide offline (from file) parsing of the Windows
+// registry.
+type OfflineRegistry struct {
+	registry *regparser.Registry
+	reader   io.ReadCloser
 }
 
 // OpenKey open the requested registry key.

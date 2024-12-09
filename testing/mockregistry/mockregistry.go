@@ -26,6 +26,21 @@ var (
 	errValueNotFound   = errors.New("value not found")
 )
 
+// Opener is an opener for the mock registry.
+type Opener struct {
+	Registry *MockRegistry
+}
+
+// NewOpener creates a new Opener for the mock registry.
+func NewOpener(registry *MockRegistry) *Opener {
+	return &Opener{Registry: registry}
+}
+
+// Open returns the mock registry.
+func (o *Opener) Open() (registry.Registry, error) {
+	return o.Registry, nil
+}
+
 // MockRegistry mocks registry access.
 type MockRegistry struct {
 	Keys map[string]registry.Key
