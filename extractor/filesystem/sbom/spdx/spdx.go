@@ -116,7 +116,7 @@ func (e Extractor) convertSpdxDocToInventory(spdxDoc *spdx.Document, path string
 				packageURL, err := purl.FromString(extRef.Locator)
 				inv.Name = packageURL.Name
 				if err != nil {
-					log.Warnf("Invalid PURL for package: %q", extRef.Locator)
+					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
 					m.PURL = &packageURL
 				}
