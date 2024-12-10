@@ -20,16 +20,15 @@ package regosversion
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -38,8 +37,30 @@ const (
 	regVersionPath = `SOFTWARE\Microsoft\Windows NT\CurrentVersion`
 )
 
-// Extractor provides a metadata extractor for the DISM patch level on Windows.
-type Extractor struct{}
+// Configuration for the extractor.
+type Configuration struct {
+	// Opener is the registry engine to use (offline, live or mock).
+	Opener registry.Opener
+}
+
+// DefaultConfiguration for the extractor. It uses the live registry of the running system.
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Opener: registry.NewLiveOpener(),
+	}
+}
+
+// Extractor provides a metadata extractor for the patch level on Windows.
+type Extractor struct {
+	opener registry.Opener
+}
+
+// New creates a new Extractor from a given configuration.
+func New(config Configuration) *Extractor {
+	return &Extractor{
+		opener: config.Opener,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -54,7 +75,13 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // Extract the DISM patch level on Windows.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, regVersionPath, registry.QUERY_VALUE)
+	reg, err := e.opener.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer reg.Close()
+
+	key, err := reg.OpenKey("HKLM", regVersionPath)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +93,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	// CurrentBuildNumber should be available on a large range of Windows versions.
-	buildNumber, _, err := key.GetStringValue("CurrentBuildNumber")
+	buildNumber, err := key.ValueString("CurrentBuildNumber")
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +103,8 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	flavor := winproducts.WindowsFlavorFromRegistry()
-	fullVersion := fmt.Sprintf("%s.%s.%d", currentVersion, buildNumber, revision)
+	flavor := winproducts.WindowsFlavorFromRegistry(reg)
+	fullVersion := fmt.Sprintf("%s.%s.%s", currentVersion, buildNumber, revision)
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
 	return []*extractor.Inventory{
 		{
@@ -94,37 +121,36 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 // windowsVersion extracts the version of Windows (major and minor, e.g. 6.3 or 10.0)
 func (e Extractor) windowsVersion(key registry.Key) (string, error) {
 	// recent version of Windows
-	majorVersion, _, majorErr := key.GetIntegerValue("CurrentMajorVersionNumber")
-	minorVersion, _, minorErr := key.GetIntegerValue("CurrentMinorVersionNumber")
+	majorVersion, majorErr := key.ValueString("CurrentMajorVersionNumber")
+	minorVersion, minorErr := key.ValueString("CurrentMinorVersionNumber")
 
 	if majorErr == nil && minorErr == nil {
-		return fmt.Sprintf("%d.%d", majorVersion, minorVersion), nil
+		return fmt.Sprintf("%s.%s", majorVersion, minorVersion), nil
 	}
 
 	// older versions of Windows
-	version, _, err := key.GetStringValue("CurrentVersion")
-	return version, err
+	return key.ValueString("CurrentVersion")
 }
 
 // windowsRevision extracts the revision within the current build.
-func (e Extractor) windowsRevision(key registry.Key) (uint64, error) {
+func (e Extractor) windowsRevision(key registry.Key) (string, error) {
 	// recent version of Windows
-	if revision, _, err := key.GetIntegerValue("UBR"); err == nil {
+	if revision, err := key.ValueString("UBR"); err == nil {
 		return revision, nil
 	}
 
 	// on older version, we have to parse the BuildLabEx key
-	buildLabEx, _, err := key.GetStringValue("BuildLabEx")
+	buildLabEx, err := key.ValueString("BuildLabEx")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	buildLabParts := strings.Split(buildLabEx, ".")
 	if len(buildLabParts) < 2 {
-		return 0, fmt.Errorf("could not parse BuildLabEx: %q", buildLabEx)
+		return "", fmt.Errorf("could not parse BuildLabEx: %q", buildLabEx)
 	}
 
-	return strconv.ParseUint(buildLabParts[1], 10, 64)
+	return buildLabParts[1], nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

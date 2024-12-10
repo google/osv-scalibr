@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package winproducts
+//go:build !windows
 
-import "github.com/google/osv-scalibr/common/windows/registry"
+package regosversion
 
-// WindowsFlavorFromRegistry is a noop on Linux.
-func WindowsFlavorFromRegistry(reg registry.Registry) string {
-	return ""
+import (
+	"context"
+	"testing"
+)
+
+func TestScan(t *testing.T) {
+	e := Extractor{}
+	if _, err := e.Extract(context.Background(), nil); err == nil {
+		t.Errorf("Extract() returned nil error, should not be supported on non-Windows")
+	}
 }
