@@ -46,6 +46,7 @@ func NewPasswordCracker() Cracker {
 }
 
 func (c passwordCracker) Crack(ctx context.Context, hash string) (string, error) {
+	// TODO(b/383302694): Add more hash algos.
 	switch {
 	case strings.HasPrefix(hash, "$2"):
 		return c.bcryptCracker.Crack(ctx, hash)
