@@ -40,7 +40,7 @@ var (
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = []standalone.Extractor{
-		&ospackages.Extractor{},
+		ospackages.New(ospackages.DefaultConfiguration()),
 		&regosversion.Extractor{},
 		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
 	}
