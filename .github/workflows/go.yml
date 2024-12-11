@@ -24,6 +24,22 @@ jobs:
         with:
           version: v1.61.0
           args: --timeout=5m
+  # TODO(#346): we're exploring if only-new-issues will help reduce friction in PRs
+  lint-just-new:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.x
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.61.0
+          only-new-issues: true
+          args: --timeout=5m
   tests:
     strategy:
       matrix:
