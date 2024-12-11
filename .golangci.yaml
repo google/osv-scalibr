@@ -81,7 +81,6 @@ linters:
     - testableexamples
     - testifylint
     - thelper
-#    - tparallel
     - unconvert
 #    - unparam
 #    - unused
@@ -90,6 +89,8 @@ linters:
     - whitespace
     - zerologlint
   disable-all: true
+#  disable:
+#    - tparallel # Parallel tests mixes up log lines of multiple tests in the internal test runner
 
 linters-settings:
   forbidigo:
