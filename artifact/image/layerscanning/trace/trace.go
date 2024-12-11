@@ -46,11 +46,15 @@ import (
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
 func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
-	layerToCommands := make(map[int]string)
-	layerToDiffID := make(map[int]string)
+	layerDetailsList := []*extractor.LayerDetails{}
+
 	for i, chainLayer := range chainLayers {
-		layerToCommands[i] = chainLayer.Layer().Command()
-		layerToDiffID[i] = chainLayer.Layer().DiffID()
+		layerDetailsList = append(layerDetailsList, &extractor.LayerDetails{
+			Index:       i,
+			DiffID:      chainLayer.Layer().DiffID(),
+			Command:     chainLayer.Layer().Command(),
+			InBaseImage: false,
+		})
 	}
 
 	updateExtractorConfig := func(filesToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
@@ -66,13 +70,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 	for _, inv := range inventory {
 		lastChainLayer := chainLayers[len(chainLayers)-1]
 		layerIndex := lastChainLayer.Index()
-
-		layerDetails := &extractor.LayerDetails{
-			Index:       layerIndex,
-			DiffID:      layerToDiffID[layerIndex],
-			Command:     layerToCommands[layerIndex],
-			InBaseImage: false,
-		}
+		layerDetails := layerDetailsList[layerIndex]
 
 		invExtractor, isFilesystemExtractor := inv.Extractor.(filesystem.Extractor)
 
@@ -110,11 +108,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 
 			// If the inventory is not present in the old layer, then it was introduced in layer i+1.
 			if !foundPackage {
-				layerDetails = &extractor.LayerDetails{
-					Index:   i + 1,
-					DiffID:  layerToDiffID[i+1],
-					Command: layerToCommands[i+1],
-				}
+				layerDetails = layerDetailsList[i+1]
 				foundOrigin = true
 				break
 			}
@@ -123,11 +117,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 		// If the inventory is present in every layer, then it means it was introduced in the first
 		// layer.
 		if !foundOrigin {
-			layerDetails = &extractor.LayerDetails{
-				Index:   0,
-				DiffID:  layerToDiffID[0],
-				Command: layerToCommands[0],
-			}
+			layerDetails = layerDetailsList[0]
 		}
 		inv.LayerDetails = layerDetails
 	}
