@@ -6,7 +6,7 @@ scalibr:
 	CGO_ENABLED=1 go build binary/scalibr/scalibr.go
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 run ./... --max-same-issues 0
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 run ./...
 
 test:
 	CGO_ENABLED=1 go test ./...
