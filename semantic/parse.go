@@ -1,3 +1,5 @@
+// Package semantic provides version parsing and comparison for various ecosystems,
+// matching the native versioning rules of each ecosystem.
 package semantic
 
 import (
@@ -7,6 +9,7 @@ import (
 
 var ErrUnsupportedEcosystem = errors.New("unsupported ecosystem")
 
+// MustParse is like Parse but panics if the ecosystem is not supported.
 func MustParse(str string, ecosystem string) Version {
 	v, err := Parse(str, ecosystem)
 
@@ -17,6 +20,8 @@ func MustParse(str string, ecosystem string) Version {
 	return v
 }
 
+// Parse attempts to parse the given string as a version for the specified ecosystem,
+// returning an ErrUnsupportedEcosystem error if the ecosystem is not supported.
 func Parse(str string, ecosystem string) (Version, error) {
 	//nolint:exhaustive // Using strings to specify ecosystem instead of lockfile types
 	switch ecosystem {
