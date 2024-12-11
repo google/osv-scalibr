@@ -84,6 +84,12 @@ type ScanConfig struct {
 	SkipDirGlob glob.Glob
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
+	// Optional: A callback to run on every file and directory before extraction.
+	// The following error returns have special meaning:
+	// filesystem.ErrSkipFile - Skip the current file, i.e. don't run any extraction on it.
+	// fs.SkipDir - Skip the current file and remaining files in the current directory.
+	// fs.SkipAll - Skip the current file and all remaining files on the filesystem.
+	BeforeExtraction filesystem.BeforeExtractionCallback
 	// Optional: Whether to read symlinks.
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
@@ -194,6 +200,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
+		BeforeExtraction:      config.BeforeExtraction,
 		ReadSymlinks:          config.ReadSymlinks,
 		Extractors:            config.FilesystemExtractors,
 		FilesToExtract:        config.FilesToExtract,
