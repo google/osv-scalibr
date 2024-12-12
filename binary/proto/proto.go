@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/opkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -403,6 +404,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Commit:    m.Commit,
 				Ecosystem: m.Ecosystem,
 				CompareAs: m.CompareAs,
+			},
+		}
+	case *opkg.Metadata:
+		i.Metadata = &spb.Inventory_OpkgMetadata{
+			OpkgMetadata: &spb.OPKGPackageMetadata{
+				PackageName:       m.PackageName,
+				Status:            m.Status,
+				PackageVersion:    m.PackageVersion,
+				Maintainer:        m.Maintainer,
+				Architecture:      m.Architecture,
+				OsId:              m.OSID,
+				OsVersionCodename: m.OSVersionCodename,
+				OsVersionId:       m.OSVersionID,
 			},
 		}
 	case *requirements.Metadata:
