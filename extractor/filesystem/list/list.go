@@ -57,6 +57,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
@@ -124,6 +125,7 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
+		pacman.New(pacman.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
 		homebrew.Extractor{},
 		macapps.New(macapps.DefaultConfig())}
