@@ -188,8 +188,6 @@ func TestMetricCollector(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			collector := testcollector.New()
 			extr := packagelockjson.New(packagelockjson.Config{
 				Stats: collector,

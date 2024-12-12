@@ -22,8 +22,6 @@ import (
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name      string
 		inputPath string
@@ -57,7 +55,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			e := conanlock.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {

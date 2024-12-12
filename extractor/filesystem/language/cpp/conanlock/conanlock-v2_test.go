@@ -27,7 +27,6 @@ import (
 )
 
 func TestExtractor_Extract_v2(t *testing.T) {
-	t.Parallel()
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "no packages",
@@ -160,7 +159,6 @@ func TestExtractor_Extract_v2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := conanlock.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

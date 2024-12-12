@@ -28,8 +28,6 @@ import (
 )
 
 func TestNPMLockExtractor_Extract_V2(t *testing.T) {
-	t.Parallel()
-
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "invalid json",
@@ -555,8 +553,6 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
-
 			collector := testcollector.New()
 			extr := packagelockjson.New(packagelockjson.Config{
 				Stats: collector,
