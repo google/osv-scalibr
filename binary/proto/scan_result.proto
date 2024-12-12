@@ -90,6 +90,7 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     OSVPackageMetadata osv_metadata = 16;
+    OPKGPackageMetadata opkg_metadata = 37;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
@@ -254,6 +255,18 @@ message DPKGPackageMetadata {
   string maintainer = 8;
   string architecture = 9;
   string status = 10;
+}
+
+// The additional data found in OPKG packages.
+message OPKGPackageMetadata {
+  string PackageName = 1;
+  string PackageVersion = 2;
+  string Status = 3;
+  string Maintainer = 4;
+  string Architecture = 5;
+  string os_id = 6;
+  string os_version_codename = 7;
+  string os_version_id = 8;
 }
 
 // The additional data found in RPM packages.

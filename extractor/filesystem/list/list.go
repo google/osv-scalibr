@@ -57,6 +57,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/opkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
@@ -120,6 +121,7 @@ var (
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{
 		dpkg.New(dpkg.DefaultConfig()),
+		opkg.New(opkg.DefaultConfig()),
 		apk.New(apk.DefaultConfig()),
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
