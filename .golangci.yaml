@@ -99,3 +99,7 @@ linters-settings:
       - p: ^testing.T.Parallel$
         pkg: ^testing$
     analyze-types: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
