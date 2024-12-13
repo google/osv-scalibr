@@ -49,7 +49,7 @@ func TestNew(t *testing.T) {
 			name: "default",
 			cfg:  opkg.DefaultConfig(),
 			wantCfg: opkg.Config{
-				MaxFileSizeBytes:    10 * units.MiB,
+				MaxFileSizeBytes:    100 * units.MiB,
 				IncludeNotInstalled: false,
 			},
 		},
@@ -90,6 +90,11 @@ func TestFileRequired(t *testing.T) {
 			path:             "usr/lib/opkg/status",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "statusfoo.txt file not required",
+			path:         "usr/lib/opkg/statusfoo.txt",
+			wantRequired: false,
 		},
 		{
 			name:         "status as a directory",
@@ -180,7 +185,6 @@ func TestExtract(t *testing.T) {
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 		wantLogWarn      int
-		wantLogErr       int
 	}{
 		{
 			name:      "valid opkg status file",
@@ -324,8 +328,22 @@ func TestExtract(t *testing.T) {
 					},
 					Locations: []string{"testdata/statusfield"},
 				},
+				{
+					Name:    "wantpurge_installed",
+					Version: "1.0",
+					Metadata: &opkg.Metadata{
+						PackageName:       "wantpurge_installed",
+						PackageVersion:    "1.0",
+						Status:            "purge ok installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/statusfield"},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
 		},
 		{
 			name:      "statusfield including not installed",
@@ -514,7 +532,6 @@ func TestExtract(t *testing.T) {
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantLogWarn:      0,
-			wantLogErr:       0,
 		},
 		{
 			name:      "transitional packages should be annotated",
@@ -597,9 +614,6 @@ func TestExtract(t *testing.T) {
 
 			if logger.warnings != tt.wantLogWarn {
 				t.Errorf("Extract(%s) recorded %d warnings, want %d warnings", tt.path, logger.warnings, tt.wantLogWarn)
-			}
-			if logger.errors != tt.wantLogErr {
-				t.Errorf("Extract(%s) recorded %d errors, want %d errors", tt.path, logger.errors, tt.wantLogErr)
 			}
 		})
 	}

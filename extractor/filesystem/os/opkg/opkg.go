@@ -43,7 +43,7 @@ const (
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSizeBytes = 10 * units.MiB
+	defaultMaxFileSizeBytes = 100 * units.MiB
 
 	// defaultIncludeNotInstalled is the default value for the IncludeNotInstalled option.
 	defaultIncludeNotInstalled = false
@@ -111,7 +111,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired checks if the specified file matches OPKG status file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !fileRequired(path) {
+	if !(filepath.ToSlash(path) == "usr/lib/opkg/status") {
 		return false
 	}
 
@@ -126,11 +126,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
-}
-
-func fileRequired(path string) bool {
-	// status file
-	return filepath.ToSlash(path) == "usr/lib/opkg/status"
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
@@ -193,9 +188,18 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		// Skip packages based on status
-		status := h.Get("Status")
-		if !e.includeNotInstalled && status != "install ok installed" {
-			continue
+		if !e.includeNotInstalled {
+			if h.Get("Status") == "" {
+				log.Warnf("Package %q has no status field", h.Get("Package"))
+				continue
+			}
+			installed, err := statusInstalled(h.Get("Status"))
+			if err != nil {
+				return pkgs, fmt.Errorf("statusInstalled(%q): %w", h.Get("Status"), err)
+			}
+			if !installed {
+				continue
+			}
 		}
 
 		// Extract required fields
@@ -217,7 +221,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			Metadata: &Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
-				Status:            status,
+				Status:            h.Get("Status"),
 				Maintainer:        h.Get("Maintainer"),
 				Architecture:      h.Get("Architecture"),
 				OSID:              m["ID"],
@@ -231,6 +235,17 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		pkgs = append(pkgs, i)
 	}
 	return pkgs, nil
+}
+
+func statusInstalled(status string) (bool, error) {
+	// Status field format: "want flag status", e.g. "install ok installed"
+	// The package is currently installed if the status field is set to installed.
+	// Other fields just show the intent of the package manager but not the current state.
+	parts := strings.Split(status, " ")
+	if len(parts) != 3 {
+		return false, fmt.Errorf("invalid OPKG Status field %q", status)
+	}
+	return parts[2] == "installed", nil
 }
 
 func toNamespace(m *Metadata) string {
