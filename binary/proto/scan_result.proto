@@ -90,6 +90,7 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     PACMANPackageMetadata pacman_metadata = 36;
+    NIXPackageMetadata nix_metadata = 37;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
@@ -288,6 +289,17 @@ message PACMANPackageMetadata {
   string os_version_id = 4;
   string package_description = 5;
   string package_dependencies = 6;
+}
+
+// The additional data found in RPM packages.
+message NIXPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string package_hash = 3;
+  string package_output = 4;
+  string os_id = 5;
+  string os_version_codename = 6;
+  string os_version_id = 7;
 }
 
 // The additional data found in SNAP packages.
