@@ -139,6 +139,49 @@ func TestFileRequired(t *testing.T) {
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
+		{
+			name:             "status file",
+			path:             "usr/lib/opkg/status",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "status as a directory",
+			path:         "usr/lib/opkg/status/foo",
+			wantRequired: false,
+		},
+		{
+			name:             "status file required if file size < max file size",
+			path:             "usr/lib/opkg/status",
+			fileSizeBytes:    10 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "status file required if file size == max file size",
+			path:             "usr/lib/opkg/status",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "status file not required if file size > max file size",
+			path:             "usr/lib/opkg/status",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 100 * units.KiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
+			name:             "status file required if max file size set to 0",
+			path:             "usr/lib/opkg/status",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
 	}
 
 	for _, tt := range tests {
@@ -180,6 +223,14 @@ VERSION="12 (bookworm)"
 VERSION_CODENAME=bookworm
 ID=debian`
 
+const OpkgRelease = `NAME="OpenWrt"
+VERSION="21.02.1"
+ID=openwrt
+VERSION_ID="21.02.1"
+VERSION_CODENAME="openwrt-21.02.1"
+PRETTY_NAME="OpenWrt 21.02.1"
+BUILD_ID="r16279-5cc53c7f44"`
+
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -194,7 +245,7 @@ func TestExtract(t *testing.T) {
 	}{
 		{
 			name:      "valid status file",
-			path:      "testdata/valid",
+			path:      "testdata/dpkg/valid",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -210,7 +261,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Debian freedesktop.org maintainers <pkg-freedesktop-maintainers@lists.alioth.debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				{
 					Name:    "acl",
@@ -225,7 +276,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				{
 					Name:    "adduser",
@@ -240,7 +291,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Debian Adduser Developers <adduser@packages.debian.org>",
 						Architecture:      "all",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				{
 					Name:    "admin-session",
@@ -255,7 +306,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "nobody@google.com",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				{
 					Name:    "attr",
@@ -270,7 +321,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				// Expect source name.
 				{
@@ -287,7 +338,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 				// Expect source name and version.
 				{
@@ -305,14 +356,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "util-linux packagers <util-linux@packages.debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/valid"},
+					Locations: []string{"testdata/dpkg/valid"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "packages with no version set are skipped",
-			path:      "testdata/noversion",
+			path:      "testdata/dpkg/noversion",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -326,7 +377,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/noversion"},
+					Locations: []string{"testdata/dpkg/noversion"},
 				},
 				{
 					Name:    "bar",
@@ -339,7 +390,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/noversion"},
+					Locations: []string{"testdata/dpkg/noversion"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -347,7 +398,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "packages with no name set are skipped",
-			path:      "testdata/nopackage",
+			path:      "testdata/dpkg/nopackage",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -361,7 +412,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/nopackage"},
+					Locations: []string{"testdata/dpkg/nopackage"},
 				},
 				{
 					Name:    "bar",
@@ -374,7 +425,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/nopackage"},
+					Locations: []string{"testdata/dpkg/nopackage"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -382,7 +433,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "statusfield",
-			path:      "testdata/statusfield",
+			path:      "testdata/dpkg/statusfield",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -396,7 +447,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantdeinstall_installed",
@@ -409,7 +460,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantpurge_installed",
@@ -422,7 +473,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -430,7 +481,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "statusfield including not installed",
-			path:      "testdata/statusfield",
+			path:      "testdata/dpkg/statusfield",
 			osrelease: DebianBookworm,
 			cfg: dpkg.Config{
 				IncludeNotInstalled: true,
@@ -447,7 +498,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantdeinstall_installed",
@@ -460,7 +511,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantdeinstall_configfiles",
@@ -473,7 +524,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantinstall_unpacked",
@@ -486,7 +537,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantpurge_installed",
@@ -499,7 +550,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantinstall_halfinstalled",
@@ -512,7 +563,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 				{
 					Name:    "wantnostatus",
@@ -524,21 +575,21 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "bookworm",
 						OSVersionID:       "12",
 					},
-					Locations: []string{"testdata/statusfield"},
+					Locations: []string{"testdata/dpkg/statusfield"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "empty",
-			path:             "testdata/empty",
+			path:             "testdata/dpkg/empty",
 			osrelease:        DebianBookworm,
 			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "invalid",
-			path:             "testdata/invalid",
+			path:             "testdata/dpkg/invalid",
 			osrelease:        DebianBookworm,
 			wantInventory:    []*extractor.Inventory{},
 			wantErr:          cmpopts.AnyError,
@@ -546,7 +597,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name: "VERSION_CODENAME not set, fallback to VERSION_ID",
-			path: "testdata/single",
+			path: "testdata/dpkg/single",
 			osrelease: `VERSION_ID="12"
 			ID=debian`,
 			wantInventory: []*extractor.Inventory{
@@ -562,14 +613,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:     "Guillem Jover <guillem@debian.org>",
 						Architecture:   "amd64",
 					},
-					Locations: []string{"testdata/single"},
+					Locations: []string{"testdata/dpkg/single"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "no version",
-			path:      "testdata/single",
+			path:      "testdata/dpkg/single",
 			osrelease: `ID=debian`,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -583,14 +634,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:     "Guillem Jover <guillem@debian.org>",
 						Architecture:   "amd64",
 					},
-					Locations: []string{"testdata/single"},
+					Locations: []string{"testdata/dpkg/single"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "osrelease id not set",
-			path:      "testdata/single",
+			path:      "testdata/dpkg/single",
 			osrelease: "VERSION_CODENAME=bookworm",
 			wantInventory: []*extractor.Inventory{
 				{
@@ -604,14 +655,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/single"},
+					Locations: []string{"testdata/dpkg/single"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "ubuntu",
-			path: "testdata/single",
+			path: "testdata/dpkg/single",
 			osrelease: `VERSION_ID="22.04"
 			VERSION_CODENAME=jammy
 			ID=ubuntu
@@ -630,14 +681,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/single"},
+					Locations: []string{"testdata/dpkg/single"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "ubuntu",
-			path: "testdata/trailingnewlines",
+			path: "testdata/dpkg/trailingnewlines",
 			osrelease: `VERSION_ID="22.04"
 			VERSION_CODENAME=jammy
 			ID=ubuntu
@@ -656,7 +707,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Guillem Jover <guillem@debian.org>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/trailingnewlines"},
+					Locations: []string{"testdata/dpkg/trailingnewlines"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -665,7 +716,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "status.d file without Status field set should work",
-			path:      "testdata/status.d/foo",
+			path:      "testdata/dpkg/status.d/foo",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -680,14 +731,14 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "someone",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/status.d/foo"},
+					Locations: []string{"testdata/dpkg/status.d/foo"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "status.d file without Status field set should work",
-			path:             "testdata/status.d/foo.md5sums",
+			path:             "testdata/dpkg/status.d/foo.md5sums",
 			osrelease:        DebianBookworm,
 			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -695,7 +746,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "transitional packages should be annotated",
-			path:      "testdata/transitional",
+			path:      "testdata/dpkg/transitional",
 			osrelease: DebianBookworm,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -712,7 +763,378 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Maintainers of Mozilla-related packages <team+pkg-mozilla@tracker.debian.org>",
 						Architecture:      "all",
 					},
-					Locations:   []string{"testdata/transitional"},
+					Locations:   []string{"testdata/dpkg/transitional"},
+					Annotations: []extractor.Annotation{extractor.Transitional},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "valid opkg status file",
+			path:      "testdata/opkg/valid", // Path to your OPKG status file in the test data
+			osrelease: OpkgRelease,           // You can mock the os-release data as needed
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/valid"},
+				},
+				{
+					Name:    "libuci20130104",
+					Version: "2023.08.10~5781664d-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "libuci20130104",
+						PackageVersion:    "2023.08.10~5781664d-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/valid"},
+				},
+				{
+					Name:    "busybox",
+					Version: "1.36.1-r2",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "busybox",
+						PackageVersion:    "1.36.1-r2",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/valid"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "packages with no version set are skipped",
+			path:      "testdata/opkg/noversion",
+			osrelease: OpkgRelease,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/noversion"},
+				},
+				{
+					Name:    "busybox",
+					Version: "1.36.1-r2",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "busybox",
+						PackageVersion:    "1.36.1-r2",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/noversion"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
+		},
+		{
+			name:      "packages with no name set are skipped",
+			path:      "testdata/opkg/nopackage",
+			osrelease: OpkgRelease,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/nopackage"},
+				},
+				{
+					Name:    "busybox",
+					Version: "1.36.1-r2",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "busybox",
+						PackageVersion:    "1.36.1-r2",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/nopackage"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
+		},
+		{
+			name:      "statusfield",
+			path:      "testdata/opkg/statusfield", // Path to your OPKG status file in the test data
+			osrelease: OpkgRelease,                 // You can mock the os-release data as needed
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "wantinstall_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_installed",
+						PackageVersion:    "1.0",
+						Status:            "install ok installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantpurge_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantpurge_installed",
+						PackageVersion:    "1.0",
+						Status:            "purge ok installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      1,
+		},
+		{
+			name:      "statusfield including not installed",
+			path:      "testdata/opkg/statusfield", // Path to your OPKG status file in the test data
+			osrelease: OpkgRelease,                 // You can mock the os-release data as needed
+			cfg: dpkg.Config{
+				IncludeNotInstalled: true,
+			},
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "wantinstall_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_installed",
+						PackageVersion:    "1.0",
+						Status:            "install ok installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantdeinstall_configfiles",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantdeinstall_configfiles",
+						PackageVersion:    "1.0",
+						Status:            "deinstall ok config-files",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantinstall_unpacked",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantinstall_unpacked",
+						PackageVersion:    "1.0",
+						Status:            "install ok unpacked",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantpurge_installed",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantpurge_installed",
+						PackageVersion:    "1.0",
+						Status:            "purge ok installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantpurge_notinstalled",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantpurge_notinstalled",
+						PackageVersion:    "1.0",
+						Status:            "purge ok not-installed",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+				{
+					Name:    "wantnostatus",
+					Version: "1.0",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "wantnostatus",
+						PackageVersion:    "1.0",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/statusfield"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:             "empty",
+			path:             "testdata/opkg/empty",
+			osrelease:        OpkgRelease,
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:             "invalid",
+			path:             "testdata/opkg/invalid",
+			osrelease:        OpkgRelease,
+			wantInventory:    []*extractor.Inventory{},
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name: "VERSION_CODENAME not set, fallback to VERSION_ID",
+			path: "testdata/opkg/single",
+			osrelease: `VERSION_ID="21.02.1"
+			ID=openwrt`,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:    "ubus",
+						PackageVersion: "2024.10.20~252a9b0c-r1",
+						Status:         "install ok installed",
+						Architecture:   "x86_64",
+						OSID:           "openwrt",
+						OSVersionID:    "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/single"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "no version",
+			path:      "testdata/opkg/single",
+			osrelease: `ID=openwrt`,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:    "ubus",
+						PackageVersion: "2024.10.20~252a9b0c-r1",
+						Status:         "install ok installed",
+						Architecture:   "x86_64",
+						OSID:           "openwrt",
+					},
+					Locations: []string{"testdata/opkg/single"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "osrelease id not set",
+			path:      "testdata/opkg/single",
+			osrelease: `VERSION_CODENAME=openwrt-21.02.1`,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSVersionCodename: "openwrt-21.02.1",
+					},
+					Locations: []string{"testdata/opkg/single"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "newlines",
+			path:      "testdata/opkg/trailingnewlines",
+			osrelease: OpkgRelease,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations: []string{"testdata/opkg/trailingnewlines"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+			wantLogWarn:      0,
+			wantLogErr:       0,
+		},
+		{
+			name:      "transitional packages should be annotated",
+			path:      "testdata/opkg/transitional",
+			osrelease: OpkgRelease,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "ubus",
+					Version: "2024.10.20~252a9b0c-r1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "ubus",
+						PackageVersion:    "2024.10.20~252a9b0c-r1",
+						Status:            "install ok installed",
+						Architecture:      "x86_64",
+						OSID:              "openwrt",
+						OSVersionCodename: "openwrt-21.02.1",
+						OSVersionID:       "21.02.1",
+					},
+					Locations:   []string{"testdata/opkg/transitional"},
 					Annotations: []extractor.Annotation{extractor.Transitional},
 				},
 			},
@@ -841,7 +1263,8 @@ func (l *testLogger) Debug(args ...any) {
 }
 
 func TestExtractNonexistentOSRelease(t *testing.T) {
-	path := "testdata/single"
+	path := "testdata/dpkg/single"
+
 	want := []*extractor.Inventory{
 		{
 			Name:    "acl",
@@ -886,6 +1309,51 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	}
 }
 
+func TestExtractNonexistentOSReleaseOpkg(t *testing.T) {
+	path := "testdata/opkg/single"
+	want := []*extractor.Inventory{
+		{
+			Name:    "ubus",
+			Version: "2024.10.20~252a9b0c-r1",
+			Metadata: &dpkg.Metadata{
+				PackageName:    "ubus",
+				PackageVersion: "2024.10.20~252a9b0c-r1",
+				Status:         "install ok installed",
+				Architecture:   "x86_64",
+				OSID:           "",
+				OSVersionID:    "",
+			},
+			Locations: []string{path},
+		},
+	}
+
+	r, err := os.Open(path)
+	defer func() {
+		if err = r.Close(); err != nil {
+			t.Errorf("Close(): %v", err)
+		}
+	}()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Note that we didn't create any OS release file.
+	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
+
+	e := dpkg.New(dpkg.DefaultConfig())
+	got, err := e.Extract(context.Background(), input)
+	if err != nil {
+		t.Fatalf("Extract(%s) error: %v", path, err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Extract(%s) (-want +got):\n%s", path, diff)
+	}
+}
+
 func TestToPURL(t *testing.T) {
 	pkgname := "pkgname"
 	sourcename := "sourcename"
@@ -895,11 +1363,13 @@ func TestToPURL(t *testing.T) {
 	e := dpkg.Extractor{}
 	tests := []struct {
 		name     string
+		location string
 		metadata *dpkg.Metadata
 		want     *purl.PackageURL
 	}{
 		{
-			name: "both OS versions present",
+			name:     "both OS versions present",
+			location: "var/lib/dpkg/status",
 			metadata: &dpkg.Metadata{
 				PackageName:       pkgname,
 				SourceName:        sourcename,
@@ -921,7 +1391,8 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			name: "only VERSION_ID set",
+			name:     "only VERSION_ID set",
+			location: "var/lib/dpkg/status",
 			metadata: &dpkg.Metadata{
 				PackageName:   pkgname,
 				SourceName:    sourcename,
@@ -942,7 +1413,8 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			name: "ID not set, fallback to linux",
+			name:     "ID not set, fallback to linux",
+			location: "var/lib/dpkg/status",
 			metadata: &dpkg.Metadata{
 				PackageName:       pkgname,
 				SourceName:        sourcename,
@@ -962,6 +1434,42 @@ func TestToPURL(t *testing.T) {
 				}),
 			},
 		},
+		{
+			name:     "OS ID and OS Version set (OpenWrt)",
+			location: "usr/lib/opkg/status",
+			metadata: &dpkg.Metadata{
+				PackageName: pkgname,
+				OSID:        "openwrt",
+				OSVersionID: "22.03.5",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeOpkg,
+				Name:      pkgname,
+				Namespace: "openwrt",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: "22.03.5",
+				}),
+			},
+		},
+		{
+			name:     "OS ID not set, fallback to linux",
+			location: "usr/lib/opkg/status",
+			metadata: &dpkg.Metadata{
+				PackageName:       pkgname,
+				OSVersionCodename: "jammy",
+				OSVersionID:       "5.10",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeOpkg,
+				Name:      pkgname,
+				Namespace: "linux",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: "jammy",
+				}),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -969,7 +1477,7 @@ func TestToPURL(t *testing.T) {
 				Name:      pkgname,
 				Version:   version,
 				Metadata:  tt.metadata,
-				Locations: []string{"location"},
+				Locations: []string{tt.location},
 			}
 			got := e.ToPURL(i)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
@@ -1005,6 +1513,34 @@ func TestEcosystem(t *testing.T) {
 				OSVersionID: "12",
 			},
 			want: "Debian:12",
+		},
+		{
+			name: "OS ID present (OpenWrt)",
+			metadata: &dpkg.Metadata{
+				OSID: "openwrt",
+			},
+			want: "Openwrt",
+		},
+		{
+			name:     "OS ID not present",
+			metadata: &dpkg.Metadata{},
+			want:     "Linux",
+		},
+		{
+			name: "OS version present (OpenWrt)",
+			metadata: &dpkg.Metadata{
+				OSID:        "openwrt",
+				OSVersionID: "22.03.5",
+			},
+			want: "Openwrt:22.03.5",
+		},
+		{
+			name: "OS version present (Generic Linux)",
+			metadata: &dpkg.Metadata{
+				OSID:        "linux",
+				OSVersionID: "5",
+			},
+			want: "Linux:5",
 		},
 	}
 	for _, tt := range tests {
