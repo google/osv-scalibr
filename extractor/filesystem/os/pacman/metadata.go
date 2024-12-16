@@ -20,6 +20,5 @@ type Metadata struct {
 	PackageVersion      string
 	OSID                string
 	OSVersionID         string
-	PackageDescription  string
 	PackageDependencies string
 }

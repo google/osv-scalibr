@@ -1,0 +1,10 @@
+%NAME%
+gawk
+
+%VERSION%
+5.3.1-1
+
+%DEPENDS%
+sh
+glibc
+mpfr

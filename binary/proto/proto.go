@@ -318,7 +318,6 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				PackageVersion:      m.PackageVersion,
 				OsId:                m.OSID,
 				OsVersionId:         m.OSVersionID,
-				PackageDescription:  m.PackageDescription,
 				PackageDependencies: m.PackageDependencies,
 			},
 		}
