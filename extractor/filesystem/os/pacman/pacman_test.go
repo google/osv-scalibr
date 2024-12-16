@@ -126,6 +126,11 @@ func TestFileRequired(t *testing.T) {
 			path:         "var/lib/pacman/local/pacmanlinux-keyring-20241015-1/desc/foo",
 			wantRequired: false,
 		},
+		{
+			name:         "invalid file",
+			path:         "var/lib/pacman/localfoo/desc",
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -285,7 +290,7 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name:      "invalid values eof",
-			path:      "testdata/invalid_values_eof",
+			path:      "testdata/eof_after_dependencies",
 			osrelease: ArchRolling,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -298,7 +303,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID:         "20241201.0.284684",
 						PackageDependencies: "sh, glibc, mpfr",
 					},
-					Locations: []string{"testdata/invalid_values_eof"},
+					Locations: []string{"testdata/eof_after_dependencies"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,

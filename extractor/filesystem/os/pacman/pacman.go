@@ -95,7 +95,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the "desc" file patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// archPrefix and archSuffix are used to match the right file and location.
-	archPrefix := "var/lib/pacman/local"
+	archPrefix := "var/lib/pacman/local/"
 	archSuffix := "desc"
 	path := api.Path()
 
@@ -176,9 +176,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			pkgDependencies, err = extractValues(s)
 		}
 
-		if err == io.EOF {
-			log.Warnf("Reached EOF for desc file in %v", input.Path)
-			break
+		if err != nil {
+			if err == io.EOF {
+				log.Warnf("Reached EOF for desc file in %v", input.Path)
+				break
+			}
+			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
 		}
 	}
 
