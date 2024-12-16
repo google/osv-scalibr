@@ -289,7 +289,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Inventory{},
 		},
 		{
-			name:      "invalid values eof",
+			name:      "eof after dependencies",
 			path:      "testdata/eof_after_dependencies",
 			osrelease: ArchRolling,
 			wantInventory: []*extractor.Inventory{
