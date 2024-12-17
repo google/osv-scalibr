@@ -199,7 +199,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if len(pkgDependencies) != 0 {
-
 			i.Metadata.(*Metadata).PackageDependencies = pkgDependencies
 		}
 
