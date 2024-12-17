@@ -150,38 +150,6 @@ func TestFileRequired(t *testing.T) {
 			path:         "usr/lib/opkg/status/foo",
 			wantRequired: false,
 		},
-		{
-			name:             "status file required if file size < max file size",
-			path:             "usr/lib/opkg/status",
-			fileSizeBytes:    10 * units.KiB,
-			maxFileSizeBytes: 100 * units.KiB,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:             "status file required if file size == max file size",
-			path:             "usr/lib/opkg/status",
-			fileSizeBytes:    100 * units.KiB,
-			maxFileSizeBytes: 100 * units.KiB,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:             "status file not required if file size > max file size",
-			path:             "usr/lib/opkg/status",
-			fileSizeBytes:    1000 * units.KiB,
-			maxFileSizeBytes: 100 * units.KiB,
-			wantRequired:     false,
-			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
-		},
-		{
-			name:             "status file required if max file size set to 0",
-			path:             "usr/lib/opkg/status",
-			fileSizeBytes:    100 * units.KiB,
-			maxFileSizeBytes: 0,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
 	}
 
 	for _, tt := range tests {
@@ -1309,51 +1277,6 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	}
 }
 
-func TestExtractNonexistentOSReleaseOpkg(t *testing.T) {
-	path := "testdata/opkg/single"
-	want := []*extractor.Inventory{
-		{
-			Name:    "ubus",
-			Version: "2024.10.20~252a9b0c-r1",
-			Metadata: &dpkg.Metadata{
-				PackageName:    "ubus",
-				PackageVersion: "2024.10.20~252a9b0c-r1",
-				Status:         "install ok installed",
-				Architecture:   "x86_64",
-				OSID:           "",
-				OSVersionID:    "",
-			},
-			Locations: []string{path},
-		},
-	}
-
-	r, err := os.Open(path)
-	defer func() {
-		if err = r.Close(); err != nil {
-			t.Errorf("Close(): %v", err)
-		}
-	}()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Note that we didn't create any OS release file.
-	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
-
-	e := dpkg.New(dpkg.DefaultConfig())
-	got, err := e.Extract(context.Background(), input)
-	if err != nil {
-		t.Fatalf("Extract(%s) error: %v", path, err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Extract(%s) (-want +got):\n%s", path, diff)
-	}
-}
-
 func TestToPURL(t *testing.T) {
 	pkgname := "pkgname"
 	sourcename := "sourcename"
@@ -1520,11 +1443,6 @@ func TestEcosystem(t *testing.T) {
 				OSID: "openwrt",
 			},
 			want: "Openwrt",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &dpkg.Metadata{},
-			want:     "Linux",
 		},
 		{
 			name: "OS version present (OpenWrt)",

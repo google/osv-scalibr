@@ -330,16 +330,18 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 		q[purl.Arch] = m.Architecture
 	}
 
+	// Determine the package type (opkg or dpkg) based on file location
 	typePurl := ""
 
 	for _, location := range i.Locations {
-		if strings.Contains(location, "opkg") {
+		if location == "usr/lib/opkg/status" {
 			typePurl = purl.TypeOpkg
 			break
 		}
 	}
 
-	if typePurl == "" { // Default to Debian if "opkg" is not found
+	// Default to dpkg if no specific file path matches
+	if typePurl == "" {
 		typePurl = purl.TypeDebian
 	}
 
