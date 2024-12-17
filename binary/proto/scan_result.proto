@@ -89,6 +89,7 @@ message Inventory {
     SPDXPackageMetadata spdx_metadata = 14;
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
+    PACMANPackageMetadata pacman_metadata = 36;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
@@ -277,6 +278,16 @@ message COSPackageMetadata {
   string category = 3;
   string os_version = 4;
   string os_version_id = 5;
+}
+
+// The additional data found in PACMAN packages.
+message PACMANPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string os_id = 3;
+  string os_version_id = 4;
+  string package_description = 5;
+  string package_dependencies = 6;
 }
 
 // The additional data found in SNAP packages.

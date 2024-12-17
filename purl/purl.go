@@ -73,6 +73,8 @@ const (
 	TypeMaven = "maven"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
+	// TypePacman is a pkg:pacman purl.
+	TypePacman = "pacman"
 	// TypeNuget is a pkg:nuget purl.
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
@@ -160,6 +162,7 @@ func validType(t string) bool {
 		TypeCOS:       true,
 		TypeCran:      true,
 		TypeDebian:    true,
+		TypePacman:    true,
 		TypeDocker:    true,
 		TypeFlatpak:   true,
 		TypeGem:       true,
@@ -188,12 +191,13 @@ func validType(t string) bool {
 
 // Qualifier names.
 const (
-	Distro        = "distro"
-	Epoch         = "epoch"
-	Arch          = "arch"
-	Origin        = "origin"
-	Source        = "source"
-	SourceVersion = "sourceversion"
-	SourceRPM     = "sourcerpm"
-	BuildNumber   = "buildnumber"
+	Distro              = "distro"
+	Epoch               = "epoch"
+	Arch                = "arch"
+	Origin              = "origin"
+	Source              = "source"
+	SourceVersion       = "sourceversion"
+	SourceRPM           = "sourcerpm"
+	BuildNumber         = "buildnumber"
+	PackageDependencies = "packagedependencies"
 )

@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -437,6 +438,43 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/rpm",
 	}
+	purlPACMANInventory := &extractor.Inventory{
+		Name:    "zstd",
+		Version: "1.5.6-1",
+		Metadata: &pacman.Metadata{
+			PackageName:    "zstd",
+			PackageVersion: "1.5.6-1",
+			OSID:           "arch",
+			OSVersionID:    "20241201.0.284684",
+		},
+		Locations: []string{"/file1"},
+		Extractor: pacman.New(pacman.DefaultConfig()),
+	}
+	purlPACMANInventoryProto := &spb.Inventory{
+		Name:    "zstd",
+		Version: "1.5.6-1",
+		Purl: &spb.Purl{
+			Purl:      "pkg:pacman/arch/zstd@1.5.6-1?distro=20241201.0.284684",
+			Type:      purl.TypePacman,
+			Namespace: "arch",
+			Name:      "zstd",
+			Version:   "1.5.6-1",
+			Qualifiers: []*spb.Qualifier{
+				{Key: "distro", Value: "20241201.0.284684"},
+			},
+		},
+		Ecosystem: "Arch:20241201.0.284684",
+		Metadata: &spb.Inventory_PacmanMetadata{
+			PacmanMetadata: &spb.PACMANPackageMetadata{
+				PackageName:    "zstd",
+				PackageVersion: "1.5.6-1",
+				OsId:           "arch",
+				OsVersionId:    "20241201.0.284684",
+			},
+		},
+		Locations: []string{"/file1"},
+		Extractor: "os/pacman",
+	}
 	containerdInventory := &extractor.Inventory{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
@@ -717,6 +755,39 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 				Inventories: []*spb.Inventory{purlRPMInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful PACMAN scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{purlPACMANInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{purlPACMANInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			excludeForOS: []string{"windows", "darwin"},
