@@ -131,8 +131,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func fileRequired(path string) bool {
 	normalized := filepath.ToSlash(path)
 
-	// Normal status file
-	if normalized == "var/lib/dpkg/status" {
+	// Normal status file matching DPKG or OPKG format
+	if normalized == "var/lib/dpkg/status" || normalized == "usr/lib/opkg/status" {
 		return true
 	}
 
@@ -329,8 +329,24 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	if m.Architecture != "" {
 		q[purl.Arch] = m.Architecture
 	}
+
+	// Determine the package type (opkg or dpkg) based on file location
+	typePurl := ""
+
+	for _, location := range i.Locations {
+		if location == "usr/lib/opkg/status" {
+			typePurl = purl.TypeOpkg
+			break
+		}
+	}
+
+	// Default to dpkg if no specific file path matches
+	if typePurl == "" {
+		typePurl = purl.TypeDebian
+	}
+
 	return &purl.PackageURL{
-		Type:       purl.TypeDebian,
+		Type:       typePurl,
 		Name:       m.PackageName,
 		Namespace:  toNamespace(m),
 		Version:    i.Version,

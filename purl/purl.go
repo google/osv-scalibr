@@ -79,6 +79,8 @@ const (
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
 	TypeOCI = "oci"
+	// TypeOpkg is a pkg:opkg purl.
+	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
 	TypePub = "pub"
 	// TypePyPi is a pkg:pypi purl.
@@ -176,6 +178,7 @@ func validType(t string) bool {
 		TypeNPM:       true,
 		TypeNuget:     true,
 		TypeOCI:       true,
+		TypeOpkg:      true,
 		TypePub:       true,
 		TypePyPi:      true,
 		TypeRPM:       true,
