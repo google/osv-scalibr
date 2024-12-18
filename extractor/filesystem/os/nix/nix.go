@@ -17,7 +17,7 @@ package nix
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -40,17 +40,11 @@ const (
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 100 * units.MiB
-
-	// nixStoreDir is the standard location of the Nix store.
-	nixStoreDir = "nix/store"
 )
 
 var (
-	// visitedDir keeps track of already visited directories.
+	// visitedDir tracks already visited directories.
 	visitedDir = make(map[string]bool)
-
-	// packageStoreRegex implements the regex for the /nix/store pattern.
-	packageStoreRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-([0-9.]+)(?:-(\S+))?$`)
 )
 
 // Config is the configuration for the Extractor.
@@ -69,13 +63,13 @@ func DefaultConfig() Config {
 	}
 }
 
-// Extractor extracts packages from the Nix store directory.
+// Extractor extracts packages from the nix store directory.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a Nix extractor.
+// New returns a nix extractor.
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		stats:            cfg.Stats,
@@ -122,26 +116,26 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func fileRequired(path string) bool {
-	normalized := filepath.ToSlash(path)
+	// nixStoreDir is the standard location of the Nix store.
+	nixStoreDir := "nix/store/"
 
-	if strings.HasPrefix(normalized, nixStoreDir) {
+	if strings.HasPrefix(path, nixStoreDir) {
 		// e.g.
-		// normalized: nix/store/1ddf3x30m0z6kknmrmapsc7liz8npi1w-perl-5.38.2/bin/ptar
-		// nix store path: 1ddf3x30m0z6kknmrmapsc7liz8npi1w-perl-5.38.2
-		pathParts := strings.Split(normalized, "/")
+		// path: nix/store/1ddf3x30m0z6kknmrmapsc7liz8npi1w-perl-5.38.2/bin/ptar
+		// pathParts: 1ddf3x30m0z6kknmrmapsc7liz8npi1w-perl-5.38.2
+		pathParts := strings.Split(path, "/")
 
 		if len(pathParts) > 3 {
 			uniquePath := pathParts[2]
 
 			// Check if uniquePath has been already processed. Scalibr scans through files but the info
-			// about the Nix packages are saved in the directory name.
+			// about the nix packages are saved in the directory name.
 			if _, exists := visitedDir[uniquePath]; !exists {
 				visitedDir[uniquePath] = true
 				return true
 			}
 		}
 	}
-
 	return false
 }
 
@@ -156,9 +150,10 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 	})
 }
 
-// Extract extracts packages from the filenames of the directories in the Nix store path.
+// Extract extracts packages from the filenames of the directories in the nix store path.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(ctx, input)
+
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -170,10 +165,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	var matches []string
+	// packageStoreRegex implements the regex for the /nix/store pattern.
+	packageStoreRegex := regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-([0-9.]+)(?:-(\S+))?$`)
+	packageStoreUnstableRegex := regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-(unstable-[0-9]{4}-[0-9]{2}-[0-9]{2})$`)
+
 	pkgs := []*extractor.Inventory{}
 
 	m, err := osrelease.GetOSRelease(input.FS)
@@ -181,17 +182,29 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		log.Errorf("osrelease.GetOSRelease(): %v", err)
 	}
 
+	// Return if canceled or exceeding deadline.
+	if err := ctx.Err(); err != nil {
+		return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+	}
+
+	// e.g.
+	// pkg = nix/store/mccadsxm3sgrcx2z0b9c8d5wgnlg7a3z-libarchive-3.7.4-lib/lib/libarchive.so.13.7.4
+	// matches = [mccadsxm3sgrcx2z0b9c8d5wgnlg7a3z-libarchive-3.7.4-lib mccadsxm3sgrcx2z0b9c8d5wgnlg7a3z libarchive 3.7.4 lib]
 	pkg := strings.Split(input.Path, "/")[2]
-	matches := packageStoreRegex.FindStringSubmatch(pkg)
+
+	// Handle unstable packages
+	if !strings.Contains(pkg, "unstable") {
+		matches = packageStoreRegex.FindStringSubmatch(pkg)
+	} else {
+		matches = packageStoreUnstableRegex.FindStringSubmatch(pkg)
+	}
 
 	if len(matches) != 0 {
 		pkgHash := matches[1]
 		pkgName := matches[2]
 		pkgVersion := matches[3]
-		pkgOutput := matches[4]
 
 		if pkgHash != "" && pkgName != "" && pkgVersion != "" {
-
 			i := &extractor.Inventory{
 				Name:    pkgName,
 				Version: pkgVersion,
@@ -199,12 +212,16 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 					PackageName:       pkgName,
 					PackageVersion:    pkgVersion,
 					PackageHash:       pkgHash,
-					PackageOutput:     pkgOutput,
 					OSID:              m["ID"],
 					OSVersionCodename: m["VERSION_CODENAME"],
 					OSVersionID:       m["VERSION_ID"],
 				},
 				Locations: []string{input.Path},
+			}
+
+			if len(matches) > 4 {
+				pkgOutput := matches[4]
+				i.Metadata.(*Metadata).PackageOutput = pkgOutput
 			}
 
 			pkgs = append(pkgs, i)
@@ -247,6 +264,10 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 }
 
 func toNamespace(m *Metadata) string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to 'nixos'")
 	return "nixos"
 }
 

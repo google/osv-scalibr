@@ -85,8 +85,13 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:         "not nix/store directory",
+			name:         "invalid nix/store directory",
 			path:         "nix/xxx/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/xxx",
+			wantRequired: false,
+		},
+		{
+			name:         "invalid nix/store directory",
+			path:         "nix/storefoo/sss",
 			wantRequired: false,
 		},
 		{
@@ -164,7 +169,7 @@ func TestExtract(t *testing.T) {
 	}{
 		{
 			name:      "valid",
-			path:      "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/xxx",
+			path:      "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/foo",
 			osrelease: NixVicuna,
 			wantInventory: []*extractor.Inventory{
 				{
@@ -179,13 +184,53 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "vicuna",
 						OSVersionID:       "24.11",
 					},
-					Locations: []string{"nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/xxx"},
+					Locations: []string{"nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/foo"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "not valid",
+			name:      "valid",
+			path:      "nix/store/q5dhwzcn82by5ndc7g0q83wsnn13qkqw-webdav-server-rs-unstable-2021-08-16/foo",
+			osrelease: NixVicuna,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "webdav-server-rs",
+					Version: "unstable-2021-08-16",
+					Metadata: &nix.Metadata{
+						PackageName:       "webdav-server-rs",
+						PackageVersion:    "unstable-2021-08-16",
+						PackageHash:       "q5dhwzcn82by5ndc7g0q83wsnn13qkqw",
+						PackageOutput:     "",
+						OSID:              "nixos",
+						OSVersionCodename: "vicuna",
+						OSVersionID:       "24.11",
+					},
+					Locations: []string{"nix/store/q5dhwzcn82by5ndc7g0q83wsnn13qkqw-webdav-server-rs-unstable-2021-08-16/foo"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:          "invalid package hash",
+			path:          "nix/store/foo-webdav-server-rs-unstable-2021-08-16/foo",
+			osrelease:     NixVicuna,
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
+			name:          "no package name",
+			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-0.28/foo",
+			osrelease:     NixVicuna,
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
+			name:          "no package version",
+			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager/foo",
+			osrelease:     NixVicuna,
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
+			name:          "invalid",
 			path:          "nix/store/xzlmnp0lblcbscy36nlgif3js4mc68gm-base-system/etc/group",
 			osrelease:     NixVicuna,
 			wantInventory: []*extractor.Inventory{},
@@ -258,14 +303,14 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			name: "OS ID missing",
+			name: "only VERSION_ID set",
 			metadata: &nix.Metadata{
-				PackageName:       pkgName,
-				PackageVersion:    pkgVersion,
-				PackageHash:       pkgHash,
-				PackageOutput:     pkgOutput,
-				OSVersionCodename: "vicuna",
-				OSVersionID:       "24.11",
+				PackageName:    pkgName,
+				PackageVersion: pkgVersion,
+				PackageHash:    pkgHash,
+				PackageOutput:  pkgOutput,
+				OSID:           "nixos",
+				OSVersionID:    "24.11",
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeNix,
@@ -278,7 +323,7 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			name: "ID not set, fallback to nixos",
+			name: "OS ID not set, fallback to Nixos",
 			metadata: &nix.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,

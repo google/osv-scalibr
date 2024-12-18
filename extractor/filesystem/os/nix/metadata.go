@@ -14,13 +14,13 @@
 
 package nix
 
-// Metadata holds parsing information for an nix package.
+// Metadata holds parsing information for a nix package.
 type Metadata struct {
-	PackageName  		string
-	PackageVersion   	string
-	PackageHash	 		string
-	PackageOutput 		string
-	OSID         		string
-	OSVersionCodename  	string
-	OSVersionID   		string
+	PackageName       string
+	PackageVersion    string
+	PackageHash       string
+	PackageOutput     string
+	OSID              string
+	OSVersionCodename string
+	OSVersionID       string
 }
