@@ -252,13 +252,15 @@ func createFileFromTestData(t *testing.T, root string, subPath string, fileName 
 	if err != nil {
 		t.Fatalf("read from %s: %v\n", testDataFilePath, err)
 	}
-	err = os.WriteFile(filepath.Join(root, subPath, fileName), []byte(testData), 0644)
+	err = os.WriteFile(filepath.Join(root, subPath, fileName), testData, 0644)
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, subPath, fileName), err)
 	}
 }
 
 func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInput {
+	t.Helper()
+
 	finalPath := filepath.Join(root, path)
 	reader, err := os.Open(finalPath)
 	defer func() {

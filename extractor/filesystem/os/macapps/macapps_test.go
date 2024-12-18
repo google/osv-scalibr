@@ -36,7 +36,6 @@ import (
 )
 
 func TestFileRequired(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		path             string
@@ -67,10 +66,9 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:             "Valid_DeepDir_File_Path_for_Info.plist",
-			path:             "Applications/GoogleChrome.app/Contents/Helpers/Applications/Contents/Info.plist",
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
+			name:         "no_sub_packages",
+			path:         "Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/Info.plist",
+			wantRequired: false,
 		},
 		{
 			name:             "Info.plist_file_required_if_file_size<max_file_size",
@@ -130,7 +128,6 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		path             string
@@ -143,7 +140,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/ValidXML.plist",
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
-					Name:      "Google Chrome",
+					Name:      "Chrome",
 					Version:   "130.0.6723.69",
 					Locations: []string{"testdata/ValidXML.plist"},
 					Metadata: &macapps.Metadata{
@@ -167,7 +164,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/BinaryApp.plist",
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
-					Name:      "",
+					Name:      "gMacInformation",
 					Version:   "202410231131",
 					Locations: []string{"testdata/BinaryApp.plist"},
 					Metadata: &macapps.Metadata{
@@ -203,7 +200,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/MissingData.plist",
 			wantInventory: []*extractor.Inventory{
 				&extractor.Inventory{
-					Name:      "",
+					Name:      "Chrome",
 					Version:   "",
 					Locations: []string{"testdata/MissingData.plist"},
 					Metadata: &macapps.Metadata{

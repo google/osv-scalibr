@@ -35,8 +35,11 @@ type SystemRegistry struct {
 }
 
 // NewFromFile creates a new SystemRegistry from a file.
+// Note that it is the responsibility of the caller to close the registry once it is no longer
+// needed.
 func NewFromFile(path string) (*SystemRegistry, error) {
-	reg, err := registry.NewFromFile(path)
+	opener := registry.NewOfflineOpener(path)
+	reg, err := opener.Open()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +60,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 	var syskey string
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
 	for _, k := range syskeyPaths {
-		key, err := s.OpenKey(currentControlSet + k)
+		key, err := s.OpenKey("HKLM", currentControlSet+k)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +86,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 	transforms := []int{8, 5, 4, 2, 11, 9, 13, 3, 0, 6, 1, 12, 14, 10, 15, 7}
 	var resultKey []byte
 
-	for i := range len(unhexKey) {
+	for i := range unhexKey {
 		resultKey = append(resultKey, unhexKey[transforms[i]])
 	}
 
@@ -91,7 +94,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 }
 
 func (s *SystemRegistry) currentControlSet() (uint32, error) {
-	key, err := s.OpenKey(`Select`)
+	key, err := s.OpenKey("HKLM", `Select`)
 	if err != nil {
 		return 0, err
 	}

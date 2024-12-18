@@ -65,9 +65,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			e := pnpmlock.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -685,9 +683,7 @@ func TestExtractor_Extract(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := pnpmlock.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

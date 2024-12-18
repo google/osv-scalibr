@@ -28,51 +28,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/types"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
-// fakeV1Layer is a fake implementation of the v1.Layer interface for testing purposes.
-type fakeV1Layer struct {
-	diffID       string
-	buildCommand string
-	isEmpty      bool
-	uncompressed io.ReadCloser
-}
-
-func (fakeV1Layer *fakeV1Layer) DiffID() (v1.Hash, error) {
-	if fakeV1Layer.diffID == "" {
-		return v1.Hash{}, fmt.Errorf("diffID is empty")
-	}
-	return v1.Hash{
-		Algorithm: "sha256",
-		Hex:       fakeV1Layer.diffID,
-	}, nil
-}
-
-func (fakeV1Layer *fakeV1Layer) Digest() (v1.Hash, error) {
-	return v1.Hash{}, nil
-}
-
-func (fakeV1Layer *fakeV1Layer) Uncompressed() (io.ReadCloser, error) {
-	return fakeV1Layer.uncompressed, nil
-}
-
-func (fakeV1Layer *fakeV1Layer) Compressed() (io.ReadCloser, error) {
-	return nil, nil
-}
-
-func (fakeV1Layer *fakeV1Layer) Size() (int64, error) {
-	return 0, nil
-}
-
-func (fakeV1Layer *fakeV1Layer) MediaType() (types.MediaType, error) {
-	return "", nil
-}
-
 func TestConvertV1Layer(t *testing.T) {
-
 	reader := io.NopCloser(nil)
 	tests := []struct {
 		name      string
@@ -83,11 +44,8 @@ func TestConvertV1Layer(t *testing.T) {
 		wantError error
 	}{
 		{
-			name: "valid layer",
-			v1Layer: &fakeV1Layer{
-				diffID:       "abc123",
-				uncompressed: reader,
-			},
+			name:    "valid layer",
+			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader),
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
@@ -98,19 +56,15 @@ func TestConvertV1Layer(t *testing.T) {
 			},
 		},
 		{
-			name: "v1 layer missing diffID",
-			v1Layer: &fakeV1Layer{
-				uncompressed: reader,
-			},
+			name:      "v1 layer missing diffID",
+			v1Layer:   fakev1layer.New("", "ADD file", false, reader),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrDiffIDMissingFromLayer,
 		},
 		{
-			name: "v1 layer missing tar reader",
-			v1Layer: &fakeV1Layer{
-				diffID: "abc123",
-			},
+			name:      "v1 layer missing tar reader",
+			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrUncompressedReaderMissingFromLayer,
@@ -306,7 +260,6 @@ func TestChainFSOpen(t *testing.T) {
 			if diff := cmp.Diff(gotFile, tc.wantNode, cmp.AllowUnexported(fileNode{})); tc.wantNode != nil && diff != "" {
 				t.Errorf("Open(%v) returned file: %v, want file: %v", tc.path, gotFile, tc.wantNode)
 			}
-
 		})
 	}
 }
@@ -476,7 +429,7 @@ func TestChainFSReadDir(t *testing.T) {
 				return strings.Compare(a.Name(), b.Name())
 			})
 
-			for i := range len(wantDirEntries) {
+			for i := range wantDirEntries {
 				gotEntry := gotDirEntries[i]
 				wantEntry := wantDirEntries[i]
 				if gotEntry.Name() != wantEntry.Name() {

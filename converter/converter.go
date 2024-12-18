@@ -38,6 +38,8 @@ const (
 	NoAssertion = "NOASSERTION"
 	// SPDXRefPrefix is the prefix used in reference IDs in the SPDX document.
 	SPDXRefPrefix = "SPDXRef-"
+	// SPDXDocumentID is the string identifier used to refer to the SPDX document.
+	SPDXDocumentID = "SPDXRef-Document"
 )
 
 // spdx_id must only contain letters, numbers, "." and "-"
@@ -73,7 +75,12 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		IsFilesAnalyzedTagPresent: false,
 	})
 
-	relationships := make([]*v2_3.Relationship, 0, 2*len(r.Inventories))
+	relationships := make([]*v2_3.Relationship, 0, 1+2*len(r.Inventories))
+	relationships = append(relationships, &v2_3.Relationship{
+		RefA:         toDocElementID(SPDXDocumentID),
+		RefB:         toDocElementID(mainPackageID),
+		Relationship: "DESCRIBES",
+	})
 
 	for _, i := range r.Inventories {
 		p := ToPURL(i)

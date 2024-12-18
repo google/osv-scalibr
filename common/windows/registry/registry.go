@@ -17,10 +17,16 @@
 // of testing.
 package registry
 
+// Opener is an interface to be able to open an actual registry.
+// It was implemented as a way to delay the time between configuring and closing/using the registry.
+type Opener interface {
+	Open() (Registry, error)
+}
+
 // Registry represents an open registry hive.
 type Registry interface {
-	// OpenKey returns a Key for the given path.
-	OpenKey(path string) (Key, error)
+	// OpenKey returns a Key for the given path in a specific hive.
+	OpenKey(hive string, path string) (Key, error)
 
 	// Close closes the registry hive.
 	Close() error
@@ -43,6 +49,15 @@ type Key interface {
 	// SubkeyNames returns the names of the subkeys of the key.
 	SubkeyNames() ([]string, error)
 
+	// Value returns the value with the given name.
+	Value(name string) (Value, error)
+
+	// ValueBytes directly returns the content (as bytes) of the named value.
+	ValueBytes(name string) ([]byte, error)
+
+	// ValueString directly returns the content (as string) of the named value.
+	ValueString(name string) (string, error)
+
 	// Values returns the different values of the key.
 	Values() ([]Value, error)
 }
@@ -54,4 +69,7 @@ type Value interface {
 
 	// Data returns the data of the value.
 	Data() ([]byte, error)
+
+	// DataString returns the data of the value as a string.
+	DataString() (string, error)
 }

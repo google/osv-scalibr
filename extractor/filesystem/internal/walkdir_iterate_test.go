@@ -83,9 +83,9 @@ func makeTree() scalibrfs.FS {
 }
 
 // Assumes that each node name is unique. Good enough for a test.
-// If clear is true, any incoming error is cleared before return. The errors
+// If clearErr is true, any incoming error is cleared before return. The errors
 // are always accumulated, though.
-func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clear bool) error {
+func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clearErr bool) error {
 	name := entry.Name()
 	walkTree(tree, tree.name, func(path string, n *Node) {
 		if n.name == name {
@@ -94,7 +94,7 @@ func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clear bool)
 	})
 	if err != nil {
 		*errors = append(*errors, err)
-		if clear {
+		if clearErr {
 			return nil
 		}
 		return err
@@ -116,9 +116,9 @@ func TestWalkDir(t *testing.T) {
 
 	fsys := makeTree()
 	errors := make([]error, 0, 10)
-	clear := true
+	clearErr := true
 	markFn := func(path string, entry fs.DirEntry, err error) error {
-		return mark(tree, entry, err, &errors, clear)
+		return mark(tree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
 	err = WalkDirUnsorted(fsys, ".", markFn)
@@ -225,9 +225,9 @@ func (f *fakeDirEntry) Sys() any                   { return nil }
 func TestWalkDirFallbackToDirFS(t *testing.T) {
 	fsys := &fakeFS{}
 	errors := make([]error, 0, 10)
-	clear := true
+	clearErr := true
 	markFn := func(path string, entry fs.DirEntry, err error) error {
-		return mark(fakeFSTree, entry, err, &errors, clear)
+		return mark(fakeFSTree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
 	if err := WalkDirUnsorted(fsys, ".", markFn); err != nil {

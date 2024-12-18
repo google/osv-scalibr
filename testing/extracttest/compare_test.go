@@ -21,8 +21,6 @@ import (
 )
 
 func TestInventoryCmpLess(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		a *extractor.Inventory
 		b *extractor.Inventory

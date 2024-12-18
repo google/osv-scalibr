@@ -110,7 +110,7 @@ func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) 
 		if cdxPkg.PackageURL != "" {
 			packageURL, err := purl.FromString(cdxPkg.PackageURL)
 			if err != nil {
-				log.Warnf("Invalid PURL for package: %q", cdxPkg.BOMRef)
+				log.Warnf("Invalid PURL %q for package ref: %q", cdxPkg.PackageURL, cdxPkg.BOMRef)
 			} else {
 				m.PURL = &packageURL
 				if inv.Name == "" {

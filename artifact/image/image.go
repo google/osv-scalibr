@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/unpack"
@@ -75,9 +75,8 @@ type Image interface {
 	FileHistory(filepath string) History
 }
 
-// NewFromRemoteName pulls a remote container and creates a
-// SCALIBR filesystem for scanning it.
-func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibrfs.FS, error) {
+// V1ImageFromRemoteName creates a v1.Image from a remote container image name.
+func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.Image, error) {
 	imageName = strings.TrimPrefix(imageName, "https://")
 	var image v1.Image
 	if strings.Contains(imageName, "@") {
@@ -104,6 +103,16 @@ func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibr
 		if err != nil {
 			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", tag, err)
 		}
+	}
+	return image, nil
+}
+
+// NewFromRemoteName pulls a remote container and creates a
+// SCALIBR filesystem for scanning it.
+func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibrfs.FS, error) {
+	image, err := V1ImageFromRemoteName(imageName, imageOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
 	return NewFromImage(image)
 }

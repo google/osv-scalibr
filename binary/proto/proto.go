@@ -80,7 +80,7 @@ func typeForPath(filePath string) (*fileType, error) {
 		}
 	}
 
-	isBinProto := false
+	var isBinProto bool
 	switch ext {
 	case ".binproto":
 		isBinProto = true
@@ -319,7 +319,6 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				PackageVersion:      m.PackageVersion,
 				OsId:                m.OSID,
 				OsVersionId:         m.OSVersionID,
-				PackageDescription:  m.PackageDescription,
 				PackageDependencies: m.PackageDependencies,
 			},
 		}

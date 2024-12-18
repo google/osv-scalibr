@@ -207,6 +207,8 @@ func invLess(i1, i2 *extractor.Inventory) bool {
 }
 
 func purlFromString(t *testing.T, purlStr string) *purl.PackageURL {
+	t.Helper()
+
 	res, err := purl.FromString(purlStr)
 	if err != nil {
 		t.Fatalf("purlFromString(%s): %v", purlStr, err)

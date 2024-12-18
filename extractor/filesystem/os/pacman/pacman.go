@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pacmna extracts packages from archlinux desc file.
+// Package pacman extracts packages from archlinux desc file.
 package pacman
 
 import (
 	"bufio"
 	"context"
+	"fmt"
+	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -39,10 +42,6 @@ const (
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 100 * units.MiB
-
-	// archPrefix and archSuffix are used to match the right file and location.
-	archPrefix = "var/lib/pacman/local"
-	archSuffix = "desc"
 )
 
 // Config is the configuration for the Extractor.
@@ -95,9 +94,12 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file matches the "desc" file patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	// archPrefix and archSuffix are used to match the right file and location.
+	archPrefix := "var/lib/pacman/local/"
+	archSuffix := "desc"
 	path := api.Path()
 
-	if !strings.HasPrefix(path, archPrefix) || !strings.HasSuffix(path, archSuffix) {
+	if !strings.HasPrefix(path, archPrefix) || filepath.Base(path) != archSuffix {
 		return false
 	}
 
@@ -150,10 +152,15 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	s := bufio.NewScanner(input.Reader)
-	var pkgName, pkgVersion, pkgDescription, pkgDependencies string
+	var pkgName, pkgVersion, pkgDependencies string
 	pkgs := []*extractor.Inventory{}
 
 	for s.Scan() {
+		// Return if canceled or exceeding deadline.
+		if err := ctx.Err(); err != nil {
+			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+		}
+
 		line := s.Text()
 		line = strings.TrimSpace(line)
 
@@ -162,66 +169,81 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if strings.HasPrefix(line, "%NAME%") {
-			pkgName = extractValue(s)
+			pkgName, err = extractValue(s)
 		} else if strings.HasPrefix(line, "%VERSION%") {
-			pkgVersion = extractValue(s)
-		} else if strings.HasPrefix(line, "%DESC%") {
-			pkgDescription = extractValue(s)
+			pkgVersion, err = extractValue(s)
 		} else if strings.HasPrefix(line, "%DEPENDS%") {
-			pkgDependencies = extractValues(s)
+			pkgDependencies, err = extractValues(s)
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				log.Warnf("Reached EOF for desc file in %v", input.Path)
+				break
+			}
+			return pkgs, fmt.Errorf("%s halted at %q: %v", e.Name(), input.Path, err)
 		}
 	}
 
-	i := &extractor.Inventory{
-		Name:    pkgName,
-		Version: pkgVersion,
-		Metadata: &Metadata{
-			PackageName:    pkgName,
-			PackageVersion: pkgVersion,
-			OSID:           m["ID"],
-			OSVersionID:    m["VERSION_ID"],
-		},
-		Locations: []string{input.Path},
-	}
+	if pkgName != "" && pkgVersion != "" {
+		i := &extractor.Inventory{
+			Name:    pkgName,
+			Version: pkgVersion,
+			Metadata: &Metadata{
+				PackageName:    pkgName,
+				PackageVersion: pkgVersion,
+				OSID:           m["ID"],
+				OSVersionID:    m["VERSION_ID"],
+			},
+			Locations: []string{input.Path},
+		}
 
-	if pkgDescription != "" {
-		i.Metadata.(*Metadata).PackageDescription = pkgDescription
-	}
-	if len(pkgDependencies) != 0 {
+		if len(pkgDependencies) != 0 {
+			i.Metadata.(*Metadata).PackageDependencies = pkgDependencies
+		}
 
-		i.Metadata.(*Metadata).PackageDependencies = pkgDependencies
+		pkgs = append(pkgs, i)
 	}
-
-	pkgs = append(pkgs, i)
 
 	return pkgs, nil
 }
 
-func extractValue(scanner *bufio.Scanner) string {
-	// Skip the current line.
-	scanner.Scan()
+func extractValue(scanner *bufio.Scanner) (string, error) {
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return "", err
+		}
 
-	return strings.TrimSpace(scanner.Text())
+		// EOF
+		return "", io.EOF
+	}
+
+	return strings.TrimSpace(scanner.Text()), nil
 }
 
-func extractValues(scanner *bufio.Scanner) string {
+func extractValues(scanner *bufio.Scanner) (string, error) {
 	var values []string
 
-	// Skip the current line.
-	scanner.Scan()
+	for {
+		if !scanner.Scan() {
+			if err := scanner.Err(); err != nil {
+				return "", err
+			}
 
-	// Scan for multiple values.
-	for scanner.Scan() {
+			// EOF
+			return strings.Join(values, ", "), io.EOF
+		}
+
 		line := strings.TrimSpace(scanner.Text())
 
-		if len(line) == 0 || strings.HasPrefix(line, "%") {
+		if len(line) == 0 {
 			break
 		}
 
 		values = append(values, line)
 	}
 
-	return strings.Join(values, ", ")
+	return strings.Join(values, ", "), nil
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
@@ -238,8 +260,8 @@ func toNamespace(m *Metadata) string {
 	if m.OSID != "" {
 		return m.OSID
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'arch'")
-	return "arch"
+	log.Errorf("os-id not set, fallback to 'linux'")
+	return "linux"
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

@@ -340,9 +340,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := pnpmlock.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

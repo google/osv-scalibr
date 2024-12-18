@@ -111,7 +111,7 @@ func (fakeV1Image *fakeV1Image) LayerByDiffID(v1.Hash) (v1.Layer, error) {
 //  6. Create a scratch image with three layers. The first layer adds file X, the second layer
 //     deletes file X, and the third layer adds file X back. The second chain layer should
 //     have no files, and the third chain layer should have file X.
-func TestLoadFrom(t *testing.T) {
+func TestFromTarball(t *testing.T) {
 	tests := []struct {
 		name                  string
 		tarPath               string
@@ -294,7 +294,7 @@ func TestLoadFrom(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotImage, gotErr := LoadFrom(tc.tarPath, tc.config)
+			gotImage, gotErr := FromTarball(tc.tarPath, tc.config)
 			defer gotImage.CleanUp()
 
 			if tc.wantErr != nil {
@@ -328,7 +328,6 @@ func TestLoadFrom(t *testing.T) {
 
 				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries)
 			}
-
 		})
 	}
 }
@@ -337,11 +336,11 @@ func TestLoadFrom(t *testing.T) {
 //  1. Use a fake v1.Image that has no config file. Make sure that Load() returns an error.
 //  2. Use a fake v1.Image that returns an error when calling Layers(). Make sure that Load() returns
 //     an error.
-//  3. Create a real image with a file surpassing the max file size. Make sure that Load() returns
+//  3. Create an image with a file surpassing the max file size. Make sure that Load() returns
 //     an error.
 //  4. Devise a pathtree that will return an error when inserting a path. Make sure that Load()
 //     returns an error.
-func TestLoad(t *testing.T) {
+func TestFromV1Image(t *testing.T) {
 	tests := []struct {
 		name                  string
 		v1Image               v1.Image
@@ -366,7 +365,7 @@ func TestLoad(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotImage, gotErr := Load(tc.v1Image, DefaultConfig())
+			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
 			defer func() {
 				if gotImage != nil {
 					gotImage.CleanUp()

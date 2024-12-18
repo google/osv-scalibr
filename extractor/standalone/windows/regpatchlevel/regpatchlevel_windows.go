@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -43,8 +43,30 @@ var (
 // Name of the extractor
 const Name = "windows/regpatchlevel"
 
+// Configuration for the extractor.
+type Configuration struct {
+	// Opener is the registry engine to use (offline, live or mock).
+	Opener registry.Opener
+}
+
+// DefaultConfiguration for the extractor. It uses the live registry of the running system.
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Opener: registry.NewLiveOpener(),
+	}
+}
+
 // Extractor implements the regpatchlevel extractor.
-type Extractor struct{}
+type Extractor struct {
+	opener registry.Opener
+}
+
+// New creates a new Extractor from a given configuration.
+func New(config Configuration) *Extractor {
+	return &Extractor{
+		opener: config.Opener,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -59,13 +81,19 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // Extract retrieves the patch level from the Windows registry.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, regPackagesRoot, registry.ENUMERATE_SUB_KEYS)
+	reg, err := e.opener.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer reg.Close()
+
+	key, err := reg.OpenKey("HKLM", regPackagesRoot)
 	if err != nil {
 		return nil, err
 	}
 	defer key.Close()
 
-	subkeys, err := key.ReadSubKeyNames(0)
+	subkeys, err := key.SubkeyNames()
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +101,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	var inventory []*extractor.Inventory
 
 	for _, subkey := range subkeys {
-		entry, err := e.handleKey(regPackagesRoot, subkey)
+		entry, err := e.handleKey(reg, regPackagesRoot, subkey)
 		if err != nil {
 			if err == errSkipEntry {
 				continue
@@ -88,26 +116,26 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	return inventory, nil
 }
 
-func (e *Extractor) handleKey(registryPath, keyName string) (*extractor.Inventory, error) {
+func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName string) (*extractor.Inventory, error) {
 	keyPath := fmt.Sprintf("%s\\%s", registryPath, keyName)
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, keyPath, registry.QUERY_VALUE)
+	key, err := reg.OpenKey("HKLM", keyPath)
 	if err != nil {
 		return nil, err
 	}
 	defer key.Close()
 
-	currentState, _, err := key.GetIntegerValue("CurrentState")
+	currentState, err := key.ValueString("CurrentState")
 	if err != nil {
 		return nil, err
 	}
 
-	visibility, _, err := key.GetIntegerValue("Visibility")
+	visibility, err := key.ValueString("Visibility")
 	if err != nil {
 		return nil, err
 	}
 
 	// Is installed and visible
-	if (currentState != 0x70 && currentState != 0x50) || visibility != 1 {
+	if (currentState != "112" && currentState != "80") || visibility != "1" {
 		return nil, errSkipEntry
 	}
 

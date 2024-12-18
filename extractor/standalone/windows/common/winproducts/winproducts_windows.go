@@ -14,7 +14,9 @@
 
 package winproducts
 
-import "golang.org/x/sys/windows/registry"
+import (
+	"github.com/google/osv-scalibr/common/windows/registry"
+)
 
 const (
 	// Registry information to find the flavor of Windows.
@@ -24,14 +26,14 @@ const (
 
 // WindowsFlavorFromRegistry returns the Windows flavor (e.g. server, client) from the registry.
 // It will default to a "server" flavor if it cannot be determined.
-func WindowsFlavorFromRegistry() string {
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, regRoot, registry.QUERY_VALUE)
+func WindowsFlavorFromRegistry(reg registry.Registry) string {
+	k, err := reg.OpenKey("HKLM", regRoot)
 	if err != nil {
 		return windowsFlavor("server")
 	}
 	defer k.Close()
 
-	value, _, err := k.GetStringValue(regKey)
+	value, err := k.ValueString(regKey)
 	if err != nil {
 		return windowsFlavor("server")
 	}

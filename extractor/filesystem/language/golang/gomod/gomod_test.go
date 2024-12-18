@@ -27,8 +27,6 @@ import (
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name      string
 		inputPath string
@@ -61,7 +59,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			t.Parallel()
 			e := gomod.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -72,8 +69,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	t.Parallel()
-
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "invalid",
@@ -265,7 +260,6 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := gomod.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

@@ -98,6 +98,15 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-52fdfc07-2182-454f-963f-5f0f9a621d72",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-52fdfc07-2182-454f-963f-5f0f9a621d72",
 						},
 						RefB: common.DocElementID{
@@ -187,6 +196,15 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-6694d2c4-22ac-4208-a007-2939487f6999",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-6694d2c4-22ac-4208-a007-2939487f6999",
 						},
 						RefB: common.DocElementID{
@@ -247,7 +265,17 @@ func TestToSPDX23(t *testing.T) {
 					PackageDownloadLocation:   converter.NoAssertion,
 					IsFilesAnalyzedTagPresent: false,
 				}},
-				Relationships: []*v2_3.Relationship{},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-95af5a25-3679-41ba-a2ff-6cd471c483f1",
+						},
+						Relationship: "DESCRIBES",
+					},
+				},
 			},
 		},
 		{
@@ -304,6 +332,15 @@ func TestToSPDX23(t *testing.T) {
 					},
 				},
 				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-680b4e7c-8b76-4a1b-9d49-d4955c848621",
+						},
+						Relationship: "DESCRIBES",
+					},
 					{
 						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-680b4e7c-8b76-4a1b-9d49-d4955c848621",
@@ -381,6 +418,15 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-0bf50598-7592-4e66-8a5b-df2c7fc48445",
 						},
 						RefB: common.DocElementID{
@@ -454,6 +500,15 @@ func TestToSPDX23(t *testing.T) {
 					},
 				},
 				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Document",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-172ed857-94bb-458b-8c3b-525da1786f9f",
+						},
+						Relationship: "DESCRIBES",
+					},
 					{
 						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-172ed857-94bb-458b-8c3b-525da1786f9f",

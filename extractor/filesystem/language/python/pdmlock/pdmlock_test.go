@@ -28,8 +28,6 @@ import (
 )
 
 func TestPdmExtractor_FileRequired(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name      string
 		inputPath string
@@ -73,9 +71,7 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			e := pdmlock.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -86,8 +82,6 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	t.Parallel()
-
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "invalid toml",
@@ -230,9 +224,7 @@ func TestExtractor_Extract(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := pdmlock.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

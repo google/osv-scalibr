@@ -1,44 +1,48 @@
 %NAME%
-filesystem
+libxml2
 
 %VERSION%
-2024.11.21-1
+2.13.5-1
 
 %BASE%
-filesystem
+libxml2
 
 %DESC%
-Base Arch Linux files
+XML C parser and toolkit
 
 %URL%
-https://archlinux.org
+https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home
 
 %ARCH%
-any
+x86_64
 
 %BUILDDATE%
-1732179381
+1731451496
 
 %INSTALLDATE%
-1733011440
+1733011443
 
 %PACKAGER%
-David Runge <dvzrv@archlinux.org>
+Jan Alexander Steffens (heftig) <heftig@archlinux.org>
 
 %SIZE%
-23801
+4002425
 
 %REASON%
 1
 
 %LICENSE%
-GPL-3.0-or-later
+MIT
 
 %VALIDATION%
 pgp
 
-%DEPENDS%
-iana-etc
+%OPTDEPENDS%
+python: Python bindings
+
+%PROVIDES%
+libxml2.so=2-64
 
 %XDATA%
-pkgtype=pkg
+pkgtype=split
+

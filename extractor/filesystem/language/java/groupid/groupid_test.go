@@ -21,7 +21,6 @@ import (
 )
 
 func TestFromArtifactID(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		artifactID string

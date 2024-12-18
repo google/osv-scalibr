@@ -25,18 +25,22 @@ import (
 var (
 	errFailedToReadClassName = errors.New("failed to read class name")
 	errFailedToOpenKey       = errors.New("failed to open key")
+	errFailedToFindValue     = errors.New("could not find value")
 )
 
-// OfflineRegistry wraps the regparser library to provide offline (from file) parsing of the Windows
-// registry.
-type OfflineRegistry struct {
-	registry *regparser.Registry
-	reader   io.ReadCloser
+// OfflineOpener is an opener for the offline registry.
+type OfflineOpener struct {
+	Filepath string
 }
 
-// NewFromFile creates a new offline registry abstraction from a file.
-func NewFromFile(path string) (*OfflineRegistry, error) {
-	f, err := os.Open(path)
+// NewOfflineOpener creates a new OfflineOpener, allowing to open a registry from a file.
+func NewOfflineOpener(filepath string) *OfflineOpener {
+	return &OfflineOpener{filepath}
+}
+
+// Open the offline registry.
+func (o *OfflineOpener) Open() (Registry, error) {
+	f, err := os.Open(o.Filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +54,16 @@ func NewFromFile(path string) (*OfflineRegistry, error) {
 	return &OfflineRegistry{reg, f}, nil
 }
 
+// OfflineRegistry wraps the regparser library to provide offline (from file) parsing of the Windows
+// registry.
+type OfflineRegistry struct {
+	registry *regparser.Registry
+	reader   io.ReadCloser
+}
+
 // OpenKey open the requested registry key.
-func (o *OfflineRegistry) OpenKey(path string) (Key, error) {
+// Note that for offline keys, the hive is not used.
+func (o *OfflineRegistry) OpenKey(_ string, path string) (Key, error) {
 	key := o.registry.OpenKey(path)
 	if key == nil {
 		return nil, errFailedToOpenKey
@@ -117,6 +129,37 @@ func (o *OfflineKey) ClassName() ([]byte, error) {
 	return buffer, nil
 }
 
+// Value returns the value with the given name.
+func (o *OfflineKey) Value(name string) (Value, error) {
+	for _, value := range o.key.Values() {
+		if value.ValueName() == name {
+			return &OfflineValue{value}, nil
+		}
+	}
+
+	return nil, errFailedToFindValue
+}
+
+// ValueBytes directly returns the content (as bytes) of the named value.
+func (o *OfflineKey) ValueBytes(name string) ([]byte, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return value.Data()
+}
+
+// ValueString directly returns the content (as string) of the named value.
+func (o *OfflineKey) ValueString(name string) (string, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return "", err
+	}
+
+	return value.DataString()
+}
+
 // Values returns the different values contained in the key.
 func (o *OfflineKey) Values() ([]Value, error) {
 	var values []Value
@@ -141,4 +184,10 @@ func (o *OfflineValue) Name() string {
 // Data returns the data contained in the value.
 func (o *OfflineValue) Data() ([]byte, error) {
 	return o.value.ValueData().Data, nil
+}
+
+// DataString returns the data contained in the value as a string. Note that if the original data
+// is not a string it will be converted.
+func (o *OfflineValue) DataString() (string, error) {
+	return o.value.ValueData().GoString(), nil
 }

@@ -28,8 +28,6 @@ import (
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name      string
 		inputPath string
@@ -67,9 +65,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			e := poetrylock.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -80,7 +76,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	t.Parallel()
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "invalid toml",
@@ -107,9 +102,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "numpy",
 					Version:   "1.23.3",
 					Locations: []string{"testdata/one-package.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -126,9 +118,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "proto-plus",
 					Version:   "1.22.0",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -137,9 +126,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "protobuf",
 					Version:   "4.21.5",
 					Locations: []string{"testdata/two-packages.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -156,9 +142,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "emoji",
 					Version:   "2.0.0",
 					Locations: []string{"testdata/one-package-with-metadata.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -194,9 +177,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "appdirs",
 					Version:   "1.4.4",
 					Locations: []string{"testdata/source-legacy.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -213,9 +193,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "numpy",
 					Version:   "1.23.3",
 					Locations: []string{"testdata/optional-package.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
@@ -225,9 +202,7 @@ func TestExtractor_Extract(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			extr := poetrylock.Extractor{}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

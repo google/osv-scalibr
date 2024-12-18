@@ -21,14 +21,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/osv-scalibr/log"
 )
 
 // SaveToTarball saves a container image to a tarball.
 func SaveToTarball(path string, image v1.Image) error {
-
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create tar file %q: %w", path, err)

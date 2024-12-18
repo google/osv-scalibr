@@ -15,12 +15,12 @@ linters:
     - canonicalheader
 #    - containedctx
 #    - contextcheck
-#    - copyloopvar
+    - copyloopvar
     - decorder
 #    - depguard
     - dogsled
 #    - dupl
-#    - dupword
+    - dupword
     - durationcheck
 #    - errcheck
 #    - errchkjson
@@ -28,15 +28,15 @@ linters:
 #    - errorlint
 #    - exhaustive
 #    - fatcontext
-#    - forbidigo
+    - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
-#    - gochecknoinits
+    - gochecknoinits
     - gochecksumtype
 #    - gocritic
 #    - gofmt
     - goheader
-#    - goimports
+    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -46,10 +46,10 @@ linters:
 #    - govet
     - grouper
     - importas
-#    - inamedparam
-#    - ineffassign
+    - inamedparam
+    - ineffassign
     - interfacebloat
-#    - intrange
+    - intrange
     - loggercheck
     - makezero
     - mirror
@@ -80,13 +80,26 @@ linters:
     - tenv
     - testableexamples
     - testifylint
-#    - thelper
-#    - tparallel
-#    - unconvert
+    - thelper
+    - unconvert
 #    - unparam
 #    - unused
 #    - usestdlibvars
-#    - wastedassign
-#    - whitespace
+    - wastedassign
+    - whitespace
     - zerologlint
   disable-all: true
+#  disable:
+#    - tparallel # Parallel tests mixes up log lines of multiple tests in the internal test runner
+
+linters-settings:
+  forbidigo:
+    forbid:
+      # Parallel tests mixes up log lines of multiple tests in the internal test runner
+      - p: ^testing.T.Parallel$
+        pkg: ^testing$
+    analyze-types: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

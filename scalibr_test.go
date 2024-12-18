@@ -241,7 +241,6 @@ func TestEnableRequiredExtractors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			if err := tc.cfg.EnableRequiredExtractors(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("EnableRequiredExtractors() error: %v, want %v", tc.wantErr, err)
 			}
@@ -353,7 +352,6 @@ func TestValidatePluginRequirements(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 			if err := tc.cfg.ValidatePluginRequirements(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("ValidatePluginRequirements() error: %v, want %v", tc.wantErr, err)
 			}

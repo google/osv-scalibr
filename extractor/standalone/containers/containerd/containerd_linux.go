@@ -135,7 +135,6 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		// and reset it in the extractor.
 		cli, err := containerd.New(e.socketAddr)
 		if err != nil {
-			cli = nil
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
 			return inventory, err
 		}
@@ -238,7 +237,6 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	if err != nil {
 		log.Errorf("Failed to obtain container info for container %v, error: %v", task.ID, err)
 		return md, err
-
 	}
 
 	image, err := container.Image(ctx)

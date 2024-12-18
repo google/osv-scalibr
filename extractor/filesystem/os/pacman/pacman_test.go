@@ -116,6 +116,21 @@ func TestFileRequired(t *testing.T) {
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
+		{
+			name:         "invalid file",
+			path:         "var/lib/pacman/local/pacmanlinux-keyring-20241015-1/foodesc",
+			wantRequired: false,
+		},
+		{
+			name:         "invalid file",
+			path:         "var/lib/pacman/local/pacmanlinux-keyring-20241015-1/desc/foo",
+			wantRequired: false,
+		},
+		{
+			name:         "invalid file",
+			path:         "var/lib/pacman/localfoo/desc",
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -185,8 +200,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
 						OSVersionID:         "20241201.0.284684",
-						PackageDescription:  "GNU version of awk",
-						PackageDependencies: "glibc, mpfr",
+						PackageDependencies: "sh, glibc, mpfr",
 					},
 					Locations: []string{"testdata/valid"},
 				},
@@ -194,21 +208,102 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:      "valid desc file with no dependencies",
-			path:      "testdata/valid_no_dep",
+			name:      "valid desc file one dependency",
+			path:      "testdata/valid_one_dep",
 			osrelease: ArchRolling,
 			wantInventory: []*extractor.Inventory{
 				{
 					Name:    "filesystem",
 					Version: "2024.11.21-1",
 					Metadata: &pacman.Metadata{
-						PackageName:        "filesystem",
-						PackageVersion:     "2024.11.21-1",
-						OSID:               "arch",
-						OSVersionID:        "20241201.0.284684",
-						PackageDescription: "Base Arch Linux files",
+						PackageName:         "filesystem",
+						PackageVersion:      "2024.11.21-1",
+						OSID:                "arch",
+						OSVersionID:         "20241201.0.284684",
+						PackageDependencies: "iana-etc",
+					},
+					Locations: []string{"testdata/valid_one_dep"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "valid desc file no dependencies",
+			path:      "testdata/valid_no_dep",
+			osrelease: ArchRolling,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "libxml2",
+					Version: "2.13.5-1",
+					Metadata: &pacman.Metadata{
+						PackageName:    "libxml2",
+						PackageVersion: "2.13.5-1",
+						OSID:           "arch",
+						OSVersionID:    "20241201.0.284684",
 					},
 					Locations: []string{"testdata/valid_no_dep"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "no os version",
+			path:      "testdata/valid",
+			osrelease: `ID=arch`,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "gawk",
+					Version: "5.3.1-1",
+					Metadata: &pacman.Metadata{
+						PackageName:         "gawk",
+						PackageVersion:      "5.3.1-1",
+						OSID:                "arch",
+						PackageDependencies: "sh, glibc, mpfr",
+					},
+					Locations: []string{"testdata/valid"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "missing osrelease",
+			path: "testdata/valid",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "gawk",
+					Version: "5.3.1-1",
+					Metadata: &pacman.Metadata{
+						PackageName:         "gawk",
+						PackageVersion:      "5.3.1-1",
+						PackageDependencies: "sh, glibc, mpfr",
+					},
+					Locations: []string{"testdata/valid"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:          "invalid value eof",
+			path:          "testdata/invalid_value_eof",
+			osrelease:     ArchRolling,
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
+			name:      "eof after dependencies",
+			path:      "testdata/eof_after_dependencies",
+			osrelease: ArchRolling,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "gawk",
+					Version: "5.3.1-1",
+					Metadata: &pacman.Metadata{
+						PackageName:         "gawk",
+						PackageVersion:      "5.3.1-1",
+						OSID:                "arch",
+						OSVersionID:         "20241201.0.284684",
+						PackageDependencies: "sh, glibc, mpfr",
+					},
+					Locations: []string{"testdata/eof_after_dependencies"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -258,7 +353,6 @@ func TestExtract(t *testing.T) {
 func TestToPURL(t *testing.T) {
 	pkgName := "pkgName"
 	pkgVersion := "pkgVersion"
-	pkgDescription := "pkgDescription"
 	PackageDependencies := "pkgDependencies1, pkgDependencies2"
 
 	e := pacman.Extractor{}
@@ -274,7 +368,6 @@ func TestToPURL(t *testing.T) {
 				PackageVersion:      pkgVersion,
 				OSID:                "arch",
 				OSVersionID:         "20241201.0.284684",
-				PackageDescription:  pkgDescription,
 				PackageDependencies: PackageDependencies,
 			},
 			want: &purl.PackageURL{
@@ -295,7 +388,6 @@ func TestToPURL(t *testing.T) {
 				PackageVersion:      pkgVersion,
 				OSID:                "arch",
 				OSVersionID:         "20241201.0.284684",
-				PackageDescription:  pkgDescription,
 				PackageDependencies: PackageDependencies,
 			},
 			want: &purl.PackageURL{
@@ -310,18 +402,17 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
-			name: "ID not set, fallback to linux",
+			name: "OS ID not set, fallback to Linux",
 			metadata: &pacman.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
 				OSVersionID:         "20241201.0.284684",
-				PackageDescription:  pkgDescription,
 				PackageDependencies: PackageDependencies,
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypePacman,
 				Name:      pkgName,
-				Namespace: "arch",
+				Namespace: "linux",
 				Version:   pkgVersion,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					purl.Distro:              "20241201.0.284684",
@@ -363,7 +454,7 @@ func TestEcosystem(t *testing.T) {
 		{
 			name:     "OS ID not present",
 			metadata: &pacman.Metadata{},
-			want:     "Arch",
+			want:     "Linux",
 		},
 		{
 			name: "OS version present",

@@ -55,6 +55,9 @@ func (f *fileNode) Stat() (fs.FileInfo, error) {
 
 // Read reads the real file referred to by the fileNode.
 func (f *fileNode) Read(b []byte) (n int, err error) {
+	if f.isWhiteout {
+		return 0, fs.ErrNotExist
+	}
 	if f.file == nil {
 		f.file, err = os.Open(f.RealFilePath())
 	}
@@ -64,10 +67,12 @@ func (f *fileNode) Read(b []byte) (n int, err error) {
 	return f.file.Read(b)
 }
 
-// Close closes the real file referred to by the fileNode.
+// Close closes the real file referred to by the fileNode and resets the file field.
 func (f *fileNode) Close() error {
 	if f.file != nil {
-		return f.file.Close()
+		err := f.file.Close()
+		f.file = nil
+		return err
 	}
 	return nil
 }

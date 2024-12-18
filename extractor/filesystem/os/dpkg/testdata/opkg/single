@@ -1,0 +1,7 @@
+Package: ubus
+Version: 2024.10.20~252a9b0c-r1
+Depends: libc, libubus20241020, libblobmsg-json20240329, ubusd
+Status: install ok installed
+Architecture: x86_64
+Installed-Time: 1730715936
+Auto-Installed: yes

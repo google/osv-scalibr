@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/osv-scalibr/artifact/image/tar"
 )
@@ -80,6 +80,7 @@ func filesMatch(t *testing.T, path1, path2 string) bool {
 }
 
 func mustHashFile(t *testing.T, path string) string {
+	t.Helper()
 
 	f, err := os.Open(path)
 	if err != nil {

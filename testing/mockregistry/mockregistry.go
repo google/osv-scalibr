@@ -23,7 +23,23 @@ import (
 
 var (
 	errFailedToOpenKey = errors.New("failed to open key")
+	errValueNotFound   = errors.New("value not found")
 )
+
+// Opener is an opener for the mock registry.
+type Opener struct {
+	Registry *MockRegistry
+}
+
+// NewOpener creates a new Opener for the mock registry.
+func NewOpener(registry *MockRegistry) *Opener {
+	return &Opener{Registry: registry}
+}
+
+// Open returns the mock registry.
+func (o *Opener) Open() (registry.Registry, error) {
+	return o.Registry, nil
+}
 
 // MockRegistry mocks registry access.
 type MockRegistry struct {
@@ -31,7 +47,8 @@ type MockRegistry struct {
 }
 
 // OpenKey open the requested registry key.
-func (o *MockRegistry) OpenKey(path string) (registry.Key, error) {
+// Note that for mock registry, the hive is not used.
+func (o *MockRegistry) OpenKey(_ string, path string) (registry.Key, error) {
 	if key, ok := o.Keys[path]; ok {
 		return key, nil
 	}
@@ -82,6 +99,37 @@ func (o *MockKey) ClassName() ([]byte, error) {
 	return []byte(o.KClassName), nil
 }
 
+// Value returns the value with the given name.
+func (o *MockKey) Value(name string) (registry.Value, error) {
+	for _, value := range o.KValues {
+		if value.Name() == name {
+			return value, nil
+		}
+	}
+
+	return nil, errValueNotFound
+}
+
+// ValueBytes directly returns the content (as bytes) of the named value.
+func (o *MockKey) ValueBytes(name string) ([]byte, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return value.Data()
+}
+
+// ValueString directly returns the content (as string) of the named value.
+func (o *MockKey) ValueString(name string) (string, error) {
+	value, err := o.Value(name)
+	if err != nil {
+		return "", err
+	}
+
+	return value.DataString()
+}
+
 // Values returns the different values contained in the key.
 func (o *MockKey) Values() ([]registry.Value, error) {
 	return o.KValues, nil
@@ -89,8 +137,9 @@ func (o *MockKey) Values() ([]registry.Value, error) {
 
 // MockValue mocks a registry.Value.
 type MockValue struct {
-	VName string
-	VData []byte
+	VName       string
+	VData       []byte
+	VDataString string
 }
 
 // Name returns the name of the value.
@@ -101,4 +150,9 @@ func (o *MockValue) Name() string {
 // Data returns the data contained in the value.
 func (o *MockValue) Data() ([]byte, error) {
 	return o.VData, nil
+}
+
+// DataString returns the data contained in the value as a string.
+func (o *MockValue) DataString() (string, error) {
+	return o.VDataString, nil
 }

@@ -29,7 +29,7 @@ var ErrNotCracked = errors.New("not cracked")
 // Cracker interface is implemented by types which know how to crack hashes.
 type Cracker interface {
 	// Crack returns (password,nil) on success and ("", ErrNotCracked) on failure.
-	Crack(context.Context, string) (string, error)
+	Crack(ctx context.Context, hash string) (string, error)
 }
 
 type passwordCracker struct {
@@ -46,6 +46,7 @@ func NewPasswordCracker() Cracker {
 }
 
 func (c passwordCracker) Crack(ctx context.Context, hash string) (string, error) {
+	// TODO(b/383302694): Add more hash algos.
 	switch {
 	case strings.HasPrefix(hash, "$2"):
 		return c.bcryptCracker.Crack(ctx, hash)
@@ -61,10 +62,8 @@ type bcryptCracker struct {
 
 func (c bcryptCracker) Crack(ctx context.Context, hash string) (string, error) {
 	for _, v := range topPasswords {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return "", ctx.Err()
-		default: // keep cracking
 		}
 		err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(v))
 		if err == nil {
@@ -81,10 +80,8 @@ type sha512CryptCracker struct {
 func (c sha512CryptCracker) Crack(ctx context.Context, hash string) (string, error) {
 	crypter := sha512_crypt.New()
 	for _, v := range topPasswords {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return "", ctx.Err()
-		default: // keep cracking
 		}
 		err := crypter.Verify(hash, []byte(v))
 		if err == nil {

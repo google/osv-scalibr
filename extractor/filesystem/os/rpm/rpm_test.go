@@ -146,8 +146,8 @@ func TestFileRequired(t *testing.T) {
 				wantResultMetric = stats.FileRequiredResultOK
 			}
 			gotResultMetric := collector.FileRequiredResult(tt.path)
-			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
-				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
+			if wantResultMetric != "" && gotResultMetric != wantResultMetric {
+				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
 			}
 		})
 	}
@@ -970,6 +970,8 @@ func TestEcosystem(t *testing.T) {
 
 // CopyFileToTempDir copies the passed in file to a temporary directory, then returns the new file path.
 func CopyFileToTempDir(t *testing.T, filepath, root string) (string, error) {
+	t.Helper()
+
 	filename := path.Base(filepath)
 	newfile := path.Join(root, filename)
 

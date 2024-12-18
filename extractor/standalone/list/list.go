@@ -40,9 +40,9 @@ var (
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = []standalone.Extractor{
-		&ospackages.Extractor{},
-		&regosversion.Extractor{},
-		&regpatchlevel.Extractor{},
+		ospackages.New(ospackages.DefaultConfiguration()),
+		regosversion.New(regosversion.DefaultConfiguration()),
+		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
 	}
 
 	// Containers standalone extractors.
@@ -66,6 +66,7 @@ var (
 	}
 )
 
+//nolint:gochecknoinits
 func init() {
 	for _, e := range All {
 		register(e)
