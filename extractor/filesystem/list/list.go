@@ -30,7 +30,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -115,7 +114,6 @@ var (
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
 	Dotnet []filesystem.Extractor = []filesystem.Extractor{
-		packagesconfig.New(packagesconfig.DefaultConfig()),
 		depsjson.New(depsjson.DefaultConfig()),
 		packageslockjson.New(packageslockjson.DefaultConfig()),
 	}

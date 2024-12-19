@@ -98,7 +98,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "application1.deps.json file required if file size < max file size",
-			path:             "/application1.deps.json",
+			path:             "application1.deps.json",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -106,7 +106,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "application1.deps.json file required if file size == max file size",
-			path:             "/application1.deps.json",
+			path:             "application1.deps.json",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -114,7 +114,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "application1.deps.json file not required if file size > max file size",
-			path:             "/application1.deps.json",
+			path:             "application1.deps.json",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
 			wantRequired:     false,
@@ -122,7 +122,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "application1.deps.json file required if max file size set to 0",
-			path:             "/application1.deps.json",
+			path:             "application1.deps.json",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
@@ -205,7 +205,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "valid application1.deps.json file",
+			name: "valid application1.deps.json file with an invalid package",
 			path: "testdata/nopackagename",
 			wantInventory: []*extractor.Inventory{
 				{

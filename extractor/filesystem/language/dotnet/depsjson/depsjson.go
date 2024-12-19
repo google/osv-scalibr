@@ -18,7 +18,6 @@ package depsjson
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -88,7 +87,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the deps.json pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.HasSuffix(filepath.Base(path), ".deps.json") {
+	if !strings.HasSuffix(path, ".deps.json") {
 		return false
 	}
 
@@ -136,7 +135,6 @@ type DepsJSON struct {
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var pkgs []*extractor.Inventory
 
 	var deps DepsJSON
 	decoder := json.NewDecoder(input.Reader)
@@ -145,6 +143,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, err
 	}
 
+	var inventories []*extractor.Inventory
 	for nameVersion := range deps.Libraries {
 		// Split name and version from "package/version" format
 		name, version := splitNameAndVersion(nameVersion)
@@ -158,10 +157,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			Version:   version,
 			Locations: []string{input.Path},
 		}
-		pkgs = append(pkgs, i)
+		inventories = append(inventories, i)
 	}
 
-	return pkgs, nil
+	return inventories, nil
 }
 
 // splitNameAndVersion splits the name and version from a "package/version" string.
