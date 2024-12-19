@@ -37,7 +37,7 @@ const (
 	defaultMaxFileSizeBytes = 10 * units.MiB // 10 MB
 )
 
-// Config is the configuration for the .NET extractor.
+// Config is the configuration for the .NET packages.config extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
 	Stats stats.Collector
@@ -46,20 +46,20 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
-// DefaultConfig returns the default configuration for the .NET extractor.
+// DefaultConfig returns the default configuration for the .NET packages.config extractor.
 func DefaultConfig() Config {
 	return Config{
 		MaxFileSizeBytes: defaultMaxFileSizeBytes,
 	}
 }
 
-// Extractor structure for packages.config files.
+// Extractor structure for .NET packages.config files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a .NET extractor.
+// New returns a .NET packages.config extractor.
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		stats:            cfg.Stats,
@@ -84,7 +84,7 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired returns true if the specified file matches the packages.config pattern.
+// FileRequired returns true if the specified file matches the .NET packages.config pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	if filepath.Base(path) != "packages.config" {

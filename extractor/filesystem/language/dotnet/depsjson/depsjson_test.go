@@ -204,6 +204,23 @@ func TestExtract(t *testing.T) {
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
+		{
+			name: "valid application1.deps.json file",
+			path: "testdata/nopackagename",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "TestLibrary",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/nopackagename"},
+				},
+				{
+					Name:      "AWSSDK.Core",
+					Version:   "3.7.10.6",
+					Locations: []string{"testdata/nopackagename"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 	}
 
 	for _, tt := range tests {

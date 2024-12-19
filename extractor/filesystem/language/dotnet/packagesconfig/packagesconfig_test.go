@@ -194,6 +194,30 @@ func TestExtract(t *testing.T) {
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
+		{
+			name: "packages without version",
+			path: "testdata/noversion",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/noversion"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "packages without name",
+			path: "testdata/nopackage",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/nopackage"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 	}
 
 	for _, tt := range tests {
