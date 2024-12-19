@@ -242,13 +242,11 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 
 	return &purl.PackageURL{
-		Type:      purl.TypeNix,
-		Name:      i.Name,
-		Version:   i.Version,
-		Namespace: toNamespace(m),
-		Qualifiers: purl.QualifiersFromMap(map[string]string{
-			"hash": m.PackageHash,
-		}),
+		Type:       purl.TypeNix,
+		Name:       i.Name,
+		Version:    i.Version,
+		Namespace:  toNamespace(m),
+		Qualifiers: purl.QualifiersFromMap(q),
 	}
 }
 

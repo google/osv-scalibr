@@ -298,7 +298,7 @@ func TestToPURL(t *testing.T) {
 				Version:   pkgVersion,
 				Namespace: "nixos",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"hash": pkgHash,
+					"distro": "vicuna",
 				}),
 			},
 		},
@@ -318,7 +318,7 @@ func TestToPURL(t *testing.T) {
 				Version:   pkgVersion,
 				Namespace: "nixos",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"hash": pkgHash,
+					"distro": "24.11",
 				}),
 			},
 		},
@@ -338,7 +338,7 @@ func TestToPURL(t *testing.T) {
 				Version:   pkgVersion,
 				Namespace: "nixos",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"hash": pkgHash,
+					"distro": "vicuna",
 				}),
 			},
 		},
