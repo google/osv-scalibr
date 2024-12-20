@@ -12,6 +12,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * OPKG (used by e.g., OpenWrt and embedded Linux systems)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 * Pacman (used by e.g. Arch Linux)
+* Kernel
 * SNAP
 * Flatpak
 * Homebrew (used by OS X)
