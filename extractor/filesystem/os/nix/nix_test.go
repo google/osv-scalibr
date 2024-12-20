@@ -19,55 +19,18 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
-	"github.com/google/osv-scalibr/testing/testcollector"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     nix.Config
-		wantCfg nix.Config
-	}{
-		{
-			name: "default",
-			cfg:  nix.DefaultConfig(),
-			wantCfg: nix.Config{
-				MaxFileSizeBytes: 100 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: nix.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: nix.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := nix.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -99,35 +62,24 @@ func TestFileRequired(t *testing.T) {
 			path:         "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/sss",
 			wantRequired: false,
 		},
+		{
+			name:         "no nix/store prefix",
+			path:         "foo/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/sss",
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := testcollector.New()
-
-			var e filesystem.Extractor = nix.New(nix.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
-
-			fileSizeBytes := tt.fileSizeBytes
-			if fileSizeBytes == 0 {
-				fileSizeBytes = 1000
-			}
+			var e filesystem.Extractor = nix.Extractor{}
 
 			isRequired := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
-				FileSize: fileSizeBytes,
 			}))
 
 			if isRequired != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
-			}
-
-			gotResultMetric := collector.FileRequiredResult(tt.path)
-			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
-				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
 	}
@@ -162,7 +114,6 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              nix.Config
 		wantInventory    []*extractor.Inventory
 		wantError        error
 		wantResultMetric stats.FileExtractedResult
@@ -215,35 +166,37 @@ func TestExtract(t *testing.T) {
 			name:          "invalid package hash",
 			path:          "nix/store/foo-webdav-server-rs-unstable-2021-08-16/foo",
 			osrelease:     NixVicuna,
-			wantInventory: []*extractor.Inventory{},
+			wantInventory: nil,
 		},
 		{
 			name:          "no package name",
 			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-0.28/foo",
 			osrelease:     NixVicuna,
-			wantInventory: []*extractor.Inventory{},
+			wantInventory: nil,
 		},
 		{
 			name:          "no package version",
 			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager/foo",
 			osrelease:     NixVicuna,
-			wantInventory: []*extractor.Inventory{},
+			wantInventory: nil,
 		},
 		{
 			name:          "invalid",
 			path:          "nix/store/xzlmnp0lblcbscy36nlgif3js4mc68gm-base-system/etc/group",
 			osrelease:     NixVicuna,
-			wantInventory: []*extractor.Inventory{},
+			wantInventory: nil,
+		},
+		{
+			name:          "invalid",
+			path:          "nix/store/a-b-c-d-e/foo",
+			osrelease:     NixVicuna,
+			wantInventory: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := testcollector.New()
-			var e filesystem.Extractor = nix.New(nix.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			var e filesystem.Extractor = nix.Extractor{}
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
@@ -293,10 +246,9 @@ func TestToPURL(t *testing.T) {
 				OSVersionID:       "24.11",
 			},
 			want: &purl.PackageURL{
-				Type:      purl.TypeNix,
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Namespace: "nixos",
+				Type:    purl.TypeNix,
+				Name:    pkgName,
+				Version: pkgVersion,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					"distro": "vicuna",
 				}),
@@ -313,10 +265,9 @@ func TestToPURL(t *testing.T) {
 				OSVersionID:    "24.11",
 			},
 			want: &purl.PackageURL{
-				Type:      purl.TypeNix,
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Namespace: "nixos",
+				Type:    purl.TypeNix,
+				Name:    pkgName,
+				Version: pkgVersion,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					"distro": "24.11",
 				}),
@@ -333,10 +284,9 @@ func TestToPURL(t *testing.T) {
 				OSVersionID:       "24.11",
 			},
 			want: &purl.PackageURL{
-				Type:      purl.TypeNix,
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Namespace: "nixos",
+				Type:    purl.TypeNix,
+				Name:    pkgName,
+				Version: pkgVersion,
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					"distro": "vicuna",
 				}),
@@ -354,47 +304,6 @@ func TestToPURL(t *testing.T) {
 			got := e.ToPURL(i)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := nix.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *nix.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &nix.Metadata{
-				OSID: "nixos",
-			},
-			want: "Nixos",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &nix.Metadata{},
-			want:     "Nixos",
-		},
-		{
-			name: "OS version present",
-			metadata: &nix.Metadata{
-				OSID:        "nixos",
-				OSVersionID: "24.11",
-			},
-			want: "Nixos:24.11",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

@@ -126,7 +126,7 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
-		nix.New(nix.DefaultConfig()),
+		nix.Extractor{},
 		pacman.New(pacman.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
 		homebrew.Extractor{},
