@@ -175,18 +175,33 @@ func TestExtract(t *testing.T) {
 			path: "testdata/valid",
 			wantInventory: []*extractor.Inventory{
 				{
-					Name:      "TestLibrary",
-					Version:   "1.0.0",
+					Name:    "TestLibrary",
+					Version: "1.0.0",
+					Metadata: &depsjson.Metadata{
+						PackageName:    "TestLibrary",
+						PackageVersion: "1.0.0",
+						Type:           "project",
+					},
 					Locations: []string{"testdata/valid"},
 				},
 				{
-					Name:      "AWSSDK.Core",
-					Version:   "3.7.10.6",
+					Name:    "AWSSDK.Core",
+					Version: "3.7.10.6",
+					Metadata: &depsjson.Metadata{
+						PackageName:    "AWSSDK.Core",
+						PackageVersion: "3.7.10.6",
+						Type:           "package",
+					},
 					Locations: []string{"testdata/valid"},
 				},
 				{
-					Name:      "Microsoft.Extensions.DependencyInjection",
-					Version:   "6.0.0",
+					Name:    "Microsoft.Extensions.DependencyInjection",
+					Version: "6.0.0",
+					Metadata: &depsjson.Metadata{
+						PackageName:    "Microsoft.Extensions.DependencyInjection",
+						PackageVersion: "6.0.0",
+						Type:           "package",
+					},
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -209,13 +224,23 @@ func TestExtract(t *testing.T) {
 			path: "testdata/nopackagename",
 			wantInventory: []*extractor.Inventory{
 				{
-					Name:      "TestLibrary",
-					Version:   "1.0.0",
+					Name:    "TestLibrary",
+					Version: "1.0.0",
+					Metadata: &depsjson.Metadata{
+						PackageName:    "TestLibrary",
+						PackageVersion: "1.0.0",
+						Type:           "project",
+					},
 					Locations: []string{"testdata/nopackagename"},
 				},
 				{
-					Name:      "AWSSDK.Core",
-					Version:   "3.7.10.6",
+					Name:    "AWSSDK.Core",
+					Version: "3.7.10.6",
+					Metadata: &depsjson.Metadata{
+						PackageName:    "AWSSDK.Core",
+						PackageVersion: "3.7.10.6",
+						Type:           "package",
+					},
 					Locations: []string{"testdata/nopackagename"},
 				},
 			},

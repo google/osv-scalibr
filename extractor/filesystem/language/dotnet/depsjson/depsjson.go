@@ -129,8 +129,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 type DepsJSON struct {
+	// Note: Libraries does not include transitive dependencies.
+	// Targets is not currently extracted because it introduces significant
+	// complexity and is not always necessary for basic dependency analysis.
 	Libraries map[string]struct {
 		Version string `json:"version"`
+		Type    string `json:"type"` // Represents the package type, if present.
 	} `json:"libraries"`
 }
 
@@ -144,17 +148,22 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	var inventories []*extractor.Inventory
-	for nameVersion := range deps.Libraries {
+	for nameVersion, library := range deps.Libraries {
 		// Split name and version from "package/version" format
 		name, version := splitNameAndVersion(nameVersion)
 		if name == "" || version == "" {
 			log.Warnf("Skipping library with missing name or version: %s", nameVersion)
 			continue
 		}
-
+		// If the library type is "project", this is the root/main package.
 		i := &extractor.Inventory{
-			Name:      name,
-			Version:   version,
+			Name:    name,
+			Version: version,
+			Metadata: &Metadata{
+				PackageName:    name,
+				PackageVersion: version,
+				Type:           library.Type,
+			},
 			Locations: []string{input.Path},
 		}
 		inventories = append(inventories, i)
