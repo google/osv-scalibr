@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -475,6 +476,43 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/pacman",
 	}
+	purlPORTAGEInventory := &extractor.Inventory{
+		Name:    "Capture-Tiny",
+		Version: "0.480.0-r1",
+		Metadata: &portage.Metadata{
+			PackageName:    "Capture-Tiny",
+			PackageVersion: "0.480.0-r1",
+			OSID:           "gentoo",
+			OSVersionID:    "2.17",
+		},
+		Locations: []string{"/file1"},
+		Extractor: portage.New(portage.DefaultConfig()),
+	}
+	purlPORTAGEInventoryProto := &spb.Inventory{
+		Name:    "Capture-Tiny",
+		Version: "0.480.0-r1",
+		Purl: &spb.Purl{
+			Purl:      "pkg:portage/gentoo/Capture-Tiny@0.480.0-r1?distro=2.17",
+			Type:      purl.TypePortage,
+			Namespace: "gentoo",
+			Name:      "Capture-Tiny",
+			Version:   "0.480.0-r1",
+			Qualifiers: []*spb.Qualifier{
+				{Key: "distro", Value: "2.17"},
+			},
+		},
+		Ecosystem: "Gentoo:2.17",
+		Metadata: &spb.Inventory_PortageMetadata{
+			PortageMetadata: &spb.PORTAGEPackageMetadata{
+				PackageName:    "Capture-Tiny",
+				PackageVersion: "0.480.0-r1",
+				OsId:           "gentoo",
+				OsVersionId:    "2.17",
+			},
+		},
+		Locations: []string{"/file1"},
+		Extractor: "os/portage",
+	}
 	containerdInventory := &extractor.Inventory{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
@@ -788,6 +826,39 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 				Inventories: []*spb.Inventory{purlPACMANInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful PORTAGE scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{purlPORTAGEInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{purlPORTAGEInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			excludeForOS: []string{"windows", "darwin"},
