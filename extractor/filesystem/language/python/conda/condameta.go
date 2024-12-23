@@ -147,23 +147,23 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, err
 	}
 
-	var res []*extractor.Inventory
+	var inventories []*extractor.Inventory
 
 	for _, pkg := range pkgs {
 		if pkg.Name == "" || pkg.Version == "" {
 			continue
 		}
-		inv := &extractor.Inventory{
+		i := &extractor.Inventory{
 			Name:    pkg.Name,
 			Version: pkg.Version,
 			Locations: []string{
 				input.Path,
 			},
 		}
-		res = append(res, inv)
+		inventories = append(inventories, i)
 	}
 
-	return res, nil
+	return inventories, nil
 }
 
 // Parse reads a Conda metadata JSON file and extracts package data.
