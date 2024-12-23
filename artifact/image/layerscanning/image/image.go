@@ -297,6 +297,12 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		basename := filepath.Base(cleanedFilePath)
 		dirname := filepath.Dir(cleanedFilePath)
 
+		// If the base name is "." or "..", then skip it. For example, if the cleaned file path is
+		// "/foo/bar/.", then we should skip it since it references "/foo/bar".
+		if basename == "." || basename == ".." {
+			continue
+		}
+
 		tombstone := strings.HasPrefix(basename, whiteout.WhiteoutPrefix)
 		// TODO: b/379094217 - Handle Opaque Whiteouts
 		if tombstone {
