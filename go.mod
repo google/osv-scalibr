@@ -7,6 +7,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/containerd/containerd v1.7.18
+	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/erikvarga/go-rpmdb v0.0.0-20240208180226-b97e041ef9af
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/protobuf v1.5.4
