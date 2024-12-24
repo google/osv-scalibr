@@ -92,11 +92,10 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file matches python setup.py file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	file := "setup.py"
 	path := api.Path()
 	normalizedPath := filepath.ToSlash(path)
 
-	if filepath.Base(normalizedPath) != file {
+	if filepath.Base(normalizedPath) != "setup.py" {
 		return false
 	}
 
@@ -142,9 +141,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
+var re = regexp.MustCompile(`['"]\W?(\w+\W?==\W?[\w.]*)`)
+
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgPattern := `['"]\W?(\w+\W?==\W?[\w.]*)`
-	re := regexp.MustCompile(pkgPattern)
 	s := bufio.NewScanner(input.Reader)
 	pkgs := []*extractor.Inventory{}
 

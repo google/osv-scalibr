@@ -120,6 +120,11 @@ func TestFileRequired(t *testing.T) {
 			path:         "software-develop/setup.py/foo",
 			wantRequired: false,
 		},
+		{
+			name:         "invalid",
+			path:         "software-develop/foo/foosetup.py",
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -202,6 +207,12 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/template"},
 				},
 			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:             "empty pkg setup.py file",
+			path:             "testdata/empty",
+			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
