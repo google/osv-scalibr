@@ -40,6 +40,8 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Javascript
   * Installed NPM packages (package.json)
   * Lockfiles: package-lock.json, yarn.lock, pnpm-lock.yaml
+* ObjectiveC
+  * Podfile.lock
 * PHP:
   * Composer
 * Python
