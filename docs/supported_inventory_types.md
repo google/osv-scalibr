@@ -31,6 +31,8 @@ SCALIBR supports extracting software package information from a variety of OS an
   * pubspec.lock
 * Erlang
   * mix.lock
+* Elixir
+  * mix.lock
 * Go
   * Go binaries
   * go.mod (OSV)
