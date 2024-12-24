@@ -52,6 +52,8 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles: Gemfile.lock (OSV)
 * Rust
   * Cargo.lock
+* Swift
+  * Package.resolved
 
 ## Container inventory
 
