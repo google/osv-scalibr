@@ -52,7 +52,9 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles: Gemfile.lock (OSV)
 * Rust
   * Cargo.lock
-
+* Wordpress plugins
+  * Installed plugins
+  
 ## Container inventory
 
 * Containerd container images that are running on host
