@@ -33,6 +33,9 @@ var (
 	ErrDiffIDMissingFromLayer = errors.New("failed to get diffID from v1 layer")
 	// ErrUncompressedReaderMissingFromLayer is returned when the uncompressed reader is missing from a v1 layer.
 	ErrUncompressedReaderMissingFromLayer = errors.New("failed to get uncompressed reader from v1 layer")
+
+	// DefaultMaxSymlinkDepth is the default maximum symlink depth.
+	DefaultMaxSymlinkDepth = 3
 )
 
 // ========================================================
@@ -109,7 +112,8 @@ type chainLayer struct {
 func (chainLayer *chainLayer) FS() scalibrfs.FS {
 	// root should be "/" given we are dealing with file paths.
 	return &FS{
-		tree: chainLayer.fileNodeTree,
+		tree:            chainLayer.fileNodeTree,
+		maxSymlinkDepth: DefaultMaxSymlinkDepth,
 	}
 }
 
@@ -129,7 +133,24 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree *pathtree.Node[fileNode]
+	tree            *pathtree.Node[fileNode]
+	maxSymlinkDepth int
+}
+
+// resolveSymlink resolves a fileNode that represents a symlink.
+func (chainfs FS) resolveSymlink(node *fileNode, depth int) (*fileNode, error) {
+	if depth == 0 {
+		return nil, fmt.Errorf("symlink depth exceeded")
+	}
+	if node.mode != fs.ModeSymlink {
+		return node, nil
+	}
+
+	linkedNode, err := chainfs.getFileNode(node.targetPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file node with virtual path %s: %w", linkedNode.targetPath, err)
+	}
+	return chainfs.resolveSymlink(linkedNode, depth-1)
 }
 
 // Open opens a file from the virtual filesystem.
@@ -138,16 +159,26 @@ func (chainfs FS) Open(name string) (fs.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file node to open %s: %w", name, err)
 	}
-	return fileNode, nil
+
+	resolvedNode, err := chainfs.resolveSymlink(fileNode, chainfs.maxSymlinkDepth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", fileNode.virtualPath, err)
+	}
+	return resolvedNode, nil
 }
 
 // Stat returns a FileInfo object describing the file found at name.
 func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
-	fileNode, err := chainfs.getFileNode(name)
+	node, err := chainfs.getFileNode(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file node to stat %s: %w", name, err)
 	}
-	return fileNode.Stat()
+
+	resolvedNode, err := chainfs.resolveSymlink(node, chainfs.maxSymlinkDepth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", node.virtualPath, err)
+	}
+	return resolvedNode.Stat()
 }
 
 // ReadDir returns the directory entries found at path name.

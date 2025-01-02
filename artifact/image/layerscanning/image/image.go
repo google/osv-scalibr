@@ -33,7 +33,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
+	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
+	"github.com/google/osv-scalibr/log"
 )
 
 const (
@@ -322,70 +324,111 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		// TODO: b/377553499 - Escape invalid characters on windows that's valid on linux
 		realFilePath := filepath.Join(dirPath, filepath.Clean(cleanedFilePath))
 
-		var fileMode fs.FileMode
-		// Write out the file/dir to disk.
+		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			fileMode, err = img.handleDir(realFilePath, tarReader, header)
-			if err != nil {
-				return fmt.Errorf("failed to handle directory: %w", err)
-			}
-
+			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+		case tar.TypeReg:
+			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+		case tar.TypeSymlink, tar.TypeLink:
+			newNode, err = img.handleSymlink(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
 		default:
-			// TODO: b/374769529 - Handle symlinks.
-			// Assume if it's not a directory, it's a normal file.
-			fileMode, err = img.handleFile(realFilePath, tarReader, header)
-			if err != nil {
-				return fmt.Errorf("failed to handle file: %w", err)
-			}
+			// TODO: marioleyvajr - Should probably fail open here and log an error.
+			return fmt.Errorf("unsupported file type: %v", header.Typeflag)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
-		fillChainLayersWithVirtualPath(img, chainLayersToFill, originLayerID, virtualPath, tombstone, fileMode)
+		fillChainLayersWithFileNode(chainLayersToFill, newNode)
 	}
-
 	return nil
 }
 
+// handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
+// the symlink mode with additional metadata.
+func (img *Image) handleSymlink(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+	targetPath := header.Linkname
+	if targetPath == "" {
+		return nil, fmt.Errorf("symlink header has no target path")
+	}
+
+	if symlink.TargetOutsideRoot(virtualPath, targetPath) {
+		log.Warnf("Found symlink that points outside the root, skipping: %q -> %q", virtualPath, targetPath)
+		return nil, fmt.Errorf("symlink points outside the root: %q -> %q", virtualPath, targetPath)
+	}
+
+	// Only absolute destination need to be prepended. Relative destinations still work.
+	if !filepath.IsAbs(targetPath) {
+		// Track the absolute path of the target so it is not skipped in the next pass.
+		targetPath = filepath.Join(filepath.Dir(virtualPath), targetPath)
+	}
+	// fmt.Printf("virtual path: %s\n symlink target path: %s\n cleaned symlink path: %s\n\n ", virtualPath, header.Linkname, targetPath)
+
+	return &fileNode{
+		extractDir:    img.ExtractDir,
+		originLayerID: originLayerID,
+		virtualPath:   virtualPath,
+		targetPath:    targetPath,
+		isWhiteout:    isWhiteout,
+		mode:          fs.ModeSymlink,
+	}, nil
+}
+
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(path string, tarReader *tar.Reader, header *tar.Header) (fs.FileMode, error) {
-	if _, err := os.Stat(path); err != nil {
-		if err := os.MkdirAll(path, dirPermission); err != nil {
-			return 0, fmt.Errorf("failed to create directory with path %s: %w", path, err)
+func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+	if _, err := os.Stat(realFilePath); err != nil {
+		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
+			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
 		}
 	}
-	return fs.FileMode(header.Mode) | fs.ModeDir, nil
+	return &fileNode{
+		extractDir:    img.ExtractDir,
+		originLayerID: originLayerID,
+		virtualPath:   virtualPath,
+		isWhiteout:    isWhiteout,
+		mode:          fs.FileMode(header.Mode) | fs.ModeDir,
+	}, nil
 }
 
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
 // the file.
-func (img *Image) handleFile(path string, tarReader *tar.Reader, header *tar.Header) (fs.FileMode, error) {
+func (img *Image) handleFile(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
 	// Write all files as read/writable by the current user, inaccessible by anyone else
 	// Actual permission bits are stored in FileNode
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, filePermission)
+	f, err := os.OpenFile(realFilePath, os.O_CREATE|os.O_RDWR, filePermission)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer f.Close()
 
 	numBytes, err := io.Copy(f, io.LimitReader(tarReader, img.maxFileBytes))
 	if numBytes >= img.maxFileBytes || errors.Is(err, io.EOF) {
-		return 0, ErrFileReadLimitExceeded
+		return nil, ErrFileReadLimitExceeded
 	}
 
 	if err != nil {
-		return 0, fmt.Errorf("unable to copy file: %w", err)
+		return nil, fmt.Errorf("unable to copy file: %w", err)
 	}
 
-	return fs.FileMode(header.Mode), nil
+	return &fileNode{
+		extractDir:    img.ExtractDir,
+		originLayerID: originLayerID,
+		virtualPath:   virtualPath,
+		isWhiteout:    isWhiteout,
+		mode:          fs.FileMode(header.Mode),
+	}, nil
 }
 
-// fillChainLayersWithVirtualPath fills the chain layers with the virtual path.
-func fillChainLayersWithVirtualPath(img *Image, chainLayers []*chainLayer, originLayerID, virtualPath string, isWhiteout bool, fileMode fs.FileMode) {
-	for _, chainLayer := range chainLayers {
+// fillChainLayersWithFileNode fills the chain layers with a new fileNode.
+func fillChainLayersWithFileNode(chainLayersToFill []*chainLayer, newNode *fileNode) {
+	virtualPath := newNode.virtualPath
+	for _, chainLayer := range chainLayersToFill {
 		if node := chainLayer.fileNodeTree.Get(virtualPath); node != nil {
 			// A newer version of the file already exists on a later chainLayer.
 			// Since we do not want to overwrite a later layer with information
@@ -393,21 +436,15 @@ func fillChainLayersWithVirtualPath(img *Image, chainLayers []*chainLayer, origi
 			continue
 		}
 
-		// check for a whited out parent directory
+		// Check for a whited out parent directory.
 		if inWhiteoutDir(chainLayer, virtualPath) {
-			// The entire directory has been deleted, so no need to save this file
+			// The entire directory has been deleted, so no need to save this file.
 			continue
 		}
 
 		// Add the file to the chain layer. If there is an error, then we fail open.
 		// TODO: b/379154069 - Add logging for fail open errors.
-		chainLayer.fileNodeTree.Insert(virtualPath, &fileNode{
-			extractDir:    img.ExtractDir,
-			originLayerID: originLayerID,
-			virtualPath:   virtualPath,
-			isWhiteout:    isWhiteout,
-			mode:          fileMode,
-		})
+		chainLayer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 }
 

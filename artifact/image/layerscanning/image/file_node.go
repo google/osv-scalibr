@@ -36,6 +36,7 @@ type fileNode struct {
 	originLayerID string
 	isWhiteout    bool
 	virtualPath   string
+	targetPath    string
 	mode          fs.FileMode
 	file          *os.File
 }
