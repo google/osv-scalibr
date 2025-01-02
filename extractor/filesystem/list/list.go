@@ -46,6 +46,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
@@ -90,6 +91,7 @@ var (
 	Python []filesystem.Extractor = []filesystem.Extractor{
 		wheelegg.New(wheelegg.DefaultConfig()),
 		requirements.New(requirements.DefaultConfig()),
+		setup.New(setup.DefaultConfig()),
 		pipfilelock.Extractor{},
 		pdmlock.Extractor{},
 		poetrylock.Extractor{},
