@@ -472,7 +472,8 @@ func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
 	return FS{
-		tree: pathtree.NewNode[fileNode](),
+		tree:            pathtree.NewNode[fileNode](),
+		maxSymlinkDepth: DefaultMaxSymlinkDepth,
 	}
 }
 
@@ -483,7 +484,8 @@ func setUpChainFS(t *testing.T) (FS, string) {
 	tempDir := t.TempDir()
 
 	chainfs := FS{
-		tree: pathtree.NewNode[fileNode](),
+		tree:            pathtree.NewNode[fileNode](),
+		maxSymlinkDepth: DefaultMaxSymlinkDepth,
 	}
 
 	vfsMap := map[string]*fileNode{
