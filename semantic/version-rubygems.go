@@ -116,6 +116,6 @@ func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
 	return compareRubyGemsComponents(v.Segments, w.Segments)
 }
 
-func (v rubyGemsVersion) CompareStr(str string) int {
-	return v.compare(parseRubyGemsVersion(str))
+func (v rubyGemsVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseRubyGemsVersion(str)), nil
 }

@@ -209,8 +209,8 @@ func (v alpineVersion) compare(w alpineVersion) int {
 	return 0
 }
 
-func (v alpineVersion) CompareStr(str string) int {
-	return v.compare(parseAlpineVersion(str))
+func (v alpineVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseAlpineVersion(str)), nil
 }
 
 // parseAlpineNumberComponents parses the given string into alpineVersion.components

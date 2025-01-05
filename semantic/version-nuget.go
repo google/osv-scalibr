@@ -14,8 +14,8 @@ func (v nuGetVersion) compare(w nuGetVersion) int {
 	return compareBuildComponents(strings.ToLower(v.Build), strings.ToLower(w.Build))
 }
 
-func (v nuGetVersion) CompareStr(str string) int {
-	return v.compare(parseNuGetVersion(str))
+func (v nuGetVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseNuGetVersion(str)), nil
 }
 
 func parseNuGetVersion(str string) nuGetVersion {
