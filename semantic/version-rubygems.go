@@ -100,22 +100,22 @@ func compareRubyGemsComponents(a, b []string) int {
 	return 0
 }
 
-type RubyGemsVersion struct {
+type rubyGemsVersion struct {
 	Original string
 	Segments []string
 }
 
-func parseRubyGemsVersion(str string) RubyGemsVersion {
-	return RubyGemsVersion{
+func parseRubyGemsVersion(str string) rubyGemsVersion {
+	return rubyGemsVersion{
 		str,
 		canonicalSegments(strings.Split(canonicalizeRubyGemVersion(str), ".")),
 	}
 }
 
-func (v RubyGemsVersion) Compare(w RubyGemsVersion) int {
+func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
 	return compareRubyGemsComponents(v.Segments, w.Segments)
 }
 
-func (v RubyGemsVersion) CompareStr(str string) int {
-	return v.Compare(parseRubyGemsVersion(str))
+func (v rubyGemsVersion) CompareStr(str string) int {
+	return v.compare(parseRubyGemsVersion(str))
 }

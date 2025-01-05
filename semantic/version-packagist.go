@@ -104,22 +104,22 @@ func comparePackagistComponents(a, b []string) int {
 	return 0
 }
 
-type PackagistVersion struct {
+type packagistVersion struct {
 	Original   string
 	Components []string
 }
 
-func parsePackagistVersion(str string) PackagistVersion {
-	return PackagistVersion{
+func parsePackagistVersion(str string) packagistVersion {
+	return packagistVersion{
 		str,
 		strings.Split(canonicalizePackagistVersion(str), "."),
 	}
 }
 
-func (v PackagistVersion) Compare(w PackagistVersion) int {
+func (v packagistVersion) compare(w packagistVersion) int {
 	return comparePackagistComponents(v.Components, w.Components)
 }
 
-func (v PackagistVersion) CompareStr(str string) int {
-	return v.Compare(parsePackagistVersion(str))
+func (v packagistVersion) CompareStr(str string) int {
+	return v.compare(parsePackagistVersion(str))
 }

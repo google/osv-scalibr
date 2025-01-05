@@ -8,17 +8,17 @@ import (
 	"github.com/google/osv-scalibr/internal/cachedregexp"
 )
 
-// SemverLikeVersion is a version that is _like_ a version as defined by the
+// semverLikeVersion is a version that is _like_ a version as defined by the
 // Semantic Version specification, except with potentially unlimited numeric
 // components and a leading "v"
-type SemverLikeVersion struct {
+type semverLikeVersion struct {
 	LeadingV   bool
-	Components Components
+	Components components
 	Build      string
 	Original   string
 }
 
-func (v *SemverLikeVersion) fetchComponentsAndBuild(maxComponents int) (Components, string) {
+func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (components, string) {
 	if len(v.Components) <= maxComponents {
 		return v.Components, v.Build
 	}
@@ -35,12 +35,13 @@ func (v *SemverLikeVersion) fetchComponentsAndBuild(maxComponents int) (Componen
 	return comps, build
 }
 
-func ParseSemverLikeVersion(line string, maxComponents int) SemverLikeVersion {
+func parseSemverLikeVersion(line string, maxComponents int) semverLikeVersion {
 	v := parseSemverLike(line)
 
+	// TODO: refactor to avoid shadowing the components type
 	components, build := v.fetchComponentsAndBuild(maxComponents)
 
-	return SemverLikeVersion{
+	return semverLikeVersion{
 		LeadingV:   v.LeadingV,
 		Components: components,
 		Build:      build,
@@ -48,7 +49,8 @@ func ParseSemverLikeVersion(line string, maxComponents int) SemverLikeVersion {
 	}
 }
 
-func parseSemverLike(line string) SemverLikeVersion {
+func parseSemverLike(line string) semverLikeVersion {
+	// TODO: refactor to avoid shadowing the components type
 	var components []*big.Int
 	originStr := line
 
@@ -111,7 +113,7 @@ func parseSemverLike(line string) SemverLikeVersion {
 		currentCom = ""
 	}
 
-	return SemverLikeVersion{
+	return semverLikeVersion{
 		LeadingV:   leadingV,
 		Components: components,
 		Build:      currentCom,

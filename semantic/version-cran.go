@@ -5,18 +5,18 @@ import (
 	"strings"
 )
 
-// CRANVersion is the representation of a version of a package that is held
+// cranVersion is the representation of a version of a package that is held
 // in the CRAN ecosystem (https://cran.r-project.org/).
 //
 // A version is a sequence of at least two non-negative integers separated by
 // either a period or a dash.
 //
 // See https://astrostatistics.psu.edu/su07/R/html/base/html/package_version.html
-type CRANVersion struct {
-	components Components
+type cranVersion struct {
+	components components
 }
 
-func (v CRANVersion) Compare(w CRANVersion) int {
+func (v cranVersion) compare(w cranVersion) int {
 	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
@@ -34,15 +34,16 @@ func (v CRANVersion) Compare(w CRANVersion) int {
 	return -1
 }
 
-func (v CRANVersion) CompareStr(str string) int {
-	return v.Compare(parseCRANVersion(str))
+func (v cranVersion) CompareStr(str string) int {
+	return v.compare(parseCRANVersion(str))
 }
 
-func parseCRANVersion(str string) CRANVersion {
+func parseCRANVersion(str string) cranVersion {
 	// dashes and periods have the same weight, so we can just normalize to periods
 	parts := strings.Split(strings.ReplaceAll(str, "-", "."), ".")
 
-	components := make(Components, 0, len(parts))
+	// TODO: refactor to avoid shadowing the components type
+	components := make(components, 0, len(parts))
 
 	for _, s := range parts {
 		v, _ := new(big.Int).SetString(s, 10)
@@ -50,5 +51,5 @@ func parseCRANVersion(str string) CRANVersion {
 		components = append(components, v)
 	}
 
-	return CRANVersion{components}
+	return cranVersion{components}
 }

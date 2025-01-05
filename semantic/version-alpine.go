@@ -61,7 +61,7 @@ func weightAlpineSuffixString(suffixStr string) int {
 	return len(supported)
 }
 
-// AlpineVersion represents a version of an Alpine package.
+// alpineVersion represents a version of an Alpine package.
 //
 // Currently, the APK version specification is as follows:
 // *number{.number}...{letter}{\_suffix{number}}...{~hash}{-r#}*
@@ -81,7 +81,7 @@ func weightAlpineSuffixString(suffixStr string) int {
 // Finally, an optional package build component *-r{number}* can follow.
 //
 // Also see https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
-type AlpineVersion struct {
+type alpineVersion struct {
 	// the original string that was parsed
 	original string
 	// whether the version was found to be invalid while parsing
@@ -103,7 +103,7 @@ type AlpineVersion struct {
 	buildComponent *big.Int
 }
 
-func (v AlpineVersion) compareComponents(w AlpineVersion) int {
+func (v alpineVersion) compareComponents(w alpineVersion) int {
 	numberOfComponents := max(len(v.components), len(w.components))
 
 	for i := range numberOfComponents {
@@ -117,7 +117,7 @@ func (v AlpineVersion) compareComponents(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) compareLetters(w AlpineVersion) int {
+func (v alpineVersion) compareLetters(w alpineVersion) int {
 	if v.letter == "" && w.letter != "" {
 		return -1
 	}
@@ -128,7 +128,7 @@ func (v AlpineVersion) compareLetters(w AlpineVersion) int {
 	return strings.Compare(v.letter, w.letter)
 }
 
-func (v AlpineVersion) fetchSuffix(n int) alpineSuffix {
+func (v alpineVersion) fetchSuffix(n int) alpineSuffix {
 	if len(v.suffixes) <= n {
 		return alpineSuffix{number: big.NewInt(0), weight: 5}
 	}
@@ -147,7 +147,7 @@ func (as alpineSuffix) Cmp(bs alpineSuffix) int {
 	return as.number.Cmp(bs.number)
 }
 
-func (v AlpineVersion) compareSuffixes(w AlpineVersion) int {
+func (v alpineVersion) compareSuffixes(w alpineVersion) int {
 	numberOfSuffixes := max(len(v.suffixes), len(w.suffixes))
 
 	for i := range numberOfSuffixes {
@@ -161,7 +161,7 @@ func (v AlpineVersion) compareSuffixes(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) compareBuildComponents(w AlpineVersion) int {
+func (v alpineVersion) compareBuildComponents(w alpineVersion) int {
 	if v.buildComponent != nil && w.buildComponent != nil {
 		if diff := v.buildComponent.Cmp(w.buildComponent); diff != 0 {
 			return diff
@@ -171,7 +171,7 @@ func (v AlpineVersion) compareBuildComponents(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) compareRemainder(w AlpineVersion) int {
+func (v alpineVersion) compareRemainder(w alpineVersion) int {
 	if v.remainder == "" && w.remainder != "" {
 		return +1
 	}
@@ -183,7 +183,7 @@ func (v AlpineVersion) compareRemainder(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) Compare(w AlpineVersion) int {
+func (v alpineVersion) compare(w alpineVersion) int {
 	// if both versions are invalid, then just use a string compare
 	if v.invalid && w.invalid {
 		return strings.Compare(v.original, w.original)
@@ -209,18 +209,18 @@ func (v AlpineVersion) Compare(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) CompareStr(str string) int {
-	return v.Compare(parseAlpineVersion(str))
+func (v alpineVersion) CompareStr(str string) int {
+	return v.compare(parseAlpineVersion(str))
 }
 
-// parseAlpineNumberComponents parses the given string into AlpineVersion.components
+// parseAlpineNumberComponents parses the given string into alpineVersion.components
 // and then returns the remainder of the string for continued parsing.
 //
 // Each number component is a sequence of digits (0-9), separated with a ".",
 // and with no limit on the value or amount of number components.
 //
 // This parser must be applied *before* any other parser.
-func parseAlpineNumberComponents(v *AlpineVersion, str string) string {
+func parseAlpineNumberComponents(v *alpineVersion, str string) string {
 	sub := cachedregexp.MustCompile(`^((\d+)\.?)*`).FindString(str)
 
 	if sub == "" {
@@ -238,14 +238,14 @@ func parseAlpineNumberComponents(v *AlpineVersion, str string) string {
 	return strings.TrimPrefix(str, sub)
 }
 
-// parseAlpineLetter parses the given string into an AlpineVersion.letter
+// parseAlpineLetter parses the given string into an alpineVersion.letter
 // and then returns the remainder of the string for continued parsing.
 //
 // The letter is optional, following after the numeric version components, and
 // must be a single lower case letter (a-z).
 //
 // This parser must be applied *after* parseAlpineNumberComponents.
-func parseAlpineLetter(v *AlpineVersion, str string) string {
+func parseAlpineLetter(v *alpineVersion, str string) string {
 	if cachedregexp.MustCompile(`^[a-z]`).MatchString(str) {
 		v.letter = str[:1]
 	}
@@ -253,13 +253,13 @@ func parseAlpineLetter(v *AlpineVersion, str string) string {
 	return strings.TrimPrefix(str, v.letter)
 }
 
-// parseAlpineSuffixes parses the given string into AlpineVersion.suffixes and
+// parseAlpineSuffixes parses the given string into alpineVersion.suffixes and
 // then returns the remainder of the string for continued parsing.
 //
 // Suffixes begin with an "_" and may optionally end with a number.
 //
 // This parser must be applied *after* parseAlpineLetter.
-func parseAlpineSuffixes(v *AlpineVersion, str string) string {
+func parseAlpineSuffixes(v *alpineVersion, str string) string {
 	re := cachedregexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
 
 	for _, match := range re.FindAllStringSubmatch(str, -1) {
@@ -277,7 +277,7 @@ func parseAlpineSuffixes(v *AlpineVersion, str string) string {
 	return str
 }
 
-// parseAlpineHash parses the given string into AlpineVersion.hash and then returns
+// parseAlpineHash parses the given string into alpineVersion.hash and then returns
 // the remainder of the string for continued parsing.
 //
 // The hash is an optional value representing a commit hash, which is a string of
@@ -285,7 +285,7 @@ func parseAlpineSuffixes(v *AlpineVersion, str string) string {
 // digits (0-9a-f).
 //
 // This parser must be applied *after* parseAlpineSuffixes.
-func parseAlpineHash(v *AlpineVersion, str string) string {
+func parseAlpineHash(v *alpineVersion, str string) string {
 	re := cachedregexp.MustCompile(`^~([0-9a-f]+)`)
 
 	v.hash = re.FindString(str)
@@ -293,14 +293,14 @@ func parseAlpineHash(v *AlpineVersion, str string) string {
 	return strings.TrimPrefix(str, v.hash)
 }
 
-// parseAlpineBuildComponent parses the given string into AlpineVersion.buildComponent
+// parseAlpineBuildComponent parses the given string into alpineVersion.buildComponent
 // and then returns the remainder of the string for continued parsing.
 //
 // The build component is an optional value at the end of the version string which
 // begins with "-r" followed by a number.
 //
 // This parser must be applied *after* parseAlpineBuildComponent
-func parseAlpineBuildComponent(v *AlpineVersion, str string) string {
+func parseAlpineBuildComponent(v *alpineVersion, str string) string {
 	if str == "" {
 		return str
 	}
@@ -326,8 +326,8 @@ func parseAlpineBuildComponent(v *AlpineVersion, str string) string {
 	return strings.TrimPrefix(str, matches[0])
 }
 
-func parseAlpineVersion(str string) AlpineVersion {
-	v := AlpineVersion{original: str, buildComponent: new(big.Int)}
+func parseAlpineVersion(str string) alpineVersion {
+	v := alpineVersion{original: str, buildComponent: new(big.Int)}
 
 	str = parseAlpineNumberComponents(&v, str)
 	str = parseAlpineLetter(&v, str)
