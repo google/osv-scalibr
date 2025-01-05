@@ -27,8 +27,6 @@ func knownEcosystems() []string {
 }
 
 func TestParse(t *testing.T) {
-	t.Parallel()
-
 	ecosystems := knownEcosystems()
 
 	ecosystems = append(ecosystems, "Alpine", "Debian", "Ubuntu")
@@ -43,8 +41,6 @@ func TestParse(t *testing.T) {
 }
 
 func TestMustParse(t *testing.T) {
-	t.Parallel()
-
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("unexpected panic - '%s'", r)
@@ -61,8 +57,6 @@ func TestMustParse(t *testing.T) {
 }
 
 func TestMustParse_Panic(t *testing.T) {
-	t.Parallel()
-
 	defer func() { _ = recover() }()
 
 	semantic.MustParse("", "<unknown>")
