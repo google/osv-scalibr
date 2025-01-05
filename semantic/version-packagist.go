@@ -120,6 +120,6 @@ func (v packagistVersion) compare(w packagistVersion) int {
 	return comparePackagistComponents(v.Components, w.Components)
 }
 
-func (v packagistVersion) CompareStr(str string) int {
-	return v.compare(parsePackagistVersion(str))
+func (v packagistVersion) CompareStr(str string) (int, error) {
+	return v.compare(parsePackagistVersion(str)), nil
 }

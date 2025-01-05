@@ -137,8 +137,8 @@ func (v debianVersion) compare(w debianVersion) int {
 	return 0
 }
 
-func (v debianVersion) CompareStr(str string) int {
-	return v.compare(parseDebianVersion(str))
+func (v debianVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseDebianVersion(str)), nil
 }
 
 func parseDebianVersion(str string) debianVersion {

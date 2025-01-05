@@ -366,6 +366,6 @@ func (pv pyPIVersion) compare(pw pyPIVersion) int {
 	return pypiCompareVersion(pv, pw)
 }
 
-func (pv pyPIVersion) CompareStr(str string) int {
-	return pv.compare(parsePyPIVersion(str))
+func (pv pyPIVersion) CompareStr(str string) (int, error) {
+	return pv.compare(parsePyPIVersion(str)), nil
 }

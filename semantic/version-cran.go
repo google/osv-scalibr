@@ -34,8 +34,8 @@ func (v cranVersion) compare(w cranVersion) int {
 	return -1
 }
 
-func (v cranVersion) CompareStr(str string) int {
-	return v.compare(parseCRANVersion(str))
+func (v cranVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseCRANVersion(str)), nil
 }
 
 func parseCRANVersion(str string) cranVersion {

@@ -174,9 +174,7 @@ func compareRedHatComponents(a, b string) int {
 	return 0
 }
 
-func (v redHatVersion) CompareStr(str string) int {
-	w := parseRedHatVersion(str)
-
+func (v redHatVersion) compare(w redHatVersion) int {
 	if diff := compareRedHatComponents(v.epoch, w.epoch); diff != 0 {
 		return diff
 	}
@@ -188,6 +186,10 @@ func (v redHatVersion) CompareStr(str string) int {
 	}
 
 	return 0
+}
+
+func (v redHatVersion) CompareStr(str string) (int, error) {
+	return v.compare(parseRedHatVersion(str)), nil
 }
 
 // parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
