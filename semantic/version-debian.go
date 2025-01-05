@@ -142,6 +142,15 @@ func (v debianVersion) CompareStr(str string) (int, error) {
 }
 
 func mustParseDebianVersion(str string) debianVersion {
+	v, err := parseDebianVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func parseDebianVersion(str string) (debianVersion, error) {
 	var upstream, revision string
 
 	str = strings.TrimSpace(str)
@@ -160,5 +169,5 @@ func mustParseDebianVersion(str string) debianVersion {
 		revision = "0"
 	}
 
-	return debianVersion{epoch, upstream, revision}
+	return debianVersion{epoch, upstream, revision}, nil
 }
