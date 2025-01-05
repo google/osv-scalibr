@@ -67,6 +67,20 @@ func (f *fileNode) Read(b []byte) (n int, err error) {
 	return f.file.Read(b)
 }
 
+// ReadAt reads the real file referred to by the fileNode at a specific offset.
+func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
+	if f.isWhiteout {
+		return 0, fs.ErrNotExist
+	}
+	if f.file == nil {
+		f.file, err = os.Open(f.RealFilePath())
+	}
+	if err != nil {
+		return 0, err
+	}
+	return f.file.ReadAt(b, off)
+}
+
 // Close closes the real file referred to by the fileNode and resets the file field.
 func (f *fileNode) Close() error {
 	if f.file != nil {
