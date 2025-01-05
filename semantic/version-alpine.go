@@ -210,7 +210,7 @@ func (v alpineVersion) compare(w alpineVersion) int {
 }
 
 func (v alpineVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseAlpineVersion(str)), nil
+	return v.compare(mustParseAlpineVersion(str)), nil
 }
 
 // parseAlpineNumberComponents parses the given string into alpineVersion.components
@@ -326,7 +326,7 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) string {
 	return strings.TrimPrefix(str, matches[0])
 }
 
-func parseAlpineVersion(str string) alpineVersion {
+func mustParseAlpineVersion(str string) alpineVersion {
 	v := alpineVersion{original: str, buildComponent: new(big.Int)}
 
 	str = parseAlpineNumberComponents(&v, str)

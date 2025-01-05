@@ -105,7 +105,7 @@ type rubyGemsVersion struct {
 	Segments []string
 }
 
-func parseRubyGemsVersion(str string) rubyGemsVersion {
+func mustParseRubyGemsVersion(str string) rubyGemsVersion {
 	return rubyGemsVersion{
 		str,
 		canonicalSegments(strings.Split(canonicalizeRubyGemVersion(str), ".")),
@@ -117,5 +117,5 @@ func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
 }
 
 func (v rubyGemsVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseRubyGemsVersion(str)), nil
+	return v.compare(mustParseRubyGemsVersion(str)), nil
 }

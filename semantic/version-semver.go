@@ -86,7 +86,7 @@ type semverVersion struct {
 	semverLikeVersion
 }
 
-func parseSemverVersion(str string) semverVersion {
+func mustParseSemverVersion(str string) semverVersion {
 	return semverVersion{parseSemverLikeVersion(str, 3)}
 }
 
@@ -99,5 +99,5 @@ func (v semverVersion) compare(w semverVersion) int {
 }
 
 func (v semverVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseSemverVersion(str)), nil
+	return v.compare(mustParseSemverVersion(str)), nil
 }

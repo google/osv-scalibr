@@ -26,37 +26,37 @@ func Parse(str string, ecosystem string) (Version, error) {
 	//nolint:exhaustive // Using strings to specify ecosystem instead of lockfile types
 	switch ecosystem {
 	case "Alpine":
-		return parseAlpineVersion(str), nil
+		return mustParseAlpineVersion(str), nil
 	case "ConanCenter":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "CRAN":
-		return parseCRANVersion(str), nil
+		return mustParseCRANVersion(str), nil
 	case "crates.io":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "Debian":
-		return parseDebianVersion(str), nil
+		return mustParseDebianVersion(str), nil
 	case "Go":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "Hex":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "Maven":
-		return parseMavenVersion(str), nil
+		return mustParseMavenVersion(str), nil
 	case "npm":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "NuGet":
-		return parseNuGetVersion(str), nil
+		return mustParseNuGetVersion(str), nil
 	case "Packagist":
-		return parsePackagistVersion(str), nil
+		return mustParsePackagistVersion(str), nil
 	case "Pub":
-		return parseSemverVersion(str), nil
+		return mustParseSemverVersion(str), nil
 	case "PyPI":
-		return parsePyPIVersion(str), nil
+		return mustParsePyPIVersion(str), nil
 	case "Red Hat":
-		return parseRedHatVersion(str), nil
+		return mustParseRedHatVersion(str), nil
 	case "RubyGems":
-		return parseRubyGemsVersion(str), nil
+		return mustParseRubyGemsVersion(str), nil
 	case "Ubuntu":
-		return parseDebianVersion(str), nil
+		return mustParseDebianVersion(str), nil
 	}
 
 	return nil, fmt.Errorf("%w %s", ErrUnsupportedEcosystem, ecosystem)

@@ -109,7 +109,7 @@ type packagistVersion struct {
 	Components []string
 }
 
-func parsePackagistVersion(str string) packagistVersion {
+func mustParsePackagistVersion(str string) packagistVersion {
 	return packagistVersion{
 		str,
 		strings.Split(canonicalizePackagistVersion(str), "."),
@@ -121,5 +121,5 @@ func (v packagistVersion) compare(w packagistVersion) int {
 }
 
 func (v packagistVersion) CompareStr(str string) (int, error) {
-	return v.compare(parsePackagistVersion(str)), nil
+	return v.compare(mustParsePackagistVersion(str)), nil
 }

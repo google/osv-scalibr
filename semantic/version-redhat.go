@@ -189,10 +189,11 @@ func (v redHatVersion) compare(w redHatVersion) int {
 }
 
 func (v redHatVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseRedHatVersion(str)), nil
+	return v.compare(mustParseRedHatVersion(str)), nil
 }
 
-// parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
+// mustParseRedHatVersion parses a Red Hat version into a redHatVersion struct,
+// panicking if the version is invalid
 //
 // A Red Hat version contains the following components:
 // - name (of the package), represented as "n"
@@ -203,7 +204,7 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 //
 // When all components are present, the version is represented as "n-e:v-r.a",
 // though only the version is actually required.
-func parseRedHatVersion(str string) redHatVersion {
+func mustParseRedHatVersion(str string) redHatVersion {
 	bf, af, hasColon := strings.Cut(str, ":")
 
 	if !hasColon {
