@@ -12,9 +12,9 @@ type Version interface {
 	CompareStr(str string) int
 }
 
-type Components []*big.Int
+type components []*big.Int
 
-func (components *Components) Fetch(n int) *big.Int {
+func (components *components) Fetch(n int) *big.Int {
 	if len(*components) <= n {
 		return big.NewInt(0)
 	}
@@ -22,7 +22,7 @@ func (components *Components) Fetch(n int) *big.Int {
 	return (*components)[n]
 }
 
-func (components *Components) Cmp(b Components) int {
+func (components *components) Cmp(b components) int {
 	numberOfComponents := max(len(*components), len(b))
 
 	for i := range numberOfComponents {

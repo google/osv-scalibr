@@ -8,9 +8,9 @@ import (
 	"github.com/google/osv-scalibr/internal/cachedregexp"
 )
 
-type PyPIVersion struct {
+type pyPIVersion struct {
 	epoch   *big.Int
-	release Components
+	release components
 	pre     letterAndNumber
 	post    letterAndNumber
 	dev     letterAndNumber
@@ -128,13 +128,13 @@ func parsePyPIVersionParts(str string) (parts []string) {
 	return parts
 }
 
-func parsePyPILegacyVersion(str string) PyPIVersion {
+func parsePyPILegacyVersion(str string) pyPIVersion {
 	parts := parsePyPIVersionParts(str)
 
-	return PyPIVersion{epoch: big.NewInt(-1), legacy: parts}
+	return pyPIVersion{epoch: big.NewInt(-1), legacy: parts}
 }
 
-func parsePyPIVersion(str string) PyPIVersion {
+func parsePyPIVersion(str string) pyPIVersion {
 	str = strings.ToLower(str)
 
 	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
@@ -145,7 +145,7 @@ func parsePyPIVersion(str string) PyPIVersion {
 		return parsePyPILegacyVersion(str)
 	}
 
-	var version PyPIVersion
+	var version pyPIVersion
 
 	version.epoch = big.NewInt(0)
 
@@ -173,20 +173,20 @@ func parsePyPIVersion(str string) PyPIVersion {
 }
 
 // Compares the epoch segments of each version
-func (pv PyPIVersion) compareEpoch(pw PyPIVersion) int {
+func (pv pyPIVersion) compareEpoch(pw pyPIVersion) int {
 	return pv.epoch.Cmp(pw.epoch)
 }
 
 // Compares the release segments of each version, which considers the numeric value
 // of each component in turn; when comparing release segments with different numbers
 // of components, the shorter segment is padded out with additional zeros as necessary.
-func (pv PyPIVersion) compareRelease(pw PyPIVersion) int {
+func (pv pyPIVersion) compareRelease(pw pyPIVersion) int {
 	return pv.release.Cmp(pw.release)
 }
 
-// Checks if this PyPIVersion should apply a sort trick when comparing pre,
+// Checks if this pyPIVersion should apply a sort trick when comparing pre,
 // which ensures that i.e. 1.0.dev0 is before 1.0a0.
-func (pv PyPIVersion) shouldApplyPreTrick() bool {
+func (pv pyPIVersion) shouldApplyPreTrick() bool {
 	return pv.pre.number == nil && pv.post.number == nil && pv.dev.number != nil
 }
 
@@ -197,7 +197,7 @@ func (pv PyPIVersion) shouldApplyPreTrick() bool {
 // candidate) and then by the numerical component within that phase.
 //
 // Versions without a pre-release are sorted after those with one.
-func (pv PyPIVersion) comparePre(pw PyPIVersion) int {
+func (pv pyPIVersion) comparePre(pw pyPIVersion) int {
 	switch {
 	case pv.shouldApplyPreTrick() && pw.shouldApplyPreTrick():
 		return +0
@@ -232,7 +232,7 @@ func (pv PyPIVersion) comparePre(pw PyPIVersion) int {
 // the corresponding release, and ahead of any subsequent release.
 //
 // Versions without a post segment are sorted before those with one.
-func (pv PyPIVersion) comparePost(pw PyPIVersion) int {
+func (pv pyPIVersion) comparePost(pw pyPIVersion) int {
 	switch {
 	case pv.post.number == nil && pw.post.number == nil:
 		return +0
@@ -253,7 +253,7 @@ func (pv PyPIVersion) comparePost(pw PyPIVersion) int {
 // and following any previous release (including any post-releases).
 //
 // Versions without a development segment are sorted after those with one.
-func (pv PyPIVersion) compareDev(pw PyPIVersion) int {
+func (pv pyPIVersion) compareDev(pw pyPIVersion) int {
 	switch {
 	case pv.dev.number == nil && pw.dev.number == nil:
 		return +0
@@ -267,7 +267,7 @@ func (pv PyPIVersion) compareDev(pw PyPIVersion) int {
 }
 
 // Compares the local segment of each version
-func (pv PyPIVersion) compareLocal(pw PyPIVersion) int {
+func (pv pyPIVersion) compareLocal(pw pyPIVersion) int {
 	minVersionLength := min(len(pv.local), len(pw.local))
 
 	var compare int
@@ -319,7 +319,7 @@ func (pv PyPIVersion) compareLocal(pw PyPIVersion) int {
 //
 // http://peak.telecommunity.com/DevCenter/setuptools#specifying-your-project-s-version
 // looks like a good reference, but unsure where it sits in the actual tooling history
-func (pv PyPIVersion) compareLegacy(pw PyPIVersion) int {
+func (pv pyPIVersion) compareLegacy(pw pyPIVersion) int {
 	if len(pv.legacy) == 0 && len(pw.legacy) == 0 {
 		return +0
 	}
@@ -336,7 +336,7 @@ func (pv PyPIVersion) compareLegacy(pw PyPIVersion) int {
 	)
 }
 
-func pypiCompareVersion(v, w PyPIVersion) int {
+func pypiCompareVersion(v, w pyPIVersion) int {
 	if legacyDiff := v.compareLegacy(w); legacyDiff != 0 {
 		return legacyDiff
 	}
@@ -362,10 +362,10 @@ func pypiCompareVersion(v, w PyPIVersion) int {
 	return 0
 }
 
-func (pv PyPIVersion) Compare(pw PyPIVersion) int {
+func (pv pyPIVersion) compare(pw pyPIVersion) int {
 	return pypiCompareVersion(pv, pw)
 }
 
-func (pv PyPIVersion) CompareStr(str string) int {
-	return pv.Compare(parsePyPIVersion(str))
+func (pv pyPIVersion) CompareStr(str string) int {
+	return pv.compare(parsePyPIVersion(str))
 }

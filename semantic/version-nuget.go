@@ -2,11 +2,11 @@ package semantic
 
 import "strings"
 
-type NuGetVersion struct {
-	SemverLikeVersion
+type nuGetVersion struct {
+	semverLikeVersion
 }
 
-func (v NuGetVersion) Compare(w NuGetVersion) int {
+func (v nuGetVersion) compare(w nuGetVersion) int {
 	if diff := v.Components.Cmp(w.Components); diff != 0 {
 		return diff
 	}
@@ -14,10 +14,10 @@ func (v NuGetVersion) Compare(w NuGetVersion) int {
 	return compareBuildComponents(strings.ToLower(v.Build), strings.ToLower(w.Build))
 }
 
-func (v NuGetVersion) CompareStr(str string) int {
-	return v.Compare(parseNuGetVersion(str))
+func (v nuGetVersion) CompareStr(str string) int {
+	return v.compare(parseNuGetVersion(str))
 }
 
-func parseNuGetVersion(str string) NuGetVersion {
-	return NuGetVersion{ParseSemverLikeVersion(str, 4)}
+func parseNuGetVersion(str string) nuGetVersion {
+	return nuGetVersion{parseSemverLikeVersion(str, 4)}
 }

@@ -117,13 +117,13 @@ func compareDebianVersions(a, b string) int {
 	return 0
 }
 
-type DebianVersion struct {
+type debianVersion struct {
 	epoch    *big.Int
 	upstream string
 	revision string
 }
 
-func (v DebianVersion) Compare(w DebianVersion) int {
+func (v debianVersion) compare(w debianVersion) int {
 	if diff := v.epoch.Cmp(w.epoch); diff != 0 {
 		return diff
 	}
@@ -137,11 +137,11 @@ func (v DebianVersion) Compare(w DebianVersion) int {
 	return 0
 }
 
-func (v DebianVersion) CompareStr(str string) int {
-	return v.Compare(parseDebianVersion(str))
+func (v debianVersion) CompareStr(str string) int {
+	return v.compare(parseDebianVersion(str))
 }
 
-func parseDebianVersion(str string) DebianVersion {
+func parseDebianVersion(str string) debianVersion {
 	var upstream, revision string
 
 	str = strings.TrimSpace(str)
@@ -160,5 +160,5 @@ func parseDebianVersion(str string) DebianVersion {
 		revision = "0"
 	}
 
-	return DebianVersion{epoch, upstream, revision}
+	return debianVersion{epoch, upstream, revision}
 }

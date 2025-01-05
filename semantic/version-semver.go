@@ -82,15 +82,15 @@ func compareSemverBuildComponents(a, b []string) int {
 	return 0
 }
 
-type SemverVersion struct {
-	SemverLikeVersion
+type semverVersion struct {
+	semverLikeVersion
 }
 
-func parseSemverVersion(str string) SemverVersion {
-	return SemverVersion{ParseSemverLikeVersion(str, 3)}
+func parseSemverVersion(str string) semverVersion {
+	return semverVersion{parseSemverLikeVersion(str, 3)}
 }
 
-func (v SemverVersion) Compare(w SemverVersion) int {
+func (v semverVersion) compare(w semverVersion) int {
 	if diff := v.Components.Cmp(w.Components); diff != 0 {
 		return diff
 	}
@@ -98,6 +98,6 @@ func (v SemverVersion) Compare(w SemverVersion) int {
 	return compareBuildComponents(v.Build, w.Build)
 }
 
-func (v SemverVersion) CompareStr(str string) int {
-	return v.Compare(parseSemverVersion(str))
+func (v semverVersion) CompareStr(str string) int {
+	return v.compare(parseSemverVersion(str))
 }

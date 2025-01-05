@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type RedHatVersion struct {
+type redHatVersion struct {
 	epoch   string
 	version string
 	release string
@@ -24,12 +24,12 @@ func isASCIILetter(c rune) bool {
 	return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
 }
 
-// shouldBeTrimmed checks if the given rune should be trimmed when parsing RedHatVersion components
+// shouldBeTrimmed checks if the given rune should be trimmed when parsing redHatVersion components
 func shouldBeTrimmed(r rune) bool {
 	return !isASCIILetter(r) && !isASCIIDigit(r) && r != '~' && r != '^'
 }
 
-// compareRedHatComponents compares two components of a RedHatVersion in the same
+// compareRedHatComponents compares two components of a redHatVersion in the same
 // manner as rpmvercmp(8) does.
 func compareRedHatComponents(a, b string) int {
 	if a == "" && b != "" {
@@ -154,7 +154,7 @@ func compareRedHatComponents(a, b string) int {
 			}
 		}
 
-		// 10. Compare the leading segments with strcmp() (or <=> in Ruby). If that returns a non-zero value, then return that value. Else continue to the next iteration of the loop.
+		// 10. compare the leading segments with strcmp() (or <=> in Ruby). If that returns a non-zero value, then return that value. Else continue to the next iteration of the loop.
 		if diff := strings.Compare(as, bs); diff != 0 {
 			return diff
 		}
@@ -174,7 +174,7 @@ func compareRedHatComponents(a, b string) int {
 	return 0
 }
 
-func (v RedHatVersion) CompareStr(str string) int {
+func (v redHatVersion) CompareStr(str string) int {
 	w := parseRedHatVersion(str)
 
 	if diff := compareRedHatComponents(v.epoch, w.epoch); diff != 0 {
@@ -190,7 +190,7 @@ func (v RedHatVersion) CompareStr(str string) int {
 	return 0
 }
 
-// parseRedHatVersion parses a Red Hat version into a RedHatVersion struct.
+// parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
 //
 // A Red Hat version contains the following components:
 // - name (of the package), represented as "n"
@@ -201,7 +201,7 @@ func (v RedHatVersion) CompareStr(str string) int {
 //
 // When all components are present, the version is represented as "n-e:v-r.a",
 // though only the version is actually required.
-func parseRedHatVersion(str string) RedHatVersion {
+func parseRedHatVersion(str string) redHatVersion {
 	bf, af, hasColon := strings.Cut(str, ":")
 
 	if !hasColon {
@@ -225,5 +225,5 @@ func parseRedHatVersion(str string) RedHatVersion {
 		epoch = "0"
 	}
 
-	return RedHatVersion{epoch, version, release}
+	return redHatVersion{epoch, version, release}
 }
