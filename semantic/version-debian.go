@@ -138,10 +138,10 @@ func (v debianVersion) compare(w debianVersion) int {
 }
 
 func (v debianVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseDebianVersion(str)), nil
+	return v.compare(mustParseDebianVersion(str)), nil
 }
 
-func parseDebianVersion(str string) debianVersion {
+func mustParseDebianVersion(str string) debianVersion {
 	var upstream, revision string
 
 	str = strings.TrimSpace(str)

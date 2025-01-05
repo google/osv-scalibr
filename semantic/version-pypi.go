@@ -134,7 +134,7 @@ func parsePyPILegacyVersion(str string) pyPIVersion {
 	return pyPIVersion{epoch: big.NewInt(-1), legacy: parts}
 }
 
-func parsePyPIVersion(str string) pyPIVersion {
+func mustParsePyPIVersion(str string) pyPIVersion {
 	str = strings.ToLower(str)
 
 	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
@@ -367,5 +367,5 @@ func (pv pyPIVersion) compare(pw pyPIVersion) int {
 }
 
 func (pv pyPIVersion) CompareStr(str string) (int, error) {
-	return pv.compare(parsePyPIVersion(str)), nil
+	return pv.compare(mustParsePyPIVersion(str)), nil
 }
