@@ -205,6 +205,26 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 // When all components are present, the version is represented as "n-e:v-r.a",
 // though only the version is actually required.
 func mustParseRedHatVersion(str string) redHatVersion {
+	v, err := parseRedHatVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+// parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
+//
+// A Red Hat version contains the following components:
+// - name (of the package), represented as "n"
+// - epoch, represented as "e"
+// - version, represented as "v"
+// - release, represented as "r"
+// - architecture, represented as "a"
+//
+// When all components are present, the version is represented as "n-e:v-r.a",
+// though only the version is actually required.
+func parseRedHatVersion(str string) (redHatVersion, error) {
 	bf, af, hasColon := strings.Cut(str, ":")
 
 	if !hasColon {
@@ -228,5 +248,5 @@ func mustParseRedHatVersion(str string) redHatVersion {
 		epoch = "0"
 	}
 
-	return redHatVersion{epoch, version, release}
+	return redHatVersion{epoch, version, release}, nil
 }

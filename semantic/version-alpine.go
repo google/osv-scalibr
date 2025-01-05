@@ -327,6 +327,15 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) string {
 }
 
 func mustParseAlpineVersion(str string) alpineVersion {
+	v, err := parseAlpineVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func parseAlpineVersion(str string) (alpineVersion, error) {
 	v := alpineVersion{original: str, buildComponent: new(big.Int)}
 
 	str = parseAlpineNumberComponents(&v, str)
@@ -337,5 +346,5 @@ func mustParseAlpineVersion(str string) alpineVersion {
 
 	v.remainder = str
 
-	return v
+	return v, nil
 }

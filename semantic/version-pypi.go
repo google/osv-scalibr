@@ -135,6 +135,15 @@ func parsePyPILegacyVersion(str string) pyPIVersion {
 }
 
 func mustParsePyPIVersion(str string) pyPIVersion {
+	v, err := parsePyPIVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func parsePyPIVersion(str string) (pyPIVersion, error) {
 	str = strings.ToLower(str)
 
 	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
@@ -142,7 +151,7 @@ func mustParsePyPIVersion(str string) pyPIVersion {
 	match := re.FindStringSubmatch(str)
 
 	if len(match) == 0 {
-		return parsePyPILegacyVersion(str)
+		return parsePyPILegacyVersion(str), nil
 	}
 
 	var version pyPIVersion
@@ -169,7 +178,7 @@ func mustParsePyPIVersion(str string) pyPIVersion {
 	version.dev = parseLetterVersion(match[re.SubexpIndex("dev_l")], match[re.SubexpIndex("dev_n")])
 	version.local = parseLocalVersion(match[re.SubexpIndex("local")])
 
-	return version
+	return version, nil
 }
 
 // Compares the epoch segments of each version

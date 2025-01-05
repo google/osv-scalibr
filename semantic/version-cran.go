@@ -39,6 +39,15 @@ func (v cranVersion) CompareStr(str string) (int, error) {
 }
 
 func mustParseCRANVersion(str string) cranVersion {
+	v, err := parseCRANVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func parseCRANVersion(str string) (cranVersion, error) {
 	// dashes and periods have the same weight, so we can just normalize to periods
 	parts := strings.Split(strings.ReplaceAll(str, "-", "."), ".")
 
@@ -51,5 +60,5 @@ func mustParseCRANVersion(str string) cranVersion {
 		components = append(components, v)
 	}
 
-	return cranVersion{components}
+	return cranVersion{components}, nil
 }

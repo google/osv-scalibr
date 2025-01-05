@@ -110,10 +110,19 @@ type packagistVersion struct {
 }
 
 func mustParsePackagistVersion(str string) packagistVersion {
+	v, err := parsePackagistVersion(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func parsePackagistVersion(str string) (packagistVersion, error) {
 	return packagistVersion{
 		str,
 		strings.Split(canonicalizePackagistVersion(str), "."),
-	}
+	}, nil
 }
 
 func (v packagistVersion) compare(w packagistVersion) int {
