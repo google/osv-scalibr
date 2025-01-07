@@ -238,6 +238,14 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
+					Name:      "proto-plus",
+					Version:   "1.23.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
 					Name:      "protobuf",
 					Version:   "4.25.5",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
