@@ -35,7 +35,7 @@ func canonicalizeRubyGemVersion(str string) string {
 
 func groupSegments(segs []string) (numbers []string, build []string) {
 	for _, seg := range segs {
-		_, isNumber := convertToBigInt(seg)
+		_, _, isNumber := convertToBigInt(seg)
 
 		if len(build) > 0 || !isNumber {
 			build = append(build, seg)
@@ -78,8 +78,8 @@ func compareRubyGemsComponents(a, b []string) int {
 		as := fetch(a, i, "0")
 		bs := fetch(b, i, "0")
 
-		ai, aIsNumber := convertToBigInt(as)
-		bi, bIsNumber := convertToBigInt(bs)
+		ai, _, aIsNumber := convertToBigInt(as)
+		bi, _, bIsNumber := convertToBigInt(bs)
 
 		switch {
 		case aIsNumber && bIsNumber:

@@ -44,8 +44,8 @@ func compareSemverBuildComponents(a, b []string) int {
 	var compare int
 
 	for i := range minComponentLength {
-		ai, aIsNumber := convertToBigInt(a[i])
-		bi, bIsNumber := convertToBigInt(b[i])
+		ai, _, aIsNumber := convertToBigInt(a[i])
+		bi, _, bIsNumber := convertToBigInt(b[i])
 
 		switch {
 		// 1. Identifiers consisting of only digits are compared numerically.

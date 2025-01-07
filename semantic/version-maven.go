@@ -15,7 +15,7 @@ type mavenVersionToken struct {
 }
 
 func (vt *mavenVersionToken) qualifierOrder() (int, error) {
-	_, isNumber := convertToBigInt(vt.value)
+	_, _, isNumber := convertToBigInt(vt.value)
 
 	if isNumber {
 		if vt.prefix == "-" {
@@ -59,8 +59,8 @@ func findKeywordOrder(keyword string) int {
 func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) (bool, error) {
 	// if the prefix is the same, then compare the token:
 	if vt.prefix == wt.prefix {
-		vv, vIsNumber := convertToBigInt(vt.value)
-		wv, wIsNumber := convertToBigInt(wt.value)
+		vv, _, vIsNumber := convertToBigInt(vt.value)
+		wv, _, wIsNumber := convertToBigInt(wt.value)
 
 		// numeric tokens have the same natural order
 		if vIsNumber && wIsNumber {
@@ -293,7 +293,7 @@ func newMavenVersion(str string) mavenVersion {
 			}
 
 			// remove any leading zeros
-			if d, isNumber := convertToBigInt(current); isNumber {
+			if d, _, isNumber := convertToBigInt(current); isNumber {
 				current = d.String()
 			}
 
