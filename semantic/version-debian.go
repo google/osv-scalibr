@@ -21,21 +21,27 @@ func splitAround(s string, sep string, reverse bool) (string, string) {
 	return s[:i], s[i+1:]
 }
 
-func splitDebianDigitPrefix(str string) (*big.Int, string) {
+func splitDebianDigitPrefix(str string) (*big.Int, string, error) {
 	// find the index of the first non-digit in the string, which is the end of the prefix
 	i := strings.IndexFunc(str, func(c rune) bool {
 		return c < 48 || c > 57
 	})
 
 	if i == 0 || str == "" {
-		return big.NewInt(0), str
+		return big.NewInt(0), str, nil
 	}
 
 	if i == -1 {
 		i = len(str)
 	}
 
-	return convertToBigIntOrPanic(str[:i]), str[i:]
+	digit, err, _ := convertToBigInt(str[:i])
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	return digit, str[i:], nil
 }
 
 func splitDebianNonDigitPrefix(str string) (string, string) {
@@ -72,9 +78,10 @@ func weighDebianChar(char string) int {
 	return c
 }
 
-func compareDebianVersions(a, b string) int {
+func compareDebianVersions(a, b string) (int, error) {
 	var ap, bp string
 	var adp, bdp *big.Int
+	var err error
 
 	// based off: https://man7.org/linux/man-pages/man7/deb-version.7.html
 	for {
@@ -96,25 +103,34 @@ func compareDebianVersions(a, b string) int {
 				bw := weighDebianChar(fetch(bpSplit, i, ""))
 
 				if aw < bw {
-					return -1
+					return -1, nil
 				}
 				if aw > bw {
-					return +1
+					return +1, nil
 				}
 			}
 		}
 
 		// Then the initial part of the remainder of each string which
 		// consists entirely of digit characters is determined....
-		adp, a = splitDebianDigitPrefix(a)
-		bdp, b = splitDebianDigitPrefix(b)
+		adp, a, err = splitDebianDigitPrefix(a)
+
+		if err != nil {
+			return 0, err
+		}
+
+		bdp, b, err = splitDebianDigitPrefix(b)
+
+		if err != nil {
+			return 0, err
+		}
 
 		if diff := adp.Cmp(bdp); diff != 0 {
-			return diff
+			return diff, nil
 		}
 	}
 
-	return 0
+	return 0, nil
 }
 
 type debianVersion struct {
@@ -123,18 +139,26 @@ type debianVersion struct {
 	revision string
 }
 
-func (v debianVersion) compare(w debianVersion) int {
+func (v debianVersion) compare(w debianVersion) (int, error) {
 	if diff := v.epoch.Cmp(w.epoch); diff != 0 {
-		return diff
+		return diff, nil
 	}
-	if diff := compareDebianVersions(v.upstream, w.upstream); diff != 0 {
-		return diff
+	if diff, err := compareDebianVersions(v.upstream, w.upstream); diff != 0 || err != nil {
+		if err != nil {
+			return 0, err
+		}
+
+		return diff, nil
 	}
-	if diff := compareDebianVersions(v.revision, w.revision); diff != 0 {
-		return diff
+	if diff, err := compareDebianVersions(v.revision, w.revision); diff != 0 || err != nil {
+		if err != nil {
+			return 0, err
+		}
+
+		return diff, nil
 	}
 
-	return 0
+	return 0, nil
 }
 
 func (v debianVersion) CompareStr(str string) (int, error) {
@@ -144,7 +168,7 @@ func (v debianVersion) CompareStr(str string) (int, error) {
 		return 0, err
 	}
 
-	return v.compare(w), nil
+	return v.compare(w)
 }
 
 func parseDebianVersion(str string) (debianVersion, error) {
@@ -155,8 +179,12 @@ func parseDebianVersion(str string) (debianVersion, error) {
 
 	if strings.Contains(str, ":") {
 		var e string
+		var err error
 		e, str = splitAround(str, ":", false)
-		epoch = convertToBigIntOrPanic(e)
+
+		if epoch, err, _ = convertToBigInt(e); err != nil {
+			return debianVersion{}, err
+		}
 	}
 
 	if strings.Contains(str, "-") {
