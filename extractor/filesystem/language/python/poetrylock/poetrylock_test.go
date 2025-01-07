@@ -226,7 +226,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "33.3.0",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev"},
+						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
@@ -250,7 +250,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.9.0.post0",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev"},
+						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
@@ -258,7 +258,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.17.0",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev"},
+						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
@@ -266,7 +266,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "4.12.2",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev"},
+						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
