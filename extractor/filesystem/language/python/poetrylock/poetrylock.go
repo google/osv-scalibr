@@ -66,6 +66,20 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "poetry.lock"
 }
 
+// removeMainGroup removes the "main" group from the list of groups,
+// as it is the default group used by Poetry for dependencies
+func removeMainGroup(groups []string) []string {
+	var g []string
+
+	for _, group := range groups {
+		if group != "main" {
+			g = append(g, group)
+		}
+	}
+
+	return g
+}
+
 // Extract extracts packages from poetry.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parsedLockfile *poetryLockFile
@@ -90,7 +104,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			}
 		}
 
-		groups := lockPackage.Groups
+		groups := removeMainGroup(lockPackage.Groups)
 
 		if groups == nil {
 			groups = []string{}
