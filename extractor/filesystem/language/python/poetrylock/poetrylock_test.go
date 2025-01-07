@@ -258,7 +258,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.17.0",
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev", "test"},
+						DepGroupVals: []string{},
 					},
 				},
 				{
