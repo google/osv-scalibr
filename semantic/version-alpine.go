@@ -226,22 +226,28 @@ func (v alpineVersion) CompareStr(str string) (int, error) {
 // and with no limit on the value or amount of number components.
 //
 // This parser must be applied *before* any other parser.
-func parseAlpineNumberComponents(v *alpineVersion, str string) string {
+func parseAlpineNumberComponents(v *alpineVersion, str string) (string, error) {
 	sub := cachedregexp.MustCompile(`^((\d+)\.?)*`).FindString(str)
 
 	if sub == "" {
-		return str
+		return str, nil
 	}
 
 	for i, d := range strings.Split(sub, ".") {
+		value, err, _ := convertToBigInt(d)
+
+		if err != nil {
+			return "", err
+		}
+
 		v.components = append(v.components, alpineNumberComponent{
-			value:    convertToBigIntOrPanic(d),
+			value:    value,
 			index:    i,
 			original: d,
 		})
 	}
 
-	return strings.TrimPrefix(str, sub)
+	return strings.TrimPrefix(str, sub), nil
 }
 
 // parseAlpineLetter parses the given string into an alpineVersion.letter
@@ -265,7 +271,7 @@ func parseAlpineLetter(v *alpineVersion, str string) string {
 // Suffixes begin with an "_" and may optionally end with a number.
 //
 // This parser must be applied *after* parseAlpineLetter.
-func parseAlpineSuffixes(v *alpineVersion, str string) string {
+func parseAlpineSuffixes(v *alpineVersion, str string) (string, error) {
 	re := cachedregexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
 
 	for _, match := range re.FindAllStringSubmatch(str, -1) {
@@ -273,14 +279,20 @@ func parseAlpineSuffixes(v *alpineVersion, str string) string {
 			match[2] = "0"
 		}
 
+		number, err, _ := convertToBigInt(match[2])
+
+		if err != nil {
+			return "", err
+		}
+
 		v.suffixes = append(v.suffixes, alpineSuffix{
 			weight: weightAlpineSuffixString(match[1]),
-			number: convertToBigIntOrPanic(match[2]),
+			number: number,
 		})
 		str = strings.TrimPrefix(str, match[0])
 	}
 
-	return str
+	return str, nil
 }
 
 // parseAlpineHash parses the given string into alpineVersion.hash and then returns
@@ -306,9 +318,9 @@ func parseAlpineHash(v *alpineVersion, str string) string {
 // begins with "-r" followed by a number.
 //
 // This parser must be applied *after* parseAlpineBuildComponent
-func parseAlpineBuildComponent(v *alpineVersion, str string) string {
+func parseAlpineBuildComponent(v *alpineVersion, str string) (string, error) {
 	if str == "" {
-		return str
+		return str, nil
 	}
 
 	re := cachedregexp.MustCompile(`^-r(\d*)`)
@@ -320,26 +332,44 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) string {
 		// must match as a build component or otherwise the version is invalid
 		v.invalid = true
 
-		return str
+		return str, nil
 	}
 
 	if matches[1] == "" {
 		matches[1] = "0"
 	}
 
-	v.buildComponent = convertToBigIntOrPanic(matches[1])
+	buildComponent, err, _ := convertToBigInt(matches[1])
 
-	return strings.TrimPrefix(str, matches[0])
+	if err != nil {
+		return "", err
+	}
+
+	v.buildComponent = buildComponent
+
+	return strings.TrimPrefix(str, matches[0]), nil
 }
 
 func parseAlpineVersion(str string) (alpineVersion, error) {
+	var err error
+
 	v := alpineVersion{original: str, buildComponent: new(big.Int)}
 
-	str = parseAlpineNumberComponents(&v, str)
+	if str, err = parseAlpineNumberComponents(&v, str); err != nil {
+		return alpineVersion{}, err
+	}
+
 	str = parseAlpineLetter(&v, str)
-	str = parseAlpineSuffixes(&v, str)
+
+	if str, err = parseAlpineSuffixes(&v, str); err != nil {
+		return alpineVersion{}, err
+	}
+
 	str = parseAlpineHash(&v, str)
-	str = parseAlpineBuildComponent(&v, str)
+
+	if str, err = parseAlpineBuildComponent(&v, str); err != nil {
+		return alpineVersion{}, err
+	}
 
 	v.remainder = str
 
