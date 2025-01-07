@@ -58,8 +58,8 @@ func comparePackagistComponents(a, b []string) int {
 	var compare int
 
 	for i := range minLength {
-		ai, aIsNumber := convertToBigInt(a[i])
-		bi, bIsNumber := convertToBigInt(b[i])
+		ai, _, aIsNumber := convertToBigInt(a[i])
+		bi, _, bIsNumber := convertToBigInt(b[i])
 
 		switch {
 		case aIsNumber && bIsNumber:

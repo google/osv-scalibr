@@ -273,8 +273,8 @@ func (pv pyPIVersion) compareLocal(pw pyPIVersion) int {
 	var compare int
 
 	for i := range minVersionLength {
-		ai, aIsNumber := convertToBigInt(pv.local[i])
-		bi, bIsNumber := convertToBigInt(pw.local[i])
+		ai, _, aIsNumber := convertToBigInt(pv.local[i])
+		bi, _, bIsNumber := convertToBigInt(pw.local[i])
 
 		switch {
 		// If a segment consists entirely of ASCII digits then that section should be considered an integer for comparison purposes
