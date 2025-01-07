@@ -326,6 +326,7 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) string {
 	return strings.TrimPrefix(str, matches[0])
 }
 
+// Deprecated: use parseAlpineVersion instead
 func mustParseAlpineVersion(str string) alpineVersion {
 	v, err := parseAlpineVersion(str)
 	if err != nil {

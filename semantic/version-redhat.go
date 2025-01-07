@@ -192,6 +192,7 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 	return v.compare(mustParseRedHatVersion(str)), nil
 }
 
+// Deprecated: use parseRedHatVersion instead
 // mustParseRedHatVersion parses a Red Hat version into a redHatVersion struct,
 // panicking if the version is invalid
 //

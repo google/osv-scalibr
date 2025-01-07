@@ -316,6 +316,7 @@ func (mv mavenVersion) CompareStr(str string) (int, error) {
 	return mv.compare(mustParseMavenVersion(str)), nil
 }
 
+// Deprecated: use parseMavenVersion instead
 func mustParseMavenVersion(str string) mavenVersion {
 	v, err := parseMavenVersion(str)
 	if err != nil {

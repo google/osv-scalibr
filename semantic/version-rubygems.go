@@ -105,6 +105,7 @@ type rubyGemsVersion struct {
 	Segments []string
 }
 
+// Deprecated: use parseRubyGemsVersion instead
 func mustParseRubyGemsVersion(str string) rubyGemsVersion {
 	v, err := parseRubyGemsVersion(str)
 	if err != nil {

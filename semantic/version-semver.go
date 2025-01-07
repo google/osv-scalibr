@@ -86,6 +86,7 @@ type semverVersion struct {
 	semverLikeVersion
 }
 
+// Deprecated: use parseSemverVersion instead
 func mustParseSemverVersion(str string) semverVersion {
 	v, err := parseSemverVersion(str)
 	if err != nil {

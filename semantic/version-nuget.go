@@ -18,6 +18,7 @@ func (v nuGetVersion) CompareStr(str string) (int, error) {
 	return v.compare(mustParseNuGetVersion(str)), nil
 }
 
+// Deprecated: use parseNuGetVersion instead
 func mustParseNuGetVersion(str string) nuGetVersion {
 	v, err := parseNuGetVersion(str)
 	if err != nil {
