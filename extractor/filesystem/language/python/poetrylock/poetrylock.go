@@ -66,8 +66,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "poetry.lock"
 }
 
-func resolvePoetryPackageGroups(groups []string) []string {
-	for _, group := range groups {
+func resolveGroups(pkg poetryLockPackage) []string {
+	// by definition an optional package cannot be in any other group,
+	// otherwise that would make it a required package
+	if pkg.Optional {
+		return []string{"optional"}
+	}
+
+	if pkg.Groups == nil {
+		return []string{}
+	}
+
+	for _, group := range pkg.Groups {
 		// the "main" group is the default group used for "production" dependencies,
 		// which we represent by an empty slice aka no groups
 		if group == "main" {
@@ -75,7 +85,7 @@ func resolvePoetryPackageGroups(groups []string) []string {
 		}
 	}
 
-	return groups
+	return pkg.Groups
 }
 
 // Extract extracts packages from poetry.lock files passed through the scan input.
@@ -95,27 +105,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
+			Metadata: osv.DepGroupMetadata{
+				DepGroupVals: resolveGroups(lockPackage),
+			},
 		}
 		if lockPackage.Source.Commit != "" {
 			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: lockPackage.Source.Commit,
 			}
 		}
-
-		groups := resolvePoetryPackageGroups(lockPackage.Groups)
-
-		if groups == nil {
-			groups = []string{}
-		}
-
-		if lockPackage.Optional {
-			groups = append(groups, "optional")
-		}
-
-		pkgDetails.Metadata = osv.DepGroupMetadata{
-			DepGroupVals: groups,
-		}
-
 		packages = append(packages, pkgDetails)
 	}
 
