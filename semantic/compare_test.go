@@ -2,6 +2,7 @@ package semantic_test
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -246,5 +247,19 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			runAgainstEcosystemFixture(t, tt.name, tt.file)
 		})
+	}
+}
+
+func TestVersion_Compare_Debian_InvalidVersion(t *testing.T) {
+	v := parseAsVersion(t, "1.2.3", "Debian")
+
+	_, err := v.CompareStr("1.2.3-not-a-debian:version!@#$")
+
+	if err == nil {
+		t.Fatalf("expected error comparing invalid version")
+	}
+
+	if !errors.Is(err, semantic.ErrInvalidVersion) {
+		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
 	}
 }
