@@ -134,16 +134,6 @@ func parsePyPILegacyVersion(str string) pyPIVersion {
 	return pyPIVersion{epoch: big.NewInt(-1), legacy: parts}
 }
 
-// Deprecated: use parsePyPIVersion instead
-func mustParsePyPIVersion(str string) pyPIVersion {
-	v, err := parsePyPIVersion(str)
-	if err != nil {
-		panic(err)
-	}
-
-	return v
-}
-
 func parsePyPIVersion(str string) (pyPIVersion, error) {
 	str = strings.ToLower(str)
 
@@ -377,5 +367,11 @@ func (pv pyPIVersion) compare(pw pyPIVersion) int {
 }
 
 func (pv pyPIVersion) CompareStr(str string) (int, error) {
-	return pv.compare(mustParsePyPIVersion(str)), nil
+	pw, err := parsePyPIVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return pv.compare(pw), nil
 }

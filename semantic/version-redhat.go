@@ -189,29 +189,13 @@ func (v redHatVersion) compare(w redHatVersion) int {
 }
 
 func (v redHatVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParseRedHatVersion(str)), nil
-}
+	w, err := parseRedHatVersion(str)
 
-// Deprecated: use parseRedHatVersion instead
-// mustParseRedHatVersion parses a Red Hat version into a redHatVersion struct,
-// panicking if the version is invalid
-//
-// A Red Hat version contains the following components:
-// - name (of the package), represented as "n"
-// - epoch, represented as "e"
-// - version, represented as "v"
-// - release, represented as "r"
-// - architecture, represented as "a"
-//
-// When all components are present, the version is represented as "n-e:v-r.a",
-// though only the version is actually required.
-func mustParseRedHatVersion(str string) redHatVersion {
-	v, err := parseRedHatVersion(str)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return v
+	return v.compare(w), nil
 }
 
 // parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
