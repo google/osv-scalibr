@@ -23,7 +23,7 @@ type letterAndNumber struct {
 	number *big.Int
 }
 
-func parseLetterVersion(letter, number string) letterAndNumber {
+func parseLetterVersion(letter, number string) (letterAndNumber, error) {
 	if letter != "" {
 		// we consider there to be an implicit 0 in a pre-release
 		// if there is not a numeral associated with it
@@ -53,7 +53,13 @@ func parseLetterVersion(letter, number string) letterAndNumber {
 			letter = "post"
 		}
 
-		return letterAndNumber{letter, convertToBigIntOrPanic(number)}
+		num, err, _ := convertToBigInt(number)
+
+		if err != nil {
+			return letterAndNumber{}, err
+		}
+
+		return letterAndNumber{letter, num}, nil
 	}
 
 	if number != "" {
@@ -61,10 +67,16 @@ func parseLetterVersion(letter, number string) letterAndNumber {
 		// the implicit post release syntax (e.g. 1.0-1)
 		letter = "post"
 
-		return letterAndNumber{letter, convertToBigIntOrPanic(number)}
+		num, err, _ := convertToBigInt(number)
+
+		if err != nil {
+			return letterAndNumber{}, err
+		}
+
+		return letterAndNumber{letter, num}, nil
 	}
 
-	return letterAndNumber{}
+	return letterAndNumber{}, nil
 }
 
 func parseLocalVersion(local string) (parts []string) {
@@ -150,14 +162,32 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 	version.epoch = big.NewInt(0)
 
 	if epoch := match[re.SubexpIndex("epoch")]; epoch != "" {
-		version.epoch = convertToBigIntOrPanic(epoch)
+		epoch, err, _ := convertToBigInt(epoch)
+
+		if err != nil {
+			return pyPIVersion{}, err
+		}
+
+		version.epoch = epoch
 	}
 
 	for _, r := range strings.Split(match[re.SubexpIndex("release")], ".") {
-		version.release = append(version.release, convertToBigIntOrPanic(r))
+		release, err, _ := convertToBigInt(r)
+
+		if err != nil {
+			return pyPIVersion{}, err
+		}
+
+		version.release = append(version.release, release)
 	}
 
-	version.pre = parseLetterVersion(match[re.SubexpIndex("pre_l")], match[re.SubexpIndex("pre_n")])
+	pre, err := parseLetterVersion(match[re.SubexpIndex("pre_l")], match[re.SubexpIndex("pre_n")])
+
+	if err != nil {
+		return pyPIVersion{}, err
+	}
+
+	version.pre = pre
 
 	post := match[re.SubexpIndex("post_n1")]
 
@@ -165,8 +195,21 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 		post = match[re.SubexpIndex("post_n2")]
 	}
 
-	version.post = parseLetterVersion(match[re.SubexpIndex("post_l")], post)
-	version.dev = parseLetterVersion(match[re.SubexpIndex("dev_l")], match[re.SubexpIndex("dev_n")])
+	post2, err := parseLetterVersion(match[re.SubexpIndex("post_l")], post)
+
+	if err != nil {
+		return pyPIVersion{}, err
+	}
+
+	version.post = post2
+
+	dev, err := parseLetterVersion(match[re.SubexpIndex("dev_l")], match[re.SubexpIndex("dev_n")])
+
+	if err != nil {
+		return pyPIVersion{}, err
+	}
+
+	version.dev = dev
 	version.local = parseLocalVersion(match[re.SubexpIndex("local")])
 
 	return version, nil
