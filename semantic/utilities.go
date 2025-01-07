@@ -5,6 +5,7 @@ import (
 	"math/big"
 )
 
+// Deprecated: use convertToBigInt instead
 func convertToBigIntOrPanic(str string) *big.Int {
 	if num, err, _ := convertToBigInt(str); err == nil {
 		return num
