@@ -8,6 +8,7 @@ import (
 )
 
 var ErrUnsupportedEcosystem = errors.New("unsupported ecosystem")
+var ErrInvalidVersion = errors.New("invalid version")
 
 // MustParse is like Parse but panics if the ecosystem is not supported.
 func MustParse(str string, ecosystem string) Version {
