@@ -14,26 +14,26 @@ type mavenVersionToken struct {
 	isNull bool
 }
 
-func (vt *mavenVersionToken) qualifierOrder() int {
+func (vt *mavenVersionToken) qualifierOrder() (int, error) {
 	_, isNumber := convertToBigInt(vt.value)
 
 	if isNumber {
 		if vt.prefix == "-" {
-			return 2
+			return 2, nil
 		}
 		if vt.prefix == "." {
-			return 3
+			return 3, nil
 		}
 	}
 
 	if vt.prefix == "-" {
-		return 1
+		return 1, nil
 	}
 	if vt.prefix == "." {
-		return 0
+		return 0, nil
 	}
 
-	panic(fmt.Sprintf("unknown prefix '%s'", vt.prefix))
+	return 0, fmt.Errorf("%w: unknown prefix '%s'", ErrInvalidVersion, vt.prefix)
 }
 
 func (vt *mavenVersionToken) shouldTrim() bool {
@@ -56,7 +56,7 @@ func findKeywordOrder(keyword string) int {
 	return len(keywordOrder)
 }
 
-func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) bool {
+func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) (bool, error) {
 	// if the prefix is the same, then compare the token:
 	if vt.prefix == wt.prefix {
 		vv, vIsNumber := convertToBigInt(vt.value)
@@ -64,17 +64,17 @@ func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) bool {
 
 		// numeric tokens have the same natural order
 		if vIsNumber && wIsNumber {
-			return vv.Cmp(wv) == -1
+			return vv.Cmp(wv) == -1, nil
 		}
 
 		// The spec is unclear, but according to Maven's implementation, numerics
 		// sort after non-numerics, **unless it's a null value**.
 		// https://github.com/apache/maven/blob/965aaa53da5c2d814e94a41d37142d0d6830375d/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L443
 		if vIsNumber && !vt.isNull {
-			return false
+			return false, nil
 		}
 		if wIsNumber && !wt.isNull {
-			return true
+			return true, nil
 		}
 
 		// Non-numeric tokens ("qualifiers") have the alphabetical order, except
@@ -88,14 +88,29 @@ func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) bool {
 
 		if leftIdx == len(keywordOrder) && rightIdx == len(keywordOrder) {
 			// Both are unknown qualifiers. Just do a lexical comparison.
-			return vt.value < wt.value
+			return vt.value < wt.value, nil
 		}
 
-		return leftIdx < rightIdx
+		return leftIdx < rightIdx, nil
 	}
 
 	// else ".qualifier" < "-qualifier" < "-number" < ".number"
-	return vt.qualifierOrder() < wt.qualifierOrder()
+	return vt.lessThanByQualifier(wt)
+}
+
+func (vt *mavenVersionToken) lessThanByQualifier(wt mavenVersionToken) (bool, error) {
+	vo, err := vt.qualifierOrder()
+	if err != nil {
+		return false, err
+	}
+
+	wo, err := wt.qualifierOrder()
+
+	if err != nil {
+		return false, err
+	}
+
+	return vo < wo, nil
 }
 
 type mavenVersion struct {
@@ -116,7 +131,7 @@ func (mv mavenVersion) equal(mw mavenVersion) bool {
 	return true
 }
 
-func newMavenNullVersionToken(token mavenVersionToken) mavenVersionToken {
+func newMavenNullVersionToken(token mavenVersionToken) (mavenVersionToken, error) {
 	if token.prefix == "." {
 		value := "0"
 
@@ -126,33 +141,42 @@ func newMavenNullVersionToken(token mavenVersionToken) mavenVersionToken {
 			value = ""
 		}
 
-		return mavenVersionToken{".", value, true}
+		return mavenVersionToken{".", value, true}, nil
 	}
 	if token.prefix == "-" {
-		return mavenVersionToken{"-", "", true}
+		return mavenVersionToken{"-", "", true}, nil
 	}
 
-	panic(fmt.Sprintf("unknown prefix '%s' (value: '%s')", token.prefix, token.value))
+	return mavenVersionToken{}, fmt.Errorf("%w: unknown prefix '%s' (value '%s')", ErrInvalidVersion, token.prefix, token.value)
 }
 
-func (mv mavenVersion) lessThan(mw mavenVersion) bool {
+func (mv mavenVersion) lessThan(mw mavenVersion) (bool, error) {
 	numberOfTokens := max(len(mv.tokens), len(mw.tokens))
 
 	var left mavenVersionToken
 	var right mavenVersionToken
+	var err error
 
 	for i := range numberOfTokens {
 		// the shorter one padded with enough "null" values with matching prefix to
 		// have the same length as the longer one. Padded "null" values depend on
 		// the prefix of the other version: 0 for '.', "" for '-'
 		if i >= len(mv.tokens) {
-			left = newMavenNullVersionToken(mw.tokens[i])
+			left, err = newMavenNullVersionToken(mw.tokens[i])
+
+			if err != nil {
+				return false, err
+			}
 		} else {
 			left = mv.tokens[i]
 		}
 
 		if i >= len(mw.tokens) {
-			right = newMavenNullVersionToken(mv.tokens[i])
+			right, err = newMavenNullVersionToken(mv.tokens[i])
+
+			if err != nil {
+				return false, err
+			}
 		} else {
 			right = mw.tokens[i]
 		}
@@ -166,7 +190,7 @@ func (mv mavenVersion) lessThan(mw mavenVersion) bool {
 		return left.lessThan(right)
 	}
 
-	return false
+	return false, nil
 }
 
 // Finds every point in a token where it transitions either from a digit to a non-digit or vis versa,
@@ -301,15 +325,19 @@ func newMavenVersion(str string) mavenVersion {
 
 	return mavenVersion{tokens}
 }
-func (mv mavenVersion) compare(w mavenVersion) int {
+func (mv mavenVersion) compare(w mavenVersion) (int, error) {
 	if mv.equal(w) {
-		return 0
+		return 0, nil
 	}
-	if mv.lessThan(w) {
-		return -1
+	if lt, err := mv.lessThan(w); lt || err != nil {
+		if err != nil {
+			return 0, err
+		}
+
+		return -1, nil
 	}
 
-	return +1
+	return +1, nil
 }
 
 func (mv mavenVersion) CompareStr(str string) (int, error) {
@@ -319,7 +347,7 @@ func (mv mavenVersion) CompareStr(str string) (int, error) {
 		return 0, err
 	}
 
-	return mv.compare(mw), nil
+	return mv.compare(mw)
 }
 
 func parseMavenVersion(str string) (mavenVersion, error) {
