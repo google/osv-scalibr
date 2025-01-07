@@ -5,15 +5,6 @@ import (
 	"math/big"
 )
 
-// Deprecated: use convertToBigInt instead
-func convertToBigIntOrPanic(str string) *big.Int {
-	if num, err, _ := convertToBigInt(str); err == nil {
-		return num
-	}
-
-	panic(fmt.Sprintf("failed to convert %s to a number", str))
-}
-
 func convertToBigInt(str string) (*big.Int, error, bool) {
 	i, ok := new(big.Int).SetString(str, 10)
 
