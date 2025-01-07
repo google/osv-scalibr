@@ -141,6 +141,7 @@ func (v debianVersion) CompareStr(str string) (int, error) {
 	return v.compare(mustParseDebianVersion(str)), nil
 }
 
+// Deprecated: use parseDebianVersion instead
 func mustParseDebianVersion(str string) debianVersion {
 	v, err := parseDebianVersion(str)
 	if err != nil {

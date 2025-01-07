@@ -134,6 +134,7 @@ func parsePyPILegacyVersion(str string) pyPIVersion {
 	return pyPIVersion{epoch: big.NewInt(-1), legacy: parts}
 }
 
+// Deprecated: use parsePyPIVersion instead
 func mustParsePyPIVersion(str string) pyPIVersion {
 	v, err := parsePyPIVersion(str)
 	if err != nil {

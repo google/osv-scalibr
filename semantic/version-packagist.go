@@ -109,6 +109,7 @@ type packagistVersion struct {
 	Components []string
 }
 
+// Deprecated: use parsePackagistVersion instead
 func mustParsePackagistVersion(str string) packagistVersion {
 	v, err := parsePackagistVersion(str)
 	if err != nil {
