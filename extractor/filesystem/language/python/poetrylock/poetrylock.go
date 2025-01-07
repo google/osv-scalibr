@@ -38,6 +38,7 @@ type poetryLockPackage struct {
 	Name     string                  `toml:"name"`
 	Version  string                  `toml:"version"`
 	Optional bool                    `toml:"optional"`
+	Groups   []string                `toml:"groups"`
 	Source   poetryLockPackageSource `toml:"source"`
 }
 
@@ -88,15 +89,21 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				Commit: lockPackage.Source.Commit,
 			}
 		}
-		if lockPackage.Optional {
-			pkgDetails.Metadata = osv.DepGroupMetadata{
-				DepGroupVals: []string{"optional"},
-			}
-		} else {
-			pkgDetails.Metadata = osv.DepGroupMetadata{
-				DepGroupVals: []string{},
-			}
+
+		groups := lockPackage.Groups
+
+		if groups == nil {
+			groups = []string{}
 		}
+
+		if lockPackage.Optional {
+			groups = append(groups, "optional")
+		}
+
+		pkgDetails.Metadata = osv.DepGroupMetadata{
+			DepGroupVals: groups,
+		}
+
 		packages = append(packages, pkgDetails)
 	}
 
