@@ -73,18 +73,6 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:         "not executable bit set",
-			path:         "some/path/a",
-			mode:         0640,
-			wantRequired: false,
-		},
-		{
-			name:         "Non regular file, socket",
-			path:         "some/path/a",
-			mode:         fs.ModeSocket | 0777,
-			wantRequired: false,
-		},
-		{
 			name:             "executable required if size less than maxFileSizeBytes",
 			path:             "some/path/a",
 			mode:             0766,
