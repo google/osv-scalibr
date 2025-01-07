@@ -105,16 +105,6 @@ type rubyGemsVersion struct {
 	Segments []string
 }
 
-// Deprecated: use parseRubyGemsVersion instead
-func mustParseRubyGemsVersion(str string) rubyGemsVersion {
-	v, err := parseRubyGemsVersion(str)
-	if err != nil {
-		panic(err)
-	}
-
-	return v
-}
-
 func parseRubyGemsVersion(str string) (rubyGemsVersion, error) {
 	return rubyGemsVersion{
 		str,
@@ -127,5 +117,11 @@ func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
 }
 
 func (v rubyGemsVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParseRubyGemsVersion(str)), nil
+	w, err := parseRubyGemsVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return v.compare(w), nil
 }

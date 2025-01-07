@@ -109,16 +109,6 @@ type packagistVersion struct {
 	Components []string
 }
 
-// Deprecated: use parsePackagistVersion instead
-func mustParsePackagistVersion(str string) packagistVersion {
-	v, err := parsePackagistVersion(str)
-	if err != nil {
-		panic(err)
-	}
-
-	return v
-}
-
 func parsePackagistVersion(str string) (packagistVersion, error) {
 	return packagistVersion{
 		str,
@@ -131,5 +121,11 @@ func (v packagistVersion) compare(w packagistVersion) int {
 }
 
 func (v packagistVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParsePackagistVersion(str)), nil
+	w, err := parsePackagistVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return v.compare(w), nil
 }

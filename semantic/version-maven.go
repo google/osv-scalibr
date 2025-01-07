@@ -313,17 +313,13 @@ func (mv mavenVersion) compare(w mavenVersion) int {
 }
 
 func (mv mavenVersion) CompareStr(str string) (int, error) {
-	return mv.compare(mustParseMavenVersion(str)), nil
-}
+	mw, err := parseMavenVersion(str)
 
-// Deprecated: use parseMavenVersion instead
-func mustParseMavenVersion(str string) mavenVersion {
-	v, err := parseMavenVersion(str)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return v
+	return mv.compare(mw), nil
 }
 
 func parseMavenVersion(str string) (mavenVersion, error) {

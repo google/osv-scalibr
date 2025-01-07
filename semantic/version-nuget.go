@@ -15,17 +15,13 @@ func (v nuGetVersion) compare(w nuGetVersion) int {
 }
 
 func (v nuGetVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParseNuGetVersion(str)), nil
-}
+	w, err := parseNuGetVersion(str)
 
-// Deprecated: use parseNuGetVersion instead
-func mustParseNuGetVersion(str string) nuGetVersion {
-	v, err := parseNuGetVersion(str)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return v
+	return v.compare(w), nil
 }
 
 func parseNuGetVersion(str string) (nuGetVersion, error) {

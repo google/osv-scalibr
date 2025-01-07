@@ -35,17 +35,13 @@ func (v cranVersion) compare(w cranVersion) int {
 }
 
 func (v cranVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParseCRANVersion(str)), nil
-}
+	w, err := parseCRANVersion(str)
 
-// Deprecated: use parseCRANVersion instead
-func mustParseCRANVersion(str string) cranVersion {
-	v, err := parseCRANVersion(str)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return v
+	return v.compare(w), nil
 }
 
 func parseCRANVersion(str string) (cranVersion, error) {

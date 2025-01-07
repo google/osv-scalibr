@@ -86,16 +86,6 @@ type semverVersion struct {
 	semverLikeVersion
 }
 
-// Deprecated: use parseSemverVersion instead
-func mustParseSemverVersion(str string) semverVersion {
-	v, err := parseSemverVersion(str)
-	if err != nil {
-		panic(err)
-	}
-
-	return v
-}
-
 func parseSemverVersion(str string) (semverVersion, error) {
 	return semverVersion{parseSemverLikeVersion(str, 3)}, nil
 }
@@ -109,5 +99,11 @@ func (v semverVersion) compare(w semverVersion) int {
 }
 
 func (v semverVersion) CompareStr(str string) (int, error) {
-	return v.compare(mustParseSemverVersion(str)), nil
+	w, err := parseSemverVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return v.compare(w), nil
 }
