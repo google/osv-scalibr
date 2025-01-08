@@ -69,10 +69,10 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
+	var e filesystem.Extractor = nix.New()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nix.Extractor{}
-
 			isRequired := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nix.Extractor{}
+			var e filesystem.Extractor = nix.New()
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)

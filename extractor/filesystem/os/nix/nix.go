@@ -34,13 +34,17 @@ const (
 	Name = "os/nix"
 )
 
-var (
-	// visitedDir tracks already visited directories.
-	visitedDir = make(map[string]bool)
-)
-
 // Extractor extracts packages from the nix store directory.
-type Extractor struct{}
+type Extractor struct {
+	// visitedDir tracks already visited directories.
+	visitedDir map[string]bool
+}
+
+func New() *Extractor {
+	return &Extractor{
+		visitedDir: make(map[string]bool),
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -53,7 +57,8 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if a given path corresponds to a unique, unprocessed
 // directory under the nixStoreDir path.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
+
 	path := api.Path()
 
 	if !strings.HasPrefix(path, "nix/store/") {
@@ -70,12 +75,17 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// uniquePath: 1ddf3x30m0z6kknmrmapsc7liz8npi1w-perl-5.38.2
 	uniquePath := pathParts[2]
 
+	// Optimization note: In case this plugin becomes too heavy in terms of CPU
+	// or memory, consider optimizing by storing only the last processed
+	// package name as a string, assuming files are walked using DFS.
+
 	// Check if the uniquePath has already been processed
-	if _, exists := visitedDir[uniquePath]; exists {
+	if _, exists := e.visitedDir[uniquePath]; exists {
 		return false
 	}
 
-	visitedDir[uniquePath] = true
+	e.visitedDir[uniquePath] = true
+
 	return true
 }
 
