@@ -16,9 +16,9 @@
 package portage
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -159,22 +159,18 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	var pf string
-	inventories := []*extractor.Inventory{}
 
-	s := bufio.NewScanner(input.Reader)
-	for s.Scan() {
-		// Return if canceled or exceeding deadline.
-		if err := ctx.Err(); err != nil {
-			return inventories, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
-		}
-
-		line := s.Text()
-		pf = strings.TrimSpace(string(line))
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		log.Errorf("unable to read file %s: %v", input.Path, err)
+		return nil, err
 	}
+
+	pf = strings.TrimSpace(string(content))
 
 	if err != nil {
 		log.Errorf("unable to read file %s: %v", input.Path, err)
-		return inventories, err
+		return nil, err
 	}
 
 	if pf == "" {
@@ -183,8 +179,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	pkgName, pkgVersion := splitPackageAndVersion(pf)
 	if pkgName == "" || pkgVersion == "" {
-		log.Errorf("no package name or version")
-		return inventories, err
+		return nil, fmt.Errorf("no package name or version found in PF file: %s", pf)
 	}
 
 	i := &extractor.Inventory{
@@ -199,9 +194,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		Locations: []string{input.Path},
 	}
 
-	inventories = append(inventories, i)
-
-	return inventories, nil
+	return []*extractor.Inventory{i}, nil
 }
 
 func splitPackageAndVersion(path string) (string, string) {

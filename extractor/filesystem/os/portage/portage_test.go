@@ -17,16 +17,16 @@ package portage_test
 import (
 	"context"
 	"io/fs"
+	golog "log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -64,7 +64,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := portage.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
 				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
 			}
 		})
@@ -171,7 +171,7 @@ func TestExtract(t *testing.T) {
 		osrelease        string
 		cfg              portage.Config
 		wantInventory    []*extractor.Inventory
-		wantErr          error
+		wantErr          int
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
@@ -197,38 +197,39 @@ func TestExtract(t *testing.T) {
 			name:             "not valid PF file",
 			path:             "testdata/invalid",
 			osrelease:        Gentoo,
-			wantInventory:    []*extractor.Inventory{},
-			wantErr:          cmpopts.AnyError,
+			wantInventory:    nil,
+			wantErr:          0,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name:             "no version PF file",
 			path:             "testdata/noversion",
 			osrelease:        Gentoo,
-			wantInventory:    []*extractor.Inventory{},
-			wantErr:          cmpopts.AnyError,
+			wantInventory:    nil,
+			wantErr:          0,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name:             "no pkg name PF file",
 			path:             "testdata/nopackage",
 			osrelease:        Gentoo,
-			wantInventory:    []*extractor.Inventory{},
-			wantErr:          cmpopts.AnyError,
+			wantInventory:    nil,
+			wantErr:          0,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
 			name:             "empty PF file",
 			path:             "testdata/empty",
 			osrelease:        Gentoo,
-			wantInventory:    []*extractor.Inventory{},
-			wantErr:          cmpopts.AnyError,
+			wantInventory:    nil,
+			wantErr:          0,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logger := &testLogger{}
 			collector := testcollector.New()
 			var e filesystem.Extractor = portage.New(portage.Config{
 				Stats:            collector,
@@ -263,7 +264,66 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
 				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
 			}
+			if logger.errors != tt.wantErr {
+				t.Errorf("Extract(%s) recorded %d errors, want %d errors", tt.path, logger.errors, tt.wantErr)
+			}
 		})
+	}
+}
+
+var _ scalibrlog.Logger = &testLogger{}
+
+type testLogger struct {
+	Verbose  bool
+	warnings int
+	errors   int
+}
+
+// Errorf is the formatted error logging function.
+func (l *testLogger) Errorf(format string, args ...any) {
+	golog.Printf(format, args...)
+	l.errors++
+}
+
+// Warnf is the formatted warning logging function.
+func (l *testLogger) Warnf(format string, args ...any) {
+	golog.Printf(format, args...)
+	l.warnings++
+}
+
+// Infof is the formatted info logging function.
+func (testLogger) Infof(format string, args ...any) {
+	golog.Printf(format, args...)
+}
+
+// Debugf is the formatted debug logging function.
+func (l *testLogger) Debugf(format string, args ...any) {
+	if l.Verbose {
+		golog.Printf(format, args...)
+	}
+}
+
+// Error is the error logging function.
+func (l *testLogger) Error(args ...any) {
+	golog.Println(args...)
+	l.errors++
+}
+
+// Warn is the warning logging function.
+func (l *testLogger) Warn(args ...any) {
+	golog.Println(args...)
+	l.warnings++
+}
+
+// Info is the info logging function.
+func (testLogger) Info(args ...any) {
+	golog.Println(args...)
+}
+
+// Debug is the debug logging function.
+func (l *testLogger) Debug(args ...any) {
+	if l.Verbose {
+		golog.Println(args...)
 	}
 }
 
