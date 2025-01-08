@@ -14,9 +14,12 @@
 
 package depsjson
 
-// Metadata holds parsing information for a depsjson package.
+// Metadata holds parsing information for a deps.json package.
 type Metadata struct {
-	PackageName    string
-	PackageVersion string
-	Type           string
+	PackageName    string // The name of the package.
+	PackageVersion string // The version of the package.
+	// Type indicates the type of the package. Examples include:
+	// - "package": Represents an external dependency, such as a NuGet package.
+	// - "project": Represents an internal dependency, such as the main application
+	Type string
 }

@@ -128,13 +128,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, err
 }
 
+// DepsJSON represents the structure of the deps.json file.
 type DepsJSON struct {
 	// Note: Libraries does not include transitive dependencies.
 	// Targets is not currently extracted because it introduces significant
 	// complexity and is not always necessary for basic dependency analysis.
 	Libraries map[string]struct {
 		Version string `json:"version"`
-		Type    string `json:"type"` // Represents the package type, if present.
+		// Type represents the package type, if present. Examples of types include:
+		// - "package": Indicates a standard NuGet package dependency.
+		// - "project": Represents a project-level dependency, such as the main application or a locally developed library.
+		Type string `json:"type"`
 	} `json:"libraries"`
 }
 
