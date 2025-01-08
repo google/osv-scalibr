@@ -20,13 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -93,9 +91,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the /wp-content/plugins/ pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	log.Error(path)
-	// Check if the file path is under /wp-content/plugins/
-	if !strings.Contains(path, "wp-content/plugins/") || filepath.Ext(path) != ".php" {
+	if !strings.Contains(path, "wp-content/plugins/") || !strings.HasSuffix(path, ".php") {
 		return false
 	}
 
