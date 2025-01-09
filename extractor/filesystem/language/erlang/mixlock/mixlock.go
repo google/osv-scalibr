@@ -48,12 +48,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract extracts packages from Erlang mix.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Parse the Mix.lock file using mixlockutils
-	inventories, err := mixlockutils.ParseMixLockFile(input)
-	if err != nil {
-		return nil, err
-	}
-
-	return inventories, nil
+	return mixlockutils.ParseMixLockFile(input)
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.

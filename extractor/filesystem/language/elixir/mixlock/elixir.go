@@ -134,12 +134,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Parse the Mix.lock file into a list of packages and return Inventory directly
-	inventories, err := mixlockutils.ParseMixLockFile(input)
-	if err != nil {
-		return nil, err
-	}
-
-	return inventories, nil
+	return mixlockutils.ParseMixLockFile(input)
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.
