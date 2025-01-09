@@ -86,15 +86,17 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 
-	// Verify the path starts with `envs/` and check extension
-	if !strings.HasPrefix(path, "envs/") || filepath.Ext(path) != ".json" {
+	// Normalize the path to use forward slashes, making it platform-independent
+	path = filepath.ToSlash(path)
+
+	// Verify the path contains the `envs/` directory and check extension
+	if !strings.Contains(path, "envs/") || !strings.HasSuffix(path, ".json") {
 		return false
 	}
 
-	// Split the path by `/` and check the second segment.
 	parts := strings.Split(path, "/")
-	// Ensure there are enough parts and the second directory has a suffix `conda-meta`.
-	if len(parts) < 3 || !strings.HasSuffix(parts[2], "conda-meta") {
+	// Ensure there are enough parts and the last directory is `conda-meta`.
+	if len(parts) < 3 || !strings.HasSuffix(filepath.Dir(path), "conda-meta") {
 		return false
 	}
 
@@ -142,41 +144,38 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs, err := Parse(input.Reader)
+	// Parse the metadata and get a package
+	pkg, err := parse(input.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	var inventories []*extractor.Inventory
-
-	for _, pkg := range pkgs {
-		if pkg.Name == "" || pkg.Version == "" {
-			continue
-		}
-		i := &extractor.Inventory{
-			Name:    pkg.Name,
-			Version: pkg.Version,
-			Locations: []string{
-				input.Path,
-			},
-		}
-		inventories = append(inventories, i)
+	// Return an empty slice if the package name or version is empty
+	if pkg.Name == "" || pkg.Version == "" {
+		return nil, fmt.Errorf("package name or version is empty")
 	}
 
-	return inventories, nil
+	inventory := &extractor.Inventory{
+		Name:    pkg.Name,
+		Version: pkg.Version,
+		Locations: []string{
+			input.Path,
+		},
+	}
+
+	return []*extractor.Inventory{inventory}, nil
 }
 
-// Parse reads a Conda metadata JSON file and extracts package data.
-func Parse(r io.Reader) ([]*Package, error) {
-	var pkg Package
+// parse reads a Conda metadata JSON file and extracts a package.
+func parse(r io.Reader) (*condaPackage, error) {
+	var pkg condaPackage
 	if err := json.NewDecoder(r).Decode(&pkg); err != nil {
 		return nil, fmt.Errorf("failed to parse Conda metadata: %w", err)
 	}
-	return []*Package{&pkg}, nil
+	return &pkg, nil
 }
 
-// Package represents a Conda package.
-type Package struct {
+type condaPackage struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 }
