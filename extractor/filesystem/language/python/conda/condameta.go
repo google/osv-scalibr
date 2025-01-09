@@ -89,14 +89,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// Normalize the path to use forward slashes, making it platform-independent
 	path = filepath.ToSlash(path)
 
-	// Verify the path contains the `envs/` directory and check extension
-	if !strings.Contains(path, "envs/") || !strings.HasSuffix(path, ".json") {
+	// Verify the path contains the `envs/` directory
+	if !(strings.HasPrefix(path, "envs/") || strings.Contains(path, "/envs/")) {
 		return false
 	}
 
-	parts := strings.Split(path, "/")
-	// Ensure there are enough parts and the last directory is `conda-meta`.
-	if len(parts) < 3 || !strings.HasSuffix(filepath.Dir(path), "conda-meta") {
+	// Verify extension
+	if !strings.HasSuffix(path, ".json") {
+		return false
+	}
+
+	// Ensure the last directory is `conda-meta`.
+	if !strings.HasSuffix(filepath.Dir(path), "conda-meta") {
 		return false
 	}
 

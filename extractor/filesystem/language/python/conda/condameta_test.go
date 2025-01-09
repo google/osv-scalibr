@@ -89,6 +89,11 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: true,
 		},
 		{
+			name:         "invalid envs dir",
+			path:         "/path/to/fooenvs/conda-meta/numpy-1.21.2-py39h123abcde.json",
+			wantRequired: false,
+		},
+		{
 			name:         "invalid path conda json file",
 			path:         "envs/data_analysis/test/numpy-1.21.2-py39h123abcde.json",
 			wantRequired: false,
