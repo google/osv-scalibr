@@ -17,21 +17,20 @@ package elixir_test
 import (
 	"context"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -63,8 +62,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := elixir.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -161,19 +160,13 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		osrelease        string
-		cfg              elixir.Config
-		wantInventory    []*extractor.Inventory
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "valid mix.lock file",
-			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid mix.lock file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "bunt",
 					Version:   "1.0.0",
@@ -191,12 +184,13 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "mix.lock file that has a valid and a corrupted packages",
-			path: "testdata/invalid",
-			wantInventory: []*extractor.Inventory{
+			Name: "mix.lock file that has a valid and a corrupted package",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "bunt",
 					Version:   "1.0.0",
@@ -206,44 +200,35 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			Name: "empty mix.lock file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
 			var e filesystem.Extractor = elixir.New(elixir.Config{
 				Stats:            collector,
 				MaxFileSizeBytes: 100,
 			})
 
-			d := t.TempDir()
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			// Opening and Reading the Test File
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+			got, err := e.Extract(context.Background(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatalf("Failed to stat test file: %v", err)
-			}
-
-			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
-			}
-
-			got, err := e.Extract(context.Background(), input)
-
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}

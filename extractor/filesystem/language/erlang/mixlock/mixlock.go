@@ -18,7 +18,6 @@ package mixlock
 import (
 	"context"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -48,35 +47,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from Erlang mix.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	// Parse the Mix.lock file into a list of packages
-	pkgs, err := mixlockutils.ParseMixLockFile(input)
+	// Parse the Mix.lock file using mixlockutils
+	inventories, err := mixlockutils.ParseMixLockFile(input)
 	if err != nil {
 		return nil, err
-	}
-
-	var inventories []*extractor.Inventory
-
-	for _, pkg := range pkgs {
-		inventories = append(inventories, &extractor.Inventory{
-			Name:      pkg.Name,
-			Version:   pkg.Version,
-			Locations: []string{input.Path},
-			SourceCode: &extractor.SourceCodeIdentifier{
-				Commit: pkg.SourceCode,
-			},
-		})
 	}
 
 	return inventories, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
+// ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeHex,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}
+	return mixlockutils.ToPURL(i)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
