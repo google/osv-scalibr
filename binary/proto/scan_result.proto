@@ -90,7 +90,7 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     PACMANPackageMetadata pacman_metadata = 36;
-    VMLINUZPackageMetadata vmlinuz_metadata = 39;
+    VmlinuzMetadata vmlinuz_metadata = 39;
     PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
@@ -325,8 +325,8 @@ message FlatpakPackageMetadata {
   string developer = 9;
 }
 
-// The additional data found in VMLINUZ packages.
-message VMLINUZPackageMetadata {
+// The additional data found in Vmlinuz packages.
+message VmlinuzMetadata {
   string name = 1;
   string version = 2;
   string architecture = 3;

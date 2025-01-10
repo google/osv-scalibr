@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -62,8 +61,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := vmlinuz.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -80,19 +79,19 @@ func TestFileRequired(t *testing.T) {
 	}{
 		{
 			name:             "required vmlinuz file",
-			path:             "/usr/lib/foo/vmlinuz",
+			path:             "boot/usr/lib/foo/vmlinuz",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
 			name:             "required vmlinuz-* file",
-			path:             "/usr/lib/foo/vmlinuz-x.y.z",
+			path:             "boot/usr/lib/foo/vmlinuz-x.y.z",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
 			name:             "file required if file size < max file size",
-			path:             "/usr/lib/foo/vmlinuz",
+			path:             "boot/usr/lib/foo/vmlinuz",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -100,7 +99,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file required if file size == max file size",
-			path:             "/usr/lib/foo/vmlinuz",
+			path:             "boot/usr/lib/foo/vmlinuz",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -108,7 +107,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file not required if file size > max file size",
-			path:             "/usr/lib/foo/vmlinuz",
+			path:             "boot/usr/lib/foo/vmlinuz",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
 			wantRequired:     false,
@@ -116,27 +115,31 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file required if max file size set to 0",
-			path:             "/usr/lib/foo/vmlinuz",
+			path:             "boot/usr/lib/foo/vmlinuz",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name: "not required",
-			path: "/usr/lib/foo/vmlinuzfoo",
+			name:         "not required",
+			path:         "/usr/lib/foo/vmlinuzfoo",
+			wantRequired: false,
 		},
 		{
-			name: "not required",
-			path: "/usr/lib/foo/foovmlinuz-",
+			name:         "not required",
+			path:         "boot/usr/lib/foo/foovmlinuz-",
+			wantRequired: false,
 		},
 		{
-			name: "not required",
-			path: "/usr/lib/foo/vmlinuz.old",
+			name:         "not required",
+			path:         "/usr/lib/foo/vmlinuz.old",
+			wantRequired: false,
 		},
 		{
-			name: "not required",
-			path: "/usr/lib/foo/vmlinuz/vmlinuz.old",
+			name:         "not required",
+			path:         "/usr/lib/foo/vmlinuz/vmlinuz.old",
+			wantRequired: false,
 		},
 	}
 
@@ -200,10 +203,10 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantInventory: []*extractor.Inventory{
 				{
-					Name:    "Linux kernel",
+					Name:    "Linux Kernel",
 					Version: "6.8.0-49-generic",
 					Metadata: &vmlinuz.Metadata{
-						Name:              "Linux kernel",
+						Name:              "Linux Kernel",
 						Version:           "6.8.0-49-generic",
 						Architecture:      "x86",
 						ExtendedVersion:   "6.8.0-49-generic (buildd@lcy02-amd64-103) #49~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Wed Nov  6 17:42:15 UTC 2",
@@ -218,6 +221,12 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:          "invalid vmlinuz file",
+			path:          "testdata/invalid",
+			osrelease:     UbuntuJammy,
+			wantInventory: nil,
 		},
 	}
 

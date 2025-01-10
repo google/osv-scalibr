@@ -363,7 +363,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 		}
 	case *vmlinuz.Metadata:
 		i.Metadata = &spb.Inventory_VmlinuzMetadata{
-			VmlinuzMetadata: &spb.VMLINUZPackageMetadata{
+			VmlinuzMetadata: &spb.VmlinuzMetadata{
 				Name:              m.Name,
 				Version:           m.Version,
 				Architecture:      m.Architecture,

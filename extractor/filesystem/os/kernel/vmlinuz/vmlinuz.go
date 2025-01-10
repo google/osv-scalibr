@@ -16,10 +16,8 @@
 package vmlinuz
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -45,6 +44,17 @@ const (
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 100 * units.MiB
 )
+
+type metadata struct {
+	architecture    string
+	version         string
+	extendedVersion string
+	format          string
+	videoMode       string
+	rwRootFS        bool
+	swapDevice      int32
+	rootDevice      int32
+}
 
 // Config is the configuration for the Extractor.
 type Config struct {
@@ -97,6 +107,10 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the vmlinuz file patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
+
+	if !strings.HasPrefix(path, "boot/") {
+		return false
+	}
 
 	if !(filepath.Base(path) == "vmlinuz" || strings.HasPrefix(filepath.Base(path), "vmlinuz-")) {
 		return false
@@ -152,14 +166,9 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	// Return if canceled or exceeding deadline.
-	if err := ctx.Err(); err != nil {
-		return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
-	}
-
-	r, err := newReaderAt(input.Reader)
+	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("newReaderAt(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("NewReaderAt(%s): %w", input.Path, err)
 	}
 
 	magicType, err := magic.GetType(r)
@@ -171,22 +180,22 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("no match with linux kernel found")
 	}
 
-	name := magicType[0]
-	architecture, version, extendedVersion, format, videoMode, rwRootFS, swapDevice, rootDevice := parseVmlinuzMetadata(magicType)
+	name := "Linux Kernel"
+	metadata := parseVmlinuzMetadata(magicType)
 
 	i := &extractor.Inventory{
 		Name:    name,
-		Version: version,
+		Version: metadata.version,
 		Metadata: &Metadata{
 			Name:              name,
-			Version:           version,
-			Architecture:      architecture,
-			ExtendedVersion:   extendedVersion,
-			Format:            format,
-			SwapDevice:        swapDevice,
-			RootDevice:        rootDevice,
-			VideoMode:         videoMode,
-			RwRootFs:          rwRootFS,
+			Version:           metadata.version,
+			Architecture:      metadata.architecture,
+			ExtendedVersion:   metadata.extendedVersion,
+			Format:            metadata.format,
+			SwapDevice:        metadata.swapDevice,
+			RootDevice:        metadata.rootDevice,
+			VideoMode:         metadata.videoMode,
+			RwRootFs:          metadata.rwRootFS,
 			OSID:              m["ID"],
 			OSVersionCodename: m["VERSION_CODENAME"],
 			OSVersionID:       m["VERSION_ID"],
@@ -199,83 +208,64 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	return pkgs, nil
 }
 
-func newReaderAt(ioReader io.Reader) (io.ReaderAt, error) {
-	r, ok := ioReader.(io.ReaderAt)
-	if ok {
-		return r, nil
-	}
-
-	// Fallback: In case ioReader does not implement ReadAt, we use a reader on byte buffer instead, which
-	// supports ReadAt.
-	buff := bytes.NewBuffer([]byte{})
-	_, err := io.Copy(buff, ioReader)
-	if err != nil {
-		return nil, fmt.Errorf("io.Copy(): %w", err)
-	}
-
-	return bytes.NewReader(buff.Bytes()), nil
-}
-
-func parseVmlinuzMetadata(magicType []string) (string, string, string, string, string, bool, int32, int32) {
-	var architecture, version, extendedVersion, format, videoMode, rootHex, swapHex string
-	var rwRootFS bool
-	var swapDevice, rootDevice int32
+func parseVmlinuzMetadata(magicType []string) metadata {
+	var m metadata
 
 	for _, t := range magicType {
 		switch {
 		// Architecture
 		case strings.HasPrefix(t, "x86 "):
-			architecture = "x86"
+			m.architecture = "x86"
 		case strings.HasPrefix(t, "ARM64 "):
-			architecture = "arm64"
+			m.architecture = "arm64"
 		case strings.HasPrefix(t, "ARM "):
-			architecture = "arm"
+			m.architecture = "arm"
 
 		// Format
 		case t == "bzImage":
-			format = "bzImage"
+			m.format = "bzImage"
 		case t == "zImage":
-			format = "zImage"
+			m.format = "zImage"
 
 		// Version and extended version
 		case strings.HasPrefix(t, "version "):
-			extendedVersion = strings.TrimPrefix(t, "version ")
-			fields := strings.Fields(extendedVersion)
+			m.extendedVersion = strings.TrimPrefix(t, "version ")
+			fields := strings.Fields(m.extendedVersion)
 			if len(fields) > 0 {
-				version = fields[0]
+				m.version = fields[0]
 			}
 
 		// RW-rootFS
 		case strings.Contains(t, "rootFS") && strings.HasPrefix(t, "RW-"):
-			rwRootFS = true
+			m.rwRootFS = true
 
 		// Swap device
 		case strings.HasPrefix(t, "swap_dev "):
-			swapHex = strings.TrimPrefix(t, "swap_dev 0X")
+			swapHex := strings.TrimPrefix(t, "swap_dev 0X")
 			swapConv, err := strconv.ParseInt(swapHex, 16, 32)
 			if err != nil {
 				log.Errorf("Failed to parse swap device: %v", err)
 				continue
 			}
-			swapDevice = int32(swapConv)
+			m.swapDevice = int32(swapConv)
 
 		// Root device
 		case strings.HasPrefix(t, "root_dev "):
-			rootHex = strings.TrimPrefix(t, "swap_dev 0X")
+			rootHex := strings.TrimPrefix(t, "swap_dev 0X")
 			rootConv, err := strconv.ParseInt(rootHex, 16, 32)
 			if err != nil {
 				log.Errorf("Failed to parse swap device: %v", err)
 				continue
 			}
-			rootDevice = int32(rootConv)
+			m.rootDevice = int32(rootConv)
 
 		// Video mode
 		case strings.Contains(t, "VGA") || strings.Contains(t, "Video"):
-			videoMode = t
+			m.videoMode = t
 		}
 	}
 
-	return architecture, version, extendedVersion, format, videoMode, rwRootFS, swapDevice, rootDevice
+	return m
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
