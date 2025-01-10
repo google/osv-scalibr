@@ -184,7 +184,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	// Sections are delimited by null bytes (\x00)
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
-
 		if len(line) == 0 {
 			continue
 		}
