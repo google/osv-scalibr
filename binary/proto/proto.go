@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -320,6 +321,15 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsId:                m.OSID,
 				OsVersionId:         m.OSVersionID,
 				PackageDependencies: m.PackageDependencies,
+			},
+		}
+	case *portage.Metadata:
+		i.Metadata = &spb.Inventory_PortageMetadata{
+			PortageMetadata: &spb.PortagePackageMetadata{
+				PackageName:    m.PackageName,
+				PackageVersion: m.PackageVersion,
+				OsId:           m.OSID,
+				OsVersionId:    m.OSVersionID,
 			},
 		}
 	case *flatpak.Metadata:
