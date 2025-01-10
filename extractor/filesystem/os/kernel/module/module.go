@@ -54,14 +54,6 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
-type moduleMetadata struct {
-	moduleName    string
-	moduleVersion string
-	srcVersion    string
-	verMagic      string
-	author        string
-}
-
 // DefaultConfig returns the default configuration for the kernel module extractor.
 func DefaultConfig() Config {
 	return Config{
@@ -180,7 +172,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("failed to read .modinfo section: %v", err)
 	}
 
-	var metadata moduleMetadata
+	var metadata Metadata
 
 	// Sections are delimited by null bytes (\x00)
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
@@ -188,41 +180,36 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		if entry := strings.SplitN(string(line), "=", 2); len(entry) == 2 {
-			key := entry[0]
-			value := entry[1]
-
-			switch key {
-			case "name":
-				metadata.moduleName = value
-			case "version":
-				metadata.moduleVersion = value
-			case "srcversion":
-				metadata.srcVersion = value
-			case "vermagic":
-				metadata.verMagic = strings.TrimSpace(value)
-			case "author":
-				metadata.author = value
-			}
-		} else {
-			// Return an error or handle malformed entry
+		entry := strings.SplitN(string(line), "=", 2)
+		if len(entry) != 2 {
 			return nil, fmt.Errorf("malformed .modinfo entry, expected 'key=value' but got: %s", string(line))
+		}
+
+		key := entry[0]
+		value := entry[1]
+
+		switch key {
+		case "name":
+			metadata.PackageName = value
+		case "version":
+			metadata.PackageVersion = value
+		case "srcversion":
+			metadata.PackageSourceVersionIdentifier = value
+		case "vermagic":
+			metadata.PackageVermagic = strings.TrimSpace(value)
+		case "author":
+			metadata.PackageAuthor = value
 		}
 	}
 
+	metadata.OSID = m["ID"]
+	metadata.OSVersionCodename = m["VERSION_CODENAME"]
+	metadata.OSVersionID = m["VERSION_ID"]
+
 	i := &extractor.Inventory{
-		Name:    metadata.moduleName,
-		Version: metadata.moduleVersion,
-		Metadata: &Metadata{
-			PackageName:                    metadata.moduleName,
-			PackageVersion:                 metadata.moduleVersion,
-			PackageVermagic:                metadata.verMagic,
-			PackageSourceVersionIdentifier: metadata.srcVersion,
-			PackageAuthor:                  metadata.author,
-			OSID:                           m["ID"],
-			OSVersionCodename:              m["VERSION_CODENAME"],
-			OSVersionID:                    m["VERSION_ID"],
-		},
+		Name:      metadata.PackageName,
+		Version:   metadata.PackageVersion,
+		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
