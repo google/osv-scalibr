@@ -221,7 +221,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:             "invalid *.ko file",
+			name:             "invalid *.ko file, no .modinfo section",
 			path:             "testdata/invalid",
 			osrelease:        UbuntuJammy,
 			wantInventory:    nil,
