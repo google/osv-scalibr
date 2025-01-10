@@ -54,7 +54,7 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
-type ModuleMetadata struct {
+type moduleMetadata struct {
 	moduleName    string
 	moduleVersion string
 	srcVersion    string
@@ -180,10 +180,15 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("failed to read .modinfo section: %v", err)
 	}
 
-	var metadata ModuleMetadata
+	var metadata moduleMetadata
 
-	// Sections are delimited by null bytes (\x00), as each key-value pair is a null-terminated string.
+	// Sections are delimited by null bytes (\x00)
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
+
+		if len(line) == 0 {
+			continue
+		}
+
 		if entry := strings.SplitN(string(line), "=", 2); len(entry) == 2 {
 			key := entry[0]
 			value := entry[1]
@@ -200,6 +205,9 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			case "author":
 				metadata.author = value
 			}
+		} else {
+			// Return an error or handle malformed entry
+			return nil, fmt.Errorf("malformed .modinfo entry, expected 'key=value' but got: %s", string(line))
 		}
 	}
 
