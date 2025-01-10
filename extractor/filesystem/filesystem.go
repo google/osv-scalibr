@@ -104,6 +104,8 @@ type Config struct {
 	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
+	// Optional: If true, fail the scan if any permission errors are encountered.
+	ErrorOnFSErrors bool
 }
 
 // Run runs the specified extractors and returns their extraction results,
@@ -180,6 +182,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		maxInodes:         config.MaxInodes,
 		inodesVisited:     0,
 		storeAbsolutePath: config.StoreAbsolutePath,
+		errorOnFSErrors:   config.ErrorOnFSErrors,
 
 		lastStatus: time.Now(),
 
@@ -247,6 +250,7 @@ type walkContext struct {
 	inodesVisited     int
 	dirsVisited       int
 	storeAbsolutePath bool
+	errorOnFSErrors   bool
 
 	// Inventories found.
 	inventory []*extractor.Inventory
@@ -295,11 +299,14 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		return wc.ctx.Err()
 	}
 	if fserr != nil {
+		if wc.errorOnFSErrors {
+			return fmt.Errorf("handleFile(%q) fserr: %w", path, fserr)
+		}
 		if os.IsPermission(fserr) {
 			// Permission errors are expected when traversing the entire filesystem.
-			log.Debugf("fserr: %v", fserr)
+			log.Debugf("fserr (permission error): %v", fserr)
 		} else {
-			log.Errorf("fserr: %v", fserr)
+			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
 		return nil
 	}

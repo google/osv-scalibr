@@ -16,6 +16,7 @@
 package gobinary
 
 import (
+	"bytes"
 	"context"
 	"debug/buildinfo"
 	"errors"
@@ -128,7 +129,19 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract returns a list of installed third party dependencies in a Go binary.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	binfo, err := buildinfo.Read(input.Reader.(io.ReaderAt))
+	var readerAt io.ReaderAt
+	if fileWithReaderAt, ok := input.Reader.(io.ReaderAt); ok {
+		readerAt = fileWithReaderAt
+	} else {
+		buf := bytes.NewBuffer([]byte{})
+		_, err := io.Copy(buf, input.Reader)
+		if err != nil {
+			return []*extractor.Inventory{}, err
+		}
+		readerAt = bytes.NewReader(buf.Bytes())
+	}
+
+	binfo, err := buildinfo.Read(readerAt)
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)
 		e.reportFileExtracted(input.Path, input.Info, err)
