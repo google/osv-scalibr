@@ -19,10 +19,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -62,8 +62,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := module.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -193,7 +193,6 @@ func TestExtract(t *testing.T) {
 						OSID:                           "ubuntu",
 						OSVersionCodename:              "jammy",
 						OSVersionID:                    "22.04",
-						PackageDependencies:            "video",
 						PackageAuthor:                  "Yin Kangkai (kangkai.yin@intel.com)",
 					},
 					Locations: []string{"testdata/valid"},
@@ -222,6 +221,14 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name:             "invalid *.ko file",
+			path:             "testdata/invalid",
+			osrelease:        UbuntuJammy,
+			wantInventory:    nil,
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
 			name:      "no os version",
 			path:      "testdata/valid",
 			osrelease: `ID=ubuntu`,
@@ -235,7 +242,6 @@ func TestExtract(t *testing.T) {
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
 						PackageSourceVersionIdentifier: "69B4F4432F52708A284377E",
 						OSID:                           "ubuntu",
-						PackageDependencies:            "video",
 						PackageAuthor:                  "Yin Kangkai (kangkai.yin@intel.com)",
 					},
 					Locations: []string{"testdata/valid"},
@@ -255,7 +261,6 @@ func TestExtract(t *testing.T) {
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
 						PackageSourceVersionIdentifier: "69B4F4432F52708A284377E",
-						PackageDependencies:            "video",
 						PackageAuthor:                  "Yin Kangkai (kangkai.yin@intel.com)",
 					},
 					Locations: []string{"testdata/valid"},
@@ -301,6 +306,10 @@ func TestExtract(t *testing.T) {
 			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
 				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
 			}
+
+			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
+			}
 		})
 	}
 }
@@ -310,7 +319,6 @@ func TestToPURL(t *testing.T) {
 	pkgVersion := "pkgVersion"
 	pkgVermagic := "pkgVermagic"
 	pkgSourceVersionIdentifier := "pkgSourceVersionIdentifier"
-	pkgDependencies := "pkgDependencies1, pkgDependencies2"
 	pkgAuthor := "pkgAuthor"
 
 	e := module.Extractor{}
@@ -326,7 +334,6 @@ func TestToPURL(t *testing.T) {
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
 				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageDependencies:            pkgDependencies,
 				PackageAuthor:                  pkgAuthor,
 				OSID:                           "ubuntu",
 				OSVersionCodename:              "jammy",
@@ -349,7 +356,6 @@ func TestToPURL(t *testing.T) {
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
 				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageDependencies:            pkgDependencies,
 				PackageAuthor:                  pkgAuthor,
 				OSID:                           "ubuntu",
 				OSVersionID:                    "22.04",
@@ -371,7 +377,6 @@ func TestToPURL(t *testing.T) {
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
 				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageDependencies:            pkgDependencies,
 				PackageAuthor:                  pkgAuthor,
 				OSVersionID:                    "22.04",
 			},

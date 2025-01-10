@@ -54,6 +54,14 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
+type ModuleMetadata struct {
+	moduleName    string
+	moduleVersion string
+	srcVersion    string
+	verMagic      string
+	author        string
+}
+
 // DefaultConfig returns the default configuration for the kernel module extractor.
 func DefaultConfig() Config {
 	return Config{
@@ -152,11 +160,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	// Return if canceled or exceeding deadline.
-	if err := ctx.Err(); err != nil {
-		return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
-	}
-
 	data, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input: %v", err)
@@ -177,58 +180,43 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("failed to read .modinfo section: %v", err)
 	}
 
-	var (
-		moduleName    string
-		moduleVersion string
-		srcVersion    string
-		verMagic      string
-		author        string
-		depends       []string
-	)
+	var metadata ModuleMetadata
 
+	// Sections are delimited by null bytes (\x00), as each key-value pair is a null-terminated string.
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
 		if entry := strings.SplitN(string(line), "=", 2); len(entry) == 2 {
-
 			key := entry[0]
 			value := entry[1]
 
 			switch key {
 			case "name":
-				moduleName = value
+				metadata.moduleName = value
 			case "version":
-				moduleVersion = value
+				metadata.moduleVersion = value
 			case "srcversion":
-				srcVersion = value
+				metadata.srcVersion = value
 			case "vermagic":
-				verMagic = strings.TrimSpace(value)
+				metadata.verMagic = strings.TrimSpace(value)
 			case "author":
-				author = value
-			case "depends":
-				depends = append(depends, value)
+				metadata.author = value
 			}
 		}
 	}
 
 	i := &extractor.Inventory{
-		Name:    moduleName,
-		Version: moduleVersion,
+		Name:    metadata.moduleName,
+		Version: metadata.moduleVersion,
 		Metadata: &Metadata{
-			PackageName:                    moduleName,
-			PackageVersion:                 moduleVersion,
-			PackageVermagic:                verMagic,
-			PackageSourceVersionIdentifier: srcVersion,
+			PackageName:                    metadata.moduleName,
+			PackageVersion:                 metadata.moduleVersion,
+			PackageVermagic:                metadata.verMagic,
+			PackageSourceVersionIdentifier: metadata.srcVersion,
+			PackageAuthor:                  metadata.author,
 			OSID:                           m["ID"],
 			OSVersionCodename:              m["VERSION_CODENAME"],
 			OSVersionID:                    m["VERSION_ID"],
 		},
 		Locations: []string{input.Path},
-	}
-
-	if len(depends) != 0 {
-		i.Metadata.(*Metadata).PackageDependencies = strings.Join(depends, ", ")
-	}
-	if author != "" {
-		i.Metadata.(*Metadata).PackageAuthor = author
 	}
 
 	pkgs = append(pkgs, i)

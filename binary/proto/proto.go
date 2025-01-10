@@ -353,7 +353,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 		}
 	case *module.Metadata:
 		i.Metadata = &spb.Inventory_ModuleMetadata{
-			ModuleMetadata: &spb.MODULEPackageMetadata{
+			ModuleMetadata: &spb.ModuleMetadata{
 				PackageName:                    m.PackageName,
 				PackageVersion:                 m.PackageVersion,
 				PackageVermagic:                m.PackageVermagic,
@@ -361,7 +361,6 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsId:                           m.OSID,
 				OsVersionCodename:              m.OSVersionCodename,
 				OsVersionId:                    m.OSVersionID,
-				PackageDependencies:            m.PackageDependencies,
 				PackageAuthor:                  m.PackageAuthor,
 			},
 		}
