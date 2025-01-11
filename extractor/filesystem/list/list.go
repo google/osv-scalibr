@@ -25,6 +25,7 @@ import (
 
 	// SCALIBR internal extractors.
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
@@ -97,6 +98,7 @@ var (
 		packagelockjson.New(packagelockjson.DefaultConfig()),
 		&pnpmlock.Extractor{},
 		&yarnlock.Extractor{},
+		&bunlock.Extractor{},
 	}
 	// Python extractors.
 	Python []filesystem.Extractor = []filesystem.Extractor{
