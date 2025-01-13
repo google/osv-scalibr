@@ -54,6 +54,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -127,6 +128,8 @@ var (
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
 	// Containers extractors.
 	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
+	// Wordpress extractors.
+	Wordpress []filesystem.Extractor = []filesystem.Extractor{plugins.New(plugins.DefaultConfig())}
 
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{
@@ -160,6 +163,7 @@ var (
 		Ruby,
 		Rust,
 		Dotnet,
+		Wordpress,
 		SBOM,
 		OS,
 		Containers,
@@ -180,6 +184,7 @@ var (
 		"dotnet":     Dotnet,
 		"php":        PHP,
 		"rust":       Rust,
+		"wordpress":  Wordpress,
 
 		"sbom":       SBOM,
 		"os":         OS,
