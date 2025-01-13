@@ -86,10 +86,12 @@ message Inventory {
     DPKGPackageMetadata dpkg_metadata = 8;
     RPMPackageMetadata rpm_metadata = 9;
     COSPackageMetadata cos_metadata = 13;
+    DEPSJSONMetadata depsjson_metadata = 40;
     SPDXPackageMetadata spdx_metadata = 14;
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     PACMANPackageMetadata pacman_metadata = 36;
+    PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     ContainerdContainerMetadata containerd_container_metadata = 22;
@@ -290,6 +292,13 @@ message PACMANPackageMetadata {
   string package_dependencies = 6;
 }
 
+// The additional data found in .NET deps json packages.
+message DEPSJSONMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string type = 3;
+}
+
 // The additional data found in SNAP packages.
 message SNAPPackageMetadata {
   string name = 1;
@@ -300,6 +309,14 @@ message SNAPPackageMetadata {
   string os_id = 6;
   string os_version_codename = 7;
   string os_version_id = 8;
+}
+
+// The additional data found in portage packages.
+message PortagePackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string os_id = 3;
+  string os_version_id = 4;
 }
 
 // The additional data found in Flatpak packages.
