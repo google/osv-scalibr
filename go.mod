@@ -1,8 +1,6 @@
 module github.com/google/osv-scalibr
 
-go 1.23
-
-toolchain go1.23.4
+go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.3.2
@@ -22,7 +20,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/package-url/packageurl-go v0.1.2
 	github.com/spdx/tools-golang v0.5.3
-	github.com/tailscale/hujson v0.0.0-20241010212012-29efb4a0184b
+	github.com/tidwall/jsonc v0.3.2
 	go.etcd.io/bbolt v1.3.10
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.31.0
