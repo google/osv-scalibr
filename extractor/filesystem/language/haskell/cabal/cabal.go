@@ -91,9 +91,8 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired return true if the specified file matched the cabal.project.freeze file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	normalizedPath := filepath.ToSlash(path)
 
-	if filepath.Base(normalizedPath) != "cabal.project.freeze" {
+	if filepath.Base(path) != "cabal.project.freeze" {
 		return false
 	}
 
@@ -139,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var re = regexp.MustCompile(`any\.(\S+) ==(\S+)`)
+var versionConstraintRe = regexp.MustCompile(`any\.(\S+) ==(\S+)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -157,7 +156,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		matches := re.FindStringSubmatch(line)
+		matches := versionConstraintRe.FindStringSubmatch(line)
 
 		if len(matches) == 3 {
 			pkgName := matches[1]
@@ -171,6 +170,15 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 			pkgs = append(pkgs, i)
 		}
+
+		if s.Err() != nil {
+			return pkgs, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
+		}
+	}
+
+	// EOF
+	if len(pkgs) == 0 {
+		return pkgs, fmt.Errorf("EOF reached while scanning %q", input.Path)
 	}
 
 	return pkgs, nil

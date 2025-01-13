@@ -105,7 +105,7 @@ var (
 	// Erlang extractors.
 	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
 	// Haskell extractors.
-	Haskell []filesystem.Extractor = []filesystem.Extractor{cabal.Extractor{}}
+	Haskell []filesystem.Extractor = []filesystem.Extractor{cabal.New(cabal.DefaultConfig())}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
