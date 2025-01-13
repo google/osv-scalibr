@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
@@ -119,7 +120,10 @@ var (
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
-	Dotnet []filesystem.Extractor = []filesystem.Extractor{packageslockjson.New(packageslockjson.DefaultConfig())}
+	Dotnet []filesystem.Extractor = []filesystem.Extractor{
+		depsjson.New(depsjson.DefaultConfig()),
+		packageslockjson.New(packageslockjson.DefaultConfig()),
+	}
 	// PHP extractors.
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
 	// Containers extractors.
