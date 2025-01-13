@@ -81,6 +81,7 @@ func structurePackageDetails(a []any) (string, string, string, error) {
 		version = ""
 	}
 
+	// file dependencies do not have a semantic version recorded
 	if strings.HasPrefix(version, "file:") {
 		version = ""
 	}
