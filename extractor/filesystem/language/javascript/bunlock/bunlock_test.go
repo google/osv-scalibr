@@ -134,6 +134,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "one package with bad tuple",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bad-tuple.json5",
+			},
+			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantInventory: []*extractor.Inventory{},
+		},
+		{
 			Name: "two packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.json5",

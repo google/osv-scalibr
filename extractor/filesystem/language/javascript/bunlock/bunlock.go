@@ -59,12 +59,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // structurePackageDetails returns the name, version, and commit of a package
 // specified as a tuple in a bun.lock
-func structurePackageDetails(a []any) (string, string, string) {
+func structurePackageDetails(a []any) (string, string, string, error) {
 	str, ok := a[0].(string)
 
-	// todo: should we return an error instead?
 	if !ok {
-		return "", "", ""
+		return "", "", "", fmt.Errorf("first element of package tuple is not a string")
 	}
 
 	str, isScoped := strings.CutPrefix(str, "@")
@@ -86,7 +85,7 @@ func structurePackageDetails(a []any) (string, string, string) {
 		version = ""
 	}
 
-	return name, version, commit
+	return name, version, commit, nil
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
@@ -111,12 +110,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	inventories := make([]*extractor.Inventory, len(parsedLockfile.Packages))
+	inventories := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
 
-	for i, pkg := range maps.Values(parsedLockfile.Packages) {
-		name, version, commit := structurePackageDetails(pkg)
+	for _, pkg := range maps.Values(parsedLockfile.Packages) {
+		name, version, commit, err := structurePackageDetails(pkg)
 
-		inventories[i] = &extractor.Inventory{
+		if err != nil {
+			return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		}
+
+		inventories = append(inventories, &extractor.Inventory{
 			Name:    name,
 			Version: version,
 			SourceCode: &extractor.SourceCodeIdentifier{
@@ -126,7 +129,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				DepGroupVals: []string{},
 			},
 			Locations: []string{input.Path},
-		}
+		})
 	}
 
 	return inventories, nil
