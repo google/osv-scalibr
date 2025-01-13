@@ -17,6 +17,7 @@ package scalibr_test
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -354,6 +355,53 @@ func TestValidatePluginRequirements(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			if err := tc.cfg.ValidatePluginRequirements(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("ValidatePluginRequirements() error: %v, want %v", tc.wantErr, err)
+			}
+		})
+	}
+}
+
+type errorFS struct {
+	err error
+}
+
+func (f errorFS) Open(name string) (fs.File, error)          { return nil, f.err }
+func (f errorFS) ReadDir(name string) ([]fs.DirEntry, error) { return nil, f.err }
+func (f errorFS) Stat(name string) (fs.FileInfo, error)      { return nil, f.err }
+
+func TestErrorOnFSErrors(t *testing.T) {
+	cases := []struct {
+		desc            string
+		ErrorOnFSErrors bool
+		wantstatus      plugin.ScanStatusEnum
+	}{
+		{
+			desc:            "ErrorOnFSErrors_is_false",
+			ErrorOnFSErrors: false,
+			wantstatus:      plugin.ScanStatusSucceeded,
+		},
+		{
+			desc:            "ErrorOnFSErrors_is_true",
+			ErrorOnFSErrors: true,
+			wantstatus:      plugin.ScanStatusFailed,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fs := errorFS{err: errors.New("some error")}
+			cfg := &scalibr.ScanConfig{
+				ScanRoots: []*scalibrfs.ScanRoot{{FS: fs}},
+				FilesystemExtractors: []filesystem.Extractor{
+					// Just a random extractor, such that walk is running.
+					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: []string{"software"}}}),
+				},
+				ErrorOnFSErrors: tc.ErrorOnFSErrors,
+			}
+
+			got := scalibr.New().Scan(context.Background(), cfg)
+
+			if got.Status.Status != tc.wantstatus {
+				t.Errorf("Scan() status: %v, want %v", got.Status.Status, tc.wantstatus)
 			}
 		})
 	}
