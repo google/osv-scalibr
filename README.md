@@ -135,6 +135,12 @@ results := scalibr.New().Scan(context.Background(), cfg)
 log.Info(results)
 ```
 
+## Go toolchain compatibility policy
+
+We aim to keep the osv-scanner library packages compatible with supported
+versions of Go (last 2 Go releases), while always building osv-scanner binaries
+with the latest version of Go.
+
 ## Contributing
 Read how to [contribute to SCALIBR](CONTRIBUTING.md).
 
