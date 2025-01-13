@@ -17,9 +17,7 @@ package depsjson_test
 import (
 	"context"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,9 +27,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -63,8 +61,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := depsjson.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -161,19 +159,13 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		osrelease        string
-		cfg              depsjson.Config
-		wantInventory    []*extractor.Inventory
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "valid application1.deps.json file",
-			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid application1.deps.json file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:    "TestLibrary",
 					Version: "1.0.0",
@@ -205,24 +197,27 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:             "application1.deps.json file not json",
-			path:             "testdata/invalid",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+			Name: "application1.deps.json file not valid JSON",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid",
+			},
+			WantErr: cmpopts.AnyError,
 		},
 		{
-			name:             "application1.deps.json file empty",
-			path:             "testdata/empty",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+			Name: "application1.deps.json file empty",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
+			WantErr: cmpopts.AnyError,
 		},
 		{
-			name: "valid application1.deps.json file with an invalid package",
-			path: "testdata/nopackagename",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid application1.deps.json file with an invalid package",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/nopackagename",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:    "TestLibrary",
 					Version: "1.0.0",
@@ -244,44 +239,31 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/nopackagename"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
 			var e filesystem.Extractor = depsjson.New(depsjson.Config{
 				Stats:            collector,
 				MaxFileSizeBytes: 100,
 			})
 
-			d := t.TempDir()
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			// Opening and Reading the Test File
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+			got, err := e.Extract(context.Background(), &scanInput)
+
+			// Compare the expected error with the actual error
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatalf("Failed to stat test file: %v", err)
-			}
-
-			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
-			}
-
-			got, err := e.Extract(context.Background(), input)
-
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			// Compare the expected inventory with the actual inventory
+			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}
