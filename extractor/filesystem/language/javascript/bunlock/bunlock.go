@@ -28,9 +28,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/exp/maps"
-
 	"github.com/tidwall/jsonc"
+	"golang.org/x/exp/maps"
 )
 
 type bunLockfile struct {
