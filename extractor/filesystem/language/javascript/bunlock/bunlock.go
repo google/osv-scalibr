@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"golang.org/x/exp/maps"
 
-	"github.com/tailscale/hujson"
+	"github.com/tidwall/jsonc"
 )
 
 type bunLockfile struct {
@@ -99,13 +99,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	b, err = hujson.Standardize(b)
-
-	if err != nil {
-		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
-	}
-
-	err = json.Unmarshal(b, &parsedLockfile)
+	err = json.Unmarshal(jsonc.ToJSON(b), &parsedLockfile)
 
 	if err != nil {
 		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
