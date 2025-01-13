@@ -17,9 +17,7 @@ package packageresolved_test
 import (
 	"context"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,9 +27,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -63,8 +61,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := packageresolved.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -161,19 +159,13 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		osrelease        string
-		cfg              packageresolved.Config
-		wantInventory    []*extractor.Inventory
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "valid Package.resolved file",
-			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid Package.resolved file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "swift-algorithms",
 					Version:   "1.0.0",
@@ -190,56 +182,43 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:             "Package.resolved file not valid",
-			path:             "testdata/invalid",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+			Name: "Package.resolved file not valid",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid",
+			},
+			WantErr: cmpopts.AnyError,
 		},
 		{
-			name:             "Package.resolved file empty",
-			path:             "testdata/empty",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+			Name: "Package.resolved file empty",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
+			WantErr: cmpopts.AnyError,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
 			var e filesystem.Extractor = packageresolved.New(packageresolved.Config{
 				Stats:            collector,
 				MaxFileSizeBytes: 100,
 			})
 
-			d := t.TempDir()
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			// Opening and Reading the Test File
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+			got, err := e.Extract(context.Background(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatalf("Failed to stat test file: %v", err)
-			}
-
-			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
-			}
-
-			got, err := e.Extract(context.Background(), input)
-
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}
