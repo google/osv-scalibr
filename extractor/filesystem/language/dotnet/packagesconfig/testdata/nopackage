@@ -3,3 +3,4 @@
   <package id="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" version="1.0.0" targetFramework="net46" />
   <package version="1.0.0" targetFramework="net46" developmentDependency="true" />
 </packages>
+
