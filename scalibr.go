@@ -93,6 +93,8 @@ type ScanConfig struct {
 	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
+	// Optional: If true, fail the scan if any permission errors are encountered.
+	ErrorOnFSErrors bool
 }
 
 // EnableRequiredExtractors adds those extractors to the config that are required by enabled
@@ -204,6 +206,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
+		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 	}
 	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
