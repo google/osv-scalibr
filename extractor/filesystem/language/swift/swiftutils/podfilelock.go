@@ -43,6 +43,11 @@ func ParsePodfileLock(reader io.Reader) ([]Package, error) {
 		return nil, fmt.Errorf("unable to read file: %w", err)
 	}
 
+	// Check if the file is empty
+	if len(bytes) == 0 {
+		return nil, fmt.Errorf("file is empty")
+	}
+
 	var podfile PodfileLock
 	if err = yaml.Unmarshal(bytes, &podfile); err != nil {
 		return nil, fmt.Errorf("unable to parse YAML: %w", err)
