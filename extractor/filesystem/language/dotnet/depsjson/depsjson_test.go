@@ -269,6 +269,10 @@ func TestExtract(t *testing.T) {
 	}
 }
 
+func invLess(i1, i2 *extractor.Inventory) bool {
+	return i1.Name < i2.Name
+}
+
 func TestToPURL(t *testing.T) {
 	e := depsjson.Extractor{}
 	i := &extractor.Inventory{
