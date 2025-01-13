@@ -111,10 +111,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	packages := maps.Values(parsedLockfile.Packages)
 	inventories := make([]*extractor.Inventory, len(parsedLockfile.Packages))
 
-	for i, pkg := range packages {
+	for i, pkg := range maps.Values(parsedLockfile.Packages) {
 		name, version, commit := structurePackageDetails(pkg)
 
 		inventories[i] = &extractor.Inventory{
