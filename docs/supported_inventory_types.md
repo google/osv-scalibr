@@ -13,6 +13,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * OPKG (used by e.g., OpenWrt and embedded Linux systems)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
 * Pacman (used by e.g. Arch Linux)
+* Portage (used by e.g. Gentoo Linux)
 * SNAP
 * Flatpak
 * Homebrew (used by OS X)
@@ -26,11 +27,15 @@ SCALIBR supports extracting software package information from a variety of OS an
 
 * .NET
   * packages.lock.json
+  * packages.config
+  * deps.json
 * C++
   * Conan packages
 * Dart
   * pubspec.lock
 * Erlang
+  * mix.lock
+* Elixir
   * mix.lock
 * Go
   * Go binaries
@@ -46,6 +51,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Python
   * Installed PyPI packages (global and venv)
   * Lockfiles: requirements.txt, poetry.lock, Pipfile.lock, pdm.lock
+  * Conda packages
 * R
   * Lockfiles: renv.lock
 * Ruby

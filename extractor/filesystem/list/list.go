@@ -29,7 +29,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
+	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
@@ -42,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
@@ -59,6 +62,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
@@ -94,6 +98,7 @@ var (
 		pipfilelock.Extractor{},
 		pdmlock.Extractor{},
 		poetrylock.Extractor{},
+		condameta.Extractor{},
 	}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{
@@ -104,6 +109,8 @@ var (
 	Dart []filesystem.Extractor = []filesystem.Extractor{pubspec.Extractor{}}
 	// Erlang extractors.
 	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
+	// Elixir extractors.
+	Elixir []filesystem.Extractor = []filesystem.Extractor{elixir.Extractor{}}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
@@ -113,7 +120,10 @@ var (
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
-	Dotnet []filesystem.Extractor = []filesystem.Extractor{packageslockjson.New(packageslockjson.DefaultConfig())}
+	Dotnet []filesystem.Extractor = []filesystem.Extractor{
+		depsjson.New(depsjson.DefaultConfig()),
+		packageslockjson.New(packageslockjson.DefaultConfig()),
+	}
 	// PHP extractors.
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
 	// Containers extractors.
@@ -128,6 +138,7 @@ var (
 		snap.New(snap.DefaultConfig()),
 		nix.New(),
 		pacman.New(pacman.DefaultConfig()),
+		portage.New(portage.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
 		homebrew.Extractor{},
 		macapps.New(macapps.DefaultConfig())}
@@ -145,6 +156,7 @@ var (
 		Go,
 		Dart,
 		Erlang,
+		Elixir,
 		PHP,
 		R,
 		Ruby,
@@ -164,6 +176,7 @@ var (
 		"go":         Go,
 		"dart":       Dart,
 		"erlang":     Erlang,
+		"elixir":     Elixir,
 		"r":          R,
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,

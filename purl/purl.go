@@ -85,6 +85,8 @@ const (
 	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
 	TypePub = "pub"
+	// TypePortage is a pkg:portage purl.
+	TypePortage = "portage"
 	// TypePyPi is a pkg:pypi purl.
 	TypePyPi = "pypi"
 	// TypeRPM is a pkg:rpm purl.
@@ -183,6 +185,7 @@ func validType(t string) bool {
 		TypeOCI:       true,
 		TypeOpkg:      true,
 		TypePub:       true,
+		TypePortage:   true,
 		TypePyPi:      true,
 		TypeRPM:       true,
 		TypeSwift:     true,
