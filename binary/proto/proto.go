@@ -32,6 +32,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
@@ -246,6 +247,14 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Author:       m.Author.PersonString(),
 				Contributors: personsToProto(m.Contributors),
 				Maintainers:  personsToProto(m.Maintainers),
+			},
+		}
+	case *depsjson.Metadata:
+		i.Metadata = &spb.Inventory_DepsjsonMetadata{
+			DepsjsonMetadata: &spb.DEPSJSONMetadata{
+				PackageName:    m.PackageName,
+				PackageVersion: m.PackageVersion,
+				Type:           m.Type,
 			},
 		}
 	case *apk.Metadata:

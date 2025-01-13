@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -225,6 +226,40 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: &packagejson.Extractor{},
 	}
+
+	purlDotnetDepsJSONInventory := &extractor.Inventory{
+		Name:    "software",
+		Version: "1.0.0",
+		Metadata: &depsjson.Metadata{
+			PackageName:    "software",
+			PackageVersion: "1.0.0",
+			Type:           "type",
+		},
+		Locations: []string{"/file1"},
+		Extractor: &depsjson.Extractor{},
+	}
+
+	purlDotnetDepsJSONInventoryProto := &spb.Inventory{
+		Name:    "software",
+		Version: "1.0.0",
+		Purl: &spb.Purl{
+			Purl:    "pkg:nuget/software@1.0.0",
+			Type:    purl.TypeNuget,
+			Name:    "software",
+			Version: "1.0.0",
+		},
+		Ecosystem: "NuGet",
+		Locations: []string{"/file1"},
+		Extractor: "dotnet/depsjson",
+		Metadata: &spb.Inventory_DepsjsonMetadata{
+			DepsjsonMetadata: &spb.DEPSJSONMetadata{
+				PackageName:    "software",
+				PackageVersion: "1.0.0",
+				Type:           "type",
+			},
+		},
+	}
+
 	windowsInventory := &extractor.Inventory{
 		Name:    "windows_server_2019",
 		Version: "10.0.17763.3406",
@@ -682,6 +717,7 @@ func TestScanResultToProto(t *testing.T) {
 					purlPythonInventory,
 					pythonRequirementsInventory,
 					purlJavascriptInventory,
+					purlDotnetDepsJSONInventory,
 					cdxInventory,
 					windowsInventory,
 					purlPythonInventoryWithLayerDetails,
@@ -734,6 +770,7 @@ func TestScanResultToProto(t *testing.T) {
 					purlPythonInventoryProto,
 					pythonRequirementsInventoryProto,
 					purlJavascriptInventoryProto,
+					purlDotnetDepsJSONInventoryProto,
 					cdxInventoryProto,
 					windowsInventoryProto,
 					purlPythonInventoryWithLayerDetailsProto,
