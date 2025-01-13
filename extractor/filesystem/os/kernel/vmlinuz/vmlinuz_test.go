@@ -79,19 +79,19 @@ func TestFileRequired(t *testing.T) {
 	}{
 		{
 			name:             "required vmlinuz file",
-			path:             "boot/usr/lib/foo/vmlinuz",
+			path:             "boot/foo/vmlinuz",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
 			name:             "required vmlinuz-* file",
-			path:             "boot/usr/lib/foo/vmlinuz-x.y.z",
+			path:             "boot/foo/voo/zoo/vmlinuz-x.y.z",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
 			name:             "file required if file size < max file size",
-			path:             "boot/usr/lib/foo/vmlinuz",
+			path:             "boot/foo/voo/zoo/vmlinuz",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -99,7 +99,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file required if file size == max file size",
-			path:             "boot/usr/lib/foo/vmlinuz",
+			path:             "boot/foo/voo/zoo/vmlinuz",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
@@ -107,7 +107,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file not required if file size > max file size",
-			path:             "boot/usr/lib/foo/vmlinuz",
+			path:             "boot/foo/voo/zoo/vmlinuz",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
 			wantRequired:     false,
@@ -115,7 +115,7 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:             "file required if max file size set to 0",
-			path:             "boot/usr/lib/foo/vmlinuz",
+			path:             "boot/foo/voo/zoo/vmlinuz",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
@@ -123,22 +123,27 @@ func TestFileRequired(t *testing.T) {
 		},
 		{
 			name:         "not required",
-			path:         "/usr/lib/foo/vmlinuzfoo",
+			path:         "usr/lib/foo/vmlinuzfoo",
 			wantRequired: false,
 		},
 		{
 			name:         "not required",
-			path:         "boot/usr/lib/foo/foovmlinuz-",
+			path:         "boot/foo/voo/zoo/foovmlinuz-",
 			wantRequired: false,
 		},
 		{
 			name:         "not required",
-			path:         "/usr/lib/foo/vmlinuz.old",
+			path:         "boot/foo/voo/zoo/vmlinuz.old",
 			wantRequired: false,
 		},
 		{
 			name:         "not required",
-			path:         "/usr/lib/foo/vmlinuz/vmlinuz.old",
+			path:         "usr/foo/voo/zoo/vmlinuz.old",
+			wantRequired: false,
+		},
+		{
+			name:         "not required",
+			path:         "var/foo/voo/zoo/vmlinuz-x.y.z",
 			wantRequired: false,
 		},
 	}

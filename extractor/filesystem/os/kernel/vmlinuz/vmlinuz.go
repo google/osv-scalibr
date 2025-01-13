@@ -45,17 +45,6 @@ const (
 	defaultMaxFileSizeBytes = 100 * units.MiB
 )
 
-type metadata struct {
-	architecture    string
-	version         string
-	extendedVersion string
-	format          string
-	videoMode       string
-	rwRootFS        bool
-	swapDevice      int32
-	rootDevice      int32
-}
-
 // Config is the configuration for the Extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
@@ -180,26 +169,16 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("no match with linux kernel found")
 	}
 
-	name := "Linux Kernel"
 	metadata := parseVmlinuzMetadata(magicType)
 
+	metadata.OSID = m["ID"]
+	metadata.OSVersionCodename = m["VERSION_CODENAME"]
+	metadata.OSVersionID = m["VERSION_ID"]
+
 	i := &extractor.Inventory{
-		Name:    name,
-		Version: metadata.version,
-		Metadata: &Metadata{
-			Name:              name,
-			Version:           metadata.version,
-			Architecture:      metadata.architecture,
-			ExtendedVersion:   metadata.extendedVersion,
-			Format:            metadata.format,
-			SwapDevice:        metadata.swapDevice,
-			RootDevice:        metadata.rootDevice,
-			VideoMode:         metadata.videoMode,
-			RwRootFs:          metadata.rwRootFS,
-			OSID:              m["ID"],
-			OSVersionCodename: m["VERSION_CODENAME"],
-			OSVersionID:       m["VERSION_ID"],
-		},
+		Name:      metadata.Name,
+		Version:   metadata.Version,
+		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
@@ -208,36 +187,38 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	return pkgs, nil
 }
 
-func parseVmlinuzMetadata(magicType []string) metadata {
-	var m metadata
+func parseVmlinuzMetadata(magicType []string) Metadata {
+	var m Metadata
+
+	m.Name = "Linux Kernel"
 
 	for _, t := range magicType {
 		switch {
 		// Architecture
 		case strings.HasPrefix(t, "x86 "):
-			m.architecture = "x86"
+			m.Architecture = "x86"
 		case strings.HasPrefix(t, "ARM64 "):
-			m.architecture = "arm64"
+			m.Architecture = "arm64"
 		case strings.HasPrefix(t, "ARM "):
-			m.architecture = "arm"
+			m.Architecture = "arm"
 
 		// Format
 		case t == "bzImage":
-			m.format = "bzImage"
+			m.Format = "bzImage"
 		case t == "zImage":
-			m.format = "zImage"
+			m.Format = "zImage"
 
 		// Version and extended version
 		case strings.HasPrefix(t, "version "):
-			m.extendedVersion = strings.TrimPrefix(t, "version ")
-			fields := strings.Fields(m.extendedVersion)
+			m.ExtendedVersion = strings.TrimPrefix(t, "version ")
+			fields := strings.Fields(m.ExtendedVersion)
 			if len(fields) > 0 {
-				m.version = fields[0]
+				m.Version = fields[0]
 			}
 
 		// RW-rootFS
 		case strings.Contains(t, "rootFS") && strings.HasPrefix(t, "RW-"):
-			m.rwRootFS = true
+			m.RwRootFs = true
 
 		// Swap device
 		case strings.HasPrefix(t, "swap_dev "):
@@ -247,7 +228,7 @@ func parseVmlinuzMetadata(magicType []string) metadata {
 				log.Errorf("Failed to parse swap device: %v", err)
 				continue
 			}
-			m.swapDevice = int32(swapConv)
+			m.SwapDevice = int32(swapConv)
 
 		// Root device
 		case strings.HasPrefix(t, "root_dev "):
@@ -257,14 +238,13 @@ func parseVmlinuzMetadata(magicType []string) metadata {
 				log.Errorf("Failed to parse swap device: %v", err)
 				continue
 			}
-			m.rootDevice = int32(rootConv)
+			m.RootDevice = int32(rootConv)
 
 		// Video mode
 		case strings.Contains(t, "VGA") || strings.Contains(t, "Video"):
-			m.videoMode = t
+			m.VideoMode = t
 		}
 	}
-
 	return m
 }
 
