@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stack_test
+package stacklock_test
 
 import (
 	"context"
 	"io/fs"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stack"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -37,22 +37,22 @@ import (
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     stack.Config
-		wantCfg stack.Config
+		cfg     stacklock.Config
+		wantCfg stacklock.Config
 	}{
 		{
 			name: "default",
-			cfg:  stack.DefaultConfig(),
-			wantCfg: stack.Config{
+			cfg:  stacklock.DefaultConfig(),
+			wantCfg: stacklock.Config{
 				MaxFileSizeBytes: 100 * units.MiB,
 			},
 		},
 		{
 			name: "custom",
-			cfg: stack.Config{
+			cfg: stacklock.Config{
 				MaxFileSizeBytes: 10,
 			},
-			wantCfg: stack.Config{
+			wantCfg: stacklock.Config{
 				MaxFileSizeBytes: 10,
 			},
 		},
@@ -60,9 +60,9 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := stack.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			got := stacklock.New(tt.cfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -130,7 +130,7 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = stack.New(stack.Config{
+			var e filesystem.Extractor = stacklock.New(stacklock.Config{
 				Stats:            collector,
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 			})
@@ -158,17 +158,13 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		cfg              stack.Config
-		wantInventory    []*extractor.Inventory
-		wantResultMetric stats.FileExtractedResult
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "valid stack.yaml.lock file",
-			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid stack.yaml.lock file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "fuzzyset",
 					Version:   "0.2.4",
@@ -190,66 +186,45 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid stack.yaml.lock file",
-			path:          "testdata/invalid",
-			wantInventory: []*extractor.Inventory{},
+			Name: "invalid stack.yaml.lock file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid",
+			},
+			WantInventory: []*extractor.Inventory{},
+			WantErr:       cmpopts.AnyError,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fsys := scalibrfs.DirFS(".")
-
-			r, err := fsys.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			info, err := r.Stat()
-			if err != nil {
-				t.Fatalf("Stat(): %v", err)
-			}
-
+		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			var e filesystem.Extractor = stack.New(defaultConfigWith(tt.cfg))
+			var e filesystem.Extractor = stacklock.New(stacklock.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: 100,
+			})
 
-			got, err := e.Extract(context.Background(), input)
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			got, err := e.Extract(context.Background(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			wantResultMetric := tt.wantResultMetric
-			if wantResultMetric == "" {
-				wantResultMetric = stats.FileExtractedResultSuccess
-			}
-
-			gotResultMetric := collector.FileExtractedResult(tt.path)
-			if gotResultMetric != wantResultMetric {
-				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
-			}
-
-			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
-			if gotFileSizeMetric != info.Size() {
-				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
+			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}
 }
 
 func TestToPURL(t *testing.T) {
-	e := stack.Extractor{}
+	e := stacklock.Extractor{}
 	i := &extractor.Inventory{
 		Name:      "Name",
 		Version:   "1.2.3",
@@ -264,16 +239,4 @@ func TestToPURL(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
-}
-
-func defaultConfigWith(cfg stack.Config) stack.Config {
-	newCfg := stack.DefaultConfig()
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	return newCfg
 }

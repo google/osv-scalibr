@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package stack extracts stack.yaml.lock files from haskell projects.
-package stack
+// Package stacklock extracts stack.yaml.lock files from haskell projects.
+package stacklock
 
 import (
 	"bufio"
@@ -33,7 +33,7 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "haskell/stack"
+	Name = "haskell/stacklock"
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
@@ -57,13 +57,13 @@ func DefaultConfig() Config {
 	}
 }
 
-// Extractor extracts stack package info from stack.yaml.lock files.
+// Extractor extracts stacklock package info from stack.yaml.lock files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a haskell stack extractor.
+// New returns a haskell stacklock extractor.
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		stats:            cfg.Stats,
@@ -91,9 +91,8 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired return true if the specified file matched the stack.yaml.lock file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	normalizedPath := filepath.ToSlash(path)
 
-	if filepath.Base(normalizedPath) != "stack.yaml.lock" {
+	if filepath.Base(path) != "stack.yaml.lock" {
 		return false
 	}
 
@@ -139,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var re = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([0-9.]+)@`)
+var PackageVersionRe = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([0-9.]+)@`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -157,7 +156,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		matches := re.FindStringSubmatch(line)
+		matches := PackageVersionRe.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			pkgName := matches[1]
 			pkgVersion := matches[2]
@@ -170,6 +169,15 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 			pkgs = append(pkgs, i)
 		}
+
+		if s.Err() != nil {
+			return pkgs, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
+		}
+	}
+
+	// EOF
+	if len(pkgs) == 0 {
+		return pkgs, fmt.Errorf("EOF reached while scanning %q", input.Path)
 	}
 
 	return pkgs, nil
