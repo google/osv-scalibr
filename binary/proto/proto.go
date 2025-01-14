@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
@@ -367,6 +368,23 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				BundleVersion:            m.CFBundleVersion,
 				ProductId:                m.KSProductID,
 				UpdateUrl:                m.KSUpdateURL,
+			},
+		}
+	case *vmlinuz.Metadata:
+		i.Metadata = &spb.Inventory_VmlinuzMetadata{
+			VmlinuzMetadata: &spb.VmlinuzMetadata{
+				Name:              m.Name,
+				Version:           m.Version,
+				Architecture:      m.Architecture,
+				ExtendedVersion:   m.ExtendedVersion,
+				Format:            m.Format,
+				SwapDevice:        m.SwapDevice,
+				RootDevice:        m.RootDevice,
+				VideoMode:         m.VideoMode,
+				OsId:              m.OSID,
+				OsVersionCodename: m.OSVersionCodename,
+				OsVersionId:       m.OSVersionID,
+				RwRootFs:          m.RwRootFs,
 			},
 		}
 	case *ctrdfs.Metadata:

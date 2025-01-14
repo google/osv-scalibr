@@ -18,7 +18,6 @@ package wheelegg
 import (
 	"archive/zip"
 	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -32,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -173,7 +173,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 var ErrSizeNotSet = errors.New("input.Info is nil, but should have Size set")
 
 func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	r, err := newReaderAt(input.Reader)
+	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("newReaderAt(%s): %w", input.Path, err)
 	}
@@ -202,23 +202,6 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		inventory = append(inventory, i)
 	}
 	return inventory, nil
-}
-
-func newReaderAt(ioReader io.Reader) (io.ReaderAt, error) {
-	r, ok := ioReader.(io.ReaderAt)
-	if ok {
-		return r, nil
-	}
-
-	// Fallback: In case ioReader does not implement ReadAt, we use a reader on byte buffer instead, which
-	// supports ReadAt.
-	buff := bytes.NewBuffer([]byte{})
-	_, err := io.Copy(buff, ioReader)
-	if err != nil {
-		return nil, fmt.Errorf("io.Copy(): %w", err)
-	}
-
-	return bytes.NewReader(buff.Bytes()), nil
 }
 
 func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Inventory, error) {
