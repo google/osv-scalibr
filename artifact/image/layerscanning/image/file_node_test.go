@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -435,22 +436,22 @@ func TestRealFilePath(t *testing.T) {
 		{
 			name: "root directory",
 			node: rootDirectory,
-			want: "/tmp/extract/layer1",
+			want: filepath.FromSlash("/tmp/extract/layer1"),
 		},
 		{
 			name: "root file",
 			node: rootFile,
-			want: "/tmp/extract/layer1/bar",
+			want: filepath.FromSlash("/tmp/extract/layer1/bar"),
 		},
 		{
 			name: "non-root file",
 			node: nonRootFile,
-			want: "/tmp/extract/layer1/dir1/foo",
+			want: filepath.FromSlash("/tmp/extract/layer1/dir1/foo"),
 		},
 		{
 			name: "non-root directory",
 			node: nonRootDirectory,
-			want: "/tmp/extract/layer1/dir1/dir2",
+			want: filepath.FromSlash("/tmp/extract/layer1/dir1/dir2"),
 		},
 	}
 

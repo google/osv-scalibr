@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 const (
@@ -36,6 +37,7 @@ type fileNode struct {
 	originLayerID string
 	isWhiteout    bool
 	virtualPath   string
+	targetPath    string
 	mode          fs.FileMode
 	file          *os.File
 }
@@ -94,7 +96,7 @@ func (f *fileNode) Close() error {
 // RealFilePath returns the real file path of the fileNode. This is the concatenation of the
 // root image extract directory, origin layer ID, and the virtual path.
 func (f *fileNode) RealFilePath() string {
-	return path.Join(f.extractDir, f.originLayerID, f.virtualPath)
+	return filepath.Join(f.extractDir, f.originLayerID, filepath.FromSlash(f.virtualPath))
 }
 
 // ========================================================

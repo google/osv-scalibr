@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -98,6 +99,8 @@ func (fakeV1Image *fakeV1Image) LayerByDiffID(v1.Hash) (v1.Layer, error) {
 }
 
 // Testing plan:
+//
+// Basic Cases:
 //  1. Create a scratch image with a single layer that adds a file. There should be one layer with
 //     one file.
 //  2. Create a scratch image with two layers. The first layer adds a file, the second layer adds a
@@ -111,13 +114,23 @@ func (fakeV1Image *fakeV1Image) LayerByDiffID(v1.Hash) (v1.Layer, error) {
 //  6. Create a scratch image with three layers. The first layer adds file X, the second layer
 //     deletes file X, and the third layer adds file X back. The second chain layer should
 //     have no files, and the third chain layer should have file X.
+//
+// Symlink Cases:
+//  1. Create a scratch image with one layer. The layer contains a regular file and two symlinks (A
+//     and B). The symlink chain is A -> B -> file.
+//  2. Create an image that has a symlink chain whose size is greater than the max symlink depth.
+//     An error should be returned.
+//  3. Create an image that has a symlink cycle. An error should be returned.
+//  4. Create an image that has a dangling symlink.
+//  5. Create an image that has a symlink that point to a file outside of the virtual root.
 func TestFromTarball(t *testing.T) {
 	tests := []struct {
-		name                  string
-		tarPath               string
-		config                *Config
-		wantChainLayerEntries []chainLayerEntries
-		wantErr               error
+		name                       string
+		tarPath                    string
+		config                     *Config
+		wantChainLayerEntries      []chainLayerEntries
+		wantErrDuringImageCreation error
+		wantErrWhileReadingFiles   error
 	}{
 		{
 			name:    "image with one file",
@@ -133,7 +146,6 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "image with two files",
@@ -161,7 +173,6 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "second layer overwrites file with different content",
@@ -185,7 +196,6 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "second layer deletes file",
@@ -212,7 +222,6 @@ func TestFromTarball(t *testing.T) {
 					filepathContentPairs: []filepathContentPair{},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "multiple files and directories added across layers",
@@ -245,7 +254,6 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "file is deleted and later added back",
@@ -280,7 +288,6 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErr: nil,
 		},
 		{
 			name:    "image with file surpassing max file size",
@@ -288,7 +295,125 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes: 1,
 			},
-			wantErr: ErrFileReadLimitExceeded,
+			wantErrDuringImageCreation: ErrFileReadLimitExceeded,
+		},
+		{
+			name:    "image with relative, absolute, and chain symlinks",
+			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/sample.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/absolute-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/relative-dot-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/relative-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/chain-symlink.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "image with symlink cycle",
+			tarPath: filepath.Join(testdataDir, "symlink-cycle.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/sample.txt",
+						},
+						{
+							filepath: "dir1/absolute-symlink.txt",
+						},
+						{
+							filepath: "dir1/chain-symlink.txt",
+						},
+					},
+				},
+			},
+			wantErrWhileReadingFiles: ErrSymlinkCycle,
+		},
+		{
+			name:    "image with symlink depth exceeded",
+			tarPath: filepath.Join(testdataDir, "symlink-depth-exceeded.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/symlink7.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+			},
+			wantErrWhileReadingFiles: ErrSymlinkDepthExceeded,
+		},
+		{
+			name:    "image with dangling symlinks",
+			tarPath: filepath.Join(testdataDir, "symlink-dangling.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/absolute-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/relative-dot-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/relative-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/chain-symlink.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir2/dir3/relative-subfolder-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir2/dir3/absolute-subfolder-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir2/dir3/absolute-chain-symlink.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+			},
+			wantErrWhileReadingFiles: fs.ErrNotExist,
+		},
+		{
+			name:                       "image with symlink pointing outside of root",
+			tarPath:                    filepath.Join(testdataDir, "symlink-attack.tar"),
+			config:                     DefaultConfig(),
+			wantErrDuringImageCreation: ErrSymlinkPointsOutsideRoot,
 		},
 	}
 
@@ -297,19 +422,18 @@ func TestFromTarball(t *testing.T) {
 			gotImage, gotErr := FromTarball(tc.tarPath, tc.config)
 			defer gotImage.CleanUp()
 
-			if tc.wantErr != nil {
-				if errors.Is(gotErr, tc.wantErr) {
+			if tc.wantErrDuringImageCreation != nil {
+				if errors.Is(gotErr, tc.wantErrDuringImageCreation) {
 					return
 				}
-				t.Fatalf("Load(%v) returned error: %v, want error: %v", tc.tarPath, gotErr, tc.wantErr)
+				t.Fatalf("FromTarball(%v) returned error: %v, want error: %v", tc.tarPath, gotErr, tc.wantErrDuringImageCreation)
 			}
 
 			if gotErr != nil {
-				t.Fatalf("Load(%v) returned unexpected error: %v", tc.tarPath, gotErr)
+				t.Fatalf("FromTarball(%v) returned unexpected error: %v", tc.tarPath, gotErr)
 			}
 
 			chainLayers, err := gotImage.ChainLayers()
-
 			if err != nil {
 				t.Fatalf("ChainLayers() returned error: %v", err)
 			}
@@ -326,7 +450,7 @@ func TestFromTarball(t *testing.T) {
 					continue
 				}
 
-				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries)
+				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries, tc.wantErrWhileReadingFiles)
 			}
 		})
 	}
@@ -385,23 +509,35 @@ func TestFromV1Image(t *testing.T) {
 
 // compareChainLayerEntries compares the files in a chain layer to the expected files in the
 // chainLayerEntries.
-func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, wantChainLayerEntries chainLayerEntries) {
+func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, wantChainLayerEntries chainLayerEntries, wantErrWhileReadingFiles error) {
 	t.Helper()
-
 	chainfs := gotChainLayer.FS()
 
 	for _, filepathContentPair := range wantChainLayerEntries.filepathContentPairs {
-		gotFile, err := chainfs.Open(filepathContentPair.filepath)
-		if err != nil {
-			t.Fatalf("Open(%v) returned error: %v", filepathContentPair.filepath, err)
-		}
-		contentBytes, err := io.ReadAll(gotFile)
-		if err != nil {
-			t.Fatalf("ReadAll(%v) returned error: %v", filepathContentPair.filepath, err)
-		}
-		gotContent := string(contentBytes[:])
-		if diff := cmp.Diff(gotContent, filepathContentPair.content); diff != "" {
-			t.Errorf("Open(%v) returned incorrect content: got %s, want %s", filepathContentPair.filepath, gotContent, filepathContentPair.content)
-		}
+		func() {
+			gotFile, gotErr := chainfs.Open(filepathContentPair.filepath)
+			if wantErrWhileReadingFiles != nil {
+				if errors.Is(gotErr, wantErrWhileReadingFiles) {
+					return
+				}
+				t.Fatalf("Open(%v) returned error: %v", filepathContentPair.filepath, gotErr)
+			}
+
+			if gotErr != nil {
+				t.Fatalf("Open(%v) returned unexpected error: %v", filepathContentPair.filepath, gotErr)
+			}
+
+			defer gotFile.Close()
+
+			contentBytes, err := io.ReadAll(gotFile)
+			if err != nil {
+				t.Fatalf("ReadAll(%v) returned error: %v", filepathContentPair.filepath, err)
+			}
+
+			gotContent := string(contentBytes[:])
+			if diff := cmp.Diff(gotContent, filepathContentPair.content); diff != "" {
+				t.Errorf("Open(%v) returned incorrect content: got \"%s\", want \"%s\"", filepathContentPair.filepath, gotContent, filepathContentPair.content)
+			}
+		}()
 	}
 }
