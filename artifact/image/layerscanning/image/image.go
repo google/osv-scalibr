@@ -176,10 +176,8 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			continue
 		}
 
+		// Create the chain layer directory if it doesn't exist.
 		dirPath := path.Join(tempPath, chainLayer.latestLayer.DiffID())
-
-		// TODO b/378491191 - Determine if an error should be thrown if the directory already exists. If
-		// so, we can probably use os.MkdirAll instead.
 		if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
 			return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
 		}
