@@ -9,6 +9,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * COS
   * cos-package-info.json
 * DPKG (used by e.g. Debian, Ubuntu)
+* NIX
 * OPKG (used by e.g., OpenWrt and embedded Linux systems)
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
   * Zypper (used by e.g. openSUSE)
