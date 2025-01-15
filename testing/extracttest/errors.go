@@ -21,6 +21,8 @@ import (
 
 // ContainsErrStr is an error that matches other errors that contains
 // `str` in their error string.
+//
+//nolint:errname
 type ContainsErrStr struct {
 	Str string
 }
