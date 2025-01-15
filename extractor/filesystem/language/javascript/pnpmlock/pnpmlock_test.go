@@ -90,8 +90,54 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-path.yaml",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "invalid dependency path"},
-			WantInventory: []*extractor.Inventory{},
+			WantErr: extracttest.ContainsErrStr{Str: "invalid dependency path"},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:       "acorn",
+					Version:    "8.7.0",
+					Locations:  []string{"testdata/invalid-path.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "invalid dep paths (first error)",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid-paths.yaml",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "invalid dependency path: invalidpath1"},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:       "acorn",
+					Version:    "8.7.0",
+					Locations:  []string{"testdata/invalid-paths.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "invalid dep paths (second error)",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid-paths.yaml",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "invalid dependency path: invalidpath2"},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:       "acorn",
+					Version:    "8.7.0",
+					Locations:  []string{"testdata/invalid-paths.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
 		},
 		{
 			Name: "empty",
