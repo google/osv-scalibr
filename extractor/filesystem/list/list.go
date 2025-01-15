@@ -54,6 +54,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -126,6 +127,8 @@ var (
 	}
 	// PHP extractors.
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
+	// Swift extractors.
+	Swift []filesystem.Extractor = []filesystem.Extractor{packageresolved.Extractor{}}
 	// Containers extractors.
 	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
 
@@ -163,6 +166,7 @@ var (
 		Rust,
 		Dotnet,
 		SBOM,
+		Swift,
 		OS,
 		Containers,
 	)
@@ -184,6 +188,7 @@ var (
 		"rust":       Rust,
 
 		"sbom":       SBOM,
+		"swift":      Swift,
 		"os":         OS,
 		"containers": Containers,
 
