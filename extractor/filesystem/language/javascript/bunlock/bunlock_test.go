@@ -138,7 +138,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bad-tuple.json5",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad1' from"},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad1' from"},
 			WantInventory: []*extractor.Inventory{
 				{
 					Name:       "wrappy",
@@ -156,7 +156,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bad-tuple.json5",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad2' from"},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad2' from"},
 			WantInventory: []*extractor.Inventory{
 				{
 					Name:       "wrappy",
