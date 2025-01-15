@@ -385,12 +385,17 @@ func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tar
 			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
 		}
 	}
+
+	fileInfo := header.FileInfo()
+
 	return &fileNode{
 		extractDir:    img.ExtractDir,
 		originLayerID: originLayerID,
 		virtualPath:   virtualPath,
 		isWhiteout:    isWhiteout,
-		mode:          fs.FileMode(header.Mode) | fs.ModeDir,
+		mode:          fileInfo.Mode() | fs.ModeDir,
+		size:          fileInfo.Size(),
+		modTime:       fileInfo.ModTime(),
 	}, nil
 }
 
@@ -415,12 +420,16 @@ func (img *Image) handleFile(realFilePath, virtualPath, originLayerID string, ta
 		return nil, fmt.Errorf("unable to copy file: %w", err)
 	}
 
+	fileInfo := header.FileInfo()
+
 	return &fileNode{
 		extractDir:    img.ExtractDir,
 		originLayerID: originLayerID,
 		virtualPath:   virtualPath,
 		isWhiteout:    isWhiteout,
-		mode:          fs.FileMode(header.Mode),
+		mode:          fileInfo.Mode(),
+		size:          fileInfo.Size(),
+		modTime:       fileInfo.ModTime(),
 	}, nil
 }
 
