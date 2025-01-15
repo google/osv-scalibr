@@ -18,6 +18,7 @@ package bunlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -106,11 +107,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	inventories := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
 
+	var errs []error
+
 	for _, pkg := range maps.Values(parsedLockfile.Packages) {
 		name, version, commit, err := structurePackageDetails(pkg)
 
 		if err != nil {
-			return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+			errs = append(errs, fmt.Errorf("could not extract from %q: %w", input.Path, err))
+
+			continue
 		}
 
 		inventories = append(inventories, &extractor.Inventory{
@@ -126,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 
-	return inventories, nil
+	return inventories, errors.Join(errs...)
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

@@ -139,7 +139,17 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:       "wrappy",
+					Version:    "1.0.2",
+					Locations:  []string{"testdata/bad-tuple.json5"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
 		},
 		{
 			Name: "two packages",
