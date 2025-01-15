@@ -30,7 +30,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/tidwall/jsonc"
-	"golang.org/x/exp/maps"
 )
 
 type bunLockfile struct {
@@ -109,11 +108,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	var errs []error
 
-	for _, pkg := range maps.Values(parsedLockfile.Packages) {
+	for key, pkg := range parsedLockfile.Packages {
 		name, version, commit, err := structurePackageDetails(pkg)
 
 		if err != nil {
-			errs = append(errs, fmt.Errorf("could not extract from %q: %w", input.Path, err))
+			errs = append(errs, fmt.Errorf("could not extract '%s' from %q: %w", key, input.Path, err))
 
 			continue
 		}
