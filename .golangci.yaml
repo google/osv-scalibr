@@ -56,7 +56,7 @@ linters:
     - misspell
 #    - musttag
     - nakedret
-#    - nilerr
+    - nilerr
 #    - nilnil
 #    - nlreturn
 #    - noctx
