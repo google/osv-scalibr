@@ -83,7 +83,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/not-json.txt",
 			},
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: []*extractor.Inventory{},
+			WantInventory: nil,
 		},
 		{
 			Name: "empty",
@@ -139,7 +139,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: []*extractor.Inventory{},
+			WantInventory: nil,
 		},
 		{
 			Name: "two packages",
