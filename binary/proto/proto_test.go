@@ -549,7 +549,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/portage",
 	}
-	purlNIXInventory := &extractor.Inventory{
+	purlNixInventory := &extractor.Inventory{
 		Name:    "attr",
 		Version: "2.5.2",
 		Metadata: &nix.Metadata{
@@ -560,24 +560,23 @@ func TestScanResultToProto(t *testing.T) {
 			OSVersionID:       "24.11",
 		},
 		Locations: []string{"/file1"},
-		Extractor: nix.New(nix.DefaultConfig()),
+		Extractor: nix.New(),
 	}
-	purlNIXInventoryProto := &spb.Inventory{
+	purlNixInventoryProto := &spb.Inventory{
 		Name:    "attr",
 		Version: "2.5.2",
 		Purl: &spb.Purl{
-			Purl:      "pkg:nix/nixos/attr@2.5.2?distro=vicuna",
-			Type:      purl.TypeNix,
-			Namespace: "nixos",
-			Name:      "attr",
-			Version:   "2.5.2",
+			Purl:    "pkg:nix/attr@2.5.2?distro=vicuna",
+			Type:    purl.TypeNix,
+			Name:    "attr",
+			Version: "2.5.2",
 			Qualifiers: []*spb.Qualifier{
 				{Key: "distro", Value: "vicuna"},
 			},
 		},
-		Ecosystem: "Nixos:24.11",
+		Ecosystem: "",
 		Metadata: &spb.Inventory_NixMetadata{
-			NixMetadata: &spb.NIXPackageMetadata{
+			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       "attr",
 				PackageVersion:    "2.5.2",
 				OsId:              "nixos",
@@ -941,7 +940,7 @@ func TestScanResultToProto(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful NIX scan linux-only",
+			desc: "Successful Nix scan linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -954,7 +953,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlNIXInventory},
+				Inventories: []*extractor.Inventory{purlNixInventory},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -968,7 +967,7 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlNIXInventoryProto},
+				Inventories: []*spb.Inventory{purlNixInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			excludeForOS: []string{"windows", "darwin"},
