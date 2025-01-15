@@ -134,11 +134,29 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "one package with bad tuple",
+			Name: "one package with bad tuple (first error)",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bad-tuple.json5",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad' from"},
+			WantErr:       extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad1' from"},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:       "wrappy",
+					Version:    "1.0.2",
+					Locations:  []string{"testdata/bad-tuple.json5"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "one package with bad tuple (second error)",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bad-tuple.json5",
+			},
+			WantErr:       extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad2' from"},
 			WantInventory: []*extractor.Inventory{
 				{
 					Name:       "wrappy",
