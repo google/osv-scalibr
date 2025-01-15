@@ -58,7 +58,6 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if a given path corresponds to a unique, unprocessed
 // directory under the nixStoreDir path.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
-
 	path := api.Path()
 
 	if !strings.HasPrefix(path, "nix/store/") {
