@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/opencontainers/go-digest"
 )
 
 var (
@@ -48,7 +49,7 @@ var (
 
 // Layer implements the Layer interface.
 type Layer struct {
-	diffID       string
+	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
 	uncompressed io.ReadCloser
@@ -65,7 +66,7 @@ func (layer *Layer) IsEmpty() bool {
 }
 
 // DiffID returns the diff id of the layer.
-func (layer *Layer) DiffID() string {
+func (layer *Layer) DiffID() digest.Digest {
 	return layer.diffID
 }
 
@@ -94,7 +95,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, err
 	}
 
 	return &Layer{
-		diffID:       diffID.Hex,
+		diffID:       digest.FromString(diffID.String()),
 		buildCommand: command,
 		isEmpty:      isEmpty,
 		uncompressed: uncompressed,

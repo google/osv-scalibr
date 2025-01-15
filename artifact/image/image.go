@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/unpack"
+	"github.com/opencontainers/go-digest"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
@@ -43,7 +44,7 @@ type Layer interface {
 	// produced by the FS method.
 	IsEmpty() bool
 	// DiffID is the hash of the uncompressed layer. Will be an empty string if the layer is empty.
-	DiffID() string
+	DiffID() digest.Digest
 	// Command is the specific command that produced the layer.
 	Command() string
 	// Uncompressed gives the uncompressed tar as a file reader.

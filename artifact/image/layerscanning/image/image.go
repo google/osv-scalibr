@@ -153,9 +153,16 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
 	// be rooted, and traversal in the virtual filesystem will be broken.
 	for _, chainLayer := range chainLayers {
+		var layerDigest string
+		if chainLayer.latestLayer.IsEmpty() {
+			layerDigest = ""
+		} else {
+			layerDigest = chainLayer.latestLayer.DiffID().Encoded()
+		}
+
 		err := chainLayer.fileNodeTree.Insert("/", &fileNode{
 			extractDir:    outputImage.ExtractDir,
-			originLayerID: chainLayer.latestLayer.DiffID(),
+			originLayerID: layerDigest,
 			virtualPath:   "/",
 			isWhiteout:    false,
 			mode:          fs.ModeDir,
@@ -176,14 +183,15 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			continue
 		}
 
+		originLayerID := chainLayer.latestLayer.DiffID().Encoded()
+
 		// Create the chain layer directory if it doesn't exist.
-		dirPath := path.Join(tempPath, chainLayer.latestLayer.DiffID())
+		dirPath := path.Join(tempPath, originLayerID)
 		if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
 			return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
 		}
 
 		chainLayersToFill := chainLayers[i:]
-		originLayerID := chainLayer.latestLayer.DiffID()
 		layerReader, err := chainLayer.latestLayer.Uncompressed()
 		if err != nil {
 			return &outputImage, err
