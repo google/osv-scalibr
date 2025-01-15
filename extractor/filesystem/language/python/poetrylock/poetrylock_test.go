@@ -199,6 +199,102 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "multiple packages with a v2 lockfile",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiple-packages.v2.lock",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "async-timeout",
+					Version:   "5.0.1",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"optional"},
+					},
+				},
+				{
+					Name:      "factory-boy",
+					Version:   "3.3.1",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:      "faker",
+					Version:   "33.3.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev", "test"},
+					},
+				},
+				{
+					Name:      "proto-plus",
+					Version:   "1.22.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "proto-plus",
+					Version:   "1.23.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "protobuf",
+					Version:   "4.25.5",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "python-dateutil",
+					Version:   "2.9.0.post0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev", "test"},
+					},
+				},
+				{
+					Name:      "six",
+					Version:   "1.17.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "typing-extensions",
+					Version:   "4.12.2",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev", "test"},
+					},
+				},
+				{
+					Name:      "urllib3",
+					Version:   "2.3.0",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:      "redis",
+					Version:   "5.2.1",
+					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"optional"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
