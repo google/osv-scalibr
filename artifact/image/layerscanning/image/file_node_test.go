@@ -19,7 +19,9 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -58,7 +60,94 @@ var (
 
 // TODO: b/377551664 - Add tests for the Stat method for the fileNode type.
 func TestStat(t *testing.T) {
-	return
+	baseTime := time.Now()
+	regularFileNode := &fileNode{
+		extractDir:    "tempDir",
+		originLayerID: "",
+		virtualPath:   "/bar",
+		isWhiteout:    false,
+		mode:          filePermission,
+		size:          1,
+		modTime:       baseTime,
+	}
+	symlinkFileNode := &fileNode{
+		extractDir:    "tempDir",
+		originLayerID: "",
+		virtualPath:   "/symlink-to-bar",
+		targetPath:    "/bar",
+		isWhiteout:    false,
+		mode:          fs.ModeSymlink | filePermission,
+		size:          1,
+		modTime:       baseTime,
+	}
+	whiteoutFileNode := &fileNode{
+		extractDir:    "tempDir",
+		originLayerID: "",
+		virtualPath:   "/bar",
+		isWhiteout:    true,
+		mode:          filePermission,
+	}
+
+	type info struct {
+		name    string
+		size    int64
+		mode    fs.FileMode
+		modTime time.Time
+	}
+
+	tests := []struct {
+		name     string
+		node     *fileNode
+		wantInfo info
+		wantErr  error
+	}{
+		{
+			name: "regular file",
+			node: regularFileNode,
+			wantInfo: info{
+				name:    "bar",
+				size:    1,
+				mode:    filePermission,
+				modTime: baseTime,
+			},
+		},
+		{
+			name: "symlink",
+			node: symlinkFileNode,
+			wantInfo: info{
+				name:    "symlink-to-bar",
+				size:    1,
+				mode:    fs.ModeSymlink | filePermission,
+				modTime: baseTime,
+			},
+		},
+		{
+			name:    "whiteout file",
+			node:    whiteoutFileNode,
+			wantErr: fs.ErrNotExist,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotFileNode, gotErr := tc.node.Stat()
+			if tc.wantErr != nil {
+				if diff := cmp.Diff(tc.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("Stat(%v) returned unexpected error (-want +got): %v", tc.node, diff)
+				}
+				return
+			}
+
+			gotInfo := info{
+				name:    gotFileNode.Name(),
+				size:    gotFileNode.Size(),
+				mode:    gotFileNode.Mode(),
+				modTime: gotFileNode.ModTime(),
+			}
+			if diff := cmp.Diff(tc.wantInfo, gotInfo, cmp.AllowUnexported(info{})); diff != "" {
+				t.Errorf("Stat(%v) returned unexpected fileNode (-want +got): %v", tc.node, diff)
+			}
+		})
+	}
 }
 
 func TestRead(t *testing.T) {
@@ -435,22 +524,22 @@ func TestRealFilePath(t *testing.T) {
 		{
 			name: "root directory",
 			node: rootDirectory,
-			want: "/tmp/extract/layer1",
+			want: filepath.FromSlash("/tmp/extract/layer1"),
 		},
 		{
 			name: "root file",
 			node: rootFile,
-			want: "/tmp/extract/layer1/bar",
+			want: filepath.FromSlash("/tmp/extract/layer1/bar"),
 		},
 		{
 			name: "non-root file",
 			node: nonRootFile,
-			want: "/tmp/extract/layer1/dir1/foo",
+			want: filepath.FromSlash("/tmp/extract/layer1/dir1/foo"),
 		},
 		{
 			name: "non-root directory",
 			node: nonRootDirectory,
-			want: "/tmp/extract/layer1/dir1/dir2",
+			want: filepath.FromSlash("/tmp/extract/layer1/dir1/dir2"),
 		},
 	}
 

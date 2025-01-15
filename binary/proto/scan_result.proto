@@ -91,6 +91,7 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     PACMANPackageMetadata pacman_metadata = 36;
+    ModuleMetadata module_metadata = 38;
     NixPackageMetadata nix_metadata = 37;
     PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
@@ -342,6 +343,18 @@ message FlatpakPackageMetadata {
   string os_version_id = 7;
   string os_build_id = 8;
   string developer = 9;
+}
+
+// The additional data found in MODULE packages.
+message ModuleMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string package_vermagic = 3;
+  string package_source_version_identifier = 4;
+  string os_id = 5;
+  string os_version_codename = 6;
+  string os_version_id = 7;
+  string package_author = 8;
 }
 
 // The additional data found in Mac Applications.
