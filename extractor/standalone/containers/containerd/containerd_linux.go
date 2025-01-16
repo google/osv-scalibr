@@ -192,7 +192,7 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 
 func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error) {
 	nsService := client.NamespaceService()
-	nss, err := nsService.List(context.Background())
+	nss, err := nsService.List(ctx)
 	if err != nil {
 		return nil, err
 	}
