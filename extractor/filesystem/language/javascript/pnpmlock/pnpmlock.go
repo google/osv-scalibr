@@ -241,7 +241,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil && !errors.Is(err, io.EOF) {
-		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	// this will happen if the file is empty
