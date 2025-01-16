@@ -42,8 +42,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
@@ -355,6 +357,18 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Developer:      m.Developer,
 			},
 		}
+	case *nix.Metadata:
+		i.Metadata = &spb.Inventory_NixMetadata{
+			NixMetadata: &spb.NixPackageMetadata{
+				PackageName:       m.PackageName,
+				PackageVersion:    m.PackageVersion,
+				PackageHash:       m.PackageHash,
+				PackageOutput:     m.PackageOutput,
+				OsId:              m.OSID,
+				OsVersionCodename: m.OSVersionCodename,
+				OsVersionId:       m.OSVersionID,
+			},
+		}
 	case *macapps.Metadata:
 		i.Metadata = &spb.Inventory_MacAppsMetadata{
 			MacAppsMetadata: &spb.MacAppsMetadata{
@@ -368,6 +382,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				BundleVersion:            m.CFBundleVersion,
 				ProductId:                m.KSProductID,
 				UpdateUrl:                m.KSUpdateURL,
+			},
+		}
+	case *module.Metadata:
+		i.Metadata = &spb.Inventory_ModuleMetadata{
+			ModuleMetadata: &spb.ModuleMetadata{
+				PackageName:                    m.PackageName,
+				PackageVersion:                 m.PackageVersion,
+				PackageVermagic:                m.PackageVermagic,
+				PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
+				OsId:                           m.OSID,
+				OsVersionCodename:              m.OSVersionCodename,
+				OsVersionId:                    m.OSVersionID,
+				PackageAuthor:                  m.PackageAuthor,
 			},
 		}
 	case *vmlinuz.Metadata:

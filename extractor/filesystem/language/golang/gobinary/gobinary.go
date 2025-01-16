@@ -136,7 +136,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		buf := bytes.NewBuffer([]byte{})
 		_, err := io.Copy(buf, input.Reader)
 		if err != nil {
-			return []*extractor.Inventory{}, err
+			return nil, err
 		}
 		readerAt = bytes.NewReader(buf.Bytes())
 	}

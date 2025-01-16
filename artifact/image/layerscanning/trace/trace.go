@@ -56,9 +56,16 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 
 	// Create list of layer details struct to be referenced by inventory.
 	for i, chainLayer := range chainLayers {
+		var diffID string
+		if chainLayer.Layer().IsEmpty() {
+			diffID = ""
+		} else {
+			diffID = chainLayer.Layer().DiffID().Encoded()
+		}
+
 		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
 			Index:       i,
-			DiffID:      chainLayer.Layer().DiffID(),
+			DiffID:      diffID,
 			Command:     chainLayer.Layer().Command(),
 			InBaseImage: false,
 		})
