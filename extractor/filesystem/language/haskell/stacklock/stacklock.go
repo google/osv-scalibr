@@ -138,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var PackageVersionRe = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([0-9.]+)@`)
+var packageVersionRe = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([0-9.]+)@`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -156,7 +156,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		matches := PackageVersionRe.FindStringSubmatch(line)
+		matches := packageVersionRe.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			pkgName := matches[1]
 			pkgVersion := matches[2]
@@ -173,11 +173,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		if s.Err() != nil {
 			return pkgs, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
 		}
-	}
-
-	// EOF
-	if len(pkgs) == 0 {
-		return pkgs, fmt.Errorf("EOF reached while scanning %q", input.Path)
 	}
 
 	return pkgs, nil
