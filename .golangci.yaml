@@ -14,7 +14,7 @@ linters:
     - bodyclose
     - canonicalheader
 #    - containedctx
-#    - contextcheck
+    - contextcheck
     - copyloopvar
     - decorder
 #    - depguard
