@@ -91,8 +91,9 @@ message Inventory {
     JavaArchiveMetadata java_archive_metadata = 15;
     JavaLockfileMetadata java_lockfile_metadata = 31;
     PACMANPackageMetadata pacman_metadata = 36;
-    ModuleMetadata module_metadata = 38;
     NixPackageMetadata nix_metadata = 37;
+    KernelModuleMetadata kernel_module_metadata = 38;
+    VmlinuzMetadata vmlinuz_metadata = 39;
     PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
@@ -346,7 +347,7 @@ message FlatpakPackageMetadata {
 }
 
 // The additional data found in MODULE packages.
-message ModuleMetadata {
+message KernelModuleMetadata {
   string package_name = 1;
   string package_version = 2;
   string package_vermagic = 3;
@@ -355,6 +356,22 @@ message ModuleMetadata {
   string os_version_codename = 6;
   string os_version_id = 7;
   string package_author = 8;
+}
+
+// The additional data found in Vmlinuz packages.
+message VmlinuzMetadata {
+  string name = 1;
+  string version = 2;
+  string architecture = 3;
+  string extended_version = 4;
+  string format = 5;
+  int32 swap_device = 6;
+  int32 root_device = 7;
+  string video_mode = 8;
+  string os_id = 9;
+  string os_version_codename = 10;
+  string os_version_id = 11;
+  bool rw_root_fs = 12;
 }
 
 // The additional data found in Mac Applications.

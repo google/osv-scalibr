@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
@@ -137,8 +138,9 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
-		module.New(module.DefaultConfig()),
 		nix.New(),
+		module.New(module.DefaultConfig()),
+		vmlinuz.New(vmlinuz.DefaultConfig()),
 		pacman.New(pacman.DefaultConfig()),
 		portage.New(portage.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
