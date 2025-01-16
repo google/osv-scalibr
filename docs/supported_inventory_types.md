@@ -14,7 +14,8 @@ SCALIBR supports extracting software package information from a variety of OS an
 * RPM (used by e.g. RHEL, CentOS, Rocky Linux)
   * Zypper (used by e.g. openSUSE)
 * Pacman (used by e.g. Arch Linux)
-* Kernel (modules, .ko)
+* Kernel modules (.ko)
+* Kernel archives (vmlinuz)
 * Portage (used by e.g. Gentoo Linux)
 * SNAP
 * Flatpak
