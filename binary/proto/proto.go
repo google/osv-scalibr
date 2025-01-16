@@ -32,6 +32,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
@@ -41,8 +42,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -246,6 +249,14 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Maintainers:  personsToProto(m.Maintainers),
 			},
 		}
+	case *depsjson.Metadata:
+		i.Metadata = &spb.Inventory_DepsjsonMetadata{
+			DepsjsonMetadata: &spb.DEPSJSONMetadata{
+				PackageName:    m.PackageName,
+				PackageVersion: m.PackageVersion,
+				Type:           m.Type,
+			},
+		}
 	case *apk.Metadata:
 		i.Metadata = &spb.Inventory_ApkMetadata{
 			ApkMetadata: &spb.APKPackageMetadata{
@@ -321,6 +332,15 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				PackageDependencies: m.PackageDependencies,
 			},
 		}
+	case *portage.Metadata:
+		i.Metadata = &spb.Inventory_PortageMetadata{
+			PortageMetadata: &spb.PortagePackageMetadata{
+				PackageName:    m.PackageName,
+				PackageVersion: m.PackageVersion,
+				OsId:           m.OSID,
+				OsVersionId:    m.OSVersionID,
+			},
+		}
 	case *flatpak.Metadata:
 		i.Metadata = &spb.Inventory_FlatpakMetadata{
 			FlatpakMetadata: &spb.FlatpakPackageMetadata{
@@ -348,6 +368,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				BundleVersion:            m.CFBundleVersion,
 				ProductId:                m.KSProductID,
 				UpdateUrl:                m.KSUpdateURL,
+			},
+		}
+	case *module.Metadata:
+		i.Metadata = &spb.Inventory_ModuleMetadata{
+			ModuleMetadata: &spb.ModuleMetadata{
+				PackageName:                    m.PackageName,
+				PackageVersion:                 m.PackageVersion,
+				PackageVermagic:                m.PackageVermagic,
+				PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
+				OsId:                           m.OSID,
+				OsVersionCodename:              m.OSVersionCodename,
+				OsVersionId:                    m.OSVersionID,
+				PackageAuthor:                  m.PackageAuthor,
 			},
 		}
 	case *ctrdfs.Metadata:

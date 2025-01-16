@@ -27,9 +27,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/opencontainers/go-digest"
 )
 
-func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID string, command string, fileContents map[string]string) *fakechainlayer.FakeChainLayer {
+func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID digest.Digest, command string, fileContents map[string]string) *fakechainlayer.FakeChainLayer {
 	t.Helper()
 
 	layer := fakelayer.New(diffID, command)
@@ -56,7 +57,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// Chain Layer 1: Start with foo and bar packages.
 	// - foo.txt
 	// - bar.txt
-	fakeChainLayer1 := setupFakeChainLayer(t, t.TempDir(), 0, "diff-id-1", "command-1", map[string]string{
+	digest1 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-1")
+	fakeChainLayer1 := setupFakeChainLayer(t, t.TempDir(), 0, digest1, "command-1", map[string]string{
 		fooFile: fooPackage,
 		barFile: barPackage,
 	})
@@ -71,7 +73,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 
 	// Chain Layer 2: Deletes bar package.
 	// - foo.txt
-	fakeChainLayer2 := setupFakeChainLayer(t, t.TempDir(), 1, "diff-id-2", "command-2", map[string]string{
+	digest2 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-2")
+	fakeChainLayer2 := setupFakeChainLayer(t, t.TempDir(), 1, digest2, "command-2", map[string]string{
 		fooFile: fooPackage,
 	})
 	fakeExtractor2 := fakeextractor.New("fake-extractor-2", 1, []string{fooFile}, map[string]fakeextractor.NamesErr{
@@ -83,7 +86,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// Chain Layer 3: Adds baz package.
 	// - foo.txt
 	// - baz.txt
-	fakeChainLayer3 := setupFakeChainLayer(t, t.TempDir(), 2, "diff-id-3", "command-3", map[string]string{
+	digest3 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-3")
+	fakeChainLayer3 := setupFakeChainLayer(t, t.TempDir(), 2, digest3, "command-3", map[string]string{
 		fooFile: fooPackage,
 		bazFile: bazPackage,
 	})
@@ -100,7 +104,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// - foo.txt
 	// - bar.txt
 	// - baz.txt
-	fakeChainLayer4 := setupFakeChainLayer(t, t.TempDir(), 3, "diff-id-4", "command-4", map[string]string{
+	digest4 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-4")
+	fakeChainLayer4 := setupFakeChainLayer(t, t.TempDir(), 3, digest4, "command-4", map[string]string{
 		fooFile: fooPackage,
 		barFile: barPackage,
 		bazFile: bazPackage,

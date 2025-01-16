@@ -176,11 +176,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 	}
 
-	// EOF
-	if len(pkgs) == 0 {
-		return pkgs, fmt.Errorf("EOF reached while scanning %q", input.Path)
-	}
-
 	return pkgs, nil
 }
 

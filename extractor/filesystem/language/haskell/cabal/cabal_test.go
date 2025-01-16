@@ -226,7 +226,6 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/invalid",
 			},
 			WantInventory: []*extractor.Inventory{},
-			WantErr:       cmpopts.AnyError,
 		},
 	}
 
