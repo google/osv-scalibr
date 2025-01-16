@@ -13,7 +13,7 @@ linters:
     - bidichk
     - bodyclose
     - canonicalheader
-#    - containedctx
+    - containedctx
 #    - contextcheck
     - copyloopvar
     - decorder
