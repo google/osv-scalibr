@@ -56,13 +56,12 @@ linters:
     - misspell
 #    - musttag
     - nakedret
-#    - nilerr
+    - nilerr
 #    - nilnil
 #    - nlreturn
 #    - noctx
     - nolintlint
 #    - nosprintfhostport
-#    - paralleltest
 #    - perfsprint
 #    - prealloc
     - predeclared
@@ -90,7 +89,8 @@ linters:
     - zerologlint
   disable-all: true
 #  disable:
-#    - tparallel # Parallel tests mixes up log lines of multiple tests in the internal test runner
+#    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
+#    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
 
 linters-settings:
   forbidigo:

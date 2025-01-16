@@ -65,6 +65,8 @@ const (
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
+	// TypeKernelModule is a pkg:kernelmod purl
+	TypeKernelModule = "kernelmod"
 	// Type Haskell is a pkg:haskell purl.
 	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
@@ -73,6 +75,8 @@ const (
 	TypeHex = "hex"
 	// TypeMaven is a pkg:maven purl.
 	TypeMaven = "maven"
+	// TypeNix is a pkg:nix purl.
+	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
 	// TypePacman is a pkg:pacman purl.
@@ -85,6 +89,8 @@ const (
 	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
 	TypePub = "pub"
+	// TypePortage is a pkg:portage purl.
+	TypePortage = "portage"
 	// TypePyPi is a pkg:pypi purl.
 	TypePyPi = "pypi"
 	// TypeRPM is a pkg:rpm purl.
@@ -154,39 +160,42 @@ func FromString(purl string) (PackageURL, error) {
 
 func validType(t string) bool {
 	types := map[string]bool{
-		TypeAlpm:      true,
-		TypeApk:       true,
-		TypeBitbucket: true,
-		TypeBrew:      true,
-		TypeCargo:     true,
-		TypeCocoapods: true,
-		TypeComposer:  true,
-		TypeConan:     true,
-		TypeConda:     true,
-		TypeCOS:       true,
-		TypeCran:      true,
-		TypeDebian:    true,
-		TypePacman:    true,
-		TypeDocker:    true,
-		TypeFlatpak:   true,
-		TypeGem:       true,
-		TypeGeneric:   true,
-		TypeGithub:    true,
-		TypeGolang:    true,
-		TypeHackage:   true,
-		TypeHaskell:   true,
-		TypeHex:       true,
-		TypeMacApps:   true,
-		TypeMaven:     true,
-		TypeNPM:       true,
-		TypeNuget:     true,
-		TypeOCI:       true,
-		TypeOpkg:      true,
-		TypePub:       true,
-		TypePyPi:      true,
-		TypeRPM:       true,
-		TypeSwift:     true,
-		TypeGooget:    true,
+		TypeAlpm:         true,
+		TypeApk:          true,
+		TypeBitbucket:    true,
+		TypeBrew:         true,
+		TypeCargo:        true,
+		TypeCocoapods:    true,
+		TypeComposer:     true,
+		TypeConan:        true,
+		TypeConda:        true,
+		TypeCOS:          true,
+		TypeCran:         true,
+		TypeDebian:       true,
+		TypePacman:       true,
+		TypeDocker:       true,
+		TypeFlatpak:      true,
+		TypeGem:          true,
+		TypeGeneric:      true,
+		TypeGithub:       true,
+		TypeGolang:       true,
+		TypeHackage:      true,
+		TypeHaskell:      true,
+		TypeHex:          true,
+		TypeKernelModule: true,
+		TypeMacApps:      true,
+		TypeMaven:        true,
+		TypeNix:          true,
+		TypeNPM:          true,
+		TypeNuget:        true,
+		TypeOCI:          true,
+		TypeOpkg:         true,
+		TypePub:          true,
+		TypePortage:      true,
+		TypePyPi:         true,
+		TypeRPM:          true,
+		TypeSwift:        true,
+		TypeGooget:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
