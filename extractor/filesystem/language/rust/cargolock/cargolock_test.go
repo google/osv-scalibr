@@ -83,7 +83,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantInventory: nil,
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{

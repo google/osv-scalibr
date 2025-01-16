@@ -107,7 +107,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	if err := scanner.Err(); err != nil {
-		return []*extractor.Inventory{}, fmt.Errorf("failed to read: %w", err)
+		return nil, fmt.Errorf("failed to read: %w", err)
 	}
 
 	return pkgs, nil
