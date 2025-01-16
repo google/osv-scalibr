@@ -95,7 +95,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, err
 	}
 
 	return &Layer{
-		diffID:       digest.FromString(diffID.String()),
+		diffID:       digest.Digest(diffID.String()),
 		buildCommand: command,
 		isEmpty:      isEmpty,
 		uncompressed: uncompressed,

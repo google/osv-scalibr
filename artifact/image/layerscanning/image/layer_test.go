@@ -48,8 +48,7 @@ func TestConvertV1Layer(t *testing.T) {
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
-				// The diffID is the encoded string: digest.FromString("abc123").
-				diffID:       "sha256:27f2fb5c8ba6b6d955cbc3cd78e89a898cac60a0442260129235683f4cc74e90",
+				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
 				uncompressed: reader,
