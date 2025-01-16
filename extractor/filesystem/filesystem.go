@@ -237,6 +237,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 }
 
 type walkContext struct {
+	//nolint:containedctx
 	ctx               context.Context
 	stats             stats.Collector
 	extractors        []Extractor

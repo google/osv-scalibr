@@ -142,6 +142,7 @@ func TestExtract(t *testing.T) {
 	}}
 
 	type args struct {
+		//nolint:containedctx
 		ctx   context.Context
 		input *filesystem.ScanInput
 	}
