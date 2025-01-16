@@ -60,3 +60,32 @@ func Files(scalibrfs scalibrfs.FS) (map[string]struct{}, error) {
 	}
 	return whiteouts, nil
 }
+
+// IsWhiteout returns true if a path is a whiteout path.
+func IsWhiteout(p string) bool {
+	_, file := filepath.Split(p)
+	return strings.HasPrefix(file, WhiteoutPrefix)
+}
+
+// Path returns the whiteout version of a path.
+func Path(p string) string {
+	dir, file := filepath.Split(p)
+	return filepath.Join(dir, fmt.Sprintf("%s%s", WhiteoutPrefix, file))
+}
+
+// Reverse returns the non whiteout version of a path.
+func Reverse(p string) string {
+	dir, file := filepath.Split(p)
+
+	if strings.HasPrefix(file, WhiteoutPrefix) {
+		file = strings.TrimPrefix(file, WhiteoutPrefix)
+	}
+
+	reverse := filepath.Join(dir, file)
+
+	if dir != "" && file == "" {
+		reverse = fmt.Sprintf("%s/", reverse)
+	}
+
+	return reverse
+}

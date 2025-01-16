@@ -17,6 +17,7 @@
 package image
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
+	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	"github.com/google/osv-scalibr/log"
@@ -50,6 +52,8 @@ var (
 	ErrFileReadLimitExceeded = errors.New("file exceeds read limit")
 	// ErrSymlinkPointsOutsideRoot is returned when a symlink points outside the root.
 	ErrSymlinkPointsOutsideRoot = errors.New("symlink points outside the root")
+	// ErrInvalidConfig is returned when the image config is invalid.
+	ErrInvalidConfig = errors.New("invalid image config")
 )
 
 // ========================================================
@@ -59,20 +63,32 @@ var (
 // Config contains the configuration to load an Image.
 type Config struct {
 	MaxFileBytes int64
+	Requirer     require.FileRequirer
 }
 
 // DefaultConfig returns the default configuration to load an Image.
 func DefaultConfig() *Config {
 	return &Config{
 		MaxFileBytes: DefaultMaxFileBytes,
+		Requirer:     &require.FileRequirerAll{},
 	}
+}
+
+func validateConfig(config *Config) error {
+	if config.MaxFileBytes <= 0 {
+		return fmt.Errorf("%w: max file bytes must be positive: %d", ErrInvalidConfig, config.MaxFileBytes)
+	}
+	if config.Requirer == nil {
+		return fmt.Errorf("%w: requirer must be specified", ErrInvalidConfig)
+	}
+	return nil
 }
 
 // Image is a container image. It is composed of a set of layers that can be scanned for software
 // inventory. It contains the proper metadata to attribute inventory to layers.
 type Image struct {
 	chainLayers    []*chainLayer
-	maxFileBytes   int64
+	config         *Config
 	ExtractDir     string
 	BaseImageIndex int
 }
@@ -113,11 +129,16 @@ func FromTarball(tarPath string, config *Config) (*Image, error) {
 // FromV1Image takes a v1.Image and produces a layer-scannable Image. The steps taken are as
 // follows:
 //
-//		(1) Retrieves v1.Layers, configFile. Creates tempPath to store the image files.
-//		(2) Initializes the output image and the chain layers.
-//		(3) Unpacks the layers by looping through the layers in reverse, while filling in the files
+//		(1) Validates the user input image config object.
+//		(2) Retrieves v1.Layers, configFile. Creates tempPath to store the image files.
+//		(3) Initializes the output image and the chain layers.
+//		(4) Unpacks the layers by looping through the layers in reverse, while filling in the files
 //	      into the appropriate chain layer.
 func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
+	if err := validateConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid image config: %w", err)
+	}
+
 	configFile, err := v1Image.ConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file: %w", err)
@@ -145,9 +166,9 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	outputImage := Image{
 		chainLayers:    chainLayers,
+		config:         config,
 		ExtractDir:     tempPath,
 		BaseImageIndex: baseImageIndex,
-		maxFileBytes:   config.MaxFileBytes,
 	}
 
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
@@ -173,43 +194,47 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		}
 	}
 
-	// Reverse loop through the layers to start from the latest layer first. This allows us to skip
-	// all files already seen.
-	for i := len(chainLayers) - 1; i >= 0; i-- {
-		chainLayer := chainLayers[i]
+	requiredTargets := make(map[string]bool)
+	for range DefaultMaxSymlinkDepth {
+		// Reverse loop through the layers to start from the latest layer first. This allows us to skip
+		// all files already seen.
+		for i := len(chainLayers) - 1; i >= 0; i-- {
+			chainLayer := chainLayers[i]
 
-		// If the layer is empty, then there is nothing to do.
-		if chainLayer.latestLayer.IsEmpty() {
-			continue
-		}
-
-		originLayerID := chainLayer.latestLayer.DiffID().Encoded()
-
-		// Create the chain layer directory if it doesn't exist.
-		dirPath := path.Join(tempPath, originLayerID)
-		if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
-			return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
-		}
-
-		chainLayersToFill := chainLayers[i:]
-		layerReader, err := chainLayer.latestLayer.Uncompressed()
-		if err != nil {
-			return &outputImage, err
-		}
-
-		err = func() error {
-			// Manually close at the end of the for loop.
-			defer layerReader.Close()
-
-			tarReader := tar.NewReader(layerReader)
-			if err := fillChainLayerWithFilesFromTar(&outputImage, tarReader, originLayerID, dirPath, chainLayersToFill); err != nil {
-				return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
+			// If the layer is empty, then there is nothing to do.
+			if chainLayer.latestLayer.IsEmpty() {
+				continue
 			}
-			return nil
-		}()
 
-		if err != nil {
-			return &outputImage, err
+			originLayerID := chainLayer.latestLayer.DiffID().Encoded()
+
+			// Create the chain layer directory if it doesn't exist.
+			dirPath := path.Join(tempPath, originLayerID)
+			if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
+				return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
+			}
+
+			chainLayersToFill := chainLayers[i:]
+			layerReader, err := chainLayer.latestLayer.Uncompressed()
+			if err != nil {
+				return &outputImage, err
+			}
+
+			err = func() error {
+				// Manually close at the end of the for loop.
+				defer layerReader.Close()
+
+				tarReader := tar.NewReader(layerReader)
+				requiredTargets, err = fillChainLayerWithFilesFromTar(&outputImage, tarReader, originLayerID, dirPath, chainLayersToFill, config.Requirer, requiredTargets)
+				if err != nil {
+					return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
+				}
+				return nil
+			}()
+
+			if err != nil {
+				return &outputImage, err
+			}
 		}
 	}
 	return &outputImage, nil
@@ -276,18 +301,26 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*c
 // fillChainLayerWithFilesFromTar fills the chain layers with the files found in the tar. The
 // chainLayersToFill are the chain layers that will be filled with the files via the virtual
 // filesystem.
-func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer) error {
+func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer, requirer require.FileRequirer, requiredTargets map[string]bool) (map[string]bool, error) {
+	// Defensive copy of requiredTargets to avoid modifying the original.
+	currRequiredTargets := make(map[string]bool)
+	for t := range requiredTargets {
+		currRequiredTargets[t] = true
+	}
+
+	currentChainLayer := chainLayersToFill[0]
+
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("could not read tar: %w", err)
+			return nil, fmt.Errorf("could not read tar: %w", err)
 		}
-		// Some tools prepend everything with "./", so if we don't Clean the
-		// name, we may have duplicate entries, which angers tar-split.
-		// Using path instead of filepath to keep `/` and deterministic behavior
+		// Some tools prepend everything with "./", so if we don't path.Clean the name, we may have
+		// duplicate entries, which angers tar-split. Using path instead of filepath to keep `/` and
+		// deterministic behavior.
 		cleanedFilePath := path.Clean(filepath.ToSlash(header.Name))
 
 		// Prevent "Zip Slip"
@@ -295,8 +328,8 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			continue
 		}
 
-		// Force PAX format to remove Name/Linkname length limit of 100 characters required by USTAR
-		// and to not depend on internal tar package guess which prefers USTAR over PAX.
+		// Force PAX format to remove Name/Linkname length limit of 100 characters required by USTAR and
+		//  to not depend on internal tar package guess which prefers USTAR over PAX.
 		header.Format = tar.FormatPAX
 
 		// There is a difference between the filepath and path modules. The filepath module will handle
@@ -313,10 +346,11 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			continue
 		}
 
-		tombstone := strings.HasPrefix(basename, whiteout.WhiteoutPrefix)
+		// Check if the file is a whiteout.
+		isWhiteout := whiteout.IsWhiteout(basename)
 		// TODO: b/379094217 - Handle Opaque Whiteouts
-		if tombstone {
-			basename = basename[len(whiteout.WhiteoutPrefix):]
+		if isWhiteout {
+			basename = whiteout.Reverse(basename)
 		}
 
 		// If we're checking a directory, don't filepath.Join names.
@@ -327,27 +361,50 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
-		// realFilePath is where the file will be written to disk. filepath.Clean first to convert
-		// to OS specific file path.
-		// TODO: b/377553499 - Escape invalid characters on windows that's valid on linux
-		// realFilePath := filepath.Join(dirPath, filepath.Clean(cleanedFilePath))
+		// If the file already exists in the current chain layer, then skip it.
+		if currentChainLayer.fileNodeTree.Get(virtualPath) != nil {
+			continue
+		}
+
+		// realFilePath is where the file will be written to disk.
 		realFilePath := filepath.Join(dirPath, filepath.FromSlash(cleanedFilePath))
+
+		// Skip files that are not required by extractors and are not targets of required symlinks.
+		// Try multiple paths variations
+		// (with parent dir, without leading slash, with leading slash). For example:
+		// - `realFilePath`: `tmp/12345/etc/os-release`. This is used when actually writing the file to disk.
+		// - `cleanedFilePath`: `etc/os-release`. This is used when checking if the file is required.
+		// - `virtualPath`: `/etc/os-release`. This is used when checking if the file is required.
+		required := false
+		for _, p := range []string{realFilePath, cleanedFilePath, virtualPath} {
+			if requirer.FileRequired(p, header.FileInfo()) {
+				required = true
+				break
+			}
+			if _, ok := currRequiredTargets[p]; ok {
+				required = true
+				break
+			}
+		}
+		if !required {
+			continue
+		}
 
 		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			continue
 		case tar.TypeReg:
-			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
-			newNode, err = img.handleSymlink(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			newNode, err = img.handleSymlink(virtualPath, originLayerID, tarReader, header, isWhiteout, currRequiredTargets)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
 		}
 
 		if err != nil {
-			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
+			return nil, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
@@ -355,12 +412,12 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithFileNode(chainLayersToFill, newNode)
 	}
-	return nil
+	return currRequiredTargets, nil
 }
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
 // the symlink mode with additional metadata.
-func (img *Image) handleSymlink(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool, currRequiredTargets map[string]bool) (*fileNode, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
 		return nil, fmt.Errorf("symlink header has no target path")
@@ -376,6 +433,8 @@ func (img *Image) handleSymlink(realFilePath, virtualPath, originLayerID string,
 		targetPath = path.Clean(path.Join(path.Dir(virtualPath), targetPath))
 	}
 
+	currRequiredTargets[targetPath] = true
+
 	return &fileNode{
 		extractDir:    img.ExtractDir,
 		originLayerID: originLayerID,
@@ -386,46 +445,31 @@ func (img *Image) handleSymlink(realFilePath, virtualPath, originLayerID string,
 	}, nil
 }
 
-// handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
-	if _, err := os.Stat(realFilePath); err != nil {
-		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
-			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
-		}
-	}
-
-	fileInfo := header.FileInfo()
-
-	return &fileNode{
-		extractDir:    img.ExtractDir,
-		originLayerID: originLayerID,
-		virtualPath:   virtualPath,
-		isWhiteout:    isWhiteout,
-		mode:          fileInfo.Mode() | fs.ModeDir,
-		size:          fileInfo.Size(),
-		modTime:       fileInfo.ModTime(),
-	}, nil
-}
-
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
 // the file.
 func (img *Image) handleFile(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
-	// Write all files as read/writable by the current user, inaccessible by anyone else
-	// Actual permission bits are stored in FileNode
-	f, err := os.OpenFile(realFilePath, os.O_CREATE|os.O_RDWR, filePermission)
-
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	numBytes, err := io.Copy(f, io.LimitReader(tarReader, img.maxFileBytes))
-	if numBytes >= img.maxFileBytes || errors.Is(err, io.EOF) {
+	if header.Size > img.config.MaxFileBytes {
 		return nil, ErrFileReadLimitExceeded
 	}
 
+	buf := new(bytes.Buffer)
+	_, err := io.Copy(buf, io.LimitReader(tarReader, img.config.MaxFileBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to copy file: %w", err)
+	}
+
+	content := buf.Bytes()
+	parent := filepath.Dir(realFilePath)
+	err = os.MkdirAll(parent, fs.ModePerm)
+	if err != nil {
+		log.Errorf("failed to create directory %q: %v", parent, err)
+		return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
+	}
+
+	err = os.WriteFile(realFilePath, content, filePermission)
+	if err != nil {
+		log.Errorf("failed to write file %q: %v", realFilePath, err)
+		return nil, fmt.Errorf("failed to write file %q: %w", realFilePath, err)
 	}
 
 	fileInfo := header.FileInfo()
