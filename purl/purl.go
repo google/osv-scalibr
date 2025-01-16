@@ -75,6 +75,8 @@ const (
 	TypeHex = "hex"
 	// TypeMaven is a pkg:maven purl.
 	TypeMaven = "maven"
+	// TypeNix is a pkg:nix purl.
+	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
 	// TypePacman is a pkg:pacman purl.
@@ -183,6 +185,7 @@ func validType(t string) bool {
 		TypeKernelModule: true,
 		TypeMacApps:      true,
 		TypeMaven:        true,
+		TypeNix:          true,
 		TypeNPM:          true,
 		TypeNuget:        true,
 		TypeOCI:          true,
