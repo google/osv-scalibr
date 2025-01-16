@@ -122,7 +122,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from the cabal.project.freeze file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	inventory, err := extractFromInput(ctx, input, e.Name())
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -140,14 +140,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 var versionConstraintRe = regexp.MustCompile(`any\.(\S+) ==(\S+)`)
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func extractFromInput(ctx context.Context, input *filesystem.ScanInput, name string) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
 	pkgs := []*extractor.Inventory{}
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", name, input.Path, err)
 		}
 
 		line := s.Text()
