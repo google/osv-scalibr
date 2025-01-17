@@ -21,16 +21,17 @@ import (
 	"io"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/opencontainers/go-digest"
 )
 
 // FakeLayer is a fake implementation of the image.Layer interface for testing purposes.
 type FakeLayer struct {
-	diffID       string
+	diffID       digest.Digest
 	buildCommand string
 }
 
 // New creates a new FakeLayer.
-func New(diffID string, buildCommand string) *FakeLayer {
+func New(diffID digest.Digest, buildCommand string) *FakeLayer {
 	return &FakeLayer{
 		diffID:       diffID,
 		buildCommand: buildCommand,
@@ -43,7 +44,7 @@ func (fakeLayer *FakeLayer) FS() scalibrfs.FS {
 }
 
 // DiffID returns the diffID of the layer.
-func (fakeLayer *FakeLayer) DiffID() string {
+func (fakeLayer *FakeLayer) DiffID() digest.Digest {
 	return fakeLayer.diffID
 }
 

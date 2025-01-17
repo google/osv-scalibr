@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
@@ -548,6 +549,44 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/portage",
 	}
+	purlNixInventory := &extractor.Inventory{
+		Name:    "attr",
+		Version: "2.5.2",
+		Metadata: &nix.Metadata{
+			PackageName:       "attr",
+			PackageVersion:    "2.5.2",
+			OSID:              "nixos",
+			OSVersionCodename: "vicuna",
+			OSVersionID:       "24.11",
+		},
+		Locations: []string{"/file1"},
+		Extractor: nix.New(),
+	}
+	purlNixInventoryProto := &spb.Inventory{
+		Name:    "attr",
+		Version: "2.5.2",
+		Purl: &spb.Purl{
+			Purl:    "pkg:nix/attr@2.5.2?distro=vicuna",
+			Type:    purl.TypeNix,
+			Name:    "attr",
+			Version: "2.5.2",
+			Qualifiers: []*spb.Qualifier{
+				{Key: "distro", Value: "vicuna"},
+			},
+		},
+		Ecosystem: "",
+		Metadata: &spb.Inventory_NixMetadata{
+			NixMetadata: &spb.NixPackageMetadata{
+				PackageName:       "attr",
+				PackageVersion:    "2.5.2",
+				OsId:              "nixos",
+				OsVersionCodename: "vicuna",
+				OsVersionId:       "24.11",
+			},
+		},
+		Locations: []string{"/file1"},
+		Extractor: "os/nix",
+	}
 	containerdInventory := &extractor.Inventory{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
@@ -896,6 +935,39 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 				Inventories: []*spb.Inventory{purlPORTAGEInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful Nix scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{purlNixInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{purlNixInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			excludeForOS: []string{"windows", "darwin"},

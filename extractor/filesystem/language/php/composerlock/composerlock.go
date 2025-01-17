@@ -67,7 +67,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	packages := make(
