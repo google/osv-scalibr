@@ -33,7 +33,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantInventory: nil,
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{

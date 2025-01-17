@@ -35,6 +35,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
@@ -60,7 +62,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
@@ -111,6 +116,8 @@ var (
 	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
 	// Elixir extractors.
 	Elixir []filesystem.Extractor = []filesystem.Extractor{elixir.Extractor{}}
+	// Haskell extractors.
+	Haskell []filesystem.Extractor = []filesystem.Extractor{stacklock.New(stacklock.DefaultConfig()), cabal.New(cabal.DefaultConfig())}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
@@ -138,6 +145,9 @@ var (
 		rpm.New(rpm.DefaultConfig()),
 		cos.New(cos.DefaultConfig()),
 		snap.New(snap.DefaultConfig()),
+		nix.New(),
+		module.New(module.DefaultConfig()),
+		vmlinuz.New(vmlinuz.DefaultConfig()),
 		pacman.New(pacman.DefaultConfig()),
 		portage.New(portage.DefaultConfig()),
 		flatpak.New(flatpak.DefaultConfig()),
@@ -158,6 +168,7 @@ var (
 		Dart,
 		Erlang,
 		Elixir,
+		Haskell,
 		PHP,
 		R,
 		Ruby,
@@ -179,6 +190,7 @@ var (
 		"dart":       Dart,
 		"erlang":     Erlang,
 		"elixir":     Elixir,
+		"haskell":    Haskell,
 		"r":          R,
 		"ruby":       Ruby,
 		"dotnet":     Dotnet,

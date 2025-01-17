@@ -257,8 +257,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
 func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
-	defer img.CleanUp()
-
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chain layers: %w", err)
