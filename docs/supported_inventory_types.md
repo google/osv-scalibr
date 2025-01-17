@@ -45,6 +45,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * go.mod (OSV)
 * Haskell
   * stack.yaml.lock
+  * cabal.project.freeze
 * Java
   * Java archives
   * Lockfiles: pom.xml, gradle.lockfile, verification-metadata.xml

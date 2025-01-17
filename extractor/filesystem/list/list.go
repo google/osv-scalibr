@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
@@ -115,7 +116,7 @@ var (
 	// Elixir extractors.
 	Elixir []filesystem.Extractor = []filesystem.Extractor{elixir.Extractor{}}
 	// Haskell extractors.
-	Haskell []filesystem.Extractor = []filesystem.Extractor{stacklock.New(stacklock.DefaultConfig())}
+	Haskell []filesystem.Extractor = []filesystem.Extractor{stacklock.New(stacklock.DefaultConfig()), cabal.New(cabal.DefaultConfig())}
 	// R extractors
 	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
 	// Ruby extractors.
