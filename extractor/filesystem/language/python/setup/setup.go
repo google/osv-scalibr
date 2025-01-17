@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -93,9 +92,8 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches python setup.py file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	normalizedPath := filepath.ToSlash(path)
 
-	if filepath.Base(normalizedPath) != "setup.py" {
+	if filepath.Base(path) != "setup.py" {
 		return false
 	}
 
@@ -141,7 +139,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var re = regexp.MustCompile(`['"]\W?(\w+\W?==\W?[\w.]*)`)
+var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+\W?==\W?[\w.]*)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -156,7 +154,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		line := s.Text()
 		line = strings.TrimSpace(line)
 
-		matches := re.FindAllString(line, -1)
+		matches := packageVersionRe.FindAllString(line, -1)
 
 		for _, match := range matches {
 			pkg := strings.Split(match, "==")
@@ -166,7 +164,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				pkgVersion := strings.TrimSpace(strings.Trim(pkg[1], `"'`))
 
 				if containsTemplate(pkgName, pkgVersion) {
-					log.Errorf("Skipping package with template directive: %v==%v", pkgName, pkgVersion)
 					continue
 				}
 
@@ -178,6 +175,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 				pkgs = append(pkgs, i)
 			}
+		}
+
+		if s.Err() != nil {
+			return pkgs, fmt.Errorf("error while scanning setup.py file from %v: %w", input.Path, s.Err())
 		}
 	}
 
