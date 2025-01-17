@@ -174,7 +174,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			}
 		}()
 	}
-	rpmPkgs, err := e.parseRPMDB(absPath)
+	rpmPkgs, err := e.parseRPMDB(ctx, absPath)
 	if err != nil {
 		return nil, fmt.Errorf("ParseRPMDB(%s): %w", absPath, err)
 	}
@@ -213,7 +213,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 }
 
 // parseRPMDB returns a slice of OS packages parsed from a RPM DB.
-func (e Extractor) parseRPMDB(path string) ([]rpmPackageInfo, error) {
+func (e Extractor) parseRPMDB(ctx context.Context, path string) ([]rpmPackageInfo, error) {
 	db, err := rpmdb.Open(path)
 	if err != nil {
 		return nil, err
@@ -227,7 +227,7 @@ func (e Extractor) parseRPMDB(path string) ([]rpmPackageInfo, error) {
 			return nil, err
 		}
 	} else {
-		ctx, cancelFunc := context.WithTimeout(context.Background(), e.Timeout)
+		ctx, cancelFunc := context.WithTimeout(ctx, e.Timeout)
 		defer cancelFunc()
 
 		// The timeout is only for corrupt bdb databases
