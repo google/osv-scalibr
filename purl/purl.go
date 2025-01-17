@@ -69,6 +69,8 @@ const (
 	TypeKernelModule = "kernelmod"
 	// TypeKernel is a pkg:kernelvmlinuz purl
 	TypeKernelVmlinuz = "kernelvmlinuz"
+	// Type Haskell is a pkg:haskell purl.
+	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
 	TypeMacApps = "macapps"
 	// TypeHex is a pkg:hex purl.
@@ -181,6 +183,7 @@ func validType(t string) bool {
 		TypeGolang:        true,
 		TypeHackage:       true,
 		TypeHex:           true,
+		TypeHaskell:       true,
 		TypeKernelModule:  true,
 		TypeKernelVmlinuz: true,
 		TypeMacApps:       true,
