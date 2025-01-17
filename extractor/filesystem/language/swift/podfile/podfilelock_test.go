@@ -161,7 +161,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "valid Podfile.lock file",
+			Name: "valid Podfile.lock file, map[string] case",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
@@ -175,6 +175,34 @@ func TestExtract(t *testing.T) {
 					Name:      "PINCache",
 					Version:   "3.0.3",
 					Locations: []string{"testdata/valid"},
+				},
+			},
+		},
+		{
+			Name: "valid Podfile.lock file, string case",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid2",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "GlossButtonNode",
+					Version:   "3.1.2",
+					Locations: []string{"testdata/valid2"},
+				},
+				{
+					Name:      "PINCache",
+					Version:   "3.0.3",
+					Locations: []string{"testdata/valid2"},
+				},
+				{
+					Name:      "Reveal-SDK",
+					Version:   "1.5.0",
+					Locations: []string{"testdata/valid2"},
+				},
+				{
+					Name:      "SwiftGen",
+					Version:   "6.0.0",
+					Locations: []string{"testdata/valid2"},
 				},
 			},
 		},
