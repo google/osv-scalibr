@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package swiftutils provides utilities for parsing Swift podfiles.
 package swiftutils
 
 import (
@@ -24,7 +25,7 @@ import (
 
 // PodfileLock represents the structure of a Podfile.lock file.
 type podfileLock struct {
-	Pods []interface{} `yaml:"PODS"`
+	Pods []any `yaml:"PODS"`
 }
 
 // Package represents a single package parsed from Podfile.lock.
@@ -54,7 +55,7 @@ func ParsePodfileLock(reader io.Reader) ([]Package, error) {
 	for _, podInterface := range podfile.Pods {
 		var podBlob string
 		switch v := podInterface.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			for k := range v {
 				podBlob = k
 			}
