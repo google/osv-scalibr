@@ -8,7 +8,9 @@ import (
 )
 
 func TestParentPOMPath(t *testing.T) {
-	input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{})
+	input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+		Path: "fixtures/my-app/pom.xml",
+	})
 	tests := []struct {
 		currentPath, relativePath string
 		want                      string
