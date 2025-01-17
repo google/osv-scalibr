@@ -11,8 +11,6 @@ import (
 )
 
 func TestGetProject(t *testing.T) {
-	t.Parallel()
-
 	srv := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true})
 	srv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
@@ -40,8 +38,6 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestGetProjectSnapshot(t *testing.T) {
-	t.Parallel()
-
 	srv := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true})
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
@@ -94,8 +90,6 @@ func TestGetProjectSnapshot(t *testing.T) {
 }
 
 func TestMultipleRegistry(t *testing.T) {
-	t.Parallel()
-
 	dft := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true})
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`

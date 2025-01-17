@@ -11,7 +11,6 @@ import (
 
 func TestRequestCache(t *testing.T) {
 	// Test that RequestCache calls each function exactly once per key.
-	t.Parallel()
 	requestCache := datasource.NewRequestCache[int, int]()
 
 	const numKeys = 20
@@ -58,8 +57,6 @@ func TestRequestCache(t *testing.T) {
 }
 
 func TestRequestCacheSetMap(t *testing.T) {
-	t.Parallel()
-
 	requestCache := datasource.NewRequestCache[string, string]()
 	requestCache.SetMap(map[string]string{"foo": "foo1", "bar": "bar2"})
 	fn := func() (string, error) { return "CACHE MISS", nil }

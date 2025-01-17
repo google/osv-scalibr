@@ -8,8 +8,6 @@ import (
 )
 
 func TestParentPOMPath(t *testing.T) {
-	t.Parallel()
-
 	input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{})
 	tests := []struct {
 		currentPath, relativePath string

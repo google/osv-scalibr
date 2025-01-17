@@ -16,8 +16,6 @@ import (
 )
 
 func TestMavenResolverExtractor_FileRequired(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		path string
 		want bool
@@ -49,7 +47,6 @@ func TestMavenResolverExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			t.Parallel()
 			e := pomxmlnet.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.path, nil))
 			if got != tt.want {
@@ -60,8 +57,6 @@ func TestMavenResolverExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	t.Parallel()
-
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "Not a pom file",
@@ -232,8 +227,6 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
-
 			resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 			extr := pomxmlnet.Extractor{
 				DependencyClient:       resolutionClient,
@@ -258,8 +251,6 @@ func TestExtractor_Extract(t *testing.T) {
 }
 
 func TestExtractor_Extract_WithMockServer(t *testing.T) {
-	t.Parallel()
-
 	tt := extracttest.TestTableEntry{
 		// Name: "with parent",
 		InputConfig: extracttest.ScanInputMockConfig{
