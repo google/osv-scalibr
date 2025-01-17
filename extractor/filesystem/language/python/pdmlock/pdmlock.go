@@ -66,7 +66,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockFile)
 	if err != nil {
-		return []*extractor.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 	packages := make([]*extractor.Inventory, 0, len(parsedLockFile.Packages))
 
