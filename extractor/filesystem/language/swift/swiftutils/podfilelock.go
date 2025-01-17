@@ -23,11 +23,8 @@ import (
 )
 
 // PodfileLock represents the structure of a Podfile.lock file.
-type PodfileLock struct {
-	Pods            []interface{}     `yaml:"PODS"`
-	SpecChecksums   map[string]string `yaml:"SPEC CHECKSUMS"`
-	PodfileChecksum string            `yaml:"PODFILE CHECKSUM"`
-	Cocopods        string            `yaml:"COCOAPODS"`
+type podfileLock struct {
+	Pods []interface{} `yaml:"PODS"`
 }
 
 // Package represents a single package parsed from Podfile.lock.
@@ -48,7 +45,7 @@ func ParsePodfileLock(reader io.Reader) ([]Package, error) {
 		return nil, fmt.Errorf("file is empty")
 	}
 
-	var podfile PodfileLock
+	var podfile podfileLock
 	if err = yaml.Unmarshal(bytes, &podfile); err != nil {
 		return nil, fmt.Errorf("unable to parse YAML: %w", err)
 	}

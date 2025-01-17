@@ -45,7 +45,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
-	podfilelock "github.com/google/osv-scalibr/extractor/filesystem/language/objectivec/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -133,8 +132,6 @@ var (
 	}
 	// PHP extractors.
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
-	// ObjectiveC extractors.
-	ObjectiveC []filesystem.Extractor = []filesystem.Extractor{podfilelock.Extractor{}}
 	// Containers extractors.
 	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
 
@@ -175,7 +172,6 @@ var (
 		Rust,
 		Dotnet,
 		SBOM,
-		ObjectiveC,
 		OS,
 		Containers,
 	)
@@ -198,7 +194,6 @@ var (
 		"rust":       Rust,
 
 		"sbom":       SBOM,
-		"objectivec": ObjectiveC,
 		"os":         OS,
 		"containers": Containers,
 
