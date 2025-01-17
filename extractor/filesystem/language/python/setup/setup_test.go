@@ -18,7 +18,6 @@ import (
 	"context"
 	"io/fs"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -61,8 +60,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setup.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
+			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
+				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
 			}
 		})
 	}
@@ -212,6 +211,12 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "empty pkg setup.py file",
 			path:             "testdata/empty",
+			wantInventory:    []*extractor.Inventory{},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:             "empty file",
+			path:             "testdata/empty_2",
 			wantInventory:    []*extractor.Inventory{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
