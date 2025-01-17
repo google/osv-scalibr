@@ -25,21 +25,22 @@ import (
 
 	"github.com/google/osv-scalibr/artifact/image"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/opencontainers/go-digest"
 )
 
 // FakeChainLayer is a fake implementation of the image.ChainLayer and scalibrfs.FS interface for
 // testing purposes.
 type FakeChainLayer struct {
 	index   int
-	diffID  string
 	command string
-	layer   image.Layer
 	testDir string
+	diffID  digest.Digest
+	layer   image.Layer
 	files   map[string]string
 }
 
 // New creates a new FakeChainLayer.
-func New(testDir string, index int, diffID string, command string, layer image.Layer, files map[string]string) (*FakeChainLayer, error) {
+func New(testDir string, index int, diffID digest.Digest, command string, layer image.Layer, files map[string]string) (*FakeChainLayer, error) {
 	for name, contents := range files {
 		filename := filepath.Join(testDir, name)
 		file, err := os.Create(filename)

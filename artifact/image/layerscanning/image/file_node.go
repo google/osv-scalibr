@@ -18,10 +18,11 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
+	"time"
 )
 
 const (
-
 	// filePermission represents the permission bits for a file, which are minimal since files in the
 	// layer scanning use case are read-only.
 	filePermission = 0600
@@ -30,14 +31,27 @@ const (
 	dirPermission = 0700
 )
 
-// FileNode represents a file in a virtual filesystem.
+// fileNode represents a file in a virtual filesystem.
 type fileNode struct {
+	// extractDir and originLayerID are used to construct the real file path of the fileNode.
 	extractDir    string
 	originLayerID string
-	isWhiteout    bool
-	virtualPath   string
-	mode          fs.FileMode
-	file          *os.File
+
+	// isWhiteout is true if the fileNode represents a whiteout file
+	isWhiteout bool
+
+	// virtualPath is the path of the fileNode in the virtual filesystem.
+	virtualPath string
+	// targetPath is reserved for symlinks. It is the path that the symlink points to.
+	targetPath string
+
+	// size, mode, and modTime are used to implement the fs.FileInfo interface.
+	size    int64
+	mode    fs.FileMode
+	modTime time.Time
+
+	// file is the file object for the real file referred to by the fileNode.
+	file *os.File
 }
 
 // ========================================================
@@ -45,12 +59,11 @@ type fileNode struct {
 // ========================================================
 
 // Stat returns the file info of real file referred by the fileNode.
-// TODO: b/378130598 - Need to replace the os stat permission with the permissions on the filenode.
 func (f *fileNode) Stat() (fs.FileInfo, error) {
 	if f.isWhiteout {
 		return nil, fs.ErrNotExist
 	}
-	return os.Stat(f.RealFilePath())
+	return f, nil
 }
 
 // Read reads the real file referred to by the fileNode.
@@ -67,6 +80,20 @@ func (f *fileNode) Read(b []byte) (n int, err error) {
 	return f.file.Read(b)
 }
 
+// ReadAt reads the real file referred to by the fileNode at a specific offset.
+func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
+	if f.isWhiteout {
+		return 0, fs.ErrNotExist
+	}
+	if f.file == nil {
+		f.file, err = os.Open(f.RealFilePath())
+	}
+	if err != nil {
+		return 0, err
+	}
+	return f.file.ReadAt(b, off)
+}
+
 // Close closes the real file referred to by the fileNode and resets the file field.
 func (f *fileNode) Close() error {
 	if f.file != nil {
@@ -80,20 +107,21 @@ func (f *fileNode) Close() error {
 // RealFilePath returns the real file path of the fileNode. This is the concatenation of the
 // root image extract directory, origin layer ID, and the virtual path.
 func (f *fileNode) RealFilePath() string {
-	return path.Join(f.extractDir, f.originLayerID, f.virtualPath)
+	return filepath.Join(f.extractDir, f.originLayerID, filepath.FromSlash(f.virtualPath))
 }
 
 // ========================================================
 // fs.DirEntry METHODS
 // ========================================================
 
-// Name returns the name of the fileNode.
+// Name returns the name of the fileNode. Name is also used to implement the fs.FileInfo interface.
 func (f *fileNode) Name() string {
 	_, filename := path.Split(f.virtualPath)
 	return filename
 }
 
-// IsDir returns whether the fileNode represents a directory.
+// IsDir returns whether the fileNode represents a directory. IsDir is also used to implement the
+// fs.FileInfo interface.
 func (f *fileNode) IsDir() bool {
 	return f.Type().IsDir()
 }
@@ -106,4 +134,23 @@ func (f *fileNode) Type() fs.FileMode {
 // Info returns the FileInfo of the file represented by the fileNode.
 func (f *fileNode) Info() (fs.FileInfo, error) {
 	return f.Stat()
+}
+
+// ========================================================
+// fs.FileInfo METHODS
+// ========================================================
+func (f *fileNode) Size() int64 {
+	return f.size
+}
+
+func (f *fileNode) Mode() fs.FileMode {
+	return f.mode
+}
+
+func (f *fileNode) ModTime() time.Time {
+	return f.modTime
+}
+
+func (f *fileNode) Sys() any {
+	return nil
 }
