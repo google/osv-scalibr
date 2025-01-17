@@ -131,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs, err := Parse(input.Reader)
+	pkgs, err := parse(input.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +152,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 }
 
 // Package represents a parsed package entry from the Package.resolved file.
-type Package struct {
+type pkg struct {
 	Name    string
 	Version string
 }
 
 // Parse reads and parses a Package.resolved file for package details.
-func Parse(r io.Reader) ([]Package, error) {
+func parse(r io.Reader) ([]pkg, error) {
 	var resolvedFile struct {
 		Pins []struct {
 			Package string `json:"identity"`
@@ -172,9 +172,9 @@ func Parse(r io.Reader) ([]Package, error) {
 		return nil, fmt.Errorf("failed to parse Package.resolved: %w", err)
 	}
 
-	var packages []Package
+	var packages []pkg
 	for _, pin := range resolvedFile.Pins {
-		packages = append(packages, Package{
+		packages = append(packages, pkg{
 			Name:    pin.Package,
 			Version: pin.State.Version,
 		})
