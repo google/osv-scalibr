@@ -107,7 +107,7 @@ func (c *MavenRegistryClient) Requirements(ctx context.Context, vk resolve.Versi
 	// We should not add registries defined in dependencies pom.xml files.
 	apiWithoutRegistries := c.api.WithoutRegistries()
 	// We need to merge parents for potential dependencies in parents.
-	if err := mavenutil.MergeParents(ctx, apiWithoutRegistries, &proj, proj.Parent, 1, "", false); err != nil {
+	if err := mavenutil.MergeParents(ctx, nil, apiWithoutRegistries, &proj, proj.Parent, 1, false); err != nil {
 		return nil, err
 	}
 	proj.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {

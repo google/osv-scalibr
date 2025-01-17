@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"deps.dev/util/maven"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/internal/datasource"
 )
 
@@ -30,8 +30,12 @@ const MaxParent = 100
 // allowLocal indicates whether parsing local parent pom.xml is allowed.
 // path holds the path to the current pom.xml, which is used to compute the
 // relative path of parent.
-func MergeParents(ctx context.Context, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, start int, path string, allowLocal bool) error {
-	currentPath := path
+func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, start int, allowLocal bool) error {
+	currentPath := ""
+	if input != nil {
+		currentPath = input.Path
+	}
+
 	visited := make(map[maven.ProjectKey]bool, MaxParent)
 	for n := start; n < MaxParent; n++ {
 		if current.GroupID == "" || current.ArtifactID == "" || current.Version == "" {
@@ -45,20 +49,22 @@ func MergeParents(ctx context.Context, mavenClient *datasource.MavenRegistryAPIC
 
 		var proj maven.Project
 		parentFound := false
-		if parentPath := ParentPOMPath(currentPath, string(current.RelativePath)); allowLocal && parentPath != "" {
-			currentPath = parentPath
-			f, err := os.Open(parentPath)
-			if err != nil {
-				return fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
-			}
-			err = datasource.NewMavenDecoder(f).Decode(&proj)
-			f.Close()
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal project: %w", err)
-			}
-			if ProjectKey(proj) == current.ProjectKey && proj.Packaging == "pom" {
-				// Only mark parent is found when the identifiers and packaging are exptected.
-				parentFound = true
+		if allowLocal {
+			if parentPath := ParentPOMPath(input, currentPath, string(current.RelativePath)); parentPath != "" {
+				currentPath = parentPath
+				f, err := input.FS.Open(parentPath)
+				if err != nil {
+					return fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
+				}
+				err = datasource.NewMavenDecoder(f).Decode(&proj)
+				f.Close()
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal project: %w", err)
+				}
+				if ProjectKey(proj) == current.ProjectKey && proj.Packaging == "pom" {
+					// Only mark parent is found when the identifiers and packaging are exptected.
+					parentFound = true
+				}
 			}
 		}
 		if !parentFound {
@@ -116,18 +122,18 @@ func ProjectKey(proj maven.Project) maven.ProjectKey {
 // Maven looks for the parent POM first in 'relativePath',
 // then the local repository '../pom.xml',
 // and lastly in the remote repo.
-func ParentPOMPath(currentPath, relativePath string) string {
+func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
 	if relativePath == "" {
 		relativePath = "../pom.xml"
 	}
 	path := filepath.Join(filepath.Dir(currentPath), relativePath)
-	if info, err := os.Stat(path); err == nil {
+	if info, err := input.FS.Stat(path); err == nil {
 		if !info.IsDir() {
 			return path
 		}
 		// Current path is a directory, so look for pom.xml in the directory.
 		path = filepath.Join(path, "pom.xml")
-		if _, err := os.Stat(path); err == nil {
+		if _, err := input.FS.Stat(path); err == nil {
 			return path
 		}
 	}
@@ -142,7 +148,7 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 	// To get dependency management from another project, we need the
 	// project with parents merged, so we call MergeParents by passing
 	// an empty project.
-	if err := MergeParents(ctx, client.WithoutRegistries(), &result, root, 0, "", false); err != nil {
+	if err := MergeParents(ctx, nil, client.WithoutRegistries(), &result, root, 0, false); err != nil {
 		return maven.DependencyManagement{}, err
 	}
 
