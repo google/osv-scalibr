@@ -66,6 +66,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Rust
   * Cargo.lock
 * Swift
+  * Podfile.lock
   * Package.resolved
 
 ## Container inventory
