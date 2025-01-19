@@ -111,7 +111,7 @@ func (s *UserInfo) decryptHashes(syskey, lmData, ntData []byte) ([]byte, []byte,
 // Hashes returns the LM and NT hashes of the user.
 // Note that the syskey is expected to be already derived.
 func (s *UserInfo) Hashes(syskey []byte) ([]byte, []byte, error) {
-	lmHash, ntHash, err := s.userV.EncrytpedHashes()
+	lmHash, ntHash, err := s.userV.EncryptedHashes()
 	if err != nil {
 		return nil, nil, err
 	}
