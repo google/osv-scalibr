@@ -214,7 +214,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 		}
 	}
 
-	// Remove symlinks that have a non-existent destination file or non-existent destination directory.
+	// Remove symlinks that have a nonexistent destination file or nonexistent destination directory.
 	if err := symlink.RemoveObsoleteSymlinks(dir); err != nil {
 		return fmt.Errorf("failed to remove obsolete symlinks from dir %q: %w", dir, err)
 	}

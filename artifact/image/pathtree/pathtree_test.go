@@ -118,7 +118,7 @@ func TestNode_Get(t *testing.T) {
 			want: &testVal{"value"},
 		},
 		{
-			name: "non-existent node in single node tree",
+			name: "nonexistent node in single node tree",
 			tree: func() *Node[testVal] {
 				tree := NewNode[testVal]()
 				_ = tree.Insert("/a", &testVal{"value"})
@@ -141,7 +141,7 @@ func TestNode_Get(t *testing.T) {
 			want: &testVal{"value3"},
 		},
 		{
-			name: "non-existent node",
+			name: "nonexistent node",
 			tree: testTree(t),
 			key:  "/a/b/g",
 			want: nil,
@@ -200,7 +200,7 @@ func TestNode_GetChildren(t *testing.T) {
 			},
 		},
 		{
-			name: "non-existent node",
+			name: "nonexistent node",
 			tree: testTree(t),
 			key:  "/a/b/g",
 			want: nil,
