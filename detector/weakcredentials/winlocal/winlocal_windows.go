@@ -129,7 +129,7 @@ func (d Detector) findingForFormatLM(users []string) *detector.Finding {
 				Severity: detector.SeverityHigh,
 			},
 			Type:           detector.TypeVulnerability,
-			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regerenate the hashes.",
+			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regenerate the hashes.",
 			Recommendation: "Change the password of the user after changing the storage format.",
 		},
 		Extra: fmt.Sprintf("%v", users),
