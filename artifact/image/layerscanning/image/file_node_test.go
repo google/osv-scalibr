@@ -191,7 +191,7 @@ func TestRead(t *testing.T) {
 		isWhiteout:    false,
 		mode:          filePermission,
 	}
-	fileNodeNonExistentFile := &fileNode{
+	fileNodeNonexistentFile := &fileNode{
 		extractDir:    tempDir,
 		originLayerID: "",
 		virtualPath:   "/dir1/xyz",
@@ -227,8 +227,8 @@ func TestRead(t *testing.T) {
 			want: "foo",
 		},
 		{
-			name:    "non-existent file",
-			node:    fileNodeNonExistentFile,
+			name:    "nonexistent file",
+			node:    fileNodeNonexistentFile,
 			wantErr: true,
 		},
 		{
@@ -301,7 +301,7 @@ func TestReadAt(t *testing.T) {
 		isWhiteout:    false,
 		mode:          filePermission,
 	}
-	fileNodeNonExistentFile := &fileNode{
+	fileNodeNonexistentFile := &fileNode{
 		extractDir:    tempDir,
 		originLayerID: "",
 		virtualPath:   "/dir1/xyz",
@@ -370,8 +370,8 @@ func TestReadAt(t *testing.T) {
 			wantErr: io.EOF,
 		},
 		{
-			name:    "non-existent file",
-			node:    fileNodeNonExistentFile,
+			name:    "nonexistent file",
+			node:    fileNodeNonexistentFile,
 			wantErr: os.ErrNotExist,
 		},
 		{
@@ -411,7 +411,7 @@ func TestClose(t *testing.T) {
 		isWhiteout:    false,
 		mode:          filePermission,
 	}
-	fileNodeNonExistentFile := &fileNode{
+	fileNodeNonexistentFile := &fileNode{
 		extractDir:    tempDir,
 		originLayerID: "",
 		virtualPath:   "/dir1/xyz",
@@ -428,8 +428,8 @@ func TestClose(t *testing.T) {
 			node: fileNodeWithUnopenedFile,
 		},
 		{
-			name: "non-existent file",
-			node: fileNodeNonExistentFile,
+			name: "nonexistent file",
+			node: fileNodeNonexistentFile,
 		},
 	}
 	for _, tc := range tests {

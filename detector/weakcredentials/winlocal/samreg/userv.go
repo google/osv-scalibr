@@ -76,9 +76,9 @@ func (s *userV) Username() (string, error) {
 	return string(decoded), nil
 }
 
-// EncrytpedHashes returns the encrypted LM and NT hashes of the user.
+// EncryptedHashes returns the encrypted LM and NT hashes of the user.
 // Note that at this point, the hashes are still encrypted with RC4 or AES.
-func (s *userV) EncrytpedHashes() ([]byte, []byte, error) {
+func (s *userV) EncryptedHashes() ([]byte, []byte, error) {
 	if s.header.NtHashLength == 0 {
 		return nil, nil, errNoHashInfoFound
 	}

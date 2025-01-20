@@ -151,7 +151,7 @@ func TestUserVUsername(t *testing.T) {
 	}
 }
 
-func TestUserVEncrytpedHashes(t *testing.T) {
+func TestUserVEncryptedHashes(t *testing.T) {
 	tests := []struct {
 		name    string
 		buffer  []byte
@@ -195,9 +195,9 @@ func TestUserVEncrytpedHashes(t *testing.T) {
 				t.Fatalf("Failed to create userV for tests: %v", err)
 			}
 
-			gotLM, gotNT, gotErr := userV.EncrytpedHashes()
+			gotLM, gotNT, gotErr := userV.EncryptedHashes()
 			if gotErr != tc.wantErr {
-				t.Errorf("EncrytpedHashes(): unexpected error, got: %v, want: %v", gotErr, tc.wantErr)
+				t.Errorf("EncryptedHashes(): unexpected error, got: %v, want: %v", gotErr, tc.wantErr)
 			}
 
 			if tc.wantErr != nil {
@@ -205,11 +205,11 @@ func TestUserVEncrytpedHashes(t *testing.T) {
 			}
 
 			if !slices.Equal(gotLM, tc.wantLM) {
-				t.Errorf("EncrytpedHashes(): got LM hash: %v, want: %v", gotLM, tc.wantLM)
+				t.Errorf("EncryptedHashes(): got LM hash: %v, want: %v", gotLM, tc.wantLM)
 			}
 
 			if !slices.Equal(gotNT, tc.wantNT) {
-				t.Errorf("EncrytpedHashes(): got NT hash: %v, want: %v", gotNT, tc.wantNT)
+				t.Errorf("EncryptedHashes(): got NT hash: %v, want: %v", gotNT, tc.wantNT)
 			}
 		})
 	}
