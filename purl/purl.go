@@ -201,7 +201,7 @@ func validType(t string) bool {
 		TypeRPM:           true,
 		TypeSwift:         true,
 		TypeGooget:        true,
-    TypeWordpress: true,
+		TypeWordpress:     true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
