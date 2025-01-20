@@ -67,7 +67,9 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Cargo.lock
 * Wordpress plugins
   * Installed plugins
-  
+* Swift
+  * Podfile.lock
+
 ## Container inventory
 
 * Containerd container images that are running on host
