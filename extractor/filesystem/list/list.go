@@ -57,6 +57,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
@@ -135,7 +136,12 @@ var (
 	// PHP extractors.
 	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
 	// Swift extractors.
-	Swift []filesystem.Extractor = []filesystem.Extractor{podfilelock.Extractor{}}
+
+	Swift []filesystem.Extractor = []filesystem.Extractor{
+		packageresolved.New(packageresolved.DefaultConfig()),
+		podfilelock.New(podfilelock.DefaultConfig()),
+	}
+
 	// Containers extractors.
 	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
 	// Wordpress extractors.
