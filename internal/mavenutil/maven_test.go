@@ -64,7 +64,7 @@ func TestParentPOMPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		got := mavenutil.ParentPOMPath(&input, tt.currentPath, tt.relativePath)
-		if got != tt.want {
+		if got != filepath.ToSlash(tt.want) {
 			t.Errorf("ParentPOMPath(%s, %s): got %s, want %s", tt.currentPath, tt.relativePath, got, tt.want)
 		}
 	}
