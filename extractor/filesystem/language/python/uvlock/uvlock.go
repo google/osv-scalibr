@@ -32,9 +32,8 @@ import (
 )
 
 type uvLockPackageSource struct {
-	Virtual  string `toml:"virtual"`
-	Git      string `toml:"git"`
-	Registry string `toml:"registry"`
+	Virtual string `toml:"virtual"`
+	Git     string `toml:"git"`
 }
 
 type uvLockPackage struct {
