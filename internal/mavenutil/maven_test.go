@@ -9,7 +9,9 @@ import (
 )
 
 func TestParentPOMPath(t *testing.T) {
-	input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{})
+	input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+		Path: filepath.Join("fixtures", "my-app", "pom.xml"),
+	})
 	defer extracttest.CloseTestScanInput(t, input)
 
 	tests := []struct {
