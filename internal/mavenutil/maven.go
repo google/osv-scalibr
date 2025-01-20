@@ -52,7 +52,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 		if allowLocal {
 			if parentPath := ParentPOMPath(input, currentPath, string(current.RelativePath)); parentPath != "" {
 				currentPath = parentPath
-				f, err := input.FS.Open(parentPath)
+				f, err := input.FS.Open(filepath.ToSlash(parentPath))
 				if err != nil {
 					return fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
 				}
