@@ -126,8 +126,12 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 	if relativePath == "" {
 		relativePath = "../pom.xml"
 	}
+
 	path := filepath.Join(filepath.Dir(currentPath), relativePath)
-	if info, err := input.FS.Stat(path); err == nil {
+	fmt.Printf("path: %s\n", path)
+
+	info, err := input.FS.Stat(path)
+	if err == nil {
 		if !info.IsDir() {
 			return path
 		}
@@ -136,6 +140,9 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 		if _, err := input.FS.Stat(path); err == nil {
 			return path
 		}
+		fmt.Println(err)
+	} else {
+		fmt.Println(err)
 	}
 
 	return ""
