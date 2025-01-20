@@ -130,14 +130,14 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 	path := filepath.Join(filepath.Dir(currentPath), relativePath)
 	fmt.Printf("path: %s\n", path)
 
-	info, err := input.FS.Stat(path)
+	info, err := input.FS.Stat(filepath.ToSlash(path))
 	if err == nil {
 		if !info.IsDir() {
 			return path
 		}
 		// Current path is a directory, so look for pom.xml in the directory.
 		path = filepath.Join(path, "pom.xml")
-		if _, err := input.FS.Stat(path); err == nil {
+		if _, err := input.FS.Stat(filepath.ToSlash(path)); err == nil {
 			return path
 		}
 		fmt.Println(err)
