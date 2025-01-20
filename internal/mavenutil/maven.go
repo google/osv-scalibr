@@ -51,8 +51,8 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 		parentFound := false
 		if allowLocal {
 			if parentPath := ParentPOMPath(input, currentPath, string(current.RelativePath)); parentPath != "" {
-				currentPath = parentPath
-				f, err := input.FS.Open(filepath.ToSlash(parentPath))
+				currentPath = filepath.ToSlash(parentPath)
+				f, err := input.FS.Open(currentPath)
 				if err != nil {
 					return fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
 				}
@@ -127,22 +127,16 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 		relativePath = "../pom.xml"
 	}
 
-	path := filepath.Join(filepath.Dir(currentPath), relativePath)
-	fmt.Printf("path: %s\n", path)
-
-	info, err := input.FS.Stat(filepath.ToSlash(path))
-	if err == nil {
+	path := filepath.ToSlash(filepath.Join(filepath.Dir(currentPath), relativePath))
+	if info, err := input.FS.Stat(path); err == nil {
 		if !info.IsDir() {
 			return path
 		}
 		// Current path is a directory, so look for pom.xml in the directory.
 		path = filepath.Join(path, "pom.xml")
-		if _, err := input.FS.Stat(filepath.ToSlash(path)); err == nil {
+		if _, err := input.FS.Stat(path); err == nil {
 			return path
 		}
-		fmt.Println(err)
-	} else {
-		fmt.Println(err)
 	}
 
 	return ""
