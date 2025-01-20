@@ -186,7 +186,8 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		originLayerID := chainLayer.latestLayer.DiffID().Encoded()
 
 		// Create the chain layer directory if it doesn't exist.
-		dirPath := path.Join(tempPath, originLayerID)
+		// Use filepath here as it is a path that will be written to disk.
+		dirPath := filepath.Join(tempPath, originLayerID)
 		if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
 			return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
 		}
@@ -304,8 +305,14 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		// some operating systems (like Windows) do not use forward slashes as path separators.
 		// The filepath module will be used to determine the real file path on disk, whereas path module
 		// will be used for the virtual path.
-		basename := filepath.Base(cleanedFilePath)
-		dirname := filepath.Dir(cleanedFilePath)
+		//
+		// Generally, we want to use path over filepath, as forward slashes can be converted to backslashes
+		// with any filepath operation, but this is not the case the other way, as backslashes are a valid
+		// filename character.
+		//
+		// We use path here as both of these paths will be used as part of virtual paths.
+		basename := path.Base(cleanedFilePath)
+		dirname := path.Dir(cleanedFilePath)
 
 		// If the base name is "." or "..", then skip it. For example, if the cleaned file path is
 		// "/foo/bar/.", then we should skip it since it references "/foo/bar".
@@ -327,8 +334,8 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
-		// realFilePath is where the file will be written to disk. filepath.Clean first to convert
-		// to OS specific file path.
+		// realFilePath is where the file will be written to disk. filepath.Join will convert
+		// any forward slashes to the appropriate OS specific path separator.
 		// TODO: b/377553499 - Escape invalid characters on windows that's valid on linux
 		// realFilePath := filepath.Join(dirPath, filepath.Clean(cleanedFilePath))
 		realFilePath := filepath.Join(dirPath, filepath.FromSlash(cleanedFilePath))
