@@ -17,6 +17,8 @@ package trace
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"slices"
 	"sort"
 
@@ -116,6 +118,12 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
 				oldInventory = cachedInventory
 			} else {
+				// Check if file still exist in this layer, if not skip extraction.
+				// This is both an optimization, and avoids polluting the log output with false file not found errors.
+				if _, err := oldChainLayer.FS().Stat(inv.Name); errors.Is(err, fs.ErrNotExist) {
+					break
+				}
+
 				// Update the extractor config to use the files from the current layer.
 				updateExtractorConfig(inv.Locations, invExtractor, oldChainLayer.FS())
 
