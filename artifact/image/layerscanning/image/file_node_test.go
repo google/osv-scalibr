@@ -400,6 +400,78 @@ func TestReadAt(t *testing.T) {
 	}
 }
 
+// Test for the Seek method
+func TestSeek(t *testing.T) {
+	tempDir := t.TempDir()
+	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+
+	// Test seeking to different positions
+	tests := []struct {
+		name   string
+		offset int64
+		whence int
+		want   int64
+	}{
+		{
+			name:   "seek to beginning",
+			offset: 0,
+			whence: io.SeekStart,
+			want:   0,
+		},
+		{
+			name:   "seek to current position",
+			offset: 0,
+			whence: io.SeekCurrent,
+			want:   0,
+		},
+		{
+			name:   "seek to end",
+			offset: 0,
+			whence: io.SeekEnd,
+			want:   3,
+		},
+		{
+			name:   "seek to 10 bytes from beginning",
+			offset: 10,
+			whence: io.SeekStart,
+			want:   10,
+		},
+		{
+			name:   "seek to 10 bytes from current position (at 0)",
+			offset: 10,
+			whence: io.SeekCurrent,
+			want:   10,
+		},
+		{
+			name:   "seek to 2 bytes from end",
+			offset: -2,
+			whence: io.SeekEnd,
+			want:   1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fileNode for the opened file
+			fileNode := &fileNode{
+				extractDir:    tempDir,
+				originLayerID: "",
+				virtualPath:   "/bar",
+				isWhiteout:    false,
+				mode:          filePermission,
+			}
+			gotPos, err := fileNode.Seek(tc.offset, tc.whence)
+			fileNode.Close()
+			if err != nil {
+				t.Fatalf("Seek failed: %v", err)
+			}
+			if gotPos != tc.want {
+				t.Errorf("Seek returned incorrect position: got %d, want %d", gotPos, tc.want)
+			}
+		})
+	}
+}
+
 func TestClose(t *testing.T) {
 	tempDir := t.TempDir()
 	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
