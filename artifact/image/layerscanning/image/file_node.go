@@ -94,6 +94,19 @@ func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
 	return f.file.ReadAt(b, off)
 }
 
+func (f *fileNode) Seek(offset int64, whence int) (n int64, err error) {
+	if f.isWhiteout {
+		return 0, fs.ErrNotExist
+	}
+	if f.file == nil {
+		f.file, err = os.Open(f.RealFilePath())
+	}
+	if err != nil {
+		return 0, err
+	}
+	return f.file.Seek(offset, whence)
+}
+
 // Close closes the real file referred to by the fileNode and resets the file field.
 func (f *fileNode) Close() error {
 	if f.file != nil {
