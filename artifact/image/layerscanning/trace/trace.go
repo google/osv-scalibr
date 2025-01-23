@@ -124,7 +124,10 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 					oldInventory = []*extractor.Inventory{}
 				} else {
 					// Update the extractor config to use the files from the current layer.
-					updateExtractorConfig(inv.Locations, invExtractor, oldChainLayer.FS())
+					// We only take extract the first location because other locations are derived from the initial
+					// extraction location. If other locations can no longer be determined from the first location
+					// they should not be included here, and the trace for those packages stops here.
+					updateExtractorConfig([]string{inv.Locations[0]}, invExtractor, oldChainLayer.FS())
 
 					var err error
 					oldInventory, _, err = filesystem.Run(ctx, config)
