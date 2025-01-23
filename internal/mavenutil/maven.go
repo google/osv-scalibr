@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package mavenutil provides utilities for merging Maven pom/xml.
 package mavenutil
 
 import (
@@ -21,7 +36,7 @@ const (
 // MaxParent sets a limit on the number of parents to avoid indefinite loop.
 const MaxParent = 100
 
-// MergeMavenParents parses local accessible parent pom.xml or fetches it from
+// MergeParents parses local accessible parent pom.xml or fetches it from
 // upstream, merges into root project, then interpolate the properties.
 // result holds the merged Maven project.
 // current holds the current parent project to merge.
@@ -119,9 +134,9 @@ func ProjectKey(proj maven.Project) maven.ProjectKey {
 	return proj.ProjectKey
 }
 
-// Maven looks for the parent POM first in 'relativePath',
-// then the local repository '../pom.xml',
-// and lastly in the remote repo.
+// ParentPOMPath returns the path of a parent pom.xml.
+// Maven looks for the parent POM first in 'relativePath', then
+// the local repository '../pom.xml', and lastly in the remote repo.
 func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
 	if relativePath == "" {
 		relativePath = "../pom.xml"

@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (
@@ -51,6 +66,7 @@ func makeVersionKey(k *pb.VersionKey) versionKey {
 	}
 }
 
+// NewCachedInsightClient creates a CachedInsightsClient
 func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClient, error) {
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
@@ -76,18 +92,21 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 	}, nil
 }
 
+// GetPackage returns metadata about a package by querying deps.dev API
 func (c *CachedInsightsClient) GetPackage(ctx context.Context, in *pb.GetPackageRequest, opts ...grpc.CallOption) (*pb.Package, error) {
 	return c.packageCache.Get(makePackageKey(in.GetPackageKey()), func() (*pb.Package, error) {
 		return c.InsightsClient.GetPackage(ctx, in, opts...)
 	})
 }
 
+// GetVersion returns metadata about a version by querying deps.dev API
 func (c *CachedInsightsClient) GetVersion(ctx context.Context, in *pb.GetVersionRequest, opts ...grpc.CallOption) (*pb.Version, error) {
 	return c.versionCache.Get(makeVersionKey(in.GetVersionKey()), func() (*pb.Version, error) {
 		return c.InsightsClient.GetVersion(ctx, in, opts...)
 	})
 }
 
+// GetRequirements returns requirements of the given version by querying deps.dev API
 func (c *CachedInsightsClient) GetRequirements(ctx context.Context, in *pb.GetRequirementsRequest, opts ...grpc.CallOption) (*pb.Requirements, error) {
 	return c.requirementsCache.Get(makeVersionKey(in.GetVersionKey()), func() (*pb.Requirements, error) {
 		return c.InsightsClient.GetRequirements(ctx, in, opts...)

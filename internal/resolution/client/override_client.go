@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package client provides clients required by dependency resolution.
 package client
 
 import (
@@ -15,6 +30,7 @@ type OverrideClient struct {
 	verDeps map[resolve.VersionKey][]resolve.RequirementVersion // dependencies of a version
 }
 
+// NewOverrideClient makes a new OverrideClient.
 func NewOverrideClient(c DependencyClient) *OverrideClient {
 	return &OverrideClient{
 		DependencyClient: c,
@@ -23,6 +39,7 @@ func NewOverrideClient(c DependencyClient) *OverrideClient {
 	}
 }
 
+// AddVersion adds the specified version and dependencies to the client.
 func (c *OverrideClient) AddVersion(v resolve.Version, deps []resolve.RequirementVersion) {
 	// TODO: Inserting multiple co-dependent requirements may not work, depending on order
 	versions := c.pkgVers[v.PackageKey]
@@ -38,6 +55,7 @@ func (c *OverrideClient) AddVersion(v resolve.Version, deps []resolve.Requiremen
 	c.verDeps[v.VersionKey] = slices.Clone(deps) // overwrites dependencies if called multiple times with same version
 }
 
+// Version returns the version specified by the VersionKey.
 func (c *OverrideClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
 	for _, v := range c.pkgVers[vk.PackageKey] {
 		if v.VersionKey == vk {
@@ -48,6 +66,7 @@ func (c *OverrideClient) Version(ctx context.Context, vk resolve.VersionKey) (re
 	return c.DependencyClient.Version(ctx, vk)
 }
 
+// Versions returns the versions of a package specified by the PackageKey.
 func (c *OverrideClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
 	if vers, ok := c.pkgVers[pk]; ok {
 		return vers, nil
@@ -56,6 +75,7 @@ func (c *OverrideClient) Versions(ctx context.Context, pk resolve.PackageKey) ([
 	return c.DependencyClient.Versions(ctx, pk)
 }
 
+// Requirements returns the requirement versions of the version specified by the VersionKey.
 func (c *OverrideClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
 	if deps, ok := c.verDeps[vk]; ok {
 		return deps, nil
@@ -64,6 +84,7 @@ func (c *OverrideClient) Requirements(ctx context.Context, vk resolve.VersionKey
 	return c.DependencyClient.Requirements(ctx, vk)
 }
 
+// MatchingVersions returns the versions matching the requirement specified by the VersionKey.
 func (c *OverrideClient) MatchingVersions(ctx context.Context, vk resolve.VersionKey) ([]resolve.Version, error) {
 	if vs, ok := c.pkgVers[vk.PackageKey]; ok {
 		return resolve.MatchRequirement(vk, vs), nil

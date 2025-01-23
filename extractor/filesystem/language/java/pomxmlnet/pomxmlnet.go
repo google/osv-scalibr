@@ -1,3 +1,17 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package pomxmlnet extracts Maven's pom.xml format with transitive dependency resolution.
 package pomxmlnet
 
@@ -23,14 +37,13 @@ import (
 )
 
 // Extractor extracts Maven packages with transitive dependency resolution.
-// TODO: Use the virtual filesystem rather than the real filesystem.
 type Extractor struct {
 	client.DependencyClient
 	*datasource.MavenRegistryAPIClient
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return "java/pomxml" }
+func (e Extractor) Name() string { return "java/pomxmlnet" }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
@@ -38,7 +51,8 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network: true,
+		Network:  true,
+		DirectFS: true,
 	}
 }
 
@@ -148,7 +162,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		inventory := extractor.Inventory{
 			Name:    node.Version.Name,
 			Version: node.Version.Version,
-			// TODO(rexpan): Add merged paths in here as well
+			// TODO: Add merged paths in here as well
+			// https://github.com/google/osv-scalibr/issues/408
 			Locations: []string{input.Path},
 		}
 		// We are only able to know dependency groups of direct dependencies but

@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package client provides clients required by dependency resolution.
 package client
 
 import (
@@ -17,6 +32,7 @@ type MavenRegistryClient struct {
 	api *datasource.MavenRegistryAPIClient
 }
 
+// NewMavenRegistryClient makes a new MavenRegistryClient.
 func NewMavenRegistryClient(registry string) (*MavenRegistryClient, error) {
 	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: registry, ReleasesEnabled: true})
 	if err != nil {
@@ -26,6 +42,7 @@ func NewMavenRegistryClient(registry string) (*MavenRegistryClient, error) {
 	return &MavenRegistryClient{api: client}, nil
 }
 
+// Version returns metadata of a version specified by the VersionKey.
 func (c *MavenRegistryClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
 	g, a, found := strings.Cut(vk.Name, ":")
 	if !found {
@@ -50,6 +67,7 @@ func (c *MavenRegistryClient) Version(ctx context.Context, vk resolve.VersionKey
 	return resolve.Version{VersionKey: vk, AttrSet: attr}, nil
 }
 
+// Versions returns all the available versions of the package specified by the given PackageKey.
 // TODO: we should also include versions not listed in the metadata file
 // There exist versions in the repository but not listed in the metada file,
 // for example version 20030203.000550 of package commons-io:commons-io
@@ -85,6 +103,7 @@ func (c *MavenRegistryClient) Versions(ctx context.Context, pk resolve.PackageKe
 	return vks, nil
 }
 
+// Requirements returns requirements of a version specified by the VersionKey.
 func (c *MavenRegistryClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
 	if vk.System != resolve.Maven {
 		return nil, fmt.Errorf("wrong system: %v", vk.System)
@@ -132,6 +151,7 @@ func (c *MavenRegistryClient) Requirements(ctx context.Context, vk resolve.Versi
 	return reqs, nil
 }
 
+// MatchingVersions returns versions matching the requirement specified by the VersionKey.
 func (c *MavenRegistryClient) MatchingVersions(ctx context.Context, vk resolve.VersionKey) ([]resolve.Version, error) {
 	if vk.System != resolve.Maven {
 		return nil, fmt.Errorf("wrong system: %v", vk.System)
@@ -145,6 +165,7 @@ func (c *MavenRegistryClient) MatchingVersions(ctx context.Context, vk resolve.V
 	return resolve.MatchRequirement(vk, versions), nil
 }
 
+// AddRegistries adds registries to the MavenRegistryClient.
 func (c *MavenRegistryClient) AddRegistries(registries []Registry) error {
 	for _, reg := range registries {
 		specific, ok := reg.(datasource.MavenRegistry)

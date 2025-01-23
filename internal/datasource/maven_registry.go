@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (
@@ -23,6 +38,7 @@ const MavenCentral = "https://repo.maven.apache.org/maven2"
 
 var errAPIFailed = errors.New("API query failed")
 
+// MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
 type MavenRegistryAPIClient struct {
 	defaultRegistry MavenRegistry                  // The default registry that we are making requests
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
@@ -49,6 +65,7 @@ type MavenRegistry struct {
 	SnapshotsEnabled bool
 }
 
+// NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
 func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = MavenCentral
@@ -102,6 +119,7 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	return nil
 }
 
+// GetRegistries returns the registries added to this client.
 func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
 }
