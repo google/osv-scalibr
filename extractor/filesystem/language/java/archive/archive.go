@@ -276,7 +276,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    pp.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{path},
+					Locations: []string{input.Path, path},
 				})
 			}
 
@@ -296,7 +296,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    mf.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{path},
+					Locations: []string{input.Path, path},
 				})
 			}
 
