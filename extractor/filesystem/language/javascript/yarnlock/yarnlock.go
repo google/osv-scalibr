@@ -118,6 +118,7 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 func extractYarnPackageName(header string) string {
 	// Header format: @my-scope/my-first-package@my-scope/my-first-package#commit=hash
 	str := strings.TrimPrefix(header, "\"")
+	str = strings.TrimSuffix(str, ":")
 	str, _, _ = strings.Cut(str, ",")
 
 	isScoped := strings.HasPrefix(str, "@")

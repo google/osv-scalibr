@@ -51,6 +51,22 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			},
 		},
 		{
+			Name: "package with no version in header",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/no-version.v1.lock",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "balanced-match",
+					Version:   "1.0.2",
+					Locations: []string{"testdata/no-version.v1.lock"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+			},
+		},
+		{
 			Name: "two packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v1.lock",
