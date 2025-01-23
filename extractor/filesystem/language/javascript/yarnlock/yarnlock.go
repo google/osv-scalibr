@@ -160,7 +160,7 @@ func determineYarnPackageResolution(props []string) string {
 }
 
 func parseYarnPackageGroup(desc *packageDescription) *extractor.Inventory {
-	name := extractYarnPackageName(desc.header)
+	name := extractYarnPackageName(strings.TrimSuffix(desc.header, ":"))
 	version := determineYarnPackageVersion(desc.props)
 	resolution := determineYarnPackageResolution(desc.props)
 
