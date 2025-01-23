@@ -120,17 +120,17 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			} else {
 				// Check if file still exist in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				if _, err := oldChainLayer.FS().Stat(inv.Name); errors.Is(err, fs.ErrNotExist) {
-					break
-				}
+				if _, err := oldChainLayer.FS().Stat(inv.Locations[0]); errors.Is(err, fs.ErrNotExist) {
+					oldInventory = []*extractor.Inventory{}
+				} else {
+					// Update the extractor config to use the files from the current layer.
+					updateExtractorConfig(inv.Locations, invExtractor, oldChainLayer.FS())
 
-				// Update the extractor config to use the files from the current layer.
-				updateExtractorConfig(inv.Locations, invExtractor, oldChainLayer.FS())
-
-				var err error
-				oldInventory, _, err = filesystem.Run(ctx, config)
-				if err != nil {
-					break
+					var err error
+					oldInventory, _, err = filesystem.Run(ctx, config)
+					if err != nil {
+						break
+					}
 				}
 
 				// Cache the inventory for future use.
