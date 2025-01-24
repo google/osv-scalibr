@@ -336,8 +336,6 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 
 		// realFilePath is where the file will be written to disk. filepath.Join will convert
 		// any forward slashes to the appropriate OS specific path separator.
-		// TODO: b/377553499 - Escape invalid characters on windows that's valid on linux
-		// realFilePath := filepath.Join(dirPath, filepath.Clean(cleanedFilePath))
 		realFilePath := filepath.Join(dirPath, filepath.FromSlash(cleanedFilePath))
 
 		var newNode *fileNode
@@ -354,6 +352,10 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		}
 
 		if err != nil {
+			if errors.Is(err, ErrFileReadLimitExceeded) {
+				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
+				continue
+			}
 			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 

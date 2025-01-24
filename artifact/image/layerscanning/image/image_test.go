@@ -295,7 +295,19 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes: 1,
 			},
-			wantErrDuringImageCreation: ErrFileReadLimitExceeded,
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "foo.txt",
+							content:  "foo\n",
+						},
+					},
+				},
+			},
+			// Reading foo.txt should return an error, since it exceeds the max file size and should not
+			// be stored in the chain layer.
+			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
 			name:    "image with relative, absolute, and chain symlinks",
