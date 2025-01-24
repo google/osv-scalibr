@@ -314,6 +314,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				subInput := &filesystem.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
 				var subInventory []*extractor.Inventory
 				subInventory, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
+				// Prepend the current input path
+				for i := range subInventory {
+					subInventory[i].Locations = append([]string{input.Path}, subInventory[i].Locations...)
+				}
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
