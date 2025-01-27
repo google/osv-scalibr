@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/groob/plist v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/microsoft/go-rustaudit v0.0.0-20240820110456-0e2abec02f8b
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/opencontainers/runtime-spec v1.1.0

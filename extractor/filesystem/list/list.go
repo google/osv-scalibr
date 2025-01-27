@@ -56,6 +56,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
@@ -126,7 +127,10 @@ var (
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig()), &gemfilelock.Extractor{}}
 	// Rust extractors.
-	Rust []filesystem.Extractor = []filesystem.Extractor{cargolock.Extractor{}}
+	Rust []filesystem.Extractor = []filesystem.Extractor{
+		cargolock.Extractor{},
+		cargoauditable.New(cargoauditable.DefaultConfig()),
+	}
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.

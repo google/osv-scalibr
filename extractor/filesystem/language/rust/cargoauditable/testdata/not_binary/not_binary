@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Though you may well take a banana, and might even cut it in half\
+ carefully, as not to also slice your finger or make the sides unequally...\
+ Bash scripts are not Rust Binaries and cannot be audited by cargo auditable."
