@@ -128,9 +128,14 @@ message SourceCodeIdentifier {
 
 // Details about the layer a package was found in.
 message LayerDetails {
+  // The index of the layer in the container image.
   int32 index = 1;
+  // The diff ID (sha256 hash) of the layer in the container image.
   string diff_id = 2;
+  // The layer build command that was used to build the layer. This may not be
+  // found in all layers depending on how the container image is built.
   string command = 3;
+  // Denotes whether the layer is in the base image.
   bool in_base_image = 4;
 }
 
