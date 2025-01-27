@@ -55,7 +55,7 @@ type RequestCache[K comparable, V any] struct {
 	mu    sync.Mutex
 }
 
-// NewRequestCache creates a new RequestCache
+// NewRequestCache creates a new RequestCache.
 func NewRequestCache[K comparable, V any]() *RequestCache[K, V] {
 	return &RequestCache[K, V]{
 		cache: make(map[K]V),

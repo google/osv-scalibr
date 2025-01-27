@@ -81,8 +81,7 @@ func ParseMavenSettings(path string) MavenSettingsXML {
 	return settings
 }
 
-// TODO: How to use with virtual filesystem + environment variables.
-// https://github.com/google/osv-scalibr/issues/409
+// TODO(#409): How to use with virtual filesystem + environment variables.
 func globalMavenSettingsFile() string {
 	// ${maven.home}/conf/settings.xml
 	// Find ${maven.home} from the installed mvn binary

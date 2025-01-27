@@ -162,8 +162,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		inventory := extractor.Inventory{
 			Name:    node.Version.Name,
 			Version: node.Version.Version,
-			// TODO: Add merged paths in here as well
-			// https://github.com/google/osv-scalibr/issues/408
+			// TODO(#408): Add merged paths in here as well
 			Locations: []string{input.Path},
 		}
 		// We are only able to know dependency groups of direct dependencies but
