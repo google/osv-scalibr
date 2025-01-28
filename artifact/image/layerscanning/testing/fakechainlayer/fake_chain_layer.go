@@ -40,15 +40,18 @@ type FakeChainLayer struct {
 }
 
 // New creates a new FakeChainLayer.
-func New(testDir string, index int, diffID digest.Digest, command string, layer image.Layer, files map[string]string) (*FakeChainLayer, error) {
-	for name, contents := range files {
-		filename := filepath.Join(testDir, name)
-		file, err := os.Create(filename)
-		if err != nil {
-			return nil, err
+func New(testDir string, index int, diffID digest.Digest, command string, layer image.Layer, files map[string]string, filesAlreadyExist bool) (*FakeChainLayer, error) {
+	if !filesAlreadyExist {
+		for name, contents := range files {
+			filename := filepath.Join(testDir, name)
+			if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
+				return nil, err
+			}
+
+			if err := os.WriteFile(filename, []byte(contents), 0600); err != nil {
+				return nil, err
+			}
 		}
-		file.WriteString(contents)
-		file.Close()
 	}
 	return &FakeChainLayer{
 		index:   index,
