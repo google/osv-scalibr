@@ -22,6 +22,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -231,7 +232,19 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file matches pnpm-lock.yaml files.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "pnpm-lock.yaml"
+	path := api.Path()
+	if filepath.Base(path) != "pnpm-lock.yaml" {
+		return false
+	}
+	// Skip lockfiles inside node_modules directories since the packages they list aren't
+	// necessarily installed by the root project. We instead use the more specific top-level
+	// lockfile for the root project dependencies.
+	dir := filepath.ToSlash(filepath.Dir(path))
+	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
+		return false
+	}
+
+	return true
 }
 
 // Extract extracts packages from a pnpm-lock.yaml file passed through the scan input.
