@@ -51,6 +51,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 			inputPath: "path.to.my.yarn.lock",
 			want:      false,
 		},
+		{
+			inputPath: "foo/node_modules/bar/yarn.lock",
+			want:      false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
