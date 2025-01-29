@@ -63,6 +63,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 			inputPath: "path.to.my.bun.lock",
 			want:      false,
 		},
+		{
+			name:      "",
+			inputPath: "foo/node_modules/bar/bun.lock",
+			want:      false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
