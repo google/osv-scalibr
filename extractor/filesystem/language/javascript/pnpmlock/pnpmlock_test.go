@@ -63,6 +63,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 			inputPath: "path.to.my.pnpm-lock.yaml",
 			want:      false,
 		},
+		{
+			name:      "",
+			inputPath: "foo/node_modules/bar/pnpn-lock.yaml",
+			want:      false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
