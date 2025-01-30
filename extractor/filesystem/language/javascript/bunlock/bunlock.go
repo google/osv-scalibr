@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -53,7 +54,19 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the specified file matches bun lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "bun.lock"
+	path := api.Path()
+	if filepath.Base(path) != "bun.lock" {
+		return false
+	}
+	// Skip lockfiles inside node_modules directories since the packages they list aren't
+	// necessarily installed by the root project. We instead use the more specific top-level
+	// lockfile for the root project dependencies.
+	dir := filepath.ToSlash(filepath.Dir(path))
+	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
+		return false
+	}
+
+	return true
 }
 
 // structurePackageDetails returns the name, version, and commit of a package
