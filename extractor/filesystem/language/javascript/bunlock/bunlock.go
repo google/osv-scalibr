@@ -29,7 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/tidwall/jsonc/pkg/jsonc"
+	"github.com/tidwall/jsonc"
 )
 
 type bunLockfile struct {
