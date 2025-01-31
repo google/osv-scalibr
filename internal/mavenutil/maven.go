@@ -129,7 +129,6 @@ func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path stri
 
 // loadParentRemote loads a parent from remote registry.
 func loadParentRemote(ctx context.Context, mavenClient *datasource.MavenRegistryAPIClient, parent maven.Parent, parentIndex int) (maven.Project, error) {
-	//fmt.Println(parent)
 	proj, err := mavenClient.GetProject(ctx, string(parent.GroupID), string(parent.ArtifactID), string(parent.Version))
 	if err != nil {
 		return maven.Project{}, fmt.Errorf("failed to get Maven project %s:%s:%s: %w", parent.GroupID, parent.ArtifactID, parent.Version, err)
