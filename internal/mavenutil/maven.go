@@ -38,71 +38,56 @@ const MaxParent = 100
 
 // MergeParents parses local accessible parent pom.xml or fetches it from
 // upstream, merges into root project, then interpolate the properties.
-// result holds the merged Maven project.
-// current holds the current parent project to merge.
-// start indicates the index of the current parent project, which is used to
-// check if the packaging has to be `pom`.
-// allowLocal indicates whether parsing local parent pom.xml is allowed.
-// path holds the path to the current pom.xml, which is used to compute the
-// relative path of parent.
-func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, start int, allowLocal bool) error {
+//   - result holds the Maven project to merge into, this is modified in place.
+//   - current holds the current parent project to merge.
+//   - parentIndex indicates the index of the current parent project, which is
+//     used to check if the packaging has to be `pom`.
+//   - allowLocal indicates whether parsing local parent pom.xml is allowed.
+//   - path holds the path to the current pom.xml, which is used to compute the
+//     relative path of parent.
+func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, initialParentIndex int, allowLocal bool) error {
 	currentPath := ""
 	if input != nil {
 		currentPath = input.Path
 	}
 
-	visited := make(map[maven.ProjectKey]bool, MaxParent)
-	for n := start; n < MaxParent; n++ {
+	visited := make(map[maven.ProjectKey]struct{}, MaxParent)
+	for n := initialParentIndex; n < MaxParent; n++ {
 		if current.GroupID == "" || current.ArtifactID == "" || current.Version == "" {
 			break
 		}
-		if visited[current.ProjectKey] {
+		if _, ok := visited[current.ProjectKey]; ok {
 			// A cycle of parents is detected
 			return errors.New("a cycle of parents is detected")
 		}
-		visited[current.ProjectKey] = true
+		visited[current.ProjectKey] = struct{}{}
 
 		var proj maven.Project
-		parentFound := false
+		parentFoundLocally := false
 		if allowLocal {
-			if parentPath := ParentPOMPath(input, currentPath, string(current.RelativePath)); parentPath != "" {
+			var parentPath string
+			var err error
+			parentFoundLocally, parentPath, err = loadParentLocal(input, current, currentPath, &proj)
+			if err != nil {
+				return fmt.Errorf("failed to load parent at %s: %w", currentPath, err)
+			}
+			if parentPath != "" {
 				currentPath = parentPath
-				f, err := input.FS.Open(currentPath)
-				if err != nil {
-					return fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
-				}
-				err = datasource.NewMavenDecoder(f).Decode(&proj)
-				f.Close()
-				if err != nil {
-					return fmt.Errorf("failed to unmarshal project: %w", err)
-				}
-				if ProjectKey(proj) == current.ProjectKey && proj.Packaging == "pom" {
-					// Only mark parent is found when the identifiers and packaging are exptected.
-					parentFound = true
-				}
 			}
 		}
-		if !parentFound {
+		if !parentFoundLocally {
 			// Once we fetch a parent pom.xml from upstream, we should not
 			// allow parsing parent pom.xml locally anymore.
 			allowLocal = false
-
 			var err error
-			if proj, err = mavenClient.GetProject(ctx, string(current.GroupID), string(current.ArtifactID), string(current.Version)); err != nil {
-				return fmt.Errorf("failed to get Maven project %s:%s:%s: %w", current.GroupID, current.ArtifactID, current.Version, err)
-			}
-			if n > 0 && proj.Packaging != "pom" {
-				// A parent project should only be of "pom" packaging type.
-				return fmt.Errorf("invalid packaging for parent project %s", proj.Packaging)
-			}
-			if ProjectKey(proj) != current.ProjectKey {
-				// The identifiers in parent does not match what we want.
-				return fmt.Errorf("parent identifiers mismatch: %v, expect %v", proj.ProjectKey, current.ProjectKey)
+			proj, err = loadParentRemote(ctx, mavenClient, current, n)
+			if err != nil {
+				return fmt.Errorf("failed to load parent from remote: %w", err)
 			}
 		}
-		// Empty JDK and ActivationOS indicates merging the default profiles.
+		// Use an empty JDK string and ActivationOS here to merge the default profiles.
 		if err := result.MergeProfiles("", maven.ActivationOS{}); err != nil {
-			return fmt.Errorf("failed to merge profiles: %w", err)
+			return fmt.Errorf("failed to merge default profiles: %w", err)
 		}
 		for _, repo := range proj.Repositories {
 			if err := mavenClient.AddRegistry(datasource.MavenRegistry{
@@ -121,6 +106,45 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 	return result.Interpolate()
 }
 
+// loadParentLocal loads a parent Maven project from local file system
+// and returns whether parent is found locally as well as parent path.
+func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path string, result *maven.Project) (bool, string, error) {
+	parentPath := parentPOMPath(input, path, string(parent.RelativePath))
+	if parentPath == "" {
+		return false, "", nil
+	}
+	f, err := input.FS.Open(parentPath)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to open parent file %s: %w", parentPath, err)
+	}
+	err = datasource.NewMavenDecoder(f).Decode(result)
+	if closeErr := f.Close(); closeErr != nil {
+		return false, "", fmt.Errorf("failed to close file: %w", err)
+	}
+	if err != nil {
+		return false, "", fmt.Errorf("failed to unmarshal project: %w", err)
+	}
+	return true, parentPath, nil
+}
+
+// loadParentRemote loads a parent from remote registry.
+func loadParentRemote(ctx context.Context, mavenClient *datasource.MavenRegistryAPIClient, parent maven.Parent, parentIndex int) (maven.Project, error) {
+	//fmt.Println(parent)
+	proj, err := mavenClient.GetProject(ctx, string(parent.GroupID), string(parent.ArtifactID), string(parent.Version))
+	if err != nil {
+		return maven.Project{}, fmt.Errorf("failed to get Maven project %s:%s:%s: %w", parent.GroupID, parent.ArtifactID, parent.Version, err)
+	}
+	if parentIndex > 0 && proj.Packaging != "pom" {
+		// A parent project should only be of "pom" packaging type.
+		return maven.Project{}, fmt.Errorf("invalid packaging for parent project %s", proj.Packaging)
+	}
+	if ProjectKey(proj) != parent.ProjectKey {
+		// The identifiers in parent does not match what we want.
+		return maven.Project{}, fmt.Errorf("parent identifiers mismatch: %v, expect %v", proj.ProjectKey, parent.ProjectKey)
+	}
+	return proj, nil
+}
+
 // ProjectKey returns a project key with empty groupId/version
 // filled by corresponding fields in parent.
 func ProjectKey(proj maven.Project) maven.ProjectKey {
@@ -134,10 +158,11 @@ func ProjectKey(proj maven.Project) maven.ProjectKey {
 	return proj.ProjectKey
 }
 
-// ParentPOMPath returns the path of a parent pom.xml.
+// parentPOMPath returns the path of a parent pom.xml.
 // Maven looks for the parent POM first in 'relativePath', then
 // the local repository '../pom.xml', and lastly in the remote repo.
-func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
+// An empty string is returned if failed to resolve the parent path.
+func parentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
 	if relativePath == "" {
 		relativePath = "../pom.xml"
 	}

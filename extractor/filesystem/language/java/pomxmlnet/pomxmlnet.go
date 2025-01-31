@@ -19,12 +19,12 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/exp/maps"
 
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
-	"deps.dev/util/resolve/dep"
 	mavenresolve "deps.dev/util/resolve/maven"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -150,7 +150,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
 	for i, e := range g.Edges {
-		e.Type = dep.Type{}
 		g.Edges[i] = e
 	}
 
@@ -187,10 +186,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	g, a, _ := strings.Cut(i.Name, ":")
 	return &purl.PackageURL{
-		Type:    purl.TypeMaven,
-		Name:    i.Name,
-		Version: i.Version,
+		Type:      purl.TypeMaven,
+		Namespace: g,
+		Name:      a,
+		Version:   i.Version,
+		// TODO(#426): add Maven classifier and type to PURL.
 	}
 }
 

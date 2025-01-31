@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mavenutil_test
+package mavenutil
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -77,7 +76,7 @@ func TestParentPOMPath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		got := mavenutil.ParentPOMPath(&input, tt.currentPath, tt.relativePath)
+		got := parentPOMPath(&input, tt.currentPath, tt.relativePath)
 		if got != filepath.ToSlash(tt.want) {
 			t.Errorf("ParentPOMPath(%s, %s): got %s, want %s", tt.currentPath, tt.relativePath, got, tt.want)
 		}
