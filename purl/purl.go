@@ -218,4 +218,6 @@ const (
 	SourceRPM           = "sourcerpm"
 	BuildNumber         = "buildnumber"
 	PackageDependencies = "packagedependencies"
+	Classifier          = "classifier" // Maven specific qualifier
+	Type                = "type"       // Maven specific qualifier
 )

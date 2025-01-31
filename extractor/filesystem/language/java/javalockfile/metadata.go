@@ -19,6 +19,8 @@ package javalockfile
 type Metadata struct {
 	ArtifactID   string
 	GroupID      string
+	Type         string
+	Classifier   string
 	DepGroupVals []string
 }
 

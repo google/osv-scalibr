@@ -243,6 +243,26 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "with type and classifier",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-type-classifier.xml",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "abc:xyz",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/with-type-classifier.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "xyz",
+						GroupID:      "abc",
+						Type:         "pom",
+						Classifier:   "sources",
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
