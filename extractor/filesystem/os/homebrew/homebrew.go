@@ -97,6 +97,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      p.AppName,
 			Version:   p.AppVersion,
 			Locations: []string{input.Path},
+			Metadata:  &Metadata{},
 		},
 	}, nil
 }

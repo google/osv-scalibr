@@ -105,6 +105,7 @@ message Inventory {
         25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
+    HomebrewPackageMetadata homebrew_metadata = 42;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -460,3 +461,6 @@ message WindowsOSVersion {
   string product = 1;
   string full_version = 2;
 }
+
+// The additional data found in Homebrew packages.
+message HomebrewPackageMetadata {}
