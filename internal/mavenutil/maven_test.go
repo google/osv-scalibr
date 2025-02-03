@@ -31,7 +31,7 @@ func TestParentPOMPath(t *testing.T) {
 		currentPath, relativePath string
 		want                      string
 	}{
-		// fixtures
+		// testdata
 		// |- maven
 		// |  |- my-app
 		// |  |  |- pom.xml
