@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (
@@ -29,10 +28,12 @@ import (
 // Maven settings.xml file parsing for registry authentication.
 // https://maven.apache.org/settings.html
 
+// MavenSettingsXML defines Maven settings.xml.
 type MavenSettingsXML struct {
 	Servers []MavenSettingsXMLServer `xml:"servers>server"`
 }
 
+// MavenSettingsXMLServer defines a Maven server in settings.xml.
 type MavenSettingsXMLServer struct {
 	ID       string `xml:"id"`
 	Username string `xml:"username"`

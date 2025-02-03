@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package client provides clients required by dependency resolution.
 package client
 
 import (
@@ -28,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 
+// MavenRegistryClient is a client to fetch data from Maven registry.
 type MavenRegistryClient struct {
 	api *datasource.MavenRegistryAPIClient
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/internal/datasource"
 )
 
+// Origin of the dependencies.
 const (
 	OriginManagement = "management"
 	OriginParent     = "parent"

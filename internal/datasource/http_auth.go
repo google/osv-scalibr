@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (
@@ -29,8 +28,10 @@ import (
 	"sync/atomic"
 )
 
+// HTTPAuthMethod definesthe type of HTTP authentication method.
 type HTTPAuthMethod int
 
+// HTTP authentication method.
 const (
 	AuthBasic HTTPAuthMethod = iota
 	AuthBearer

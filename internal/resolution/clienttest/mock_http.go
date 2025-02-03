@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package clienttest provides mock servers for testing.
 package clienttest
 
 import (
@@ -24,6 +25,7 @@ import (
 	"testing"
 )
 
+// MockHTTPServer is a simple HTTP Server for mocking basic requests.
 type MockHTTPServer struct {
 	*httptest.Server
 	mu            sync.Mutex

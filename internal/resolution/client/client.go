@@ -30,4 +30,5 @@ type DependencyClient interface {
 	AddRegistries(registries []Registry) error
 }
 
-type Registry interface{}
+// Registry is the interface of a registry to fetch data.
+type Registry any

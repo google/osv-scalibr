@@ -66,7 +66,7 @@ func makeVersionKey(k *pb.VersionKey) versionKey {
 	}
 }
 
-// NewCachedInsightClient creates a CachedInsightsClient.
+// NewCachedInsightsClient creates a CachedInsightsClient.
 func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClient, error) {
 	certPool, err := x509.SystemCertPool()
 	if err != nil {

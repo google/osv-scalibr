@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package datasource provides clients to fetch data from different APIs.
 package datasource
 
 import (
@@ -34,6 +33,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+// MavenCentral holds the URL of Maven Central Repository.
 const MavenCentral = "https://repo.maven.apache.org/maven2"
 
 var errAPIFailed = errors.New("API query failed")
@@ -55,6 +55,7 @@ type response struct {
 	Body       []byte
 }
 
+// MavenRegistry defines a Maven registry.
 type MavenRegistry struct {
 	URL    string
 	Parsed *url.URL
@@ -228,7 +229,7 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 	return metadata, nil
 }
 
-func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, url string, dst interface{}) error {
+func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, url string, dst any) error {
 	resp, err := m.responses.Get(url, func() (response, error) {
 		resp, err := auth.Get(ctx, http.DefaultClient, url)
 		if err != nil {

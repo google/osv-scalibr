@@ -25,6 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ResolutionUniverse defines a mock resolution universe.
 type ResolutionUniverse struct {
 	System string `yaml:"system"`
 	Schema string `yaml:"schema"`
@@ -38,6 +39,7 @@ func (mdc mockDependencyClient) LoadCache(string) error                  { retur
 func (mdc mockDependencyClient) WriteCache(string) error                 { return nil }
 func (mdc mockDependencyClient) AddRegistries(_ []client.Registry) error { return nil }
 
+// NewMockResolutionClient creates a new mock resolution client from the given universe YAML.
 func NewMockResolutionClient(t *testing.T, universeYAML string) client.DependencyClient {
 	t.Helper()
 	f, err := os.Open(universeYAML)
