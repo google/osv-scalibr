@@ -12,6 +12,18 @@ See the [list of currently supported software inventory types](docs/supported_in
 
 ## Prerequisites
 
+Some of your code contributions might require regenerating protos. This can
+happen when, say, you want to contribute a new inventory type. For such cases,
+you'll need install a few dependencies
+
+* `protoc`: Install the appropriate [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
+  * For Mac, you can also [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
+* `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
+
+and then run `make protos` or `./build_protos.sh`.
+
+### For open source only
+
 To build SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/install.
 
 ## How to use
@@ -138,17 +150,9 @@ log.Info(results)
 ## Contributing
 Read how to [contribute to SCALIBR](CONTRIBUTING.md).
 
+Make sure you have the [Prerequisites](#prerequisites) installed.
+
 To build and test your local changes, run `make` and `make test`. A local `scalibr` binary will be generated in the repo base.
-
-Some of your code contributions might require regenerating protos. This can
-happen when, say, you want to contribute a new inventory type. For such cases,
-you'll need install a few dependencies
-
-* `protoc`: Install the appropriate [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
-  * For Mac, you can also [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
-* `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
-
-and then run `make protos` or `./build_protos.sh`.
 
 ## Disclaimers
 SCALIBR is not an official Google product.

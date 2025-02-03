@@ -123,11 +123,14 @@ extractor as an example.
 1.  Implement `Extract` to extract inventory inside the file.
 1.  If you introduced any new metadata type, be sure to add them to the scan_results.proto
     as well and re-generate the go_proto using `make protos`
+
+    regen_go_proto.sh requires the proto compiler, see [Prerequisites](/README.md#prerequisites).
 1.  If you added new dependencies, regenerate the go.mod file by running
 
     ```sh
     $ `go mod tidy`
     ```
+    regen_go_proto.sh requires the proto compiler, see [Prerequisites](/README.md#prerequisite).
 
 1.  Implement `ToPURL` to generate PURLs from the Inventory
     extracted. If your extractor doesn't support CPEs feel free to return an empty
