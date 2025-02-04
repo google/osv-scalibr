@@ -2,9 +2,16 @@ package semantic
 
 import (
 	"math/big"
+	"regexp"
 	"strings"
+)
 
-	"github.com/google/osv-scalibr/internal/cachedregexp"
+var (
+	alpineNumberComponentsFinder     = regexp.MustCompile(`^((\d+)\.?)*`)
+	alpineIsFirstCharLowercaseLetter = regexp.MustCompile(`^[a-z]`)
+	alpineSuffixesFinder             = regexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
+	alpineHashFinder                 = regexp.MustCompile(`^~([0-9a-f]+)`)
+	alpineBuildComponentFinder       = regexp.MustCompile(`^-r(\d*)`)
 )
 
 type alpineNumberComponent struct {
@@ -227,7 +234,7 @@ func (v alpineVersion) CompareStr(str string) (int, error) {
 //
 // This parser must be applied *before* any other parser.
 func parseAlpineNumberComponents(v *alpineVersion, str string) (string, error) {
-	sub := cachedregexp.MustCompile(`^((\d+)\.?)*`).FindString(str)
+	sub := alpineNumberComponentsFinder.FindString(str)
 
 	if sub == "" {
 		return str, nil
@@ -258,7 +265,7 @@ func parseAlpineNumberComponents(v *alpineVersion, str string) (string, error) {
 //
 // This parser must be applied *after* parseAlpineNumberComponents.
 func parseAlpineLetter(v *alpineVersion, str string) string {
-	if cachedregexp.MustCompile(`^[a-z]`).MatchString(str) {
+	if alpineIsFirstCharLowercaseLetter.MatchString(str) {
 		v.letter = str[:1]
 	}
 
@@ -272,9 +279,7 @@ func parseAlpineLetter(v *alpineVersion, str string) string {
 //
 // This parser must be applied *after* parseAlpineLetter.
 func parseAlpineSuffixes(v *alpineVersion, str string) (string, error) {
-	re := cachedregexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
-
-	for _, match := range re.FindAllStringSubmatch(str, -1) {
+	for _, match := range alpineSuffixesFinder.FindAllStringSubmatch(str, -1) {
 		if match[2] == "" {
 			match[2] = "0"
 		}
@@ -304,9 +309,7 @@ func parseAlpineSuffixes(v *alpineVersion, str string) (string, error) {
 //
 // This parser must be applied *after* parseAlpineSuffixes.
 func parseAlpineHash(v *alpineVersion, str string) string {
-	re := cachedregexp.MustCompile(`^~([0-9a-f]+)`)
-
-	v.hash = re.FindString(str)
+	v.hash = alpineHashFinder.FindString(str)
 
 	return strings.TrimPrefix(str, v.hash)
 }
@@ -323,9 +326,7 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) (string, error) {
 		return str, nil
 	}
 
-	re := cachedregexp.MustCompile(`^-r(\d*)`)
-
-	matches := re.FindStringSubmatch(str)
+	matches := alpineBuildComponentFinder.FindStringSubmatch(str)
 
 	if matches == nil {
 		// since this is the last part of parsing, anything other than an empty string

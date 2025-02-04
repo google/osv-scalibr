@@ -3,9 +3,16 @@ package semantic
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
+)
 
-	"github.com/google/osv-scalibr/internal/cachedregexp"
+var (
+	pypiLocalVersionSplitter = regexp.MustCompile(`[._-]`)
+	pypiVersionPartsFinder   = regexp.MustCompile(`(\d+|[a-z]+|\.|-)`)
+	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+	pypiVersionFinder = regexp.MustCompile(`^\s*v?(?:(?:(?P<epoch>[0-9]+)!)?(?P<release>[0-9]+(?:\.[0-9]+)*)(?P<pre>[-_\.]?(?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?P<pre_n>[0-9]+)?)?(?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_\.]?(?P<post_l>post|rev|r)[-_\.]?(?P<post_n2>[0-9]+)?))?(?P<dev>[-_\.]?(?P<dev_l>dev)[-_\.]?(?P<dev_n>[0-9]+)?)?)(?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?\s*$`)
+	pypiIsDigit       = semverIsDigit
 )
 
 type pyPIVersion struct {
@@ -80,7 +87,7 @@ func parseLetterVersion(letter, number string) (letterAndNumber, error) {
 }
 
 func parseLocalVersion(local string) (parts []string) {
-	for _, part := range cachedregexp.MustCompile(`[._-]`).Split(local, -1) {
+	for _, part := range pypiLocalVersionSplitter.Split(local, -1) {
 		parts = append(parts, strings.ToLower(part))
 	}
 
@@ -101,7 +108,7 @@ func normalizePyPILegacyPart(part string) string {
 		part = "@"
 	}
 
-	if cachedregexp.MustCompile(`\d`).MatchString(part[:1]) {
+	if pypiIsDigit.MatchString(part[:1]) {
 		// pad for numeric comparison
 		return fmt.Sprintf("%08s", part)
 	}
@@ -110,9 +117,7 @@ func normalizePyPILegacyPart(part string) string {
 }
 
 func parsePyPIVersionParts(str string) (parts []string) {
-	re := cachedregexp.MustCompile(`(\d+|[a-z]+|\.|-)`)
-
-	splits := re.FindAllString(str, -1)
+	splits := pypiVersionPartsFinder.FindAllString(str, -1)
 	splits = append(splits, "final")
 
 	for _, part := range splits {
@@ -149,9 +154,7 @@ func parsePyPILegacyVersion(str string) pyPIVersion {
 func parsePyPIVersion(str string) (pyPIVersion, error) {
 	str = strings.ToLower(str)
 
-	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-	re := cachedregexp.MustCompile(`^\s*v?(?:(?:(?P<epoch>[0-9]+)!)?(?P<release>[0-9]+(?:\.[0-9]+)*)(?P<pre>[-_\.]?(?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?P<pre_n>[0-9]+)?)?(?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_\.]?(?P<post_l>post|rev|r)[-_\.]?(?P<post_n2>[0-9]+)?))?(?P<dev>[-_\.]?(?P<dev_l>dev)[-_\.]?(?P<dev_n>[0-9]+)?)?)(?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?\s*$`)
-	match := re.FindStringSubmatch(str)
+	match := pypiVersionFinder.FindStringSubmatch(str)
 
 	if len(match) == 0 {
 		return parsePyPILegacyVersion(str), nil
@@ -161,7 +164,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 
 	version.epoch = big.NewInt(0)
 
-	if epoch := match[re.SubexpIndex("epoch")]; epoch != "" {
+	if epoch := match[pypiVersionFinder.SubexpIndex("epoch")]; epoch != "" {
 		epoch, err, _ := convertToBigInt(epoch)
 
 		if err != nil {
@@ -171,7 +174,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 		version.epoch = epoch
 	}
 
-	for _, r := range strings.Split(match[re.SubexpIndex("release")], ".") {
+	for _, r := range strings.Split(match[pypiVersionFinder.SubexpIndex("release")], ".") {
 		release, err, _ := convertToBigInt(r)
 
 		if err != nil {
@@ -181,7 +184,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 		version.release = append(version.release, release)
 	}
 
-	pre, err := parseLetterVersion(match[re.SubexpIndex("pre_l")], match[re.SubexpIndex("pre_n")])
+	pre, err := parseLetterVersion(match[pypiVersionFinder.SubexpIndex("pre_l")], match[pypiVersionFinder.SubexpIndex("pre_n")])
 
 	if err != nil {
 		return pyPIVersion{}, err
@@ -189,13 +192,13 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 
 	version.pre = pre
 
-	post := match[re.SubexpIndex("post_n1")]
+	post := match[pypiVersionFinder.SubexpIndex("post_n1")]
 
 	if post == "" {
-		post = match[re.SubexpIndex("post_n2")]
+		post = match[pypiVersionFinder.SubexpIndex("post_n2")]
 	}
 
-	post2, err := parseLetterVersion(match[re.SubexpIndex("post_l")], post)
+	post2, err := parseLetterVersion(match[pypiVersionFinder.SubexpIndex("post_l")], post)
 
 	if err != nil {
 		return pyPIVersion{}, err
@@ -203,14 +206,14 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 
 	version.post = post2
 
-	dev, err := parseLetterVersion(match[re.SubexpIndex("dev_l")], match[re.SubexpIndex("dev_n")])
+	dev, err := parseLetterVersion(match[pypiVersionFinder.SubexpIndex("dev_l")], match[pypiVersionFinder.SubexpIndex("dev_n")])
 
 	if err != nil {
 		return pyPIVersion{}, err
 	}
 
 	version.dev = dev
-	version.local = parseLocalVersion(match[re.SubexpIndex("local")])
+	version.local = parseLocalVersion(match[pypiVersionFinder.SubexpIndex("local")])
 
 	return version, nil
 }

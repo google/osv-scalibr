@@ -3,9 +3,12 @@ package semantic
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
+)
 
-	"github.com/google/osv-scalibr/internal/cachedregexp"
+var (
+	semverIsDigit = regexp.MustCompile(`\d`)
 )
 
 // semverLikeVersion is a version that is _like_ a version as defined by the
@@ -54,8 +57,6 @@ func parseSemverLike(line string) semverLikeVersion {
 	var components []*big.Int
 	originStr := line
 
-	numberReg := cachedregexp.MustCompile(`\d`)
-
 	currentCom := ""
 	foundBuild := false
 
@@ -70,7 +71,7 @@ func parseSemverLike(line string) semverLikeVersion {
 		}
 
 		// this is part of a component version
-		if numberReg.MatchString(string(c)) {
+		if semverIsDigit.MatchString(string(c)) {
 			currentCom += string(c)
 
 			continue

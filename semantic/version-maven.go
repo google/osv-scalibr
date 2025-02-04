@@ -2,10 +2,14 @@ package semantic
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
+)
 
-	"github.com/google/osv-scalibr/internal/cachedregexp"
+var (
+	mavenDigitToNonDigitTransitionFinder = regexp.MustCompile(`\D\d`)
+	mavenNonDigitToDigitTransitionFinder = regexp.MustCompile(`\d\D`)
 )
 
 type mavenVersionToken struct {
@@ -199,11 +203,11 @@ func (mv mavenVersion) lessThan(mw mavenVersion) (bool, error) {
 // According to Maven's implementation, any non-digit is a "character":
 // https://github.com/apache/maven/blob/965aaa53da5c2d814e94a41d37142d0d6830375d/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L627
 func mavenFindTransitions(token string) (ints []int) {
-	for _, span := range cachedregexp.MustCompile(`\D\d`).FindAllStringIndex(token, -1) {
+	for _, span := range mavenDigitToNonDigitTransitionFinder.FindAllStringIndex(token, -1) {
 		ints = append(ints, span[0]+1)
 	}
 
-	for _, span := range cachedregexp.MustCompile(`\d\D`).FindAllStringIndex(token, -1) {
+	for _, span := range mavenNonDigitToDigitTransitionFinder.FindAllStringIndex(token, -1) {
 		ints = append(ints, span[0]+1)
 	}
 

@@ -1,10 +1,15 @@
 package semantic
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
+)
 
-	"github.com/google/osv-scalibr/internal/cachedregexp"
+var (
+	packagistVersionSeperatorFinder = regexp.MustCompile(`[-_+]`)
+	packagistNonDigitToDigitFinder  = regexp.MustCompile(`([^\d.])(\d)`)
+	packagistDigitToNonDigitFinder  = regexp.MustCompile(`(\d)([^\d.])`)
 )
 
 func canonicalizePackagistVersion(v string) string {
@@ -16,9 +21,9 @@ func canonicalizePackagistVersion(v string) string {
 	//   the trimming...)
 	v = strings.TrimPrefix(strings.TrimPrefix(v, "v"), "V")
 
-	v = cachedregexp.MustCompile(`[-_+]`).ReplaceAllString(v, ".")
-	v = cachedregexp.MustCompile(`([^\d.])(\d)`).ReplaceAllString(v, "$1.$2")
-	v = cachedregexp.MustCompile(`(\d)([^\d.])`).ReplaceAllString(v, "$1.$2")
+	v = packagistVersionSeperatorFinder.ReplaceAllString(v, ".")
+	v = packagistNonDigitToDigitFinder.ReplaceAllString(v, "$1.$2")
+	v = packagistDigitToNonDigitFinder.ReplaceAllString(v, "$1.$2")
 
 	return v
 }
