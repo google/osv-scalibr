@@ -38,7 +38,7 @@ import (
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
-	resolution.DependencyClient
+	resolve.Client
 	*datasource.MavenRegistryAPIClient
 }
 
@@ -98,12 +98,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
-		if err := e.DependencyClient.AddRegistries(clientRegs); err != nil {
-			return nil, err
+		if cl, ok := e.Client.(resolution.ClientWithRegistries); ok {
+			if err := cl.AddRegistries(clientRegs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	overrideClient := resolution.NewOverrideClient(e.DependencyClient)
+	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.
