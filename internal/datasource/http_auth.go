@@ -15,10 +15,13 @@
 package datasource
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -186,84 +189,80 @@ func (auth *HTTPAuthentication) addBearer(req *http.Request) bool {
 }
 
 func (auth *HTTPAuthentication) addDigest(req *http.Request, challenge string) bool {
-	// The original implementation of this function depends on crypto/md5, which
-	// is not allowed internally so comment out the implementation for now.
-	return false
 	// Mostly following the algorithm as outlined in https://en.wikipedia.org/wiki/Digest_access_authentication
 	// And also https://datatracker.ietf.org/doc/html/rfc2617
-	/*
-		if auth.Username == "" || auth.Password == "" {
-			return false
-		}
-		params := auth.parseChallenge(challenge)
-		realm, ok := params["realm"]
-		if !ok {
-			return false
-		}
 
-		nonce, ok := params["nonce"]
-		if !ok {
+	if auth.Username == "" || auth.Password == "" {
+		return false
+	}
+	params := auth.parseChallenge(challenge)
+	realm, ok := params["realm"]
+	if !ok {
+		return false
+	}
+
+	nonce, ok := params["nonce"]
+	if !ok {
+		return false
+	}
+	var cnonce string
+
+	ha1 := md5.Sum([]byte(auth.Username + ":" + realm + ":" + auth.Password)) //nolint:gosec
+	switch params["algorithm"] {
+	case "MD5-sess":
+		cnonce = auth.cnonce()
+		if cnonce == "" {
 			return false
 		}
-		var cnonce string
+		var b bytes.Buffer
+		fmt.Fprintf(&b, "%x:%s:%s", ha1, nonce, cnonce)
+		ha1 = md5.Sum(b.Bytes()) //nolint:gosec
+	case "MD5":
+	case "":
+	default:
+		return false
+	}
 
-		ha1 := md5.Sum([]byte(auth.Username + ":" + realm + ":" + auth.Password)) //nolint:gosec
-		switch params["algorithm"] {
-		case "MD5-sess":
+	// Only support "auth" qop
+	if qop, ok := params["qop"]; ok && !slices.Contains(strings.Split(qop, ","), "auth") {
+		return false
+	}
+
+	uri := req.URL.Path // is this sufficient?
+
+	ha2 := md5.Sum([]byte(req.Method + ":" + uri)) //nolint:gosec
+
+	// hard-coding nonceCount to 1 since we don't make a request more than once
+	nonceCount := "00000001"
+
+	var b bytes.Buffer
+	if _, ok := params["qop"]; ok {
+		if cnonce == "" {
 			cnonce = auth.cnonce()
 			if cnonce == "" {
 				return false
 			}
-			var b bytes.Buffer
-			fmt.Fprintf(&b, "%x:%s:%s", ha1, nonce, cnonce)
-			ha1 = md5.Sum(b.Bytes()) //nolint:gosec
-		case "MD5":
-		case "":
-		default:
-			return false
 		}
+		fmt.Fprintf(&b, "%x:%s:%s:%s:%s:%x", ha1, nonce, nonceCount, cnonce, "auth", ha2)
+	} else {
+		fmt.Fprintf(&b, "%x:%s:%x", ha1, nonce, ha2)
+	}
+	response := md5.Sum(b.Bytes()) //nolint:gosec
 
-		// Only support "auth" qop
-		if qop, ok := params["qop"]; ok && !slices.Contains(strings.Split(qop, ","), "auth") {
-			return false
-		}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\"",
+		auth.Username, realm, nonce, uri)
+	if _, ok := params["qop"]; ok {
+		fmt.Fprintf(&sb, ", qop=auth, nc=%s, cnonce=\"%s\"", nonceCount, cnonce)
+	}
+	if alg, ok := params["algorithm"]; ok {
+		fmt.Fprintf(&sb, ", algorithm=%s", alg)
+	}
+	fmt.Fprintf(&sb, ", response=\"%x\", opaque=\"%s\"", response, params["opaque"])
 
-		uri := req.URL.Path // is this sufficient?
+	req.Header.Add("Authorization", sb.String())
 
-		ha2 := md5.Sum([]byte(req.Method + ":" + uri)) //nolint:gosec
-
-		// hard-coding nonceCount to 1 since we don't make a request more than once
-		nonceCount := "00000001"
-
-		var b bytes.Buffer
-		if _, ok := params["qop"]; ok {
-			if cnonce == "" {
-				cnonce = auth.cnonce()
-				if cnonce == "" {
-					return false
-				}
-			}
-			fmt.Fprintf(&b, "%x:%s:%s:%s:%s:%x", ha1, nonce, nonceCount, cnonce, "auth", ha2)
-		} else {
-			fmt.Fprintf(&b, "%x:%s:%x", ha1, nonce, ha2)
-		}
-		response := md5.Sum(b.Bytes()) //nolint:gosec
-
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\"",
-			auth.Username, realm, nonce, uri)
-		if _, ok := params["qop"]; ok {
-			fmt.Fprintf(&sb, ", qop=auth, nc=%s, cnonce=\"%s\"", nonceCount, cnonce)
-		}
-		if alg, ok := params["algorithm"]; ok {
-			fmt.Fprintf(&sb, ", algorithm=%s", alg)
-		}
-		fmt.Fprintf(&sb, ", response=\"%x\", opaque=\"%s\"", response, params["opaque"])
-
-		req.Header.Add("Authorization", sb.String())
-
-		return true
-	*/
+	return true
 }
 
 func (auth *HTTPAuthentication) parseChallenge(challenge string) map[string]string {
