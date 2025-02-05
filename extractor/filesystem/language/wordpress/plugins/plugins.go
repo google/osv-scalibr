@@ -91,7 +91,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the /wp-content/plugins/ pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.Contains(path, "wp-content/plugins/") || !strings.HasSuffix(path, ".php") {
+	if !strings.HasSuffix(path, ".php") || !strings.Contains(path, "wp-content/plugins/") {
 		return false
 	}
 
@@ -122,21 +122,26 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract parses the PHP file to extract Wordpress package.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs, err := parsePHPFile(input.Reader)
+	if input == nil || input.Reader == nil {
+		return nil, fmt.Errorf("invalid input: nil reader")
+	}
+
+	pkg, err := parsePHPFile(input.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	var inventories []*extractor.Inventory
-	for _, pkg := range pkgs {
-		inventories = append(inventories, &extractor.Inventory{
-			Name:      pkg.Name,
-			Version:   pkg.Version,
-			Locations: []string{input.Path},
-		})
+	if pkg == nil {
+		return nil, nil
 	}
 
-	return inventories, nil
+	inventory := &extractor.Inventory{
+		Name:      pkg.Name,
+		Version:   pkg.Version,
+		Locations: []string{input.Path},
+	}
+
+	return []*extractor.Inventory{inventory}, nil
 }
 
 type Package struct {
@@ -144,11 +149,10 @@ type Package struct {
 	Version string
 }
 
-func parsePHPFile(r io.Reader) ([]Package, error) {
+func parsePHPFile(r io.Reader) (*Package, error) {
 	scanner := bufio.NewScanner(r)
-	var pkgs []Package
-
 	var name, version string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -161,7 +165,6 @@ func parsePHPFile(r io.Reader) ([]Package, error) {
 		}
 
 		if name != "" && version != "" {
-			pkgs = append(pkgs, Package{Name: name, Version: version})
 			break
 		}
 	}
@@ -170,7 +173,11 @@ func parsePHPFile(r io.Reader) ([]Package, error) {
 		return nil, fmt.Errorf("failed to read PHP file: %w", err)
 	}
 
-	return pkgs, nil
+	if name == "" || version == "" {
+		return nil, nil
+	}
+
+	return &Package{Name: name, Version: version}, nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

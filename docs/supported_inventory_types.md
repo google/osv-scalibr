@@ -51,7 +51,9 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles: pom.xml, gradle.lockfile, verification-metadata.xml
 * Javascript
   * Installed NPM packages (package.json)
-  * Lockfiles: package-lock.json, yarn.lock, pnpm-lock.yaml
+  * Lockfiles: package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lock
+* ObjectiveC
+  * Podfile.lock
 * PHP:
   * Composer
 * Python
@@ -65,11 +67,12 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles: Gemfile.lock (OSV)
 * Rust
   * Cargo.lock
-* Wordpress plugins
-  * Installed plugins
+  * Rust binaries
 * Swift
   * Podfile.lock
   * Package.resolved
+* Wordpress plugins
+  * Installed plugins
 
 ## Container inventory
 
