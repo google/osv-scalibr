@@ -42,6 +42,21 @@ type Extractor struct {
 	*datasource.MavenRegistryAPIClient
 }
 
+// New makes a new pom.xml transitive extractor with required clients.
+// Clients are assuming Maven Central as the registry.
+func New() *Extractor {
+	// No need to check errors since we are using the default Maven Central URL.
+	depClient, _ := client.NewMavenRegistryClient(datasource.MavenCentral)
+	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
+		URL:             datasource.MavenCentral,
+		ReleasesEnabled: true,
+	})
+	return &Extractor{
+		DependencyClient:       depClient,
+		MavenRegistryAPIClient: mavenClient,
+	}
+}
+
 // Name of the extractor.
 func (e Extractor) Name() string { return "java/pomxmlnet" }
 
@@ -51,12 +66,11 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network:  true,
-		DirectFS: true,
+		Network: true,
 	}
 }
 
-// FileRequired never returns true, as this is for the osv-scanner json output.
+// FileRequired returns true if the specified file matches Maven POM lockfile patterns.
 func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 	return filepath.Base(fapi.Path()) == "pom.xml"
 }
