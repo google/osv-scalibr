@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
@@ -138,6 +139,7 @@ var (
 	// Dotnet (.NET) extractors.
 	Dotnet []filesystem.Extractor = []filesystem.Extractor{
 		depsjson.New(depsjson.DefaultConfig()),
+		packagesconfig.New(packagesconfig.DefaultConfig()),
 		packageslockjson.New(packageslockjson.DefaultConfig()),
 	}
 	// PHP extractors.
