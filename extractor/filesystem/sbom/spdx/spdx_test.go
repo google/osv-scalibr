@@ -68,6 +68,11 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
+			name:           "sbom.spdx.rdf.xml",
+			path:           "testdata/sbom.spdx.rdf.xml",
+			wantIsRequired: true,
+		},
+		{
 			name:           "random_file.ext",
 			path:           "testdata/random_file.ext",
 			wantIsRequired: false,
