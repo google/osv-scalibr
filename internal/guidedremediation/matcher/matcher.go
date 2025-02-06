@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package client provides interfaces for the clients used by guided remediation.
-package client
+// Package matcher provides the interface for the vulnerability matcher used by guided remediation.
+package matcher
 
 import (
 	"context"

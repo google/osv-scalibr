@@ -22,15 +22,15 @@ import (
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/internal/guidedremediation/client"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
+	"github.com/google/osv-scalibr/internal/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
 // Vulnerability represents a vulnerability found in a dependency graph.
 type Vulnerability struct {
-	OSV     *client.OSVRecord
+	OSV     *matcher.OSVRecord
 	DevOnly bool
 	// Subgraphs are the collections of nodes and edges that reach the vulnerable node.
 	// Subgraphs all contain the root node (NodeID 0) with no incoming edges (Parents),
@@ -40,7 +40,7 @@ type Vulnerability struct {
 
 // FindVulnerabilities scans for vulnerabilities in a resolved graph.
 // One Vulnerability is created per unique ID, which may affect multiple graph nodes.
-func FindVulnerabilities(ctx context.Context, cl client.VulnerabilityMatcher, m manifest.Manifest, graph *resolve.Graph) ([]Vulnerability, error) {
+func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m manifest.Manifest, graph *resolve.Graph) ([]Vulnerability, error) {
 	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToInventory(graph))
 	if err != nil {
 		return nil, err
@@ -48,11 +48,11 @@ func FindVulnerabilities(ctx context.Context, cl client.VulnerabilityMatcher, m 
 
 	// The root node is of the graph is excluded from the vulnerability results.
 	// Prepend an element to nodeVulns so that the indices line up with graph.Nodes[i] <=> nodeVulns[i]
-	nodeVulns = append([][]*client.OSVRecord{nil}, nodeVulns...)
+	nodeVulns = append([][]*matcher.OSVRecord{nil}, nodeVulns...)
 
 	// Find the dependency subgraphs of the vulnerable dependencies.
 	var vulnerableNodes []resolve.NodeID
-	uniqueVulns := make(map[string]*client.OSVRecord)
+	uniqueVulns := make(map[string]*matcher.OSVRecord)
 	for i, vulns := range nodeVulns {
 		if len(vulns) > 0 {
 			vulnerableNodes = append(vulnerableNodes, resolve.NodeID(i))

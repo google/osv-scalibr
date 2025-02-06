@@ -30,10 +30,6 @@ type ResolutionUniverse struct {
 	Schema string `yaml:"schema"`
 }
 
-type mockDependencyClient struct {
-	*resolve.LocalClient
-}
-
 // NewMockResolutionClient creates a new mock resolution client from the given universe YAML.
 func NewMockResolutionClient(t *testing.T, universeYAML string) resolve.Client {
 	t.Helper()
@@ -67,5 +63,5 @@ func NewMockResolutionClient(t *testing.T, universeYAML string) resolve.Client {
 		t.Fatalf("failed parsing schema: %v", err)
 	}
 
-	return mockDependencyClient{sch.NewClient()}
+	return sch.NewClient()
 }
