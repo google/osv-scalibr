@@ -70,12 +70,11 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts Re
 }
 
 func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manifest, opts ResolveOptions, graph *resolve.Graph) (*resolve.Graph, error) {
-
 	if m.System() == resolve.Maven && opts.MavenManagement {
 		// Add a node & edge for each dependency in dependencyManagement that doesn't already appear in the resolved graph
 		manifestSpecific, ok := m.EcosystemSpecific().(maven.ManifestSpecific)
 		if !ok {
-			return graph, errors.New("invalid MavenManifestSpecific data")
+			return graph, errors.New("invalid maven ManifestSpecific data")
 		}
 
 		// Search through OriginalRequirements management dependencies in this pom only (not parents).

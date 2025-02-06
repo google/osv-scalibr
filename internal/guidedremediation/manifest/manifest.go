@@ -23,7 +23,7 @@ import (
 
 // Manifest is the interface for the representation of a manifest file needed for dependency resolution.
 type Manifest interface {
-	FilePath() string                           // Path to the manifest file on disk
+	FilePath() string                           // Path to the manifest file
 	Root() resolve.Version                      // Version representing this package
 	System() resolve.System                     // The System of this manifest
 	Requirements() []resolve.RequirementVersion // All direct requirements, including dev

@@ -32,5 +32,22 @@ type VulnerabilityMatcher interface {
 // OSVRecord is a representation of an OSV record.
 // TODO: replace with https://github.com/ossf/osv-schema/pull/333
 type OSVRecord struct {
-	ID string
+	ID       string `yaml:"id"`
+	Affected []struct {
+		Package struct {
+			Ecosystem string `yaml:"ecosystem,omitempty"`
+			Name      string `yaml:"name,omitempty"`
+		} `yaml:"package,omitempty"`
+		Ranges []struct {
+			Type   string     `yaml:"type,omitempty"`
+			Events []OSVEvent `yaml:"events,omitempty"`
+		} `yaml:"ranges,omitempty"`
+		Versions []string `yaml:"versions,omitempty"`
+	} `yaml:"affected,omitempty"`
+}
+
+type OSVEvent struct {
+	Introduced   string `yaml:"introduced,omitempty"`
+	Fixed        string `yaml:"fixed,omitempty"`
+	LastAffected string `yaml:"last_affected,omitempty"`
 }

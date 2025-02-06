@@ -90,7 +90,8 @@ func graphToInventory(g *resolve.Graph) []*extractor.Inventory {
 		inv[i] = &extractor.Inventory{
 			Name:      n.Version.Name,
 			Version:   n.Version.Version,
-			Extractor: mockExtractor{n.Version.System},
+			Extractor: mockExtractor{},
+			Metadata:  n.Version.System,
 		}
 	}
 
@@ -98,12 +99,10 @@ func graphToInventory(g *resolve.Graph) []*extractor.Inventory {
 }
 
 // mockExtractor is for graphToInventory to get the ecosystem.
-type mockExtractor struct {
-	ecosystem resolve.System
-}
+type mockExtractor struct{}
 
-func (e mockExtractor) Ecosystem(*extractor.Inventory) string {
-	switch e.ecosystem {
+func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
+	switch inv.Metadata.(resolve.System) {
 	case resolve.NPM:
 		return "npm"
 	case resolve.Maven:
