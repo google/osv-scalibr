@@ -99,7 +99,7 @@ var (
 		gradlelockfile.Extractor{},
 		gradleverificationmetadataxml.Extractor{},
 		javaarchive.New(javaarchive.DefaultConfig()),
-		pomxmlnet.New(),
+		pomxmlnet.New(pomxmlnet.DefaultConfig()),
 	}
 	// Javascript extractors.
 	Javascript []filesystem.Extractor = []filesystem.Extractor{
