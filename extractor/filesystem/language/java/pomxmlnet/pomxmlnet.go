@@ -75,7 +75,7 @@ func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 	return filepath.Base(fapi.Path()) == "pom.xml"
 }
 
-// Extract extracts packages from yarn.lock files passed through the scan input.
+// Extract extracts packages from pom.xml files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
