@@ -21,7 +21,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/schema"
-	"github.com/google/osv-scalibr/internal/resolution/client"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,10 +37,10 @@ type mockDependencyClient struct {
 
 func (mdc mockDependencyClient) LoadCache(string) error                  { return nil }
 func (mdc mockDependencyClient) WriteCache(string) error                 { return nil }
-func (mdc mockDependencyClient) AddRegistries(_ []client.Registry) error { return nil }
+func (mdc mockDependencyClient) AddRegistries(_ []resolution.Registry) error { return nil }
 
 // NewMockResolutionClient creates a new mock resolution client from the given universe YAML.
-func NewMockResolutionClient(t *testing.T, universeYAML string) client.DependencyClient {
+func NewMockResolutionClient(t *testing.T, universeYAML string) resolution.DependencyClient {
 	t.Helper()
 	f, err := os.Open(universeYAML)
 	if err != nil {

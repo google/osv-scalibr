@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"deps.dev/util/maven"
-	"github.com/google/osv-scalibr/internal/datasource"
-	"github.com/google/osv-scalibr/internal/resolution/clienttest"
+	"github.com/google/osv-scalibr/clients/clienttest"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 func TestGetProject(t *testing.T) {

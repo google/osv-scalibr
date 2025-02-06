@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 func TestRequestCache(t *testing.T) {
