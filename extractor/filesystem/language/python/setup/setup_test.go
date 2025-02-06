@@ -21,14 +21,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -157,17 +158,13 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		name             string
-		path             string
-		cfg              setup.Config
-		wantInventory    []*extractor.Inventory
-		wantResultMetric stats.FileExtractedResult
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "valid setup.py file",
-			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid setup.py file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "pysaml2",
 					Version:   "6.5.1",
@@ -219,12 +216,13 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "valid setup.py file 2",
-			path: "testdata/valid_2",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid setup.py file 2",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid_2",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "accelerate",
 					Version:   "0.26.1",
@@ -246,12 +244,13 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid_2"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "valid setup.py file 3",
-			path: "testdata/valid_3",
-			wantInventory: []*extractor.Inventory{
+			Name: "valid setup.py file 3",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid_3",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "nanoplotter",
 					Version:   "0.13.1",
@@ -268,12 +267,13 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid_3"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "template setup.py file",
-			path: "testdata/template",
-			wantInventory: []*extractor.Inventory{
+			Name: "template setup.py file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/template",
+			},
+			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "requests",
 					Version:   "2.25.1",
@@ -290,66 +290,44 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/template"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:             "empty pkg setup.py file",
-			path:             "testdata/empty",
-			wantInventory:    []*extractor.Inventory{},
-			wantResultMetric: stats.FileExtractedResultSuccess,
+			Name: "empty pkg setup.py file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
+			WantInventory: []*extractor.Inventory{},
 		},
 		{
-			name:             "empty file",
-			path:             "testdata/empty_2",
-			wantInventory:    []*extractor.Inventory{},
-			wantResultMetric: stats.FileExtractedResultSuccess,
+			Name: "empty file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty_2",
+			},
+			WantInventory: []*extractor.Inventory{},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fsys := scalibrfs.DirFS(".")
-
-			r, err := fsys.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			info, err := r.Stat()
-			if err != nil {
-				t.Fatalf("Stat(): %v", err)
-			}
-
+		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			var e filesystem.Extractor = setup.New(defaultConfigWith(tt.cfg))
+			var e filesystem.Extractor = setup.New(setup.Config{
+				Stats:            collector,
+				MaxFileSizeBytes: 30,
+			})
 
-			got, err := e.Extract(context.Background(), input)
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			got, err := e.Extract(context.Background(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			wantResultMetric := tt.wantResultMetric
-			if wantResultMetric == "" {
-				wantResultMetric = stats.FileExtractedResultSuccess
-			}
-
-			gotResultMetric := collector.FileExtractedResult(tt.path)
-			if gotResultMetric != wantResultMetric {
-				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, wantResultMetric)
-			}
-
-			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
-			if gotFileSizeMetric != info.Size() {
-				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
+			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}
