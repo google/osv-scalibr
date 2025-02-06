@@ -35,8 +35,6 @@ type mockDependencyClient struct {
 	*resolve.LocalClient
 }
 
-func (mdc mockDependencyClient) LoadCache(string) error                  { return nil }
-func (mdc mockDependencyClient) WriteCache(string) error                 { return nil }
 func (mdc mockDependencyClient) AddRegistries(_ []resolution.Registry) error { return nil }
 
 // NewMockResolutionClient creates a new mock resolution client from the given universe YAML.
