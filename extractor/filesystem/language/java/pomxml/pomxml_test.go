@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -239,6 +239,26 @@ func TestExtractor_Extract(t *testing.T) {
 						ArtifactID:   "junit",
 						GroupID:      "junit",
 						DepGroupVals: []string{"test"},
+					},
+				},
+			},
+		},
+		{
+			Name: "with type and classifier",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-type-classifier.xml",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "abc:xyz",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/with-type-classifier.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "xyz",
+						GroupID:      "abc",
+						Type:         "pom",
+						Classifier:   "sources",
+						DepGroupVals: []string{},
 					},
 				},
 			},

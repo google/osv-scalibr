@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ func (d Detector) findingForFormatLM(users []string) *detector.Finding {
 				Severity: detector.SeverityHigh,
 			},
 			Type:           detector.TypeVulnerability,
-			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regerenate the hashes.",
+			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regenerate the hashes.",
 			Recommendation: "Change the password of the user after changing the storage format.",
 		},
 		Extra: fmt.Sprintf("%v", users),

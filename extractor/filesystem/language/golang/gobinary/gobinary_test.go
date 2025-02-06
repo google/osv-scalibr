@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,18 +71,6 @@ func TestFileRequired(t *testing.T) {
 			mode:             0666,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:         "not executable bit set",
-			path:         "some/path/a",
-			mode:         0640,
-			wantRequired: false,
-		},
-		{
-			name:         "Non regular file, socket",
-			path:         "some/path/a",
-			mode:         fs.ModeSocket | 0777,
-			wantRequired: false,
 		},
 		{
 			name:             "executable required if size less than maxFileSizeBytes",

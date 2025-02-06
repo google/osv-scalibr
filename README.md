@@ -8,7 +8,7 @@ SCALIBR (Software Composition Analysis Library) is an extensible file system sca
 
 The scanner can either be used as a standalone binary to scan the local machine or as a library with a custom wrapper to perform scans on e.g. container images or remote hosts. It comes with built-in plugins for inventory extraction and vulnerability detection and it also allows users to run their custom plugins.
 
-See [here](docs/supported_inventory_types.md) for the list of currently supported software inventory types.
+See the [list of currently supported software inventory types](docs/supported_inventory_types.md).
 
 ## Prerequisites
 

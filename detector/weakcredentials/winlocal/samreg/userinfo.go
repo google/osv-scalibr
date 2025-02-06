@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ func (s *UserInfo) decryptHashes(syskey, lmData, ntData []byte) ([]byte, []byte,
 // Hashes returns the LM and NT hashes of the user.
 // Note that the syskey is expected to be already derived.
 func (s *UserInfo) Hashes(syskey []byte) ([]byte, []byte, error) {
-	lmHash, ntHash, err := s.userV.EncrytpedHashes()
+	lmHash, ntHash, err := s.userV.EncryptedHashes()
 	if err != nil {
 		return nil, nil, err
 	}

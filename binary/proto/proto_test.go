@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
@@ -587,6 +588,26 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/nix",
 	}
+	purlHomebrewInventory := &extractor.Inventory{
+		Name:      "rclone",
+		Version:   "1.67.0",
+		Metadata:  &homebrew.Metadata{},
+		Locations: []string{"/file1"},
+		Extractor: homebrew.Extractor{},
+	}
+	purlHomebrewInventoryProto := &spb.Inventory{
+		Name:    "rclone",
+		Version: "1.67.0",
+		Purl: &spb.Purl{
+			Purl:    "pkg:brew/rclone@1.67.0",
+			Type:    purl.TypeBrew,
+			Name:    "rclone",
+			Version: "1.67.0",
+		},
+		Metadata:  &spb.Inventory_HomebrewMetadata{},
+		Locations: []string{"/file1"},
+		Extractor: "os/homebrew",
+	}
 	containerdInventory := &extractor.Inventory{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
@@ -760,6 +781,7 @@ func TestScanResultToProto(t *testing.T) {
 					cdxInventory,
 					windowsInventory,
 					purlPythonInventoryWithLayerDetails,
+					purlHomebrewInventory,
 				},
 				Findings: []*detector.Finding{
 					{
@@ -813,6 +835,7 @@ func TestScanResultToProto(t *testing.T) {
 					cdxInventoryProto,
 					windowsInventoryProto,
 					purlPythonInventoryWithLayerDetailsProto,
+					purlHomebrewInventoryProto,
 				},
 				Findings: []*spb.Finding{
 					{
@@ -971,6 +994,39 @@ func TestScanResultToProto(t *testing.T) {
 				Findings:    []*spb.Finding{},
 			},
 			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful Homebrew scan darwin-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{purlHomebrewInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{purlHomebrewInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			excludeForOS: []string{"windows", "linux"},
 		},
 		{
 			desc: "Successful containerd scan linux-only",

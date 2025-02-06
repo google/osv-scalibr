@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
@@ -383,6 +384,10 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ProductId:                m.KSProductID,
 				UpdateUrl:                m.KSUpdateURL,
 			},
+		}
+	case *homebrew.Metadata:
+		i.Metadata = &spb.Inventory_HomebrewMetadata{
+			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
 		}
 	case *module.Metadata:
 		i.Metadata = &spb.Inventory_KernelModuleMetadata{

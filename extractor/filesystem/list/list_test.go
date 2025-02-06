@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,17 +69,17 @@ func TestExtractorsFromNames(t *testing.T) {
 		{
 			desc:     "Find all extractors of a type",
 			names:    []string{"python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Case-insensitive",
 			names:    []string{"Python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Remove duplicates",
 			names:    []string{"python", "python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Nonexistent plugin",

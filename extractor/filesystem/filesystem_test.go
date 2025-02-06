@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 // pathsMapFS provides a hooked version of MapFS that forces slashes. Because depending on the
@@ -711,5 +712,100 @@ func TestRunFS_ReadError(t *testing.T) {
 
 	if diff := cmp.Diff(wantStatus, gotStatus); diff != "" {
 		t.Errorf("extractor.Run(%v): unexpected status (-want +got):\n%s", ex, diff)
+	}
+}
+
+type fakeFileAPI struct {
+	path string
+	info fakefs.FakeFileInfo
+}
+
+func (f fakeFileAPI) Path() string { return f.path }
+func (f fakeFileAPI) Stat() (fs.FileInfo, error) {
+	return f.info, nil
+}
+
+func TestIsInterestingExecutable(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		mode        fs.FileMode
+		want        bool
+		wantWindows bool
+	}{
+		{
+			name: "user executable",
+			path: "some/path/a",
+			mode: 0766,
+			want: true,
+		},
+		{
+			name: "group executable",
+			path: "some/path/a",
+			mode: 0676,
+			want: true,
+		},
+		{
+			name: "other executable",
+			path: "some/path/a",
+			mode: 0667,
+			want: true,
+		},
+		{
+			name: "windows exe",
+			path: "some/path/a.exe",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "windows dll",
+			path: "some/path/a.dll",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name:        "not executable bit set",
+			path:        "some/path/a",
+			mode:        0640,
+			want:        false,
+			wantWindows: true,
+		},
+		{
+			name: "executable required",
+			path: "some/path/a",
+			mode: 0766,
+			want: true,
+		},
+		{
+			name: "unwanted extension",
+			path: "some/path/a.html",
+			mode: 0766,
+			want: false,
+		},
+		{
+			name: "another unwanted extension",
+			path: "some/path/a.txt",
+			mode: 0766,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filesystem.IsInterestingExecutable(fakeFileAPI{tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: tt.mode,
+			}})
+
+			want := tt.want
+			// For Windows we don't check the executable bit on files.
+			if runtime.GOOS == "windows" && !want {
+				want = tt.wantWindows
+			}
+
+			if got != want {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, want)
+			}
+		})
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,22 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Name:      "balanced-match",
 					Version:   "1.0.2",
 					Locations: []string{"testdata/one-package.v1.lock"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+			},
+		},
+		{
+			Name: "package with no version in header",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/no-version.v1.lock",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "balanced-match",
+					Version:   "1.0.2",
+					Locations: []string{"testdata/no-version.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},

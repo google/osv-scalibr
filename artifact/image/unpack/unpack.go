@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -214,7 +214,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 		}
 	}
 
-	// Remove symlinks that have a non-existent destination file or non-existent destination directory.
+	// Remove symlinks that have a nonexistent destination file or nonexistent destination directory.
 	if err := symlink.RemoveObsoleteSymlinks(dir); err != nil {
 		return fmt.Errorf("failed to remove obsolete symlinks from dir %q: %w", dir, err)
 	}

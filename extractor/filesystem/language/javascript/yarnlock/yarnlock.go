@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -118,6 +119,7 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 func extractYarnPackageName(header string) string {
 	// Header format: @my-scope/my-first-package@my-scope/my-first-package#commit=hash
 	str := strings.TrimPrefix(header, "\"")
+	str = strings.TrimSuffix(str, ":")
 	str, _, _ = strings.Cut(str, ",")
 
 	isScoped := strings.HasPrefix(str, "@")
@@ -193,7 +195,19 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the specified file is an NPM yarn.lock file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "yarn.lock"
+	path := api.Path()
+	if filepath.Base(path) != "yarn.lock" {
+		return false
+	}
+	// Skip lockfiles inside node_modules directories since the packages they list aren't
+	// necessarily installed by the root project. We instead use the more specific top-level
+	// lockfile for the root project dependencies.
+	dir := filepath.ToSlash(filepath.Dir(path))
+	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
+		return false
+	}
+
+	return true
 }
 
 // Extract extracts packages from NPM yarn.lock files passed through the scan input.

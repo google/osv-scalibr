@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 
@@ -87,32 +86,21 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file is marked executable.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
+	if !filesystem.IsInterestingExecutable(api) {
+		return false
+	}
 
-	// TODO(b/380419487): This is inefficient, it would be better if gobinary would filter out common
-	// non executable by their file extension.
 	fileinfo, err := api.Stat()
 	if err != nil {
 		return false
 	}
 
-	if !fileinfo.Mode().IsRegular() {
-		// Includes dirs, symlinks, sockets, pipes...
-		return false
-	}
-
-	// TODO(b/279138598): Research: Maybe on windows all files have the executable bit set.
-	// Either windows .exe or unix executable bit should be set.
-	if filepath.Ext(path) != ".exe" && fileinfo.Mode()&0111 == 0 {
-		return false
-	}
-
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 

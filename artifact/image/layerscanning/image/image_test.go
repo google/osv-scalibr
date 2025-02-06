@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -295,7 +295,19 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes: 1,
 			},
-			wantErrDuringImageCreation: ErrFileReadLimitExceeded,
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "foo.txt",
+							content:  "foo\n",
+						},
+					},
+				},
+			},
+			// Reading foo.txt should return an error, since it exceeds the max file size and should not
+			// be stored in the chain layer.
+			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
 			name:    "image with relative, absolute, and chain symlinks",

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -218,4 +218,6 @@ const (
 	SourceRPM           = "sourcerpm"
 	BuildNumber         = "buildnumber"
 	PackageDependencies = "packagedependencies"
+	Classifier          = "classifier" // Maven specific qualifier
+	Type                = "type"       // Maven specific qualifier
 )

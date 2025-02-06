@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -276,7 +276,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    pp.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{path},
+					Locations: []string{input.Path, path},
 				})
 			}
 
@@ -296,7 +296,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    mf.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{path},
+					Locations: []string{input.Path, path},
 				})
 			}
 
@@ -314,6 +314,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				subInput := &filesystem.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
 				var subInventory []*extractor.Inventory
 				subInventory, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
+				// Prepend the current input path
+				for i := range subInventory {
+					subInventory[i].Locations = append([]string{input.Path}, subInventory[i].Locations...)
+				}
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
