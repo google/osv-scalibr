@@ -38,7 +38,7 @@ const (
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSizeBytes = 100 * units.MiB
+	defaultMaxFileSizeBytes = 30 * units.MiB
 )
 
 // Config is the configuration for the Extractor.
@@ -139,7 +139,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+\W?==\W?[\w.]*)`)
+var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+)\W?(==|>=)\W?([\w.]*)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -154,18 +154,21 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		line := s.Text()
 		line = strings.TrimSpace(line)
 
-		matches := packageVersionRe.FindAllString(line, -1)
+		// Skip commented lines
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		matches := packageVersionRe.FindAllStringSubmatch(line, -1)
 
 		for _, match := range matches {
-			pkg := strings.Split(match, "==")
-
-			if len(pkg) == 2 {
-				pkgName := strings.TrimSpace(strings.Trim(pkg[0], `"'`))
-				pkgVersion := strings.TrimSpace(strings.Trim(pkg[1], `"'`))
-
-				if containsTemplate(pkgName, pkgVersion) {
+			if len(match) == 4 {
+				if containsTemplate(match[0]) {
 					continue
 				}
+
+				pkgName := strings.TrimSpace(match[1])
+				pkgVersion := strings.TrimSpace(match[3])
 
 				i := &extractor.Inventory{
 					Name:      pkgName,
@@ -185,8 +188,8 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	return pkgs, nil
 }
 
-func containsTemplate(pkgName, pkgVersion string) bool {
-	return strings.ContainsAny(pkgName, "%{}") || strings.ContainsAny(pkgVersion, "%{}")
+func containsTemplate(s string) bool {
+	return strings.Contains(s, `%s`) || strings.ContainsAny(s, "%{}")
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

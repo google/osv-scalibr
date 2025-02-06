@@ -18,7 +18,7 @@ setup(
     name=_pkg_name,
     install_requires=[
         '%s==6.5.1',
-        'xmlschema=={}',
+        'xmlschema=={}'.format(var),
         'requests==2.25.1',
         'lxml>=4.6.2',
         'Jinja2==2.11.3;python_version<"3.6"',

@@ -22,6 +22,11 @@ setup(
         'requests==2.25.1',
         'lxml>=4.6.2',
         'Jinja2==2.11.3',
-        # 'sslyze>=4.0.4', # todo
+        " pkg1 == 0.1.1", ' pkg2== 0.1.2',
+        "foo>=2.20,<3.0",
+        "pydantic>=1.8.2,<2.0",
+        "certifi>=2017.4.17",
+        # 'sslyze>=4.0.4', # todo,
+        "foo"
       ],
     )

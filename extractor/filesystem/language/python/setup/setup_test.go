@@ -43,7 +43,7 @@ func TestNew(t *testing.T) {
 			name: "default",
 			cfg:  setup.DefaultConfig(),
 			wantCfg: setup.Config{
-				MaxFileSizeBytes: 100 * units.MiB,
+				MaxFileSizeBytes: 30 * units.MiB,
 			},
 		},
 		{
@@ -184,9 +184,88 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/valid"},
 				},
 				{
+					Name:      "lxml",
+					Version:   "4.6.2",
+					Locations: []string{"testdata/valid"},
+				},
+				{
 					Name:      "Jinja2",
 					Version:   "2.11.3",
 					Locations: []string{"testdata/valid"},
+				},
+				{
+					Name:      "pkg1",
+					Version:   "0.1.1",
+					Locations: []string{"testdata/valid"},
+				},
+				{
+					Name:      "pkg2",
+					Version:   "0.1.2",
+					Locations: []string{"testdata/valid"},
+				},
+				{
+					Name:      "foo",
+					Version:   "2.20",
+					Locations: []string{"testdata/valid"},
+				},
+				{
+					Name:      "pydantic",
+					Version:   "1.8.2",
+					Locations: []string{"testdata/valid"},
+				},
+				{
+					Name:      "certifi",
+					Version:   "2017.4.17",
+					Locations: []string{"testdata/valid"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "valid setup.py file 2",
+			path: "testdata/valid_2",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "accelerate",
+					Version:   "0.26.1",
+					Locations: []string{"testdata/valid_2"},
+				},
+				{
+					Name:      "transformers",
+					Version:   "4.37.2",
+					Locations: []string{"testdata/valid_2"},
+				},
+				{
+					Name:      "datasets",
+					Version:   "2.16.1",
+					Locations: []string{"testdata/valid_2"},
+				},
+				{
+					Name:      "mteb",
+					Version:   "1.4.0",
+					Locations: []string{"testdata/valid_2"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "valid setup.py file 3",
+			path: "testdata/valid_3",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      "nanoplotter",
+					Version:   "0.13.1",
+					Locations: []string{"testdata/valid_3"},
+				},
+				{
+					Name:      "nanoget",
+					Version:   "0.11.0",
+					Locations: []string{"testdata/valid_3"},
+				},
+				{
+					Name:      "nanomath",
+					Version:   "0.12.0",
+					Locations: []string{"testdata/valid_3"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -198,6 +277,11 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "requests",
 					Version:   "2.25.1",
+					Locations: []string{"testdata/template"},
+				},
+				{
+					Name:      "lxml",
+					Version:   "4.6.2",
 					Locations: []string{"testdata/template"},
 				},
 				{
