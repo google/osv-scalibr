@@ -63,15 +63,15 @@ func comparePackagistComponents(a, b []string) int {
 	var compare int
 
 	for i := range minLength {
-		ai, _, aIsNumber := convertToBigInt(a[i])
-		bi, _, bIsNumber := convertToBigInt(b[i])
+		ai, aErr := convertToBigInt(a[i])
+		bi, bErr := convertToBigInt(b[i])
 
 		switch {
-		case aIsNumber && bIsNumber:
+		case aErr == nil && bErr == nil:
 			compare = ai.Cmp(bi)
-		case !aIsNumber && !bIsNumber:
+		case aErr != nil && bErr != nil:
 			compare = comparePackagistSpecialVersions(a[i], b[i])
-		case aIsNumber:
+		case aErr == nil:
 			compare = comparePackagistSpecialVersions("#", b[i])
 		default:
 			compare = comparePackagistSpecialVersions(a[i], "#")

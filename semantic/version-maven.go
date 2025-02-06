@@ -19,9 +19,9 @@ type mavenVersionToken struct {
 }
 
 func (vt *mavenVersionToken) qualifierOrder() (int, error) {
-	_, _, isNumber := convertToBigInt(vt.value)
+	_, err := convertToBigInt(vt.value)
 
-	if isNumber {
+	if err == nil {
 		if vt.prefix == "-" {
 			return 2, nil
 		}
@@ -63,21 +63,21 @@ func findKeywordOrder(keyword string) int {
 func (vt *mavenVersionToken) lessThan(wt mavenVersionToken) (bool, error) {
 	// if the prefix is the same, then compare the token:
 	if vt.prefix == wt.prefix {
-		vv, _, vIsNumber := convertToBigInt(vt.value)
-		wv, _, wIsNumber := convertToBigInt(wt.value)
+		vv, vErr := convertToBigInt(vt.value)
+		wv, wErr := convertToBigInt(wt.value)
 
 		// numeric tokens have the same natural order
-		if vIsNumber && wIsNumber {
+		if vErr == nil && wErr == nil {
 			return vv.Cmp(wv) == -1, nil
 		}
 
 		// The spec is unclear, but according to Maven's implementation, numerics
 		// sort after non-numerics, **unless it's a null value**.
 		// https://github.com/apache/maven/blob/965aaa53da5c2d814e94a41d37142d0d6830375d/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L443
-		if vIsNumber && !vt.isNull {
+		if vErr == nil && !vt.isNull {
 			return false, nil
 		}
-		if wIsNumber && !wt.isNull {
+		if wErr == nil && !wt.isNull {
 			return true, nil
 		}
 
@@ -297,7 +297,7 @@ func newMavenVersion(str string) mavenVersion {
 			}
 
 			// remove any leading zeros
-			if d, _, isNumber := convertToBigInt(current); isNumber {
+			if d, err := convertToBigInt(current); err == nil {
 				current = d.String()
 			}
 

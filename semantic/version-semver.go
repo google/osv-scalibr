@@ -44,18 +44,18 @@ func compareSemverBuildComponents(a, b []string) int {
 	var compare int
 
 	for i := range minComponentLength {
-		ai, _, aIsNumber := convertToBigInt(a[i])
-		bi, _, bIsNumber := convertToBigInt(b[i])
+		ai, aErr := convertToBigInt(a[i])
+		bi, bErr := convertToBigInt(b[i])
 
 		switch {
 		// 1. Identifiers consisting of only digits are compared numerically.
-		case aIsNumber && bIsNumber:
+		case aErr == nil && bErr == nil:
 			compare = ai.Cmp(bi)
 		// 2. Identifiers with letters or hyphens are compared lexically in ASCII sort order.
-		case !aIsNumber && !bIsNumber:
+		case aErr != nil && bErr != nil:
 			compare = strings.Compare(a[i], b[i])
 		// 3. Numeric identifiers always have lower precedence than non-numeric identifiers.
-		case aIsNumber:
+		case aErr == nil:
 			compare = -1
 		default:
 			compare = +1

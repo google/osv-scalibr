@@ -35,7 +35,7 @@ func splitDebianDigitPrefix(str string) (*big.Int, string, error) {
 		i = len(str)
 	}
 
-	digit, err, _ := convertToBigInt(str[:i])
+	digit, err := convertToBigInt(str[:i])
 
 	if err != nil {
 		return nil, "", err
@@ -182,7 +182,7 @@ func parseDebianVersion(str string) (debianVersion, error) {
 		var err error
 		e, str = splitAround(str, ":", false)
 
-		if epoch, err, _ = convertToBigInt(e); err != nil {
+		if epoch, err = convertToBigInt(e); err != nil {
 			return debianVersion{}, err
 		}
 	}

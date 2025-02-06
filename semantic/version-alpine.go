@@ -241,7 +241,7 @@ func parseAlpineNumberComponents(v *alpineVersion, str string) (string, error) {
 	}
 
 	for i, d := range strings.Split(sub, ".") {
-		value, err, _ := convertToBigInt(d)
+		value, err := convertToBigInt(d)
 
 		if err != nil {
 			return "", err
@@ -284,7 +284,7 @@ func parseAlpineSuffixes(v *alpineVersion, str string) (string, error) {
 			match[2] = "0"
 		}
 
-		number, err, _ := convertToBigInt(match[2])
+		number, err := convertToBigInt(match[2])
 
 		if err != nil {
 			return "", err
@@ -340,7 +340,7 @@ func parseAlpineBuildComponent(v *alpineVersion, str string) (string, error) {
 		matches[1] = "0"
 	}
 
-	buildComponent, err, _ := convertToBigInt(matches[1])
+	buildComponent, err := convertToBigInt(matches[1])
 
 	if err != nil {
 		return "", err

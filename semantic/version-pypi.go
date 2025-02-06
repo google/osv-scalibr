@@ -60,7 +60,7 @@ func parseLetterVersion(letter, number string) (letterAndNumber, error) {
 			letter = "post"
 		}
 
-		num, err, _ := convertToBigInt(number)
+		num, err := convertToBigInt(number)
 
 		if err != nil {
 			return letterAndNumber{}, err
@@ -74,7 +74,7 @@ func parseLetterVersion(letter, number string) (letterAndNumber, error) {
 		// the implicit post release syntax (e.g. 1.0-1)
 		letter = "post"
 
-		num, err, _ := convertToBigInt(number)
+		num, err := convertToBigInt(number)
 
 		if err != nil {
 			return letterAndNumber{}, err
@@ -165,7 +165,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 	version.epoch = big.NewInt(0)
 
 	if epoch := match[pypiVersionFinder.SubexpIndex("epoch")]; epoch != "" {
-		epoch, err, _ := convertToBigInt(epoch)
+		epoch, err := convertToBigInt(epoch)
 
 		if err != nil {
 			return pyPIVersion{}, err
@@ -175,7 +175,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 	}
 
 	for _, r := range strings.Split(match[pypiVersionFinder.SubexpIndex("release")], ".") {
-		release, err, _ := convertToBigInt(r)
+		release, err := convertToBigInt(r)
 
 		if err != nil {
 			return pyPIVersion{}, err
@@ -319,18 +319,18 @@ func (pv pyPIVersion) compareLocal(pw pyPIVersion) int {
 	var compare int
 
 	for i := range minVersionLength {
-		ai, _, aIsNumber := convertToBigInt(pv.local[i])
-		bi, _, bIsNumber := convertToBigInt(pw.local[i])
+		ai, aErr := convertToBigInt(pv.local[i])
+		bi, bErr := convertToBigInt(pw.local[i])
 
 		switch {
 		// If a segment consists entirely of ASCII digits then that section should be considered an integer for comparison purposes
-		case aIsNumber && bIsNumber:
+		case aErr == nil && bErr == nil:
 			compare = ai.Cmp(bi)
 		// If a segment contains any ASCII letters then that segment is compared lexicographically with case insensitivity.
-		case !aIsNumber && !bIsNumber:
+		case aErr != nil && bErr != nil:
 			compare = strings.Compare(pv.local[i], pw.local[i])
 		// When comparing a numeric and lexicographic segment, the numeric section always compares as greater than the lexicographic segment.
-		case aIsNumber:
+		case aErr == nil:
 			compare = +1
 		default:
 			compare = -1
