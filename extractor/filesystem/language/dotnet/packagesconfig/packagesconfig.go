@@ -12,14 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package depsjson extracts packages from .NET deps.json files.
-package depsjson
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package packagesconfig extracts packages from .NET packages.config files.
+package packagesconfig
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
+	"encoding/xml"
+	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -32,35 +45,35 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "dotnet/depsjson"
+	Name = "dotnet/packagesconfig"
 
 	// defaultMaxFileSizeBytes is the maximum file size this extractor will process.
-	defaultMaxFileSizeBytes = 10 * units.MiB // 10 MB
+	defaultMaxFileSizeBytes = 20 * units.MiB // 20 MB
 )
 
-// Config is the configuration for the deps.json extractor.
+// Config is the configuration for the .NET packages.config extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
 	Stats stats.Collector
 	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false.
+	// `FileRequired` gets a bigger file, it will return false,
 	MaxFileSizeBytes int64
 }
 
-// DefaultConfig returns the default configuration for the deps.json extractor.
+// DefaultConfig returns the default configuration for the .NET packages.config extractor.
 func DefaultConfig() Config {
 	return Config{
 		MaxFileSizeBytes: defaultMaxFileSizeBytes,
 	}
 }
 
-// Extractor structure for deps.json files.
+// Extractor structure for .NET packages.config files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a deps.json extractor.
+// New returns a .NET packages.config extractor.
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		stats:            cfg.Stats,
@@ -85,10 +98,10 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired returns true if the specified file matches the deps.json pattern.
+// FileRequired returns true if the specified file matches the .NET packages.config pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.HasSuffix(path, ".deps.json") {
+	if filepath.Base(path) != "packages.config" {
 		return false
 	}
 
@@ -112,7 +125,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 	})
 }
 
-// Extract parses the deps.json file to extract .NET package dependencies.
+// Extract parses the packages.config file to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	packages, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
@@ -129,66 +142,40 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, err
 }
 
-// DepsJSON represents the structure of the deps.json file.
-type DepsJSON struct {
-	// Note: Libraries does not include transitive dependencies.
-	// Targets is not currently extracted because it introduces significant
-	// complexity and is not always necessary for basic dependency analysis.
-	Libraries map[string]struct {
-		Version string `json:"version"`
-		// Type represents the package type, if present. Examples of types include:
-		// - "package": Indicates a standard NuGet package dependency.
-		// - "project": Represents a project-level dependency, such as the main application or a locally developed library.
-		Type string `json:"type"`
-	} `json:"libraries"`
+type dotNETPackage struct {
+	ID      string `xml:"id,attr"`
+	Version string `xml:"version,attr"`
+}
+
+type dotNETPackages struct {
+	XMLName  xml.Name        `xml:"packages"`
+	Packages []dotNETPackage `xml:"package"`
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var deps DepsJSON
-	decoder := json.NewDecoder(input.Reader)
-	if err := decoder.Decode(&deps); err != nil {
-		log.Errorf("Error parsing deps.json: %v", err)
+	var packages dotNETPackages
+	decoder := xml.NewDecoder(input.Reader)
+	if err := decoder.Decode(&packages); err != nil {
+		log.Errorf("Error parsing packages.config: %v", err)
 		return nil, err
 	}
 
-	// Check if the decoded content is empty (i.e., no libraries)
-	if len(deps.Libraries) == 0 {
-		log.Warn("Empty deps.json file or no libraries found")
-		return nil, fmt.Errorf("empty deps.json file or no libraries found")
-	}
-
 	var inventories []*extractor.Inventory
-	for nameVersion, library := range deps.Libraries {
-		// Split name and version from "package/version" format
-		name, version := splitNameAndVersion(nameVersion)
-		if name == "" || version == "" {
-			log.Warnf("Skipping library with missing name or version: %s", nameVersion)
+	for _, pkg := range packages.Packages {
+		if pkg.ID == "" || pkg.Version == "" {
+			log.Warnf("Skipping package with missing name or version: %+v", pkg)
 			continue
 		}
-		// If the library type is "project", this is the root/main package.
+
 		i := &extractor.Inventory{
-			Name:    name,
-			Version: version,
-			Metadata: &Metadata{
-				PackageName:    name,
-				PackageVersion: version,
-				Type:           library.Type,
-			},
+			Name:      pkg.ID,
+			Version:   pkg.Version,
 			Locations: []string{input.Path},
 		}
 		inventories = append(inventories, i)
 	}
 
 	return inventories, nil
-}
-
-// splitNameAndVersion splits the name and version from a "package/version" string.
-func splitNameAndVersion(nameVersion string) (string, string) {
-	parts := strings.Split(nameVersion, "/")
-	if len(parts) != 2 {
-		return "", ""
-	}
-	return parts[0], parts[1]
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
