@@ -95,6 +95,7 @@ var (
 		javaarchive.New(javaarchive.DefaultConfig()),
 		pomxml.Extractor{},
 	}
+	// TODO(#441): enable pomxmlnet extractor when network is accesible.
 	// JavaNet extractors requiring network access.
 	JavaNet []filesystem.Extractor = []filesystem.Extractor{
 		gradlelockfile.Extractor{},
