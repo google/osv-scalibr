@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 // mockTransport is used to inspect the requests being made by HTTPAuthentications

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package resolution
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/version"
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 

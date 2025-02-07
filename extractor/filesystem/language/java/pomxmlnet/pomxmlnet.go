@@ -26,32 +26,32 @@ import (
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	mavenresolve "deps.dev/util/resolve/maven"
+	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/internal/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
-	"github.com/google/osv-scalibr/internal/resolution/client"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
-	depClient   client.DependencyClient
+	depClient   resolution.DependencyClient
 	mavenClient *datasource.MavenRegistryAPIClient
 }
 
 // Config is the configuration for the pomxmlnet Extractor.
 type Config struct {
-	client.DependencyClient
+	resolution.DependencyClient
 	*datasource.MavenRegistryAPIClient
 }
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	depClient, _ := client.NewMavenRegistryClient(datasource.MavenCentral)
+	depClient, _ := resolution.NewMavenRegistryClient(datasource.MavenCentral)
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
 		URL:             datasource.MavenCentral,
 		ReleasesEnabled: true,
@@ -123,7 +123,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	})
 
 	if registries := e.mavenClient.GetRegistries(); len(registries) > 0 {
-		clientRegs := make([]client.Registry, len(registries))
+		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
@@ -132,7 +132,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
-	overrideClient := client.NewOverrideClient(e.depClient)
+	overrideClient := resolution.NewOverrideClient(e.depClient)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.

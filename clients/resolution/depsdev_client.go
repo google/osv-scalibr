@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package resolution
 
 import (
 	"encoding/gob"
 	"os"
 
 	"deps.dev/util/resolve"
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 const depsDevCacheExt = ".resolve.deps"
