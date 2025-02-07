@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package client provides clients required by dependency resolution.
-package client
+// Package resolution provides clients required by dependency resolution.
+package resolution
 
 import (
 	"deps.dev/util/resolve"
@@ -22,10 +22,6 @@ import (
 // DependencyClient is the interface of the client required by dependency resolution.
 type DependencyClient interface {
 	resolve.Client
-	// WriteCache writes a manifest-specific resolution cache.
-	WriteCache(filepath string) error
-	// LoadCache loads a manifest-specific resolution cache.
-	LoadCache(filepath string) error
 	// AddRegistries adds the specified registries to fetch data.
 	AddRegistries(registries []Registry) error
 }

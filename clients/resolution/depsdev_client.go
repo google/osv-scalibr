@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package resolution
 
 import (
-	"encoding/gob"
-	"os"
-
 	"deps.dev/util/resolve"
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 const depsDevCacheExt = ".resolve.deps"
@@ -42,25 +39,3 @@ func NewDepsDevClient(addr string, userAgent string) (*DepsDevClient, error) {
 
 // AddRegistries is a placeholder here for DepsDevClient.
 func (d *DepsDevClient) AddRegistries(_ []Registry) error { return nil }
-
-// WriteCache writes cache at the given path.
-func (d *DepsDevClient) WriteCache(path string) error {
-	f, err := os.Create(path + depsDevCacheExt)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return gob.NewEncoder(f).Encode(d.c)
-}
-
-// LoadCache loads the cache at the given path.
-func (d *DepsDevClient) LoadCache(path string) error {
-	f, err := os.Open(path + depsDevCacheExt)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return gob.NewDecoder(f).Decode(&d.c)
-}

@@ -26,19 +26,19 @@ import (
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	mavenresolve "deps.dev/util/resolve/maven"
+	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/internal/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
-	"github.com/google/osv-scalibr/internal/resolution/client"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
-	client.DependencyClient
+	resolution.DependencyClient
 	*datasource.MavenRegistryAPIClient
 }
 
@@ -94,7 +94,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	})
 
 	if registries := e.MavenRegistryAPIClient.GetRegistries(); len(registries) > 0 {
-		clientRegs := make([]client.Registry, len(registries))
+		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
@@ -103,7 +103,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
-	overrideClient := client.NewOverrideClient(e.DependencyClient)
+	overrideClient := resolution.NewOverrideClient(e.DependencyClient)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.

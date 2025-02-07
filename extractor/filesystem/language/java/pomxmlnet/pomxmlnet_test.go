@@ -20,12 +20,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/clients/clienttest"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	"github.com/google/osv-scalibr/internal/datasource"
-	"github.com/google/osv-scalibr/internal/resolution/clienttest"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
