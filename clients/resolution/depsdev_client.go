@@ -15,9 +15,6 @@
 package resolution
 
 import (
-	"encoding/gob"
-	"os"
-
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/clients/datasource"
 )
