@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ type poetryLockPackage struct {
 	Name     string                  `toml:"name"`
 	Version  string                  `toml:"version"`
 	Optional bool                    `toml:"optional"`
+	Groups   []string                `toml:"groups"`
 	Source   poetryLockPackageSource `toml:"source"`
 }
 
@@ -65,6 +66,28 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "poetry.lock"
 }
 
+func resolveGroups(pkg poetryLockPackage) []string {
+	// by definition an optional package cannot be in any other group,
+	// otherwise that would make it a required package
+	if pkg.Optional {
+		return []string{"optional"}
+	}
+
+	if pkg.Groups == nil {
+		return []string{}
+	}
+
+	for _, group := range pkg.Groups {
+		// the "main" group is the default group used for "production" dependencies,
+		// which we represent by an empty slice aka no groups
+		if group == "main" {
+			return []string{}
+		}
+	}
+
+	return pkg.Groups
+}
+
 // Extract extracts packages from poetry.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parsedLockfile *poetryLockFile
@@ -82,19 +105,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
+			Metadata: osv.DepGroupMetadata{
+				DepGroupVals: resolveGroups(lockPackage),
+			},
 		}
 		if lockPackage.Source.Commit != "" {
 			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: lockPackage.Source.Commit,
-			}
-		}
-		if lockPackage.Optional {
-			pkgDetails.Metadata = osv.DepGroupMetadata{
-				DepGroupVals: []string{"optional"},
-			}
-		} else {
-			pkgDetails.Metadata = osv.DepGroupMetadata{
-				DepGroupVals: []string{},
 			}
 		}
 		packages = append(packages, pkgDetails)

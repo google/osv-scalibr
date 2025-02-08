@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,11 +55,21 @@ func TestFileRequired(t *testing.T) {
 		{
 			name:           "sbom.bom.json",
 			path:           "testdata/sbom.bom.json",
-			wantIsRequired: true,
+			wantIsRequired: false,
 		},
 		{
 			name:           "sbom.bom.xml",
 			path:           "testdata/sbom.bom.xml",
+			wantIsRequired: false,
+		},
+		{
+			name:           "bom.json",
+			path:           "testdata/bom.json",
+			wantIsRequired: true,
+		},
+		{
+			name:           "bom.xml",
+			path:           "testdata/bom.xml",
 			wantIsRequired: true,
 		},
 		{

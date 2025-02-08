@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,9 +47,12 @@ type extractFunc = func(io.Reader) (cyclonedx.BOM, error)
 // https://cyclonedx.org/specification/overview/#recognized-file-patterns
 var cdxExtensions = map[string]cyclonedx.BOMFileFormat{
 	".cdx.json": cyclonedx.BOMFileFormatJSON,
-	".bom.json": cyclonedx.BOMFileFormatJSON,
 	".cdx.xml":  cyclonedx.BOMFileFormatXML,
-	".bom.xml":  cyclonedx.BOMFileFormatXML,
+}
+
+var cdxNames = map[string]cyclonedx.BOMFileFormat{
+	"bom.json": cyclonedx.BOMFileFormatJSON,
+	"bom.xml":  cyclonedx.BOMFileFormatXML,
 }
 
 // FileRequired returns true if the specified file is a supported cdx file.
@@ -79,6 +82,15 @@ func findExtractor(path string) extractFunc {
 
 	for ext, format := range cdxExtensions {
 		if hasFileExtension(path, ext) {
+			return func(rdr io.Reader) (cyclonedx.BOM, error) {
+				var cdxBOM cyclonedx.BOM
+				return cdxBOM, cyclonedx.NewBOMDecoder(rdr, format).Decode(&cdxBOM)
+			}
+		}
+	}
+
+	for name, format := range cdxNames {
+		if strings.ToLower(filepath.Base(path)) == name {
 			return func(rdr io.Reader) (cyclonedx.BOM, error) {
 				var cdxBOM cyclonedx.BOM
 				return cdxBOM, cyclonedx.NewBOMDecoder(rdr, format).Decode(&cdxBOM)

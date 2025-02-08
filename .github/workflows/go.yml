@@ -17,12 +17,12 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
+          version: v1.63.4
           args: --timeout=5m
   # TODO(#346): we're exploring if only-new-issues will help reduce friction in PRs
   lint-just-new:
@@ -32,12 +32,12 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
+          version: v1.63.4
           only-new-issues: true
           args: --timeout=5m
   tests:
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ type mavenLockDependency struct {
 	ArtifactID string   `xml:"artifactId"`
 	Version    string   `xml:"version"`
 	Scope      string   `xml:"scope"`
+	Type       string   `xml:"type"`
+	Classifier string   `xml:"classifier"`
 }
 
 func (mld mavenLockDependency) parseResolvedVersion(version string) string {
@@ -185,6 +187,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		metadata := javalockfile.Metadata{
 			ArtifactID:   lockPackage.ArtifactID,
 			GroupID:      lockPackage.GroupID,
+			Type:         lockPackage.Type,
+			Classifier:   lockPackage.Classifier,
 			DepGroupVals: []string{},
 		}
 		pkgDetails := &extractor.Inventory{
@@ -211,6 +215,10 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 		Namespace: strings.ToLower(m.GroupID),
 		Name:      strings.ToLower(m.ArtifactID),
 		Version:   i.Version,
+		Qualifiers: purl.QualifiersFromMap(map[string]string{
+			purl.Type:       m.Type,
+			purl.Classifier: m.Classifier,
+		}),
 	}
 }
 

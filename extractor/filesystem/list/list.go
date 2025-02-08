@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@ import (
 
 	// SCALIBR internal extractors.
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
@@ -51,10 +53,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
@@ -97,6 +101,7 @@ var (
 		packagelockjson.New(packagelockjson.DefaultConfig()),
 		&pnpmlock.Extractor{},
 		&yarnlock.Extractor{},
+		&bunlock.Extractor{},
 	}
 	// Python extractors.
 	Python []filesystem.Extractor = []filesystem.Extractor{
@@ -106,6 +111,7 @@ var (
 		pdmlock.Extractor{},
 		poetrylock.Extractor{},
 		condameta.Extractor{},
+		uvlock.Extractor{},
 	}
 	// Go extractors.
 	Go []filesystem.Extractor = []filesystem.Extractor{
@@ -125,12 +131,16 @@ var (
 	// Ruby extractors.
 	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig()), &gemfilelock.Extractor{}}
 	// Rust extractors.
-	Rust []filesystem.Extractor = []filesystem.Extractor{cargolock.Extractor{}}
+	Rust []filesystem.Extractor = []filesystem.Extractor{
+		cargolock.Extractor{},
+		cargoauditable.New(cargoauditable.DefaultConfig()),
+	}
 	// SBOM extractors.
 	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
 	// Dotnet (.NET) extractors.
 	Dotnet []filesystem.Extractor = []filesystem.Extractor{
 		depsjson.New(depsjson.DefaultConfig()),
+		packagesconfig.New(packagesconfig.DefaultConfig()),
 		packageslockjson.New(packageslockjson.DefaultConfig()),
 	}
 	// PHP extractors.

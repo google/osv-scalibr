@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package depsjson
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -148,6 +149,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	if err := decoder.Decode(&deps); err != nil {
 		log.Errorf("Error parsing deps.json: %v", err)
 		return nil, err
+	}
+
+	// Check if the decoded content is empty (i.e., no libraries)
+	if len(deps.Libraries) == 0 {
+		log.Warn("Empty deps.json file or no libraries found")
+		return nil, fmt.Errorf("empty deps.json file or no libraries found")
 	}
 
 	var inventories []*extractor.Inventory

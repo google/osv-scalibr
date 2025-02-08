@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -124,6 +124,7 @@ func TestExtract(t *testing.T) {
 					Name:      "rclone",
 					Version:   "1.67.0",
 					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
+					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},
@@ -135,6 +136,7 @@ func TestExtract(t *testing.T) {
 					Name:      "testapp",
 					Version:   "1.1.1",
 					Locations: []string{"testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"},
+					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},
@@ -151,6 +153,7 @@ func TestExtract(t *testing.T) {
 					Name:      "android-platform-tools",
 					Version:   "35.0.2",
 					Locations: []string{"testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"},
+					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},

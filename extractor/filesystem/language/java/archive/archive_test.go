@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -219,6 +219,7 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
+					filepath.FromSlash("testdata/simple.jar"),
 					filepath.FromSlash("testdata/simple.jar/pom.properties"),
 				},
 			}},
@@ -244,6 +245,7 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
+					filepath.FromSlash("testdata/simple.jar"),
 					filepath.FromSlash("testdata/simple.jar/pom.properties"),
 				},
 			}},
@@ -351,6 +353,16 @@ func TestExtract(t *testing.T) {
 					SHA1:       "PO6pevcX8f2Rkpv4xB6NYviFokQ=", // inner most nested.jar
 				},
 				Locations: []string{
+					filepath.FromSlash("testdata/nested_at_10.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
+					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
 					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties"),
 				},
 			}},
@@ -372,6 +384,7 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 					Locations: []string{
+						filepath.FromSlash("testdata/complex.jar"),
 						filepath.FromSlash("testdata/complex.jar/pom.properties"),
 					},
 				},
@@ -380,6 +393,8 @@ func TestExtract(t *testing.T) {
 					Version:  "3.2.1",
 					Metadata: &archive.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
 					Locations: []string{
+						filepath.FromSlash("testdata/complex.jar"),
+						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar"),
 						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties"),
 					},
 				},
@@ -398,6 +413,7 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
+					filepath.FromSlash("testdata/complex.jar"),
 					filepath.FromSlash("testdata/complex.jar/pom.properties"),
 				},
 			}},
@@ -419,6 +435,7 @@ func TestExtract(t *testing.T) {
 						SHA1: "YEWPh30FXQyRFNnhou+3N7S8KCw=",
 					},
 					Locations: []string{
+						filepath.FromSlash("testdata/guava-31.1-jre.jar"),
 						filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties"),
 					},
 				},
@@ -441,6 +458,7 @@ func TestExtract(t *testing.T) {
 					GroupID:    "com.google.guava.failureaccess",
 				},
 				Locations: []string{
+					filepath.FromSlash("testdata/manifest-symbolicname"),
 					filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF"),
 				},
 			}},
@@ -457,6 +475,7 @@ func TestExtract(t *testing.T) {
 					GroupID:    "test.group",
 				},
 				Locations: []string{
+					filepath.FromSlash("testdata/invalid-ids"),
 					filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF"),
 				},
 			}},
@@ -473,6 +492,7 @@ func TestExtract(t *testing.T) {
 					GroupID:    "org.springframework",
 				},
 				Locations: []string{
+					filepath.FromSlash("testdata/known-group-id"),
 					filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
 				},
 			}},
@@ -525,6 +545,7 @@ func TestExtract(t *testing.T) {
 				Version:  "1.4",
 				Metadata: &archive.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
 				Locations: []string{
+					filepath.FromSlash("testdata/axis"),
 					filepath.FromSlash("testdata/axis/MANIFEST.MF"),
 				},
 			}},

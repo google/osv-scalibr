@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package trace
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"slices"
 	"sort"
 
@@ -116,13 +118,22 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
 				oldInventory = cachedInventory
 			} else {
-				// Update the extractor config to use the files from the current layer.
-				updateExtractorConfig(inv.Locations, invExtractor, oldChainLayer.FS())
+				// Check if file still exist in this layer, if not skip extraction.
+				// This is both an optimization, and avoids polluting the log output with false file not found errors.
+				if _, err := oldChainLayer.FS().Stat(inv.Locations[0]); errors.Is(err, fs.ErrNotExist) {
+					oldInventory = []*extractor.Inventory{}
+				} else {
+					// Update the extractor config to use the files from the current layer.
+					// We only take extract the first location because other locations are derived from the initial
+					// extraction location. If other locations can no longer be determined from the first location
+					// they should not be included here, and the trace for those packages stops here.
+					updateExtractorConfig([]string{inv.Locations[0]}, invExtractor, oldChainLayer.FS())
 
-				var err error
-				oldInventory, _, err = filesystem.Run(ctx, config)
-				if err != nil {
-					break
+					var err error
+					oldInventory, _, err = filesystem.Run(ctx, config)
+					if err != nil {
+						break
+					}
 				}
 
 				// Cache the inventory for future use.

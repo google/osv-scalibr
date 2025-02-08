@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ func TestChainFSOpen(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			name: "non-existent tree",
+			name: "nonexistent tree",
 			chainfs: FS{
 				tree: nil,
 			},
@@ -264,9 +264,9 @@ func TestChainFSOpen(t *testing.T) {
 			},
 		},
 		{
-			name:    "error opening symlink due to non-existent target",
+			name:    "error opening symlink due to nonexistent target",
 			chainfs: populatedChainFS,
-			path:    "/symlink-to-non-existent-file",
+			path:    "/symlink-to-nonexistent-file",
 			wantErr: fs.ErrNotExist,
 		},
 		{
@@ -317,7 +317,7 @@ func TestChainFSStat(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			name: "non-existent tree",
+			name: "nonexistent tree",
 			chainfs: FS{
 				tree: nil,
 			},
@@ -374,7 +374,7 @@ func TestChainFSReadDir(t *testing.T) {
 		wantErr   error
 	}{
 		{
-			name: "read directory from non-existent tree",
+			name: "read directory from nonexistent tree",
 			chainfs: FS{
 				tree: nil,
 			},
@@ -479,10 +479,10 @@ func TestChainFSReadDir(t *testing.T) {
 				{
 					extractDir:    extractDir,
 					originLayerID: "layer2",
-					virtualPath:   "/symlink-to-non-existent-file",
+					virtualPath:   "/symlink-to-nonexistent-file",
 					isWhiteout:    false,
 					mode:          fs.ModeSymlink,
-					targetPath:    "/non-existent-file",
+					targetPath:    "/nonexistent-file",
 				},
 				{
 					extractDir:    extractDir,
@@ -711,13 +711,13 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:          fs.ModeSymlink,
 			targetPath:    "/dir2",
 		},
-		"/symlink-to-non-existent-file": &fileNode{
+		"/symlink-to-nonexistent-file": &fileNode{
 			extractDir:    tempDir,
 			originLayerID: "layer2",
-			virtualPath:   "symlink-to-non-existent-file",
+			virtualPath:   "symlink-to-nonexistent-file",
 			isWhiteout:    false,
 			mode:          fs.ModeSymlink,
-			targetPath:    "/non-existent-file",
+			targetPath:    "/nonexistent-file",
 		},
 		"/symlink-cycle1": &fileNode{
 			extractDir:    tempDir,

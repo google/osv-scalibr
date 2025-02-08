@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Name:      p.AppName,
 			Version:   p.AppVersion,
 			Locations: []string{input.Path},
+			Metadata:  &Metadata{},
 		},
 	}, nil
 }

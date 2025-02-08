@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -545,4 +546,57 @@ func (i *ScanInput) GetRealPath() (string, error) {
 	defer f.Close()
 	io.Copy(f, i.Reader)
 	return path, nil
+}
+
+// TODO(b/380419487): This list is not exhaustive. We should add more extensions here.
+var unlikelyExecutableExtensions = map[string]bool{
+	".c":             true,
+	".cc":            true,
+	".cargo-ok":      true,
+	".crate":         true,
+	".css":           true,
+	".db":            true,
+	".gitattributes": true,
+	".gitignore":     true,
+	".go":            true,
+	".h":             true,
+	".html":          true,
+	".json":          true,
+	".lock":          true,
+	".log":           true,
+	".md":            true,
+	".mod":           true,
+	".png":           true,
+	".proto":         true,
+	".rs":            true,
+	".stderr":        true,
+	".sum":           true,
+	".svg":           true,
+	".tar":           true,
+	".tmpl":          true,
+	".toml":          true,
+	".txt":           true,
+	".woff2":         true,
+	".xml":           true,
+	".yaml":          true,
+	".yml":           true,
+	".zip":           true,
+	".ziphash":       true,
+}
+
+// IsInterestingExecutable returns true if the specified file is an executable which may need scanning.
+func IsInterestingExecutable(api FileAPI) bool {
+	extension := filepath.Ext(api.Path())
+	if unlikelyExecutableExtensions[extension] {
+		return false
+	}
+
+	// TODO(b/279138598): Research: Maybe on windows all files have the executable bit set.
+	// Either windows .exe/.dll or unix executable bit should be set.
+	if runtime.GOOS == "windows" || extension == ".exe" || extension == ".dll" {
+		return true
+	}
+
+	mode, err := api.Stat()
+	return err == nil && mode.Mode()&0111 != 0
 }
