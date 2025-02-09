@@ -34,7 +34,7 @@ func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID digest.
 	t.Helper()
 
 	layer := fakelayer.New(diffID, command)
-	chainLayer, err := fakechainlayer.New(testDir, index, diffID, command, layer, fileContents)
+	chainLayer, err := fakechainlayer.New(testDir, index, diffID, command, layer, fileContents, false)
 	if err != nil {
 		t.Fatalf("fakechainlayer.New(%d, %q, %q, %v, %v) failed: %v", index, diffID, command, layer, fileContents, err)
 	}

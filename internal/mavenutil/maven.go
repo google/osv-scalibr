@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 
 	"deps.dev/util/maven"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 )
 
 // Origin of the dependencies.

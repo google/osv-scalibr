@@ -50,10 +50,11 @@ type extractFunc = func(io.Reader) (*spdx.Document, error)
 
 // Format support based on https://spdx.dev/resources/use/#documents
 var extensionHandlers = map[string]extractFunc{
-	".spdx.json": json.Read,
-	".spdx":      tagvalue.Read,
-	".spdx.yml":  yaml.Read,
-	".spdx.rdf":  rdf.Read,
+	".spdx.json":    json.Read,
+	".spdx":         tagvalue.Read,
+	".spdx.yml":     yaml.Read,
+	".spdx.rdf":     rdf.Read,
+	".spdx.rdf.xml": rdf.Read,
 	// No support for .xsl files because those are too ambiguous and could be many other things.
 }
 

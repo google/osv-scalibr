@@ -147,3 +147,119 @@ func TestWhiteout(t *testing.T) {
 		})
 	}
 }
+
+func TestIsWhiteout(t *testing.T) {
+	testCases := []struct {
+		desc string
+		path string
+		want bool
+	}{
+		{
+			desc: "Empty path",
+			path: "",
+			want: false,
+		},
+		{
+			desc: "Simple file path",
+			path: "file.txt",
+			want: false,
+		},
+		{
+			desc: "Path with directories",
+			path: "dir1/dir2/foo.txt",
+			want: false,
+		},
+		{
+			desc: "Simple whiteout path",
+			path: ".wh.file.txt",
+			want: true,
+		},
+		{
+			desc: "Whiteout path with directories",
+			path: "dir1/dir2/.wh.foo.txt",
+			want: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := whiteout.IsWhiteout(tc.path)
+			if got != tc.want {
+				t.Errorf("IsWhiteout(%q) = %v, want: %v", tc.path, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestToWhiteout(t *testing.T) {
+	testCases := []struct {
+		desc string
+		path string
+		want string
+	}{
+		{
+			desc: "Empty path",
+			path: "",
+			want: ".wh.",
+		},
+		{
+			desc: "Simple file path",
+			path: "file.txt",
+			want: ".wh.file.txt",
+		},
+		{
+			desc: "Path with directories",
+			path: "dir1/dir2/foo.txt",
+			want: "dir1/dir2/.wh.foo.txt",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := whiteout.ToWhiteout(tc.path)
+			if got != tc.want {
+				t.Errorf("ToWhiteout(%q) = %q, want: %q", tc.path, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestToPath(t *testing.T) {
+	testCases := []struct {
+		desc string
+		path string
+		want string
+	}{
+		{
+			desc: "Empty path",
+			path: "",
+			want: "",
+		},
+		{
+			desc: "Simple file path",
+			path: "file.txt",
+			want: "file.txt",
+		},
+		{
+			desc: "Path with directories",
+			path: "dir1/dir2/foo.txt",
+			want: "dir1/dir2/foo.txt",
+		},
+		{
+			desc: "Simple whiteout path",
+			path: ".wh.file.txt",
+			want: "file.txt",
+		},
+		{
+			desc: "Whiteout path with directories",
+			path: "dir1/dir2/.wh.foo.txt",
+			want: "dir1/dir2/foo.txt",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := whiteout.ToPath(tc.path)
+			if got != tc.want {
+				t.Errorf("ToPath(%q) = %q, want: %q", tc.path, got, tc.want)
+			}
+		})
+	}
+}

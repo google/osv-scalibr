@@ -224,6 +224,11 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // v1.Layers found in the image from the tarball.
 func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*chainLayer, error) {
 	layerIndex := 0
+
+	if configFile == nil {
+		return nil, fmt.Errorf("config file is nil")
+	}
+
 	chainLayers := make([]*chainLayer, 0, len(configFile.History))
 	for _, entry := range configFile.History {
 		if entry.EmptyLayer {
@@ -320,10 +325,10 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			continue
 		}
 
-		tombstone := strings.HasPrefix(basename, whiteout.WhiteoutPrefix)
+		isWhiteout := whiteout.IsWhiteout(basename)
 		// TODO: b/379094217 - Handle Opaque Whiteouts
-		if tombstone {
-			basename = basename[len(whiteout.WhiteoutPrefix):]
+		if isWhiteout {
+			basename = whiteout.ToPath(basename)
 		}
 
 		// If we're checking a directory, don't filepath.Join names.
@@ -341,11 +346,11 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		case tar.TypeReg:
-			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
-			newNode, err = img.handleSymlink(realFilePath, virtualPath, originLayerID, tarReader, header, tombstone)
+			newNode, err = img.handleSymlink(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
@@ -419,6 +424,10 @@ func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tar
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
 // the file.
 func (img *Image) handleFile(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+	parentDirectory := filepath.Dir(realFilePath)
+	if err := os.MkdirAll(parentDirectory, dirPermission); err != nil {
+		return nil, fmt.Errorf("failed to create parent directory %s: %w", parentDirectory, err)
+	}
 	// Write all files as read/writable by the current user, inaccessible by anyone else
 	// Actual permission bits are stored in FileNode
 	f, err := os.OpenFile(realFilePath, os.O_CREATE|os.O_RDWR, filePermission)

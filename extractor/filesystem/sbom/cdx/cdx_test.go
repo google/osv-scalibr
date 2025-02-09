@@ -55,11 +55,21 @@ func TestFileRequired(t *testing.T) {
 		{
 			name:           "sbom.bom.json",
 			path:           "testdata/sbom.bom.json",
-			wantIsRequired: true,
+			wantIsRequired: false,
 		},
 		{
 			name:           "sbom.bom.xml",
 			path:           "testdata/sbom.bom.xml",
+			wantIsRequired: false,
+		},
+		{
+			name:           "bom.json",
+			path:           "testdata/bom.json",
+			wantIsRequired: true,
+		},
+		{
+			name:           "bom.xml",
+			path:           "testdata/bom.xml",
 			wantIsRequired: true,
 		},
 		{

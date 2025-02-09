@@ -272,6 +272,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			},
 			expectedResponseCodes: []int{http.StatusOK},
 		},
+
 		{
 			name: "basic auth reuse on subsequent",
 			httpAuth: &datasource.HTTPAuthentication{
