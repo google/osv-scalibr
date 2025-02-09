@@ -22,10 +22,6 @@ import (
 // DependencyClient is the interface of the client required by dependency resolution.
 type DependencyClient interface {
 	resolve.Client
-	// WriteCache writes a manifest-specific resolution cache.
-	WriteCache(filepath string) error
-	// LoadCache loads a manifest-specific resolution cache.
-	LoadCache(filepath string) error
 	// AddRegistries adds the specified registries to fetch data.
 	AddRegistries(registries []Registry) error
 }

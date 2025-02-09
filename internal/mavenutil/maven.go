@@ -23,7 +23,7 @@ import (
 
 	"deps.dev/util/maven"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/internal/datasource"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 // Origin of the dependencies.
