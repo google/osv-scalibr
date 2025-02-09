@@ -19,6 +19,8 @@ import (
 	"github.com/google/osv-scalibr/clients/datasource"
 )
 
+const depsDevCacheExt = ".resolve.deps"
+
 // DepsDevClient is a ResolutionClient wrapping the official resolve.APIClient
 type DepsDevClient struct {
 	resolve.APIClient
