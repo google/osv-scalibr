@@ -228,7 +228,7 @@ func (auth *HTTPAuthentication) addDigest(req *http.Request, challenge string) b
 		return false
 	}
 
-	uri := req.URL.Path // is this sufficient?
+	uri := req.URL.Path
 
 	ha2 := md5.Sum([]byte(req.Method + ":" + uri)) //nolint:gosec
 

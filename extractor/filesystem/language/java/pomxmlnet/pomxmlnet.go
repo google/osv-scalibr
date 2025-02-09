@@ -31,9 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
-	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
