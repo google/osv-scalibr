@@ -43,6 +43,8 @@ const (
 	// DefaultMaxFileBytes is the default maximum size of files that will be unpacked. Larger files are ignored.
 	// The max is large because some files are hundreds of megabytes.
 	DefaultMaxFileBytes = 1024 * 1024 * 1024 // 1GB
+	// DefaultMaxSymlinkDepth is the default maximum symlink depth.
+	DefaultMaxSymlinkDepth = 6
 )
 
 var (
@@ -61,25 +63,36 @@ var (
 
 // Config contains the configuration to load an Image.
 type Config struct {
-	MaxFileBytes int64
-	Requirer     require.FileRequirer
+	MaxFileBytes    int64
+	MaxSymlinkDepth int
+	Requirer        require.FileRequirer
 }
 
 // DefaultConfig returns the default configuration to load an Image.
 func DefaultConfig() *Config {
 	return &Config{
-		MaxFileBytes: DefaultMaxFileBytes,
+		MaxFileBytes:    DefaultMaxFileBytes,
+		MaxSymlinkDepth: DefaultMaxSymlinkDepth,
 		// All files are required by default.
 		Requirer: &require.FileRequirerAll{},
 	}
 }
 
+// validateConfig makes sure that the config values will not cause issues while extracting the
+// image. Checks include:
+//
+//	(1) MaxFileBytes is positive.
+//	(2) Requirer is not nil.
+//	(3) MaxSymlinkDepth is non-negative.
 func validateConfig(config *Config) error {
 	if config.MaxFileBytes <= 0 {
 		return fmt.Errorf("%w: max file bytes must be positive: %d", ErrInvalidConfig, config.MaxFileBytes)
 	}
 	if config.Requirer == nil {
 		return fmt.Errorf("%w: requirer must be specified", ErrInvalidConfig)
+	}
+	if config.MaxSymlinkDepth < 0 {
+		return fmt.Errorf("%w: max symlink depth must be non-negative: %d", ErrInvalidConfig, config.MaxSymlinkDepth)
 	}
 	return nil
 }
@@ -149,7 +162,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("failed to load layers: %w", err)
 	}
 
-	chainLayers, err := initializeChainLayers(v1Layers, configFile)
+	chainLayers, err := initializeChainLayers(v1Layers, configFile, config.MaxSymlinkDepth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize chain layers: %w", err)
 	}
@@ -194,8 +207,12 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		}
 	}
 
+	// The number of passes through the layers is the max symlink depth + 1. The additional pass (+1)
+	// is due to the fact that the regular file contents should always be extracted.
+	totalPasses := config.MaxSymlinkDepth + 1
 	requiredTargets := make(map[string]bool)
-	for range DefaultMaxSymlinkDepth {
+
+	for range totalPasses {
 		// Reverse loop through the layers to start from the latest layer first. This allows us to skip
 		// all files already seen.
 		for i := len(chainLayers) - 1; i >= 0; i-- {
@@ -262,9 +279,9 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // Helper functions
 // ========================================================
 
-// initializeChainLayers initializes the chain layers based on the config file history and the
-// v1.Layers found in the image from the tarball.
-func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*chainLayer, error) {
+// initializeChainLayers initializes the chain layers based on the config file history, the
+// v1.Layers found in the image from the tarball, and the max symlink depth.
+func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSymlinkDepth int) ([]*chainLayer, error) {
 	layerIndex := 0
 
 	if configFile == nil {
@@ -281,6 +298,7 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*c
 					buildCommand: entry.CreatedBy,
 					isEmpty:      true,
 				},
+				maxSymlinkDepth: maxSymlinkDepth,
 			})
 			continue
 		}
@@ -296,9 +314,10 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*c
 		}
 
 		chainLayer := &chainLayer{
-			fileNodeTree: pathtree.NewNode[fileNode](),
-			index:        layerIndex,
-			latestLayer:  layer,
+			fileNodeTree:    pathtree.NewNode[fileNode](),
+			index:           layerIndex,
+			latestLayer:     layer,
+			maxSymlinkDepth: maxSymlinkDepth,
 		}
 		chainLayers = append(chainLayers, chainLayer)
 
@@ -311,9 +330,10 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile) ([]*c
 			return nil, err
 		}
 		chainLayers = append(chainLayers, &chainLayer{
-			fileNodeTree: pathtree.NewNode[fileNode](),
-			index:        layerIndex,
-			latestLayer:  layer,
+			fileNodeTree:    pathtree.NewNode[fileNode](),
+			index:           layerIndex,
+			latestLayer:     layer,
+			maxSymlinkDepth: maxSymlinkDepth,
 		})
 		layerIndex++
 	}

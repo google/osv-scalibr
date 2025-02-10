@@ -363,7 +363,8 @@ func TestFromTarball(t *testing.T) {
 			name:    "image with required symlink but non-required target path",
 			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
 			config: &Config{
-				MaxFileBytes: DefaultMaxFileBytes,
+				MaxFileBytes:    DefaultMaxFileBytes,
+				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
 				// dir1/sample.txt is not explicitly required, but should be unpacked because it is the
 				// target of a required symlink.
 				Requirer: require.NewFileRequirerPaths([]string{
@@ -389,7 +390,8 @@ func TestFromTarball(t *testing.T) {
 			name:    "image with symlink chain but non-required target path",
 			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
 			config: &Config{
-				MaxFileBytes: DefaultMaxFileBytes,
+				MaxFileBytes:    DefaultMaxFileBytes,
+				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
 				Requirer: require.NewFileRequirerPaths([]string{
 					"/dir1/chain-symlink.txt",
 				}),
