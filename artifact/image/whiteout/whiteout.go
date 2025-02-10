@@ -40,7 +40,8 @@ func Files(scalibrfs scalibrfs.FS) (map[string]struct{}, error) {
 
 	err := fs.WalkDir(scalibrfs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			// nolint:nilerr // Continue walking if there is an error.
+			// Continue walking if there is an error.
+			//nolint:nilerr
 			return nil
 		}
 
