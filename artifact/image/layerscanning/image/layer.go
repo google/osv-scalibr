@@ -38,9 +38,6 @@ var (
 	ErrSymlinkDepthExceeded = errors.New("symlink depth exceeded")
 	// ErrSymlinkCycle is returned when a symlink cycle is found.
 	ErrSymlinkCycle = errors.New("symlink cycle found")
-
-	// DefaultMaxSymlinkDepth is the default maximum symlink depth.
-	DefaultMaxSymlinkDepth = 6
 )
 
 // ========================================================
@@ -108,16 +105,17 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, err
 
 // chainLayer represents all the files on up to a layer (files from a chain of layers).
 type chainLayer struct {
-	index        int
-	fileNodeTree *pathtree.Node[fileNode]
-	latestLayer  image.Layer
+	index           int
+	fileNodeTree    *pathtree.Node[fileNode]
+	latestLayer     image.Layer
+	maxSymlinkDepth int
 }
 
 // FS returns a scalibrfs.FS that can be used to scan for inventory.
 func (chainLayer *chainLayer) FS() scalibrfs.FS {
 	return &FS{
 		tree:            chainLayer.fileNodeTree,
-		maxSymlinkDepth: DefaultMaxSymlinkDepth,
+		maxSymlinkDepth: chainLayer.maxSymlinkDepth,
 	}
 }
 
