@@ -60,7 +60,7 @@ linters:
 #    - nilnil
 #    - nlreturn
 #    - noctx
-#    - nolintlint
+    - nolintlint
 #    - nosprintfhostport
 #    - perfsprint
 #    - prealloc
