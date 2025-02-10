@@ -23,10 +23,10 @@ import (
 	"deps.dev/util/resolve/dep"
 	"deps.dev/util/resolve/schema"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
 	mavenManifest "github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
-	"github.com/google/osv-scalibr/internal/resolution/clienttest"
 )
 
 // mockManifest represents a manifest file for testing purposes.
