@@ -360,6 +360,60 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
+			name:    "image with required symlink but non-required target path",
+			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
+			config: &Config{
+				MaxFileBytes: DefaultMaxFileBytes,
+				// dir1/sample.txt is not explicitly required, but should be unpacked because it is the
+				// target of a required symlink.
+				Requirer: require.NewFileRequirerPaths([]string{
+					"/dir1/absolute-symlink.txt",
+				}),
+			},
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/sample.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/absolute-symlink.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "image with symlink chain but non-required target path",
+			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
+			config: &Config{
+				MaxFileBytes: DefaultMaxFileBytes,
+				Requirer: require.NewFileRequirerPaths([]string{
+					"/dir1/chain-symlink.txt",
+				}),
+			},
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/sample.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/absolute-symlink.txt",
+							content:  "sample text\n",
+						},
+						{
+							filepath: "dir1/chain-symlink.txt",
+							content:  "sample text\n",
+						},
+					},
+				},
+			},
+		},
+		{
 			name:    "image with symlink cycle",
 			tarPath: filepath.Join(testdataDir, "symlink-cycle.tar"),
 			config:  DefaultConfig(),
