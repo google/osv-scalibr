@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
+	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	"github.com/google/osv-scalibr/log"
@@ -50,6 +51,8 @@ var (
 	ErrFileReadLimitExceeded = errors.New("file exceeds read limit")
 	// ErrSymlinkPointsOutsideRoot is returned when a symlink points outside the root.
 	ErrSymlinkPointsOutsideRoot = errors.New("symlink points outside the root")
+	// ErrInvalidConfig is returned when the image config is invalid.
+	ErrInvalidConfig = errors.New("invalid image config")
 )
 
 // ========================================================
@@ -59,20 +62,32 @@ var (
 // Config contains the configuration to load an Image.
 type Config struct {
 	MaxFileBytes int64
+	Requirer     require.FileRequirer
 }
 
 // DefaultConfig returns the default configuration to load an Image.
 func DefaultConfig() *Config {
 	return &Config{
 		MaxFileBytes: DefaultMaxFileBytes,
+		Requirer:     &require.FileRequirerAll{},
 	}
+}
+
+func validateConfig(config *Config) error {
+	if config.MaxFileBytes <= 0 {
+		return fmt.Errorf("%w: max file bytes must be positive: %d", ErrInvalidConfig, config.MaxFileBytes)
+	}
+	if config.Requirer == nil {
+		return fmt.Errorf("%w: requirer must be specified", ErrInvalidConfig)
+	}
+	return nil
 }
 
 // Image is a container image. It is composed of a set of layers that can be scanned for software
 // inventory. It contains the proper metadata to attribute inventory to layers.
 type Image struct {
 	chainLayers    []*chainLayer
-	maxFileBytes   int64
+	config         *Config
 	ExtractDir     string
 	BaseImageIndex int
 }
@@ -113,11 +128,16 @@ func FromTarball(tarPath string, config *Config) (*Image, error) {
 // FromV1Image takes a v1.Image and produces a layer-scannable Image. The steps taken are as
 // follows:
 //
-//		(1) Retrieves v1.Layers, configFile. Creates tempPath to store the image files.
-//		(2) Initializes the output image and the chain layers.
-//		(3) Unpacks the layers by looping through the layers in reverse, while filling in the files
+//		(1) Validates the user input image config object.
+//		(2) Retrieves v1.Layers, configFile. Creates tempPath to store the image files.
+//		(3) Initializes the output image and the chain layers.
+//		(4) Unpacks the layers by looping through the layers in reverse, while filling in the files
 //	      into the appropriate chain layer.
 func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
+	if err := validateConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid image config: %w", err)
+	}
+
 	configFile, err := v1Image.ConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file: %w", err)
@@ -145,9 +165,9 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	outputImage := Image{
 		chainLayers:    chainLayers,
+		config:         config,
 		ExtractDir:     tempPath,
 		BaseImageIndex: baseImageIndex,
-		maxFileBytes:   config.MaxFileBytes,
 	}
 
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
@@ -291,9 +311,9 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		if err != nil {
 			return fmt.Errorf("could not read tar: %w", err)
 		}
-		// Some tools prepend everything with "./", so if we don't Clean the
-		// name, we may have duplicate entries, which angers tar-split.
-		// Using path instead of filepath to keep `/` and deterministic behavior
+		// Some tools prepend everything with "./", so if we don't path.Clean the name, we may have
+		// duplicate entries, which angers tar-split. Using path instead of filepath to keep `/` and
+		// deterministic behavior.
 		cleanedFilePath := path.Clean(filepath.ToSlash(header.Name))
 
 		// Prevent "Zip Slip"
@@ -301,8 +321,8 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			continue
 		}
 
-		// Force PAX format to remove Name/Linkname length limit of 100 characters required by USTAR
-		// and to not depend on internal tar package guess which prefers USTAR over PAX.
+		// Force PAX format to remove Name/Linkname length limit of 100 characters required by USTAR and
+		//  to not depend on internal tar package guess which prefers USTAR over PAX.
 		header.Format = tar.FormatPAX
 
 		// There is a difference between the filepath and path modules. The filepath module will handle
@@ -342,6 +362,11 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 		// realFilePath is where the file will be written to disk. filepath.Join will convert
 		// any forward slashes to the appropriate OS specific path separator.
 		realFilePath := filepath.Join(dirPath, filepath.FromSlash(cleanedFilePath))
+
+		// If the file is not required, then skip it.
+		if !img.config.Requirer.FileRequired(virtualPath, header.FileInfo()) {
+			continue
+		}
 
 		var newNode *fileNode
 		switch header.Typeflag {
@@ -437,8 +462,8 @@ func (img *Image) handleFile(realFilePath, virtualPath, originLayerID string, ta
 	}
 	defer f.Close()
 
-	numBytes, err := io.Copy(f, io.LimitReader(tarReader, img.maxFileBytes))
-	if numBytes >= img.maxFileBytes || errors.Is(err, io.EOF) {
+	numBytes, err := io.Copy(f, io.LimitReader(tarReader, img.config.MaxFileBytes))
+	if numBytes >= img.config.MaxFileBytes || errors.Is(err, io.EOF) {
 		return nil, ErrFileReadLimitExceeded
 	}
 

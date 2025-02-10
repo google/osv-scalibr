@@ -27,6 +27,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/require"
 )
 
 const testdataDir = "testdata"
@@ -132,6 +133,23 @@ func TestFromTarball(t *testing.T) {
 		wantErrDuringImageCreation error
 		wantErrWhileReadingFiles   error
 	}{
+		{
+			name:    "invalid config - non positive maxFileBytes",
+			tarPath: filepath.Join(testdataDir, "single-file.tar"),
+			config: &Config{
+				Requirer:     &require.FileRequirerAll{},
+				MaxFileBytes: 0,
+			},
+			wantErrDuringImageCreation: ErrInvalidConfig,
+		},
+		{
+			name:    "invalid config - missing requirer",
+			tarPath: filepath.Join(testdataDir, "single-file.tar"),
+			config: &Config{
+				MaxFileBytes: DefaultMaxFileBytes,
+			},
+			wantErrDuringImageCreation: ErrInvalidConfig,
+		},
 		{
 			name:    "image with one file",
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
@@ -294,6 +312,7 @@ func TestFromTarball(t *testing.T) {
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
 			config: &Config{
 				MaxFileBytes: 1,
+				Requirer:     &require.FileRequirerAll{},
 			},
 			wantChainLayerEntries: []chainLayerEntries{
 				{
@@ -427,12 +446,39 @@ func TestFromTarball(t *testing.T) {
 			config:                     DefaultConfig(),
 			wantErrDuringImageCreation: ErrSymlinkPointsOutsideRoot,
 		},
+		{
+			name:    "require single file from images",
+			tarPath: filepath.Join(testdataDir, "multiple-files.tar"),
+			config: &Config{
+				MaxFileBytes: DefaultMaxFileBytes,
+				// Only require foo.txt.
+				Requirer: require.NewFileRequirerPaths([]string{"/foo.txt"}),
+			},
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "foo.txt",
+							content:  "foo\n",
+						},
+					},
+				},
+				{
+					// dir1/bar.txt and dir1/baz.txt are ignored in the second layer.
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "foo.txt",
+							content:  "foo\n",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			gotImage, gotErr := FromTarball(tc.tarPath, tc.config)
-			defer gotImage.CleanUp()
 
 			if tc.wantErrDuringImageCreation != nil {
 				if errors.Is(gotErr, tc.wantErrDuringImageCreation) {
@@ -444,6 +490,8 @@ func TestFromTarball(t *testing.T) {
 			if gotErr != nil {
 				t.Fatalf("FromTarball(%v) returned unexpected error: %v", tc.tarPath, gotErr)
 			}
+			// Only defer call to CleanUp if the image was created successfully.
+			defer gotImage.CleanUp()
 
 			chainLayers, err := gotImage.ChainLayers()
 			if err != nil {
