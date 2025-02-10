@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package maven provides the manifest parsing and writing for the npm package.json format.
+// Package npm provides the manifest parsing and writing for the npm package.json format.
 package npm
 
 import (

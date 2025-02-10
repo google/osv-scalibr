@@ -24,8 +24,8 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
-	mavenResolve "deps.dev/util/resolve/maven"
-	npmResolve "deps.dev/util/resolve/npm"
+	mavenresolve "deps.dev/util/resolve/maven"
+	npmresolve "deps.dev/util/resolve/npm"
 	client "github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
@@ -50,9 +50,9 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts Re
 	var sys resolve.System = m.System()
 	switch sys {
 	case resolve.NPM:
-		r = npmResolve.NewResolver(cl)
+		r = npmresolve.NewResolver(cl)
 	case resolve.Maven:
-		r = mavenResolve.NewResolver(cl)
+		r = mavenresolve.NewResolver(cl)
 	default:
 		return nil, fmt.Errorf("no resolver for ecosystem %v", sys)
 	}
