@@ -191,7 +191,6 @@ func (auth *HTTPAuthentication) addBearer(req *http.Request) bool {
 func (auth *HTTPAuthentication) addDigest(req *http.Request, challenge string) bool {
 	// Mostly following the algorithm as outlined in https://en.wikipedia.org/wiki/Digest_access_authentication
 	// And also https://datatracker.ietf.org/doc/html/rfc2617
-
 	if auth.Username == "" || auth.Password == "" {
 		return false
 	}
@@ -207,7 +206,8 @@ func (auth *HTTPAuthentication) addDigest(req *http.Request, challenge string) b
 	}
 	var cnonce string
 
-	ha1 := md5.Sum([]byte(auth.Username + ":" + realm + ":" + auth.Password)) //nolint:gosec
+	//nolint:gosec
+	ha1 := md5.Sum([]byte(auth.Username + ":" + realm + ":" + auth.Password))
 	switch params["algorithm"] {
 	case "MD5-sess":
 		cnonce = auth.cnonce()
@@ -216,7 +216,8 @@ func (auth *HTTPAuthentication) addDigest(req *http.Request, challenge string) b
 		}
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "%x:%s:%s", ha1, nonce, cnonce)
-		ha1 = md5.Sum(b.Bytes()) //nolint:gosec
+		//nolint:gosec
+		ha1 = md5.Sum(b.Bytes())
 	case "MD5":
 	case "":
 	default:
