@@ -65,27 +65,27 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 func TestExtractor_Extract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
-		// {
-		// 	Name: "Invalid toml",
-		// 	InputConfig: extracttest.ScanInputMockConfig{
-		// 		Path: "testdata/not-toml.txt",
-		// 	},
-		// 	WantInventory: nil,
-		// 	WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-		// },
-		// {
-		// 	Name: "no dependencies",
-		// 	InputConfig: extracttest.ScanInputMockConfig{
-		// 		Path: "testdata/no-dependency.toml",
-		// 	},
-		// 	WantInventory: []*extractor.Inventory{
-		// 		{
-		// 			Name:      "hello_world",
-		// 			Version:   "0.1.0",
-		// 			Locations: []string{"testdata/no-dependency.toml"},
-		// 		},
-		// 	},
-		// },
+		{
+			Name: "Invalid toml",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/not-toml.txt",
+			},
+			WantInventory: nil,
+			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+		},
+		{
+			Name: "no dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/no-dependency.toml",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "hello_world",
+					Version:   "0.1.0",
+					Locations: []string{"testdata/no-dependency.toml"},
+				},
+			},
+		},
 		{
 			Name: "dependency with only version specified",
 			InputConfig: extracttest.ScanInputMockConfig{
