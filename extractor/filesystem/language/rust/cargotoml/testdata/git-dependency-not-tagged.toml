@@ -1,0 +1,6 @@
+[package]
+  name = "hello_world"
+  version = "0.1.0"
+
+[dependencies]
+  regex = { git = "https://github.com/rust-lang/regex.git"}
