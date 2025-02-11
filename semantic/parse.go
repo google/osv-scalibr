@@ -24,7 +24,7 @@ func MustParse(str string, ecosystem string) Version {
 // Parse attempts to parse the given string as a version for the specified ecosystem,
 // returning an ErrUnsupportedEcosystem error if the ecosystem is not supported.
 func Parse(str string, ecosystem string) (Version, error) {
-	//nolint:exhaustive // Using strings to specify ecosystem instead of lockfile types
+	// TODO(#457): support more ecosystems
 	switch ecosystem {
 	case "Alpine":
 		return parseAlpineVersion(str)
