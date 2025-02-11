@@ -21,7 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 )
 
-// Temporarily internal while migration is in progress.
+// TODO(#454): Temporarily internal while migration is in progress.
 // Will need to be moved to publicly accessible location once external interface is created.
 
 // VulnerabilityMatcher interface provides functionality get a list of affecting vulnerabilities for each package in an inventory.
