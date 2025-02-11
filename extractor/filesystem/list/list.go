@@ -61,6 +61,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -134,6 +135,7 @@ var (
 	// Rust extractors.
 	Rust []filesystem.Extractor = []filesystem.Extractor{
 		cargolock.Extractor{},
+		cargotoml.Extractor{},
 		cargoauditable.New(cargoauditable.DefaultConfig()),
 	}
 	// SBOM extractors.
