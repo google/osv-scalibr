@@ -16,14 +16,17 @@
 package gomod
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
 
+	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"golang.org/x/exp/maps"
@@ -112,6 +115,30 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
+	// for go mod version <= 1.6 read the go.sum file to extract indirect dependencies
+	// TODO
+	// - check that the compare is correctly executed
+	// - go.sum could have multiple versions of a module => TRUE
+	// - go.sum could have modules which are not used anymore => This problem should exists also in go.mod
+	//
+	if semver.Go.Compare(parsedLockfile.Go.Version, "1.6") <= 0 {
+		sumRequires, err := readSumFile(input)
+		if err != nil {
+			// TODO: find out which is the best way to log
+			log.Warn(err)
+		}
+
+		for _, require := range sumRequires {
+			name := require.mod
+			version := strings.TrimPrefix(require.version, "v")
+			packages[mapKey{name: name, version: version}] = &extractor.Inventory{
+				Name:      name,
+				Version:   version,
+				Locations: []string{input.Path},
+			}
+		}
+	}
+
 	// Add the Go stdlib as an explicit dependency.
 	if parsedLockfile.Go != nil && parsedLockfile.Go.Version != "" {
 		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
@@ -142,6 +169,56 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 	return "Go"
+}
+
+type sumRequire struct {
+	mod     string
+	version string
+}
+
+func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
+	goSumPath := strings.TrimSuffix(input.Path, ".mod") + ".sum"
+	f, err := input.FS.Open(goSumPath)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(f)
+
+	requires := []*sumRequire{}
+	for lineNumber := 0; scanner.Scan(); lineNumber++ {
+		line := scanner.Text()
+
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, " ")
+		if len(parts) < 2 {
+			// TODO: find a better way to log?
+			log.Warn("wrongly formatted line %s:d", goSumPath, lineNumber)
+			continue
+		}
+		name := parts[0]
+		version := parts[1]
+
+		// skip a line if it the version contains "/go.mod" because
+		// lines containing "/go.mod" are duplicate used to verify the hash of the go.mod file
+		if strings.Contains(version, "/go.mod") {
+			continue
+		}
+
+		requires = append(requires, &sumRequire{
+			mod:     name,
+			version: version,
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return requires, nil
 }
 
 var _ filesystem.Extractor = Extractor{}
