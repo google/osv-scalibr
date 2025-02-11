@@ -434,7 +434,9 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 				break
 			}
 		}
-		if !required {
+		// If the header represents a directory, then it should be required in order to capture the
+		// directory information, even if its filepath is not required.
+		if !required && (header.Typeflag != tar.TypeDir) {
 			continue
 		}
 
