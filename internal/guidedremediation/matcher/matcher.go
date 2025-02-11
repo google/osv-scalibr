@@ -19,6 +19,7 @@ import (
 	"context"
 
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // TODO(#454): Temporarily internal while migration is in progress.
@@ -26,28 +27,5 @@ import (
 
 // VulnerabilityMatcher interface provides functionality get a list of affecting vulnerabilities for each package in an inventory.
 type VulnerabilityMatcher interface {
-	MatchVulnerabilities(ctx context.Context, invs []*extractor.Inventory) ([][]*OSVRecord, error)
-}
-
-// OSVRecord is a representation of an OSV record.
-// TODO: replace with https://github.com/ossf/osv-schema/pull/333
-type OSVRecord struct {
-	ID       string `yaml:"id"`
-	Affected []struct {
-		Package struct {
-			Ecosystem string `yaml:"ecosystem,omitempty"`
-			Name      string `yaml:"name,omitempty"`
-		} `yaml:"package,omitempty"`
-		Ranges []struct {
-			Type   string     `yaml:"type,omitempty"`
-			Events []OSVEvent `yaml:"events,omitempty"`
-		} `yaml:"ranges,omitempty"`
-		Versions []string `yaml:"versions,omitempty"`
-	} `yaml:"affected,omitempty"`
-}
-
-type OSVEvent struct {
-	Introduced   string `yaml:"introduced,omitempty"`
-	Fixed        string `yaml:"fixed,omitempty"`
-	LastAffected string `yaml:"last_affected,omitempty"`
+	MatchVulnerabilities(ctx context.Context, invs []*extractor.Inventory) ([][]*osvschema.Vulnerability, error)
 }
