@@ -14,22 +14,14 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// TODO: maybe here I could use a struct and keep some metadata, ex:
-// - rev for source code
-// - git for source code
-// currently metadata information are not retrieved following Cargo.lock extractor implementation:
-// https://github.com/google/osv-scalibr/blob/1c4ee505a8ccd68cad7ae8d8523a9c8b5c5140e5/extractor/filesystem/language/rust/cargolock/cargolock.go#L36
 type cargoTomlDependency struct {
 	Version string
 }
 
-// UnmarshalTOML follows rust Dependency specification:
-// https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+// UnmarshalTOML parses a dependency from a Cargo.toml file.
 //
-// The version key always implies that the package is available in a registry,
-// regardless of the presence of git or path keys.
-//
-// If the Version field is specified it overrides everything else
+// Dependencies in Cargo.toml can be defined as simple strings (e.g., version)
+// or as more complex objects (e.g., with version, path, etc.)
 func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 	getString := func(m map[string]any, key string) (string, bool) {
 		v, ok := m[key]
@@ -53,18 +45,13 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 			v.Version = tag
 			return nil
 		}
-		// no error to report since both Version and Tag can be omitted
+		// no version or tag found; no error is returned as both fields are optional
 		return nil
 	default:
-		return errors.New("Cargo.toml dependency is malformed")
+		return errors.New("invalid format for Cargo.toml dependency")
 	}
 }
 
-// TODO:
-// - maybe here I could keep authors information to return as metadata, ex:
-// - [] Authors
-// - currently metadata information are not retrieved following Cargo.lock extractor implementation:
-// https://github.com/google/osv-scalibr/blob/1c4ee505a8ccd68cad7ae8d8523a9c8b5c5140e5/extractor/filesystem/language/rust/cargolock/cargolock.go#L36
 type cargoTomlPackage struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
