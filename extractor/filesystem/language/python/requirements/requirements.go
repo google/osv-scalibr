@@ -41,7 +41,7 @@ var (
 	// * Version wildcards (*)
 	// * Less than (<)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<|,`)
+	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,`)
 	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
 	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
@@ -288,7 +288,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 	}
 
 	t := []string{}
-	separators := []string{"===", "==", ">=", "~="}
+	separators := []string{"===", "==", ">=", "<=", "~="}
 	comp := ""
 	for _, sep := range separators {
 		if strings.Contains(s, sep) {

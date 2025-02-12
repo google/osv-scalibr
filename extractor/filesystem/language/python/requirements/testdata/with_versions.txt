@@ -7,3 +7,4 @@ qwerty \
 hy-phen==1.2
 under_score==1.3
 yolo===1.0
+pkg<=1.2.3

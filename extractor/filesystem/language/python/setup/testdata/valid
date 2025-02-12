@@ -26,6 +26,7 @@ setup(
         "foo>=2.20,<3.0",
         "pydantic>=1.8.2,<2.0",
         "certifi>=2017.4.17",
+        "pkg3<= 1.2.3",
         # 'sslyze>=4.0.4', # todo,
         "foo"
       ],

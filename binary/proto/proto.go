@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
@@ -489,6 +490,12 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
+			},
+		}
+	case *setup.Metadata:
+		i.Metadata = &spb.Inventory_PythonSetupMetadata{
+			PythonSetupMetadata: &spb.PythonSetupMetadata{
+				VersionComparator: m.VersionComparator,
 			},
 		}
 	case *winmetadata.OSVersion:
