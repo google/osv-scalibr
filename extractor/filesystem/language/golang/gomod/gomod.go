@@ -117,14 +117,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	isGoVersionSpecified := parsedLockfile.Go != nil && parsedLockfile.Go.Version != ""
 
-	// TODO
-	// - write a better compare
-	// - what to do if the version is not specified?
+	// TODO: I don't like this check
+	// if the version is not specified assume it is after 1.16
 	if isGoVersionSpecified && semver.Go.Compare("v"+parsedLockfile.Go.Version, "v1.17") < 0 {
 		sumRequires, err := readSumFile(input)
 		if err != nil {
-			// TODO: find out which is the best way to log
-			log.Warn(err)
+			log.Warnf("Error reading go.sum file: %s", err)
 		}
 
 		for _, require := range sumRequires {
@@ -192,12 +190,11 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 			continue
 		}
 
-		parts := strings.Split(line, " ")
-		if len(parts) < 2 {
-			// TODO: find a better way to log?
-			log.Warn("wrongly formatted line %s:d", goSumPath, lineNumber)
-			continue
+		parts := strings.Fields(line)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("Error reading go.sum file: wrongly formatted line %s:%d", goSumPath, lineNumber)
 		}
+
 		name := parts[0]
 		version := parts[1]
 
@@ -207,7 +204,6 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 			continue
 		}
 
-		// TODO: maybe remove the rev after the dash in the version?
 		requires = append(requires, &sumRequire{
 			mod:     name,
 			version: version,
