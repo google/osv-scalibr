@@ -115,13 +115,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
-	// for go mod version <= 1.6 read the go.sum file to extract indirect dependencies
+	isGoVersionSpecified := parsedLockfile.Go != nil && parsedLockfile.Go.Version != ""
+
 	// TODO
-	// - check that the compare is correctly executed
-	// - go.sum could have multiple versions of a module => TRUE
-	// - go.sum could have modules which are not used anymore => This problem should exists also in go.mod
-	//
-	if semver.Go.Compare(parsedLockfile.Go.Version, "1.6") <= 0 {
+	// - write a better compare
+	// - what to do if the version is not specified?
+	if isGoVersionSpecified && semver.Go.Compare("v"+parsedLockfile.Go.Version, "v1.17") < 0 {
 		sumRequires, err := readSumFile(input)
 		if err != nil {
 			// TODO: find out which is the best way to log
@@ -140,7 +139,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	// Add the Go stdlib as an explicit dependency.
-	if parsedLockfile.Go != nil && parsedLockfile.Go.Version != "" {
+	if isGoVersionSpecified {
 		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
 			Version:   parsedLockfile.Go.Version,
@@ -208,6 +207,7 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 			continue
 		}
 
+		// TODO: maybe remove the rev after the dash in the version?
 		requires = append(requires, &sumRequire{
 			mod:     name,
 			version: version,

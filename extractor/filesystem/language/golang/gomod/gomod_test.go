@@ -256,6 +256,72 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "test extractor for go > 1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-after-1.16.mod",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "github.com/sirupsen/logrus",
+					Version:   "1.9.3",
+					Locations: []string{"testdata/indirect-after-1.16.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					Locations: []string{"testdata/indirect-after-1.16.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.23",
+					Locations: []string{"testdata/indirect-after-1.16.mod"},
+				},
+			},
+		},
+		{
+			Name: "test extractor for go <=1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-before-1.16.mod",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "github.com/davecgh/go-spew",
+					Version:   "1.1.1",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "github.com/pmezard/go-difflib",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "github.com/sirupsen/logrus",
+					Version:   "1.9.3",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "github.com/stretchr/testify",
+					Version:   "1.7.0",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "gopkg.in/yaml.v3",
+					Version:   "3.0.0-20200313102051-9f266ea9e77c",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.16",
+					Locations: []string{"testdata/indirect-before-1.16.mod"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
