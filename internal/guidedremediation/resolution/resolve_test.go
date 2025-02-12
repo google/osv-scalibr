@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
-	mavenManifest "github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
+	mavenmanifest "github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
 )
 
@@ -226,9 +226,9 @@ func TestResolveMaven(t *testing.T) {
 				typ:     managementType.Clone(),
 			},
 		},
-		ecosystemSpecific: mavenManifest.ManifestSpecific{
+		ecosystemSpecific: mavenmanifest.ManifestSpecific{
 			// Construct the OriginalRequirements that resolvePostProcess checks.
-			OriginalRequirements: []mavenManifest.DependencyWithOrigin{
+			OriginalRequirements: []mavenmanifest.DependencyWithOrigin{
 				{
 					Dependency: maven.Dependency{
 						GroupID:    "group",
