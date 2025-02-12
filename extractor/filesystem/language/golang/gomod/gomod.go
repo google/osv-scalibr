@@ -19,11 +19,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"go/version"
 	"io"
 	"path/filepath"
 	"strings"
 
-	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/log"
@@ -117,9 +117,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	isGoVersionSpecified := parsedLockfile.Go != nil && parsedLockfile.Go.Version != ""
 
-	// TODO: I don't like this check
 	// if the version is not specified assume it is after 1.16
-	if isGoVersionSpecified && semver.Go.Compare("v"+parsedLockfile.Go.Version, "v1.17") < 0 {
+	if isGoVersionSpecified && version.Compare("go"+parsedLockfile.Go.Version, "go1.17") < 0 {
 		sumRequires, err := readSumFile(input)
 		if err != nil {
 			log.Warnf("Error reading go.sum file: %s", err)
@@ -199,7 +198,7 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 		version := parts[1]
 
 		// skip a line if it the version contains "/go.mod" because
-		// lines containing "/go.mod" are duplicate used to verify the hash of the go.mod file
+		// lines containing "/go.mod" are duplicates used to verify the hash of the go.mod file
 		if strings.Contains(version, "/go.mod") {
 			continue
 		}
