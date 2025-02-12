@@ -26,7 +26,7 @@ type RequirementKey struct {
 	KnownAs string
 }
 
-var _ map[RequirementKey]interface{}
+var _ map[RequirementKey]any
 
 // MakeRequirementKey constructs an npm RequirementKey from the given RequirementVersion.
 func MakeRequirementKey(requirement resolve.RequirementVersion) RequirementKey {

@@ -28,7 +28,7 @@ type RequirementKey struct {
 	Classifier   string
 }
 
-var _ map[RequirementKey]interface{}
+var _ map[RequirementKey]any
 
 // MakeRequirementKey constructs a maven RequirementKey from the given RequirementVersion.
 func MakeRequirementKey(requirement resolve.RequirementVersion) RequirementKey {
