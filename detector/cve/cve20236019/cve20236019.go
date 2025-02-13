@@ -39,11 +39,21 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+const (
+	// Name of the detector.
+	Name = "cve/CVE-2023-6019"
+)
+
 // Detector is a SCALIBR Detector for CVE-2023-6019
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector
-func (Detector) Name() string { return "cve/CVE-2023-6019" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector
 func (Detector) Version() int { return 0 }

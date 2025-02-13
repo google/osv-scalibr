@@ -70,6 +70,9 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // PackagesLockJSON represents the `packages.lock.json` file generated from
 // running `dotnet restore --use-lock-file`.
 // The schema path we care about is:

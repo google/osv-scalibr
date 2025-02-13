@@ -29,6 +29,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "python/pdmlock"
+)
+
 type pdmLockPackage struct {
 	Name     string   `toml:"name"`
 	Version  string   `toml:"version"`
@@ -44,8 +49,11 @@ type pdmLockFile struct {
 // Extractor extracts python packages from pdm.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "python/pdmlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

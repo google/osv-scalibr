@@ -31,6 +31,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "python/uvlock"
+)
+
 type uvLockPackageSource struct {
 	Virtual string `toml:"virtual"`
 	Git     string `toml:"git"`
@@ -58,8 +63,11 @@ type uvLockFile struct {
 // Extractor extracts python packages from uv.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "python/uvlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

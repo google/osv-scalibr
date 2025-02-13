@@ -29,6 +29,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "cpp/conanlock"
+)
+
 type conanReference struct {
 	Name            string
 	Version         string
@@ -192,8 +197,11 @@ func parseConanLock(lockfile conanLockFile) []*extractor.Inventory {
 // Extractor extracts Conan packages from conan.lock files.
 type Extractor struct{}
 
+// New returns a new instance of this Extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "cpp/conanlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

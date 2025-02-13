@@ -33,6 +33,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "java/pomxml"
+)
+
 // "Constant" at the top to compile this regex only once.
 var (
 	versionRequirementReg = regexp.MustCompile(`[[(]?(.*?)(?:,|[)\]]|$)`)
@@ -132,8 +137,11 @@ func (p *mavenLockProperties) UnmarshalXML(d *xml.Decoder, start xml.StartElemen
 // Extractor extracts Maven packages from pom.xml files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "java/pomxml" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

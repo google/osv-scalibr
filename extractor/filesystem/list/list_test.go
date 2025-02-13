@@ -69,17 +69,17 @@ func TestExtractorsFromNames(t *testing.T) {
 		{
 			desc:     "Find all extractors of a type",
 			names:    []string{"python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Case-insensitive",
 			names:    []string{"Python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Remove duplicates",
 			names:    []string{"python", "python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Nonexistent plugin",
@@ -130,9 +130,9 @@ func TestExtractorFromName(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc:    "Works for upper case names",
+			desc:    "Case inensitive matching",
 			name:    "python/Pipfilelock",
-			wantExt: "python/Pipfilelock",
+			wantExt: "python/pipfilelock",
 		},
 	}
 
