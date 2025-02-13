@@ -48,18 +48,23 @@ type Config struct {
 	*datasource.MavenRegistryAPIClient
 }
 
-// DefaultConfig returns the default configuration for the pomxmlnet extractor.
-func DefaultConfig() Config {
+// NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
+func NewConfig(registry string) Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	depClient, _ := resolution.NewMavenRegistryClient(datasource.MavenCentral)
+	depClient, _ := resolution.NewMavenRegistryClient(registry)
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
-		URL:             datasource.MavenCentral,
+		URL:             registry,
 		ReleasesEnabled: true,
 	})
 	return Config{
 		DependencyClient:       depClient,
 		MavenRegistryAPIClient: mavenClient,
 	}
+}
+
+// DefaultConfig returns the default configuration for the pomxmlnet extractor.
+func DefaultConfig() Config {
+	return NewConfig(datasource.MavenCentral)
 }
 
 // New makes a new pom.xml transitive extractor with the given config.

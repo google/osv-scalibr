@@ -24,6 +24,7 @@ import (
 	// OSV extractors.
 
 	// SCALIBR internal extractors.
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 
@@ -102,7 +103,7 @@ var (
 		gradlelockfile.Extractor{},
 		gradleverificationmetadataxml.Extractor{},
 		javaarchive.New(javaarchive.DefaultConfig()),
-		pomxmlnet.New(pomxmlnet.DefaultConfig()),
+		pomxmlnet.New(pomxmlnet.NewConfig(datasource.MavenCentralMirror)),
 	}
 	// Javascript extractors.
 	Javascript []filesystem.Extractor = []filesystem.Extractor{
