@@ -38,8 +38,36 @@ import (
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
+	depClient   resolution.DependencyClient
+	mavenClient *datasource.MavenRegistryAPIClient
+}
+
+// Config is the configuration for the pomxmlnet Extractor.
+type Config struct {
 	resolution.DependencyClient
 	*datasource.MavenRegistryAPIClient
+}
+
+// DefaultConfig returns the default configuration for the pomxmlnet extractor.
+func DefaultConfig() Config {
+	// No need to check errors since we are using the default Maven Central URL.
+	depClient, _ := resolution.NewMavenRegistryClient(datasource.MavenCentral)
+	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
+		URL:             datasource.MavenCentral,
+		ReleasesEnabled: true,
+	})
+	return Config{
+		DependencyClient:       depClient,
+		MavenRegistryAPIClient: mavenClient,
+	}
+}
+
+// New makes a new pom.xml transitive extractor with the given config.
+func New(c Config) *Extractor {
+	return &Extractor{
+		depClient:   c.DependencyClient,
+		mavenClient: c.MavenRegistryAPIClient,
+	}
 }
 
 // Name of the extractor.
@@ -56,12 +84,12 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// FileRequired never returns true, as this is for the osv-scanner json output.
+// FileRequired returns true if the specified file matches Maven POM lockfile patterns.
 func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 	return filepath.Base(fapi.Path()) == "pom.xml"
 }
 
-// Extract extracts packages from yarn.lock files passed through the scan input.
+// Extract extracts packages from pom.xml files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
@@ -71,8 +99,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
+	// Clear the registries that may be from other extraction.
+	e.mavenClient = e.mavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
-		if err := e.MavenRegistryAPIClient.AddRegistry(datasource.MavenRegistry{
+		if err := e.mavenClient.AddRegistry(datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -82,7 +112,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
-	if err := mavenutil.MergeParents(ctx, input, e.MavenRegistryAPIClient, &project, project.Parent, 1, true); err != nil {
+	if err := mavenutil.MergeParents(ctx, input, e.mavenClient, &project, project.Parent, 1, true); err != nil {
 		return nil, fmt.Errorf("failed to merge parents: %w", err)
 	}
 	// Process the dependencies:
@@ -90,20 +120,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
 	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, e.MavenRegistryAPIClient, groupID, artifactID, version)
+		return mavenutil.GetDependencyManagement(ctx, e.mavenClient, groupID, artifactID, version)
 	})
 
-	if registries := e.MavenRegistryAPIClient.GetRegistries(); len(registries) > 0 {
+	if registries := e.mavenClient.GetRegistries(); len(registries) > 0 {
 		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
-		if err := e.DependencyClient.AddRegistries(clientRegs); err != nil {
+		if err := e.depClient.AddRegistries(clientRegs); err != nil {
 			return nil, err
 		}
 	}
 
-	overrideClient := resolution.NewOverrideClient(e.DependencyClient)
+	overrideClient := resolution.NewOverrideClient(e.depClient)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.
