@@ -34,18 +34,16 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 
 	switch data := data.(type) {
 	case string:
+		// if the type is string then the data is version
 		v.Version = data
 		return nil
 	case map[string]any:
+		// if the type is an object then the version is inside it
 		if version, ok := getString(data, "version"); ok {
 			v.Version = version
 			return nil
 		}
-		if tag, ok := getString(data, "tag"); ok {
-			v.Version = tag
-			return nil
-		}
-		// no version or tag found; no error is returned as both fields are optional
+		// no version found, no error is returned as it is optional
 		return nil
 	default:
 		return errors.New("invalid format for Cargo.toml dependency")
@@ -99,6 +97,9 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*e
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
+		if dependency.Version == "" {
+			continue
+		}
 		packages = append(packages, &extractor.Inventory{
 			Name:      name,
 			Version:   dependency.Version,
