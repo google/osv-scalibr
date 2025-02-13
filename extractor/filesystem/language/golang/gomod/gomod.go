@@ -117,20 +117,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	isGoVersionSpecified := parsedLockfile.Go != nil && parsedLockfile.Go.Version != ""
 
-	// if the version is not specified assume it is after 1.16
+	// At go 1.17 and above, the go command adds an indirect requirement for each module that provides any
+	// package imported (even indirectly) by a package or test in the main module or passed as an argument to go get.
+	//
+	// for versions below extract indirect dependencies from the go.sum file
 	if isGoVersionSpecified && version.Compare("go"+parsedLockfile.Go.Version, "go1.17") < 0 {
-		sumRequires, err := readSumFile(input)
+		sumPackages, err := extractFromSum(input)
 		if err != nil {
 			log.Warnf("Error reading go.sum file: %s", err)
-		}
-
-		for _, require := range sumRequires {
-			name := require.mod
-			version := strings.TrimPrefix(require.version, "v")
-			packages[mapKey{name: name, version: version}] = &extractor.Inventory{
-				Name:      name,
-				Version:   version,
-				Locations: []string{input.Path},
+		} else {
+			for _, p := range sumPackages {
+				packages[mapKey{name: p.Name, version: p.Version}] = p
 			}
 		}
 	}
@@ -167,12 +164,10 @@ func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 	return "Go"
 }
 
-type sumRequire struct {
-	mod     string
-	version string
-}
-
-func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
+// extractFromSum extracts dependencies from the go.sum file.
+//
+// Note: This function may produce false positives, as the go.sum file might be outdated.
+func extractFromSum(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	goSumPath := strings.TrimSuffix(input.Path, ".mod") + ".sum"
 	f, err := input.FS.Open(goSumPath)
 	if err != nil {
@@ -180,8 +175,8 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 	}
 
 	scanner := bufio.NewScanner(f)
+	packages := []*extractor.Inventory{}
 
-	requires := []*sumRequire{}
 	for lineNumber := 0; scanner.Scan(); lineNumber++ {
 		line := scanner.Text()
 
@@ -195,7 +190,7 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 		}
 
 		name := parts[0]
-		version := parts[1]
+		version := strings.TrimPrefix(parts[1], "v")
 
 		// skip a line if it the version contains "/go.mod" because
 		// lines containing "/go.mod" are duplicates used to verify the hash of the go.mod file
@@ -203,9 +198,10 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 			continue
 		}
 
-		requires = append(requires, &sumRequire{
-			mod:     name,
-			version: version,
+		packages = append(packages, &extractor.Inventory{
+			Name:      name,
+			Version:   version,
+			Locations: []string{goSumPath},
 		})
 	}
 
@@ -213,7 +209,7 @@ func readSumFile(input *filesystem.ScanInput) ([]*sumRequire, error) {
 		return nil, err
 	}
 
-	return requires, nil
+	return packages, nil
 }
 
 var _ filesystem.Extractor = Extractor{}
