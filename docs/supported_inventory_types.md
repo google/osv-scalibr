@@ -60,6 +60,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Installed PyPI packages (global and venv)
   * Lockfiles: requirements.txt, poetry.lock, Pipfile.lock, pdm.lock
   * Conda packages
+  * setup.py
 * R
   * Lockfiles: renv.lock
 * Ruby
