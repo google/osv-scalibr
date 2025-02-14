@@ -19,8 +19,8 @@ import (
 	"deps.dev/util/resolve"
 )
 
-// DependencyClient is the interface of the client required by dependency resolution.
-type DependencyClient interface {
+// ClientWithRegistries is a resolve.Client that allows package registries to be added.
+type ClientWithRegistries interface {
 	resolve.Client
 	// AddRegistries adds the specified registries to fetch data.
 	AddRegistries(registries []Registry) error

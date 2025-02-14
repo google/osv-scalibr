@@ -21,20 +21,20 @@ import (
 	"deps.dev/util/resolve"
 )
 
-// OverrideClient wraps a DependencyClient, allowing for custom packages & versions to be added
+// OverrideClient wraps a resolve.Client, allowing for custom packages & versions to be added
 type OverrideClient struct {
-	DependencyClient
+	resolve.Client
 	// Can't quite reuse resolve.LocalClient because it automatically creates dependencies
 	pkgVers map[resolve.PackageKey][]resolve.Version            // versions of a package
 	verDeps map[resolve.VersionKey][]resolve.RequirementVersion // dependencies of a version
 }
 
 // NewOverrideClient makes a new OverrideClient.
-func NewOverrideClient(c DependencyClient) *OverrideClient {
+func NewOverrideClient(c resolve.Client) *OverrideClient {
 	return &OverrideClient{
-		DependencyClient: c,
-		pkgVers:          make(map[resolve.PackageKey][]resolve.Version),
-		verDeps:          make(map[resolve.VersionKey][]resolve.RequirementVersion),
+		Client:  c,
+		pkgVers: make(map[resolve.PackageKey][]resolve.Version),
+		verDeps: make(map[resolve.VersionKey][]resolve.RequirementVersion),
 	}
 }
 
@@ -62,7 +62,7 @@ func (c *OverrideClient) Version(ctx context.Context, vk resolve.VersionKey) (re
 		}
 	}
 
-	return c.DependencyClient.Version(ctx, vk)
+	return c.Client.Version(ctx, vk)
 }
 
 // Versions returns the versions of a package specified by the PackageKey.
@@ -71,7 +71,7 @@ func (c *OverrideClient) Versions(ctx context.Context, pk resolve.PackageKey) ([
 		return vers, nil
 	}
 
-	return c.DependencyClient.Versions(ctx, pk)
+	return c.Client.Versions(ctx, pk)
 }
 
 // Requirements returns the requirement versions of the version specified by the VersionKey.
@@ -80,7 +80,7 @@ func (c *OverrideClient) Requirements(ctx context.Context, vk resolve.VersionKey
 		return deps, nil
 	}
 
-	return c.DependencyClient.Requirements(ctx, vk)
+	return c.Client.Requirements(ctx, vk)
 }
 
 // MatchingVersions returns the versions matching the requirement specified by the VersionKey.
@@ -89,5 +89,5 @@ func (c *OverrideClient) MatchingVersions(ctx context.Context, vk resolve.Versio
 		return resolve.MatchRequirement(vk, vs), nil
 	}
 
-	return c.DependencyClient.MatchingVersions(ctx, vk)
+	return c.Client.MatchingVersions(ctx, vk)
 }

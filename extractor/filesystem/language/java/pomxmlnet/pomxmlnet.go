@@ -38,13 +38,13 @@ import (
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
-	depClient   resolution.DependencyClient
+	depClient   resolve.Client
 	mavenClient *datasource.MavenRegistryAPIClient
 }
 
 // Config is the configuration for the pomxmlnet Extractor.
 type Config struct {
-	resolution.DependencyClient
+	DependencyClient resolve.Client
 	*datasource.MavenRegistryAPIClient
 }
 
@@ -133,8 +133,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
-		if err := e.depClient.AddRegistries(clientRegs); err != nil {
-			return nil, err
+		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
+			if err := cl.AddRegistries(clientRegs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
