@@ -698,6 +698,7 @@ func mustJar(t *testing.T, path string) *os.File {
 	if err != nil {
 		t.Fatalf("os.CreateTemp(\"temp-*.jar\") unexpected error: %v", err)
 	}
+	//nolint:errcheck
 	defer jarFile.Sync()
 
 	zipWriter := zip.NewWriter(jarFile)

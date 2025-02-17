@@ -51,7 +51,7 @@ func TestScan(t *testing.T) {
 
 	tmp := t.TempDir()
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
-	os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 
 	invName := "software"
 	fakeExtractor := fe.New(
