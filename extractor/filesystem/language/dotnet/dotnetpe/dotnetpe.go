@@ -31,7 +31,7 @@ package dotnetpe
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	peparser "github.com/saferwall/pe"
 )
 
 const (
@@ -83,22 +84,68 @@ type Extractor struct {
 
 // Ecosystem implements filesystem.Extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	// TODO: check if this is correct
 	return "NuGet"
 }
 
 // Extract parses the PE files to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	panic("unimplemented")
+	// TODO: maybe use peparser.NewBytes here
+	pe, err := peparser.New(input.Path, &peparser.Options{})
+	if err != nil {
+		return nil, err
+	}
+
+	ivs := []*extractor.Inventory{}
+
+	// TODO: from my experience this step is redundant:
+	// pe.CLR.MetadataTables seems to always contain an entry for the name and version of the current file
+	//
+	// solution:
+	// 1. remove this step if it's actually always redundant
+	// 2. add a deduplication pass (see `extractor/filesystem/language/golang/gomod/gomod.go` implementation) if not
+	if versionResources, err := pe.ParseVersionResources(); err == nil {
+		name, version := versionResources["InternalName"], versionResources["Assembly Version"]
+		if name != "" && version != "" {
+			ivs = append(ivs, &extractor.Inventory{
+				Name:    name,
+				Version: version,
+			})
+		}
+	}
+
+	for _, table := range pe.CLR.MetadataTables {
+		switch content := table.Content.(type) {
+		case []peparser.AssemblyTableRow:
+			for _, v := range content {
+				name := string(pe.GetStringFromData(v.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				version := fmt.Sprintf("%d.%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber, v.RevisionNumber)
+				ivs = append(ivs, &extractor.Inventory{
+					Name:    name,
+					Version: version,
+				})
+			}
+			break
+		case []peparser.AssemblyRefTableRow:
+			for _, v := range content {
+				name := string(pe.GetStringFromData(v.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				version := fmt.Sprintf("%d.%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber, v.RevisionNumber)
+				ivs = append(ivs, &extractor.Inventory{
+					Name:    name,
+					Version: version,
+				})
+			}
+			break
+		}
+	}
+
+	return ivs, nil
 }
 
 // FileRequired returns true if the specified file matches the .NET PE file structure.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	// TODO: add extensions matching
-	if filepath.Base(path) != "" {
-		return false
-	}
+
+	// TODO: maybe check for file extensions
 
 	fileinfo, err := api.Stat()
 	if err != nil || (e.cfg.MaxFileSizeBytes > 0 && fileinfo.Size() > e.cfg.MaxFileSizeBytes) {
@@ -106,7 +153,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
-	// TODO: add format matching (something simple to see if the file is pe)
+	// TODO: add magic bytes checks (don't know if this is the right time to open the file)
 
 	return true
 }
@@ -132,7 +179,6 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
-		// TODO: check if this is correct
 		Type:    purl.TypeNuget,
 		Name:    i.Name,
 		Version: i.Version,
