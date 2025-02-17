@@ -63,6 +63,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -165,6 +166,8 @@ var (
 
 	// Containers extractors.
 	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
+	// Wordpress extractors.
+	Wordpress []filesystem.Extractor = []filesystem.Extractor{plugins.New(plugins.DefaultConfig())}
 
 	// OS extractors.
 	OS []filesystem.Extractor = []filesystem.Extractor{
@@ -205,6 +208,7 @@ var (
 		Ruby,
 		Rust,
 		Dotnet,
+		Wordpress,
 		SBOM,
 		Swift,
 		OS,
@@ -227,6 +231,7 @@ var (
 		"dotnet":     Dotnet,
 		"php":        PHP,
 		"rust":       Rust,
+		"wordpress":  Wordpress,
 		"swift":      Swift,
 
 		"sbom":       SBOM,
