@@ -276,11 +276,11 @@ func NewOmitEmptyLinesReader(r io.Reader) io.Reader {
 		for scanner.Scan() {
 			line := scanner.Text()
 			if line != "" {
-				pw.Write([]byte(line + "\n"))
+				_, _ = pw.Write([]byte(line + "\n"))
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			pw.CloseWithError(err)
+			_ = pw.CloseWithError(err)
 		}
 	}()
 

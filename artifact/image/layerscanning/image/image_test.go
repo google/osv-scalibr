@@ -581,6 +581,7 @@ func TestFromTarball(t *testing.T) {
 				t.Fatalf("FromTarball(%v) returned unexpected error: %v", tc.tarPath, gotErr)
 			}
 			// Only defer call to CleanUp if the image was created successfully.
+			//nolint:errcheck
 			defer gotImage.CleanUp()
 
 			// Make sure the expected files are in the chain layers.
@@ -669,7 +670,7 @@ func TestFromV1Image(t *testing.T) {
 			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
 			defer func() {
 				if gotImage != nil {
-					gotImage.CleanUp()
+					_ = gotImage.CleanUp()
 				}
 			}()
 

@@ -53,7 +53,7 @@ func TestSaveToTarball(t *testing.T) {
 			defer os.RemoveAll(dir)
 			path := filepath.Join(dir, "image.tar")
 			if tc.missingDir {
-				os.RemoveAll(dir)
+				_ = os.RemoveAll(dir)
 			}
 
 			err := tar.SaveToTarball(path, tc.image)
