@@ -154,9 +154,9 @@ func TestRead(t *testing.T) {
 	const bufferSize = 20
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
@@ -166,8 +166,8 @@ func TestRead(t *testing.T) {
 	// separate test.
 	defer openedRootFile.Close()
 
-	os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
+	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
+	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
 		extractDir:    tempDir,
@@ -255,7 +255,7 @@ func TestRead(t *testing.T) {
 			}
 
 			// Close the file. The Close method is tested in a separate test.
-			tc.node.Close()
+			_ = tc.node.Close()
 		})
 	}
 }
@@ -264,9 +264,9 @@ func TestReadAt(t *testing.T) {
 	const bufferSize = 20
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
@@ -276,8 +276,8 @@ func TestReadAt(t *testing.T) {
 	// separate test.
 	defer openedRootFile.Close()
 
-	os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
+	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
+	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
 		extractDir:    tempDir,
@@ -403,7 +403,7 @@ func TestReadAt(t *testing.T) {
 // Test for the Seek method
 func TestSeek(t *testing.T) {
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
 	// Test seeking to different positions
 	tests := []struct {
@@ -461,7 +461,7 @@ func TestSeek(t *testing.T) {
 				mode:          filePermission,
 			}
 			gotPos, err := fileNode.Seek(tc.offset, tc.whence)
-			fileNode.Close()
+			_ = fileNode.Close()
 			if err != nil {
 				t.Fatalf("Seek failed: %v", err)
 			}
@@ -474,7 +474,7 @@ func TestSeek(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
 		extractDir:    tempDir,
@@ -520,8 +520,8 @@ func TestReadingAfterClose(t *testing.T) {
 	const readAndCloseEvents = 2
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
