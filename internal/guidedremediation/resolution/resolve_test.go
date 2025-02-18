@@ -174,7 +174,7 @@ func TestResolveNPM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got.Canon()
+	_ = got.Canon()
 	got.Duration = 0 // Ignore duration for comparison
 
 	want, err := schema.ParseResolve(`
@@ -193,7 +193,7 @@ test 1.0.0
 	if err != nil {
 		t.Fatal(err)
 	}
-	want.Canon()
+	_ = want.Canon()
 	want.Duration = 0
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -262,7 +262,7 @@ func TestResolveMaven(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got.Canon()
+	_ = got.Canon()
 	got.Duration = 0
 
 	want, err := schema.ParseResolve(`
@@ -274,7 +274,7 @@ test:test 1.0.0
 	if err != nil {
 		t.Fatal(err)
 	}
-	want.Canon()
+	_ = want.Canon()
 	want.Duration = 0
 
 	if diff := cmp.Diff(want, got); diff != "" {
