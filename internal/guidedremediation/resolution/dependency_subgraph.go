@@ -109,7 +109,7 @@ func (ds *DependencySubgraph) IsDevOnly(groups map[manifest.RequirementKey][]str
 				VersionKey: ds.Nodes[e.To].Version,
 				Type:       e.Type.Clone(),
 			}
-			reqGroups := groups[manifest.MakeRequirementKey(req)]
+			reqGroups := groups[MakeRequirementKey(req)]
 			switch req.System {
 			case resolve.NPM:
 				return !slices.Contains(reqGroups, "dev")
