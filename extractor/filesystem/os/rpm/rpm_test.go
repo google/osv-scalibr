@@ -15,7 +15,6 @@
 package rpm_test
 
 import (
-	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -512,7 +511,7 @@ func TestExtract(t *testing.T) {
 				Root: filepath.Dir(tmpPath),
 				Info: info,
 			}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tmpPath, err, tt.wantErr)
 			}
@@ -809,7 +808,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Info: info,
 			}
 
-			got, err := rpm.New(rpm.Config{}).Extract(context.Background(), input)
+			got, err := rpm.New(rpm.Config{}).Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}

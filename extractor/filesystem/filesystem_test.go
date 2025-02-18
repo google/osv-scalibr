@@ -15,7 +15,6 @@
 package filesystem_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -143,7 +142,7 @@ func TestInitWalkContext(t *testing.T) {
 				scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: dummyFS, Path: p})
 			}
 			_, err := filesystem.InitWalkContext(
-				context.Background(), config, scanRoots,
+				t.Context(), config, scanRoots,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("filesystem.InitializeWalkContext(%v) error got diff (-want +got):\n%s", config, diff)
@@ -563,7 +562,7 @@ func TestRunFS(t *testing.T) {
 				StoreAbsolutePath: tc.storeAbsPath,
 			}
 			wc, err := filesystem.InitWalkContext(
-				context.Background(), config, []*scalibrfs.ScanRoot{{
+				t.Context(), config, []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: cwd,
 				}},
 			)
@@ -573,7 +572,7 @@ func TestRunFS(t *testing.T) {
 			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
 				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
-			gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
+			gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v) error got diff (-want +got):\n%s", tc.ex, diff)
 			}
@@ -694,14 +693,14 @@ func TestRunFS_ReadError(t *testing.T) {
 		}},
 		Stats: stats.NoopCollector{},
 	}
-	wc, err := filesystem.InitWalkContext(context.Background(), config, config.ScanRoots)
+	wc, err := filesystem.InitWalkContext(t.Context(), config, config.ScanRoots)
 	if err != nil {
 		t.Fatalf("filesystem.InitializeWalkContext(%v): %v", config, err)
 	}
 	if err := wc.UpdateScanRoot(".", fsys); err != nil {
 		t.Fatalf("wc.UpdateScanRoot(%v): %v", config, err)
 	}
-	gotInv, gotStatus, err := filesystem.RunFS(context.Background(), config, wc)
+	gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
 	if err != nil {
 		t.Fatalf("extractor.Run(%v): %v", ex, err)
 	}

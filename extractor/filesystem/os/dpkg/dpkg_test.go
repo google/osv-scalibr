@@ -15,7 +15,6 @@
 package dpkg_test
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	golog "log"
@@ -1142,7 +1141,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			e := dpkg.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
@@ -1268,7 +1267,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 
 	e := dpkg.New(dpkg.DefaultConfig())
-	got, err := e.Extract(context.Background(), input)
+	got, err := e.Extract(t.Context(), input)
 	if err != nil {
 		t.Fatalf("Extract(%s) error: %v", path, err)
 	}
