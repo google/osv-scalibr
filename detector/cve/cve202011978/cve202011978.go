@@ -46,6 +46,9 @@ type airflowPackageNames struct {
 }
 
 const (
+	// Name of the detector.
+	Name = "cve/CVE-2020-11978"
+
 	airflowServerIP   = "127.0.0.1"
 	airflowServerPort = 8080
 	defaultTimeout    = 5 * time.Second
@@ -121,8 +124,13 @@ var (
 // Detector is a SCALIBR Detector for CVE-2020-11978.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cve/CVE-2020-11978" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

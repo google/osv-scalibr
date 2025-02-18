@@ -43,8 +43,13 @@ func DefaultConfiguration() Configuration {
 type Extractor struct{}
 
 // New creates a new Extractor from a given configuration.
-func New(config Configuration) *Extractor {
+func New(config Configuration) standalone.Extractor {
 	return &Extractor{}
+}
+
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() standalone.Extractor {
+	return New(DefaultConfiguration())
 }
 
 // Name of the extractor.

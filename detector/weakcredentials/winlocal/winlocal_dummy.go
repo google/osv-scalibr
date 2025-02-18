@@ -26,11 +26,21 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+const (
+	// Name of the detector.
+	Name = "weakcredentials/winlocal"
+)
+
 // Detector is a SCALIBR Detector for weak passwords detector for local accounts on Windows.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "weakcredentials/winlocal" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

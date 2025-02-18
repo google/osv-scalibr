@@ -40,7 +40,8 @@ type Extractor struct {
 	visitedDir map[string]bool
 }
 
-func New() *Extractor {
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor {
 	return &Extractor{
 		visitedDir: make(map[string]bool),
 	}

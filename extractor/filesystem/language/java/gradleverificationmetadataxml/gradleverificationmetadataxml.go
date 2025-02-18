@@ -29,6 +29,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "java/gradleverificationmetadataxml"
+)
+
 type gradleVerificationMetadataFile struct {
 	Components []struct {
 		Group   string `xml:"group,attr"`
@@ -40,8 +45,11 @@ type gradleVerificationMetadataFile struct {
 // Extractor extracts Maven packages from Gradle verification metadata files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "java/gradleverificationmetadataxml" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

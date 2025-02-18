@@ -17,7 +17,6 @@ package list
 
 import (
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 
@@ -28,66 +27,71 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"golang.org/x/exp/maps"
 )
 
+type initFn func() detector.Detector
+type initMap map[string][]initFn
+
 // CIS scanning related detectors.
-var CIS []detector.Detector = []detector.Detector{&etcpasswdpermissions.Detector{}}
+var CIS = initMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
 
 // CVE scanning related detectors.
-var CVE []detector.Detector = []detector.Detector{&cve202338408.Detector{}}
+var CVE = initMap{cve202338408.Name: {cve202338408.New}}
 
 // Govulncheck detectors.
-var Govulncheck []detector.Detector = []detector.Detector{&binary.Detector{}}
+var Govulncheck = initMap{binary.Name: {binary.New}}
 
 // Weakcreds detectors for weak credentials.
-var Weakcreds []detector.Detector = []detector.Detector{
-	&etcshadow.Detector{},
-	&filebrowser.Detector{},
-	&winlocal.Detector{},
+var Weakcreds = initMap{
+	etcshadow.Name:   {etcshadow.New},
+	filebrowser.Name: {filebrowser.New},
+	winlocal.Name:    {winlocal.New},
 }
 
 // Default detectors that are recommended to be enabled.
-var Default []detector.Detector = []detector.Detector{}
+var Default = initMap{}
 
 // All detectors internal to SCALIBR.
-var All []detector.Detector = slices.Concat(
+var All = concat(
 	CIS,
 	CVE,
 	Govulncheck,
 	Weakcreds,
 )
 
-var detectorNames = map[string][]detector.Detector{
-	"cis":         CIS,
-	"cve":         CVE,
-	"govulncheck": Govulncheck,
-	"weakcreds":   Weakcreds,
-	"default":     Default,
-	"all":         All,
+var detectorNames = concat(All, initMap{
+	"cis":         vals(CIS),
+	"cve":         vals(CVE),
+	"govulncheck": vals(Govulncheck),
+	"weakcreds":   vals(Weakcreds),
+	"default":     vals(Default),
+	"all":         vals(All),
+})
+
+func concat(initMaps ...initMap) initMap {
+	result := initMap{}
+	for _, m := range initMaps {
+		maps.Copy(result, m)
+	}
+	return result
 }
 
-//nolint:gochecknoinits
-func init() {
-	for _, d := range All {
-		register(d)
-	}
-}
-
-func register(d detector.Detector) {
-	if _, ok := detectorNames[strings.ToLower(d.Name())]; ok {
-		log.Errorf("There are 2 detectors with the name: %q", d.Name())
-		os.Exit(1)
-	}
-	detectorNames[strings.ToLower(d.Name())] = []detector.Detector{d}
+func vals(initMap initMap) []initFn {
+	return slices.Concat(maps.Values(initMap)...)
 }
 
 // FromCapabilities returns all detectors that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []detector.Detector {
-	return FilterByCapabilities(All, capabs)
+	all := vals(All)
+	dets := make([]detector.Detector, 0, len(all))
+	for _, initer := range all {
+		dets = append(dets, initer())
+	}
+	return FilterByCapabilities(dets, capabs)
 }
 
 // FilterByCapabilities returns all detectors from the given list that can run
@@ -107,8 +111,9 @@ func FilterByCapabilities(dets []detector.Detector, capabs *plugin.Capabilities)
 func DetectorsFromNames(names []string) ([]detector.Detector, error) {
 	resultMap := make(map[string]detector.Detector)
 	for _, n := range names {
-		if ds, ok := detectorNames[strings.ToLower(n)]; ok {
-			for _, d := range ds {
+		if initers, ok := detectorNames[strings.ToLower(n)]; ok {
+			for _, initer := range initers {
+				d := initer()
 				if _, ok := resultMap[d.Name()]; !ok {
 					resultMap[d.Name()] = d
 				}
