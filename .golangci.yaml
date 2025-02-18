@@ -82,7 +82,7 @@ linters:
     - thelper
     - unconvert
 #    - unparam
-#    - unused
+    - unused
     - usestdlibvars
     - wastedassign
     - whitespace
