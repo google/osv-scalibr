@@ -49,6 +49,9 @@ type bentomlPackageNames struct {
 }
 
 const (
+	// Name of the detector.
+	Name = "cve/cve-2024-2912"
+
 	payloadPath       = "/tmp/bentoml-poc-CVE-2024-2912"
 	bentomlServerPort = 3000
 	defaultTimeout    = 5 * time.Second
@@ -71,8 +74,13 @@ var (
 // Detector is a SCALIBR Detector for CVE-2024-2912.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cve/CVE-2024-2912" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

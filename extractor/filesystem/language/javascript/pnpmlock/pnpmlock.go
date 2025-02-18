@@ -35,6 +35,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "javascript/pnpmlock"
+)
+
 type pnpmLockPackageResolution struct {
 	Tarball string `yaml:"tarball"`
 	Commit  string `yaml:"commit"`
@@ -221,8 +226,11 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
 // Extractor extracts pnpm-lock.yaml files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "javascript/pnpmlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

@@ -47,6 +47,9 @@ func New(cfg Config) *Extractor {
 	return &Extractor{}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
 

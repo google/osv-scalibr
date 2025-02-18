@@ -44,6 +44,9 @@ var (
 )
 
 const (
+	// Name of the detector.
+	Name = "weakcredentials/winlocal"
+
 	samDumpFile       = `C:\ProgramData\Scalibr\private\SAM`
 	systemDumpFile    = `C:\ProgramData\Scalibr\private\SYSTEM`
 	vulnRefLMPassword = "PASSWORD_HASH_LM_FORMAT"
@@ -56,6 +59,11 @@ type Detector struct {
 	knownLMHashes map[string]string
 }
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // userHashInfo contains the hashes of a user. Note that both hashes represents the same password.
 type userHashInfo struct {
 	username string
@@ -64,7 +72,7 @@ type userHashInfo struct {
 }
 
 // Name of the detector.
-func (Detector) Name() string { return "weakcredentials/winlocal" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

@@ -78,13 +78,18 @@ type Extractor struct {
 }
 
 // New creates a new containerd client and returns a containerd container inventory extractor.
-func New(cfg Config) *Extractor {
+func New(cfg Config) standalone.Extractor {
 	return &Extractor{
 		client:              nil,
 		socketAddr:          cfg.ContainerdSocketAddr,
 		checkIfSocketExists: true,
 		initNewCtrdClient:   true,
 	}
+}
+
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() standalone.Extractor {
+	return New(DefaultConfig())
 }
 
 // NewWithClient creates a new extractor with the provided containerd client.

@@ -45,6 +45,9 @@ type sparkUIPackageNames struct {
 }
 
 const (
+	// Name of the detector.
+	Name = "cve/cve-2022-33891"
+
 	defaultTimeout = 5 * time.Second
 )
 
@@ -72,8 +75,13 @@ var (
 // Detector is a SCALIBR Detector for CVE-2022-33891.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cve/CVE-2022-33891" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

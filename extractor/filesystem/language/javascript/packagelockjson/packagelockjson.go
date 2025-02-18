@@ -35,6 +35,11 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "javascript/packagelockjson"
+)
+
 type npmLockDependency struct {
 	// For an aliased package, Version is like "npm:[name]@[version]"
 	Version      string                       `json:"version"`
@@ -272,8 +277,11 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "javascript/packagelockjson" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }

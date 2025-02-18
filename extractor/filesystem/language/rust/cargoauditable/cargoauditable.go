@@ -30,6 +30,11 @@ import (
 	"github.com/microsoft/go-rustaudit"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "rust/cargoauditable"
+)
+
 // defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 // If Extract gets a bigger file, it will return an error.
 const defaultMaxFileSizeBytes = 0
@@ -79,8 +84,11 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "rust/cargoauditable" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
