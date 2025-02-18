@@ -17,6 +17,7 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -39,7 +40,10 @@ import (
 var (
 	// ErrNotRelativeToScanRoots is returned when one of the file or directory to be retrieved or
 	// skipped is not relative to any of the scan roots.
-	ErrNotRelativeToScanRoots = fmt.Errorf("path not relative to any of the scan roots")
+	ErrNotRelativeToScanRoots = errors.New("path not relative to any of the scan roots")
+	// ErrSkipFile is returned by the custom callback function to indicate that the current file
+	// should not be parsed by any extractors.
+	ErrSkipFile = errors.New("skip this file")
 )
 
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
@@ -96,6 +100,12 @@ type Config struct {
 	SkipDirGlob glob.Glob
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
+	// Optional: A callback to run on every file and directory before extraction.
+	// The following error returns have special meaning:
+	// filesystem.ErrSkipFile - Skip the current file, i.e. don't run any extraction on it.
+	// fs.SkipDir - Skip the current file and remaining files in the current directory.
+	// fs.SkipAll - Skip the current file and all remaining files on the filesystem.
+	BeforeExtraction BeforeExtractionCallback
 	// Optional: Whether to read symlinks.
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
@@ -108,6 +118,9 @@ type Config struct {
 	// Optional: If true, fail the scan if any permission errors are encountered.
 	ErrorOnFSErrors bool
 }
+
+// BeforeExtractionCallback is the function type that is called before the extraction of each file.
+type BeforeExtractionCallback func(path string) error
 
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
@@ -174,6 +187,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	return &walkContext{
 		ctx:               ctx,
 		stats:             config.Stats,
+		beforeExtraction:  config.BeforeExtraction,
 		extractors:        config.Extractors,
 		filesToExtract:    filesToExtract,
 		dirsToSkip:        pathStringListToMap(dirsToSkip),
@@ -241,6 +255,7 @@ type walkContext struct {
 	//nolint:containedctx
 	ctx               context.Context
 	stats             stats.Collector
+	beforeExtraction  BeforeExtractionCallback
 	extractors        []Extractor
 	fs                scalibrfs.FS
 	scanRoot          string
@@ -312,8 +327,24 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 		return nil
 	}
+
 	if d.Type().IsDir() {
 		wc.dirsVisited++
+	}
+
+	if wc.beforeExtraction != nil {
+		if err := wc.beforeExtraction(path); err != nil {
+			// Skip parsing this file.
+			if err == ErrSkipFile {
+				return nil
+			}
+			// The callback can return fs.SkipDir or fs.SkipAll to instruct SCALIBR to
+			// skip the remaining dir or all remaining files.
+			return err
+		}
+	}
+
+	if d.Type().IsDir() {
 		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
 			return fs.SkipDir
 		}
