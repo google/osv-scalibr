@@ -332,15 +332,6 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 	return r
 }
 
-func hasFailedPlugins(statuses []*plugin.Status) bool {
-	for _, s := range statuses {
-		if s.Status.Status != plugin.ScanStatusSucceeded {
-			return true
-		}
-	}
-	return false
-}
-
 // sortResults sorts the result to make the output deterministic and diffable.
 func sortResults(results *ScanResult) {
 	for _, inventory := range results.Inventories {

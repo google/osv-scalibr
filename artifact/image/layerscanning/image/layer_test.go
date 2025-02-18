@@ -585,21 +585,6 @@ func TestChainFSReadDir(t *testing.T) {
 // CHAINLAYER TESTING HELPER METHODS
 // ========================================================
 
-func checkError(t *testing.T, funcName string, gotErr error, wantErr error) {
-	t.Helper()
-	if wantErr != nil {
-		if !errors.Is(gotErr, wantErr) {
-			t.Fatalf("%s returned error: %v, want error: %v", funcName, gotErr, wantErr)
-		}
-		return
-	}
-
-	if gotErr != nil {
-		t.Fatalf("%s returned error: %v", funcName, gotErr)
-		return
-	}
-}
-
 func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
