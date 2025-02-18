@@ -165,11 +165,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			Name:    pkg.Name,
 			Version: pkg.Version,
 			Metadata: &Metadata{
-				Name:        pkg.Name,
-				Version:     pkg.Version,
-				Category:    pkg.Category,
-				OSVersion:   m["VERSION"],
-				OSVersionID: m["VERSION_ID"],
+				Name:          pkg.Name,
+				Version:       pkg.Version,
+				Category:      pkg.Category,
+				OSVersion:     m["VERSION"],
+				OSVersionID:   m["VERSION_ID"],
+				EbuildVersion: pkg.EbuildVersion,
 			},
 			Locations: []string{input.Path},
 		}
