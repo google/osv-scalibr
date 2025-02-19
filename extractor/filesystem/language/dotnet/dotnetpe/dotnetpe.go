@@ -17,6 +17,7 @@ package dotnetpe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -41,8 +42,11 @@ const (
 var (
 	peExtensions = []string{
 		".acm", ".ax", ".cpl", ".dll", ".drv", ".efi", ".exe", ".mui", ".ocx",
-		".scr", ".sys", ".tsp", ".mun", ".msstyles",
+		".scr", ".sys", ".tsp", ".mun", ".msstyles", "",
 	}
+
+	ErrOpeningPEFile = errors.New("error opening PE file")
+	ErrParsingPEFile = errors.New("error parsing PE file")
 )
 
 // Config is the configuration for the .NET PE extractor.
@@ -51,6 +55,7 @@ type Config struct {
 	Stats stats.Collector
 	// MaxFileSizeBytes is the maximum file size this extractor will parse. If
 	// `FileRequired` gets a bigger file, it will return false.
+	// Use 0 to accept all file sizes
 	MaxFileSizeBytes int64
 }
 
@@ -84,24 +89,55 @@ func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 
 // Extract parses the PE files to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	// TODO: maybe use peparser.NewBytes here
-	pe, err := peparser.New(input.Path, &peparser.Options{})
+	// Retrieve the real path of the file
+	realPath, err := input.GetRealPath()
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrOpeningPEFile, err)
 	}
 
+	// Parse the PE file
+	pe, err := peparser.New(realPath, &peparser.Options{})
+	if err != nil {
+		return nil, errors.Join(ErrParsingPEFile, err)
+	}
+
+	// Parse the PE file
 	if err := pe.Parse(); err != nil {
-		return nil, err
+		return nil, errors.Join(ErrParsingPEFile, err)
 	}
 
-	ivs := []*extractor.Inventory{}
+	// Initialize inventory slice to store the dependencies
+	var ivs []*extractor.Inventory
 
-	// TODO: from my experience this step is redundant:
-	// pe.CLR.MetadataTables seems to always contain an entry for the name and version of the current file
-	//
-	// solution:
-	// 1. remove this step if it's actually always redundant
-	// 2. add a deduplication pass (see `extractor/filesystem/language/golang/gomod/gomod.go` implementation) if not
+	// Iterate over the CLR Metadata Tables to extract assembly information
+	for _, table := range pe.CLR.MetadataTables {
+		switch content := table.Content.(type) {
+		case []peparser.AssemblyTableRow:
+			for _, row := range content {
+				name := string(pe.GetStringFromData(row.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
+				ivs = append(ivs, &extractor.Inventory{
+					Name:    name,
+					Version: version,
+				})
+			}
+		case []peparser.AssemblyRefTableRow:
+			for _, row := range content {
+				name := string(pe.GetStringFromData(row.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
+				ivs = append(ivs, &extractor.Inventory{
+					Name:    name,
+					Version: version,
+				})
+			}
+		}
+	}
+
+	if len(ivs) > 0 {
+		return ivs, nil
+	}
+
+	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
 	if versionResources, err := pe.ParseVersionResources(); err == nil {
 		name, version := versionResources["InternalName"], versionResources["Assembly Version"]
 		if name != "" && version != "" {
@@ -109,31 +145,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				Name:    name,
 				Version: version,
 			})
-		}
-	}
-
-	for _, table := range pe.CLR.MetadataTables {
-		switch content := table.Content.(type) {
-		case []peparser.AssemblyTableRow:
-			for _, v := range content {
-				name := string(pe.GetStringFromData(v.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
-				version := fmt.Sprintf("%d.%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber, v.RevisionNumber)
-				ivs = append(ivs, &extractor.Inventory{
-					Name:    name,
-					Version: version,
-				})
-			}
-			break
-		case []peparser.AssemblyRefTableRow:
-			for _, v := range content {
-				name := string(pe.GetStringFromData(v.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
-				version := fmt.Sprintf("%d.%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber, v.RevisionNumber)
-				ivs = append(ivs, &extractor.Inventory{
-					Name:    name,
-					Version: version,
-				})
-			}
-			break
 		}
 	}
 
@@ -164,6 +175,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
+	e.reportFileRequired(path, stats.FileRequiredResultOK)
 	return true
 }
 
