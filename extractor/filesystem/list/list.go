@@ -289,7 +289,7 @@ func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("unknown extractor %s", n)
+			return nil, fmt.Errorf("unknown extractor %q", n)
 		}
 	}
 	result := make([]filesystem.Extractor, 0, len(resultMap))
@@ -303,7 +303,7 @@ func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 func ExtractorFromName(name string) (filesystem.Extractor, error) {
 	es, ok := extractorNames[strings.ToLower(name)]
 	if !ok {
-		return nil, fmt.Errorf("unknown extractor %s", name)
+		return nil, fmt.Errorf("unknown extractor %q", name)
 	}
 	if len(es) != 1 || es[0].Name() != name {
 		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)

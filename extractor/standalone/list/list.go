@@ -113,7 +113,7 @@ func FilterByCapabilities(exs []standalone.Extractor, capabs *plugin.Capabilitie
 func ExtractorFromName(name string) (standalone.Extractor, error) {
 	es, ok := extractorNames[strings.ToLower(name)]
 	if !ok {
-		return nil, fmt.Errorf("unknown extractor %s", name)
+		return nil, fmt.Errorf("unknown extractor %q", name)
 	}
 	if len(es) != 1 || es[0].Name() != name {
 		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
@@ -132,7 +132,7 @@ func ExtractorsFromNames(names []string) ([]standalone.Extractor, error) {
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("unknown extractor %s", n)
+			return nil, fmt.Errorf("unknown extractor %q", n)
 		}
 	}
 	result := make([]standalone.Extractor, 0, len(resultMap))

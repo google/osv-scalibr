@@ -114,7 +114,7 @@ func DetectorsFromNames(names []string) ([]detector.Detector, error) {
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("unknown detector %s", n)
+			return nil, fmt.Errorf("unknown detector %q", n)
 		}
 	}
 	result := make([]detector.Detector, 0, len(resultMap))
