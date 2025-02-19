@@ -158,6 +158,7 @@ func (r readWriter) System() resolve.System {
 
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
+	// TODO(#472): much of this logic is duplicated with the pomxmlnet extractor.
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
 	f, err := fsys.Open(path)
@@ -194,7 +195,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 
-	// TODO: there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
+	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
 	for _, repo := range project.Repositories {
 		if err := r.MavenRegistryAPIClient.AddRegistry(datasource.MavenRegistry{
 			URL:              string(repo.URL),
