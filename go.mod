@@ -23,6 +23,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/opencontainers/runtime-spec v1.1.0
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20250210065807-ab8a4f6e6389
 	github.com/package-url/packageurl-go v0.1.2
 	github.com/saferwall/pe v1.5.6
 	github.com/spdx/tools-golang v0.5.3

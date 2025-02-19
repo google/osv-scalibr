@@ -171,6 +171,11 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0",
 					Metadata: &requirements.Metadata{VersionComparator: "==="},
 				},
+				{
+					Name:     "pkg",
+					Version:  "1.2.3",
+					Metadata: &requirements.Metadata{VersionComparator: "<="},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},

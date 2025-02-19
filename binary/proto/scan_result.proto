@@ -97,6 +97,7 @@ message Inventory {
     PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
     PythonRequirementsMetadata python_requirements_metadata = 21;
+    PythonSetupMetadata python_setup_metadata = 44;
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
@@ -430,6 +431,10 @@ message OSVPackageMetadata {
 
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
+  string version_comparator = 2;
+}
+
+message PythonSetupMetadata {
   string version_comparator = 2;
 }
 

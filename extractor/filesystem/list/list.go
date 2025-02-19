@@ -24,6 +24,7 @@ import (
 	// OSV extractors.
 
 	// SCALIBR internal extractors.
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 
@@ -44,6 +45,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -95,6 +97,14 @@ var (
 		gradleverificationmetadataxml.Extractor{},
 		javaarchive.New(javaarchive.DefaultConfig()),
 		pomxml.Extractor{},
+	}
+	// TODO(#441): enable pomxmlnet extractor when network is accesible.
+	// JavaNet extractors requiring network access.
+	JavaNet []filesystem.Extractor = []filesystem.Extractor{
+		gradlelockfile.Extractor{},
+		gradleverificationmetadataxml.Extractor{},
+		javaarchive.New(javaarchive.DefaultConfig()),
+		pomxmlnet.New(pomxmlnet.NewConfig(datasource.MavenCentralMirror)),
 	}
 	// Javascript extractors.
 	Javascript []filesystem.Extractor = []filesystem.Extractor{
@@ -178,6 +188,9 @@ var (
 
 	// Default extractors that are recommended to be enabled.
 	Default []filesystem.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
+	// DefaultNet defines the list of recommended extractors that require network access.
+	DefaultNet []filesystem.Extractor = slices.Concat(JavaNet, Javascript, Python, Go, OS)
+
 	// All extractors available from SCALIBR.
 	All []filesystem.Extractor = slices.Concat(
 		Cpp,
@@ -223,8 +236,9 @@ var (
 		"containers": Containers,
 
 		// Collections.
-		"default": Default,
-		"all":     All,
+		"default":    Default,
+		"defaultnet": DefaultNet,
+		"all":        All,
 	}
 )
 

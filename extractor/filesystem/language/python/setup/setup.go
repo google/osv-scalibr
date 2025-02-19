@@ -139,7 +139,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+)\W?(==|>=)\W?([\w.]*)`)
+var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+)\W?(==|>=|<=)\W?([\w.]*)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	s := bufio.NewScanner(input.Reader)
@@ -170,12 +170,14 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			}
 
 			pkgName := strings.TrimSpace(match[1])
+			comp := match[2]
 			pkgVersion := strings.TrimSpace(match[3])
 
 			i := &extractor.Inventory{
 				Name:      pkgName,
 				Version:   pkgVersion,
 				Locations: []string{input.Path},
+				Metadata:  &Metadata{VersionComparator: comp},
 			}
 
 			pkgs = append(pkgs, i)

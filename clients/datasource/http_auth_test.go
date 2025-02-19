@@ -179,102 +179,100 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedAuths:         []string{"", "Bearer PleaseUseThis"},
 			expectedResponseCodes: []int{http.StatusOK},
 		},
-		// Digest authentication is not supported for now so temperatily comment out the tests.
-		/*
-			{
-				name: "digest auth",
-				// Example from https://en.wikipedia.org/wiki/Digest_access_authentication#Example_with_explanation
-				httpAuth: &datasource.HTTPAuthentication{
-					SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
-					AlwaysAuth:       false,
-					Username:         "Mufasa",
-					Password:         "Circle Of Life",
-					CnonceFunc:       func() string { return "0a4f113b" },
-				},
-				requestURL: "https://127.0.0.1/dir/index.html",
-				wwwAuth: []string{
-					"Digest realm=\"testrealm@host.com\", " +
-						"qop=\"auth,auth-int\", " +
-						"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
-						"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
-				},
-				expectedAuths: []string{
-					"",
-					// The order of these fields shouldn't actually matter
-					"Digest username=\"Mufasa\", " +
-						"realm=\"testrealm@host.com\", " +
-						"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
-						"uri=\"/dir/index.html\", " +
-						"qop=auth, " +
-						"nc=00000001, " +
-						"cnonce=\"0a4f113b\", " +
-						"response=\"6629fae49393a05397450978507c4ef1\", " +
-						"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
-				},
-				expectedResponseCodes: []int{http.StatusOK},
+		{
+			name: "digest auth",
+			// Example from https://en.wikipedia.org/wiki/Digest_access_authentication#Example_with_explanation
+			httpAuth: &datasource.HTTPAuthentication{
+				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
+				AlwaysAuth:       false,
+				Username:         "Mufasa",
+				Password:         "Circle Of Life",
+				CnonceFunc:       func() string { return "0a4f113b" },
 			},
-			{
-				name: "digest auth rfc2069", // old spec, without qop header
-				httpAuth: &datasource.HTTPAuthentication{
-					SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
-					AlwaysAuth:       false,
-					Username:         "Mufasa",
-					Password:         "Circle Of Life",
-				},
-				requestURL: "https://127.0.0.1/dir/index.html",
-				wwwAuth: []string{
-					"Digest realm=\"testrealm@host.com\", " +
-						"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
-						"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
-				},
-				expectedAuths: []string{
-					"",
-					// The order of these fields shouldn't actually matter
-					"Digest username=\"Mufasa\", " +
-						"realm=\"testrealm@host.com\", " +
-						"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
-						"uri=\"/dir/index.html\", " +
-						"response=\"670fd8c2df070c60b045671b8b24ff02\", " +
-						"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
-				},
-				expectedResponseCodes: []int{http.StatusOK},
+			requestURL: "https://127.0.0.1/dir/index.html",
+			wwwAuth: []string{
+				"Digest realm=\"testrealm@host.com\", " +
+					"qop=\"auth,auth-int\", " +
+					"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
+					"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
 			},
-			{
-				name: "digest auth mvn",
-				// From what mvn sends.
-				httpAuth: &datasource.HTTPAuthentication{
-					SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
-					AlwaysAuth:       false,
-					Username:         "my-username",
-					Password:         "cool-password",
-					CnonceFunc:       func() string { return "f7ef2d457dabcd54" },
-				},
-				requestURL: "https://127.0.0.1:41565/commons-io/commons-io/1.0/commons-io-1.0.pom",
-				wwwAuth: []string{
-					"Digest realm=\"test@osv.dev\"," +
-						"qop=\"auth\"," +
-						"nonce=\"deadbeef\"," +
-						"opaque=\"aaaa\"," +
-						"algorithm=\"MD5-sess\"," +
-						"domain=\"/test\"",
-				},
-				expectedAuths: []string{
-					"",
-					// The order of these fields shouldn't actually matter
-					"Digest username=\"my-username\", " +
-						"realm=\"test@osv.dev\", " +
-						"nonce=\"deadbeef\", " +
-						"uri=\"/commons-io/commons-io/1.0/commons-io-1.0.pom\", " +
-						"qop=auth, " +
-						"nc=00000001, " +
-						"cnonce=\"f7ef2d457dabcd54\", " +
-						"algorithm=MD5-sess, " +
-						"response=\"15a35e7018a0fc7db05d31185e0d2c9e\", " +
-						"opaque=\"aaaa\"",
-				},
-				expectedResponseCodes: []int{http.StatusOK},
+			expectedAuths: []string{
+				"",
+				// The order of these fields shouldn't actually matter
+				"Digest username=\"Mufasa\", " +
+					"realm=\"testrealm@host.com\", " +
+					"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
+					"uri=\"/dir/index.html\", " +
+					"qop=auth, " +
+					"nc=00000001, " +
+					"cnonce=\"0a4f113b\", " +
+					"response=\"6629fae49393a05397450978507c4ef1\", " +
+					"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
 			},
-		*/
+			expectedResponseCodes: []int{http.StatusOK},
+		},
+		{
+			name: "digest auth rfc2069", // old spec, without qop header
+			httpAuth: &datasource.HTTPAuthentication{
+				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
+				AlwaysAuth:       false,
+				Username:         "Mufasa",
+				Password:         "Circle Of Life",
+			},
+			requestURL: "https://127.0.0.1/dir/index.html",
+			wwwAuth: []string{
+				"Digest realm=\"testrealm@host.com\", " +
+					"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
+					"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
+			},
+			expectedAuths: []string{
+				"",
+				// The order of these fields shouldn't actually matter
+				"Digest username=\"Mufasa\", " +
+					"realm=\"testrealm@host.com\", " +
+					"nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
+					"uri=\"/dir/index.html\", " +
+					"response=\"670fd8c2df070c60b045671b8b24ff02\", " +
+					"opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
+			},
+			expectedResponseCodes: []int{http.StatusOK},
+		},
+		{
+			name: "digest auth mvn",
+			// From what mvn sends.
+			httpAuth: &datasource.HTTPAuthentication{
+				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
+				AlwaysAuth:       false,
+				Username:         "my-username",
+				Password:         "cool-password",
+				CnonceFunc:       func() string { return "f7ef2d457dabcd54" },
+			},
+			requestURL: "https://127.0.0.1:41565/commons-io/commons-io/1.0/commons-io-1.0.pom",
+			wwwAuth: []string{
+				"Digest realm=\"test@osv.dev\"," +
+					"qop=\"auth\"," +
+					"nonce=\"deadbeef\"," +
+					"opaque=\"aaaa\"," +
+					"algorithm=\"MD5-sess\"," +
+					"domain=\"/test\"",
+			},
+			expectedAuths: []string{
+				"",
+				// The order of these fields shouldn't actually matter
+				"Digest username=\"my-username\", " +
+					"realm=\"test@osv.dev\", " +
+					"nonce=\"deadbeef\", " +
+					"uri=\"/commons-io/commons-io/1.0/commons-io-1.0.pom\", " +
+					"qop=auth, " +
+					"nc=00000001, " +
+					"cnonce=\"f7ef2d457dabcd54\", " +
+					"algorithm=MD5-sess, " +
+					"response=\"15a35e7018a0fc7db05d31185e0d2c9e\", " +
+					"opaque=\"aaaa\"",
+			},
+			expectedResponseCodes: []int{http.StatusOK},
+		},
+
 		{
 			name: "basic auth reuse on subsequent",
 			httpAuth: &datasource.HTTPAuthentication{

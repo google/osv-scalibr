@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
@@ -45,6 +46,11 @@ var (
 		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
 	}
 
+	// OSExperimental defines experimental OS extractors.
+	OSExperimental = []standalone.Extractor{
+		netports.New(),
+	}
+
 	// Containers standalone extractors.
 	Containers = []standalone.Extractor{
 		containerd.New(containerd.DefaultConfig()),
@@ -53,7 +59,7 @@ var (
 	// Default standalone extractors.
 	Default []standalone.Extractor = slices.Concat(Windows)
 	// All standalone extractors.
-	All []standalone.Extractor = slices.Concat(Windows, WindowsExperimental, Containers)
+	All []standalone.Extractor = slices.Concat(Windows, WindowsExperimental, Containers, OSExperimental)
 
 	extractorNames = map[string][]standalone.Extractor{
 		// Windows
