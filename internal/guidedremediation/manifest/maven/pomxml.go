@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"slices"
 
 	"deps.dev/util/maven"
@@ -158,6 +159,7 @@ func (r readWriter) System() resolve.System {
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
 	ctx := context.Background()
+	path = filepath.ToSlash(path)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err
