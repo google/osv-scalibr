@@ -18,6 +18,8 @@ package dotnetpe
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -36,12 +38,19 @@ const (
 	defaultMaxFileSizeBytes = 20 * units.MiB // 20 MB
 )
 
+var (
+	peExtensions = []string{
+		".acm", ".ax", ".cpl", ".dll", ".drv", ".efi", ".exe", ".mui", ".ocx",
+		".scr", ".sys", ".tsp", ".mun", ".msstyles",
+	}
+)
+
 // Config is the configuration for the .NET PE extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
 	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
+	// MaxFileSizeBytes is the maximum file size this extractor will parse. If
+	// `FileRequired` gets a bigger file, it will return false.
 	MaxFileSizeBytes int64
 }
 
@@ -78,6 +87,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// TODO: maybe use peparser.NewBytes here
 	pe, err := peparser.New(input.Path, &peparser.Options{})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := pe.Parse(); err != nil {
 		return nil, err
 	}
 
@@ -127,19 +140,29 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return ivs, nil
 }
 
+func isPE(path string) bool {
+	ext := filepath.Ext(path)
+	for _, peExt := range peExtensions {
+		if strings.EqualFold(ext, peExt) {
+			return true
+		}
+	}
+	return false
+}
+
 // FileRequired returns true if the specified file matches the .NET PE file structure.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 
-	// TODO: maybe check for file extensions
+	if !isPE(path) {
+		return false
+	}
 
 	fileinfo, err := api.Stat()
 	if err != nil || (e.cfg.MaxFileSizeBytes > 0 && fileinfo.Size() > e.cfg.MaxFileSizeBytes) {
 		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
-
-	// TODO: add magic bytes checks (don't know if this is the right time to open the file)
 
 	return true
 }
