@@ -52,6 +52,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
+				fileNodeTree: pathtree.NewNode[fileNode](),
 			},
 		},
 		{
@@ -77,7 +78,7 @@ func TestConvertV1Layer(t *testing.T) {
 			if tc.wantError != nil && gotError == tc.wantError {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned error: %v, want error: %v", tc.v1Layer, tc.command, tc.isEmpty, gotError, tc.wantError)
 			}
-			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{})); tc.wantLayer != nil && diff != "" {
+			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, pathtree.Node[fileNode]{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
 			}
 		})
