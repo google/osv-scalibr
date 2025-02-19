@@ -142,6 +142,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 }
 
 func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, error) {
+	path = filepath.ToSlash(path)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err
@@ -175,7 +176,8 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 		// Find all package.json files in the workspaces & parse those too.
 		var workspaces []string
 		for _, pattern := range pkgJSON.Workspaces {
-			match, err := fs.Glob(fsys, filepath.Join(filepath.Dir(path), pattern, "package.json"))
+			p := filepath.ToSlash(filepath.Join(filepath.Dir(path), pattern, "package.json"))
+			match, err := fs.Glob(fsys, p)
 			if err != nil {
 				return nil, err
 			}
