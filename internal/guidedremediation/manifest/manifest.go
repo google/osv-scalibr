@@ -17,8 +17,7 @@ package manifest
 
 import (
 	"deps.dev/util/resolve"
-	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
-	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/npm"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // Manifest is the interface for the representation of a manifest file needed for dependency resolution.
@@ -27,7 +26,7 @@ type Manifest interface {
 	Root() resolve.Version                      // Version representing this package
 	System() resolve.System                     // The System of this manifest
 	Requirements() []resolve.RequirementVersion // All direct requirements, including dev
-	Groups() map[RequirementKey][]string        // Dependency groups that the imports belong to
+	Groups() map[RequirementKey][]string        // Dependency groups that the direct requirements belong to
 	LocalManifests() []Manifest                 // Manifests of local packages
 	EcosystemSpecific() any                     // Any ecosystem-specific information needed
 
@@ -38,16 +37,9 @@ type Manifest interface {
 // It does not include the version specification.
 type RequirementKey any
 
-// MakeRequirementKey constructs an ecosystem-specific RequirementKey from the given RequirementVersion.
-func MakeRequirementKey(requirement resolve.RequirementVersion) RequirementKey {
-	switch requirement.System {
-	case resolve.NPM:
-		return npm.MakeRequirementKey(requirement)
-	case resolve.Maven:
-		return maven.MakeRequirementKey(requirement)
-	case resolve.UnknownSystem:
-		fallthrough
-	default:
-		return requirement.PackageKey
-	}
+// ReadWriter is the interface for parsing and applying remediation patches to a manifest file.
+type ReadWriter interface {
+	System() resolve.System
+	Read(path string, fsys scalibrfs.FS) (Manifest, error)
+	// TODO(#454): Write()
 }

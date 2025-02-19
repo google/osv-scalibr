@@ -85,7 +85,7 @@ func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manif
 			}
 
 			// Unique identifier for this package.
-			reqKey := manifest.MakeRequirementKey(resolve.RequirementVersion{
+			reqKey := MakeRequirementKey(resolve.RequirementVersion{
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.Maven,
@@ -104,7 +104,7 @@ func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manif
 					return false
 				}
 
-				return reqKey == manifest.MakeRequirementKey(rv)
+				return reqKey == MakeRequirementKey(rv)
 			})
 
 			if idx == -1 {
@@ -120,7 +120,7 @@ func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manif
 			// See if the package is already in the resolved graph.
 			// Check the edges so we can make sure the ArtifactTypes and Classifiers match.
 			if !slices.ContainsFunc(graph.Edges, func(e resolve.Edge) bool {
-				return reqKey == manifest.MakeRequirementKey(resolve.RequirementVersion{
+				return reqKey == MakeRequirementKey(resolve.RequirementVersion{
 					VersionKey: graph.Nodes[e.To].Version,
 					Type:       e.Type,
 				})

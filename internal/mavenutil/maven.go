@@ -125,6 +125,10 @@ func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path stri
 	if err != nil {
 		return false, "", fmt.Errorf("failed to unmarshal project: %w", err)
 	}
+	if ProjectKey(*result) != parent.ProjectKey || result.Packaging != "pom" {
+		// Only mark parent as found when the identifiers and packaging are expected.
+		return false, "", nil
+	}
 	return true, parentPath, nil
 }
 
