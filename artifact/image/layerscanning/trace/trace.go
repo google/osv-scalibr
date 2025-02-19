@@ -17,13 +17,13 @@ package trace
 
 import (
 	"context"
-	"errors"
-	"io/fs"
+	"fmt"
 	"slices"
 	"sort"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -54,23 +54,11 @@ type locationAndIndex struct {
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
 func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
-	chainLayerDetailsList := []*extractor.LayerDetails{}
-
-	// Create list of layer details struct to be referenced by inventory.
-	for i, chainLayer := range chainLayers {
-		var diffID string
-		if chainLayer.Layer().IsEmpty() {
-			diffID = ""
-		} else {
-			diffID = chainLayer.Layer().DiffID().Encoded()
-		}
-
-		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
-			Index:       i,
-			DiffID:      diffID,
-			Command:     chainLayer.Layer().Command(),
-			InBaseImage: false,
-		})
+	layerDetailsList := createLayerDetailsList(chainLayers)
+	layerFSList, err := createLayerFSList(chainLayers)
+	if err != nil {
+		log.Errorf("Failed to create layer FS list: %v", err)
+		return
 	}
 
 	// Helper function to update the extractor config.
@@ -90,7 +78,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 	lastLayerIndex := len(chainLayers) - 1
 
 	for _, inv := range inventory {
-		layerDetails := chainLayerDetailsList[lastLayerIndex]
+		layerDetails := layerDetailsList[lastLayerIndex]
 		invExtractor, isFilesystemExtractor := inv.Extractor.(filesystem.Extractor)
 
 		// Only filesystem extractors are supported for layer scanning. Also, if the inventory has no
@@ -100,66 +88,66 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			continue
 		}
 
+		fileLocation := inv.Locations[0]
+		layersWithFileIndices := findLayersWithFile(fileLocation, layerFSList)
+
 		var foundOrigin bool
 
-		// Go backwards through the chain layers and find the first layer where the inventory is not
-		// present. Such layer is the layer in which the inventory was introduced. If the inventory is
-		// present in all layers, then it means it was introduced in the first layer.
-		// TODO: b/381249869 - Optimization: Skip layers if file not found.
-		for i := len(chainLayers) - 2; i >= 0; i-- {
-			oldChainLayer := chainLayers[i]
+		// Iterate through the layer indices that contain the file in reverse order. The first layer
+		// that contains the inventory is the layer origin layer of the inventory.
+		for i := len(layersWithFileIndices) - 1; i >= 0; i-- {
+			layerIndex := layersWithFileIndices[i]
+			chainLayer := chainLayers[layerIndex]
 
 			invLocationAndIndex := locationAndIndex{
-				location: inv.Locations[0],
-				index:    i,
+				location: fileLocation,
+				index:    layerIndex,
 			}
 
-			var oldInventory []*extractor.Inventory
+			var inventory []*extractor.Inventory
 			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
-				oldInventory = cachedInventory
+				inventory = cachedInventory
 			} else {
-				// Check if file still exist in this layer, if not skip extraction.
+				// Check if file still exists in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				if _, err := oldChainLayer.FS().Stat(inv.Locations[0]); errors.Is(err, fs.ErrNotExist) {
-					oldInventory = []*extractor.Inventory{}
-				} else {
-					// Update the extractor config to use the files from the current layer.
-					// We only take extract the first location because other locations are derived from the initial
-					// extraction location. If other locations can no longer be determined from the first location
-					// they should not be included here, and the trace for those packages stops here.
-					updateExtractorConfig([]string{inv.Locations[0]}, invExtractor, oldChainLayer.FS())
+				if _, err := chainLayer.FS().Stat(fileLocation); err != nil {
+					continue
+				}
+				// Update the extractor config to use the files from the current layer.
+				// We only extract the first location because other locations are derived from the initial
+				// extraction location. If other locations can no longer be determined from the first location
+				// they should not be included here, and the trace for those packages stops here.
+				updateExtractorConfig([]string{fileLocation}, invExtractor, chainLayer.FS())
 
-					var err error
-					oldInventory, _, err = filesystem.Run(ctx, config)
-					if err != nil {
-						break
-					}
+				var err error
+				inventory, _, err = filesystem.Run(ctx, config)
+				if err != nil {
+					break
 				}
 
 				// Cache the inventory for future use.
-				locationIndexToInventory[invLocationAndIndex] = oldInventory
+				locationIndexToInventory[invLocationAndIndex] = inventory
 			}
 
 			foundPackage := false
-			for _, oldInv := range oldInventory {
-				if areInventoriesEqual(inv, oldInv) {
+			for _, otherInv := range inventory {
+				if areInventoriesEqual(inv, otherInv) {
 					foundPackage = true
 					break
 				}
 			}
 
-			// If the inventory is not present in the old layer, then it was introduced in layer i+1.
-			if !foundPackage {
-				layerDetails = chainLayerDetailsList[i+1]
+			// If the inventory was found, then the current layer is the origin layer.
+			if foundPackage {
+				layerDetails = layerDetailsList[layerIndex]
 				foundOrigin = true
 				break
 			}
 		}
 
-		// If the inventory is present in every layer, then it means it was introduced in the first
-		// layer.
 		if !foundOrigin {
-			layerDetails = chainLayerDetailsList[0]
+			log.Infof("Inventory %v not found in any chain layer", inv)
+			continue
 		}
 		inv.LayerDetails = layerDetails
 	}
@@ -191,4 +179,64 @@ func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) b
 		return false
 	}
 	return true
+}
+
+// getSingleLayerFSFromChainLayer returns the filesystem of the underlying layer in the chain layer.
+func getLayerFSFromChainLayer(chainLayer scalibrImage.ChainLayer) (scalibrfs.FS, error) {
+	layer := chainLayer.Layer()
+	if layer == nil {
+		return nil, fmt.Errorf("chain layer has no layer")
+	}
+
+	fs := layer.FS()
+	if fs == nil {
+		return nil, fmt.Errorf("layer has no filesystem")
+	}
+
+	return fs, nil
+}
+
+func createLayerDetailsList(chainLayers []scalibrImage.ChainLayer) []*extractor.LayerDetails {
+	layerDetailsList := []*extractor.LayerDetails{}
+	for i, chainLayer := range chainLayers {
+		var diffID string
+		if chainLayer.Layer().IsEmpty() {
+			diffID = ""
+		} else {
+			diffID = chainLayer.Layer().DiffID().Encoded()
+		}
+		layerDetailsList = append(layerDetailsList, &extractor.LayerDetails{
+			Index:       i,
+			DiffID:      diffID,
+			Command:     chainLayer.Layer().Command(),
+			InBaseImage: false,
+		})
+	}
+	return layerDetailsList
+}
+
+// createLayerFSList creates a list of filesystems of the underlying diff layers. It does not get
+// the filesystems of the chain layers themselves.
+func createLayerFSList(chainLayers []scalibrImage.ChainLayer) ([]scalibrfs.FS, error) {
+	layerFSList := []scalibrfs.FS{}
+	for _, chainLayer := range chainLayers {
+		layerFS, err := getLayerFSFromChainLayer(chainLayer)
+		if err != nil {
+			return nil, err
+		}
+		layerFSList = append(layerFSList, layerFS)
+	}
+	return layerFSList, nil
+}
+
+func findLayersWithFile(fileLocation string, layerFSList []scalibrfs.FS) []int {
+	layersIndices := []int{}
+	for i := 0; i < len(layerFSList); i++ {
+		layerFS := layerFSList[i]
+		if _, err := layerFS.Stat(fileLocation); err != nil {
+			continue
+		}
+		layersIndices = append(layersIndices, i)
+	}
+	return layersIndices
 }
