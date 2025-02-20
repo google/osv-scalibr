@@ -18,7 +18,9 @@ package trace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
+	"os"
 	"slices"
 	"sort"
 
@@ -108,26 +110,37 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 		// TODO: b/381249869 - Optimization: Skip layers if file not found.
 		for i := len(chainLayers) - 2; i >= 0; i-- {
 			oldChainLayer := chainLayers[i]
+			fileLocation := inv.Locations[0]
+
+			// If the file does not exist in the underlying layer, then the chain layer can be skipped.
+			layerFS, err := getLayerFSFromChainLayer(oldChainLayer)
+			if err == nil {
+				if _, err := layerFS.Stat(fileLocation); err != nil && (errors.Is(err, os.ErrNotExist) || errors.Is(err, fs.ErrNotExist)) {
+					continue
+				}
+			}
 
 			invLocationAndIndex := locationAndIndex{
-				location: inv.Locations[0],
+				location: fileLocation,
 				index:    i,
 			}
 
 			var oldInventory []*extractor.Inventory
 			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
 				oldInventory = cachedInventory
+				// maybe this should just be
+				oldInventory = []*extractor.Inventory{}
 			} else {
-				// Check if file still exist in this layer, if not skip extraction.
+				// Check if file still exists in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				if _, err := oldChainLayer.FS().Stat(inv.Locations[0]); errors.Is(err, fs.ErrNotExist) {
+				if _, err := oldChainLayer.FS().Stat(fileLocation); errors.Is(err, fs.ErrNotExist) {
 					oldInventory = []*extractor.Inventory{}
 				} else {
 					// Update the extractor config to use the files from the current layer.
 					// We only take extract the first location because other locations are derived from the initial
 					// extraction location. If other locations can no longer be determined from the first location
 					// they should not be included here, and the trace for those packages stops here.
-					updateExtractorConfig([]string{inv.Locations[0]}, invExtractor, oldChainLayer.FS())
+					updateExtractorConfig([]string{fileLocation}, invExtractor, oldChainLayer.FS())
 
 					var err error
 					oldInventory, _, err = filesystem.Run(ctx, config)
@@ -191,4 +204,19 @@ func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) b
 		return false
 	}
 	return true
+}
+
+// getSingleLayerFSFromChainLayer returns the filesystem of the underlying layer in the chain layer.
+func getLayerFSFromChainLayer(chainLayer scalibrImage.ChainLayer) (scalibrfs.FS, error) {
+	layer := chainLayer.Layer()
+	if layer == nil {
+		return nil, fmt.Errorf("chain layer has no layer")
+	}
+
+	fs := layer.FS()
+	if fs == nil {
+		return nil, fmt.Errorf("layer has no filesystem")
+	}
+
+	return fs, nil
 }
