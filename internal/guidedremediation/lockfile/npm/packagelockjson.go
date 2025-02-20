@@ -24,6 +24,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/internal/guidedremediation/lockfile"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/npm"
 	"github.com/google/osv-scalibr/log"
@@ -39,46 +40,6 @@ func GetReadWriter() (lockfile.ReadWriter, error) {
 // System returns the ecosystem of this ReadWriter.
 func (r readWriter) System() resolve.System {
 	return resolve.NPM
-}
-
-type lockDependency struct {
-	// For an aliased package, Version is like "npm:[name]@[version]"
-	Version      string                    `json:"version"`
-	Dependencies map[string]lockDependency `json:"dependencies,omitempty"`
-
-	Dev      bool `json:"dev,omitempty"`
-	Optional bool `json:"optional,omitempty"`
-
-	Requires map[string]string `json:"requires,omitempty"`
-}
-
-type lockPackage struct {
-	// For an aliased package, Name is the real package name
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	Resolved string `json:"resolved"`
-
-	Dependencies         map[string]string `json:"dependencies,omitempty"`
-	DevDependencies      map[string]string `json:"devDependencies,omitempty"`
-	OptionalDependencies map[string]string `json:"optionalDependencies,omitempty"`
-	PeerDependencies     map[string]string `json:"peerDependencies,omitempty"`
-
-	PeerDependenciesMeta map[string]struct {
-		Optional bool `json:"optional,omitempty"`
-	} `json:"peerDependenciesMeta,omitempty"`
-
-	Dev         bool `json:"dev,omitempty"`
-	DevOptional bool `json:"devOptional,omitempty"`
-	Optional    bool `json:"optional,omitempty"`
-
-	Link bool `json:"link,omitempty"`
-}
-
-type packageLockJSON struct {
-	// npm v1- lockfiles use "dependencies"
-	Dependencies map[string]lockDependency `json:"dependencies,omitempty"`
-	// npm v2+ lockfiles use "packages"
-	Packages map[string]lockPackage `json:"packages,omitempty"`
 }
 
 type dependencyVersionSpec struct {
@@ -108,7 +69,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	var lockJSON packageLockJSON
+	var lockJSON packagelockjson.LockFile
 	if err := dec.Decode(&lockJSON); err != nil {
 		return nil, err
 	}

@@ -20,6 +20,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/npm"
 )
 
@@ -28,7 +29,7 @@ import (
 // Installed packages stored in recursive "dependencies" object
 // with "requires" field listing direct dependencies, and each possibly having their own "dependencies"
 // No dependency information package-lock.json for the root node, so we must also have the package.json
-func nodesFromDependencies(lockJSON packageLockJSON, packageJSON io.Reader) (*resolve.Graph, *nodeModule, error) {
+func nodesFromDependencies(lockJSON packagelockjson.LockFile, packageJSON io.Reader) (*resolve.Graph, *nodeModule, error) {
 	// Need to grab the root requirements from the package.json, since it's not in the lockfile
 	var manifestJSON npm.PackageJSON
 	if err := json.NewDecoder(packageJSON).Decode(&manifestJSON); err != nil {
@@ -75,7 +76,7 @@ func nodesFromDependencies(lockJSON packageLockJSON, packageJSON io.Reader) (*re
 	return g, nodeModuleTree, err
 }
 
-func computeDependenciesRecursive(g *resolve.Graph, parent *nodeModule, deps map[string]lockDependency) error {
+func computeDependenciesRecursive(g *resolve.Graph, parent *nodeModule, deps map[string]packagelockjson.Dependency) error {
 	for name, d := range deps {
 		actualName, version := npm.SplitNPMAlias(d.Version)
 		nID := g.AddNode(resolve.VersionKey{

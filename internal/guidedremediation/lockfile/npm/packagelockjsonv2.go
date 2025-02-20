@@ -24,6 +24,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 )
 
 // nodesFromPackages extracts graph from new-style (npm >= 7 / lockfileVersion 2+) structure
@@ -31,7 +32,7 @@ import (
 // Installed packages are in the flat "packages" object, keyed by the install path
 // e.g. "node_modules/foo/node_modules/bar"
 // packages contain most information from their own manifests.
-func nodesFromPackages(lockJSON packageLockJSON) (*resolve.Graph, *nodeModule, error) {
+func nodesFromPackages(lockJSON packagelockjson.LockFile) (*resolve.Graph, *nodeModule, error) {
 	g := &resolve.Graph{}
 	// Create graph nodes and reconstruct the node_modules folder structure in memory
 	root, ok := lockJSON.Packages[""]
@@ -155,7 +156,7 @@ func nodesFromPackages(lockJSON packageLockJSON) (*resolve.Graph, *nodeModule, e
 	return g, nodeModuleTree, nil
 }
 
-func makeNodeModuleDeps(pkg lockPackage, includeDev bool) *nodeModule {
+func makeNodeModuleDeps(pkg packagelockjson.Package, includeDev bool) *nodeModule {
 	nm := nodeModule{
 		Children: make(map[string]*nodeModule),
 		Deps:     make(map[string]dependencyVersionSpec),
@@ -186,7 +187,7 @@ func makeNodeModuleDeps(pkg lockPackage, includeDev bool) *nodeModule {
 	return &nm
 }
 
-func packageNamesByNodeModuleDepth(packages map[string]lockPackage) []string {
+func packageNamesByNodeModuleDepth(packages map[string]packagelockjson.Package) []string {
 	keys := slices.Collect(maps.Keys(packages))
 	slices.SortFunc(keys, func(a, b string) int {
 		aSplit := strings.Split(a, "node_modules/")
