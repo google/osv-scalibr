@@ -78,6 +78,7 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// Extractor extracts dotnet dependencies from a PE file
 type Extractor struct {
 	cfg Config
 }
@@ -195,7 +196,9 @@ func (e Extractor) Name() string {
 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{DirectFS: true}
+}
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
