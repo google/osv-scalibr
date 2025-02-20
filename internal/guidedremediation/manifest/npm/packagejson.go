@@ -127,13 +127,17 @@ func (r readWriter) System() resolve.System {
 	return resolve.NPM
 }
 
-type packageJSON struct {
+type PackageJSON struct {
 	Name                 string            `json:"name"`
 	Version              string            `json:"version"`
 	Workspaces           []string          `json:"workspaces"`
 	Dependencies         map[string]string `json:"dependencies"`
 	DevDependencies      map[string]string `json:"devDependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
+	PeerDependencies     map[string]string `json:"peerDependencies"`
+	PeerDependenciesMeta map[string]struct {
+		Optional bool `json:"optional,omitempty"`
+	} `json:"peerDependenciesMeta,omitempty"`
 }
 
 // Read parses the manifest from the given file.
@@ -150,7 +154,7 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	var pkgJSON packageJSON
+	var pkgJSON PackageJSON
 	if err := dec.Decode(&pkgJSON); err != nil {
 		return nil, err
 	}
