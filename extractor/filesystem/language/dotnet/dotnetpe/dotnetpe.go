@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -34,9 +33,6 @@ import (
 const (
 	// name is the unique name of this extractor.
 	name = "dotnet/pe"
-
-	// defaultMaxFileSizeBytes is the maximum file size this extractor will process.
-	defaultMaxFileSizeBytes = 20 * units.MiB // 20 MB
 )
 
 var (
@@ -61,9 +57,7 @@ type Config struct {
 
 // DefaultConfig returns the default configuration of the extractor.
 func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: defaultMaxFileSizeBytes,
-	}
+	return Config{}
 }
 
 // New returns an .NET PE extractor.
