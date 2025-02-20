@@ -16,14 +16,17 @@
 package gomod
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"go/version"
 	"io"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"golang.org/x/exp/maps"
@@ -112,8 +115,25 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
+	isGoVersionSpecified := parsedLockfile.Go != nil && parsedLockfile.Go.Version != ""
+
+	// At go 1.17 and above, the go command adds an indirect requirement for each module that provides any
+	// package imported (even indirectly) by a package or test in the main module or passed as an argument to go get.
+	//
+	// for versions below extract indirect dependencies from the go.sum file
+	if isGoVersionSpecified && version.Compare("go"+parsedLockfile.Go.Version, "go1.17") < 0 {
+		sumPackages, err := extractFromSum(input)
+		if err != nil {
+			log.Warnf("Error reading go.sum file: %s", err)
+		} else {
+			for _, p := range sumPackages {
+				packages[mapKey{name: p.Name, version: p.Version}] = p
+			}
+		}
+	}
+
 	// Add the Go stdlib as an explicit dependency.
-	if parsedLockfile.Go != nil && parsedLockfile.Go.Version != "" {
+	if isGoVersionSpecified {
 		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
 			Version:   parsedLockfile.Go.Version,
@@ -142,6 +162,54 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 	return "Go"
+}
+
+// extractFromSum extracts dependencies from the go.sum file.
+//
+// Note: This function may produce false positives, as the go.sum file might be outdated.
+func extractFromSum(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	goSumPath := strings.TrimSuffix(input.Path, ".mod") + ".sum"
+	f, err := input.FS.Open(goSumPath)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(f)
+	packages := []*extractor.Inventory{}
+
+	for lineNumber := 0; scanner.Scan(); lineNumber++ {
+		line := scanner.Text()
+
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Fields(line)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("Error reading go.sum file: wrongly formatted line %s:%d", goSumPath, lineNumber)
+		}
+
+		name := parts[0]
+		version := strings.TrimPrefix(parts[1], "v")
+
+		// skip a line if it the version contains "/go.mod" because
+		// lines containing "/go.mod" are duplicates used to verify the hash of the go.mod file
+		if strings.Contains(version, "/go.mod") {
+			continue
+		}
+
+		packages = append(packages, &extractor.Inventory{
+			Name:      name,
+			Version:   version,
+			Locations: []string{goSumPath},
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return packages, nil
 }
 
 var _ filesystem.Extractor = Extractor{}
