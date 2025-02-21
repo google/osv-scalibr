@@ -24,9 +24,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
+	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/google/osv-scalibr/artifact/image/require"
 )
 
@@ -549,11 +552,14 @@ func TestFromTarball(t *testing.T) {
 			// Only defer call to CleanUp if the image was created successfully.
 			defer gotImage.CleanUp()
 
+			// Make sure the expected files are in the chain layers.
 			chainLayers, err := gotImage.ChainLayers()
 			if err != nil {
 				t.Fatalf("ChainLayers() returned error: %v", err)
 			}
 
+			// If the number of chain layers does not match the number of expected chain layer entries,
+			// then there is no point in continuing the test.
 			if len(chainLayers) != len(tc.wantChainLayerEntries) {
 				t.Fatalf("ChainLayers() returned incorrect number of chain layers: got %d chain layers, want %d chain layers", len(chainLayers), len(tc.wantChainLayerEntries))
 			}
@@ -655,5 +661,284 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 				t.Errorf("Open(%v) returned incorrect content: got \"%s\", want \"%s\"", filepathContentPair.filepath, gotContent, filepathContentPair.content)
 			}
 		}()
+	}
+}
+
+func TestInitializeChainLayers(t *testing.T) {
+	fakeV1Layer1 := fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil)
+	fakeV1Layer2 := fakev1layer.New("456", "COPY ./bar.txt /bar.txt # buildkit", false, nil)
+	fakeV1Layer3 := fakev1layer.New("789", "COPY ./baz.txt /baz.txt # buildkit", false, nil)
+
+	tests := []struct {
+		name            string
+		v1Layers        []v1.Layer
+		configFile      *v1.ConfigFile
+		maxSymlinkDepth int
+		want            []*chainLayer
+		wantErr         bool
+	}{
+		{
+			name: "nil config file",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+			},
+			wantErr: true,
+		},
+		{
+			name: "no config file history entries",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+			},
+			configFile: &v1.ConfigFile{
+				History: []v1.History{},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        0,
+					latestLayer: &Layer{
+						diffID:  "sha256:123",
+						v1Layer: fakeV1Layer1,
+						isEmpty: false,
+					},
+				},
+			},
+		},
+		{
+			name: "single non-empty layer with history entry",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+			},
+			configFile: &v1.ConfigFile{
+				History: []v1.History{
+					{
+						CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+					},
+				},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        0,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						diffID:       "sha256:123",
+						v1Layer:      fakeV1Layer1,
+						isEmpty:      false,
+					},
+				},
+			},
+		},
+		{
+			name: "multiple non-empty layer with history entries",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+				fakeV1Layer2,
+				fakeV1Layer3,
+			},
+			configFile: &v1.ConfigFile{
+				History: []v1.History{
+					{
+						CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+					},
+					{
+						CreatedBy: "COPY ./bar.txt /bar.txt # buildkit",
+					},
+					{
+						CreatedBy: "COPY ./baz.txt /baz.txt # buildkit",
+					},
+				},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        0,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						diffID:       "sha256:123",
+						v1Layer:      fakeV1Layer1,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        1,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
+						diffID:       "sha256:456",
+						v1Layer:      fakeV1Layer2,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        2,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
+						diffID:       "sha256:789",
+						v1Layer:      fakeV1Layer3,
+						isEmpty:      false,
+					},
+				},
+			},
+		},
+		{
+			name: "mix of filled and empty layers with history entries",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+				fakeV1Layer2,
+				fakeV1Layer3,
+			},
+			configFile: &v1.ConfigFile{
+				History: []v1.History{
+					{
+						CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
+						EmptyLayer: false,
+					},
+					{
+						CreatedBy:  "ENTRYPOINT [\"/bin/sh\"]",
+						EmptyLayer: true,
+					},
+					{
+						CreatedBy:  "COPY ./bar.txt /bar.txt # buildkit",
+						EmptyLayer: false,
+					},
+					{
+						CreatedBy:  "RANDOM DOCKER COMMAND",
+						EmptyLayer: true,
+					},
+					{
+						CreatedBy:  "COPY ./baz.txt /baz.txt # buildkit",
+						EmptyLayer: false,
+					},
+					{
+						CreatedBy:  "RUN [\"/bin/sh\"]",
+						EmptyLayer: true,
+					},
+				},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        0,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						diffID:       "sha256:123",
+						v1Layer:      fakeV1Layer1,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        1,
+					latestLayer: &Layer{
+						buildCommand: "ENTRYPOINT [\"/bin/sh\"]",
+						isEmpty:      true,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        2,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
+						diffID:       "sha256:456",
+						v1Layer:      fakeV1Layer2,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        3,
+					latestLayer: &Layer{
+						buildCommand: "RANDOM DOCKER COMMAND",
+						isEmpty:      true,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        4,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
+						diffID:       "sha256:789",
+						v1Layer:      fakeV1Layer3,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        5,
+					latestLayer: &Layer{
+						buildCommand: "RUN [\"/bin/sh\"]",
+						isEmpty:      true,
+					},
+				},
+			},
+		},
+		{
+			name: "more layers than history entries",
+			v1Layers: []v1.Layer{
+				fakeV1Layer1,
+				fakeV1Layer2,
+				fakeV1Layer3,
+			},
+			configFile: &v1.ConfigFile{
+				History: []v1.History{
+					{
+						CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
+						EmptyLayer: false,
+					},
+				},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        0,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						diffID:       "sha256:123",
+						v1Layer:      fakeV1Layer1,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        1,
+					latestLayer: &Layer{
+						diffID:  "sha256:456",
+						v1Layer: fakeV1Layer2,
+						isEmpty: false,
+					},
+				},
+				{
+					fileNodeTree: pathtree.NewNode[fileNode](),
+					index:        2,
+					latestLayer: &Layer{
+						diffID:  "sha256:789",
+						v1Layer: fakeV1Layer3,
+						isEmpty: false,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.configFile, tc.maxSymlinkDepth)
+			if tc.wantErr {
+				if err != nil {
+					return
+				}
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned nil error, want error", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth)
+			}
+
+			if err != nil {
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected error: %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, err)
+			}
+
+			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree")); diff != "" {
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected diff (-want +got): %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, diff)
+			}
+		})
 	}
 }
