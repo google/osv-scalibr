@@ -119,6 +119,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			// dependencies with only tag specified should be skipped
 			Name: "git dependency with tag specified",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git-dependency-tagged.toml",
@@ -129,46 +130,39 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "0.1.0",
 					Locations: []string{"testdata/git-dependency-tagged.toml"},
 				},
-				{
-					Name:      "regex",
-					Version:   "0.0.1",
-					Locations: []string{"testdata/git-dependency-tagged.toml"},
-				},
 			},
 		},
 		{
-			Name: "git dependency without tag specified",
+			Name: "git dependency with commit specified",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/git-dependency-not-tagged.toml",
+				Path: "testdata/git-dependency-with-commit.toml",
 			},
 			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
-					Locations: []string{"testdata/git-dependency-not-tagged.toml"},
+					Locations: []string{"testdata/git-dependency-with-commit.toml"},
 				},
 				{
-					Name:      "regex",
-					Version:   "",
-					Locations: []string{"testdata/git-dependency-not-tagged.toml"},
+					Name: "regex",
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Repo:   "https://github.com/rust-lang/regex.git",
+						Commit: "0c0990399270277832fbb5b91a1fa118e6f63dba",
+					},
+					Locations: []string{"testdata/git-dependency-with-commit.toml"},
 				},
 			},
 		},
 		{
-			Name: "dependency with version and git specified (Version should override the Tag)",
+			Name: "git dependency with pr rev specified",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/git-dependency-tagged-with-version.toml",
+				Path: "testdata/git-dependency-with-pr.toml",
 			},
 			WantInventory: []*extractor.Inventory{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
-					Locations: []string{"testdata/git-dependency-tagged-with-version.toml"},
-				},
-				{
-					Name:      "regex",
-					Version:   "0.0.2",
-					Locations: []string{"testdata/git-dependency-tagged-with-version.toml"},
+					Locations: []string{"testdata/git-dependency-with-pr.toml"},
 				},
 			},
 		},
@@ -184,11 +178,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Locations: []string{"testdata/two-dependencies.toml"},
 				},
 				{
-					Name:      "regex",
-					Version:   "0.0.1",
-					Locations: []string{"testdata/two-dependencies.toml"},
-				},
-				{
 					Name:      "futures",
 					Version:   "0.3",
 					Locations: []string{"testdata/two-dependencies.toml"},
@@ -196,6 +185,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			extr := cargotoml.Extractor{}

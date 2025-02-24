@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 
 	"github.com/BurntSushi/toml"
 
@@ -29,22 +30,29 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+var shaPattern = regexp.MustCompile("^[0-9a-f]{40}$")
+
 type cargoTomlDependency struct {
 	Version string
+	Git     string
+	Rev     string
 }
 
 // UnmarshalTOML parses a dependency from a Cargo.toml file.
 //
 // Dependencies in Cargo.toml can be defined as simple strings (e.g., version)
 // or as more complex objects (e.g., with version, path, etc.)
+//
+// in case both the Version and Git/Path are specified the version should be considered
+// the source of truth
 func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
-	getString := func(m map[string]any, key string) (string, bool) {
+	getString := func(m map[string]any, key string) string {
 		v, ok := m[key]
 		if !ok {
-			return "", false
+			return ""
 		}
-		s, ok := v.(string)
-		return s, ok
+		s, _ := v.(string)
+		return s
 	}
 
 	switch data := data.(type) {
@@ -53,16 +61,20 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 		v.Version = data
 		return nil
 	case map[string]any:
-		// if the type is an object then the version is inside it
-		if version, ok := getString(data, "version"); ok {
-			v.Version = version
-			return nil
+		*v = cargoTomlDependency{
+			Version: getString(data, "version"),
+			Git:     getString(data, "git"),
+			Rev:     getString(data, "rev"),
 		}
-		// no version found, no error is returned as it is optional
 		return nil
 	default:
 		return errors.New("invalid format for Cargo.toml dependency")
 	}
+}
+
+// IsCommitSpecified checks if the dependency specifies a Git commit.
+func (v *cargoTomlDependency) IsCommitSpecified() bool {
+	return v.Git != "" && shaPattern.MatchString(v.Rev)
 }
 
 type cargoTomlPackage struct {
@@ -112,13 +124,24 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*e
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
-		if dependency.Version == "" {
+		var srcCode *extractor.SourceCodeIdentifier
+		if dependency.IsCommitSpecified() {
+			srcCode = &extractor.SourceCodeIdentifier{
+				Repo:   dependency.Git,
+				Commit: dependency.Rev,
+			}
+		}
+
+		// Skip dependencies that have no version and no useful source code information
+		if dependency.Version == "" && srcCode == nil {
 			continue
 		}
+
 		packages = append(packages, &extractor.Inventory{
-			Name:      name,
-			Version:   dependency.Version,
-			Locations: []string{input.Path},
+			Name:       name,
+			Version:    dependency.Version,
+			Locations:  []string{input.Path},
+			SourceCode: srcCode,
 		})
 	}
 
