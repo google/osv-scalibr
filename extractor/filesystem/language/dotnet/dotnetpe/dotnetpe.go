@@ -19,11 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -100,13 +102,23 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Retrieve the real path of the file
-	realPath, err := input.GetRealPath()
+	absPath, err := input.GetRealPath()
 	if err != nil {
 		return nil, err
 	}
 
+	if input.Root == "" {
+		// The file got copied to a temporary dir, remove it at the end.
+		defer func() {
+			dir := filepath.Base(absPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Errorf("os.RemoveAll(%q%): %w", dir, err)
+			}
+		}()
+	}
+
 	// Open the PE file
-	pe, err := peparser.New(realPath, &peparser.Options{})
+	pe, err := peparser.New(absPath, &peparser.Options{})
 	if err != nil {
 		return nil, errors.Join(ErrOpeningPEFile, err)
 	}
@@ -143,6 +155,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		}
 	}
 
+	// if at least an inventory was found inside the CLR.MetadataTables there is no need to check the VersionResources
 	if len(ivs) > 0 {
 		return ivs, nil
 	}
