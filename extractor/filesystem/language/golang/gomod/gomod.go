@@ -192,8 +192,8 @@ func extractFromSum(input *filesystem.ScanInput) ([]*extractor.Inventory, error)
 		name := parts[0]
 		version := strings.TrimPrefix(parts[1], "v")
 
-		// skip a line if it the version contains "/go.mod" because
-		// lines containing "/go.mod" are duplicates used to verify the hash of the go.mod file
+		// skip a line if the version contains "/go.mod" because lines
+		// containing "/go.mod" are duplicates used to verify the hash of the go.mod file
 		if strings.Contains(version, "/go.mod") {
 			continue
 		}
