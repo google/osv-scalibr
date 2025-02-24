@@ -82,18 +82,33 @@ func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 	return "NuGet"
 }
 
-// Extract parses the PE files to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	inventory, err := e.extractFromInput(input)
+	if e.cfg.Stats != nil {
+		var fileSizeBytes int64
+		if input.Info != nil {
+			fileSizeBytes = input.Info.Size()
+		}
+		e.cfg.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+			Path:          input.Path,
+			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
+			FileSizeBytes: fileSizeBytes,
+		})
+	}
+	return inventory, err
+}
+
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Retrieve the real path of the file
 	realPath, err := input.GetRealPath()
 	if err != nil {
-		return nil, errors.Join(ErrOpeningPEFile, err)
+		return nil, err
 	}
 
-	// Parse the PE file
+	// Open the PE file
 	pe, err := peparser.New(realPath, &peparser.Options{})
 	if err != nil {
-		return nil, errors.Join(ErrParsingPEFile, err)
+		return nil, errors.Join(ErrOpeningPEFile, err)
 	}
 
 	// Parse the PE file

@@ -157,7 +157,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/Empty.dll",
 			},
-			WantErr: dotnetpe.ErrParsingPEFile,
+			WantErr: dotnetpe.ErrOpeningPEFile,
 		},
 	}
 
