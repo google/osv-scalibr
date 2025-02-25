@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -790,6 +791,10 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
 
+			// Need to record scalibr files found in /tmp before the rpm extractor runs, as it may create
+			// some. This is needed to compare the files found after the extractor runs.
+			filesInTmpWant := scalibrFilesInTmp(t)
+
 			r, err := os.Open(tt.path)
 			defer func() {
 				if err = r.Close(); err != nil {
@@ -822,6 +827,13 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 
 			if len(got) != tt.wantResults {
 				t.Errorf("Extract(%s): got %d results, want %d\n", tt.path, len(got), tt.wantResults)
+			}
+
+			// Check that no scalibr files remain in /tmp.
+			filesInTmpGot := scalibrFilesInTmp(t)
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less)); diff != "" {
+				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -995,4 +1007,23 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
+}
+
+// scalibrFilesInTmp returns the list of filenames in /tmp that start with "scalibr-".
+func scalibrFilesInTmp(t *testing.T) []string {
+	t.Helper()
+
+	filenames := []string{}
+	files, err := os.ReadDir(os.TempDir())
+	if err != nil {
+		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)
+	}
+
+	for _, f := range files {
+		name := f.Name()
+		if strings.HasPrefix(name, "scalibr-") {
+			filenames = append(filenames, f.Name())
+		}
+	}
+	return filenames
 }
