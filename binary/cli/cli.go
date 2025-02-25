@@ -525,14 +525,14 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
 			OS:            plugin.OSLinux,
-			Network:       true,
+			Network:       plugin.NetworkOnline,
 			DirectFS:      true,
 			RunningSystem: false,
 		}
 	}
 	return &plugin.Capabilities{
 		OS:            platform.OS(),
-		Network:       true,
+		Network:       plugin.NetworkOnline,
 		DirectFS:      true,
 		RunningSystem: true,
 	}

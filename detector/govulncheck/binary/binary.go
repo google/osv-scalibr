@@ -53,7 +53,11 @@ func (Detector) Version() int { return 0 }
 
 // Requirements of the detector.
 func (d Detector) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: d.OfflineVulnDBPath == "", DirectFS: true}
+	net := plugin.NetworkOnline
+	if d.OfflineVulnDBPath == "" {
+		net = plugin.NetworkAny
+	}
+	return &plugin.Capabilities{Network: net, DirectFS: true}
 }
 
 // RequiredExtractors returns the go binary extractor.
