@@ -38,6 +38,9 @@ const (
 )
 
 var (
+	// Supported extensions for Portable Executable (PE) files.
+	// This list may not be exhaustive, as the PE standard does not mandate specific extensions.
+	// The empty string is intentionally included to handle files without extensions.
 	peExtensions = []string{
 		".acm", ".ax", ".cpl", ".dll", ".drv", ".efi", ".exe", ".mui", ".ocx",
 		".scr", ".sys", ".tsp", ".mun", ".msstyles", "",
@@ -84,6 +87,7 @@ func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 	return "NuGet"
 }
 
+// Extract parses the PE files to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
 	if e.cfg.Stats != nil {
