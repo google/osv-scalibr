@@ -127,7 +127,7 @@ func readDir(fsys scalibrfs.FS, name string) (*dirIterator, error) {
 	if !ok {
 		// Fallback if ReadDirFile is not implemented: Use fs.DirFS's ReadDir().
 		// (Uses more memory since it reads all subdirs at once.)
-		file.Close()
+		_ = file.Close()
 		files, err := fsys.ReadDir(name)
 		if err != nil {
 			return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}

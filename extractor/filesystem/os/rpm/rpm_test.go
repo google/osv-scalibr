@@ -1002,7 +1002,7 @@ func CopyFileToTempDir(t *testing.T, filepath, root string) (string, error) {
 
 func createOsRelease(t *testing.T, root string, content string) {
 	t.Helper()
-	os.MkdirAll(filepath.Join(root, "etc"), 0755)
+	_ = os.MkdirAll(filepath.Join(root, "etc"), 0755)
 	err := os.WriteFile(filepath.Join(root, "etc/os-release"), []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
