@@ -95,15 +95,9 @@ var (
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
 		javaarchive.Name:                   {javaarchive.NewDefault},
-		pomxml.Name:                        {pomxml.New},
-	}
-	// TODO(#441): enable pomxmlnet extractor when network is accesible.
-	// JavaNet extractors requiring network access.
-	JavaNet = InitMap{
-		gradlelockfile.Name:                {gradlelockfile.New},
-		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
-		javaarchive.Name:                   {javaarchive.NewDefault},
-		pomxmlnet.Name:                     {pomxmlnet.NewDefault},
+		// pom.xml extraction for environments with and without network access.
+		pomxml.Name:    {pomxml.New},
+		pomxmlnet.Name: {pomxmlnet.NewDefault},
 	}
 	// Javascript extractors.
 	Javascript = InitMap{
@@ -197,8 +191,6 @@ var (
 
 	// Default extractors that are recommended to be enabled.
 	Default = concat(Java, Javascript, Python, Go, OS)
-	// DefaultNet defines the list of recommended extractors that require network access.
-	DefaultNet = concat(JavaNet, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR.
 	All = concat(
 		Cpp,
@@ -244,9 +236,8 @@ var (
 		"containers": vals(Containers),
 
 		// Collections.
-		"default":    vals(Default),
-		"defaultnet": vals(DefaultNet),
-		"all":        vals(All),
+		"default": vals(Default),
+		"all":     vals(All),
 	})
 )
 
