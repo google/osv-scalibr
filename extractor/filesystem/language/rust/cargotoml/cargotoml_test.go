@@ -75,8 +75,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 }
 
-// TODO: convert this to toml est
-
 func TestExtractor_Extract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
