@@ -121,6 +121,9 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
 
@@ -133,7 +136,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches java archive file patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !isArchive(filepath.ToSlash(path)) {
+	if !IsArchive(filepath.ToSlash(path)) {
 		return false
 	}
 
@@ -300,7 +303,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				})
 			}
 
-		case isArchive(file.Name):
+		case IsArchive(file.Name):
 			// Anonymous func needed to defer f.Close().
 			func() {
 				f, err := file.Open()
@@ -413,7 +416,8 @@ func hashJar(r io.Reader) (string, error) {
 	return base64.StdEncoding.EncodeToString(h), nil
 }
 
-func isArchive(path string) bool {
+// IsArchive returns true if the file path ends with one of the supported archive extensions.
+func IsArchive(path string) bool {
 	ext := filepath.Ext(path)
 	for _, archiveExt := range archiveExtensions {
 		if strings.EqualFold(ext, archiveExt) {

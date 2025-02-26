@@ -17,16 +17,9 @@ package list
 
 import (
 	"fmt"
-	"os"
 	"slices"
-	"strings"
 
-	// OSV extractors.
-
-	// SCALIBR internal extractors.
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
-
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -43,6 +36,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -79,107 +74,133 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"golang.org/x/exp/maps"
 )
+
+// InitFn is the extractor initializer function.
+type InitFn func() filesystem.Extractor
+
+// InitMap is a map of extractor names to their initers.
+type InitMap map[string][]InitFn
 
 // LINT.IfChange
 var (
 	// Language extractors.
 
 	// C++ extractors.
-	Cpp []filesystem.Extractor = []filesystem.Extractor{conanlock.Extractor{}}
+	Cpp = InitMap{conanlock.Name: {conanlock.New}}
 	// Java extractors.
-	Java []filesystem.Extractor = []filesystem.Extractor{
-		gradlelockfile.Extractor{},
-		gradleverificationmetadataxml.Extractor{},
-		javaarchive.New(javaarchive.DefaultConfig()),
-		pomxml.Extractor{},
+	Java = InitMap{
+		gradlelockfile.Name:                {gradlelockfile.New},
+		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
+		javaarchive.Name:                   {javaarchive.NewDefault},
+		pomxml.Name:                        {pomxml.New},
+	}
+	// TODO(#441): enable pomxmlnet extractor when network is accesible.
+	// JavaNet extractors requiring network access.
+	JavaNet = InitMap{
+		gradlelockfile.Name:                {gradlelockfile.New},
+		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
+		javaarchive.Name:                   {javaarchive.NewDefault},
+		pomxmlnet.Name:                     {pomxmlnet.NewDefault},
 	}
 	// Javascript extractors.
-	Javascript []filesystem.Extractor = []filesystem.Extractor{
-		packagejson.New(packagejson.DefaultConfig()),
-		packagelockjson.New(packagelockjson.DefaultConfig()),
-		&pnpmlock.Extractor{},
-		&yarnlock.Extractor{},
-		&bunlock.Extractor{},
+	Javascript = InitMap{
+		packagejson.Name:     {packagejson.NewDefault},
+		packagelockjson.Name: {packagelockjson.NewDefault},
+		pnpmlock.Name:        {pnpmlock.New},
+		yarnlock.Name:        {yarnlock.New},
+		bunlock.Name:         {bunlock.New},
 	}
 	// Python extractors.
-	Python []filesystem.Extractor = []filesystem.Extractor{
-		wheelegg.New(wheelegg.DefaultConfig()),
-		requirements.New(requirements.DefaultConfig()),
-		setup.New(setup.DefaultConfig()),
-		pipfilelock.Extractor{},
-		pdmlock.Extractor{},
-		poetrylock.Extractor{},
-		condameta.Extractor{},
-		uvlock.Extractor{},
+	Python = InitMap{
+		wheelegg.Name:     {wheelegg.NewDefault},
+		requirements.Name: {requirements.NewDefault},
+		setup.Name:        {setup.NewDefault},
+		pipfilelock.Name:  {pipfilelock.New},
+		pdmlock.Name:      {pdmlock.New},
+		poetrylock.Name:   {poetrylock.New},
+		condameta.Name:    {condameta.NewDefault},
+		uvlock.Name:       {uvlock.New},
 	}
 	// Go extractors.
-	Go []filesystem.Extractor = []filesystem.Extractor{
-		gobinary.New(gobinary.DefaultConfig()),
-		&gomod.Extractor{},
+	Go = InitMap{
+		gobinary.Name: {gobinary.NewDefault},
+		gomod.Name:    {gomod.New},
 	}
 	// Dart extractors.
-	Dart []filesystem.Extractor = []filesystem.Extractor{pubspec.Extractor{}}
+	Dart = InitMap{pubspec.Name: {pubspec.New}}
 	// Erlang extractors.
-	Erlang []filesystem.Extractor = []filesystem.Extractor{mixlock.Extractor{}}
+	Erlang = InitMap{mixlock.Name: {mixlock.New}}
 	// Elixir extractors.
-	Elixir []filesystem.Extractor = []filesystem.Extractor{elixir.Extractor{}}
+	Elixir = InitMap{elixir.Name: {elixir.NewDefault}}
 	// Haskell extractors.
-	Haskell []filesystem.Extractor = []filesystem.Extractor{stacklock.New(stacklock.DefaultConfig()), cabal.New(cabal.DefaultConfig())}
+	Haskell = InitMap{
+		stacklock.Name: {stacklock.NewDefault},
+		cabal.Name:     {cabal.NewDefault},
+	}
 	// R extractors
-	R []filesystem.Extractor = []filesystem.Extractor{renvlock.Extractor{}}
+	R = InitMap{renvlock.Name: {renvlock.New}}
 	// Ruby extractors.
-	Ruby []filesystem.Extractor = []filesystem.Extractor{gemspec.New(gemspec.DefaultConfig()), &gemfilelock.Extractor{}}
+	Ruby = InitMap{
+		gemspec.Name:     {gemspec.NewDefault},
+		gemfilelock.Name: {gemfilelock.New},
+	}
 	// Rust extractors.
-	Rust []filesystem.Extractor = []filesystem.Extractor{
-		cargolock.Extractor{},
-		cargotoml.Extractor{},
-		cargoauditable.New(cargoauditable.DefaultConfig()),
+	Rust = InitMap{
+		cargolock.Name:      {cargolock.New},
+		cargoauditable.Name: {cargoauditable.NewDefault},
+		cargotoml.Name:      {cargotoml.New},
 	}
 	// SBOM extractors.
-	SBOM []filesystem.Extractor = []filesystem.Extractor{&cdx.Extractor{}, &spdx.Extractor{}}
+	SBOM = InitMap{
+		cdx.Name:  {cdx.New},
+		spdx.Name: {spdx.New},
+	}
 	// Dotnet (.NET) extractors.
-	Dotnet []filesystem.Extractor = []filesystem.Extractor{
-		depsjson.New(depsjson.DefaultConfig()),
-		packagesconfig.New(packagesconfig.DefaultConfig()),
-		packageslockjson.New(packageslockjson.DefaultConfig()),
+	Dotnet = InitMap{
+		depsjson.Name:         {depsjson.NewDefault},
+		packagesconfig.Name:   {packagesconfig.NewDefault},
+		packageslockjson.Name: {packageslockjson.NewDefault},
 	}
 	// PHP extractors.
-	PHP []filesystem.Extractor = []filesystem.Extractor{&composerlock.Extractor{}}
+	PHP = InitMap{composerlock.Name: {composerlock.New}}
 	// Swift extractors.
 
-	Swift []filesystem.Extractor = []filesystem.Extractor{
-		packageresolved.New(packageresolved.DefaultConfig()),
-		podfilelock.New(podfilelock.DefaultConfig()),
+	Swift = InitMap{
+		packageresolved.Name: {packageresolved.NewDefault},
+		podfilelock.Name:     {podfilelock.NewDefault},
 	}
 
 	// Containers extractors.
-	Containers []filesystem.Extractor = []filesystem.Extractor{containerd.New(containerd.DefaultConfig())}
+	Containers = InitMap{containerd.Name: {containerd.NewDefault}}
 
 	// OS extractors.
-	OS []filesystem.Extractor = []filesystem.Extractor{
-		dpkg.New(dpkg.DefaultConfig()),
-		apk.New(apk.DefaultConfig()),
-		rpm.New(rpm.DefaultConfig()),
-		cos.New(cos.DefaultConfig()),
-		snap.New(snap.DefaultConfig()),
-		nix.New(),
-		module.New(module.DefaultConfig()),
-		vmlinuz.New(vmlinuz.DefaultConfig()),
-		pacman.New(pacman.DefaultConfig()),
-		portage.New(portage.DefaultConfig()),
-		flatpak.New(flatpak.DefaultConfig()),
-		homebrew.Extractor{},
-		macapps.New(macapps.DefaultConfig())}
+	OS = InitMap{
+		dpkg.Name:     {dpkg.NewDefault},
+		apk.Name:      {apk.NewDefault},
+		rpm.Name:      {rpm.NewDefault},
+		cos.Name:      {cos.NewDefault},
+		snap.Name:     {snap.NewDefault},
+		nix.Name:      {nix.New},
+		module.Name:   {module.NewDefault},
+		vmlinuz.Name:  {vmlinuz.NewDefault},
+		pacman.Name:   {pacman.NewDefault},
+		portage.Name:  {portage.NewDefault},
+		flatpak.Name:  {flatpak.NewDefault},
+		homebrew.Name: {homebrew.New},
+		macapps.Name:  {macapps.NewDefault},
+	}
 
 	// Collections of extractors.
 
 	// Default extractors that are recommended to be enabled.
-	Default []filesystem.Extractor = slices.Concat(Java, Javascript, Python, Go, OS)
+	Default = concat(Java, Javascript, Python, Go, OS)
+	// DefaultNet defines the list of recommended extractors that require network access.
+	DefaultNet = concat(JavaNet, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR.
-	All []filesystem.Extractor = slices.Concat(
+	All = concat(
 		Cpp,
 		Java,
 		Javascript,
@@ -200,57 +221,60 @@ var (
 		Containers,
 	)
 
-	extractorNames = map[string][]filesystem.Extractor{
+	extractorNames = concat(All, InitMap{
 		// Languages.
-		"cpp":        Cpp,
-		"java":       Java,
-		"javascript": Javascript,
-		"python":     Python,
-		"go":         Go,
-		"dart":       Dart,
-		"erlang":     Erlang,
-		"elixir":     Elixir,
-		"haskell":    Haskell,
-		"r":          R,
-		"ruby":       Ruby,
-		"dotnet":     Dotnet,
-		"php":        PHP,
-		"rust":       Rust,
-		"swift":      Swift,
+		"cpp":        vals(Cpp),
+		"java":       vals(Java),
+		"javascript": vals(Javascript),
+		"python":     vals(Python),
+		"go":         vals(Go),
+		"dart":       vals(Dart),
+		"erlang":     vals(Erlang),
+		"elixir":     vals(Elixir),
+		"haskell":    vals(Haskell),
+		"r":          vals(R),
+		"ruby":       vals(Ruby),
+		"dotnet":     vals(Dotnet),
+		"php":        vals(PHP),
+		"rust":       vals(Rust),
+		"swift":      vals(Swift),
 
-		"sbom":       SBOM,
-		"os":         OS,
-		"containers": Containers,
+		"sbom":       vals(SBOM),
+		"os":         vals(OS),
+		"containers": vals(Containers),
 
 		// Collections.
-		"default": Default,
-		"all":     All,
-	}
+		"default":    vals(Default),
+		"defaultnet": vals(DefaultNet),
+		"all":        vals(All),
+	})
 )
 
 // LINT.ThenChange(/docs/supported_inventory_types.md)
 
-//nolint:gochecknoinits
-func init() {
-	for _, e := range All {
-		register(e)
+func concat(InitMaps ...InitMap) InitMap {
+	result := InitMap{}
+	for _, m := range InitMaps {
+		maps.Copy(result, m)
 	}
+	return result
 }
 
-// register adds the individual extractors to the extractorNames map.
-func register(d filesystem.Extractor) {
-	if _, ok := extractorNames[strings.ToLower(d.Name())]; ok {
-		log.Errorf("There are 2 extractors with the name: %q", d.Name())
-		os.Exit(1)
-	}
-	extractorNames[strings.ToLower(d.Name())] = []filesystem.Extractor{d}
+func vals(InitMap InitMap) []InitFn {
+	return slices.Concat(maps.Values(InitMap)...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
-	return FilterByCapabilities(All, capabs)
+	all := []filesystem.Extractor{}
+	for _, initers := range All {
+		for _, initer := range initers {
+			all = append(all, initer())
+		}
+	}
+	return FilterByCapabilities(all, capabs)
 }
 
 // FilterByCapabilities returns all extractors from the given list that can run
@@ -270,14 +294,15 @@ func FilterByCapabilities(exs []filesystem.Extractor, capabs *plugin.Capabilitie
 func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 	resultMap := make(map[string]filesystem.Extractor)
 	for _, n := range names {
-		if es, ok := extractorNames[strings.ToLower(n)]; ok {
-			for _, e := range es {
+		if initers, ok := extractorNames[n]; ok {
+			for _, initer := range initers {
+				e := initer()
 				if _, ok := resultMap[e.Name()]; !ok {
 					resultMap[e.Name()] = e
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("unknown extractor %s", n)
+			return nil, fmt.Errorf("unknown extractor %q", n)
 		}
 	}
 	result := make([]filesystem.Extractor, 0, len(resultMap))
@@ -289,12 +314,16 @@ func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 
 // ExtractorFromName returns a single extractor based on its exact name.
 func ExtractorFromName(name string) (filesystem.Extractor, error) {
-	es, ok := extractorNames[strings.ToLower(name)]
+	initers, ok := extractorNames[name]
 	if !ok {
-		return nil, fmt.Errorf("unknown extractor %s", name)
+		return nil, fmt.Errorf("unknown extractor %q", name)
 	}
-	if len(es) != 1 || es[0].Name() != name {
+	if len(initers) != 1 {
 		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
 	}
-	return es[0], nil
+	e := initers[0]()
+	if e.Name() != name {
+		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
+	}
+	return e, nil
 }

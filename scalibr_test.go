@@ -279,7 +279,7 @@ func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) *purl.PackageURL { re
 func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string        { return "" }
 
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: true}
+	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 type fakeDetNeedsFS struct {
@@ -311,7 +311,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 					&fakeDetNeedsFS{},
 				},
 				Capabilities: &plugin.Capabilities{
-					Network:  true,
+					Network:  plugin.NetworkOnline,
 					DirectFS: true,
 				},
 			},
@@ -327,7 +327,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 					&fakeDetNeedsFS{},
 				},
 				Capabilities: &plugin.Capabilities{
-					Network:  false,
+					Network:  plugin.NetworkOffline,
 					DirectFS: true,
 				},
 			},
@@ -343,7 +343,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 					&fakeDetNeedsFS{},
 				},
 				Capabilities: &plugin.Capabilities{
-					Network:  false,
+					Network:  plugin.NetworkOffline,
 					DirectFS: false,
 				},
 			},

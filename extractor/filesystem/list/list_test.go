@@ -15,13 +15,32 @@
 package list_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
 )
+
+var (
+	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+)
+
+func TestPluginNamesValid(t *testing.T) {
+	for _, initers := range el.All {
+		for _, initer := range initers {
+			name := initer().Name()
+			if !reValidName.MatchString(name) {
+				t.Errorf("Invalid plugin name %q", name)
+			}
+		}
+	}
+}
 
 func TestFromCapabilities(t *testing.T) {
 	found := false
@@ -44,10 +63,7 @@ func TestFromCapabilities(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
-	exs, err := el.ExtractorsFromNames([]string{"os/snap", "os/homebrew"})
-	if err != nil {
-		t.Fatalf("el.ExtractorsFromNames: %v", err)
-	}
+	exs := []filesystem.Extractor{snap.NewDefault(), homebrew.New()}
 	got := el.FilterByCapabilities(exs, capab)
 	if len(got) != 1 {
 		t.Fatalf("el.FilterCapabilities(%v, %v): want 1 plugin, got %d", exs, capab, len(got))
@@ -69,17 +85,12 @@ func TestExtractorsFromNames(t *testing.T) {
 		{
 			desc:     "Find all extractors of a type",
 			names:    []string{"python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
-		},
-		{
-			desc:     "Case-insensitive",
-			names:    []string{"Python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Remove duplicates",
 			names:    []string{"python", "python"},
-			wantExts: []string{"python/pdmlock", "python/Pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:     "Nonexistent plugin",
@@ -128,11 +139,6 @@ func TestExtractorFromName(t *testing.T) {
 			desc:    "Not an exact name",
 			name:    "python",
 			wantErr: cmpopts.AnyError,
-		},
-		{
-			desc:    "Works for upper case names",
-			name:    "python/Pipfilelock",
-			wantExt: "python/Pipfilelock",
 		},
 	}
 

@@ -16,9 +16,10 @@ package cos
 
 // Metadata holds parsing information for a COS package.
 type Metadata struct {
-	Name        string
-	Version     string
-	Category    string
-	OSVersion   string
-	OSVersionID string
+	Name          string
+	Version       string
+	Category      string
+	OSVersion     string
+	OSVersionID   string
+	EbuildVersion string
 }

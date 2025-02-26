@@ -46,7 +46,7 @@ func TestInventoryFromOutput(t *testing.T) {
 				{
 					Name:    "windows_server_2019",
 					Version: "10.0.17763.3406",
-					Metadata: metadata.OSVersion{
+					Metadata: &metadata.OSVersion{
 						Product:     "windows_server_2019",
 						FullVersion: "10.0.17763.3406",
 					},

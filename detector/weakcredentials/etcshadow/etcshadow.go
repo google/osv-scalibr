@@ -31,11 +31,21 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+const (
+	// Name of the detector.
+	Name = "weakcredentials/etcshadow"
+)
+
 // Detector is a SCALIBR Detector for weak/guessable passwords from /etc/shadow.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "weakcredentials/etcshadow" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

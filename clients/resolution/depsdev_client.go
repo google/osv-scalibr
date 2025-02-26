@@ -34,6 +34,3 @@ func NewDepsDevClient(addr string, userAgent string) (*DepsDevClient, error) {
 
 	return &DepsDevClient{APIClient: *resolve.NewAPIClient(c), c: c}, nil
 }
-
-// AddRegistries is a placeholder here for DepsDevClient.
-func (d *DepsDevClient) AddRegistries(_ []Registry) error { return nil }

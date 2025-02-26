@@ -27,12 +27,22 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+const (
+	// Name of the detector.
+	Name = "cis/generic-linux/etcpasswdpermissions"
+)
+
 // Detector is a SCALIBR Detector for the CIS check "Ensure permissions on /etc/passwd- are configured"
 // from the CIS Distribution Independent Linux benchmarks.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cis/generic_linux/etcpasswdpermissions" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

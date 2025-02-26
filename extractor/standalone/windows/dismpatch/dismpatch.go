@@ -37,7 +37,7 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 		{
 			Name:    windowsProduct,
 			Version: imgVersion,
-			Metadata: metadata.OSVersion{
+			Metadata: &metadata.OSVersion{
 				Product:     windowsProduct,
 				FullVersion: imgVersion,
 			},

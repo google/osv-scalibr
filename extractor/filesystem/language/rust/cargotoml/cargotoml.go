@@ -30,6 +30,10 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	Name = "rust/cargotoml"
+)
+
 var shaPattern = regexp.MustCompile("^[0-9a-f]{40}$")
 
 type cargoTomlDependency struct {
@@ -100,8 +104,11 @@ type cargoTomlFile struct {
 // Extractor extracts crates.io packages from Cargo.toml files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "rust/cargotoml" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
