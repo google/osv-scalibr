@@ -107,7 +107,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract extracts packages from Cargo.toml files passed through the scan input.
-func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parsedTomlFile cargoTomlFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
@@ -124,6 +124,10 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*e
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
+		if err := ctx.Err(); err != nil {
+			return packages, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+		}
+
 		var srcCode *extractor.SourceCodeIdentifier
 		if dependency.IsCommitSpecified() {
 			srcCode = &extractor.SourceCodeIdentifier{
