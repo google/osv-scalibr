@@ -15,7 +15,6 @@
 package condameta_test
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -223,7 +222,7 @@ func TestExtract(t *testing.T) {
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			got, err := e.Extract(context.Background(), &scanInput)
+			got, err := e.Extract(t.Context(), &scanInput)
 
 			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)

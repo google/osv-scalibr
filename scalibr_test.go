@@ -171,7 +171,7 @@ func TestScan(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := scalibr.New().Scan(context.Background(), tc.cfg)
+			got := scalibr.New().Scan(t.Context(), tc.cfg)
 
 			// We can't mock the time from here so we skip it in the comparison.
 			tc.want.StartTime = got.StartTime
@@ -398,7 +398,7 @@ func TestErrorOnFSErrors(t *testing.T) {
 				ErrorOnFSErrors: tc.ErrorOnFSErrors,
 			}
 
-			got := scalibr.New().Scan(context.Background(), cfg)
+			got := scalibr.New().Scan(t.Context(), cfg)
 
 			if got.Status.Status != tc.wantstatus {
 				t.Errorf("Scan() status: %v, want %v", got.Status.Status, tc.wantstatus)

@@ -15,7 +15,6 @@
 package packagelockjson_test
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -197,7 +196,7 @@ func TestMetricCollector(t *testing.T) {
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
 			// Results are tested in the other files
-			_, _ = extr.Extract(context.Background(), &scanInput)
+			_, _ = extr.Extract(t.Context(), &scanInput)
 
 			gotResultMetric := collector.FileExtractedResult(tt.inputConfig.Path)
 			if gotResultMetric != tt.wantResultMetric {
