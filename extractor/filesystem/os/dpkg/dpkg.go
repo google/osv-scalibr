@@ -230,8 +230,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
+		description := strings.ToLower(h.Get("Description"))
 		var annotations []extractor.Annotation
-		if strings.Contains(strings.ToLower(h.Get("Description")), "transitional package") {
+		if strings.Contains(description, "transitional package") ||
+			strings.Contains(description, "transitional dummy package") ||
+			strings.Contains(description, "transitional empty package") {
 			annotations = append(annotations, extractor.Transitional)
 		}
 
