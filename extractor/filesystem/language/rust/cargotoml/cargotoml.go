@@ -91,7 +91,7 @@ type cargoTomlFile struct {
 type Extractor struct{}
 
 // Name of the extractor
-func (e Extractor) Name() string { return "rust/Cargotoml" }
+func (e Extractor) Name() string { return "rust/cargotoml" }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
