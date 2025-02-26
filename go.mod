@@ -19,12 +19,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/groob/plist v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/microsoft/go-rustaudit v0.0.0-20240820110456-0e2abec02f8b
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20250210065807-ab8a4f6e6389
 	github.com/package-url/packageurl-go v0.1.2
+	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
 	github.com/spdx/tools-golang v0.5.3
 	github.com/tidwall/jsonc v0.3.2
 	go.etcd.io/bbolt v1.3.10
