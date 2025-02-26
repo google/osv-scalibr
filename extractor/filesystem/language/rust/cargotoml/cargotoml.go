@@ -46,13 +46,18 @@ type cargoTomlDependency struct {
 // in case both the Version and Git/Path are specified the version should be considered
 // the source of truth
 func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
-	getString := func(m map[string]any, key string) string {
+	getString := func(m map[string]any, key string) (string, error) {
 		v, ok := m[key]
 		if !ok {
-			return ""
+			// if the key does not exists leave the string value empty
+			return "", nil
 		}
-		s, _ := v.(string)
-		return s
+		s, ok := v.(string)
+		if !ok {
+			// if the key exists but the type is wrong return an error
+			return "", fmt.Errorf("invalid type for key %q: expected string, got %T", key, v)
+		}
+		return s, nil
 	}
 
 	switch data := data.(type) {
@@ -61,10 +66,15 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 		v.Version = data
 		return nil
 	case map[string]any:
-		*v = cargoTomlDependency{
-			Version: getString(data, "version"),
-			Git:     getString(data, "git"),
-			Rev:     getString(data, "rev"),
+		var err error
+		if v.Version, err = getString(data, "version"); err != nil {
+			return err
+		}
+		if v.Git, err = getString(data, "git"); err != nil {
+			return err
+		}
+		if v.Rev, err = getString(data, "rev"); err != nil {
+			return err
 		}
 		return nil
 	default:

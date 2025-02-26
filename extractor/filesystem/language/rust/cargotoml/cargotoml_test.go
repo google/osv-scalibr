@@ -86,6 +86,14 @@ func TestExtractor_Extract(t *testing.T) {
 			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
+			Name: "Invalid dependency toml",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid-dependency.toml",
+			},
+			WantInventory: nil,
+			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+		},
+		{
 			Name: "no dependencies",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-dependency.toml",
