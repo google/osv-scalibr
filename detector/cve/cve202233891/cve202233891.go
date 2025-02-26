@@ -46,7 +46,7 @@ type sparkUIPackageNames struct {
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2022-33891"
+	Name = "cve/cve-2022-33891"
 
 	defaultTimeout = 5 * time.Second
 )

@@ -47,7 +47,7 @@ type airflowPackageNames struct {
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2020-11978"
+	Name = "cve/cve-2020-11978"
 
 	airflowServerIP   = "127.0.0.1"
 	airflowServerPort = 8080

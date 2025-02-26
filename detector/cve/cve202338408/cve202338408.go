@@ -35,7 +35,7 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2023-38408"
+	Name = "cve/cve-2023-38408"
 )
 
 var (

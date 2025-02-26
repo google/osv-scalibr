@@ -57,7 +57,7 @@ type saltPackageNames struct {
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2020-16846"
+	Name = "cve/cve-2020-16846"
 
 	saltServerPort = 8000
 	defaultTimeout = 5 * time.Second

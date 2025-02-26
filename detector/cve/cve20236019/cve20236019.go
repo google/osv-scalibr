@@ -41,7 +41,7 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2023-6019"
+	Name = "cve/cve-2023-6019"
 )
 
 // Detector is a SCALIBR Detector for CVE-2023-6019

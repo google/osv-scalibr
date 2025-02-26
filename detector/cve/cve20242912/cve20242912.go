@@ -50,7 +50,7 @@ type bentomlPackageNames struct {
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2024-2912"
+	Name = "cve/cve-2024-2912"
 
 	payloadPath       = "/tmp/bentoml-poc-CVE-2024-2912"
 	bentomlServerPort = 3000

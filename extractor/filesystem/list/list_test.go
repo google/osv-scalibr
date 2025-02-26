@@ -15,6 +15,7 @@
 package list_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,6 +26,21 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
 )
+
+var (
+	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+)
+
+func TestPluginNamesValid(t *testing.T) {
+	for _, initers := range el.All {
+		for _, initer := range initers {
+			name := initer().Name()
+			if !reValidName.MatchString(name) {
+				t.Errorf("Invalid plugin name %q", name)
+			}
+		}
+	}
+}
 
 func TestFromCapabilities(t *testing.T) {
 	found := false

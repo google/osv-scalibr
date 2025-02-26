@@ -29,7 +29,7 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "cis/generic_linux/etcpasswdpermissions"
+	Name = "cis/generic-linux/etcpasswdpermissions"
 )
 
 // Detector is a SCALIBR Detector for the CIS check "Ensure permissions on /etc/passwd- are configured"
