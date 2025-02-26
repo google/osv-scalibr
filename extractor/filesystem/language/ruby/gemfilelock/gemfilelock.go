@@ -31,6 +31,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "ruby/gemfilelock"
+)
+
 var (
 	// Gemfile.lock spec lines follow the format "name (version)"
 	nameVersionRegexp = regexp.MustCompile(`^(.*?)(?: \(([^-]*)(?:-(.*))?\))?(!)?$`)
@@ -40,8 +45,11 @@ var (
 // Extractor extracts package info from Gemfile.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "ruby/gemfilelock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }

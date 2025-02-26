@@ -45,6 +45,11 @@ type Detector struct {
 	OfflineVulnDBPath string
 }
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
 func (Detector) Name() string { return Name }
 

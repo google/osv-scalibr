@@ -32,6 +32,11 @@ import (
 	"github.com/google/osv-scalibr/stats"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "ruby/gemspec"
+)
+
 // Regex expressions used for extracting gemspec package name and version.
 var (
 	reSpec = regexp.MustCompile(`^Gem::Specification\.new`)
@@ -75,8 +80,11 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "ruby/gemspec" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

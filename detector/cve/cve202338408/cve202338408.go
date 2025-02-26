@@ -33,6 +33,11 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
+const (
+	// Name of the detector.
+	Name = "cve/CVE-2023-38408"
+)
+
 var (
 	// Regex matching the "ssh -A" command.
 	sshRegex = regexp.MustCompile(`ssh (.* )?-\w*A`)
@@ -45,8 +50,13 @@ var (
 // Detector is a SCALIBR Detector for CVE-2023-38408.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cve/CVE-2023-38408" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

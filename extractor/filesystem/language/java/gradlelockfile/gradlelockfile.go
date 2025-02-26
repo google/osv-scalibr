@@ -31,6 +31,9 @@ import (
 )
 
 const (
+	// Name is the unique name of this extractor.
+	Name = "java/gradlelockfile"
+
 	gradleLockFileCommentPrefix = "#"
 	gradleLockFileEmptyPrefix   = "empty="
 )
@@ -67,8 +70,11 @@ func parseToGradlePackageDetail(line string) (*extractor.Inventory, error) {
 // Extractor extracts Maven packages from Gradle files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "java/gradlelockfile" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

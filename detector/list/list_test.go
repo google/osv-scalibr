@@ -19,6 +19,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -44,9 +47,9 @@ func TestFromCapabilities(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
-	dets, err := dl.DetectorsFromNames([]string{"cis/generic_linux/etcpasswdpermissions", "govulncheck/binary"})
-	if err != nil {
-		t.Fatalf("dl.DetectorsFromNames: %v", err)
+	dets := []detector.Detector{
+		etcpasswdpermissions.New(),
+		binary.New(),
 	}
 	got := dl.FilterByCapabilities(dets, capab)
 	if len(got) != 1 {
@@ -79,11 +82,6 @@ func TestDetectorsFromNames(t *testing.T) {
 				"weakcredentials/filebrowser",
 				"weakcredentials/winlocal",
 			},
-		},
-		{
-			desc:     "Case-insensitive",
-			names:    []string{"CIS"},
-			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
 		},
 		{
 			desc:     "Remove duplicates",

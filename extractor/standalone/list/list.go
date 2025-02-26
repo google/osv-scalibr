@@ -17,9 +17,7 @@ package list
 
 import (
 	"fmt"
-	"os"
 	"slices"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -28,72 +26,77 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"golang.org/x/exp/maps"
 )
+
+// InitFn is the extractor initializer function.
+type InitFn func() standalone.Extractor
+
+// InitMap is a map of extractor names to their initers.
+type InitMap map[string][]InitFn
 
 var (
 	// Windows standalone extractors.
-	Windows = []standalone.Extractor{
-		&dismpatch.Extractor{},
-	}
+	Windows = InitMap{dismpatch.Name: {dismpatch.New}}
 
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
-	WindowsExperimental = []standalone.Extractor{
-		ospackages.New(ospackages.DefaultConfiguration()),
-		regosversion.New(regosversion.DefaultConfiguration()),
-		regpatchlevel.New(regpatchlevel.DefaultConfiguration()),
+	WindowsExperimental = InitMap{
+		ospackages.Name:    {ospackages.NewDefault},
+		regosversion.Name:  {regosversion.NewDefault},
+		regpatchlevel.Name: {regpatchlevel.NewDefault},
 	}
 
 	// OSExperimental defines experimental OS extractors.
-	OSExperimental = []standalone.Extractor{
-		netports.New(),
+	OSExperimental = InitMap{
+		netports.Name: {netports.New},
 	}
 
 	// Containers standalone extractors.
-	Containers = []standalone.Extractor{
-		containerd.New(containerd.DefaultConfig()),
+	Containers = InitMap{
+		containerd.Name: {containerd.NewDefault},
 	}
 
 	// Default standalone extractors.
-	Default []standalone.Extractor = slices.Concat(Windows)
+	Default = Windows
 	// All standalone extractors.
-	All []standalone.Extractor = slices.Concat(Windows, WindowsExperimental, Containers, OSExperimental)
+	All = concat(Windows, WindowsExperimental, Containers, OSExperimental)
 
-	extractorNames = map[string][]standalone.Extractor{
+	extractorNames = concat(All, InitMap{
 		// Windows
-		"windows": Windows,
+		"windows": vals(Windows),
 
 		// Collections.
-		"default":    Default,
-		"all":        All,
-		"containers": Containers,
-	}
+		"default":    vals(Default),
+		"all":        vals(All),
+		"containers": vals(Containers),
+	})
 )
 
-//nolint:gochecknoinits
-func init() {
-	for _, e := range All {
-		register(e)
+func concat(InitMaps ...InitMap) InitMap {
+	result := InitMap{}
+	for _, m := range InitMaps {
+		maps.Copy(result, m)
 	}
+	return result
 }
 
-// register adds the individual extractors to the extractorNames map.
-func register(d standalone.Extractor) {
-	if _, ok := extractorNames[strings.ToLower(d.Name())]; ok {
-		log.Errorf("There are 2 extractors with the name: %q", d.Name())
-		os.Exit(1)
-	}
-
-	extractorNames[strings.ToLower(d.Name())] = []standalone.Extractor{d}
+func vals(InitMap InitMap) []InitFn {
+	return slices.Concat(maps.Values(InitMap)...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
 func FromCapabilities(capabs *plugin.Capabilities) []standalone.Extractor {
-	return FilterByCapabilities(All, capabs)
+	all := []standalone.Extractor{}
+	for _, initers := range All {
+		for _, initer := range initers {
+			all = append(all, initer())
+		}
+	}
+	return FilterByCapabilities(all, capabs)
 }
 
 // FilterByCapabilities returns all extractors from the given list that can run
@@ -109,24 +112,13 @@ func FilterByCapabilities(exs []standalone.Extractor, capabs *plugin.Capabilitie
 	return result
 }
 
-// ExtractorFromName returns a single extractor based on its exact name.
-func ExtractorFromName(name string) (standalone.Extractor, error) {
-	es, ok := extractorNames[strings.ToLower(name)]
-	if !ok {
-		return nil, fmt.Errorf("unknown extractor %q", name)
-	}
-	if len(es) != 1 || es[0].Name() != name {
-		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
-	}
-	return es[0], nil
-}
-
 // ExtractorsFromNames returns a deduplicated list of extractors from a list of names.
 func ExtractorsFromNames(names []string) ([]standalone.Extractor, error) {
 	resultMap := make(map[string]standalone.Extractor)
 	for _, n := range names {
-		if es, ok := extractorNames[strings.ToLower(n)]; ok {
-			for _, e := range es {
+		if initers, ok := extractorNames[n]; ok {
+			for _, initer := range initers {
+				e := initer()
 				if _, ok := resultMap[e.Name()]; !ok {
 					resultMap[e.Name()] = e
 				}
@@ -140,4 +132,20 @@ func ExtractorsFromNames(names []string) ([]standalone.Extractor, error) {
 		result = append(result, e)
 	}
 	return result, nil
+}
+
+// ExtractorFromName returns a single extractor based on its exact name.
+func ExtractorFromName(name string) (standalone.Extractor, error) {
+	initers, ok := extractorNames[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown extractor %q", name)
+	}
+	if len(initers) != 1 {
+		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
+	}
+	e := initers[0]()
+	if e.Name() != name {
+		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
+	}
+	return e, nil
 }

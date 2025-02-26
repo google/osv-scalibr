@@ -51,7 +51,7 @@ var (
 type Extractor struct{}
 
 // New creates a new Extractor.
-func New() *Extractor {
+func New() standalone.Extractor {
 	return &Extractor{}
 }
 

@@ -71,6 +71,9 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // cosPackage represents a COS package found in /etc/cos-package-info.json
 type cosPackage struct {
 	Category      string `json:"category"`
