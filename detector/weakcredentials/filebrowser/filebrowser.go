@@ -174,6 +174,7 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 	client := &http.Client{Timeout: requestTimeout}
 	targetURL := fmt.Sprintf("http://%s:%d/api/login", fileBrowserIP, fileBrowserPort)
 
+	//nolint:errchkjson
 	requestBody, _ := json.Marshal(map[string]string{
 		"username":  "admin",
 		"password":  "admin",
