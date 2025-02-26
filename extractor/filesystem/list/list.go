@@ -126,7 +126,7 @@ var (
 	// Go extractors.
 	Go = InitMap{
 		gobinary.Name: {gobinary.NewDefault},
-		gomod.Name:    {gomod.New},
+		gomod.Name:    {gomod.NewDefault},
 	}
 	// Dart extractors.
 	Dart = InitMap{pubspec.Name: {pubspec.New}}

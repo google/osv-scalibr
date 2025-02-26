@@ -42,10 +42,38 @@ const (
 // including the stdlib version by using the top level go version
 //
 // The output is not sorted and will not be in a consistent order
-type Extractor struct{}
+type Extractor struct {
+	deduplicateSumDependencies bool
+}
+
+// Config contains the configuration options for the extractor.
+type Config struct {
+	// DeduplicateSumDependencies controls whether dependencies in the go.sum file
+	// should be deduplicated against those in the go.mod file.
+	//
+	// When two dependencies with the same name and version exist, one in go.mod
+	// and the other in go.sum:
+	//  - If set to true, only the dependency from go.mod will be retained.
+	//  - If set to false, both dependencies (from go.mod and go.sum) will be kept.
+	DeduplicateSumDependencies bool
+}
+
+// DefaultConfig returns the default configuration for the extractor.
+func DefaultConfig() Config {
+	return Config{
+		DeduplicateSumDependencies: true,
+	}
+}
+
+// NewDefault returns a new instance of the extractor using the default configuration.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(cfg Config) filesystem.Extractor {
+	return &Extractor{
+		deduplicateSumDependencies: cfg.DeduplicateSumDependencies,
+	}
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -81,6 +109,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	type mapKey struct {
 		name    string
 		version string
+		isGoSum bool
 	}
 	packages := map[mapKey]*extractor.Inventory{}
 
@@ -138,13 +167,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			log.Warnf("Error reading go.sum file: %s", err)
 		} else {
 			for _, p := range sumPackages {
-				key := mapKey{name: p.Name, version: p.Version}
-
-				// Skip if the package is already present in the go.mod
-				if _, ok := packages[key]; ok {
-					continue
-				}
-				packages[key] = p
+				packages[mapKey{name: p.Name, version: p.Version, isGoSum: true}] = p
 			}
 		}
 	}
@@ -158,11 +181,24 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
-	// The map values might have changed after replacement so we need to run another
-	// deduplication pass.
+	// An additional deduplication pass is required.
+	// This is necessary because the values in the map may have changed after the replacement,
+	// and to ensure that sum dependencies are deduplicated when specified.
 	dedupedPs := map[mapKey]*extractor.Inventory{}
-	for _, p := range packages {
-		dedupedPs[mapKey{name: p.Name, version: p.Version}] = p
+	for key, p := range packages {
+		keepGoSumSeparated := !e.deduplicateSumDependencies
+		s := mapKey{
+			name:    p.Name,
+			version: p.Version,
+			isGoSum: key.isGoSum && keepGoSumSeparated,
+		}
+
+		// Do not override `go.mod` dependencies with by `go.sum` ones
+		if _, ok := dedupedPs[s]; ok && key.isGoSum {
+			continue
+		}
+
+		dedupedPs[s] = p
 	}
 	return maps.Values(dedupedPs), nil
 }
