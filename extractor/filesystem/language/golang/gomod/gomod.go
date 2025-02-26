@@ -59,6 +59,9 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the specified file matches go.mod files.
+//
+// go.sum is not considered since the 'go.mod' file
+// is necessary to determine the Go version before opening it.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "go.mod"
 }
@@ -135,7 +138,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			log.Warnf("Error reading go.sum file: %s", err)
 		} else {
 			for _, p := range sumPackages {
-				packages[mapKey{name: p.Name, version: p.Version}] = p
+				key := mapKey{name: p.Name, version: p.Version}
+
+				// Skip if the package is already present in the go.mod
+				if _, ok := packages[key]; ok {
+					continue
+				}
+				packages[key] = p
 			}
 		}
 	}
@@ -173,6 +182,9 @@ func (e Extractor) Ecosystem(i *extractor.Inventory) string {
 }
 
 // extractFromSum extracts dependencies from the go.sum file.
+//
+// Below 1.17 go.mod does not contain indirect dependencies
+// but they might be in go.sum, thus we look into it as well.
 //
 // Note: This function may produce false positives, as the go.sum file might be outdated.
 func extractFromSum(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {

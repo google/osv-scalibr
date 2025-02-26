@@ -298,7 +298,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/sirupsen/logrus",
 					Version:   "1.9.3",
-					Locations: []string{"testdata/indirect-1.16.sum"},
+					Locations: []string{"testdata/indirect-1.16.mod"},
 				},
 				{
 					Name:      "github.com/stretchr/testify",
