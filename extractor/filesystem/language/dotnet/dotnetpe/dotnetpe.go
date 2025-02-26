@@ -17,6 +17,7 @@ package dotnetpe
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/saferwall/pe"
 	peparser "github.com/saferwall/pe"
 )
 
@@ -105,6 +107,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+	// check if the file has the needed magic bytes before doing the heavy parsing
+	if !hasPEMagicBytes(input) {
+		return nil, fmt.Errorf("the file header does not contain magic bytes %w", ErrOpeningPEFile)
+	}
+
 	// Retrieve the real path of the file
 	absPath, err := input.GetRealPath()
 	if err != nil {
@@ -178,7 +185,27 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	return ivs, nil
 }
 
-func isPE(path string) bool {
+// hasPEMagicBytes checks if a given file has the PE magic bytes in the header
+func hasPEMagicBytes(input *filesystem.ScanInput) bool {
+	// check for the smallest PE size.
+	if input.Info.Size() < pe.TinyPESize {
+		return false
+	}
+
+	var magic uint16
+	if err := binary.Read(input.Reader, binary.LittleEndian, &magic); err != nil {
+		return false
+	}
+
+	// Validate if the magic bytes match any of the expected PE signatures
+	if magic != peparser.ImageDOSSignature &&
+		magic != peparser.ImageDOSZMSignature {
+		return false
+	}
+	return true
+}
+
+func isPELikelyExtension(path string) bool {
 	ext := filepath.Ext(path)
 	for _, peExt := range peExtensions {
 		if strings.EqualFold(ext, peExt) {
@@ -192,7 +219,7 @@ func isPE(path string) bool {
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 
-	if !isPE(path) {
+	if !isPELikelyExtension(path) {
 		return false
 	}
 
