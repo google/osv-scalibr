@@ -122,7 +122,12 @@ extractor as an example.
     extractor returns true for any file named `package.json`.
 1.  Implement `Extract` to extract inventory inside the file.
 1.  If you introduced any new metadata type, be sure to add them to the scan_results.proto
-    as well and re-generate the go_proto using `make protos`
+    as well and re-generate the go_proto:
+
+    ```
+    $ `make protos`
+    ```
+
 1.  If you added new dependencies, regenerate the go.mod file by running
 
     ```sh

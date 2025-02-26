@@ -71,6 +71,9 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // cosPackage represents a COS package found in /etc/cos-package-info.json
 type cosPackage struct {
 	Category      string `json:"category"`
@@ -165,11 +168,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			Name:    pkg.Name,
 			Version: pkg.Version,
 			Metadata: &Metadata{
-				Name:        pkg.Name,
-				Version:     pkg.Version,
-				Category:    pkg.Category,
-				OSVersion:   m["VERSION"],
-				OSVersionID: m["VERSION_ID"],
+				Name:          pkg.Name,
+				Version:       pkg.Version,
+				Category:      pkg.Category,
+				OSVersion:     m["VERSION"],
+				OSVersionID:   m["VERSION_ID"],
+				EbuildVersion: pkg.EbuildVersion,
 			},
 			Locations: []string{input.Path},
 		}

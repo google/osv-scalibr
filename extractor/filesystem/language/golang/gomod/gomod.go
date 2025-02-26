@@ -33,14 +33,22 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "go/gomod"
+)
+
 // Extractor extracts go packages from a go.mod file,
 // including the stdlib version by using the top level go version
 //
 // The output is not sorted and will not be in a consistent order
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "go/gomod" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }

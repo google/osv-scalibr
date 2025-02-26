@@ -33,6 +33,11 @@ import (
 	"github.com/google/osv-scalibr/stats"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "python/requirements"
+)
+
 var (
 	// Regex matching comments in requirements files.
 	// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L492
@@ -41,7 +46,7 @@ var (
 	// * Version wildcards (*)
 	// * Less than (<)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<|,`)
+	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,`)
 	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
 	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
@@ -86,8 +91,11 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "python/requirements" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
@@ -288,7 +296,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 	}
 
 	t := []string{}
-	separators := []string{"===", "==", ">=", "~="}
+	separators := []string{"===", "==", ">=", "<=", "~="}
 	comp := ""
 	for _, sep := range separators {
 		if strings.Contains(s, sep) {

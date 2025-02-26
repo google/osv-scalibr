@@ -37,6 +37,9 @@ import (
 )
 
 const (
+	// Name of the detector.
+	Name = "weakcredentials/filebrowser"
+
 	fileBrowserIP  = "127.0.0.1"
 	requestTimeout = 2 * time.Second
 	title          = "Filebrowser default credentials"
@@ -63,8 +66,13 @@ var (
 // Detector is a SCALIBR Detector for weak/guessable passwords from /etc/shadow.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "weakcredentials/filebrowser" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

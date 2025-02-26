@@ -29,6 +29,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "python/poetrylock"
+)
+
 type poetryLockPackageSource struct {
 	Type   string `toml:"type"`
 	Commit string `toml:"resolved_reference"`
@@ -50,8 +55,11 @@ type poetryLockFile struct {
 // Extractor extracts python packages from poetry.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "python/poetrylock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }
