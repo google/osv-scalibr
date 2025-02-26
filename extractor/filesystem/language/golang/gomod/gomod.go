@@ -185,8 +185,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// This is necessary because the values in the map may have changed after the replacement,
 	// and to ensure that sum dependencies are deduplicated when specified.
 	dedupedPs := map[mapKey]*extractor.Inventory{}
+	keepGoSumSeparated := !e.deduplicateSumDependencies
+
 	for key, p := range packages {
-		keepGoSumSeparated := !e.deduplicateSumDependencies
 		s := mapKey{
 			name:    p.Name,
 			version: p.Version,
