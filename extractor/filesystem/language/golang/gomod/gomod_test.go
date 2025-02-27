@@ -69,13 +69,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	tests := []struct {
-		ExtractorConfig *gomod.Config
-		Name            string
-		InputConfig     extracttest.ScanInputMockConfig
-		WantInventory   []*extractor.Inventory
-		WantErr         error
-	}{
+	tests := []*extracttest.TestTableEntry{
 		{
 			Name: "invalid",
 			InputConfig: extracttest.ScanInputMockConfig{
@@ -302,60 +296,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
-					Name:      "github.com/sirupsen/logrus",
-					Version:   "1.9.3",
-					Locations: []string{"testdata/indirect-1.16.mod"},
-				},
-				{
-					Name:      "github.com/stretchr/testify",
-					Version:   "1.7.0",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "golang.org/x/sys",
-					Version:   "0.0.0-20220715151400-c0bba94af5f8",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "gopkg.in/yaml.v3",
-					Version:   "3.0.0-20200313102051-9f266ea9e77c",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "stdlib",
-					Version:   "1.16",
-					Locations: []string{"testdata/indirect-1.16.mod"},
-				},
-			},
-		},
-		{
-			Name: "test extractor for go <=1.16 without deduplication",
-			ExtractorConfig: &gomod.Config{
-				DeduplicateSumDependencies: false,
-			},
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/indirect-1.16.mod",
-			},
-			WantInventory: []*extractor.Inventory{
-				{
-					Name:      "github.com/sirupsen/logrus",
-					Version:   "1.9.3",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "github.com/davecgh/go-spew",
-					Version:   "1.1.1",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "github.com/pmezard/go-difflib",
-					Version:   "1.0.0",
-					Locations: []string{"testdata/indirect-1.16.sum"},
-				},
-				{
-					Name:      "github.com/sirupsen/logrus",
-					Version:   "1.9.3",
-					Locations: []string{"testdata/indirect-1.16.mod"},
+					Name:    "github.com/sirupsen/logrus",
+					Version: "1.9.3",
+					Locations: []string{
+						"testdata/indirect-1.16.mod", "testdata/indirect-1.16.sum",
+					},
 				},
 				{
 					Name:      "github.com/stretchr/testify",
@@ -383,10 +328,7 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := gomod.NewDefault()
-			if tt.ExtractorConfig != nil {
-				extr = gomod.New(*tt.ExtractorConfig)
-			}
+			extr := gomod.New()
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
