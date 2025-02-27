@@ -36,10 +36,6 @@ import (
 // MavenCentral holds the URL of Maven Central Repository.
 const MavenCentral = "https://repo.maven.apache.org/maven2"
 
-// MavenCentralMirror holds the URL of Maven Central mirror hosted on Google Cloud Storage.
-// https://storage-download.googleapis.com/maven-central/index.html
-const MavenCentralMirror = "https://maven-central.storage-download.googleapis.com/maven2/"
-
 var errAPIFailed = errors.New("API query failed")
 
 // MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
