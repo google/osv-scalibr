@@ -100,8 +100,8 @@ type semverVersion struct {
 	semverLikeVersion
 }
 
-func parseSemverVersion(str string) (semverVersion, error) {
-	return semverVersion{parseSemverLikeVersion(str, 3)}, nil
+func parseSemverVersion(str string) semverVersion {
+	return semverVersion{parseSemverLikeVersion(str, 3)}
 }
 
 func (v semverVersion) compare(w semverVersion) int {
@@ -113,11 +113,5 @@ func (v semverVersion) compare(w semverVersion) int {
 }
 
 func (v semverVersion) CompareStr(str string) (int, error) {
-	w, err := parseSemverVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return v.compare(w), nil
+	return v.compare(parseSemverVersion(str)), nil
 }

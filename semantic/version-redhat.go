@@ -203,13 +203,7 @@ func (v redHatVersion) compare(w redHatVersion) int {
 }
 
 func (v redHatVersion) CompareStr(str string) (int, error) {
-	w, err := parseRedHatVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return v.compare(w), nil
+	return v.compare(parseRedHatVersion(str)), nil
 }
 
 // parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
@@ -223,7 +217,7 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 //
 // When all components are present, the version is represented as "n-e:v-r.a",
 // though only the version is actually required.
-func parseRedHatVersion(str string) (redHatVersion, error) {
+func parseRedHatVersion(str string) redHatVersion {
 	bf, af, hasColon := strings.Cut(str, ":")
 
 	if !hasColon {
@@ -247,5 +241,5 @@ func parseRedHatVersion(str string) (redHatVersion, error) {
 		epoch = "0"
 	}
 
-	return redHatVersion{epoch, version, release}, nil
+	return redHatVersion{epoch, version, release}
 }
