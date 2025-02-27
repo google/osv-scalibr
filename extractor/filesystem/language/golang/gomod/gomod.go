@@ -194,10 +194,12 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 
 // ToPURL converts a package created by this extractor into a PURL.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	nameParts := strings.Split(p.Name, "/")
 	return &purl.PackageURL{
-		Type:    purl.TypeGolang,
-		Name:    p.Name,
-		Version: p.Version,
+		Type:      purl.TypeGolang,
+		Name:      nameParts[len(nameParts)-1],
+		Namespace: strings.Join(nameParts[:len(nameParts)-1], "/"),
+		Version:   p.Version,
 	}
 }
 
