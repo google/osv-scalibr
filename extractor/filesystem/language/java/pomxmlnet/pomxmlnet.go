@@ -69,7 +69,7 @@ func NewConfig(registry string) Config {
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
-	return NewConfig(datasource.MavenCentralMirror)
+	return NewConfig(datasource.MavenCentral)
 }
 
 // New makes a new pom.xml transitive extractor with the given config.
