@@ -103,7 +103,7 @@ func readFileDescriptors(ctx context.Context, d fs.DirEntry, inodesToPID map[int
 	// for each file descriptor in the process directory, we try to extract the inode number for
 	// sockets.
 	fn := func(d fs.DirEntry) error {
-		inode, err := extractSocketInode(ctx, absFdPath, d)
+		inode, err := extractSocketInode(absFdPath, d)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func readFileDescriptors(ctx context.Context, d fs.DirEntry, inodesToPID map[int
 	return nil
 }
 
-func extractSocketInode(ctx context.Context, absFdDir string, d fs.DirEntry) (int64, error) {
+func extractSocketInode(absFdDir string, d fs.DirEntry) (int64, error) {
 	if d.Type() != fs.ModeSymlink {
 		return 0, nil
 	}
