@@ -544,7 +544,11 @@ func (i *ScanInput) GetRealPath() (string, error) {
 		return "", err
 	}
 	defer f.Close()
-	io.Copy(f, i.Reader)
+	_, err = io.Copy(f, i.Reader)
+	if err != nil {
+		return "", err
+	}
+
 	return path, nil
 }
 
