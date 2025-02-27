@@ -936,7 +936,7 @@ func TestInitializeChainLayers(t *testing.T) {
 				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected error: %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, err)
 			}
 
-			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree")); diff != "" {
+			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree"), cmpopts.IgnoreFields(Layer{}, "fileNodeTree")); diff != "" {
 				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected diff (-want +got): %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, diff)
 			}
 		})
