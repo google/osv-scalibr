@@ -462,10 +462,7 @@ func multiStringToList(arg []string) []string {
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	if f.RemoteImage != "" {
-		imageOptions, err := f.scanRemoteImageOptions()
-		if err != nil {
-			return nil, err
-		}
+		imageOptions := f.scanRemoteImageOptions()
 		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
 		if err != nil {
 			return nil, err
@@ -491,7 +488,7 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	return scanRoots, nil
 }
 
-func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
+func (f *Flags) scanRemoteImageOptions() *[]remote.Option {
 	imageOptions := []remote.Option{
 		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 	}
@@ -504,7 +501,7 @@ func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
 			},
 		))
 	}
-	return &imageOptions, nil
+	return &imageOptions
 }
 
 // All capabilities are enabled when running SCALIBR as a binary.
