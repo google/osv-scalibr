@@ -90,6 +90,9 @@ func New(cfg Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Config returns the configuration of the extractor.
 func (e Extractor) Config() Config {
 	return Config{
@@ -227,8 +230,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
+		description := strings.ToLower(h.Get("Description"))
 		var annotations []extractor.Annotation
-		if strings.Contains(strings.ToLower(h.Get("Description")), "transitional package") {
+		if strings.Contains(description, "transitional package") ||
+			strings.Contains(description, "transitional dummy package") ||
+			strings.Contains(description, "transitional empty package") {
 			annotations = append(annotations, extractor.Transitional)
 		}
 

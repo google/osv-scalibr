@@ -26,11 +26,19 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "erlang/mixlock"
+)
+
 // Extractor extracts erlang mix.lock files.
 type Extractor struct{}
 
+// New returns a new instance of this Extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "erlang/mixlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

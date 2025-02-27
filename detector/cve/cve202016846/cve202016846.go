@@ -56,6 +56,9 @@ type saltPackageNames struct {
 }
 
 const (
+	// Name of the detector.
+	Name = "cve/cve-2020-16846"
+
 	saltServerPort = 8000
 	defaultTimeout = 5 * time.Second
 	saltServerIP   = "127.0.0.1"
@@ -95,8 +98,13 @@ var (
 // Detector is a SCALIBR Detector for CVE-2020-16846.
 type Detector struct{}
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
-func (Detector) Name() string { return "cve/CVE-2020-16846" }
+func (Detector) Name() string { return Name }
 
 // Version of the detector.
 func (Detector) Version() int { return 0 }

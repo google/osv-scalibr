@@ -32,6 +32,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "javascript/yarnlock"
+)
+
 var (
 	// Version matcher regex.
 	// Format for yarn.lock v1: `version "0.0.1"`
@@ -182,8 +187,11 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Inventory {
 // Extractor extracts NPM yarn.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "javascript/yarnlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

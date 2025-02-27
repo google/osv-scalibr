@@ -35,8 +35,8 @@ import (
 )
 
 const (
-	// name is the unique name of this extractor.
-	name = "dotnet/pe"
+	// Name is the unique Name of this extractor.
+	Name = "dotnet/pe"
 )
 
 var (
@@ -61,6 +61,9 @@ type Config struct {
 	// Use 0 to accept all file sizes
 	MaxFileSizeBytes int64
 }
+
+// NewDefault returns the extractor with its default configuration.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // DefaultConfig returns the default configuration of the extractor.
 func DefaultConfig() Config {
@@ -245,7 +248,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 
 // Name of the extractor.
 func (e Extractor) Name() string {
-	return name
+	return Name
 }
 
 // Requirements of the extractor.

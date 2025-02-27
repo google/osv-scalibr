@@ -30,11 +30,19 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "sbom/cdx"
+)
+
 // Extractor extracts software dependencies from an CycloneDX SBOM.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "sbom/cdx" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }

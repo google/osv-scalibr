@@ -15,18 +15,37 @@
 package list_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
 	"github.com/google/osv-scalibr/plugin"
 )
 
+var (
+	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+)
+
+func TestPluginNamesValid(t *testing.T) {
+	for _, initers := range dl.All {
+		for _, initer := range initers {
+			name := initer().Name()
+			if !reValidName.MatchString(name) {
+				t.Errorf("Invalid plugin name %q", name)
+			}
+		}
+	}
+}
+
 func TestFromCapabilities(t *testing.T) {
 	found := false
 	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
-	want := "cis/generic_linux/etcpasswdpermissions" // Doesn't need direct FS access.
+	want := "cis/generic-linux/etcpasswdpermissions" // Doesn't need direct FS access.
 	dontWant := "govulncheck/binary"                 // Needs direct FS access.
 	for _, ex := range dl.FromCapabilities(capab) {
 		if ex.Name() == want {
@@ -44,16 +63,16 @@ func TestFromCapabilities(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
-	dets, err := dl.DetectorsFromNames([]string{"cis/generic_linux/etcpasswdpermissions", "govulncheck/binary"})
-	if err != nil {
-		t.Fatalf("dl.DetectorsFromNames: %v", err)
+	dets := []detector.Detector{
+		etcpasswdpermissions.New(),
+		binary.New(),
 	}
 	got := dl.FilterByCapabilities(dets, capab)
 	if len(got) != 1 {
 		t.Fatalf("dl.FilterCapabilities(%v, %v): want 1 plugin, got %d", dets, capab, len(got))
 	}
 	gotName := got[0].Name()
-	wantName := "cis/generic_linux/etcpasswdpermissions" // govulncheck/binary needs direct FS access.
+	wantName := "cis/generic-linux/etcpasswdpermissions" // govulncheck/binary needs direct FS access.
 	if gotName != wantName {
 		t.Fatalf("dl.FilterCapabilities(%v, %v): want plugin %q, got %q", dets, capab, wantName, gotName)
 	}
@@ -69,7 +88,7 @@ func TestDetectorsFromNames(t *testing.T) {
 		{
 			desc:     "Find all detectors of a type",
 			names:    []string{"cis"},
-			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
+			wantDets: []string{"cis/generic-linux/etcpasswdpermissions"},
 		},
 		{
 			desc:  "Find weak credentials detectors",
@@ -81,14 +100,9 @@ func TestDetectorsFromNames(t *testing.T) {
 			},
 		},
 		{
-			desc:     "Case-insensitive",
-			names:    []string{"CIS"},
-			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
-		},
-		{
 			desc:     "Remove duplicates",
 			names:    []string{"cis", "cis"},
-			wantDets: []string{"cis/generic_linux/etcpasswdpermissions"},
+			wantDets: []string{"cis/generic-linux/etcpasswdpermissions"},
 		},
 		{
 			desc:     "Nonexistent plugin",

@@ -33,6 +33,11 @@ import (
 	"github.com/tidwall/jsonc"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "javascript/bunlock"
+)
+
 type bunLockfile struct {
 	Version  int              `json:"lockfileVersion"`
 	Packages map[string][]any `json:"packages"`
@@ -41,8 +46,11 @@ type bunLockfile struct {
 // Extractor extracts npm packages from bun.lock files.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "javascript/bunlock" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }

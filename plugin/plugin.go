@@ -34,13 +34,26 @@ const (
 	OSUnix OS = iota
 )
 
+// Network is the network access of the scanner or the network
+// requirements of a plugin.
+type Network int
+
+// Network values
+const (
+	// NetworkAny is used only when specifying Plugin requirements. Specifies
+	// that the plugin doesn't care whether the scanner has network access or not.
+	NetworkAny     Network = iota
+	NetworkOffline Network = iota
+	NetworkOnline  Network = iota
+)
+
 // Capabilities lists capabilities that the scanning environment provides for the plugins.
 // A plugin can't be enabled if it has more requirements than what the scanning environment provides.
 type Capabilities struct {
 	// A specific OS type a Plugin needs to be run on.
 	OS OS
 	// Whether network access is provided.
-	Network bool
+	Network Network
 	// Whether the scanned artifacts can be access through direct filesystem calls.
 	// True on hosts where the scan target is mounted onto the host's filesystem directly.
 	// In these cases the plugin can open direct file paths with e.g. os.Open(path).
@@ -103,8 +116,12 @@ func ValidateRequirements(p Plugin, capabs *Capabilities) error {
 	} else if p.Requirements().OS != OSAny && p.Requirements().OS != capabs.OS {
 		errs = append(errs, "needs to run on a different OS than that of the scan environment")
 	}
-	if p.Requirements().Network && !capabs.Network {
-		errs = append(errs, "needs network access but scan environment doesn't provide it")
+	if p.Requirements().Network != NetworkAny && p.Requirements().Network != capabs.Network {
+		if capabs.Network == NetworkOffline {
+			errs = append(errs, "needs network access but scan environment doesn't provide it")
+		} else {
+			errs = append(errs, "should only run offline but the scan environment provides network access")
+		}
 	}
 	if p.Requirements().DirectFS && !capabs.DirectFS {
 		errs = append(errs, "needs direct filesystem access but scan environment doesn't provide it")

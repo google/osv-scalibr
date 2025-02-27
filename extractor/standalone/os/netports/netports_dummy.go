@@ -33,7 +33,7 @@ const Name = "os/netports"
 type Extractor struct{}
 
 // New creates a new Extractor from a given configuration.
-func New() *Extractor {
+func New() standalone.Extractor {
 	return &Extractor{}
 }
 

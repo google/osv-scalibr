@@ -29,6 +29,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "dart/pubspec"
+)
+
 type pubspecLockDescription struct {
 	Ref string `yaml:"resolved-ref"`
 }
@@ -65,8 +70,11 @@ type pubspecLockfile struct {
 // Extractor extracts Dart pubspec.lock files
 type Extractor struct{}
 
+// New returns a new instance of this Extractor.
+func New() filesystem.Extractor { return &Extractor{} }
+
 // Name of the extractor
-func (e Extractor) Name() string { return "dart/pubspec" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor
 func (e Extractor) Version() int { return 0 }

@@ -31,6 +31,11 @@ const Name = "windows/dismpatch"
 // Extractor implements the dismpatch extractor.
 type Extractor struct{}
 
+// New returns a new instance of the extractor.
+func New() standalone.Extractor {
+	return &Extractor{}
+}
+
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
 

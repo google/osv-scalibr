@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/package-url/packageurl-go"
 )
 
 func TestFromString(t *testing.T) {
@@ -163,6 +164,51 @@ func TestFromStringInvalidPURL(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := purl.FromString(test.purl); err == nil {
 				t.Fatalf("FromString(%+v) got no error, expected one", test.purl)
+			}
+		})
+	}
+}
+
+func TestQualifiersFromMap(t *testing.T) {
+	tests := []struct {
+		name           string
+		qualifierMap   map[string]string
+		wantQualifiers purl.Qualifiers
+	}{
+		{
+			name: "normal transcription",
+			qualifierMap: map[string]string{
+				"qual":  "ifier",
+				"other": "qualifier",
+			},
+			wantQualifiers: []packageurl.Qualifier{
+				{Key: "other", Value: "qualifier"},
+				{Key: "qual", Value: "ifier"},
+			},
+		}, {
+			name: "filters only empty value",
+			qualifierMap: map[string]string{
+				"empty": "",
+				"other": "qualifier",
+			},
+			wantQualifiers: []packageurl.Qualifier{
+				{Key: "other", Value: "qualifier"},
+			},
+		}, {
+			name: "empty qualifiers if all empty",
+			qualifierMap: map[string]string{
+				"empty": "",
+			},
+			wantQualifiers: []packageurl.Qualifier{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := purl.QualifiersFromMap(test.qualifierMap)
+
+			if diff := cmp.Diff(test.wantQualifiers, got); diff != "" {
+				t.Fatalf("QualifiersFromMap(%+v) returned unexpected result; diff (-want +got):\n%s", test.qualifierMap, diff)
 			}
 		})
 	}

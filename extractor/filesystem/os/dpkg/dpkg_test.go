@@ -738,6 +738,56 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name:      "transitional dummy packages should be annotated",
+			path:      "testdata/dpkg/transitional_dummy",
+			osrelease: DebianBookworm,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "git-core",
+					Version: "1:2.14.2-1",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "git-core",
+						Status:            "install ok installed",
+						PackageVersion:    "1:2.14.2-1",
+						SourceName:        "git",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+						Maintainer:        "Gerrit Pape <pape@smarden.org>",
+						Architecture:      "all",
+					},
+					Locations:   []string{"testdata/dpkg/transitional_dummy"},
+					Annotations: []extractor.Annotation{extractor.Transitional},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "transitional empty packages should be annotated",
+			path:      "testdata/dpkg/transitional_empty",
+			osrelease: DebianBookworm,
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "runit-systemd",
+					Version: "2.1.2-54+usrmerge",
+					Metadata: &dpkg.Metadata{
+						PackageName:       "runit-systemd",
+						Status:            "install ok installed",
+						PackageVersion:    "2.1.2-54+usrmerge",
+						SourceName:        "runit",
+						OSID:              "debian",
+						OSVersionCodename: "bookworm",
+						OSVersionID:       "12",
+						Maintainer:        "Lorenzo Puliti <plorenzo@disroot.org>",
+						Architecture:      "all",
+					},
+					Locations:   []string{"testdata/dpkg/transitional_empty"},
+					Annotations: []extractor.Annotation{extractor.Transitional},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name:      "valid opkg status file",
 			path:      "testdata/opkg/valid", // Path to your OPKG status file in the test data
 			osrelease: OpkgRelease,           // You can mock the os-release data as needed

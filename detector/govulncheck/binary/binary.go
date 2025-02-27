@@ -45,6 +45,11 @@ type Detector struct {
 	OfflineVulnDBPath string
 }
 
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
+}
+
 // Name of the detector.
 func (Detector) Name() string { return Name }
 
@@ -53,7 +58,11 @@ func (Detector) Version() int { return 0 }
 
 // Requirements of the detector.
 func (d Detector) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: d.OfflineVulnDBPath == "", DirectFS: true}
+	net := plugin.NetworkOnline
+	if d.OfflineVulnDBPath == "" {
+		net = plugin.NetworkAny
+	}
+	return &plugin.Capabilities{Network: net, DirectFS: true}
 }
 
 // RequiredExtractors returns the go binary extractor.

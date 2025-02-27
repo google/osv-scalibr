@@ -126,6 +126,13 @@ type Qualifiers packageurl.Qualifiers
 // deterministic qualifier order (despite maps not providing any iteration order
 // guarantees) the returned Qualifiers are sorted in increasing order of key.
 func QualifiersFromMap(mm map[string]string) Qualifiers {
+	for key, value := range mm {
+		// Empty value strings are invalid qualifiers according to the purl spec
+		// so we filter them out.
+		if value == "" {
+			delete(mm, key)
+		}
+	}
 	return Qualifiers(packageurl.QualifiersFromMap(mm))
 }
 

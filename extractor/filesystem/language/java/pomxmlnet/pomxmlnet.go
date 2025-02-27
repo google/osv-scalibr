@@ -36,6 +36,11 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+const (
+	// Name is the unique name of this extractor.
+	Name = "java/pomxmlnet"
+)
+
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
 	depClient   resolve.Client
@@ -75,8 +80,11 @@ func New(c Config) *Extractor {
 	}
 }
 
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
 // Name of the extractor.
-func (e Extractor) Name() string { return "java/pomxmlnet" }
+func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
@@ -84,7 +92,7 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network:  true,
+		Network:  plugin.NetworkOnline,
 		DirectFS: true,
 	}
 }

@@ -51,7 +51,7 @@ var (
 type Extractor struct{}
 
 // New creates a new Extractor.
-func New() *Extractor {
+func New() standalone.Extractor {
 	return &Extractor{}
 }
 
@@ -64,7 +64,8 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		OS: plugin.OSLinux,
+		OS:            plugin.OSLinux,
+		RunningSystem: true,
 	}
 }
 
