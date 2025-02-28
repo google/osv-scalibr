@@ -52,6 +52,11 @@ var (
 	ErrParsingPEFile = errors.New("error parsing PE file")
 )
 
+// Extractor extracts dotnet dependencies from a PE file
+type Extractor struct {
+	cfg Config
+}
+
 // Config is the configuration for the .NET PE extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
@@ -61,9 +66,6 @@ type Config struct {
 	// Use 0 to accept all file sizes
 	MaxFileSizeBytes int64
 }
-
-// NewDefault returns the extractor with its default configuration.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // DefaultConfig returns the default configuration of the extractor.
 func DefaultConfig() Config {
@@ -82,14 +84,44 @@ func New(cfg Config) *Extractor {
 	}
 }
 
-// Extractor extracts dotnet dependencies from a PE file
-type Extractor struct {
-	cfg Config
+// NewDefault returns the extractor with its default configuration.
+func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+
+// Name of the extractor.
+func (e Extractor) Name() string { return Name }
+
+// Version of the extractor.
+func (e Extractor) Version() int { return 0 }
+
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
+// FileRequired returns true if the specified file matches the .NET PE file structure.
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+
+	if !isPELikelyExtension(path) {
+		return false
+	}
+
+	fileinfo, err := api.Stat()
+	if err != nil || (e.cfg.MaxFileSizeBytes > 0 && fileinfo.Size() > e.cfg.MaxFileSizeBytes) {
+		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
+		return false
+	}
+
+	e.reportFileRequired(path, stats.FileRequiredResultOK)
+	return true
 }
 
-// Ecosystem implements filesystem.Extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "NuGet"
+func isPELikelyExtension(path string) bool {
+	ext := filepath.Ext(path)
+	for _, peExt := range peExtensions {
+		if strings.EqualFold(ext, peExt) {
+			return true
+		}
+	}
+	return false
 }
 
 // Extract parses the PE files to extract .NET package dependencies.
@@ -211,34 +243,6 @@ func hasPEMagicBytes(input *filesystem.ScanInput) bool {
 	return true
 }
 
-func isPELikelyExtension(path string) bool {
-	ext := filepath.Ext(path)
-	for _, peExt := range peExtensions {
-		if strings.EqualFold(ext, peExt) {
-			return true
-		}
-	}
-	return false
-}
-
-// FileRequired returns true if the specified file matches the .NET PE file structure.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
-
-	if !isPELikelyExtension(path) {
-		return false
-	}
-
-	fileinfo, err := api.Stat()
-	if err != nil || (e.cfg.MaxFileSizeBytes > 0 && fileinfo.Size() > e.cfg.MaxFileSizeBytes) {
-		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
-		return false
-	}
-
-	e.reportFileRequired(path, stats.FileRequiredResultOK)
-	return true
-}
-
 func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResult) {
 	if e.cfg.Stats == nil {
 		return
@@ -249,14 +253,6 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 	})
 }
 
-// Name of the extractor.
-func (e Extractor) Name() string {
-	return Name
-}
-
-// Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
-
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
@@ -266,9 +262,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 }
 
-// Version of the extractor.
-func (e Extractor) Version() int {
-	return 0
+// Ecosystem implements filesystem.Extractor.
+func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+	return "NuGet"
 }
 
 var _ filesystem.Extractor = Extractor{}
