@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -69,7 +69,7 @@ func NewConfig(registry string) Config {
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
-	return NewConfig(datasource.MavenCentralMirror)
+	return NewConfig(datasource.MavenCentral)
 }
 
 // New makes a new pom.xml transitive extractor with the given config.
@@ -212,16 +212,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		// We are only able to know dependency groups of direct dependencies but
 		// not transitive dependencies because the nodes in the resolve graph does
 		// not have the scope information.
+		isDirect := false
 		for _, dep := range project.Dependencies {
 			if dep.Name() != inventory.Name {
 				continue
 			}
+			isDirect = true
 			if dep.Scope != "" && dep.Scope != "compile" {
 				depGroups = append(depGroups, string(dep.Scope))
 			}
+			break
 		}
-		inventory.Metadata = osv.DepGroupMetadata{
+		inventory.Metadata = javalockfile.Metadata{
 			DepGroupVals: depGroups,
+			IsDirect:     isDirect,
 		}
 		details[inventory.Name] = &inventory
 	}
