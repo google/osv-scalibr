@@ -208,7 +208,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
 	versionResources, err := f.ParseVersionResources()
 	if err != nil {
-		return ivs, err
+		return nil, err
 	}
 
 	name, version := versionResources["InternalName"], versionResources["Assembly Version"]
@@ -235,8 +235,8 @@ func hasPEMagicBytes(input *filesystem.ScanInput) bool {
 	}
 
 	// Validate if the magic bytes match any of the expected PE signatures
-	if magic != peparser.ImageDOSSignature &&
-		magic != peparser.ImageDOSZMSignature {
+	if magic != pe.ImageDOSSignature &&
+		magic != pe.ImageDOSZMSignature {
 		return false
 	}
 	return true
