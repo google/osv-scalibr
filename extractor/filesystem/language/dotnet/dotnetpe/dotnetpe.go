@@ -175,14 +175,17 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 
 	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
-	if versionResources, err := pe.ParseVersionResources(); err == nil {
-		name, version := versionResources["InternalName"], versionResources["Assembly Version"]
-		if name != "" && version != "" {
-			ivs = append(ivs, &extractor.Inventory{
-				Name:    name,
-				Version: version,
-			})
-		}
+	versionResources, err := pe.ParseVersionResources()
+	if err != nil {
+		return ivs, err
+	}
+
+	name, version := versionResources["InternalName"], versionResources["Assembly Version"]
+	if name != "" && version != "" {
+		ivs = append(ivs, &extractor.Inventory{
+			Name:    name,
+			Version: version,
+		})
 	}
 
 	return ivs, nil
