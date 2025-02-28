@@ -31,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/saferwall/pe"
-	peparser "github.com/saferwall/pe"
 )
 
 const (
@@ -164,13 +163,13 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 
 	// Open the PE file
-	pe, err := peparser.New(absPath, &peparser.Options{})
+	f, err := pe.New(absPath, &pe.Options{})
 	if err != nil {
 		return nil, errors.Join(ErrOpeningPEFile, err)
 	}
 
 	// Parse the PE file
-	if err := pe.Parse(); err != nil {
+	if err := f.Parse(); err != nil {
 		return nil, errors.Join(ErrParsingPEFile, err)
 	}
 
@@ -178,20 +177,20 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	var ivs []*extractor.Inventory
 
 	// Iterate over the CLR Metadata Tables to extract assembly information
-	for _, table := range pe.CLR.MetadataTables {
+	for _, table := range f.CLR.MetadataTables {
 		switch content := table.Content.(type) {
-		case []peparser.AssemblyTableRow:
+		case []pe.AssemblyTableRow:
 			for _, row := range content {
-				name := string(pe.GetStringFromData(row.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
 				ivs = append(ivs, &extractor.Inventory{
 					Name:    name,
 					Version: version,
 				})
 			}
-		case []peparser.AssemblyRefTableRow:
+		case []pe.AssemblyRefTableRow:
 			for _, row := range content {
-				name := string(pe.GetStringFromData(row.Name, pe.CLR.MetadataStreams["#Strings"])) + ".dll"
+				name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
 				ivs = append(ivs, &extractor.Inventory{
 					Name:    name,
@@ -207,7 +206,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 
 	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
-	versionResources, err := pe.ParseVersionResources()
+	versionResources, err := f.ParseVersionResources()
 	if err != nil {
 		return ivs, err
 	}
