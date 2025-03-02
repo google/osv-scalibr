@@ -15,7 +15,6 @@
 package packageslockjson_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -217,7 +216,7 @@ func TestExtractor(t *testing.T) {
 				Reader: r,
 				Info:   info,
 			}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)
 			}

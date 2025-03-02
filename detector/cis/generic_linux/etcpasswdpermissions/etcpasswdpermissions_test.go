@@ -15,7 +15,6 @@
 package etcpasswdpermissions_test
 
 import (
-	"context"
 	"io/fs"
 	"runtime"
 	"slices"
@@ -123,7 +122,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			det := etcpasswdpermissions.Detector{}
-			findings, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
+			findings, err := det.Scan(t.Context(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}

@@ -15,7 +15,6 @@
 package trace
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -322,7 +321,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 
-			PopulateLayerDetails(context.Background(), tc.inventory, tc.chainLayers, config)
+			PopulateLayerDetails(t.Context(), tc.inventory, tc.chainLayers, config)
 			if diff := cmp.Diff(tc.wantInventory, tc.inventory, cmpopts.IgnoreFields(extractor.Inventory{}, "Extractor")); diff != "" {
 				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.inventory, tc.chainLayers, diff)
 			}

@@ -17,7 +17,6 @@
 package winlocal
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,7 +24,7 @@ import (
 
 func TestScan(t *testing.T) {
 	d := Detector{}
-	_, err := d.Scan(context.Background(), nil, nil)
+	_, err := d.Scan(t.Context(), nil, nil)
 	if diff := cmp.Diff(err.Error(), "only supported on Windows"); diff != "" {
 		t.Errorf("Scan(...) unexpected error (-want +got): %v", diff)
 	}

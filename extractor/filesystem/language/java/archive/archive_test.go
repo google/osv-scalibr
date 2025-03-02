@@ -16,7 +16,6 @@ package archive_test
 
 import (
 	"archive/zip"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -585,7 +584,7 @@ func TestExtract(t *testing.T) {
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if err != nil && tt.wantErr == errAny {
 				err = errAny
 			}
