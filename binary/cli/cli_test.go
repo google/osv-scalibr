@@ -262,6 +262,35 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 	}
 }
 
+func TestGetScanConfig_NetworkCapabilities(t *testing.T) {
+	for _, tc := range []struct {
+		desc        string
+		flags       cli.Flags
+		wantNetwork plugin.Network
+	}{
+		{
+			desc:        "online_if_nothing_set",
+			flags:       cli.Flags{},
+			wantNetwork: plugin.NetworkOnline,
+		},
+		{
+			desc:        "offline_if_offline_flag_set",
+			flags:       cli.Flags{Offline: true},
+			wantNetwork: plugin.NetworkOffline,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if tc.wantNetwork != cfg.Capabilities.Network {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantNetwork, cfg.Capabilities.Network)
+			}
+		})
+	}
+}
+
 func TestGetScanConfig_DirsToSkip(t *testing.T) {
 	for _, tc := range []struct {
 		desc           string
