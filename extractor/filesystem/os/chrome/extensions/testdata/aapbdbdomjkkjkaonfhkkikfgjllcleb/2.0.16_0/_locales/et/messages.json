@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Teie Chrome'i brauseris valitud tekst saadetakse Google'i serverisse määratlemaks, kas tõlget peaks kuvama."
+   },
+   "1442994382865027284": {
+      "message": "Minu esmane keel:"
+   },
+   "214421942080869713": {
+      "message": "Kuva hüpik kohe."
+   },
+   "2188433896094691489": {
+      "message": "Valikud on salvestatud."
+   },
+   "240104395545014795": {
+      "message": "Lehe tõlkimise funktsioon on Chrome'i sisse ehitatud."
+   },
+   "2509634311667449183": {
+      "message": "Google'i tõlge\n\nVasak klõps – tõlgete lisamine!\nParem klõps – valikute vaatamine."
+   },
+   "2823656161254750288": {
+      "message": "Tõlge"
+   },
+   "3715106636322454053": {
+      "message": "ROHKEM »"
+   },
+   "3798355593581482387": {
+      "message": "Google'i tõlke koduleht"
+   },
+   "3955566821402057": {
+      "message": "Laienduse valikud"
+   },
+   "4115247474741222238": {
+      "message": "Ära kuva ikooni ega hüpikut."
+   },
+   "4799572612327798818": {
+      "message": "Saate valitud teksti ikkagi tõlkida, klõpsates Google'i tõlke laiendusikoonil."
+   },
+   "5029249418176901843": {
+      "message": "Kui valin sõna või fraasi:"
+   },
+   "5265851802920685748": {
+      "message": "AVA TEENUSES GOOGLE'I TÕLGE"
+   },
+   "5636646071825253269": {
+      "message": "Vaadake tõlkeid veebis sirvimise ajal. Google'i tõlke tiimi abil."
+   },
+   "564411404725368794": {
+      "message": "Hüpikaknas ilmuvad tõlked:"
+   },
+   "6131124164729815942": {
+      "message": "Tõlget ei saanud tuua. Kontrollige oma võrguühendust."
+   },
+   "6522250354200336197": {
+      "message": "Chrome'i laienduse valikud"
+   },
+   "6997490218739615323": {
+      "message": "LÜLITA HÜPIK VÄLJA"
+   },
+   "719896791478226289": {
+      "message": "Google'i tõlke laienduse valikud"
+   },
+   "7432447050681380507": {
+      "message": "LISATEAVE"
+   },
+   "7572626056779822063": {
+      "message": "Lähtesta"
+   },
+   "7720080731342973504": {
+      "message": "Kuva ikoon, millel saan hüpiku kuvamiseks klõpsata."
+   },
+   "8121604685132229235": {
+      "message": "Privaatsus"
+   },
+   "8310989585281680561": {
+      "message": "Kuva ikoon isegi siis, kui leht on minu valitud keeles."
+   },
+   "8639639632686471366": {
+      "message": "Salvesta"
+   },
+   "8969005060131950570": {
+      "message": "Google'i tõlge"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

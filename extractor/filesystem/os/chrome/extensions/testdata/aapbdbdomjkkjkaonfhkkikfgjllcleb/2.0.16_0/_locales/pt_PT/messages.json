@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Qualquer texto selecionado no navegador Chrome determina se deverá ser apresentada uma tradução."
+   },
+   "1442994382865027284": {
+      "message": "O meu idioma principal:"
+   },
+   "214421942080869713": {
+      "message": "Mostrar imediatamente pop-ups."
+   },
+   "2188433896094691489": {
+      "message": "Opções guardadas."
+   },
+   "240104395545014795": {
+      "message": "A tradução de páginas está integrada no Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google Tradutor\n\nClique com o botão esquerdo para traduzir! \nClique com o botão direito para as opções."
+   },
+   "2823656161254750288": {
+      "message": "Traduzir"
+   },
+   "3715106636322454053": {
+      "message": "MAIS »"
+   },
+   "3798355593581482387": {
+      "message": "Página inicial do Google Tradutor"
+   },
+   "3955566821402057": {
+      "message": "Opções de extensões"
+   },
+   "4115247474741222238": {
+      "message": "Não apresentar ícone nem pop-ups."
+   },
+   "4799572612327798818": {
+      "message": "Ainda pode traduzir texto selecionado ao clicar no ícone de extensão do Google Translate."
+   },
+   "5029249418176901843": {
+      "message": "Quando selecionar uma palavra ou frase:"
+   },
+   "5265851802920685748": {
+      "message": "ABRIR NO GOOGLE TRADUTOR"
+   },
+   "5636646071825253269": {
+      "message": "Veja traduções facilmente enquanto navega na web. Pela equipa do Google Tradutor."
+   },
+   "564411404725368794": {
+      "message": "Traduções pop-up:"
+   },
+   "6131124164729815942": {
+      "message": "Erro ao obter a tradução. Verifique a sua ligação de rede."
+   },
+   "6522250354200336197": {
+      "message": "Opções de extensões do Chrome"
+   },
+   "6997490218739615323": {
+      "message": "DESATIVAR POP-UP"
+   },
+   "719896791478226289": {
+      "message": "Opções de extensões do Google Tradutor"
+   },
+   "7432447050681380507": {
+      "message": "SAIBA MAIS"
+   },
+   "7572626056779822063": {
+      "message": "Repor"
+   },
+   "7720080731342973504": {
+      "message": "Ícone de apresentação onde posso clicar para mostrar pop-ups."
+   },
+   "8121604685132229235": {
+      "message": "Privacidade"
+   },
+   "8310989585281680561": {
+      "message": "Mostrar ícone se a página estiver no meu idioma."
+   },
+   "8639639632686471366": {
+      "message": "Guardar"
+   },
+   "8969005060131950570": {
+      "message": "Google Tradutor"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

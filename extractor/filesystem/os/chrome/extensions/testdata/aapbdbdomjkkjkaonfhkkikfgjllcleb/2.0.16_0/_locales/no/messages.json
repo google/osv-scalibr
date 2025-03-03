@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "All tekst som merkes i Chrome-nettleseren din, blir sendt til Google-serveren for å finne ut om en oversettelse skal vises."
+   },
+   "1442994382865027284": {
+      "message": "Primærspråket mitt:"
+   },
+   "214421942080869713": {
+      "message": "Vis et forgrunnsvindu umiddelbart."
+   },
+   "2188433896094691489": {
+      "message": "Alternativene er lagret."
+   },
+   "240104395545014795": {
+      "message": "Sideoversettelse er innebygd i Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google Oversetter\n\nVenstreklikk for å oversette.\nHøyreklikk for å se alternativer."
+   },
+   "2823656161254750288": {
+      "message": "Oversett"
+   },
+   "3715106636322454053": {
+      "message": "MER »"
+   },
+   "3798355593581482387": {
+      "message": "Startsiden til Google Oversetter"
+   },
+   "3955566821402057": {
+      "message": "Alternativer for utvidelsen"
+   },
+   "4115247474741222238": {
+      "message": "Ikke vis et ikon eller forgrunnsvindu."
+   },
+   "4799572612327798818": {
+      "message": "Du kan fortsatt oversette merket tekst ved å klikke på ikonet for Google Oversetter-utvidelsen."
+   },
+   "5029249418176901843": {
+      "message": "Når jeg velger et ord eller en frase:"
+   },
+   "5265851802920685748": {
+      "message": "ÅPNE I GOOGLE OVERSETTER"
+   },
+   "5636646071825253269": {
+      "message": "Se oversettelser på enkelt vis mens du surfer på nettet. Av Google Oversetter-teamet."
+   },
+   "564411404725368794": {
+      "message": "Oversettelser i forgrunnsvinduer:"
+   },
+   "6131124164729815942": {
+      "message": "Det oppsto en feil ved henting av oversettelsen. Sjekk nettverkstilkoblingen din."
+   },
+   "6522250354200336197": {
+      "message": "Alternativer for Chrome-utvidelsen"
+   },
+   "6997490218739615323": {
+      "message": "SLÅ AV FORGRUNNSVINDUET"
+   },
+   "719896791478226289": {
+      "message": "Utvidelsesalternativer for Google Oversetter"
+   },
+   "7432447050681380507": {
+      "message": "FINN UT MER"
+   },
+   "7572626056779822063": {
+      "message": "Tilbakestill"
+   },
+   "7720080731342973504": {
+      "message": "Vis et ikon som jeg kan klikke på for å se forgrunnsvinduet."
+   },
+   "8121604685132229235": {
+      "message": "Personvern"
+   },
+   "8310989585281680561": {
+      "message": "Vis et ikon selv om siden er på mitt eget språk."
+   },
+   "8639639632686471366": {
+      "message": "Lagre"
+   },
+   "8969005060131950570": {
+      "message": "Google Oversetter"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Svi tekstovi odabrani u pregledniku Chrome šalju se Googleovu poslužitelju kako bi se utvrdilo treba li se prikazati prijevod."
+   },
+   "1442994382865027284": {
+      "message": "Moj primarni jezik:"
+   },
+   "214421942080869713": {
+      "message": "Odmah prikaži skočni prozor."
+   },
+   "2188433896094691489": {
+      "message": "Opcije su spremljene."
+   },
+   "240104395545014795": {
+      "message": "Prijevod stranica ugrađen je u Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google prevoditelj\n\nLijevi klik za prevođenje!\nDesni klik za opcije."
+   },
+   "2823656161254750288": {
+      "message": "Prevedi"
+   },
+   "3715106636322454053": {
+      "message": "VIŠE"
+   },
+   "3798355593581482387": {
+      "message": "Početna stranica Google prevoditelja"
+   },
+   "3955566821402057": {
+      "message": "Opcije proširenja"
+   },
+   "4115247474741222238": {
+      "message": "Ne prikazuj ikonu ni skočni prozor."
+   },
+   "4799572612327798818": {
+      "message": "I dalje možete prevesti odabrani tekst tako što ćete kliknuti ikonu proširenja Google prevoditelj."
+   },
+   "5029249418176901843": {
+      "message": "Kada odaberem riječ ili frazu:"
+   },
+   "5265851802920685748": {
+      "message": "OTVORI U GOOGLE PREVODITELJU"
+   },
+   "5636646071825253269": {
+      "message": "Jednostavan prikaz prijevoda pri pregledavanju weba. Omogućuje tim Google prevoditelja."
+   },
+   "564411404725368794": {
+      "message": "Prijevodi u skočnom prozoru:"
+   },
+   "6131124164729815942": {
+      "message": "Pogreška prilikom dohvaćanja prijevoda. Provjerite mrežnu vezu."
+   },
+   "6522250354200336197": {
+      "message": "Opcije Chromeovih proširenja"
+   },
+   "6997490218739615323": {
+      "message": "ISKLJUČITE SKOČNI PROZOR"
+   },
+   "719896791478226289": {
+      "message": "Opcije proširenja Google prevoditelja"
+   },
+   "7432447050681380507": {
+      "message": "SAZNAJTE VIŠE"
+   },
+   "7572626056779822063": {
+      "message": "Poništi"
+   },
+   "7720080731342973504": {
+      "message": "Prikaži ikonu koju mogu kliknuti za prikazivanje skočnog prozora."
+   },
+   "8121604685132229235": {
+      "message": "Privatnost"
+   },
+   "8310989585281680561": {
+      "message": "Prikaži ikonu čak i ako je stranica na mojem jeziku."
+   },
+   "8639639632686471366": {
+      "message": "Spremi"
+   },
+   "8969005060131950570": {
+      "message": "Google Prevoditelj"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

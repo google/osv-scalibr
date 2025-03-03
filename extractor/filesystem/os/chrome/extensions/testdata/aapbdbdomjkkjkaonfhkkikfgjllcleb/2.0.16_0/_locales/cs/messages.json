@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Veškerý text vybraný v prohlížeči Chrome je odesílán na server Googlu, kde se vyhodnotí, zda zobrazit překlad."
+   },
+   "1442994382865027284": {
+      "message": "Můj hlavní jazyk:"
+   },
+   "214421942080869713": {
+      "message": "okamžitě zobrazit vyskakovací okno."
+   },
+   "2188433896094691489": {
+      "message": "Možnosti uloženy."
+   },
+   "240104395545014795": {
+      "message": "Překlad stránek je vestavěný v Chromu."
+   },
+   "2509634311667449183": {
+      "message": "Překladač Google\n\nPřeložit kliknutím na levé tlačítko myši.\nZobrazit možnosti kliknutím na pravé tlačítko myši."
+   },
+   "2823656161254750288": {
+      "message": "Přeložit"
+   },
+   "3715106636322454053": {
+      "message": "DALŠÍ »"
+   },
+   "3798355593581482387": {
+      "message": "Domovská stránka Překladače Google"
+   },
+   "3955566821402057": {
+      "message": "Možnosti rozšíření"
+   },
+   "4115247474741222238": {
+      "message": "nezobrazovat ikonu ani vyskakovací okno."
+   },
+   "4799572612327798818": {
+      "message": "Vybraný text můžete i přesto přeložit kliknutím na ikonu rozšíření Překladače Google."
+   },
+   "5029249418176901843": {
+      "message": "Při výběru slova nebo slovního spojení:"
+   },
+   "5265851802920685748": {
+      "message": "OTEVŘÍT V PŘEKLADAČI GOOGLE"
+   },
+   "5636646071825253269": {
+      "message": "Překlad přímo v prohlížeči. Přináší tým Překladače Google."
+   },
+   "564411404725368794": {
+      "message": "Vyskakovací překlady:"
+   },
+   "6131124164729815942": {
+      "message": "Při načítání překladu došlo k chybě. Zkontrolujte připojení k síti."
+   },
+   "6522250354200336197": {
+      "message": "Možnosti rozšíření prohlížeče Chrome"
+   },
+   "6997490218739615323": {
+      "message": "VYPNOUT VYSKAKOVACÍ REKLAMY"
+   },
+   "719896791478226289": {
+      "message": "Možnosti rozšíření Překladače Google"
+   },
+   "7432447050681380507": {
+      "message": "DALŠÍ INFORMACE"
+   },
+   "7572626056779822063": {
+      "message": "Obnovit"
+   },
+   "7720080731342973504": {
+      "message": "zobrazit ikonu, na kterou mohu kliknout a přejít k vyskakovacímu oknu."
+   },
+   "8121604685132229235": {
+      "message": "Ochrana soukromí"
+   },
+   "8310989585281680561": {
+      "message": "Zobrazit ikonu, i když je stránka v mém jazyce."
+   },
+   "8639639632686471366": {
+      "message": "Uložit"
+   },
+   "8969005060131950570": {
+      "message": "Překladač Google"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

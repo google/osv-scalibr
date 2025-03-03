@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Orice text selectat în browserul Chrome este trimis la serverul Google pentru a se stabili dacă este necesar să se afișeze traducerea."
+   },
+   "1442994382865027284": {
+      "message": "Limba mea principală:"
+   },
+   "214421942080869713": {
+      "message": "Afișează imediat fereastra pop-up."
+   },
+   "2188433896094691489": {
+      "message": "Opțiunile au fost salvate."
+   },
+   "240104395545014795": {
+      "message": "Traducerea paginilor este integrată în Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google Traducere\n\nDați clic stânga pentru traducere.\nDați clic dreapta pentru opțiuni."
+   },
+   "2823656161254750288": {
+      "message": "Traduceți"
+   },
+   "3715106636322454053": {
+      "message": "MAI MULTE »"
+   },
+   "3798355593581482387": {
+      "message": "Pagina de start Google Traducere"
+   },
+   "3955566821402057": {
+      "message": "Opțiuni pentru extensie"
+   },
+   "4115247474741222238": {
+      "message": "Nu afișa pictograma sau fereastra pop-up."
+   },
+   "4799572612327798818": {
+      "message": "Puteți traduce în continuare textul selectat dând clic pe pictograma extensiei Google Traducere."
+   },
+   "5029249418176901843": {
+      "message": "Când selectez un cuvânt sau o expresie:"
+   },
+   "5265851802920685748": {
+      "message": "DESCHIDEȚI ÎN GOOGLE TRADUCERE"
+   },
+   "5636646071825253269": {
+      "message": "Vizualizați ușor traducerile în timp ce navigați pe Web. Echipa Google Traducere."
+   },
+   "564411404725368794": {
+      "message": "Traduceri în ferestre pop-up:"
+   },
+   "6131124164729815942": {
+      "message": "Eroare la preluarea traducerii. Verificați conexiunea la rețea."
+   },
+   "6522250354200336197": {
+      "message": "Opțiuni pentru extensia Chrome"
+   },
+   "6997490218739615323": {
+      "message": "DEZACTIVAȚI FERESTRELE POP-UP"
+   },
+   "719896791478226289": {
+      "message": "Opțiuni pentru extensiile Google Traducere"
+   },
+   "7432447050681380507": {
+      "message": "AFLAȚI MAI MULTE"
+   },
+   "7572626056779822063": {
+      "message": "Resetați"
+   },
+   "7720080731342973504": {
+      "message": "Afișează pictograma pe care să pot da clic pentru a deschide fereastra pop-up."
+   },
+   "8121604685132229235": {
+      "message": "Confidențialitate"
+   },
+   "8310989585281680561": {
+      "message": "Afișează pictograma chiar dacă pagina este în limba mea."
+   },
+   "8639639632686471366": {
+      "message": "Salvați"
+   },
+   "8969005060131950570": {
+      "message": "Google Traducere"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

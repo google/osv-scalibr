@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Chrome tarayıcınızda seçilen tüm metinler, çevirinin görüntülenmesinin gerekip gerekmediğini belirlemek için Google sunucusuna gönderilir."
+   },
+   "1442994382865027284": {
+      "message": "Ana dilim:"
+   },
+   "214421942080869713": {
+      "message": "Anında pop-up'ı görüntüle."
+   },
+   "2188433896094691489": {
+      "message": "Seçenekler kaydedildi."
+   },
+   "240104395545014795": {
+      "message": "Sayfa çevirisi Chrome'da yerleşik olarak sunulmaktadır."
+   },
+   "2509634311667449183": {
+      "message": "Google Çeviri\n\nÇevirmek için sol tıklayın!\nSeçenekler için sağ tıklayın."
+   },
+   "2823656161254750288": {
+      "message": "Çevir"
+   },
+   "3715106636322454053": {
+      "message": "DAHA FAZLA »"
+   },
+   "3798355593581482387": {
+      "message": "Google Çeviri Ana Sayfası"
+   },
+   "3955566821402057": {
+      "message": "Uzantı Seçenekleri"
+   },
+   "4115247474741222238": {
+      "message": "Simge ya da pop-up görüntüleme."
+   },
+   "4799572612327798818": {
+      "message": "Yine de, seçili metni Google Çeviri uzantısının simgesini tıklayarak çevirebilirsiniz."
+   },
+   "5029249418176901843": {
+      "message": "Bir kelime veya ifade seçtiğimde:"
+   },
+   "5265851802920685748": {
+      "message": "GOOGLE ÇEVİRİ'DE AÇ"
+   },
+   "5636646071825253269": {
+      "message": "Web'de gezinirken çevirileri kolayca görüntüleyin. Google Çeviri Ekibi'nin katkılarıyla."
+   },
+   "564411404725368794": {
+      "message": "Pop-up çeviriler:"
+   },
+   "6131124164729815942": {
+      "message": "Çeviri alınırken hata oluştu. Ağ bağlantınızı kontrol edin."
+   },
+   "6522250354200336197": {
+      "message": "Chrome Uzantısı Seçenekleri"
+   },
+   "6997490218739615323": {
+      "message": "POP-UP'I KAPAT"
+   },
+   "719896791478226289": {
+      "message": "Google Çeviri Uzantı Seçenekleri"
+   },
+   "7432447050681380507": {
+      "message": "DAHA FAZLA BİLGİ"
+   },
+   "7572626056779822063": {
+      "message": "Sıfırla"
+   },
+   "7720080731342973504": {
+      "message": "Pop-up'ı göstermesi için tıklayabileceğim simgeyi görüntüle."
+   },
+   "8121604685132229235": {
+      "message": "Gizlilik"
+   },
+   "8310989585281680561": {
+      "message": "Sayfa benim dilimde olsa bile simgeyi göster."
+   },
+   "8639639632686471366": {
+      "message": "Kaydet"
+   },
+   "8969005060131950570": {
+      "message": "Google Çeviri"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

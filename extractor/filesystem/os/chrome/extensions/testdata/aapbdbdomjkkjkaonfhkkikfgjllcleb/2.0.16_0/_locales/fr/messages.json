@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Tout texte sélectionné dans votre navigateur Chrome est envoyé au serveur Google afin de déterminer si une traduction doit être affichée."
+   },
+   "1442994382865027284": {
+      "message": "Ma langue maternelle :"
+   },
+   "214421942080869713": {
+      "message": "Afficher immédiatement la fenêtre pop-up."
+   },
+   "2188433896094691489": {
+      "message": "Options enregistrées."
+   },
+   "240104395545014795": {
+      "message": "La traduction de pages est intégrée à Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google Traduction\n\nCliquez avec le bouton gauche pour traduire.\nCliquez avec le bouton droit pour plus d'options."
+   },
+   "2823656161254750288": {
+      "message": "Traduire"
+   },
+   "3715106636322454053": {
+      "message": "PLUS »"
+   },
+   "3798355593581482387": {
+      "message": "Page d'accueil Google Traduction"
+   },
+   "3955566821402057": {
+      "message": "Options d'extension"
+   },
+   "4115247474741222238": {
+      "message": "Ne pas afficher d'icône ni de fenêtre pop-up."
+   },
+   "4799572612327798818": {
+      "message": "Vous avez toujours la possibilité de traduire le texte sélectionné en cliquant sur l'icône de l'extension Google Traduction."
+   },
+   "5029249418176901843": {
+      "message": "Lorsque je sélectionne un mot ou une expression :"
+   },
+   "5265851802920685748": {
+      "message": "OUVRIR DANS GOOGLE TRADUCTION"
+   },
+   "5636646071825253269": {
+      "message": "Affichez facilement les traductions lorsque vous naviguez sur le Web. Par l'équipe Google Traduction."
+   },
+   "564411404725368794": {
+      "message": "Traductions pop-up :"
+   },
+   "6131124164729815942": {
+      "message": "Erreur lors de la récupération de la traduction. Vérifiez votre connexion réseau."
+   },
+   "6522250354200336197": {
+      "message": "Options d'extension Chrome"
+   },
+   "6997490218739615323": {
+      "message": "DÉSACTIVER LES POP-UP"
+   },
+   "719896791478226289": {
+      "message": "Options d'extension Google Traduction"
+   },
+   "7432447050681380507": {
+      "message": "EN SAVOIR PLUS"
+   },
+   "7572626056779822063": {
+      "message": "Réinitialiser"
+   },
+   "7720080731342973504": {
+      "message": "Afficher une icône sur laquelle je peux cliquer pour ouvrir la fenêtre pop-up."
+   },
+   "8121604685132229235": {
+      "message": "Confidentialité"
+   },
+   "8310989585281680561": {
+      "message": "Afficher l'icône même si la page est dans ma langue"
+   },
+   "8639639632686471366": {
+      "message": "Enregistrer"
+   },
+   "8969005060131950570": {
+      "message": "Google Traduction"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -29,8 +30,10 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Name is the name for the RPM extractor
+// Name is the name for the Chrome extensions extractor
 const Name = "chrome/extensions"
+
+var extensionIDPattern = regexp.MustCompile(`^[a-p]{32}$`)
 
 type manifest struct {
 	Author struct {
@@ -75,11 +78,6 @@ type message struct {
 	Message     string `json:"message"`
 }
 
-type extensionMessages struct {
-	ExtDesc message `json:"extDesc"`
-	ExtName message `json:"extName"`
-}
-
 // Extractor extracts chrome extensions
 type Extractor struct{}
 
@@ -97,7 +95,6 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// todo: check this
 // FileRequired returns true if the file is chrome manifest extension
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
@@ -116,7 +113,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		// ~/.config/google-chrome/Default/Extensions/
 		return strings.Contains(path, "/.config/google-chrome/Default/Extensions/")
 	case "macos":
-		// ~/Library/Application\ Support/Google/Chrome/Default/Extensions
+		// ~/Library/Application Support/Google/Chrome/Default/Extensions
 		return strings.Contains(path, "/Library/Application Support/Google/Chrome/Default/Extensions")
 	default:
 		return false
@@ -133,33 +130,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("bad format %s", input.Path)
 	}
 
-	path, err := filepath.Abs(input.Path)
+	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract full path of %s: %w", input.Path, err)
+		return nil, err
 	}
-	parts := strings.Split(filepath.ToSlash(path), "/")
-	if len(parts) < 3 {
-		return nil, fmt.Errorf("could not extract extension ID from %s", path)
-	}
-	ID := parts[len(parts)-3]
 
-	// https://groups.google.com/a/chromium.org/g/chromium-apps/c/kjbbarpEVKU
-	if m.Name == "__MSG_extName__" || m.Description == "__MSG_extDesc__" {
-		localInfo, err := extractLocalInfo(input, m.DefaultLocale)
-		if err != nil {
+	if m.DefaultLocale != "" {
+		if err := extractLocaleInfo(&m, input); err != nil {
 			return nil, fmt.Errorf("could not extract locale info from %s: %w", input.Path, err)
-		}
-		if m.Name == "__MSG_extName__" {
-			m.Name = localInfo.ExtName.Message
-		}
-		if m.Description == "__MSG_extDesc__" {
-			m.Description = localInfo.ExtDesc.Message
 		}
 	}
 
 	ivs := []*extractor.Inventory{
 		{
-			Name:    ID,
+			Name:    id,
 			Version: m.Version,
 			Metadata: Metadata{
 				AuthorEmail:          m.Author.Email,
@@ -178,25 +162,69 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return ivs, nil
 }
 
-func extractLocalInfo(input *filesystem.ScanInput, defaultLocale string) (*extensionMessages, error) {
-	locale := defaultLocale
-	if locale == "" {
-		locale = "en_US"
+func cutBoth(s string, prefix string, suffix string) (string, bool) {
+	if !strings.HasPrefix(s, prefix) {
+		return "", false
+	}
+	if !strings.HasSuffix(s, suffix) {
+		return "", false
+	}
+	s = s[len(prefix) : len(s)-len(suffix)]
+	return s, true
+}
+
+func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
+	path, err := filepath.Abs(input.Path)
+	if err != nil {
+		return "", fmt.Errorf("could not extract full path of %s: %w", input.Path, err)
+	}
+	parts := strings.Split(filepath.ToSlash(path), "/")
+	if len(parts) < 3 {
+		return "", fmt.Errorf("could not extract extension ID from %s", path)
+	}
+	id := parts[len(parts)-3]
+	if !extensionIDPattern.MatchString(id) {
+		return "", fmt.Errorf("id did not match chrome extensions standard %s", id)
 	}
 
-	messagePath := filepath.Join(filepath.Dir(input.Path), "/_locales/", defaultLocale, "message.json")
+	return id, nil
+}
+
+func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
+	messagePath := filepath.Join(filepath.Dir(input.Path), "/_locales/", m.DefaultLocale, "message.json")
 
 	f, err := input.FS.Open(messagePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var m extensionMessages
-	if err := json.NewDecoder(f).Decode(&m); err != nil {
-		return nil, fmt.Errorf("could not read %s: %w", input.Path, err)
+	// using a map since the key are determined by the values of the manifest.json
+	//
+	// ex:
+	// 	"name" : "__MSG_43ry328yr932__"
+	var messages map[string]message
+	if err := json.NewDecoder(f).Decode(&messages); err != nil {
+		return err
 	}
 
-	return &m, nil
+	lowerCase := map[string]message{}
+	for k, v := range messages {
+		lowerCase[strings.ToLower(k)] = v
+	}
+
+	if v, ok := cutBoth(m.Name, "__MSG_", "__"); ok {
+		if msg, ok := lowerCase[strings.ToLower(v)]; ok {
+			m.Name = msg.Message
+		}
+	}
+
+	if v, ok := cutBoth(m.Description, "__MSG_", "__"); ok {
+		if msg, ok := lowerCase[strings.ToLower(v)]; ok {
+			m.Description = msg.Message
+		}
+	}
+
+	return nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

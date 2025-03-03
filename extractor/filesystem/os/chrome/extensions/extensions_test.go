@@ -52,20 +52,20 @@ func TestExtractor_FileRequired(t *testing.T) {
 func TestExtractor_Extract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "invalid",
+			Name: "invalid manifest",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid.json",
+				Path: "testdata/invalid-manifest.json",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "bad format"},
 		},
 		{
 			Name: "no locale specified",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/jkbfewkjnflewmfpewmgpewknfojewnf/1.2.85/manifest.json",
+				Path: "testdata/caaadbdomjkkjkaonfhkkikfgjllcleb/1.2.85/manifest.json",
 			},
 			WantInventory: []*extractor.Inventory{
 				{
-					Name:    "jkbfewkjnflewmfpewmgpewknfojewnf",
+					Name:    "caaadbdomjkkjkaonfhkkikfgjllcleb",
 					Version: "1.2.85",
 					Metadata: extensions.Metadata{
 						Description:     "A decentralized wallet for blockchain transactions.",
@@ -80,9 +80,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "locale specified without message",
+			Name: "invalid id",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid-name/1.89.1/manifest.json",
+				Path: "testdata/invalid-id/1.89.1/manifest.json",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "id did not match chrome extensions standard"},
+		},
+		{
+			Name: "default locale specified but no message file provided",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/nolocaleoekpmoecnnnilnnbdlolhkhi/1.89.1/manifest.json",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract locale info from"},
 		},

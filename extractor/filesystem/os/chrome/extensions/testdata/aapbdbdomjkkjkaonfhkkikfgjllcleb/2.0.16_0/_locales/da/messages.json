@@ -1,0 +1,164 @@
+{
+   "1258862881920637537": {
+      "message": "Alle markerede tekster i din Chrome-browser bliver sendt til Google-serveren mhp. vurdering af, om en oversættelse skal vises."
+   },
+   "1442994382865027284": {
+      "message": "Mit primære sprog:"
+   },
+   "214421942080869713": {
+      "message": "Vis pop op med det samme"
+   },
+   "2188433896094691489": {
+      "message": "Indstillingerne blev gemt"
+   },
+   "240104395545014795": {
+      "message": "Sideoversættelse er indbygget i Chrome."
+   },
+   "2509634311667449183": {
+      "message": "Google Oversæt\n\nVenstreklik for at oversætte.\nHøjreklik for valgmuligheder."
+   },
+   "2823656161254750288": {
+      "message": "Oversæt"
+   },
+   "3715106636322454053": {
+      "message": "MERE »"
+   },
+   "3798355593581482387": {
+      "message": "Google Oversæt-startside"
+   },
+   "3955566821402057": {
+      "message": "Udvidelsesmuligheder"
+   },
+   "4115247474741222238": {
+      "message": "Vis hverken ikon eller pop op."
+   },
+   "4799572612327798818": {
+      "message": "Du kan stadig oversætte markeret tekst ved at klikke på udvidelsesikonet for Google Oversæt."
+   },
+   "5029249418176901843": {
+      "message": "Når jeg vælger et ord eller en sætning:"
+   },
+   "5265851802920685748": {
+      "message": "ÅBN I GOOGLE OVERSÆT"
+   },
+   "5636646071825253269": {
+      "message": "Se lettilgængelige oversættelser, mens du surfer på nettet. Af Google Oversæt-teamet."
+   },
+   "564411404725368794": {
+      "message": "Pop op-oversættelser:"
+   },
+   "6131124164729815942": {
+      "message": "Der opstod en fejl, da oversættelsen skulle hentes. Kontrollér din netværksforbindelse."
+   },
+   "6522250354200336197": {
+      "message": "Udvidelsesmuligheder til Chrome"
+   },
+   "6997490218739615323": {
+      "message": "DEAKTIVER POP OP"
+   },
+   "719896791478226289": {
+      "message": "Udvidelsesmuligheder for Google Translate"
+   },
+   "7432447050681380507": {
+      "message": "FÅ FLERE OPLYSNINGER"
+   },
+   "7572626056779822063": {
+      "message": "Nulstil"
+   },
+   "7720080731342973504": {
+      "message": "Vis ikon, jeg kan klikke på for at se pop op."
+   },
+   "8121604685132229235": {
+      "message": "Privatliv"
+   },
+   "8310989585281680561": {
+      "message": "Vis ikon, selvom siden er på mit eget sprog."
+   },
+   "8639639632686471366": {
+      "message": "Gem"
+   },
+   "8969005060131950570": {
+      "message": "Google Oversæt"
+   },
+   "MSG_BROWSER_ACTION_TITLE": {
+      "message": "2509634311667449183"
+   },
+   "MSG_DESCRIPTION": {
+      "message": "5636646071825253269"
+   },
+   "MSG_FOOTER_OPTIONS": {
+      "message": "3955566821402057"
+   },
+   "MSG_FOOTER_TRANSLATE": {
+      "message": "8969005060131950570"
+   },
+   "MSG_LEARN_MORE": {
+      "message": "7432447050681380507"
+   },
+   "MSG_MORE": {
+      "message": "3715106636322454053"
+   },
+   "MSG_OFF": {
+      "message": "6997490218739615323"
+   },
+   "MSG_OPEN_IN_TRANSLATE": {
+      "message": "5265851802920685748"
+   },
+   "MSG_OPTIONS_ALWAYS_SHOW_ICON": {
+      "message": "8310989585281680561"
+   },
+   "MSG_OPTIONS_FOOTER_HOMEPAGE": {
+      "message": "3798355593581482387"
+   },
+   "MSG_OPTIONS_FOOTER_PRIVACY": {
+      "message": "8121604685132229235"
+   },
+   "MSG_OPTIONS_ICON_DESC": {
+      "message": "7720080731342973504"
+   },
+   "MSG_OPTIONS_LANG": {
+      "message": "1442994382865027284"
+   },
+   "MSG_OPTIONS_NONE_DESC": {
+      "message": "4115247474741222238"
+   },
+   "MSG_OPTIONS_NONE_TIP": {
+      "message": "4799572612327798818"
+   },
+   "MSG_OPTIONS_PAGE_TITLE": {
+      "message": "719896791478226289"
+   },
+   "MSG_OPTIONS_POPUP": {
+      "message": "564411404725368794"
+   },
+   "MSG_OPTIONS_POPUP_DESC": {
+      "message": "214421942080869713"
+   },
+   "MSG_OPTIONS_POPUP_TIP": {
+      "message": "1258862881920637537"
+   },
+   "MSG_OPTIONS_POPUP_TITLE": {
+      "message": "5029249418176901843"
+   },
+   "MSG_OPTIONS_RESET": {
+      "message": "7572626056779822063"
+   },
+   "MSG_OPTIONS_SAVE": {
+      "message": "8639639632686471366"
+   },
+   "MSG_OPTIONS_SAVED_STATUS": {
+      "message": "2188433896094691489"
+   },
+   "MSG_OPTIONS_TITLE": {
+      "message": "6522250354200336197"
+   },
+   "MSG_TRANSLATE": {
+      "message": "2823656161254750288"
+   },
+   "MSG_TRANSLATE_PAGE_INFO": {
+      "message": "240104395545014795"
+   },
+   "MSG_TRANSLATION_ERROR": {
+      "message": "6131124164729815942"
+   }
+}
