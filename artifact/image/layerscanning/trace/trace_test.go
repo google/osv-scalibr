@@ -30,13 +30,17 @@ import (
 	"github.com/opencontainers/go-digest"
 )
 
-func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID digest.Digest, command string, fileContents map[string]string) *fakechainlayer.FakeChainLayer {
+func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID digest.Digest, command string, layerContents map[string]string, chainLayerContents map[string]string) *fakechainlayer.FakeChainLayer {
 	t.Helper()
 
-	layer := fakelayer.New(diffID, command)
-	chainLayer, err := fakechainlayer.New(testDir, index, diffID, command, layer, fileContents, false)
+	layer, err := fakelayer.New(testDir, diffID, command, layerContents, false)
 	if err != nil {
-		t.Fatalf("fakechainlayer.New(%d, %q, %q, %v, %v) failed: %v", index, diffID, command, layer, fileContents, err)
+		t.Fatalf("fakelayer.New(%q, %q, %q, %v, %v) failed: %v", testDir, diffID, command, layerContents, false, err)
+	}
+
+	chainLayer, err := fakechainlayer.New(testDir, index, diffID, command, layer, chainLayerContents, false)
+	if err != nil {
+		t.Fatalf("fakechainlayer.New(%d, %q, %q, %v, %v) failed: %v", index, diffID, command, layer, chainLayerContents, err)
 	}
 	return chainLayer
 }
@@ -57,11 +61,16 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// Chain Layer 1: Start with foo and bar packages.
 	// - foo.txt
 	// - bar.txt
-	digest1 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-1")
-	fakeChainLayer1 := setupFakeChainLayer(t, t.TempDir(), 0, digest1, "command-1", map[string]string{
+	layerContents1 := map[string]string{
 		fooFile: fooPackage,
 		barFile: barPackage,
-	})
+	}
+	chainLayerContents1 := map[string]string{
+		fooFile: fooPackage,
+		barFile: barPackage,
+	}
+	digest1 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-1")
+	fakeChainLayer1 := setupFakeChainLayer(t, t.TempDir(), 0, digest1, "command-1", layerContents1, chainLayerContents1)
 	fakeExtractor1 := fakeextractor.New("fake-extractor-1", 1, []string{fooFile, barFile}, map[string]fakeextractor.NamesErr{
 		fooFile: fakeextractor.NamesErr{
 			Names: []string{fooPackage},
@@ -71,12 +80,14 @@ func TestPopulateLayerDetails(t *testing.T) {
 		},
 	})
 
+	layerContents2 := map[string]string{}
+	chainLayerContents2 := map[string]string{
+		fooFile: fooPackage,
+	}
 	// Chain Layer 2: Deletes bar package.
 	// - foo.txt
 	digest2 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-2")
-	fakeChainLayer2 := setupFakeChainLayer(t, t.TempDir(), 1, digest2, "command-2", map[string]string{
-		fooFile: fooPackage,
-	})
+	fakeChainLayer2 := setupFakeChainLayer(t, t.TempDir(), 1, digest2, "command-2", layerContents2, chainLayerContents2)
 	fakeExtractor2 := fakeextractor.New("fake-extractor-2", 1, []string{fooFile}, map[string]fakeextractor.NamesErr{
 		fooFile: fakeextractor.NamesErr{
 			Names: []string{fooPackage},
@@ -86,11 +97,15 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// Chain Layer 3: Adds baz package.
 	// - foo.txt
 	// - baz.txt
-	digest3 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-3")
-	fakeChainLayer3 := setupFakeChainLayer(t, t.TempDir(), 2, digest3, "command-3", map[string]string{
+	layerContents3 := map[string]string{
+		bazFile: bazPackage,
+	}
+	chainLayerContents3 := map[string]string{
 		fooFile: fooPackage,
 		bazFile: bazPackage,
-	})
+	}
+	digest3 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-3")
+	fakeChainLayer3 := setupFakeChainLayer(t, t.TempDir(), 2, digest3, "command-3", layerContents3, chainLayerContents3)
 	fakeExtractor3 := fakeextractor.New("fake-extractor-3", 1, []string{fooFile, bazFile}, map[string]fakeextractor.NamesErr{
 		fooFile: fakeextractor.NamesErr{
 			Names: []string{fooPackage},
@@ -104,12 +119,16 @@ func TestPopulateLayerDetails(t *testing.T) {
 	// - foo.txt
 	// - bar.txt
 	// - baz.txt
-	digest4 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-4")
-	fakeChainLayer4 := setupFakeChainLayer(t, t.TempDir(), 3, digest4, "command-4", map[string]string{
+	layerContents4 := map[string]string{
+		barFile: barPackage,
+	}
+	chainLayerContents4 := map[string]string{
 		fooFile: fooPackage,
 		barFile: barPackage,
 		bazFile: bazPackage,
-	})
+	}
+	digest4 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-4")
+	fakeChainLayer4 := setupFakeChainLayer(t, t.TempDir(), 3, digest4, "command-4", layerContents4, chainLayerContents4)
 	fakeExtractor4 := fakeextractor.New("fake-extractor-4", 1, []string{fooFile, barFile, bazFile}, map[string]fakeextractor.NamesErr{
 		fooFile: fakeextractor.NamesErr{
 			Names: []string{fooPackage},
