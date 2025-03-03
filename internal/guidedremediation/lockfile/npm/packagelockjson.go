@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/internal/guidedremediation/lockfile"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/npm"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -40,6 +41,11 @@ func GetReadWriter() (lockfile.ReadWriter, error) {
 // System returns the ecosystem of this ReadWriter.
 func (r readWriter) System() resolve.System {
 	return resolve.NPM
+}
+
+// SupportedStrategies returns the remediation strategies supported for this lockfile.
+func (r readWriter) SupportedStrategies() []strategy.Strategy {
+	return []strategy.Strategy{}
 }
 
 type dependencyVersionSpec struct {
