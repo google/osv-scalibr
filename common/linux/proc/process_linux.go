@@ -94,6 +94,7 @@ func readFileDescriptors(ctx context.Context, d fs.DirEntry, inodesToPID map[int
 	// only read PID directories
 	pid, err := strconv.ParseInt(d.Name(), 10, 64)
 	if err != nil {
+		//nolint:nilerr // only read PID directories
 		return nil
 	}
 
@@ -107,6 +108,8 @@ func readFileDescriptors(ctx context.Context, d fs.DirEntry, inodesToPID map[int
 			return err
 		}
 
+		// an inode of 0 means that the file descriptor is not a socket or
+		// there was an error extracting the inode, so we just ignore it
 		if inode != 0 {
 			inodesToPID[inode] = pid
 		}
@@ -137,6 +140,7 @@ func extractSocketInode(ctx context.Context, absFdDir string, d fs.DirEntry) (in
 
 	var inode int64
 	if _, err := fmt.Sscanf(link, "socket:[%d]", &inode); err != nil {
+		//nolint:nilerr // don't surface the error
 		return 0, nil
 	}
 
