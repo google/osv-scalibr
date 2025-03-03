@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 
@@ -138,6 +139,36 @@ func (m *mavenManifest) Clone() manifest.Manifest {
 	return clone
 }
 
+// PatchRequirement modifies the manifest's requirements to include the new requirement version.
+// If the package already is in the requirements, updates the version.
+// Otherwise, adds req to the dependencyManagement of the root pom.xml.
+func (m *mavenManifest) PatchRequirement(req resolve.RequirementVersion) error {
+	found := false
+	i := 0
+	for _, r := range m.requirements {
+		if r.PackageKey != req.PackageKey {
+			m.requirements[i] = r
+			i++
+
+			continue
+		}
+		origin, hasOrigin := r.Type.GetAttr(dep.MavenDependencyOrigin)
+		if !hasOrigin || origin == mavenutil.OriginManagement {
+			found = true
+			r.Version = req.Version
+			m.requirements[i] = r
+			i++
+		}
+	}
+	m.requirements = m.requirements[:i]
+	if !found {
+		req.Type.AddAttr(dep.MavenDependencyOrigin, mavenutil.OriginManagement)
+		m.requirements = append(m.requirements, req)
+	}
+
+	return nil
+}
+
 type readWriter struct {
 	*datasource.MavenRegistryAPIClient
 }
@@ -154,6 +185,11 @@ func GetReadWriter(registry string) (manifest.ReadWriter, error) {
 // System returns the ecosystem of this ReadWriter.
 func (r readWriter) System() resolve.System {
 	return resolve.Maven
+}
+
+// SupportedStrategies returns the remediation strategies supported for this manifest.
+func (r readWriter) SupportedStrategies() []strategy.Strategy {
+	return []strategy.Strategy{strategy.StrategyOverride}
 }
 
 // Read parses the manifest from the given file.

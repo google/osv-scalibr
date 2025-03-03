@@ -18,6 +18,7 @@ package manifest
 import (
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 )
 
 // Manifest is the interface for the representation of a manifest file needed for dependency resolution.
@@ -30,6 +31,8 @@ type Manifest interface {
 	LocalManifests() []Manifest                 // Manifests of local packages
 	EcosystemSpecific() any                     // Any ecosystem-specific information needed
 
+	PatchRequirement(req resolve.RequirementVersion) error // Patch the requirements to use new requirement.
+
 	Clone() Manifest // Clone the manifest
 }
 
@@ -41,5 +44,6 @@ type RequirementKey any
 type ReadWriter interface {
 	System() resolve.System
 	Read(path string, fsys scalibrfs.FS) (Manifest, error)
+	SupportedStrategies() []strategy.Strategy
 	// TODO(#454): Write()
 }

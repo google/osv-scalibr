@@ -27,6 +27,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -114,6 +115,12 @@ func (m *npmManifest) Clone() manifest.Manifest {
 	return clone
 }
 
+// PatchRequirement modifies the manifest's requirements to include the new requirement version.
+func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
+	// TODO
+	return nil
+}
+
 type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for package.json manifest files.
@@ -125,6 +132,11 @@ func GetReadWriter(registry string) (manifest.ReadWriter, error) {
 // System returns the ecosystem of this ReadWriter.
 func (r readWriter) System() resolve.System {
 	return resolve.NPM
+}
+
+// SupportedStrategies returns the remediation strategies supported for this manifest.
+func (r readWriter) SupportedStrategies() []strategy.Strategy {
+	return []strategy.Strategy{}
 }
 
 // PackageJSON is the structure for the contents of a package.json file.

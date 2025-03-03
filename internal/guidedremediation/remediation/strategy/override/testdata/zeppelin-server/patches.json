@@ -1,0 +1,1143 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "io.atomix:atomix",
+        "versionFrom": "",
+        "versionTo": "3.1.6"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-2fqw-684c-pvp7",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-4jhc-wjr3-pwh2",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-6vvh-5794-vpmj",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7fr2-94h7-ccg2",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-g7p8-r2ch-4rmf",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-m4h3-7mc2-v295",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-mf27-wg66-m8f5",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      }
+    ],
+    "introduced": [
+      {
+        "id": "GHSA-v2xm-76pq-phcf",
+        "packages": [
+          {
+            "name": "io.github.classgraph:classgraph",
+            "version": "4.2.3"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.pdfbox:pdfbox",
+        "versionFrom": "",
+        "versionTo": "2.0.24"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-2h3j-m7gr-25xj",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-6vqp-h455-42mr",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7grw-6pjh-jpc9",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-fg3j-q579-v8x4",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "xerces:xercesImpl",
+        "versionFrom": "",
+        "versionTo": "2.12.2"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-7j4h-8wpf-rqfh",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-h65f-jvqw-m9fj",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-vmqm-g3vh-847m",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-w4jq-qh47-hvjq",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.atomix:atomix",
+        "versionFrom": "",
+        "versionTo": "3.1.6"
+      },
+      {
+        "name": "io.github.classgraph:classgraph",
+        "versionFrom": "",
+        "versionTo": "4.8.112"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-2fqw-684c-pvp7",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-4jhc-wjr3-pwh2",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-6vvh-5794-vpmj",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7fr2-94h7-ccg2",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-g7p8-r2ch-4rmf",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-m4h3-7mc2-v295",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-mf27-wg66-m8f5",
+        "packages": [
+          {
+            "name": "io.atomix:atomix",
+            "version": "3.0.0-rc5"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "com.google.guava:guava",
+        "versionFrom": "",
+        "versionTo": "32.0.0-jre"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-5mg8-w23w-74h3",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "22.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7g45-4rm6-3mm3",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "22.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-mvr2-9pj6-7w5j",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "22.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "xerces:xercesImpl",
+        "versionFrom": "",
+        "versionTo": "2.12.1"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-7j4h-8wpf-rqfh",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-vmqm-g3vh-847m",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-w4jq-qh47-hvjq",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "com.fasterxml.jackson.core:jackson-databind",
+        "versionFrom": "2.12.6.1",
+        "versionTo": "2.12.7.1"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-jjjh-jjxp-wpff",
+        "packages": [
+          {
+            "name": "com.fasterxml.jackson.core:jackson-databind",
+            "version": "2.12.6.1"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-rgv9-q543-rqg4",
+        "packages": [
+          {
+            "name": "com.fasterxml.jackson.core:jackson-databind",
+            "version": "2.12.6.1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.netty:netty-handler",
+        "versionFrom": "",
+        "versionTo": "4.1.94.Final"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-6mjq-h674-j845",
+        "packages": [
+          {
+            "name": "io.netty:netty-handler",
+            "version": "4.1.27.Final"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-mm9x-g8pc-w292",
+        "packages": [
+          {
+            "name": "io.netty:netty-handler",
+            "version": "4.1.27.Final"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.commons:commons-compress",
+        "versionFrom": "",
+        "versionTo": "1.26.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-4265-ccf5-phj5",
+        "packages": [
+          {
+            "name": "org.apache.commons:commons-compress",
+            "version": "1.21"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-4g9r-vxhx-9pgx",
+        "packages": [
+          {
+            "name": "org.apache.commons:commons-compress",
+            "version": "1.21"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.commons:commons-configuration2",
+        "versionFrom": "2.8.0",
+        "versionTo": "2.10.1"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-9w38-p64v-xpmv",
+        "packages": [
+          {
+            "name": "org.apache.commons:commons-configuration2",
+            "version": "2.8.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-xjp4-hw94-mvp5",
+        "packages": [
+          {
+            "name": "org.apache.commons:commons-configuration2",
+            "version": "2.8.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.mina:mina-core",
+        "versionFrom": "",
+        "versionTo": "2.0.22"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-5h29-qq92-wj7f",
+        "packages": [
+          {
+            "name": "org.apache.mina:mina-core",
+            "version": "2.0.7"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-6mcm-j9cj-3vc3",
+        "packages": [
+          {
+            "name": "org.apache.mina:mina-core",
+            "version": "2.0.7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.pdfbox:pdfbox",
+        "versionFrom": "",
+        "versionTo": "2.0.23"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-2h3j-m7gr-25xj",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-6vqp-h455-42mr",
+        "packages": [
+          {
+            "name": "org.apache.pdfbox:pdfbox",
+            "version": "2.0.16"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.shiro:shiro-web",
+        "versionFrom": "1.10.0",
+        "versionTo": "1.13.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-hhw5-c326-822h",
+        "packages": [
+          {
+            "name": "org.apache.shiro:shiro-web",
+            "version": "1.10.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-pmhc-2g4f-85cg",
+        "packages": [
+          {
+            "name": "org.apache.shiro:shiro-web",
+            "version": "1.10.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.eclipse.jgit:org.eclipse.jgit",
+        "versionFrom": "",
+        "versionTo": "5.13.3.202401111512-r"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-3p86-9955-h393",
+        "packages": [
+          {
+            "name": "org.eclipse.jgit:org.eclipse.jgit",
+            "version": "4.5.4.201711221230-r"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-q446-82vq-w674",
+        "packages": [
+          {
+            "name": "com.jcraft:jsch",
+            "version": "0.1.53"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "xerces:xercesImpl",
+        "versionFrom": "",
+        "versionTo": "2.12.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-7j4h-8wpf-rqfh",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-vmqm-g3vh-847m",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "commons-net:commons-net",
+        "versionFrom": "",
+        "versionTo": "3.9.0"
+      },
+      {
+        "name": "net.sourceforge.htmlunit:htmlunit",
+        "versionFrom": "",
+        "versionTo": "2.37.0"
+      },
+      {
+        "name": "net.sourceforge.htmlunit:neko-htmlunit",
+        "versionFrom": "",
+        "versionTo": "2.61.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-5mh9-r3rr-9597",
+        "packages": [
+          {
+            "name": "net.sourceforge.htmlunit:htmlunit",
+            "version": "2.18"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7j4h-8wpf-rqfh",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-h65f-jvqw-m9fj",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-vmqm-g3vh-847m",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-w4jq-qh47-hvjq",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "net.sourceforge.htmlunit:htmlunit",
+        "versionFrom": "",
+        "versionTo": "2.37.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-5mh9-r3rr-9597",
+        "packages": [
+          {
+            "name": "net.sourceforge.htmlunit:htmlunit",
+            "version": "2.18"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7j4h-8wpf-rqfh",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-vmqm-g3vh-847m",
+        "packages": [
+          {
+            "name": "xerces:xercesImpl",
+            "version": "2.11.0"
+          }
+        ]
+      }
+    ],
+    "introduced": [
+      {
+        "id": "GHSA-6jmm-mp6w-4rrg",
+        "packages": [
+          {
+            "name": "net.sourceforge.htmlunit:neko-htmlunit",
+            "version": "2.37.0"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-cgp8-4m63-fhh5",
+        "packages": [
+          {
+            "name": "commons-net:commons-net",
+            "version": "3.6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "com.google.guava:guava",
+        "versionFrom": "",
+        "versionTo": "24.1.1-jre"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-mvr2-9pj6-7w5j",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "22.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "com.jcraft:jsch",
+        "versionFrom": "",
+        "versionTo": "0.1.54"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-q446-82vq-w674",
+        "packages": [
+          {
+            "name": "com.jcraft:jsch",
+            "version": "0.1.53"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "com.nimbusds:nimbus-jose-jwt",
+        "versionFrom": "9.13",
+        "versionTo": "9.37.2"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-gvpg-vgmx-xg6w",
+        "packages": [
+          {
+            "name": "com.nimbusds:nimbus-jose-jwt",
+            "version": "9.13"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.netty:netty",
+        "versionFrom": "",
+        "versionTo": "3.9.8.Final"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-xfv3-rrfm-f2rv",
+        "packages": [
+          {
+            "name": "io.netty:netty",
+            "version": "3.5.2.Final"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.netty:netty-handler",
+        "versionFrom": "",
+        "versionTo": "4.1.46.Final"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-mm9x-g8pc-w292",
+        "packages": [
+          {
+            "name": "io.netty:netty-handler",
+            "version": "4.1.27.Final"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.directory.api:api-ldap-model",
+        "versionFrom": "",
+        "versionTo": "1.0.0-M31"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-cx3q-cv6w-mx4h",
+        "packages": [
+          {
+            "name": "org.apache.directory.api:api-ldap-model",
+            "version": "1.0.0-M20"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.mina:mina-core",
+        "versionFrom": "",
+        "versionTo": "2.0.21"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-5h29-qq92-wj7f",
+        "packages": [
+          {
+            "name": "org.apache.mina:mina-core",
+            "version": "2.0.7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.shiro:shiro-core",
+        "versionFrom": "1.10.0",
+        "versionTo": "1.13.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-jc7h-c423-mpjc",
+        "packages": [
+          {
+            "name": "org.apache.shiro:shiro-core",
+            "version": "1.10.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.shiro:shiro-web",
+        "versionFrom": "1.10.0",
+        "versionTo": "1.12.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-pmhc-2g4f-85cg",
+        "packages": [
+          {
+            "name": "org.apache.shiro:shiro-web",
+            "version": "1.10.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.glassfish.jersey.core:jersey-common",
+        "versionFrom": "",
+        "versionTo": "2.34"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-c43q-5hpj-4crv",
+        "packages": [
+          {
+            "name": "org.glassfish.jersey.core:jersey-common",
+            "version": "2.30"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "xalan:xalan",
+        "versionFrom": "",
+        "versionTo": "2.7.3"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-9339-86wc-4qgf",
+        "packages": [
+          {
+            "name": "xalan:xalan",
+            "version": "2.7.2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.thrift:libthrift",
+        "versionFrom": "0.13.0",
+        "versionTo": "0.14.0"
+      },
+      {
+        "name": "org.apache.tomcat.embed:tomcat-embed-core",
+        "versionFrom": "",
+        "versionTo": "8.5.99"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-g2fg-mr77-6vrm",
+        "packages": [
+          {
+            "name": "org.apache.thrift:libthrift",
+            "version": "0.13.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.netty:netty-codec",
+        "versionFrom": "",
+        "versionTo": "4.1.68.Final"
+      }
+    ],
+    "fixed": []
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "io.netty:netty-handler",
+        "versionFrom": "",
+        "versionTo": "4.1.45.Final"
+      }
+    ],
+    "fixed": []
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "org.apache.thrift:libthrift",
+        "versionFrom": "0.13.0",
+        "versionTo": "0.14.0"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-g2fg-mr77-6vrm",
+        "packages": [
+          {
+            "name": "org.apache.thrift:libthrift",
+            "version": "0.13.0"
+          }
+        ]
+      }
+    ],
+    "introduced": [
+      {
+        "id": "GHSA-2rvv-w9r2-rg7m",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-7w75-32cg-r6g2",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-9xcj-c8cr-8c3c",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-c9hw-wf7x-jp9j",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-f4qf-m5gf-8jm8",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-fccv-jmmp-qg76",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-g8pj-r55q-5c2v",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-hh3j-x4mc-g48r",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-j39c-c8hj-x4j3",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-jgwr-3qm3-26f3",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-p22x-g9px-3945",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-q3mw-pvr8-9ggc",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-qppj-fm5r-hxr3",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-qxf4-chvg-4r8r",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      },
+      {
+        "id": "GHSA-r6j3-px5g-cq3x",
+        "packages": [
+          {
+            "name": "org.apache.tomcat.embed:tomcat-embed-core",
+            "version": "8.5.46"
+          }
+        ]
+      }
+    ]
+  }
+]
