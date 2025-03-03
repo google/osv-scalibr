@@ -117,7 +117,7 @@ func (m *npmManifest) Clone() manifest.Manifest {
 
 // PatchRequirement modifies the manifest's requirements to include the new requirement version.
 func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
-	// TODO
+	// TODO(#454)
 	return nil
 }
 
