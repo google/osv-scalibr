@@ -24,5 +24,5 @@ import (
 
 // VulnerabilityMatcher interface provides functionality get a list of affecting vulnerabilities for each package in an inventory.
 type VulnerabilityMatcher interface {
-	MatchVulnerabilities(ctx context.Context, invs []*extractor.Inventory) ([][]*osvschema.Vulnerability, error)
+	MatchVulnerabilities(ctx context.Context, pkgs []*extractor.Package) ([][]*osvschema.Vulnerability, error)
 }

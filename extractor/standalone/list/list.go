@@ -20,12 +20,6 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
-	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
 	"github.com/google/osv-scalibr/plugin"
 	"golang.org/x/exp/maps"
 )
@@ -37,40 +31,14 @@ type InitFn func() standalone.Extractor
 type InitMap map[string][]InitFn
 
 var (
-	// Windows standalone extractors.
-	Windows = InitMap{dismpatch.Name: {dismpatch.New}}
-
-	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
-	// dangerous.
-	WindowsExperimental = InitMap{
-		ospackages.Name:    {ospackages.NewDefault},
-		regosversion.Name:  {regosversion.NewDefault},
-		regpatchlevel.Name: {regpatchlevel.NewDefault},
-	}
-
-	// OSExperimental defines experimental OS extractors.
-	OSExperimental = InitMap{
-		netports.Name: {netports.New},
-	}
-
-	// Containers standalone extractors.
-	Containers = InitMap{
-		containerd.Name: {containerd.NewDefault},
-	}
-
-	// Default standalone extractors.
-	Default = Windows
+	Default = InitMap{}
 	// All standalone extractors.
-	All = concat(Windows, WindowsExperimental, Containers, OSExperimental)
+	All = InitMap{}
 
 	extractorNames = concat(All, InitMap{
-		// Windows
-		"windows": vals(Windows),
-
 		// Collections.
-		"default":    vals(Default),
-		"all":        vals(All),
-		"containers": vals(Containers),
+		"default": vals(Default),
+		"all":     vals(All),
 	})
 )
 

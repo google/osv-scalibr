@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/mockregistry"
 )
 
@@ -30,11 +31,11 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		reg     *mockregistry.MockRegistry
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr bool
 	}{
 		{
-			name: "listOfPackages_returnsInventory",
+			name: "listOfPackages_returnsPackage",
 			reg: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					regPackagesRoot: &mockregistry.MockKey{
@@ -60,7 +61,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "Package_for_KB5020683~31bf3856ad364e35~amd64~~19041.2304.1.3",
 					Version: "19041.2304.1.3",
@@ -140,7 +141,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(inventory.Inventory{Packages: tc.want}, got); diff != "" {
 				t.Errorf("Extract() returned an unexpected diff (-want +got): %v", diff)
 			}
 		})

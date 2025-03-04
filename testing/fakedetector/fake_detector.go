@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -64,7 +64,7 @@ func (d *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Capa
 func (d *fakeDetector) RequiredExtractors() []string { return d.ReqExtractors }
 
 // Scan always returns the same predefined finding or error.
-func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
 	if d.Finding == nil {
 		return nil, d.Err
 	}

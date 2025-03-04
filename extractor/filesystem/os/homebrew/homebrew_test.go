@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -105,21 +106,21 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func invLess(i1, i2 *extractor.Inventory) bool {
+func pkgLess(i1, i2 *extractor.Package) bool {
 	return i1.Name < i2.Name
 }
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		wantErr       error
-		wantInventory []*extractor.Inventory
+		name         string
+		path         string
+		wantErr      error
+		wantPackages []*extractor.Package
 	}{
 		{
 			name: "cellar.valid.json",
 			path: "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "rclone",
 					Version:   "1.67.0",
@@ -131,7 +132,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "caskroom.valid.json",
 			path: "testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "testapp",
 					Version:   "1.1.1",
@@ -141,14 +142,14 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:          "caskroom.null.variation",
-			path:          "testdata/Caskroom/somefolder/2.2",
-			wantInventory: []*extractor.Inventory{},
+			name:         "caskroom.null.variation",
+			path:         "testdata/Caskroom/somefolder/2.2",
+			wantPackages: nil,
 		},
 		{
 			name: "caskroom.other.variation",
 			path: "testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "android-platform-tools",
 					Version:   "35.0.2",
@@ -168,9 +169,9 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(invLess)); diff != "" {
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 		})
@@ -179,13 +180,13 @@ func TestExtract(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	tests := []struct {
-		name      string
-		inventory []*extractor.Inventory
-		want      *purl.PackageURL
+		name string
+		pkgs []*extractor.Package
+		want *purl.PackageURL
 	}{
 		{
 			name: "cask_firefox",
-			inventory: []*extractor.Inventory{
+			pkgs: []*extractor.Package{
 				{
 					Name:      "firefox",
 					Version:   "129.0",
@@ -203,10 +204,10 @@ func TestToPURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = homebrew.Extractor{}
-			for _, i := range tt.inventory {
-				got := e.ToPURL(i)
+			for _, p := range tt.pkgs {
+				got := e.ToPURL(p)
 				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+					t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 				}
 			}
 		})

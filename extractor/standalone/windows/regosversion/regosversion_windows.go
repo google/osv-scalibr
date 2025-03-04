@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -79,39 +80,39 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract the DISM patch level on Windows.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	reg, err := e.opener.Open()
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 	defer reg.Close()
 
 	key, err := reg.OpenKey("HKLM", regVersionPath)
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 	defer key.Close()
 
 	currentVersion, err := e.windowsVersion(key)
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	// CurrentBuildNumber should be available on a large range of Windows versions.
 	buildNumber, err := key.ValueString("CurrentBuildNumber")
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	revision, err := e.windowsRevision(key)
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	flavor := winproducts.WindowsFlavorFromRegistry(reg)
 	fullVersion := fmt.Sprintf("%s.%s.%s", currentVersion, buildNumber, revision)
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
-	return []*extractor.Inventory{
+	return inventory.Inventory{Packages: []*extractor.Package{
 		{
 			Name:    winproduct,
 			Version: fullVersion,
@@ -120,7 +121,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 				FullVersion: fullVersion,
 			},
 		},
-	}, nil
+	}}, nil
 }
 
 // windowsVersion extracts the version of Windows (major and minor, e.g. 6.3 or 10.0)
@@ -158,14 +159,14 @@ func (e Extractor) windowsRevision(key registry.Key) (string, error) {
 	return buildLabParts[1], nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	var qualifiers purl.Qualifiers
 
-	switch i.Metadata.(type) {
+	switch p.Metadata.(type) {
 	case *metadata.OSVersion:
 		qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Metadata.(*metadata.OSVersion).FullVersion,
+			purl.BuildNumber: p.Metadata.(*metadata.OSVersion).FullVersion,
 		})
 	default:
 		return nil
@@ -174,10 +175,10 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:       purl.TypeGeneric,
 		Namespace:  "microsoft",
-		Name:       i.Name,
+		Name:       p.Name,
 		Qualifiers: qualifiers,
 	}
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regosversion yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

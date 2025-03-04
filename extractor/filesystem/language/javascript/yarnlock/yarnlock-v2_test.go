@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -32,14 +33,14 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "balanced-match",
 					Version:   "1.0.2",
@@ -55,7 +56,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "compare-func",
 					Version:   "2.0.0",
@@ -79,7 +80,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-quotes.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "compare-func",
 					Version:   "2.0.0",
@@ -103,7 +104,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-versions.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "debug",
 					Version:   "4.3.3",
@@ -135,7 +136,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/cli",
 					Version:   "7.16.8",
@@ -167,7 +168,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-prerelease.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@nicolo-ribaudo/chokidar-2",
 					Version:   "2.1.8-no-fsevents.3",
@@ -199,7 +200,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-build-string.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "domino",
 					Version:   "2.1.6+git",
@@ -231,7 +232,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@my-scope/my-first-package",
 					Version:   "0.0.6",
@@ -295,7 +296,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "my-package",
 					Version:   "0.0.2",
@@ -311,7 +312,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-aliases.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/helper-validator-identifier",
 					Version:   "7.22.20",
@@ -362,7 +363,8 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
