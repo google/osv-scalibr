@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -105,7 +106,9 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 
-	if !isPELikelyExtension(path) {
+	// check if the file extension matches one of the known PE extensions
+	ext := strings.ToLower(filepath.Ext(path))
+	if !slices.Contains(peExtensions, ext) {
 		return false
 	}
 
@@ -117,16 +120,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 	e.reportFileRequired(path, stats.FileRequiredResultOK)
 	return true
-}
-
-func isPELikelyExtension(path string) bool {
-	ext := filepath.Ext(path)
-	for _, peExt := range peExtensions {
-		if strings.EqualFold(ext, peExt) {
-			return true
-		}
-	}
-	return false
 }
 
 // Extract parses the PE files to extract .NET package dependencies.
