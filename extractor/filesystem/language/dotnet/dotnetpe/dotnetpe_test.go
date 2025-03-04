@@ -142,12 +142,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tests := []struct {
-		Name          string
-		InputConfig   extracttest.ScanInputMockConfig
-		WantInventory []*extractor.Inventory
-		WantErr       error
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
 			Name: "valid .dll",
 			InputConfig: extracttest.ScanInputMockConfig{
@@ -177,7 +172,14 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/Empty.dll",
 			},
-			WantErr: dotnetpe.ErrOpeningPEFile,
+			WantErr: extracttest.ContainsErrStr{Str: "the file header does not contain magic bytes"},
+		},
+		{
+			Name: "Invalid .dll",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/Invalid.dll",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "the file header does not contain magic bytes"},
 		},
 	}
 

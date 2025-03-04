@@ -18,7 +18,6 @@ package dotnetpe
 import (
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,20 +38,13 @@ const (
 	Name = "dotnet/pe"
 )
 
-var (
-	// Supported extensions for Portable Executable (PE) files.
-	// This list may not be exhaustive, as the PE standard does not mandate specific extensions.
-	// The empty string is intentionally included to handle files without extensions.
-	peExtensions = []string{
-		".acm", ".ax", ".cpl", ".dll", ".drv", ".efi", ".exe", ".mui", ".ocx",
-		".scr", ".sys", ".tsp", ".mun", ".msstyles", "",
-	}
-
-	// ErrOpeningPEFile is returned when the PE file cannot be opened
-	ErrOpeningPEFile = errors.New("error opening PE file")
-	// ErrParsingPEFile is returned when the PR files has a bad format and cannot be parsed
-	ErrParsingPEFile = errors.New("error parsing PE file")
-)
+// Supported extensions for Portable Executable (PE) files.
+// This list may not be exhaustive, as the PE standard does not mandate specific extensions.
+// The empty string is intentionally included to handle files without extensions.
+var peExtensions = []string{
+	".acm", ".ax", ".cpl", ".dll", ".drv", ".efi", ".exe", ".mui", ".ocx",
+	".scr", ".sys", ".tsp", ".mun", ".msstyles", "",
+}
 
 // Extractor extracts dotnet dependencies from a PE file
 type Extractor struct {
@@ -164,12 +156,12 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	// Open the PE file
 	f, err := pe.New(absPath, &pe.Options{})
 	if err != nil {
-		return nil, errors.Join(ErrOpeningPEFile, err)
+		return nil, err
 	}
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
-		return nil, errors.Join(ErrParsingPEFile, err)
+		return nil, err
 	}
 
 	// Initialize inventory slice to store the dependencies
