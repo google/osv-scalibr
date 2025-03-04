@@ -18,6 +18,7 @@ package extensions
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -135,18 +136,20 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var m manifest
 	if err := json.NewDecoder(input.Reader).Decode(&m); err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract manifest from %s: %w", input.Path, err)
 	}
 	if err := m.validate(); err != nil {
-		return nil, fmt.Errorf("bad format in %s: %w", input.Path, err)
+		return nil, fmt.Errorf("bad format in manifest %s: %w", input.Path, err)
 	}
 
 	// extract the extensions ID from the path
 	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not extract extension id from %s: %w", input.Path, err)
 	}
 
+	// if default locale is specified some fields of the manifest may be
+	// written inside the ./_locales/LOCALE_CODE/messages.json file
 	if m.DefaultLocale != "" {
 		if err := extractLocaleInfo(&m, input); err != nil {
 			return nil, fmt.Errorf("could not extract locale info from %s: %w", input.Path, err)
@@ -174,29 +177,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return ivs, nil
 }
 
-func cutBoth(s string, prefix string, suffix string) (string, bool) {
-	if !strings.HasPrefix(s, prefix) {
-		return "", false
-	}
-	if !strings.HasSuffix(s, suffix) {
-		return "", false
-	}
-	s = s[len(prefix) : len(s)-len(suffix)]
-	return s, true
-}
-
+// extractExtensionsIDFromPath extracts the extensions id from the path
+//
+// expected path is:
+//
+//	/extensionID/version/manifest.json
 func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
 	path, err := filepath.Abs(input.Path)
 	if err != nil {
-		return "", fmt.Errorf("could not extract full path of %s: %w", input.Path, err)
+		return "", fmt.Errorf("could not extract full path: %w", err)
 	}
 	parts := strings.Split(filepath.ToSlash(path), "/")
 	if len(parts) < 3 {
-		return "", fmt.Errorf("could not extract extension ID from %s", path)
+		return "", errors.New("cold not find id expected path format '/extensionID/version/manifest.json'")
 	}
-	// the standard path for an extension is /Extensions/extensionID/version/manifest.json
 	id := parts[len(parts)-3]
-	// returning the id as it is since the path has been already validated in the FileRequired function
+	// no more validation on the id is required since the path has been checked during FileRequired
 	return id, nil
 }
 
@@ -210,10 +206,15 @@ func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 		return err
 	}
 
-	// using a map since the key are determined by the values of the manifest.json
+	// using a map to decode since the keys are determined by the values
+	// of the manifest.json fields
 	//
 	// ex:
+	//
+	// 	manifest.json:
 	// 	"name" : "__MSG_43ry328yr932__"
+	// 	en/message.json
+	// 	"43ry328yr932" : "Extension name"
 	var messages map[string]message
 	if err := json.NewDecoder(f).Decode(&messages); err != nil {
 		return err
@@ -224,19 +225,31 @@ func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 		lowerCase[strings.ToLower(k)] = v
 	}
 
-	if v, ok := cutBoth(m.Name, "__MSG_", "__"); ok {
+	if v, ok := cutPrefixSuffix(m.Name, "__MSG_", "__"); ok {
 		if msg, ok := lowerCase[strings.ToLower(v)]; ok {
 			m.Name = msg.Message
 		}
 	}
 
-	if v, ok := cutBoth(m.Description, "__MSG_", "__"); ok {
+	if v, ok := cutPrefixSuffix(m.Description, "__MSG_", "__"); ok {
 		if msg, ok := lowerCase[strings.ToLower(v)]; ok {
 			m.Description = msg.Message
 		}
 	}
 
 	return nil
+}
+
+// cutPrefixSuffix cuts the specified prefix and suffix
+func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
+	if !strings.HasPrefix(s, prefix) {
+		return "", false
+	}
+	if !strings.HasSuffix(s, suffix) {
+		return "", false
+	}
+	s = s[len(prefix) : len(s)-len(suffix)]
+	return s, true
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
