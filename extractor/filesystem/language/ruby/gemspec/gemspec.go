@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -125,18 +126,18 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from the .gemspec file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	i, err := extract(input.Path, input.Reader)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	p, err := extract(input.Path, input.Reader)
 	e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
-		return nil, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)
 	}
-	if i == nil {
-		return []*extractor.Inventory{}, nil
+	if p == nil {
+		return inventory.Inventory{}, nil
 	}
 
-	i.Locations = []string{input.Path}
-	return []*extractor.Inventory{i}, nil
+	p.Locations = []string{input.Path}
+	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result stats.FileExtractedResult) {
@@ -157,7 +158,7 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result
 // extract searches for the required name and version lines in the gemspec
 // file using regex.
 // Based on: https://guides.rubygems.org/specification-reference/
-func extract(path string, r io.Reader) (*extractor.Inventory, error) {
+func extract(path string, r io.Reader) (*extractor.Package, error) {
 	buf := bufio.NewScanner(r)
 	gemName, gemVer := "", ""
 	foundStart := false
@@ -205,20 +206,20 @@ func extract(path string, r io.Reader) (*extractor.Inventory, error) {
 		return nil, fmt.Errorf("failed to parse gemspec name (%v) and version (%v)", gemName, gemVer)
 	}
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    gemName,
 		Version: gemVer,
 	}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGem,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "RubyGems" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "RubyGems" }

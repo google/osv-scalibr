@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -138,14 +139,14 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		cfg              packagejson.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "top level package.json",
 			path: "testdata/package.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "testdata",
 					Version:   "10.46.8",
@@ -163,7 +164,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "accepts",
 			path: "testdata/deps/accepts/package.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "accepts",
 					Version:   "1.3.8",
@@ -187,7 +188,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "no person name",
 			path: "testdata/deps/no-person-name/package.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "accepts",
 					Version:   "1.3.8",
@@ -207,7 +208,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "nested acorn",
 			path: "testdata/deps/with/deps/acorn/package.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
 					Version:   "1.2.2",
@@ -228,39 +229,39 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:          "empty name",
-			path:          "testdata/deps/acorn/package.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "empty name",
+			path:         "testdata/deps/acorn/package.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name:          "empty version",
-			path:          "testdata/deps/acorn-globals/package.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "empty version",
+			path:         "testdata/deps/acorn-globals/package.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name:          "missing name and version",
-			path:          "testdata/deps/window-size/package.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "missing name and version",
+			path:         "testdata/deps/window-size/package.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name:          "VSCode extension",
-			path:          "testdata/vscode-extension.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "VSCode extension",
+			path:         "testdata/vscode-extension.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name:          "VSCode extension with only required fields",
-			path:          "testdata/vscode-extension-only-required.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "VSCode extension with only required fields",
+			path:         "testdata/vscode-extension-only-required.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name:          "Unity package",
-			path:          "testdata/unity-package.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "Unity package",
+			path:         "testdata/unity-package.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name: "Undici package with nonstandard contributors parsed correctly",
 			path: "testdata/undici-package.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "undici",
 					Version: "5.28.3",
@@ -288,7 +289,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "npm package with engine field set",
 			path: "testdata/not-vscode.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "jsonparse",
 					Version:   "1.3.1",
@@ -343,9 +344,9 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}
 
-			var want []*extractor.Inventory
-			if tt.wantInventory != nil {
-				want = tt.wantInventory
+			var want inventory.Inventory
+			if tt.wantPackages != nil {
+				want = inventory.Inventory{Packages: tt.wantPackages}
 			}
 
 			if diff := cmp.Diff(want, got); diff != "" {
@@ -384,7 +385,7 @@ func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
 
 func TestToPURL(t *testing.T) {
 	e := packagejson.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -394,8 +395,8 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }

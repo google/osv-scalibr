@@ -22,15 +22,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	scalibr "github.com/google/osv-scalibr"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
@@ -53,13 +53,13 @@ func TestScan(t *testing.T) {
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 
-	invName := "software"
+	pkgName := "software"
 	fakeExtractor := fe.New(
 		"python/wheelegg", 1, []string{"file.txt"},
-		map[string]fe.NamesErr{"file.txt": {Names: []string{invName}, Err: nil}},
+		map[string]fe.NamesErr{"file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
-	inventory := &extractor.Inventory{
-		Name:      invName,
+	pkg := &extractor.Package{
+		Name:      pkgName,
 		Locations: []string{"file.txt"},
 		Extractor: fakeExtractor,
 	}
@@ -85,8 +85,10 @@ func TestScan(t *testing.T) {
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
-				Inventories: []*extractor.Inventory{inventory},
-				Findings:    []*detector.Finding{withDetectorName(finding, "detector")},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+				},
 			},
 		},
 		{
@@ -110,8 +112,6 @@ func TestScan(t *testing.T) {
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "detector", Version: 3, Status: success},
 				},
-				Inventories: []*extractor.Inventory{},
-				Findings:    []*detector.Finding{},
 			},
 		},
 		{
@@ -129,8 +129,10 @@ func TestScan(t *testing.T) {
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: extFailure},
 				},
-				Inventories: nil,
-				Findings:    []*detector.Finding{withDetectorName(finding, "detector")},
+				Inventory: inventory.Inventory{
+					Packages: nil,
+					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+				},
 			},
 		},
 		{
@@ -148,8 +150,9 @@ func TestScan(t *testing.T) {
 					{Name: "detector", Version: 2, Status: detFailure},
 					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
-				Inventories: []*extractor.Inventory{inventory},
-				Findings:    []*detector.Finding{},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+				},
 			},
 		},
 		{
@@ -163,8 +166,6 @@ func TestScan(t *testing.T) {
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "no scan root specified",
 				},
-				Inventories: []*extractor.Inventory{},
-				Findings:    []*detector.Finding{},
 			},
 		},
 	}
@@ -272,11 +273,11 @@ type fakeExNeedsNetwork struct {
 func (fakeExNeedsNetwork) Name() string                           { return "fake-extractor" }
 func (fakeExNeedsNetwork) Version() int                           { return 0 }
 func (fakeExNeedsNetwork) FileRequired(_ filesystem.FileAPI) bool { return false }
-func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
-	return nil, nil
+func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, nil
 }
-func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
-func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string        { return "" }
+func (e fakeExNeedsNetwork) ToPURL(p *extractor.Package) *purl.PackageURL { return nil }
+func (e fakeExNeedsNetwork) Ecosystem(p *extractor.Package) string        { return "" }
 
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
@@ -288,7 +289,7 @@ type fakeDetNeedsFS struct {
 func (fakeDetNeedsFS) Name() string                 { return "fake-extractor" }
 func (fakeDetNeedsFS) Version() int                 { return 0 }
 func (fakeDetNeedsFS) RequiredExtractors() []string { return nil }
-func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
 	return nil, nil
 }
 func (fakeDetNeedsFS) Requirements() *plugin.Capabilities {

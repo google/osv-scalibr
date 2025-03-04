@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -129,7 +130,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // Extract parses the packages.config file to extract .NET package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	packages, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -142,7 +143,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return packages, err
+	return inventory.Inventory{Packages: packages}, err
 }
 
 type dotNETPackage struct {
@@ -155,7 +156,7 @@ type dotNETPackages struct {
 	Packages []dotNETPackage `xml:"package"`
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var packages dotNETPackages
 	decoder := xml.NewDecoder(input.Reader)
 	if err := decoder.Decode(&packages); err != nil {
@@ -163,34 +164,33 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		return nil, err
 	}
 
-	var inventories []*extractor.Inventory
+	var result []*extractor.Package
 	for _, pkg := range packages.Packages {
 		if pkg.ID == "" || pkg.Version == "" {
 			log.Warnf("Skipping package with missing name or version: %+v", pkg)
 			continue
 		}
 
-		i := &extractor.Inventory{
+		result = append(result, &extractor.Package{
 			Name:      pkg.ID,
 			Version:   pkg.Version,
 			Locations: []string{input.Path},
-		}
-		inventories = append(inventories, i)
+		})
 	}
 
-	return inventories, nil
+	return result, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
+func (Extractor) Ecosystem(p *extractor.Package) string {
 	return "NuGet"
 }

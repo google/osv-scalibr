@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/dismparser"
 )
 
-func TestInventoryFromOutput(t *testing.T) {
+func TestPackageFromOutput(t *testing.T) {
 	dismTestData, err := os.ReadFile("dismparser/testdata/dism_testdata.txt")
 	if err != nil {
 		t.Fatalf("Failed to read testdata: %v", err)
@@ -36,14 +36,14 @@ func TestInventoryFromOutput(t *testing.T) {
 		desc    string
 		flavor  string
 		output  string
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr error
 	}{
 		{
-			desc:   "Valid test data returns inventory",
+			desc:   "Valid test data returns package",
 			flavor: "server",
 			output: string(dismTestData),
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "windows_server_2019",
 					Version: "10.0.17763.3406",
@@ -90,9 +90,9 @@ func TestInventoryFromOutput(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, gotErr := inventoryFromOutput(tc.flavor, tc.output)
+			got, gotErr := packageFromOutput(tc.flavor, tc.output)
 			if !errors.Is(gotErr, tc.wantErr) {
-				t.Fatalf("inventoryFromOutput(%q, %q) returned an unexpected error: %v", tc.flavor, tc.output, gotErr)
+				t.Fatalf("packageFromOutput(%q, %q) returned an unexpected error: %v", tc.flavor, tc.output, gotErr)
 			}
 
 			if tc.wantErr != nil {
@@ -100,7 +100,7 @@ func TestInventoryFromOutput(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("inventoryFromOutput(%q, %q) returned an unexpected diff (-want +got): %v", tc.flavor, tc.output, diff)
+				t.Errorf("packageFromOutput(%q, %q) returned an unexpected diff (-want +got): %v", tc.flavor, tc.output, diff)
 			}
 		})
 	}

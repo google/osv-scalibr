@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package inventoryindex_test
+package packageindex_test
 
 import (
 	"testing"
@@ -22,114 +22,114 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 )
 
 var (
-	invLess = func(i1, i2 *extractor.Inventory) bool {
+	pkgLess = func(i1, i2 *extractor.Package) bool {
 		return i1.Name < i2.Name
 	}
-	sortInv         = cmpopts.SortSlices(invLess)
+	sortPKGs        = cmpopts.SortSlices(pkgLess)
 	allowUnexported = cmp.AllowUnexported(packagejson.Extractor{}, wheelegg.Extractor{})
 )
 
 func TestGetAll(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
-	inv := []*extractor.Inventory{
+	pkgs := []*extractor.Package{
 		{Name: "software1", Extractor: npmEx},
 		{Name: "software2", Extractor: pipEx},
 		{Name: "software3", Extractor: pipEx},
 	}
-	want := inv
+	want := pkgs
 
-	ix, err := inventoryindex.New(inv)
+	px, err := packageindex.New(pkgs)
 	if err != nil {
-		t.Fatalf("inventoryindex.New(%v): %v", inv, err)
+		t.Fatalf("packageindex.New(%v): %v", pkgs, err)
 	}
 
-	got := ix.GetAll()
-	if diff := cmp.Diff(want, got, sortInv, allowUnexported); diff != "" {
-		t.Errorf("inventoryindex.New(%v).GetAll(): unexpected inventory (-want +got):\n%s", inv, diff)
+	got := px.GetAll()
+	if diff := cmp.Diff(want, got, sortPKGs, allowUnexported); diff != "" {
+		t.Errorf("packageindex.New(%v).GetAll(): unexpected package (-want +got):\n%s", pkgs, diff)
 	}
 }
 
 func TestGetAllOfType(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
-	inv := []*extractor.Inventory{
+	pkgs := []*extractor.Package{
 		{Name: "software1", Extractor: npmEx},
 		{Name: "software2", Extractor: pipEx},
 		{Name: "software3", Extractor: pipEx},
 	}
-	want := []*extractor.Inventory{
+	want := []*extractor.Package{
 		{Name: "software2", Extractor: pipEx},
 		{Name: "software3", Extractor: pipEx},
 	}
 
-	ix, err := inventoryindex.New(inv)
+	px, err := packageindex.New(pkgs)
 	if err != nil {
-		t.Fatalf("inventoryindex.New(%v): %v", inv, err)
+		t.Fatalf("packageindex.New(%v): %v", pkgs, err)
 	}
 
-	got := ix.GetAllOfType("pypi")
-	if diff := cmp.Diff(want, got, sortInv, allowUnexported); diff != "" {
-		t.Errorf("inventoryindex.New(%v).GetAllOfType(pypi): unexpected inventory (-want +got):\n%s", inv, diff)
+	got := px.GetAllOfType("pypi")
+	if diff := cmp.Diff(want, got, sortPKGs, allowUnexported); diff != "" {
+		t.Errorf("packageindex.New(%v).GetAllOfType(pypi): unexpected package (-want +got):\n%s", pkgs, diff)
 	}
 }
 
 func TestGetSpecific(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
-	inv1 := &extractor.Inventory{Name: "software1", Version: "1.2.3", Extractor: npmEx}
-	inv2 := &extractor.Inventory{Name: "software2", Version: "1.2.3", Extractor: pipEx}
-	inv3 := &extractor.Inventory{Name: "software3", Extractor: pipEx}
-	inv4v123 := &extractor.Inventory{Name: "software4", Version: "1.2.3", Extractor: npmEx}
-	inv4v456 := &extractor.Inventory{Name: "software4", Version: "4.5.6", Extractor: npmEx}
-	inv := []*extractor.Inventory{inv1, inv2, inv3, inv4v123, inv4v456}
+	pkg1 := &extractor.Package{Name: "software1", Version: "1.2.3", Extractor: npmEx}
+	pkg2 := &extractor.Package{Name: "software2", Version: "1.2.3", Extractor: pipEx}
+	pkg3 := &extractor.Package{Name: "software3", Extractor: pipEx}
+	pkg4v123 := &extractor.Package{Name: "software4", Version: "1.2.3", Extractor: npmEx}
+	pkg4v456 := &extractor.Package{Name: "software4", Version: "4.5.6", Extractor: npmEx}
+	pkgs := []*extractor.Package{pkg1, pkg2, pkg3, pkg4v123, pkg4v456}
 
 	testCases := []struct {
 		desc    string
 		pkgType string
 		pkgName string
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 	}{
 		{
 			desc:    "No version or namespace",
 			pkgType: "pypi",
 			pkgName: "software3",
-			want:    []*extractor.Inventory{inv3},
+			want:    []*extractor.Package{pkg3},
 		},
 		{
 			desc:    "software with version",
 			pkgType: "pypi",
 			pkgName: "software2",
-			want:    []*extractor.Inventory{inv2},
+			want:    []*extractor.Package{pkg2},
 		},
 		{
 			desc:    "software with namespace",
 			pkgType: "npm",
 			pkgName: "software1",
-			want:    []*extractor.Inventory{inv1},
+			want:    []*extractor.Package{pkg1},
 		},
 		{
 			desc:    "multiple versions",
 			pkgType: "npm",
 			pkgName: "software4",
-			want:    []*extractor.Inventory{inv4v123, inv4v456},
+			want:    []*extractor.Package{pkg4v123, pkg4v456},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			ix, err := inventoryindex.New(inv)
+			px, err := packageindex.New(pkgs)
 			if err != nil {
-				t.Fatalf("inventoryindex.New(%v): %v", inv, err)
+				t.Fatalf("packageindex.New(%v): %v", pkgs, err)
 			}
 
-			got := ix.GetSpecific(tc.pkgName, tc.pkgType)
-			if diff := cmp.Diff(tc.want, got, sortInv, allowUnexported); diff != "" {
-				t.Errorf("inventoryindex.New(%v).GetSpecific(%s, %s): unexpected inventory (-want +got):\n%s", inv, tc.pkgName, tc.pkgType, diff)
+			got := px.GetSpecific(tc.pkgName, tc.pkgType)
+			if diff := cmp.Diff(tc.want, got, sortPKGs, allowUnexported); diff != "" {
+				t.Errorf("packageindex.New(%v).GetSpecific(%s, %s): unexpected package (-want +got):\n%s", pkgs, tc.pkgName, tc.pkgType, diff)
 			}
 		})
 	}

@@ -28,7 +28,7 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 )
 
 // All users have the password "Password123" using distinct hashing algorithms.
@@ -108,7 +108,7 @@ func TestScan(t *testing.T) {
 		Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 	}
 
-	ix, _ := inventoryindex.New([]*extractor.Inventory{})
+	px, _ := packageindex.New([]*extractor.Package{})
 	testCases := []struct {
 		desc         string
 		fsys         scalibrfs.FS
@@ -146,7 +146,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			detector := etcshadow.Detector{}
-			findings, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
+			findings, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}
@@ -160,12 +160,12 @@ func TestScan(t *testing.T) {
 }
 
 func TestScanCancelled(t *testing.T) {
-	ix, _ := inventoryindex.New([]*extractor.Inventory{})
+	px, _ := packageindex.New([]*extractor.Package{})
 	detector := etcshadow.Detector{}
 	fsys := &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
-	findings, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, ix)
+	findings, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, px)
 	if findings != nil || !errors.Is(err, ctx.Err()) {
 		t.Errorf("expected scan to be cancelled")
 	}

@@ -24,8 +24,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// inventoryFromOutput parses the output of DISM and produces inventory entries from it.
-func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) {
+// packageFromOutput parses the output of DISM and produces package entries from it.
+func packageFromOutput(flavor, output string) ([]*extractor.Package, error) {
 	packages, imgVersion, err := dismparser.Parse(output)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 
 	imgVersion = strings.TrimSpace(imgVersion)
 	windowsProduct := winproducts.WindowsProductFromVersion(flavor, imgVersion)
-	inventory := []*extractor.Inventory{
+	result := []*extractor.Package{
 		{
 			Name:    windowsProduct,
 			Version: imgVersion,
@@ -46,33 +46,33 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 
 	// extract KB informations
 	for _, pkg := range packages {
-		inventory = append(inventory, &extractor.Inventory{
+		result = append(result, &extractor.Package{
 			Name:    pkg.PackageIdentity,
 			Version: pkg.PackageVersion,
 		})
 	}
 
-	return inventory, nil
+	return result, nil
 }
 
 // Ecosystem returns no ecosystem since OSV does ont support dism patches yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(pkg *extractor.Package) *purl.PackageURL {
 	p := &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
-		Name:      i.Name,
+		Name:      pkg.Name,
 	}
 
-	switch meta := i.Metadata.(type) {
+	switch meta := pkg.Metadata.(type) {
 	case *metadata.OSVersion:
 		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
 			purl.BuildNumber: meta.FullVersion,
 		})
 	default:
-		p.Version = i.Version
+		p.Version = pkg.Version
 	}
 
 	return p

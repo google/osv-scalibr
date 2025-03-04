@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -87,29 +88,29 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json5",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -126,7 +127,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -144,7 +145,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad1' from"},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -162,7 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad2' from"},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -179,7 +180,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
@@ -205,7 +206,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/same-package-different-groups.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "3.0.0",
@@ -231,7 +232,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@typescript-eslint/types",
 					Version:    "5.62.0",
@@ -248,7 +249,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages-mixed.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/code-frame",
 					Version:    "7.26.2",
@@ -301,7 +302,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.14.0",
@@ -336,7 +337,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-implicit.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
@@ -362,7 +363,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-explicit.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
@@ -388,7 +389,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
@@ -477,7 +478,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies-dup.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
@@ -548,7 +549,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/alias.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
@@ -592,7 +593,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/helper-plugin-utils",
 					Version:    "7.26.5",
@@ -776,7 +777,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "etag",
 					Version:    "",
@@ -802,7 +803,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/blog-sample.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "uWebSockets.js",
 					Version:   "",
@@ -832,7 +833,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
