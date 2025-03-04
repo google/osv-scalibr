@@ -35,8 +35,10 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		name             string
-		path             string
+		name string
+		path string
+		// fileSizeBytes is set to 1K if not specified because the minimum size of a PE file is
+		// 	pe.TinyPESize // 97
 		fileSizeBytes    int64
 		maxFileSizeBytes int64
 		wantRequired     bool
