@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -119,7 +120,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var readerAt io.ReaderAt
 	if fileWithReaderAt, ok := input.Reader.(io.ReaderAt); ok {
 		readerAt = fileWithReaderAt
@@ -127,7 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		buf := bytes.NewBuffer([]byte{})
 		_, err := io.Copy(buf, input.Reader)
 		if err != nil {
-			return nil, err
+			return inventory.Inventory{}, err
 		}
 		readerAt = bytes.NewReader(buf.Bytes())
 	}
@@ -136,12 +137,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)
 		e.reportFileExtracted(input.Path, input.Info, err)
-		return []*extractor.Inventory{}, nil
+		return inventory.Inventory{}, nil
 	}
 
-	inventory := e.extractPackagesFromBuildInfo(binfo, input.Path)
+	pkg := e.extractPackagesFromBuildInfo(binfo, input.Path)
 	e.reportFileExtracted(input.Path, input.Info, nil)
-	return inventory, nil
+	return inventory.Inventory{Packages: pkg}, nil
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
@@ -159,15 +160,15 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 	})
 }
 
-func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Inventory {
-	res := []*extractor.Inventory{}
+func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Package {
+	res := []*extractor.Package{}
 
 	validatedGoVers, err := validateGoVersion(binfo.GoVersion)
 	if err != nil {
 		log.Warnf("failed to validate the Go version from buildinfo (%v): %v", binfo, err)
 	}
 	if validatedGoVers != "" {
-		res = append(res, &extractor.Inventory{
+		res = append(res, &extractor.Package{
 			Name:      "go",
 			Version:   validatedGoVers,
 			Locations: []string{filename},
@@ -182,7 +183,7 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 
 		pkgVers = strings.TrimPrefix(pkgVers, "v")
 
-		pkg := &extractor.Inventory{
+		pkg := &extractor.Package{
 			Name:      pkgName,
 			Version:   pkgVers,
 			Locations: []string{filename},
@@ -219,14 +220,14 @@ func parseDependency(d *debug.Module) (string, string) {
 	return dep.Path, dep.Version
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGolang,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Go" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "Go" }

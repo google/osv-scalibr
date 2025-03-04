@@ -45,6 +45,7 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -162,7 +163,7 @@ func TestScanResultToProto(t *testing.T) {
 	successProto := &spb.ScanStatus{Status: spb.ScanStatus_SUCCEEDED}
 	failure := &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"}
 	failureProto := &spb.ScanStatus{Status: spb.ScanStatus_FAILED, FailureReason: "failure"}
-	purlDPKGInventory := &extractor.Inventory{
+	purlDPKGPackage := &extractor.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Metadata: &dpkg.Metadata{
@@ -176,7 +177,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: dpkg.New(dpkg.DefaultConfig()),
 	}
-	purlDPKGAnnotationInventory := &extractor.Inventory{
+	purlDPKGAnnotationPackage := &extractor.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Metadata: &dpkg.Metadata{
@@ -191,7 +192,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor:   dpkg.New(dpkg.DefaultConfig()),
 		Annotations: []extractor.Annotation{extractor.Transitional},
 	}
-	purlPythonInventory := &extractor.Inventory{
+	purlPythonPackage := &extractor.Package{
 		Name:      "software",
 		Version:   "1.0.0",
 		Locations: []string{"/file1"},
@@ -201,7 +202,7 @@ func TestScanResultToProto(t *testing.T) {
 			AuthorEmail: "author@corp.com",
 		},
 	}
-	pythonRequirementsInventory := &extractor.Inventory{
+	pythonRequirementsPackage := &extractor.Package{
 		Name:      "foo",
 		Version:   "1.0",
 		Locations: []string{"/file1"},
@@ -211,7 +212,7 @@ func TestScanResultToProto(t *testing.T) {
 			VersionComparator:      ">=",
 		},
 	}
-	purlJavascriptInventory := &extractor.Inventory{
+	purlJavascriptPackage := &extractor.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Metadata: &packagejson.JavascriptPackageJSONMetadata{
@@ -231,7 +232,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: &packagejson.Extractor{},
 	}
 
-	purlDotnetDepsJSONInventory := &extractor.Inventory{
+	purlDotnetDepsJSONPackage := &extractor.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Metadata: &depsjson.Metadata{
@@ -243,7 +244,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: &depsjson.Extractor{},
 	}
 
-	purlDotnetDepsJSONInventoryProto := &spb.Inventory{
+	purlDotnetDepsJSONPackageProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -255,7 +256,7 @@ func TestScanResultToProto(t *testing.T) {
 		Ecosystem: "NuGet",
 		Locations: []string{"/file1"},
 		Extractor: "dotnet/depsjson",
-		Metadata: &spb.Inventory_DepsjsonMetadata{
+		Metadata: &spb.Package_DepsjsonMetadata{
 			DepsjsonMetadata: &spb.DEPSJSONMetadata{
 				PackageName:    "software",
 				PackageVersion: "1.0.0",
@@ -264,7 +265,7 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 
-	windowsInventory := &extractor.Inventory{
+	windowsPackage := &extractor.Package{
 		Name:    "windows_server_2019",
 		Version: "10.0.17763.3406",
 		Metadata: &winmetadata.OSVersion{
@@ -274,7 +275,7 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: &dismpatch.Extractor{},
 	}
 
-	purlDPKGInventoryProto := &spb.Inventory{
+	purlDPKGPackageProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -289,7 +290,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "Debian",
-		Metadata: &spb.Inventory_DpkgMetadata{
+		Metadata: &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       "software",
 				PackageVersion:    "1.0.0",
@@ -302,7 +303,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/dpkg",
 	}
-	purlDPKGAnnotationInventoryProto := &spb.Inventory{
+	purlDPKGAnnotationPackageProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -317,7 +318,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "Debian",
-		Metadata: &spb.Inventory_DpkgMetadata{
+		Metadata: &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       "software",
 				PackageVersion:    "1.0.0",
@@ -329,9 +330,9 @@ func TestScanResultToProto(t *testing.T) {
 		},
 		Locations:   []string{"/file1"},
 		Extractor:   "os/dpkg",
-		Annotations: []spb.Inventory_AnnotationEnum{spb.Inventory_TRANSITIONAL},
+		Annotations: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
 	}
-	purlPythonInventoryProto := &spb.Inventory{
+	purlPythonPackageProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -343,14 +344,14 @@ func TestScanResultToProto(t *testing.T) {
 		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Extractor: "python/wheelegg",
-		Metadata: &spb.Inventory_PythonMetadata{
+		Metadata: &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      "author",
 				AuthorEmail: "author@corp.com",
 			},
 		},
 	}
-	pythonRequirementsInventoryProto := &spb.Inventory{
+	pythonRequirementsPackageProto := &spb.Package{
 		Name:    "foo",
 		Version: "1.0",
 		Purl: &spb.Purl{
@@ -362,14 +363,14 @@ func TestScanResultToProto(t *testing.T) {
 		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Extractor: "python/requirements",
-		Metadata: &spb.Inventory_PythonRequirementsMetadata{
+		Metadata: &spb.Package_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: []string{"sha256:123"},
 				VersionComparator:      ">=",
 			},
 		},
 	}
-	purlJavascriptInventoryProto := &spb.Inventory{
+	purlJavascriptPackageProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -381,7 +382,7 @@ func TestScanResultToProto(t *testing.T) {
 		Ecosystem: "npm",
 		Locations: []string{"/file1"},
 		Extractor: "javascript/packagejson",
-		Metadata: &spb.Inventory_JavascriptMetadata{
+		Metadata: &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
 				Maintainers: []string{
 					"maintainer1 <maintainer1@corp.com> (https://blog.maintainer1.com)",
@@ -390,7 +391,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 	}
-	cdxInventory := &extractor.Inventory{
+	cdxPackage := &extractor.Package{
 		Name:    "openssl",
 		Version: "1.1.1",
 		Metadata: &cdx.Metadata{
@@ -403,7 +404,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/openssl"},
 		Extractor: &cdx.Extractor{},
 	}
-	cdxInventoryProto := &spb.Inventory{
+	cdxPackageProto := &spb.Package{
 		Name:      "openssl",
 		Version:   "1.1.1",
 		Ecosystem: "generic",
@@ -413,7 +414,7 @@ func TestScanResultToProto(t *testing.T) {
 			Name:    "openssl",
 			Version: "1.1.1",
 		},
-		Metadata: &spb.Inventory_CdxMetadata{
+		Metadata: &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: &spb.Purl{
 					Purl:    "pkg:generic/openssl@1.1.1",
@@ -426,7 +427,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/openssl"},
 		Extractor: "sbom/cdx",
 	}
-	purlRPMInventory := &extractor.Inventory{
+	purlRPMPackage := &extractor.Package{
 		Name:    "openssh-clients",
 		Version: "5.3p1",
 		Metadata: &rpm.Metadata{
@@ -444,7 +445,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: rpm.New(rpm.DefaultConfig()),
 	}
-	purlRPMInventoryProto := &spb.Inventory{
+	purlRPMPackageProto := &spb.Package{
 		Name:    "openssh-clients",
 		Version: "5.3p1",
 		Purl: &spb.Purl{
@@ -461,7 +462,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "Red Hat",
-		Metadata: &spb.Inventory_RpmMetadata{
+		Metadata: &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  "openssh-clients",
 				SourceRpm:    "openssh-5.3p1-124.el6_10.src.rpm",
@@ -478,7 +479,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/rpm",
 	}
-	purlPACMANInventory := &extractor.Inventory{
+	purlPACMANPackage := &extractor.Package{
 		Name:    "zstd",
 		Version: "1.5.6-1",
 		Metadata: &pacman.Metadata{
@@ -490,7 +491,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: pacman.New(pacman.DefaultConfig()),
 	}
-	purlPACMANInventoryProto := &spb.Inventory{
+	purlPACMANPackageProto := &spb.Package{
 		Name:    "zstd",
 		Version: "1.5.6-1",
 		Purl: &spb.Purl{
@@ -504,7 +505,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "Arch:20241201.0.284684",
-		Metadata: &spb.Inventory_PacmanMetadata{
+		Metadata: &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:    "zstd",
 				PackageVersion: "1.5.6-1",
@@ -515,7 +516,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/pacman",
 	}
-	purlPORTAGEInventory := &extractor.Inventory{
+	purlPORTAGEPackage := &extractor.Package{
 		Name:    "Capture-Tiny",
 		Version: "0.480.0-r1",
 		Metadata: &portage.Metadata{
@@ -527,7 +528,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: portage.New(portage.DefaultConfig()),
 	}
-	purlPORTAGEInventoryProto := &spb.Inventory{
+	purlPORTAGEPackageProto := &spb.Package{
 		Name:    "Capture-Tiny",
 		Version: "0.480.0-r1",
 		Purl: &spb.Purl{
@@ -541,7 +542,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "Gentoo:2.17",
-		Metadata: &spb.Inventory_PortageMetadata{
+		Metadata: &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    "Capture-Tiny",
 				PackageVersion: "0.480.0-r1",
@@ -552,7 +553,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/portage",
 	}
-	purlNixInventory := &extractor.Inventory{
+	purlNixPackage := &extractor.Package{
 		Name:    "attr",
 		Version: "2.5.2",
 		Metadata: &nix.Metadata{
@@ -565,7 +566,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: nix.New(),
 	}
-	purlNixInventoryProto := &spb.Inventory{
+	purlNixPackageProto := &spb.Package{
 		Name:    "attr",
 		Version: "2.5.2",
 		Purl: &spb.Purl{
@@ -578,7 +579,7 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
-		Metadata: &spb.Inventory_NixMetadata{
+		Metadata: &spb.Package_NixMetadata{
 			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       "attr",
 				PackageVersion:    "2.5.2",
@@ -590,14 +591,14 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file1"},
 		Extractor: "os/nix",
 	}
-	purlHomebrewInventory := &extractor.Inventory{
+	purlHomebrewPackage := &extractor.Package{
 		Name:      "rclone",
 		Version:   "1.67.0",
 		Metadata:  &homebrew.Metadata{},
 		Locations: []string{"/file1"},
 		Extractor: homebrew.Extractor{},
 	}
-	purlHomebrewInventoryProto := &spb.Inventory{
+	purlHomebrewPackageProto := &spb.Package{
 		Name:    "rclone",
 		Version: "1.67.0",
 		Purl: &spb.Purl{
@@ -606,11 +607,11 @@ func TestScanResultToProto(t *testing.T) {
 			Name:    "rclone",
 			Version: "1.67.0",
 		},
-		Metadata:  &spb.Inventory_HomebrewMetadata{},
+		Metadata:  &spb.Package_HomebrewMetadata{},
 		Locations: []string{"/file1"},
 		Extractor: "os/homebrew",
 	}
-	containerdInventory := &extractor.Inventory{
+	containerdPackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Metadata: &ctrdfs.Metadata{
@@ -628,11 +629,11 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file4"},
 		Extractor: &ctrdfs.Extractor{},
 	}
-	containerdInventoryProto := &spb.Inventory{
+	containerdPackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
-		Metadata: &spb.Inventory_ContainerdContainerMetadata{
+		Metadata: &spb.Package_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName: "default",
 				ImageName:     "gcr.io/google-samples/hello-app:1.0",
@@ -649,7 +650,7 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file4"},
 		Extractor: "containers/containerd",
 	}
-	containerdRuntimeInventory := &extractor.Inventory{
+	containerdRuntimePackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
 		Version: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Metadata: &ctrdruntime.Metadata{
@@ -664,11 +665,11 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file7"},
 		Extractor: &ctrdruntime.Extractor{},
 	}
-	containerdRuntimeInventoryProto := &spb.Inventory{
+	containerdRuntimePackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
-		Metadata: &spb.Inventory_ContainerdRuntimeContainerMetadata{
+		Metadata: &spb.Package_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: "default",
 				ImageName:     "gcr.io/google-samples/hello-app:1.0",
@@ -682,10 +683,10 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/file7"},
 		Extractor: "containers/containerd-runtime",
 	}
-	windowsInventoryProto := &spb.Inventory{
+	windowsPackageProto := &spb.Package{
 		Name:    "windows_server_2019",
 		Version: "10.0.17763.3406",
-		Metadata: &spb.Inventory_WindowsOsVersionMetadata{
+		Metadata: &spb.Package_WindowsOsVersionMetadata{
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     "windows_server_2019",
 				FullVersion: "10.0.17763.3406",
@@ -705,7 +706,7 @@ func TestScanResultToProto(t *testing.T) {
 		},
 		Extractor: "windows/dismpatch",
 	}
-	purlPythonInventoryWithLayerDetails := &extractor.Inventory{
+	purlPythonPackageWithLayerDetails := &extractor.Package{
 		Name:      "software",
 		Version:   "1.0.0",
 		Locations: []string{"/file1"},
@@ -721,7 +722,7 @@ func TestScanResultToProto(t *testing.T) {
 			InBaseImage: true,
 		},
 	}
-	purlPythonInventoryWithLayerDetailsProto := &spb.Inventory{
+	purlPythonPackageWithLayerDetailsProto := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -733,7 +734,7 @@ func TestScanResultToProto(t *testing.T) {
 		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Extractor: "python/wheelegg",
-		Metadata: &spb.Inventory_PythonMetadata{
+		Metadata: &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      "author",
 				AuthorEmail: "author@corp.com",
@@ -746,7 +747,7 @@ func TestScanResultToProto(t *testing.T) {
 			InBaseImage: true,
 		},
 	}
-	mavenInventory := &extractor.Inventory{
+	mavenPackage := &extractor.Package{
 		Name:      "abc:xyz",
 		Version:   "1.0.0",
 		Locations: []string{"/pom.xml"},
@@ -757,7 +758,7 @@ func TestScanResultToProto(t *testing.T) {
 			IsTransitive: true,
 		},
 	}
-	mavenInventoryProto := &spb.Inventory{
+	mavenPackageProto := &spb.Package{
 		Name:      "abc:xyz",
 		Version:   "1.0.0",
 		Ecosystem: "Maven",
@@ -770,7 +771,7 @@ func TestScanResultToProto(t *testing.T) {
 		},
 		Locations: []string{"/pom.xml"},
 		Extractor: "java/pomxmlnet",
-		Metadata: &spb.Inventory_JavaLockfileMetadata{
+		Metadata: &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   "xyz",
 				GroupId:      "abc",
@@ -805,40 +806,42 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{
-					purlDPKGInventory,
-					purlDPKGAnnotationInventory,
-					purlPythonInventory,
-					pythonRequirementsInventory,
-					purlJavascriptInventory,
-					purlDotnetDepsJSONInventory,
-					cdxInventory,
-					windowsInventory,
-					purlPythonInventoryWithLayerDetails,
-					purlHomebrewInventory,
-				},
-				Findings: []*detector.Finding{
-					{
-						Adv: &detector.Advisory{
-							ID: &detector.AdvisoryID{
-								Publisher: "CVE",
-								Reference: "CVE-1234",
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						purlDPKGPackage,
+						purlDPKGAnnotationPackage,
+						purlPythonPackage,
+						pythonRequirementsPackage,
+						purlJavascriptPackage,
+						purlDotnetDepsJSONPackage,
+						cdxPackage,
+						windowsPackage,
+						purlPythonPackageWithLayerDetails,
+						purlHomebrewPackage,
+					},
+					Findings: []*detector.Finding{
+						{
+							Adv: &detector.Advisory{
+								ID: &detector.AdvisoryID{
+									Publisher: "CVE",
+									Reference: "CVE-1234",
+								},
+								Type:           detector.TypeVulnerability,
+								Title:          "Title",
+								Description:    "Description",
+								Recommendation: "Recommendation",
+								Sev: &detector.Severity{
+									Severity: detector.SeverityMedium,
+									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
+									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+								},
 							},
-							Type:           detector.TypeVulnerability,
-							Title:          "Title",
-							Description:    "Description",
-							Recommendation: "Recommendation",
-							Sev: &detector.Severity{
-								Severity: detector.SeverityMedium,
-								CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-								CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+							Target: &detector.TargetDetails{
+								Location: []string{"/file2"},
+								Package:  purlDPKGPackage,
 							},
+							Extra: "extra details",
 						},
-						Target: &detector.TargetDetails{
-							Location:  []string{"/file2"},
-							Inventory: purlDPKGInventory,
-						},
-						Extra: "extra details",
 					},
 				},
 			},
@@ -859,40 +862,42 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{
-					purlDPKGInventoryProto,
-					purlDPKGAnnotationInventoryProto,
-					purlPythonInventoryProto,
-					pythonRequirementsInventoryProto,
-					purlJavascriptInventoryProto,
-					purlDotnetDepsJSONInventoryProto,
-					cdxInventoryProto,
-					windowsInventoryProto,
-					purlPythonInventoryWithLayerDetailsProto,
-					purlHomebrewInventoryProto,
-				},
-				Findings: []*spb.Finding{
-					{
-						Adv: &spb.Advisory{
-							Id: &spb.AdvisoryId{
-								Publisher: "CVE",
-								Reference: "CVE-1234",
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{
+						purlDPKGPackageProto,
+						purlDPKGAnnotationPackageProto,
+						purlPythonPackageProto,
+						pythonRequirementsPackageProto,
+						purlJavascriptPackageProto,
+						purlDotnetDepsJSONPackageProto,
+						cdxPackageProto,
+						windowsPackageProto,
+						purlPythonPackageWithLayerDetailsProto,
+						purlHomebrewPackageProto,
+					},
+					Findings: []*spb.Finding{
+						{
+							Adv: &spb.Advisory{
+								Id: &spb.AdvisoryId{
+									Publisher: "CVE",
+									Reference: "CVE-1234",
+								},
+								Type:           spb.Advisory_VULNERABILITY,
+								Title:          "Title",
+								Description:    "Description",
+								Recommendation: "Recommendation",
+								Sev: &spb.Severity{
+									Severity: spb.Severity_MEDIUM,
+									CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
+									CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+								},
 							},
-							Type:           spb.Advisory_VULNERABILITY,
-							Title:          "Title",
-							Description:    "Description",
-							Recommendation: "Recommendation",
-							Sev: &spb.Severity{
-								Severity: spb.Severity_MEDIUM,
-								CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-								CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+							Target: &spb.TargetDetails{
+								Location: []string{"/file2"},
+								Package:  purlDPKGPackageProto,
 							},
+							Extra: "extra details",
 						},
-						Target: &spb.TargetDetails{
-							Location:  []string{"/file2"},
-							Inventory: purlDPKGInventoryProto,
-						},
-						Extra: "extra details",
 					},
 				},
 			},
@@ -911,7 +916,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlRPMInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlRPMPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -925,8 +932,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlRPMInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlRPMPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
 		},
@@ -944,7 +953,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlPACMANInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlPACMANPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -958,8 +969,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlPACMANInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlPACMANPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
 		},
@@ -977,7 +990,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlPORTAGEInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlPORTAGEPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -991,8 +1006,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlPORTAGEInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlPORTAGEPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
 		},
@@ -1010,7 +1027,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlNixInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlNixPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -1024,8 +1043,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlNixInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlNixPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
 		},
@@ -1043,7 +1064,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlHomebrewInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlHomebrewPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -1057,8 +1080,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlHomebrewInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlHomebrewPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			excludeForOS: []string{"windows", "linux"},
 		},
@@ -1076,7 +1101,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{containerdInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{containerdPackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -1090,8 +1117,10 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{containerdInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{containerdPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
 			// on Windows.
@@ -1111,7 +1140,9 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{containerdRuntimeInventory},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{containerdRuntimePackage},
+				},
 			},
 			want: &spb.ScanResult{
 				Version:   "1.0.0",
@@ -1125,15 +1156,17 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{containerdRuntimeInventoryProto},
-				Findings:    []*spb.Finding{},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{containerdRuntimePackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
 			// on Windows.
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "no inventory target, still works",
+			desc: "no package target, still works",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1151,25 +1184,27 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cdxInventory},
-				Findings: []*detector.Finding{
-					{
-						Adv: &detector.Advisory{
-							ID: &detector.AdvisoryID{
-								Publisher: "CVE",
-								Reference: "CVE-1234",
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
+					Findings: []*detector.Finding{
+						{
+							Adv: &detector.Advisory{
+								ID: &detector.AdvisoryID{
+									Publisher: "CVE",
+									Reference: "CVE-1234",
+								},
+								Type:           detector.TypeVulnerability,
+								Title:          "Title",
+								Description:    "Description",
+								Recommendation: "Recommendation",
+								Sev: &detector.Severity{
+									Severity: detector.SeverityMedium,
+									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
+									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+								},
 							},
-							Type:           detector.TypeVulnerability,
-							Title:          "Title",
-							Description:    "Description",
-							Recommendation: "Recommendation",
-							Sev: &detector.Severity{
-								Severity: detector.SeverityMedium,
-								CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-								CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-							},
+							Extra: "extra details",
 						},
-						Extra: "extra details",
 					},
 				},
 			},
@@ -1190,25 +1225,27 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  successProto,
 					},
 				},
-				Inventories: []*spb.Inventory{purlDPKGInventoryProto, purlPythonInventoryProto, purlJavascriptInventoryProto, cdxInventoryProto},
-				Findings: []*spb.Finding{
-					{
-						Adv: &spb.Advisory{
-							Id: &spb.AdvisoryId{
-								Publisher: "CVE",
-								Reference: "CVE-1234",
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{purlDPKGPackageProto, purlPythonPackageProto, purlJavascriptPackageProto, cdxPackageProto},
+					Findings: []*spb.Finding{
+						{
+							Adv: &spb.Advisory{
+								Id: &spb.AdvisoryId{
+									Publisher: "CVE",
+									Reference: "CVE-1234",
+								},
+								Type:           spb.Advisory_VULNERABILITY,
+								Title:          "Title",
+								Description:    "Description",
+								Recommendation: "Recommendation",
+								Sev: &spb.Severity{
+									Severity: spb.Severity_MEDIUM,
+									CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
+									CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+								},
 							},
-							Type:           spb.Advisory_VULNERABILITY,
-							Title:          "Title",
-							Description:    "Description",
-							Recommendation: "Recommendation",
-							Sev: &spb.Severity{
-								Severity: spb.Severity_MEDIUM,
-								CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-								CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-							},
+							Extra: "extra details",
 						},
-						Extra: "extra details",
 					},
 				},
 			},
@@ -1232,21 +1269,23 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cdxInventory},
-				Findings: []*detector.Finding{
-					{
-						Adv: &detector.Advisory{
-							Type:           detector.TypeVulnerability,
-							Title:          "Title",
-							Description:    "Description",
-							Recommendation: "Recommendation",
-							Sev: &detector.Severity{
-								Severity: detector.SeverityMedium,
-								CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-								CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
+					Findings: []*detector.Finding{
+						{
+							Adv: &detector.Advisory{
+								Type:           detector.TypeVulnerability,
+								Title:          "Title",
+								Description:    "Description",
+								Recommendation: "Recommendation",
+								Sev: &detector.Severity{
+									Severity: detector.SeverityMedium,
+									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
+									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
+								},
 							},
+							Extra: "extra details",
 						},
-						Extra: "extra details",
 					},
 				},
 			},
@@ -1271,10 +1310,12 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  success,
 					},
 				},
-				Inventories: []*extractor.Inventory{purlDPKGInventory, purlPythonInventory, purlJavascriptInventory, cdxInventory},
-				Findings: []*detector.Finding{
-					{
-						Extra: "extra details",
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
+					Findings: []*detector.Finding{
+						{
+							Extra: "extra details",
+						},
 					},
 				},
 			},
@@ -1305,6 +1346,7 @@ func TestScanResultToProto(t *testing.T) {
 				StartTime: timestamppb.New(startTime),
 				EndTime:   timestamppb.New(endTime),
 				Status:    failureProto,
+				Inventory: &spb.Inventory{},
 				PluginStatus: []*spb.PluginStatus{
 					{
 						Name:    "ext",
@@ -1322,19 +1364,23 @@ func TestScanResultToProto(t *testing.T) {
 		{
 			desc: "pom.xml inventories with transitive dependencies",
 			res: &scalibr.ScanResult{
-				Version:     "1.0.0",
-				StartTime:   startTime,
-				EndTime:     endTime,
-				Status:      success,
-				Inventories: []*extractor.Inventory{mavenInventory},
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{mavenPackage},
+				},
 			},
 			want: &spb.ScanResult{
-				Version:     "1.0.0",
-				StartTime:   timestamppb.New(startTime),
-				EndTime:     timestamppb.New(endTime),
-				Status:      successProto,
-				Inventories: []*spb.Inventory{mavenInventoryProto},
-				Findings:    []*spb.Finding{},
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{mavenPackageProto},
+					Findings: []*spb.Finding{},
+				},
 			},
 		},
 	}
@@ -1349,6 +1395,15 @@ func TestScanResultToProto(t *testing.T) {
 			if err != tc.wantErr {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
 			}
+
+			// Ignore deprecated fields in the comparison.
+			// TODO(b/400910349): Stop setting the deprecated fields
+			// once integrators no longer read them.
+			if got != nil {
+				got.InventoriesDeprecated = nil
+				got.FindingsDeprecated = nil
+			}
+
 			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
 				t.Errorf("check.Exec() returned unexpected diff (-want +got):\n%s", diff)
 			}

@@ -36,13 +36,13 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
 type airflowPackageNames struct {
-	packageType      string
+	pkgType          string
 	name             string
 	affectedVersions []string
 }
@@ -63,8 +63,8 @@ var (
 	randFilePath    = "/tmp/" + randomString(16)
 	airflowPackages = []airflowPackageNames{
 		{
-			packageType: "pypi",
-			name:        "apache-airflow",
+			pkgType: "pypi",
+			name:    "apache-airflow",
 			affectedVersions: []string{
 				"1.10.10",
 				"1.10.10rc5",
@@ -145,18 +145,18 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns the python wheel extractor.
 func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
-func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory, []string) {
+func findairflowVersions(px *packageindex.PackageIndex) (string, *extractor.Package, []string) {
 	for _, r := range airflowPackages {
-		for _, i := range ix.GetSpecific(r.name, r.packageType) {
-			return i.Version, i, r.affectedVersions
+		for _, p := range px.GetSpecific(r.name, r.pkgType) {
+			return p.Version, p, r.affectedVersions
 		}
 	}
 	return "", nil, []string{}
 }
 
 // Scan checks for the presence of the airflow CVE-2020-11978 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+	airflowVersion, pkg, affectedVersions := findairflowVersions(px)
 	if airflowVersion == "" {
 		log.Debugf("No airflow version found")
 		return nil, nil
@@ -220,9 +220,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
 		Target: &detector.TargetDetails{
-			Inventory: inventory,
+			Package: pkg,
 		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
+		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 	}}, nil
 }
 

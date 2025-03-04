@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -157,16 +158,16 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from pom.xml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *mavenLockFile
 
 	err := xml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	details := map[string]*extractor.Inventory{}
+	details := map[string]*extractor.Package{}
 
 	for _, lockPackage := range parsedLockfile.ManagedDependencies {
 		finalName := lockPackage.GroupID + ":" + lockPackage.ArtifactID
@@ -176,7 +177,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			DepGroupVals: []string{},
 		}
 
-		pkgDetails := &extractor.Inventory{
+		pkgDetails := &extractor.Package{
 			Name:      finalName,
 			Version:   lockPackage.ResolveVersion(*parsedLockfile),
 			Locations: []string{input.Path},
@@ -199,7 +200,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			Classifier:   lockPackage.Classifier,
 			DepGroupVals: []string{},
 		}
-		pkgDetails := &extractor.Inventory{
+		pkgDetails := &extractor.Package{
 			Name:      finalName,
 			Version:   lockPackage.ResolveVersion(*parsedLockfile),
 			Locations: []string{input.Path},
@@ -212,17 +213,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		details[finalName] = pkgDetails
 	}
 
-	return maps.Values(details), nil
+	return inventory.Inventory{Packages: maps.Values(details)}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*javalockfile.Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*javalockfile.Metadata)
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),
 		Name:      strings.ToLower(m.ArtifactID),
-		Version:   i.Version,
+		Version:   p.Version,
 		Qualifiers: purl.QualifiersFromMap(map[string]string{
 			purl.Type:       m.Type,
 			purl.Classifier: m.Classifier,
@@ -231,7 +232,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Maven"
 }
 
