@@ -33,7 +33,16 @@ import (
 // Name is the name for the Chrome extensions extractor
 const Name = "chrome/extensions"
 
-var extensionIDPattern = regexp.MustCompile(`^[a-p]{32}$`)
+var (
+	windowsChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/Google\/Chrome(?: Beta| SxS| for Testing|)\/User Data\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+	windowsChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/Chromium\/User Data\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+
+	macosChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/Google\/Chrome(?: Beta| SxS| for Testing| Canary|)\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+	macosChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/Chromium\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+
+	linuxChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/google-chrome(?:-beta|-unstable|-for-testing|)\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+	linuxChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/chromium\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest.json$`)
+)
 
 type manifest struct {
 	Author struct {
@@ -82,7 +91,7 @@ type message struct {
 type Extractor struct{}
 
 // New returns an chrome extractor.
-func New() *Extractor {
+func New() filesystem.Extractor {
 	return &Extractor{}
 }
 
@@ -100,21 +109,13 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	path = filepath.ToSlash(path)
 
-	if !strings.HasSuffix(path, "manifest.json") {
-		return false
-	}
-
-	// todo: can I actually use this?
 	switch runtime.GOOS {
 	case "windows":
-		// C:\Users\<Your_User_Name>\AppData\Local\Google\Chrome\User Data\Default\Extensions
-		return strings.Contains(path, "AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions")
+		return windowsChromeExtensionsPattern.MatchString(path) || windowsChromiumExtensionsPattern.MatchString(path)
 	case "linux":
-		// ~/.config/google-chrome/Default/Extensions/
-		return strings.Contains(path, "/.config/google-chrome/Default/Extensions/")
-	case "macos":
-		// ~/Library/Application Support/Google/Chrome/Default/Extensions
-		return strings.Contains(path, "/Library/Application Support/Google/Chrome/Default/Extensions")
+		return linuxChromeExtensionsPattern.MatchString(path) || linuxChromiumExtensionsPattern.MatchString(path)
+	case "darwin":
+		return macosChromeExtensionsPattern.MatchString(path) || macosChromiumExtensionsPattern.MatchString(path)
 	default:
 		return false
 	}
@@ -183,10 +184,6 @@ func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
 		return "", fmt.Errorf("could not extract extension ID from %s", path)
 	}
 	id := parts[len(parts)-3]
-	if !extensionIDPattern.MatchString(id) {
-		return "", fmt.Errorf("id did not match chrome extensions standard %s", id)
-	}
-
 	return id, nil
 }
 
@@ -230,6 +227,5 @@ func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
 
-// todo: check this
 // Ecosystem is not defined.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

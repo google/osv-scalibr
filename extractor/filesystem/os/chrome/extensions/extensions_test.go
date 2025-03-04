@@ -16,6 +16,7 @@ package extensions_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,18 +29,45 @@ import (
 
 func TestExtractor_FileRequired(t *testing.T) {
 	tests := []struct {
-		name      string
 		inputPath string
 		want      bool
+		GOOS      string
 	}{
-		{
-			inputPath: "",
-			want:      false,
-		},
-		// todo : this
+		{inputPath: "", want: false},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\version\manifest.json`, want: true},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Google\Chrome Beta\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\version\manifest.json`, want: true},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Google\Chrome SxS\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\version\manifest.json`, want: true},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Google\Chrome for Testing\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\version\manifest.json`, want: true},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Chromium\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\version\manifest.json`, want: true},
+
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Chromium\User Data\Default\Extensions\invalid-id\version\manifest.json`, want: false},
+		{GOOS: "windows", inputPath: `%LOCALAPPDATA%\Chromium\User Data\Default\Extensions\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\bad\path\manifest.json`, want: false},
+
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome Beta/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome Canary/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome for Testing/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/invalid-id/version/manifest.json`, want: false},
+		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bad/path/manifest.json`, want: false},
+
+		{GOOS: "linux", inputPath: `~/.config/google-chrome/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "linux", inputPath: `~/.config/google-chrome-beta/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "linux", inputPath: `~/.config/google-chrome-unstable/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "linux", inputPath: `~/.config/google-chrome-for-testing/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+
+		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/invalid-id/version/manifest.json`, want: false},
+		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: false},
+
+		{inputPath: `/Users/username/Library/Application Support/Google/Chrome/Default/Extensions/aapbdbdomjkkjkaonfhkkikfgjllcleb/1.0.0.6_0/manifest.json`, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
+			if tt.GOOS != "" && tt.GOOS != runtime.GOOS {
+				t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)
+			}
 			e := extensions.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -78,13 +106,6 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 			},
-		},
-		{
-			Name: "invalid id",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid-id/1.89.1/manifest.json",
-			},
-			WantErr: extracttest.ContainsErrStr{Str: "id did not match chrome extensions standard"},
 		},
 		{
 			Name: "default locale specified but no message file provided",
