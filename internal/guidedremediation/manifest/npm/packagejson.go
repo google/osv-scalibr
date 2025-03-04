@@ -117,7 +117,7 @@ func (m *npmManifest) Clone() manifest.Manifest {
 
 // PatchRequirement modifies the manifest's requirements to include the new requirement version.
 func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
-	// TODO(#454)
+	// TODO(#454): implement this for npm when adding relax strategy
 	return nil
 }
 

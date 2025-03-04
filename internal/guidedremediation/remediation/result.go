@@ -110,14 +110,16 @@ type PackageUpdate struct {
 }
 
 // ResolveError represents an error encountered during the initial resolution of the dependency graph.
+//
+// e.g.
+//
+//	ResolveError{
+//		  Package:     OutputPackage{"foo", "1.2.3"},
+//		  Requirement: OutputPackage{"bar", ">2.0.0"},
+//		  Error:       "could not find a version that satisfies requirement >2.0.0 for package bar",
+//	}
 type ResolveError struct {
 	Package     Package `json:"package"`     // the package that caused the error.
 	Requirement Package `json:"requirement"` // the requirement of the package that errored.
 	Error       string  `json:"error"`       // the error string.
-	// e.g.
-	// ResolveError{
-	// 	  Package:     OutputPackage{"foo", "1.2.3"},
-	// 	  Requirement: OutputPackage{"bar", ">2.0.0"},
-	//	  Error:       "could not find a version that satisfies requirement >2.0.0 for package bar",
-	// }
 }
