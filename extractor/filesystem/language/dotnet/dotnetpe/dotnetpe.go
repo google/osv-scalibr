@@ -177,26 +177,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 
 	// Iterate over the CLR Metadata Tables to extract assembly information
 	for _, table := range f.CLR.MetadataTables {
-		switch content := table.Content.(type) {
-		case []pe.AssemblyTableRow:
-			for _, row := range content {
-				name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
-				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-				ivs = append(ivs, &extractor.Inventory{
-					Name:    name,
-					Version: version,
-				})
-			}
-		case []pe.AssemblyRefTableRow:
-			for _, row := range content {
-				name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
-				version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-				ivs = append(ivs, &extractor.Inventory{
-					Name:    name,
-					Version: version,
-				})
-			}
-		}
+		ivs = append(ivs, tableContentToInventories(f, table.Content)...)
 	}
 
 	// if at least an inventory was found inside the CLR.MetadataTables there is no need to check the VersionResources
@@ -205,6 +186,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 
 	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
+	// this is mostly required on .exe files
 	versionResources, err := f.ParseVersionResources()
 	if err != nil {
 		return nil, err
@@ -221,6 +203,27 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	return ivs, nil
 }
 
+func tableContentToInventories(f *pe.File, content any) []*extractor.Inventory {
+	var ivs []*extractor.Inventory
+
+	switch content := content.(type) {
+	case []pe.AssemblyTableRow:
+		for _, row := range content {
+			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
+			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
+			ivs = append(ivs, &extractor.Inventory{Name: name, Version: version})
+		}
+	case []pe.AssemblyRefTableRow:
+		for _, row := range content {
+			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
+			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
+			ivs = append(ivs, &extractor.Inventory{Name: name, Version: version})
+		}
+	}
+
+	return ivs
+}
+
 // hasPEMagicBytes checks if a given file has the PE magic bytes in the header
 func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 	// check for the smallest PE size.
@@ -235,7 +238,6 @@ func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 
 	// Validate if the magic bytes match any of the expected PE signatures
 	hasPESignature := magic == pe.ImageDOSSignature || magic == pe.ImageDOSZMSignature
-
 	return hasPESignature, nil
 }
 
