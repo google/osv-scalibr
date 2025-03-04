@@ -82,6 +82,16 @@ type manifest struct {
 	} `json:"web_accessible_resources"`
 }
 
+func (m *manifest) validate() error {
+	if m.Name == "" {
+		return fmt.Errorf("field 'Name' must be specified")
+	}
+	if m.Version == "" {
+		return fmt.Errorf("field 'Version' must be specified")
+	}
+	return nil
+}
+
 type message struct {
 	Description string `json:"description"`
 	Message     string `json:"message"`
@@ -127,10 +137,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err := json.NewDecoder(input.Reader).Decode(&m); err != nil {
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
-	if m.Name == "" || m.Version == "" {
-		return nil, fmt.Errorf("bad format %s", input.Path)
+	if err := m.validate(); err != nil {
+		return nil, fmt.Errorf("bad format in %s: %w", input.Path, err)
 	}
 
+	// extract the extensions ID from the path
 	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
 		return nil, err
@@ -183,10 +194,14 @@ func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
 	if len(parts) < 3 {
 		return "", fmt.Errorf("could not extract extension ID from %s", path)
 	}
+	// the standard path for an extension is /Extensions/extensionID/version/manifest.json
 	id := parts[len(parts)-3]
+	// returning the id as it is since the path has been already validated in the FileRequired function
 	return id, nil
 }
 
+// extractLocaleInfo extract locale information from the _locales/LOCALE_CODE/messages.json
+// following manifest.json v3 specification
 func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 	messagePath := filepath.Join(filepath.Dir(input.Path), "/_locales/", m.DefaultLocale, "message.json")
 
