@@ -141,8 +141,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// check if the file has the needed magic bytes before doing the heavy parsing
-	if !hasPEMagicBytes(input) {
-		return nil, fmt.Errorf("the file header does not contain magic bytes %w", ErrOpeningPEFile)
+	if ok, err := hasPEMagicBytes(input); !ok {
+		return nil, fmt.Errorf("the file header does not contain magic bytes %w", err)
 	}
 
 	// Retrieve the real path of the file
@@ -222,23 +222,21 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 }
 
 // hasPEMagicBytes checks if a given file has the PE magic bytes in the header
-func hasPEMagicBytes(input *filesystem.ScanInput) bool {
+func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 	// check for the smallest PE size.
 	if input.Info.Size() < pe.TinyPESize {
-		return false
+		return false, nil
 	}
 
 	var magic uint16
 	if err := binary.Read(input.Reader, binary.LittleEndian, &magic); err != nil {
-		return false
+		return false, err
 	}
 
 	// Validate if the magic bytes match any of the expected PE signatures
-	if magic != pe.ImageDOSSignature &&
-		magic != pe.ImageDOSZMSignature {
-		return false
-	}
-	return true
+	hasPESignature := magic == pe.ImageDOSSignature || magic == pe.ImageDOSZMSignature
+
+	return hasPESignature, nil
 }
 
 func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResult) {
