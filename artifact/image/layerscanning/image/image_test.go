@@ -15,6 +15,8 @@
 package image
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -23,9 +25,13 @@ import (
 	"strings"
 	"testing"
 
+	"archive/tar"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
@@ -33,7 +39,19 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/require"
 )
 
-const testdataDir = "testdata"
+const (
+	testdataDir = "testdata"
+	osContents  = `PRETTY_NAME="Debian GNU/Linux 7 (wheezy)"
+		NAME="Debian GNU/Linux"
+		VERSION_ID="7"
+		VERSION="7 (wheezy)"
+		ID=debian
+		ANSI_COLOR="1;31"
+		HOME_URL="http://www.debian.org/"
+		SUPPORT_URL="http://www.debian.org/support/"
+		BUG_REPORT_URL="http://bugs.debian.org/"
+	`
+)
 
 type filepathContentPair struct {
 	filepath string
@@ -587,6 +605,12 @@ func TestFromTarball(t *testing.T) {
 //  4. Devise a pathtree that will return an error when inserting a path. Make sure that Load()
 //     returns an error.
 func TestFromV1Image(t *testing.T) {
+	ctx := context.Background()
+	fakeImage, err := constructImage(ctx, "1.0", "fake-package-name")
+	if err != nil {
+		t.Fatalf("Failed to construct image: %v", err)
+	}
+
 	tests := []struct {
 		name                  string
 		v1Image               v1.Image
@@ -607,6 +631,24 @@ func TestFromV1Image(t *testing.T) {
 				errorOnLayers: true,
 			},
 			wantErr: true,
+		},
+		{
+			name:    "image with single package",
+			v1Image: *fakeImage,
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "etc/os-release",
+							content:  osContents,
+						},
+						{
+							filepath: "var/lib/dpkg/status",
+							content:  "Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed",
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -941,4 +983,58 @@ func TestInitializeChainLayers(t *testing.T) {
 			}
 		})
 	}
+}
+
+// constructImage constructs a fake v1.Image that contains a single layer with two files:
+//   - The file `osContents` defines the OS, which allows the image to be scanned.
+//   - The file `statusContents` defines the packages in the image, in this probe it contains a
+//     single fake package with a specified version, so it is only affected by the Note created in
+//     this execution.
+//
+// Put them in a single tarball to make a single layer and put that layer in an empty image to
+// make the minimal image that will work.
+func constructImage(ctx context.Context, version, fakePackageName string) (*v1.Image, error) {
+	// The file containing the fake package version.
+	statusContents := fmt.Sprintf("Package: %s\nVersion: %s\nStatus: install ok installed", fakePackageName, version)
+
+	var buf bytes.Buffer
+	w := tar.NewWriter(&buf)
+
+	// These files are the minimal set to create an image that will be scanned by Container Analysis.
+	// - The file `osContents` defines the OS, which allows the image to be scanned.
+	// - The file `statusContents` defines the packages in the image, in this probe it contains a
+	//   single fake package with a specified version, so it is only affected by the Note created in
+	//   this execution.
+	//
+	// Put them in a single tarball to make a single layer and put that layer in an empty image to
+	// make the minimal image that will work.
+	files := []struct {
+		name, contents string
+	}{
+		{"etc/os-release", osContents},
+		{"var/lib/dpkg/status", statusContents},
+	}
+	for _, file := range files {
+		hdr := &tar.Header{
+			Name:     file.name,
+			Mode:     0600,
+			Size:     int64(len(file.contents)),
+			Typeflag: tar.TypeReg,
+		}
+		if err := w.WriteHeader(hdr); err != nil {
+			return nil, fmt.Errorf("couldn't write header for %s: %w", file.name, err)
+		}
+		if _, err := w.Write([]byte(file.contents)); err != nil {
+			return nil, fmt.Errorf("couldn't write %s: %w", file.name, err)
+		}
+	}
+	w.Close()
+	layer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to create layer: %v", err)
+	}
+	image, err := mutate.AppendLayers(empty.Image, layer)
+	return &image, err
 }

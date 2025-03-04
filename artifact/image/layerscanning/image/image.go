@@ -474,6 +474,10 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 			return nil, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
+		// If the virtual path has any directories and those directories have not been populated, then
+		// populate them with file nodes.
+		populateEmptyDirectoryNodes(virtualPath, originLayerID, dirPath, chainLayersToFill)
+
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
@@ -484,6 +488,34 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 	return requiredTargets, nil
+}
+
+// populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths
+// that do not have an associated file node. This is done by creating a file node for each directory
+// in the virtual path and then filling the chain layers with that file node.
+func populateEmptyDirectoryNodes(virtualPath, originLayerID, extractDir string, chainLayersToFill []*chainLayer) {
+	currentChainLayer := chainLayersToFill[0]
+
+	runningDir := "/"
+	dirs := strings.Split(path.Dir(virtualPath), "/")
+
+	for _, dir := range dirs {
+		runningDir = path.Join(runningDir, dir)
+
+		// If the directory already exists in the current chain layer, then skip it.
+		if currentChainLayer.fileNodeTree.Get(runningDir) != nil {
+			continue
+		}
+
+		node := &fileNode{
+			extractDir:    extractDir,
+			originLayerID: originLayerID,
+			virtualPath:   runningDir,
+			isWhiteout:    false,
+			mode:          fs.ModeDir,
+		}
+		fillChainLayersWithFileNode(chainLayersToFill, node)
+	}
 }
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
