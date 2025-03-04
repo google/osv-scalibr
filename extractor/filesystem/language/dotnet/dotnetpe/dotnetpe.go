@@ -47,7 +47,9 @@ var (
 		".scr", ".sys", ".tsp", ".mun", ".msstyles", "",
 	}
 
+	// ErrOpeningPEFile is returned when the PE file cannot be opened
 	ErrOpeningPEFile = errors.New("error opening PE file")
+	// ErrParsingPEFile is returned when the PR files has a bad format and cannot be parsed
 	ErrParsingPEFile = errors.New("error parsing PE file")
 )
 
