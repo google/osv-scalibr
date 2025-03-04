@@ -183,7 +183,7 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 
 	for _, ns := range nss {
 		// For each namespace returned by the API, get the containers metadata.
-		ctx = namespaces.WithNamespace(ctx, ns)
+		ctx := namespaces.WithNamespace(ctx, ns)
 		ctrs, err := containersMetadata(ctx, client, ns, defaultContainerdRootfsPrefix)
 		if err != nil {
 			log.Errorf("Could not get a list of containers from the containerd: %v", err)

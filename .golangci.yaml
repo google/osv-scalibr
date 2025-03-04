@@ -27,7 +27,7 @@ linters:
     - errname
 #    - errorlint
 #    - exhaustive
-#    - fatcontext
+    - fatcontext
     - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
