@@ -49,6 +49,24 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "executable file with upper case",
+			path:             "test.Exe",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".dll",
+			path:             "test.dll",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "upper case .dll",
+			path:             "test.DLL",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:             "file without extension",
 			path:             "test",
 			wantRequired:     true,
