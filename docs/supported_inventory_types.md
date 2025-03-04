@@ -6,6 +6,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 
 * Alpine
   * APK
+* Chrome extensions
 * COS
   * cos-package-info.json
 * DPKG (used by e.g. Debian, Ubuntu)
