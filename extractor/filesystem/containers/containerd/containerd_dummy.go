@@ -65,12 +65,12 @@ func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 }
 
 // Extract not implemented.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	return nil, fmt.Errorf("not supported")
 }
 
 // ToPURL not implemented.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL { return nil }
 
 // Ecosystem not defined.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

@@ -45,9 +45,11 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with no custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "software", Version: "1.2.3", Extractor: pipEx,
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -129,9 +131,11 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "software", Version: "1.2.3", Extractor: pipEx,
+					}},
+				},
 			},
 			config: converter.SPDXConfig{
 				DocumentName:      "Custom name",
@@ -227,16 +231,18 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with invalid PURLs skipped",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{
-					// PURL field missing
-					{Extractor: pipEx},
-					// No name
-					{
-						Version: "1.2.3", Extractor: pipEx,
-					},
-					// No version
-					{
-						Name: "software", Extractor: pipEx,
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{
+						// PURL field missing
+						{Extractor: pipEx},
+						// No name
+						{
+							Version: "1.2.3", Extractor: pipEx,
+						},
+						// No version
+						{
+							Name: "software", Extractor: pipEx,
+						},
 					},
 				},
 			},
@@ -281,9 +287,11 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Invalid chars in package name replaced",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "softw@re&", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "softw@re&", Version: "1.2.3", Extractor: pipEx,
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -365,9 +373,11 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "One location reported",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1"},
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1"},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -449,9 +459,11 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Multiple locations reported",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1", "/file2", "/file3"},
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1", "/file2", "/file3"},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -564,9 +576,11 @@ func TestToCDX(t *testing.T) {
 		{
 			desc: "Package with custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: &scalibr.Inventory{
+					Packages: []*extractor.Package{{
+						Name: "software", Version: "1.2.3", Extractor: pipEx,
+					}},
+				},
 			},
 			config: converter.CDXConfig{
 				ComponentName:    "sbom-1",
@@ -628,14 +642,14 @@ func TestToCDX(t *testing.T) {
 func TestToPURL(t *testing.T) {
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	tests := []struct {
-		desc      string
-		inventory *extractor.Inventory
-		want      *purl.PackageURL
-		onGoos    string
+		desc   string
+		pkg    *extractor.Package
+		want   *purl.PackageURL
+		onGoos string
 	}{
 		{
-			desc: "Valid inventory extractor",
-			inventory: &extractor.Inventory{
+			desc: "Valid package extractor",
+			pkg: &extractor.Package{
 				Name:      "software",
 				Version:   "1.0.0",
 				Locations: []string{"/file1"},
@@ -655,10 +669,10 @@ func TestToPURL(t *testing.T) {
 				t.Skipf("Skipping test on %s", runtime.GOOS)
 			}
 
-			got := converter.ToPURL(tc.inventory)
+			got := converter.ToPURL(tc.pkg)
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
+				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.pkg, diff)
 			}
 		})
 	}

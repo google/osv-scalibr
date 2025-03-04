@@ -29,7 +29,7 @@ import (
 type Extractor interface {
 	extractor.Extractor
 	// Extract the information.
-	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
+	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Package, error)
 }
 
 // Config for running standalone extractors.
@@ -47,8 +47,8 @@ type ScanInput struct {
 }
 
 // Run the extractors that are specified in the config.
-func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
-	var inventories []*extractor.Inventory
+func Run(ctx context.Context, config *Config) ([]*extractor.Package, []*plugin.Status, error) {
+	var packages []*extractor.Package
 	var statuses []*plugin.Status
 
 	if !config.ScanRoot.IsVirtual() {
@@ -69,18 +69,18 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 			return nil, nil, ctx.Err()
 		}
 
-		inv, err := extractor.Extract(ctx, scanInput)
+		pkg, err := extractor.Extract(ctx, scanInput)
 		if err != nil {
 			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err))
 			continue
 		}
-		for _, i := range inv {
-			i.Extractor = extractor
+		for _, p := range pkg {
+			p.Extractor = extractor
 		}
 
-		inventories = append(inventories, inv...)
+		packages = append(packages, pkg...)
 		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil))
 	}
 
-	return inventories, statuses, nil
+	return packages, statuses, nil
 }

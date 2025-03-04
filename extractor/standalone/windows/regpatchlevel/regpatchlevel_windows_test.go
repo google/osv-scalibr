@@ -30,11 +30,11 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		reg     *mockregistry.MockRegistry
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr bool
 	}{
 		{
-			name: "listOfPackages_returnsInventory",
+			name: "listOfPackages_returnsPackage",
 			reg: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					regPackagesRoot: &mockregistry.MockKey{
@@ -60,7 +60,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "Package_for_KB5020683~31bf3856ad364e35~amd64~~19041.2304.1.3",
 					Version: "19041.2304.1.3",

@@ -133,7 +133,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
-	multipleInventories := []*extractor.Inventory{{
+	multiplePackages := []*extractor.Package{{
 		Name:      name1,
 		Locations: []string{"some path"},
 	}, {
@@ -150,7 +150,7 @@ func TestExtract(t *testing.T) {
 		name      string
 		extractor filesystem.Extractor
 		args      args
-		want      []*extractor.Inventory
+		want      []*extractor.Package
 		wantErr   error
 	}{
 		{
@@ -159,7 +159,7 @@ func TestExtract(t *testing.T) {
 				"some path": {nil, nil},
 			}),
 			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
-			want: []*extractor.Inventory{},
+			want: []*extractor.Package{},
 		},
 		{
 			name: "multiple results",
@@ -167,7 +167,7 @@ func TestExtract(t *testing.T) {
 				"some path": {[]string{name1, name2}, nil},
 			}),
 			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
-			want: multipleInventories,
+			want: multiplePackages,
 		},
 		{
 			name: "unrecognized path throws an error",

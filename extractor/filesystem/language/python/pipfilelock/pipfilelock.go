@@ -69,7 +69,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from Pipfile.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedLockfile *pipenvLockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -78,7 +78,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	details := make(map[string]*extractor.Inventory)
+	details := make(map[string]*extractor.Package)
 
 	addPkgDetails(details, parsedLockfile.Packages, "")
 	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
@@ -90,7 +90,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return maps.Values(details), nil
 }
 
-func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]pipenvPackage, group string) {
+func addPkgDetails(details map[string]*extractor.Package, packages map[string]pipenvPackage, group string) {
 	for name, pipenvPackage := range packages {
 		if pipenvPackage.Version == "" {
 			continue
@@ -113,7 +113,7 @@ func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]
 				groupSlice = []string{group}
 			}
 
-			inv := &extractor.Inventory{
+			pkg := &extractor.Package{
 				Name:    name,
 				Version: version,
 				Metadata: osv.DepGroupMetadata{
@@ -121,18 +121,18 @@ func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]
 				},
 			}
 
-			details[name+"@"+version] = inv
+			details[name+"@"+version] = pkg
 		}
 	}
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return pypipurl.MakePackageURL(p)
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "PyPI"
 }
 

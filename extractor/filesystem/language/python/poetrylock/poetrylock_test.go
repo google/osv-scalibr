@@ -82,22 +82,22 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
@@ -113,7 +113,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "proto-plus",
 					Version:   "1.22.0",
@@ -137,7 +137,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-with-metadata.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "emoji",
 					Version:   "2.0.0",
@@ -153,7 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/source-git.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ike",
 					Version:   "0.2.0",
@@ -172,7 +172,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/source-legacy.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "appdirs",
 					Version:   "1.4.4",
@@ -188,7 +188,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
@@ -204,7 +204,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-packages.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "async-timeout",
 					Version:   "5.0.1",
@@ -311,7 +311,7 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

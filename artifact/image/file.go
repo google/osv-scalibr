@@ -16,7 +16,7 @@ package image
 
 import "io/fs"
 
-// History holds the creation, modification, and deletion history of a file or inventory. Each field
+// History holds the creation, modification, and deletion history of a file or package. Each field
 // holds an array of integers representing layer indices.
 type History struct {
 	Created []int

@@ -33,14 +33,14 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-packages.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.11.3",
@@ -57,7 +57,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.11.3",
@@ -74,7 +74,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@typescript-eslint/types",
 					Version:    "5.62.0",
@@ -91,7 +91,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
@@ -117,7 +117,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-advanced.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@eslint-community/eslint-utils",
 					Version:    "4.4.0",
@@ -242,7 +242,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-versions.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "uuid",
 					Version:    "8.0.0",
@@ -277,7 +277,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ansi-regex",
 					Version:   "6.0.1",
@@ -307,7 +307,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/mixed-groups.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-regex",
 					Version:    "5.0.1",
@@ -353,7 +353,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

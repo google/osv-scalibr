@@ -27,8 +27,8 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"golang.org/x/vuln/scan"
@@ -71,16 +71,16 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan takes the go binaries gathered in the extraction phase and runs govulncheck on them.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
 	result := []*detector.Finding{}
 	scanned := make(map[string]bool)
 	var allErrs error = nil
-	for _, i := range ix.GetAllOfType(purl.TypeGolang) {
+	for _, p := range px.GetAllOfType(purl.TypeGolang) {
 		// We only look at Go binaries (no source code).
-		if i.Extractor.Name() != gobinary.Name {
+		if p.Extractor.Name() != gobinary.Name {
 			continue
 		}
-		for _, l := range i.Locations {
+		for _, l := range p.Locations {
 			if scanned[l] {
 				continue
 			}

@@ -33,13 +33,13 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
 type sparkUIPackageNames struct {
-	packageType      string
+	pkgType          string
 	name             string
 	affectedVersions []string
 }
@@ -56,8 +56,8 @@ var (
 	sparkServersPorts = []int{4040, 8080}
 	sparkUIPackages   = []sparkUIPackageNames{
 		{
-			packageType: "pypi",
-			name:        "pyspark",
+			pkgType: "pypi",
+			name:    "pyspark",
 			affectedVersions: []string{
 				"3.0.0",
 				"3.0.1",
@@ -98,8 +98,8 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan scans for the vulnerability, doh!
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	sparkUIVersion, inventory, affectedVersions := findApacheSparkUIPackage(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+	sparkUIVersion, pkg, affectedVersions := findApacheSparkUIPackage(px)
 	if sparkUIVersion == "" {
 		log.Debugf("No Apache Spark UI version found")
 		return nil, nil
@@ -156,9 +156,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
 		Target: &detector.TargetDetails{
-			Inventory: inventory,
+			Package: pkg,
 		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
+		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 	}}, nil
 }
 
@@ -180,11 +180,11 @@ func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cm
 	return resp.StatusCode
 }
 
-func findApacheSparkUIPackage(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory, []string) {
+func findApacheSparkUIPackage(px *packageindex.PackageIndex) (string, *extractor.Package, []string) {
 	for _, r := range sparkUIPackages {
-		inventory := ix.GetSpecific(r.name, r.packageType)
-		for _, i := range inventory {
-			return i.Version, i, r.affectedVersions
+		pkgs := px.GetSpecific(r.name, r.pkgType)
+		for _, p := range pkgs {
+			return p.Version, p, r.affectedVersions
 		}
 	}
 	return "", nil, []string{}

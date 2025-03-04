@@ -84,7 +84,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract retrieves the patch level from the Windows registry.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
 	reg, err := e.opener.Open()
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	inventory := e.allSoftwaresInfo(reg, "HKLM", sysKeys)
+	pkg := e.allSoftwaresInfo(reg, "HKLM", sysKeys)
 
 	// Then we extract user-level installed software.
 	userKeys, err := e.installedUserSoftware(reg)
@@ -106,27 +106,27 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	inv := e.allSoftwaresInfo(reg, "HKU", userKeys)
-	return append(inventory, inv...), nil
+	pkgs := e.allSoftwaresInfo(reg, "HKU", userKeys)
+	return append(pkgs, pkg...), nil
 }
 
-// allSoftwaresInfo builds the inventory of name/version for installed software from the given registry
+// allSoftwaresInfo builds the package of name/version for installed software from the given registry
 // keys. This function cannot return an error.
-func (e *Extractor) allSoftwaresInfo(reg registry.Registry, hive string, paths []string) []*extractor.Inventory {
-	var inventory []*extractor.Inventory
+func (e *Extractor) allSoftwaresInfo(reg registry.Registry, hive string, paths []string) []*extractor.Package {
+	var pkgs []*extractor.Package
 
 	for _, p := range paths {
 		// Silently swallow errors as some software might not have a name or version.
 		// For example, paint will be a subkey of the registry key, but it does not have a version.
-		if inv, err := e.softwareInfo(reg, hive, p); err == nil {
-			inventory = append(inventory, inv)
+		if pkg, err := e.softwareInfo(reg, hive, p); err == nil {
+			pkgs = append(pkgs, pkg)
 		}
 	}
 
-	return inventory
+	return pkgs
 }
 
-func (e *Extractor) softwareInfo(reg registry.Registry, hive string, path string) (*extractor.Inventory, error) {
+func (e *Extractor) softwareInfo(reg registry.Registry, hive string, path string) (*extractor.Package, error) {
 	key, err := reg.OpenKey(hive, path)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (e *Extractor) softwareInfo(reg registry.Registry, hive string, path string
 		return nil, err
 	}
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    displayName,
 		Version: displayVersion,
 	}, nil
@@ -205,23 +205,23 @@ func (e *Extractor) enumerateSubkeys(reg registry.Registry, hive string, path st
 	return paths, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	if strings.HasPrefix(i.Name, googetPrefix) {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	if strings.HasPrefix(p.Name, googetPrefix) {
 		return &purl.PackageURL{
 			Type:    purl.TypeGooget,
-			Name:    i.Name,
-			Version: i.Version,
+			Name:    p.Name,
+			Version: p.Version,
 		}
 	}
 
 	return &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
-		Name:      i.Name,
-		Version:   i.Version,
+		Name:      p.Name,
+		Version:   p.Version,
 	}
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows ospackages yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

@@ -476,8 +476,9 @@ func TestGetScanConfig_GovulncheckParams(t *testing.T) {
 func TestWriteScanResults(t *testing.T) {
 	testDirPath := t.TempDir()
 	result := &scalibr.ScanResult{
-		Version: "1.2.3",
-		Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+		Version:   "1.2.3",
+		Status:    &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+		Inventory: &scalibr.Inventory{},
 	}
 	for _, tc := range []struct {
 		desc              string

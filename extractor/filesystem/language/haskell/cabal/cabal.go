@@ -124,8 +124,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from the cabal.project.freeze file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -138,19 +138,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return pkgs, err
 }
 
 var versionConstraintRe = regexp.MustCompile(`any\.(\S+) ==(\S+)`)
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)
-	pkgs := []*extractor.Inventory{}
+	packages := []*extractor.Package{}
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
 		}
 
 		line := s.Text()
@@ -165,31 +165,31 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			pkgName := matches[1]
 			pkgVersion := strings.TrimSuffix(matches[2], ",")
 
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
 				Locations: []string{input.Path},
 			}
 
-			pkgs = append(pkgs, i)
+			packages = append(packages, p)
 		}
 
 		if s.Err() != nil {
-			return pkgs, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
+			return packages, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
 		}
 	}
 
-	return pkgs, nil
+	return packages, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeHaskell,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Hackage" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "Hackage" }

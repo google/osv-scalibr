@@ -273,8 +273,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from package-lock.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventories, err := e.extractPkgLock(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	packages, err := e.extractPackageLock(ctx, input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -288,10 +288,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 
-	return inventories, err
+	return packages, err
 }
 
-func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractPackageLock(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedLockfile *packagelockjson.LockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -301,14 +301,14 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 	}
 
 	packages := maps.Values(parseNpmLock(*parsedLockfile))
-	inventories := make([]*extractor.Inventory, len(packages))
+	result := make([]*extractor.Package, len(packages))
 
 	for i, pkg := range packages {
 		if pkg.DepGroups == nil {
 			pkg.DepGroups = []string{}
 		}
 
-		inventories[i] = &extractor.Inventory{
+		result[i] = &extractor.Package{
 			Name: pkg.Name,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
@@ -321,17 +321,17 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		}
 	}
 
-	return inventories, nil
+	return result, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
+		Name:    strings.ToLower(p.Name),
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "npm" }
+func (e Extractor) Ecosystem(_ *extractor.Package) string { return "npm" }

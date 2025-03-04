@@ -69,7 +69,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from a composer.lock file passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedLockfile *composerLock
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -79,14 +79,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	packages := make(
-		[]*extractor.Inventory,
+		[]*extractor.Package,
 		0,
 		// len cannot return negative numbers, but the types can't reflect that
 		uint64(len(parsedLockfile.Packages))+uint64(len(parsedLockfile.PackagesDev)),
 	)
 
 	for _, composerPackage := range parsedLockfile.Packages {
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:      composerPackage.Name,
 			Version:   composerPackage.Version,
 			Locations: []string{input.Path},
@@ -100,7 +100,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	for _, composerPackage := range parsedLockfile.PackagesDev {
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:      composerPackage.Name,
 			Version:   composerPackage.Version,
 			Locations: []string{input.Path},
@@ -116,17 +116,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeComposer,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Packagist"
 }
 

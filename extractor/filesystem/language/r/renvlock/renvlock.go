@@ -65,7 +65,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from renv.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedLockfile *renvLockfile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -74,7 +74,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
+	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, pkg := range parsedLockfile.Packages {
 		// currently we only support CRAN
@@ -82,7 +82,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:      pkg.Package,
 			Version:   pkg.Version,
 			Locations: []string{input.Path},
@@ -92,17 +92,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeCran,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('CRAN') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "CRAN"
 }
 

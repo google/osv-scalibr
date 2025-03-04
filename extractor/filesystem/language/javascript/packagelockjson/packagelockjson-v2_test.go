@@ -41,14 +41,14 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wrappy",
 					Version:   "1.0.2",
@@ -67,7 +67,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wrappy",
 					Version:   "1.0.2",
@@ -86,7 +86,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wrappy",
 					Version:   "1.0.2",
@@ -116,7 +116,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wrappy",
 					Version:   "1.0.2",
@@ -146,7 +146,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "postcss",
 					Version:   "6.0.23",
@@ -209,7 +209,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies-dup.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "supports-color",
 					Version:   "6.1.0",
@@ -239,7 +239,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@segment/analytics.js-integration-facebook-pixel",
 					Version:   "2.4.1",
@@ -401,7 +401,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "etag",
 					Version:   "1.8.0",
@@ -442,7 +442,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/alias.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/code-frame",
 					Version:   "7.0.0",
@@ -483,7 +483,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wrappy",
 					Version:   "1.0.2",
@@ -513,7 +513,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/same-package-different-groups.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "eslint",
 					Version:   "1.2.3",
@@ -568,7 +568,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 

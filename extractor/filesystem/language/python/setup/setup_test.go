@@ -178,7 +178,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "pysaml2",
 					Version:   "6.5.1",
@@ -252,7 +252,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid_2",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "accelerate",
 					Version:   "0.26.1",
@@ -284,7 +284,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid_3",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "nanoplotter",
 					Version:   "0.13.1",
@@ -310,7 +310,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/template",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "requests",
 					Version:   "2.25.1",
@@ -332,18 +332,18 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "empty pkg setup.py file",
+			Name: "empty package setup.py file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "empty file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty_2",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -366,7 +366,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
@@ -375,7 +375,7 @@ func TestExtract(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := setup.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -385,9 +385,9 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }
 

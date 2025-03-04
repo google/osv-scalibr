@@ -52,7 +52,7 @@ type Extractor interface {
 	// library for that.
 	FileRequired(api FileAPI) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
-	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
+	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Package, error)
 }
 
 // FileAPI is the interface for accessing file information and path.
@@ -100,7 +100,7 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
-	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
+	// Optional: By default, inventory paths are relative to the scan root. If StoreAbsolutePath
 	// is set, the absolute path is stored instead.
 	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
@@ -111,9 +111,9 @@ type Config struct {
 
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
+func Run(ctx context.Context, config *Config) ([]*extractor.Package, []*plugin.Status, error) {
 	if len(config.Extractors) == 0 {
-		return []*extractor.Inventory{}, []*plugin.Status{}, nil
+		return []*extractor.Package{}, []*plugin.Status{}, nil
 	}
 
 	scanRoots, err := expandAllAbsolutePaths(config.ScanRoots)
@@ -126,23 +126,23 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 		return nil, nil, err
 	}
 
-	var inventory []*extractor.Inventory
+	var pkgs []*extractor.Package
 	var status []*plugin.Status
 
 	for _, root := range scanRoots {
-		inv, st, err := runOnScanRoot(ctx, config, root, wc)
+		pkg, st, err := runOnScanRoot(ctx, config, root, wc)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		inventory = append(inventory, inv...)
+		pkgs = append(pkgs, pkg...)
 		status = append(status, st...)
 	}
 
-	return inventory, status, nil
+	return pkgs, status, nil
 }
 
-func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Package, []*plugin.Status, error) {
 	abs := ""
 	var err error
 	if !scanRoot.IsVirtual() {
@@ -187,9 +187,9 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 
 		lastStatus: time.Now(),
 
-		inventory: []*extractor.Inventory{},
+		pkgs:      []*extractor.Package{},
 		errors:    make(map[string]error),
-		foundInv:  make(map[string]bool),
+		foundPKGs: make(map[string]bool),
 
 		fileAPI: &lazyFileAPI{},
 	}, nil
@@ -199,7 +199,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Package, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
 		return nil, nil, fmt.Errorf("walk context is nil")
@@ -234,7 +234,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 	log.Infof("End status: %d dirs visited, %d inodes visited, %d Extract calls, %s elapsed, %s wall time",
 		wc.dirsVisited, wc.inodesVisited, wc.extractCalls, time.Since(start), time.Duration(time.Now().UnixNano()-start.UnixNano()))
 
-	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
+	return wc.pkgs, errToExtractorStatus(config.Extractors, wc.foundPKGs, wc.errors), err
 }
 
 type walkContext struct {
@@ -254,12 +254,12 @@ type walkContext struct {
 	storeAbsolutePath bool
 	errorOnFSErrors   bool
 
-	// Inventories found.
-	inventory []*extractor.Inventory
+	// Packages found.
+	pkgs []*extractor.Package
 	// Extractor name to runtime errors.
 	errors map[string]error
-	// Whether an extractor found any inventory.
-	foundInv map[string]bool
+	// Whether an extractor found any packages.
+	foundPKGs map[string]bool
 	// Whether to read symlinks.
 	readSymlinks bool
 
@@ -406,13 +406,13 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	}
 
 	if len(results) > 0 {
-		wc.foundInv[ex.Name()] = true
+		wc.foundPKGs[ex.Name()] = true
 		for _, r := range results {
 			r.Extractor = ex
 			if wc.storeAbsolutePath {
 				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
 			}
-			wc.inventory = append(wc.inventory, r)
+			wc.pkgs = append(wc.pkgs, r)
 		}
 	}
 }
@@ -504,10 +504,10 @@ func addErrToMap(errors map[string]error, key string, err error) {
 	}
 }
 
-func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
+func errToExtractorStatus(extractors []Extractor, foundPKGs map[string]bool, errors map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
-		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))
+		result = append(result, plugin.StatusFromErr(ex, foundPKGs[ex.Name()], errors[ex.Name()]))
 	}
 	return result
 }

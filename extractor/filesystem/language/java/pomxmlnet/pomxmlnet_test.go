@@ -91,14 +91,14 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/empty.xml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/one-package.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.apache.maven:maven-artifact",
 					Version:   "1.0.0",
@@ -112,7 +112,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/two-packages.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.42.Final",
@@ -132,7 +132,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/with-dependency-management.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.9",
@@ -152,7 +152,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/interpolation.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.mine:mypackage",
 					Version:   "1.0.0",
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/with-scope.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "junit:junit",
 					Version:   "4.12",
@@ -192,7 +192,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/transitive.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.direct:alice",
 					Version:   "1.0.0",
@@ -257,7 +257,7 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
@@ -270,7 +270,7 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 		InputConfig: extracttest.ScanInputMockConfig{
 			Path: "testdata/maven/with-parent.xml",
 		},
-		WantInventory: []*extractor.Inventory{
+		WantPackages: []*extractor.Package{
 			{
 				Name:      "org.alice:alice",
 				Version:   "1.0.0",
@@ -365,7 +365,7 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 		return
 	}
 
-	if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+	if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 		t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 	}
 }

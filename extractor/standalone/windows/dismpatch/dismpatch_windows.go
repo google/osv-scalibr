@@ -53,7 +53,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract retrieves the patch level from the DISM command line tool.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
 	opener := registry.NewLiveOpener()
 	reg, err := opener.Open()
 	if err != nil {
@@ -67,7 +67,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	flavor := winproducts.WindowsFlavorFromRegistry(reg)
-	return inventoryFromOutput(flavor, output)
+	return packageFromOutput(flavor, output)
 }
 
 // runDISM executes the dism command line tool.

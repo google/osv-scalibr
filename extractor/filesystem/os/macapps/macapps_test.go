@@ -131,15 +131,15 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "Valid_XML_Info.plist_data ",
 			path: "testdata/ValidXML.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "130.0.6723.69",
 					Locations: []string{"testdata/ValidXML.plist"},
@@ -162,8 +162,8 @@ func TestExtract(t *testing.T) {
 		{
 			name: "Valid_Binary_Info.plist_data ",
 			path: "testdata/BinaryApp.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "gMacInformation",
 					Version:   "202410231131",
 					Locations: []string{"testdata/BinaryApp.plist"},
@@ -198,8 +198,8 @@ func TestExtract(t *testing.T) {
 		{
 			name: "Missing_Info.plist_data ",
 			path: "testdata/MissingData.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "",
 					Locations: []string{"testdata/MissingData.plist"},
@@ -267,7 +267,7 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			if diff := cmp.Diff(tt.wantPackages, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 

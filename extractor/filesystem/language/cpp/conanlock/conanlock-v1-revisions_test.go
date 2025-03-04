@@ -33,14 +33,14 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
@@ -56,7 +56,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-name.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
@@ -72,7 +72,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
@@ -96,7 +96,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.13",
@@ -144,7 +144,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v1.revisions.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ninja",
 					Version:   "1.11.1",
@@ -171,7 +171,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

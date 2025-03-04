@@ -174,7 +174,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "jupyterlab",
 					Version:   "3.1.12",
@@ -230,7 +230,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
@@ -239,7 +239,7 @@ func TestExtract(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := condameta.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -249,8 +249,8 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }

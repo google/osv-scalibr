@@ -70,7 +70,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract extracts open ports on the system.
-func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
 	// First, extract a mapping that provides the PID for each open socket inode number.
 	inodeToPID, err := proc.MapSocketInodesToPID(ctx, input.Root, input.FS)
 	if err != nil {
@@ -85,7 +85,7 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 
 	// Maps socket inode -> PID -> command line. Tries to cache the command line when possible.
 	pidCommandLinesCache := make(map[int64][]string)
-	var inventories []*extractor.Inventory
+	var packages []*extractor.Package
 
 	proto := "tcp"
 	for _, tcpInfo := range tcpInfos {
@@ -93,13 +93,13 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 			port := entry.LocalPort
 			pid, ok := inodeToPID[entry.Inode]
 			if !ok {
-				inventories = append(inventories, e.newInventory(ctx, port, proto, []string{"unknown"}))
+				packages = append(packages, e.newPackage(ctx, port, proto, []string{"unknown"}))
 				continue
 			}
 
 			cmdline, cached := pidCommandLinesCache[pid]
 			if cached {
-				inventories = append(inventories, e.newInventory(ctx, port, proto, cmdline))
+				packages = append(packages, e.newPackage(ctx, port, proto, cmdline))
 				continue
 			}
 
@@ -109,21 +109,21 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 			}
 
 			pidCommandLinesCache[pid] = cmdline
-			inventories = append(inventories, e.newInventory(ctx, port, proto, cmdline))
+			packages = append(packages, e.newPackage(ctx, port, proto, cmdline))
 		}
 	}
 
-	return inventories, nil
+	return packages, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
+// ToPURL converts a package created by this extractor into a PURL.
 // This extractor does not create PURLs.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return nil
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
 
 func (e Extractor) allTCPInfo(ctx context.Context) ([]*proc.NetTCPInfo, error) {
 	var entries []*proc.NetTCPInfo
@@ -150,8 +150,8 @@ func (e Extractor) extractPortsFromFile(ctx context.Context, path string) (*proc
 	return proc.ParseNetTCP(ctx, f)
 }
 
-func (e Extractor) newInventory(ctx context.Context, port uint32, protocol string, cmdline []string) *extractor.Inventory {
-	return &extractor.Inventory{
+func (e Extractor) newPackage(ctx context.Context, port uint32, protocol string, cmdline []string) *extractor.Package {
+	return &extractor.Package{
 		Name: fmt.Sprintf("network-port-%d", port),
 		Metadata: &Metadata{
 			Port:     port,

@@ -87,10 +87,10 @@ func (opts *Options) matchSeverity(v resolution.Vulnerability) bool {
 		// There are no top-level severity, see if there are individual affected[].severity field.
 		severities = []osvschema.Severity{}
 		for _, sg := range v.Subgraphs {
-			inv := vulns.VKToInventory(sg.Nodes[sg.Dependency].Version)
+			pkg := vulns.VKToPackage(sg.Nodes[sg.Dependency].Version)
 			// Make and match a dummy OSV record per affected[] entry to determine which applies.
 			for _, affected := range v.OSV.Affected {
-				if vulns.IsAffected(&osvschema.Vulnerability{Affected: []osvschema.Affected{affected}}, inv) {
+				if vulns.IsAffected(&osvschema.Vulnerability{Affected: []osvschema.Affected{affected}}, pkg) {
 					severities = append(severities, affected.Severity...)
 					break
 				}

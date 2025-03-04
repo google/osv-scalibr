@@ -82,23 +82,23 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "Invalid dependency toml",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-dependency.toml",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "no dependencies",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-dependency.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -111,7 +111,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/only-version-dependency.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -130,7 +130,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git-dependency-tagged.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -143,7 +143,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git-dependency-with-commit.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -164,7 +164,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git-dependency-with-pr.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -177,7 +177,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-dependencies.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
@@ -206,7 +206,7 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
