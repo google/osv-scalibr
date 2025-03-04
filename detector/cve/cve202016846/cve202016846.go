@@ -225,7 +225,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", target, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Infof("Error creating request: %v\n", err)
 		return false

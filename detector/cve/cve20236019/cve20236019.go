@@ -152,7 +152,7 @@ func isVulnerableVersion(version string) bool {
 // Check for "Ray Dashboard" in HTTP response
 func isDashboardPresent(ctx context.Context) bool {
 	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:8265", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:8265", nil)
 	if err != nil {
 		log.Errorf("Error creating HTTP request: %v", err)
 		return false
@@ -199,7 +199,7 @@ func rayRequest(ctx context.Context, host string, port int, cmd string) int {
 	url := fmt.Sprintf("http://%s:%d/worker/cpu_profile?pid=3354&ip=127.0.0.1&duration=5&native=0&format=%s", host, port, cmd)
 
 	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		log.Errorf("Error creating HTTP request: %v", err)
 		return 500 // Return an error code
