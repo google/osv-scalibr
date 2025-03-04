@@ -470,7 +470,7 @@ under the License.
                   <includeClassifiers>source-release</includeClassifiers>
                   <excludeMainArtifact>true</excludeMainArtifact>
                   <csvSummary>false</csvSummary>
-                  <!-- attach SHA-512 checksum as well to upload to Maven Staging Repo, 
+                  <!-- attach SHA-512 checksum as well to upload to Maven Staging Repo,
                        as this eases uploading from stage to dist and doesn't do harm in Maven Central -->
                   <attachChecksums>true</attachChecksums>
                 </configuration>
