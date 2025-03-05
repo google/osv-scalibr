@@ -169,7 +169,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				Name:                 m.Name,
 				Permissions:          m.Permissions,
 				UpdateURL:            m.UpdateURL,
-				Version:              m.Version,
 			},
 		},
 	}
