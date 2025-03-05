@@ -28,8 +28,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,7 +108,7 @@ func findBentomlVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 
 // CheckAccessibility checks if the BentoML server is reachable
 func CheckAccessibility(ctx context.Context, ip string, port int) bool {
-	target := fmt.Sprintf("http://%s:%d/summarize", ip, port)
+	target := fmt.Sprintf("http://%s/summarize", net.JoinHostPort(ip, strconv.Itoa(port)))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
@@ -126,7 +128,7 @@ func CheckAccessibility(ctx context.Context, ip string, port int) bool {
 
 // ExploitBentoml sends payload to the BentoML service
 func ExploitBentoml(ctx context.Context, ip string, port int) bool {
-	target := fmt.Sprintf("http://%s:%d/summarize", ip, port)
+	target := fmt.Sprintf("http://%s/summarize", net.JoinHostPort(ip, strconv.Itoa(port)))
 
 	payload, err := base64.StdEncoding.DecodeString(string(pickledPayload))
 	if err != nil {
