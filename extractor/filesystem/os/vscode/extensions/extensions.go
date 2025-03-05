@@ -17,6 +17,11 @@ package extensions
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"path/filepath"
+	"regexp"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -26,6 +31,29 @@ import (
 
 // Name is the name for the vscode extensions extractor
 const Name = "vscode/extensions"
+
+var extensionsPattern = regexp.MustCompile(`(?m)\.vscode\/extensions\/extensions\.json`)
+
+type extension struct {
+	Identifier struct {
+		ID string `json:"id"`
+	} `json:"identifier"`
+	Version  string `json:"version"`
+	Location struct {
+		Path string `json:"path"`
+	} `json:"location"`
+	Metadata Metadata `json:"metadata"`
+}
+
+func (e *extension) validate() error {
+	if e.Identifier.ID == "" {
+		return errors.New("extension 'Identifier.ID' cannot be empty")
+	}
+	if e.Version == "" {
+		return errors.New("extension 'Version' cannot be empty")
+	}
+	return nil
+}
 
 // Extractor extracts vscode extensions
 type Extractor struct{}
@@ -44,14 +72,34 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired // todo
+// FileRequired returns true if the file contains vscode extensions information
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	panic("unimplemented")
+	path := api.Path()
+	path = filepath.ToSlash(path)
+	return extensionsPattern.MatchString(path)
 }
 
 // Extract extracts vscode extensions
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	panic("unimplemented")
+	var exts []*extension
+	if err := json.NewDecoder(input.Reader).Decode(&exts); err != nil {
+		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+	}
+
+	ivs := make([]*extractor.Inventory, 0, len(exts))
+	for _, ext := range exts {
+		if err := ext.validate(); err != nil {
+			return nil, fmt.Errorf("bad format in %s: %w", input.Path, err)
+		}
+		ivs = append(ivs, &extractor.Inventory{
+			Name:      ext.Identifier.ID,
+			Version:   ext.Version,
+			Locations: []string{ext.Location.Path, input.Path},
+			Metadata:  ext.Metadata,
+		})
+	}
+
+	return ivs, nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
