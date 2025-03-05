@@ -44,8 +44,8 @@ import (
 )
 
 var (
-	errNoScanRoot            = fmt.Errorf("no scan root specified")
-	errFilesWithSeveralRoots = fmt.Errorf("can't extract specific files with several scan roots")
+	errNoScanRoot            = errors.New("no scan root specified")
+	errFilesWithSeveralRoots = errors.New("can't extract specific files with several scan roots")
 )
 
 // Scanner is the main entry point of the scanner.
@@ -263,7 +263,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	if len(chainLayers) == 0 {
-		return nil, fmt.Errorf("no chain layers found")
+		return nil, errors.New("no chain layers found")
 	}
 
 	finalChainLayer := chainLayers[len(chainLayers)-1]

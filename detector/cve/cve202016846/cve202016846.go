@@ -66,7 +66,7 @@ const (
 
 var (
 	seededRand   = rand.New(rand.NewSource(time.Now().UnixNano()))
-	randFilePath = fmt.Sprintf("/tmp/%s", randomString(16))
+	randFilePath = "/tmp/" + randomString(16)
 	saltPackages = []saltPackageNames{
 		{
 			packageType: "pypi",

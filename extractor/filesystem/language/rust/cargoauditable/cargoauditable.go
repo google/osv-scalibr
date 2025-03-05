@@ -129,7 +129,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	reader, ok := input.Reader.(io.ReaderAt)
 	if !ok {
-		return nil, fmt.Errorf("input.Reader is not a ReaderAt")
+		return nil, errors.New("input.Reader is not a ReaderAt")
 	}
 
 	dependencyInfo, err := rustaudit.GetDependencyInfo(reader)

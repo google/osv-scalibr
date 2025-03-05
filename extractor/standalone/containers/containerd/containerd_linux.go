@@ -19,7 +19,7 @@ package containerd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -148,7 +148,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	if e.client == nil {
-		return inventory, fmt.Errorf("Containerd API client is not initialized")
+		return inventory, errors.New("Containerd API client is not initialized")
 	}
 
 	ctrMetadata, err := containersFromAPI(ctx, e.client)
