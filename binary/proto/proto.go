@@ -40,7 +40,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/chrome/extensions"
+	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/os/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -507,7 +507,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				FullVersion: m.FullVersion,
 			},
 		}
-	case *extensions.Metadata:
+	case *chromeextensions.Metadata:
 		i.Metadata = &spb.Inventory_ChromeExtensionsMetadata{
 			ChromeExtensionsMetadata: &spb.ChromeExtensionsMetadata{
 				Name:                 m.Name,
