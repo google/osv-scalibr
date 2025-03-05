@@ -35,8 +35,10 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -192,7 +194,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.
 func CheckForCherrypy(saltIP string, saltServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d", saltIP, saltServerPort)
+	target := fmt.Sprintf("http://%s", net.JoinHostPort(saltIP, strconv.Itoa(saltServerPort)))
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
@@ -208,7 +210,7 @@ func CheckForCherrypy(saltIP string, saltServerPort int) bool {
 
 // ExploitSalt attempts to exploit the Salt server if vulnerable.
 func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/run", saltIP, saltServerPort)
+	target := fmt.Sprintf("http://%s/run", net.JoinHostPort(saltIP, strconv.Itoa(saltServerPort)))
 	data := map[string]any{
 		"client":   "ssh",
 		"tgt":      "*",
