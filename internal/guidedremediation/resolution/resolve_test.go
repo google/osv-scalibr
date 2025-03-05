@@ -106,6 +106,10 @@ func (m mockManifest) Clone() manifest.Manifest {
 	return m
 }
 
+func (m mockManifest) PatchRequirement(resolve.RequirementVersion) error {
+	return nil
+}
+
 func TestResolveNPM(t *testing.T) {
 	aliasType := func(knownAs string) dep.Type {
 		var typ dep.Type

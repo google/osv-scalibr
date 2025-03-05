@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package lockfile provides methods for parsing and writing lockfiles.
-package lockfile
+// Package strategy provides the guided remediation strategies.
+package strategy
 
-import (
-	"deps.dev/util/resolve"
-	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
+// Strategy is a remediation strategy.
+type Strategy string
+
+const (
+	// StrategyInPlace  Strategy = "in-place"
+	// StrategyRelax    Strategy = "relax"
+	StrategyOverride Strategy = "override"
 )
-
-// ReadWriter is the interface for parsing and applying remediation patches to a lockfile.
-type ReadWriter interface {
-	System() resolve.System
-	Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
-	SupportedStrategies() []strategy.Strategy
-	// TODO(#454): Write()
-}
