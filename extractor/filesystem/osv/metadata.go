@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package osv defines OSV-specific fields for parsed source packages.
 package osv
 
 // Metadata holds parsing information for packages extracted by an OSV extractor wrapper.
