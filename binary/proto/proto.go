@@ -428,6 +428,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				ImageDigest:   m.ImageDigest,
 				Runtime:       m.Runtime,
 				Id:            m.ID,
+				PodName:       m.PodName,
 				Pid:           int32(m.PID),
 				Snapshotter:   m.Snapshotter,
 				SnapshotKey:   m.SnapshotKey,

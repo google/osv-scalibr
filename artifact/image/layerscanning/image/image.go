@@ -243,7 +243,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 				defer layerReader.Close()
 
 				tarReader := tar.NewReader(layerReader)
-				requiredTargets, err = fillChainLayerWithFilesFromTar(&outputImage, tarReader, originLayerID, dirPath, chainLayersToFill, config.Requirer, requiredTargets)
+				requiredTargets, err = fillChainLayersWithFilesFromTar(&outputImage, tarReader, originLayerID, dirPath, chainLayersToFill, config.Requirer, requiredTargets)
 				if err != nil {
 					return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
 				}
@@ -304,6 +304,7 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSy
 				latestLayer: &Layer{
 					buildCommand: entry.CreatedBy,
 					isEmpty:      true,
+					fileNodeTree: pathtree.NewNode[fileNode](),
 				},
 				maxSymlinkDepth: maxSymlinkDepth,
 			})
@@ -353,10 +354,10 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSy
 	return chainLayers, nil
 }
 
-// fillChainLayerWithFilesFromTar fills the chain layers with the files found in the tar. The
+// fillChainLayersWithFilesFromTar fills the chain layers with the files found in the tar. The
 // chainLayersToFill are the chain layers that will be filled with the files via the virtual
 // filesystem.
-func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer, requirer require.FileRequirer, requiredTargets map[string]bool) (map[string]bool, error) {
+func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer, requirer require.FileRequirer, requiredTargets map[string]bool) (map[string]bool, error) {
 	currentChainLayer := chainLayersToFill[0]
 
 	for {
@@ -473,12 +474,48 @@ func fillChainLayerWithFilesFromTar(img *Image, tarReader *tar.Reader, originLay
 			return nil, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
+		// If the virtual path has any directories and those directories have not been populated, then
+		// populate them with file nodes.
+		populateEmptyDirectoryNodes(virtualPath, originLayerID, dirPath, chainLayersToFill)
+
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithFileNode(chainLayersToFill, newNode)
+
+		// Add the fileNode to the node tree of the underlying layer.
+		layer := currentChainLayer.latestLayer.(*Layer)
+		layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 	return requiredTargets, nil
+}
+
+// populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths
+// that do not have an associated file node. This is done by creating a file node for each directory
+// in the virtual path and then filling the chain layers with that file node.
+func populateEmptyDirectoryNodes(virtualPath, originLayerID, extractDir string, chainLayersToFill []*chainLayer) {
+	currentChainLayer := chainLayersToFill[0]
+
+	runningDir := "/"
+	dirs := strings.Split(path.Dir(virtualPath), "/")
+
+	for _, dir := range dirs {
+		runningDir = path.Join(runningDir, dir)
+
+		// If the directory already exists in the current chain layer, then skip it.
+		if currentChainLayer.fileNodeTree.Get(runningDir) != nil {
+			continue
+		}
+
+		node := &fileNode{
+			extractDir:    extractDir,
+			originLayerID: originLayerID,
+			virtualPath:   runningDir,
+			isWhiteout:    false,
+			mode:          fs.ModeDir,
+		}
+		fillChainLayersWithFileNode(chainLayersToFill, node)
+	}
 }
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with

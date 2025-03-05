@@ -56,6 +56,7 @@ func parseFlags() *cli.Flags {
 	explicitExtractors := flag.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
 	filterByCapabilities := flag.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
 	windowsAllDrives := flag.Bool("windows-all-drives", false, "Scan all drives on Windows")
+	offline := flag.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
 
 	flag.Parse()
 	filesToExtract := flag.Args()
@@ -83,6 +84,7 @@ func parseFlags() *cli.Flags {
 		ExplicitExtractors:    *explicitExtractors,
 		FilterByCapabilities:  *filterByCapabilities,
 		WindowsAllDrives:      *windowsAllDrives,
+		Offline:               *offline,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		log.Errorf("Error parsing CLI args: %v", err)
