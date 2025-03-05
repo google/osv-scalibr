@@ -85,7 +85,7 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.Invento
 
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
-		return nil, fmt.Errorf("failed to get file ownership info")
+		return nil, errors.New("failed to get file ownership info")
 	}
 
 	if stat.Uid != 0 {

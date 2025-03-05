@@ -185,12 +185,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 func toDistro(m *Metadata) string {
 	if m.OSVersionID != "" {
-		return fmt.Sprintf("cos-%s", m.OSVersionID)
+		return "cos-" + m.OSVersionID
 	}
 
 	if m.OSVersion != "" {
 		log.Warnf("VERSION_ID not set in os-release, fallback to VERSION")
-		return fmt.Sprintf("cos-%s", m.OSVersion)
+		return "cos-" + m.OSVersion
 	}
 	log.Errorf("VERSION and VERSION_ID not set in os-release")
 	return ""
