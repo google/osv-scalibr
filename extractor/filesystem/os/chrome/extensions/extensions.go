@@ -253,7 +253,13 @@ func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
+func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	return &purl.PackageURL{
+		Type:    purl.TypeGeneric,
+		Name:    i.Name,
+		Version: i.Version,
+	}
+}
 
 // Ecosystem is not defined.
 func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
