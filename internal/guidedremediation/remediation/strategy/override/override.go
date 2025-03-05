@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/internal/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/upgrade"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
 	"github.com/google/osv-scalibr/internal/guidedremediation/vulns"
@@ -36,17 +37,17 @@ import (
 // ComputePatches attempts to resolve each vulnerability found in result independently, returning the list of unique possible patches.
 // Vulnerabilities are resolved by directly overriding versions of vulnerable packages to non-vulnerable versions.
 // If a patch introduces new vulnerabilities, additional overrides are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *remediation.Options) ([]remediation.Patch, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *remediation.Options) ([]result.Patch, error) {
 	// Do the remediation attempts concurrently
-	type result struct {
+	type overrideResult struct {
 		vulnIDs  []string
 		resolved *remediation.ResolvedManifest
 		err      error
 	}
-	ch := make(chan result)
+	ch := make(chan overrideResult)
 	doOverride := func(vulnIDs []string) {
 		resolved, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
-		ch <- result{vulnIDs, resolved, err}
+		ch <- overrideResult{vulnIDs, resolved, err}
 	}
 
 	toProcess := 0
@@ -55,7 +56,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 		toProcess++
 	}
 
-	var allResults []remediation.Patch
+	var allResults []result.Patch
 	for toProcess > 0 {
 		r := <-ch
 		toProcess--
@@ -86,9 +87,9 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 	}
 
 	// Sort and remove duplicate patches
-	cmpFn := func(a, b remediation.Patch) int { return a.Compare(b, resolved.Manifest.System().Semver()) }
+	cmpFn := func(a, b result.Patch) int { return a.Compare(b, resolved.Manifest.System().Semver()) }
 	slices.SortFunc(allResults, cmpFn)
-	allResults = slices.CompactFunc(allResults, func(a, b remediation.Patch) bool { return cmpFn(a, b) == 0 })
+	allResults = slices.CompactFunc(allResults, func(a, b result.Patch) bool { return cmpFn(a, b) == 0 })
 
 	return allResults, nil
 }

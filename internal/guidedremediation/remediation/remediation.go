@@ -22,12 +22,15 @@ import (
 	"slices"
 
 	"deps.dev/util/resolve"
+	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/matcher"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/upgrade"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
 	"github.com/google/osv-scalibr/internal/guidedremediation/severity"
 	"github.com/google/osv-scalibr/internal/guidedremediation/vulns"
+	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -166,7 +169,7 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 }
 
 // ConstructPatches computes the effective Patches that were applied to oldRes to get newRes.
-func ConstructPatches(oldRes, newRes *ResolvedManifest) Patch {
+func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 	fixedVulns := make(map[string]*resolution.Vulnerability)
 	for _, v := range oldRes.Vulns {
 		fixedVulns[v.OSV.ID] = &v
@@ -180,30 +183,30 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) Patch {
 		}
 	}
 
-	var output Patch
-	output.Fixed = make([]Vuln, 0, len(fixedVulns))
+	var output result.Patch
+	output.Fixed = make([]result.Vuln, 0, len(fixedVulns))
 	for _, v := range fixedVulns {
-		vuln := Vuln{ID: v.OSV.ID}
+		vuln := result.Vuln{ID: v.OSV.ID}
 		for _, sg := range v.Subgraphs {
 			n := oldRes.Graph.Nodes[sg.Dependency]
-			vuln.Packages = append(vuln.Packages, Package{Name: n.Version.Name, Version: n.Version.Version})
+			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
 		}
 		output.Fixed = append(output.Fixed, vuln)
 	}
-	slices.SortFunc(output.Fixed, func(a, b Vuln) int { return cmp.Compare(a.ID, b.ID) })
+	slices.SortFunc(output.Fixed, func(a, b result.Vuln) int { return cmp.Compare(a.ID, b.ID) })
 
 	if len(introducedVulns) > 0 {
-		output.Introduced = make([]Vuln, 0, len(introducedVulns))
+		output.Introduced = make([]result.Vuln, 0, len(introducedVulns))
 	}
 	for _, v := range introducedVulns {
-		vuln := Vuln{ID: v.OSV.ID}
+		vuln := result.Vuln{ID: v.OSV.ID}
 		for _, sg := range v.Subgraphs {
 			n := newRes.Graph.Nodes[sg.Dependency]
-			vuln.Packages = append(vuln.Packages, Package{Name: n.Version.Name, Version: n.Version.Version})
+			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
 		}
 		output.Introduced = append(output.Introduced, vuln)
 	}
-	slices.SortFunc(output.Introduced, func(a, b Vuln) int { return cmp.Compare(a.ID, b.ID) })
+	slices.SortFunc(output.Introduced, func(a, b result.Vuln) int { return cmp.Compare(a.ID, b.ID) })
 
 	oldReqs := make(map[resolve.PackageKey]resolve.RequirementVersion)
 	for _, req := range oldRes.Manifest.Requirements() {
@@ -212,10 +215,13 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) Patch {
 	for _, req := range newRes.Manifest.Requirements() {
 		oldReq, ok := oldReqs[req.PackageKey]
 		if !ok {
-			output.PackageUpdates = append(output.PackageUpdates, PackageUpdate{
+			typ := dep.NewType()
+			typ.AddAttr(dep.MavenDependencyOrigin, mavenutil.OriginManagement)
+			output.PackageUpdates = append(output.PackageUpdates, result.PackageUpdate{
 				Name:        req.Name,
 				VersionFrom: "",
 				VersionTo:   req.Version,
+				Type:        typ,
 			})
 			continue
 		}
@@ -223,18 +229,21 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) Patch {
 			continue
 		}
 
-		output.PackageUpdates = append(output.PackageUpdates, PackageUpdate{
+		output.PackageUpdates = append(output.PackageUpdates, result.PackageUpdate{
 			Name:        req.Name,
 			VersionFrom: oldReq.Version,
 			VersionTo:   req.Version,
+			Type:        oldReq.Type.Clone(),
 		})
 	}
-	slices.SortFunc(output.PackageUpdates, func(a, b PackageUpdate) int {
+	slices.SortFunc(output.PackageUpdates, func(a, b result.PackageUpdate) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	// It's possible something is in the requirements twice (e.g. with Maven dependencyManagement)
 	// Deduplicate the patches in this case.
-	output.PackageUpdates = slices.Compact(output.PackageUpdates)
+	output.PackageUpdates = slices.CompactFunc(output.PackageUpdates, func(a, b result.PackageUpdate) bool {
+		return a.Name == b.Name && a.VersionFrom == b.VersionFrom && a.VersionTo == b.VersionTo
+	})
 
 	return output
 }

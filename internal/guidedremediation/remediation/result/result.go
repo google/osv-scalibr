@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package remediation
+// package result defines the remediation result structs
+package result
 
 import (
 	"cmp"
 
+	"deps.dev/util/resolve/dep"
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -107,6 +109,8 @@ type PackageUpdate struct {
 	VersionTo   string `json:"versionTo"`   // version of the dependency after the patch.
 	// TODO(#454): reevaluate if transitive flag is useful/necessary
 	// Transitive  bool   `json:"transitive"`  // false if this package is a direct dependency, true if indirect.
+
+	Type dep.Type `json:"-"`
 }
 
 // ResolveError represents an error encountered during the initial resolution of the dependency graph.
