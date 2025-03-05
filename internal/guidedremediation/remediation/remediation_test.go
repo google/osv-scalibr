@@ -95,6 +95,75 @@ func TestMatchVuln(t *testing.T) {
 				},
 			}},
 		}
+
+		// ID: VULN-003, Dev: false, Severity: 7.0, Depth: 1
+		vuln3 = resolution.Vulnerability{
+			OSV: &osvschema.Vulnerability{
+				ID: "VULN-003",
+
+				Aliases: []string{"CVE-111", "OSV-2"},
+				Affected: []osvschema.Affected{
+					{
+						Package: osvschema.Package{
+							Ecosystem: "npm",
+							Name:      "pkg",
+						},
+						Ranges: []osvschema.Range{
+							{
+								Type: osvschema.RangeSemVer,
+								Events: []osvschema.Event{
+									{Introduced: "0"},
+									{Fixed: "1.9.1"},
+								},
+							},
+						},
+						Severity: []osvschema.Severity{
+							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
+						},
+					},
+					{
+						Package: osvschema.Package{
+							Ecosystem: "npm",
+							Name:      "pkg",
+						},
+						Ranges: []osvschema.Range{
+							{
+								Type: osvschema.RangeSemVer,
+								Events: []osvschema.Event{
+									{Introduced: "2.0.0"},
+									{Fixed: "2.9.9"},
+								},
+							},
+						},
+						Severity: []osvschema.Severity{
+							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
+						},
+					},
+				},
+			},
+			DevOnly: false,
+			Subgraphs: []*resolution.DependencySubgraph{{
+				Dependency: 1,
+				Nodes: map[resolve.NodeID]resolution.GraphNode{
+					1: {
+						Distance: 0,
+						Parents:  []resolve.Edge{{From: 0, To: 1}},
+						Version: resolve.VersionKey{
+							PackageKey: resolve.PackageKey{
+								System: resolve.NPM,
+								Name:   "pkg",
+							},
+							Version: "2.0.2",
+						},
+					},
+					0: {
+						Distance: 1,
+						Parents:  []resolve.Edge{},
+						Children: []resolve.Edge{{From: 0, To: 1}},
+					},
+				},
+			}},
+		}
 	)
 	tests := []struct {
 		name string
@@ -139,17 +208,16 @@ func TestMatchVuln(t *testing.T) {
 			},
 			want: true,
 		},
-		// TODO(#454): need to import github.com/pandatix/go-cvss
-		// {
-		// 	name: "reject severity",
-		// 	vuln: vuln1,
-		// 	opt: remediation.Options{
-		// 		DevDeps:     true,
-		// 		MaxDepth:    -1,
-		// 		MinSeverity: 6.7,
-		// 	},
-		// 	want: false,
-		// },
+		{
+			name: "reject severity",
+			vuln: vuln1,
+			opt: remediation.Options{
+				DevDeps:     true,
+				MaxDepth:    -1,
+				MinSeverity: 6.7,
+			},
+			want: false,
+		},
 		{
 			name: "accept unknown severity",
 			vuln: vuln2,
@@ -206,6 +274,16 @@ func TestMatchVuln(t *testing.T) {
 				DevDeps:     true,
 				MaxDepth:    -1,
 				IgnoreVulns: []string{"OSV-2"},
+			},
+			want: false,
+		},
+		{
+			name: "check per-affected severity",
+			vuln: vuln3,
+			opt: remediation.Options{
+				DevDeps:     true,
+				MaxDepth:    -1,
+				MinSeverity: 8.0,
 			},
 			want: false,
 		},
