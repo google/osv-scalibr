@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -32,7 +32,7 @@ import (
 // Name is the name for the vscode extensions extractor
 const Name = "vscode/extensions"
 
-var extensionsPattern = regexp.MustCompile(`(?m)\.vscode\/extensions\/extensions\.json`)
+const extensionsSubPath = "/.vscode/extensions/extensions.json"
 
 type extension struct {
 	Identifier struct {
@@ -76,7 +76,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	path = filepath.ToSlash(path)
-	return extensionsPattern.MatchString(path)
+	return strings.HasSuffix(path, extensionsSubPath)
 }
 
 // Extract extracts vscode extensions
