@@ -90,7 +90,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/one-extension.json",
 					},
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
 						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
 						PublisherDisplayName: "Microsoft",
@@ -110,7 +110,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "golang.go",
 					Version:   "0.46.1",
 					Locations: []string{"/home/username/.vscode/extensions/golang.go-0.46.1", "testdata/extensions.json"},
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						ID:                   "d6f6cfea-4b6f-41f4-b571-6ad2ab7918da",
 						PublisherID:          "dbf6ae0a-da75-4167-ac8b-75b4512f2153",
 						PublisherDisplayName: "Go Team at Google",
@@ -125,7 +125,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/google.geminicodeassist-2.28.0",
 						"testdata/extensions.json",
 					},
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						ID:                   "51643712-2cb2-4384-b7cc-d55b01b8274b",
 						PublisherID:          "93a45bde-b507-401c-9deb-7a098ebcded8",
 						PublisherDisplayName: "Google",
@@ -140,7 +140,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/googlecloudtools.cloudcode-2.27.0",
 						"testdata/extensions.json",
 					},
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						ID:                   "5e8803a2-3dc8-42b3-9c5f-ea9d37828c03",
 						PublisherID:          "f24fd523-af08-49d8-bb0b-f4eda502706e",
 						PublisherDisplayName: "Google Cloud",
@@ -155,7 +155,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/extensions.json",
 					},
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
 						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
 						PublisherDisplayName: "Microsoft",
