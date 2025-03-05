@@ -160,7 +160,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		{
 			Name:    id,
 			Version: m.Version,
-			Metadata: Metadata{
+			Metadata: &Metadata{
 				AuthorEmail:          m.Author.Email,
 				Description:          m.Description,
 				HostPermissions:      m.HostPermissions,

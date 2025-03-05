@@ -95,7 +95,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:    "caaadbdomjkkjkaonfhkkikfgjllcleb",
 					Version: "1.2.85",
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						Description:     "A decentralized wallet for blockchain transactions.",
 						HostPermissions: []string{"file://*/*", "http://*/*", "https://*/*"},
 						ManifestVersion: 3,
@@ -123,7 +123,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:    "ghbmnnjooekpmoecnnnilnnbdlolhkhi",
 					Version: "1.89.1",
-					Metadata: extensions.Metadata{
+					Metadata: &extensions.Metadata{
 						AuthorEmail:          "docs-hosted-app-own@google.com",
 						Description:          "Edit, create, and view your documents, spreadsheets, and presentations — all without internet access.",
 						HostPermissions:      []string{"https://docs.google.com/*", "https://drive.google.com/*"},
