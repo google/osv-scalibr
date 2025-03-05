@@ -124,10 +124,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -168,6 +170,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -194,8 +197,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			} else {
 				if strings.Contains(input.Path, "status.d") {
 					log.Warnf("Failed to read MIME header from %q: %v", input.Path, err)
+
 					return []*extractor.Inventory{}, nil
 				}
+
 				return pkgs, err
 			}
 		}
@@ -210,6 +215,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		if !e.includeNotInstalled && (!strings.Contains(input.Path, "status.d") || h.Get("Status") != "") {
 			if h.Get("Status") == "" {
 				log.Warnf("Package %q has no status field", h.Get("Package"))
+
 				continue
 			}
 			installed, err := statusInstalled(h.Get("Status"))
@@ -227,6 +233,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			if !eof { // Expected when reaching the last line.
 				log.Warnf("DPKG package name or version is empty (name: %q, version: %q)", pkgName, pkgVersion)
 			}
+
 			continue
 		}
 
@@ -265,6 +272,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 		pkgs = append(pkgs, i)
 	}
+
 	return pkgs, nil
 }
 
@@ -276,6 +284,7 @@ func statusInstalled(status string) (bool, error) {
 	if len(parts) != 3 {
 		return false, fmt.Errorf("invalid DPKG Status field %q", status)
 	}
+
 	return parts[2] == "installed", nil
 }
 
@@ -290,8 +299,10 @@ func parseSourceNameVersion(source string) (string, string, error) {
 		}
 		n := source[:idx]
 		v := source[idx+2 : len(source)-1]
+
 		return n, v, nil
 	}
+
 	return source, "", nil
 }
 
@@ -312,9 +323,11 @@ func toDistro(m *Metadata) string {
 	// fallback: e.g. 22.04
 	if m.OSVersionID != "" {
 		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
+
 		return m.OSVersionID
 	}
 	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+
 	return ""
 }
 
@@ -342,6 +355,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	for _, location := range i.Locations {
 		if location == "usr/lib/opkg/status" {
 			typePurl = purl.TypeOpkg
+
 			break
 		}
 	}
@@ -367,5 +381,6 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	if m.OSVersionID == "" {
 		return osID
 	}
+
 	return osID + ":" + m.OSVersionID
 }

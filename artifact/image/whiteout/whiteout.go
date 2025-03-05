@@ -54,24 +54,28 @@ func Files(scalibrfs scalibrfs.FS) (map[string]struct{}, error) {
 		if d.IsDir() && strings.HasPrefix(base, WhiteoutDirPrefix) {
 			whiteouts[path] = struct{}{}
 		}
+
 		return nil
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to successfully walk fs to find whiteout files: %w", err)
 	}
+
 	return whiteouts, nil
 }
 
 // IsWhiteout returns true if a path is a whiteout path.
 func IsWhiteout(p string) bool {
 	_, file := path.Split(p)
+
 	return strings.HasPrefix(file, WhiteoutPrefix)
 }
 
 // ToWhiteout returns the whiteout version of a path.
 func ToWhiteout(p string) string {
 	dir, file := path.Split(p)
+
 	return path.Join(dir, fmt.Sprintf("%s%s", WhiteoutPrefix, file))
 }
 

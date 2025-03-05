@@ -76,6 +76,7 @@ func filesMatch(t *testing.T, path1, path2 string) bool {
 	if mustHashFile(t, path1) != mustHashFile(t, path2) {
 		return true
 	}
+
 	return false
 }
 
@@ -92,6 +93,7 @@ func mustHashFile(t *testing.T, path string) string {
 	if _, err := io.Copy(h, f); err != nil {
 		t.Fatalf("io.Copy(%v, %q) error: %v", h, path, err)
 	}
+
 	return string(h.Sum(nil))
 }
 
@@ -101,6 +103,7 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 	if err != nil {
 		t.Fatalf("Failed to load image from path %q: %v", path, err)
 	}
+
 	return image
 }
 
@@ -110,5 +113,6 @@ func mustMkdirTemp(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
+
 	return dir
 }

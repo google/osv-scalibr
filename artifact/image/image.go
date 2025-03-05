@@ -105,6 +105,7 @@ func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.
 			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", tag, err)
 		}
 	}
+
 	return image, nil
 }
 
@@ -115,6 +116,7 @@ func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
+
 	return NewFromImage(image)
 }
 
@@ -140,5 +142,6 @@ func NewFromImage(image v1.Image) (scalibrfs.FS, error) {
 	if err = unpacker.UnpackSquashed(outDir, image); err != nil {
 		return nil, fmt.Errorf("failed to unpack image into directory %q: %w", outDir, err)
 	}
+
 	return scalibrfs.DirFS(outDir), nil
 }

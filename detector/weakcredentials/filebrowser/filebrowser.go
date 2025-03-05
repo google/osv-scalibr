@@ -94,6 +94,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		if !isVulnerable(ctx, fileBrowserIP, fileBrowserPort) {
 			continue
 		}
+
 		return []*detector.Finding{{
 			Adv: &detector.Advisory{
 				ID: &detector.AdvisoryID{
@@ -119,6 +120,7 @@ func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int
 	if !checkLogin(ctx, fileBrowserIP, fileBrowserPort) {
 		return false
 	}
+
 	return true
 }
 
@@ -130,6 +132,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
+
 		return false
 	}
 
@@ -140,6 +143,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 		} else {
 			log.Debugf("Error when sending request %s to the server: %v", targetURL, err)
 		}
+
 		return false
 	}
 	defer resp.Body.Close()
@@ -151,18 +155,21 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 	// Expected size for the response is around 6 kilobytes.
 	if resp.ContentLength > 20*1024 {
 		log.Infof("Filesize is too large: %d bytes", resp.ContentLength)
+
 		return false
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Infof("Error reading response body: %v", err)
+
 		return false
 	}
 
 	bodyString := string(bodyBytes)
 	if !strings.Contains(bodyString, "File Browser") {
 		log.Infof("Response body does not contain 'File Browser'")
+
 		return false
 	}
 
@@ -183,6 +190,7 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
+
 		return false
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -194,6 +202,7 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 		} else {
 			log.Infof("Error when sending request %s to the server: %v", targetURL, err)
 		}
+
 		return false
 	}
 	defer resp.Body.Close()

@@ -86,5 +86,6 @@ func findVersion(identity string) string {
 	if len(pkgVer) > 1 {
 		return pkgVer[1]
 	}
+
 	return ""
 }

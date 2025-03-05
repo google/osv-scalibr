@@ -52,6 +52,7 @@ func NewFileRequirerPaths(required []string) *FileRequirerPaths {
 	for _, r := range required {
 		fr.required[r] = true
 	}
+
 	return fr
 }
 

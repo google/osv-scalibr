@@ -997,6 +997,7 @@ func CopyFileToTempDir(t *testing.T, filepath, root string) (string, error) {
 	if err := os.WriteFile(newfile, bytes, 0400); err != nil {
 		return "", err
 	}
+
 	return newfile, nil
 }
 
@@ -1025,5 +1026,6 @@ func scalibrFilesInTmp(t *testing.T) []string {
 			filenames = append(filenames, f.Name())
 		}
 	}
+
 	return filenames
 }

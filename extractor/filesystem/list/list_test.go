@@ -50,6 +50,7 @@ func TestFromCapabilities(t *testing.T) {
 	for _, ex := range el.FromCapabilities(capab) {
 		if ex.Name() == want {
 			found = true
+
 			break
 		}
 		if ex.Name() == dontWant {

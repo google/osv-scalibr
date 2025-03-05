@@ -174,6 +174,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
 		if err != nil {
 			errs = append(errs, err)
 			log.Errorf("failed to extract package version from %q: %v", pkg, err)
+
 			continue
 		}
 

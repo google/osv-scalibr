@@ -149,6 +149,7 @@ func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 			return i.Version, i, r.affectedVersions
 		}
 	}
+
 	return "", nil, []string{}
 }
 
@@ -157,6 +158,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
 	if airflowVersion == "" {
 		log.Debugf("No airflow version found")
+
 		return nil, nil
 	}
 
@@ -169,6 +171,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", airflowVersion)
+
 		return nil, nil
 	}
 
@@ -176,21 +179,25 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !CheckAccessibility(airflowServerIP, airflowServerPort) {
 		log.Infof("Airflow server not accessible. Version %q not vulnerable", airflowVersion)
+
 		return nil, nil
 	}
 
 	if !CheckForBashTask(airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
+
 		return nil, nil
 	}
 
 	if !CheckForPause(airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
+
 		return nil, nil
 	}
 
 	if !triggerAndWaitForDAG(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
+
 		return nil, nil
 	}
 
@@ -232,9 +239,11 @@ func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
 	resp, err := client.Get(target)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
+
 	return true
 }
 
@@ -246,6 +255,7 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	resp, err := client.Get(target)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
@@ -258,24 +268,29 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	var data map[string]any
 	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Infof("Error parsing JSON: %v", err)
+
 		return false
 	}
 
 	if _, exists := data["env"]; !exists {
 		log.Infof("Key 'env' does not exist in the JSON data")
+
 		return false
 	}
 
 	envValue, ok := data["env"].(string)
 	if !ok {
 		log.Infof("Value of 'env' is not a string")
+
 		return false
 	}
 
 	if !strings.Contains(envValue, "dag_run") {
 		log.Infof("Value of 'env' does not contain 'dag_run'")
+
 		return true
 	}
+
 	return false
 }
 
@@ -287,9 +302,11 @@ func CheckForPause(airflowIP string, airflowServerPort int) bool {
 	resp, err := client.Get(target)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
+
 	return resp.StatusCode == 200
 }
 
@@ -321,6 +338,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		} else {
 			fmt.Println("Error making request:", err)
 		}
+
 		return false
 	}
 	defer res.Body.Close()
@@ -339,6 +357,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 	// Check for the existence of "message" and "execution_date"
 	if _, messagePresent := resBody["message"]; !messagePresent {
 		log.Errorf("Key 'message' not found in response body")
+
 		return false
 	}
 
@@ -346,6 +365,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 
 	if _, execDatePresent := resBody["execution_date"]; !execDatePresent {
 		log.Errorf("Key 'execution_date' not found in response body")
+
 		return false
 	}
 
@@ -359,6 +379,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 	for {
 		if time.Since(startTime) > loopTimeout {
 			log.Infof("Timeout reached (2 minutes). Probably stuck or not exploitable")
+
 			return false
 		}
 		time.Sleep(schedulerTimeout)
@@ -370,6 +391,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		var statusBody map[string]any
 		if err := json.NewDecoder(res.Body).Decode(&statusBody); err != nil {
 			log.Infof("failed to decode status response: %v", err)
+
 			return false
 		}
 		res.Body.Close()
@@ -386,9 +408,11 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 			log.Infof("Bash task running")
 		case "success":
 			log.Infof("Bash task successfully ran")
+
 			return true
 		case "None":
 			log.Infof("Bash task is not yet queued")
+
 			return false
 		default:
 			return false
@@ -398,6 +422,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 
 func fileExists(filesys scalibrfs.FS, path string) bool {
 	_, err := fs.Stat(filesys, path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -407,5 +432,6 @@ func randomString(length int) string {
 	for i := range b {
 		b[i] = charSet[seededRand.Intn(len(charSet)-1)]
 	}
+
 	return string(b)
 }

@@ -79,6 +79,7 @@ func makeTree() scalibrfs.FS {
 			fsys[path] = &fstest.MapFile{Mode: fs.ModeDir}
 		}
 	})
+
 	return fsys
 }
 
@@ -97,8 +98,10 @@ func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clearErr bo
 		if clearErr {
 			return nil
 		}
+
 		return err
 	}
+
 	return nil
 }
 
@@ -156,6 +159,7 @@ func TestIssue51617(t *testing.T) {
 		if d.IsDir() {
 			saw = append(saw, path)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -183,6 +187,7 @@ func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	} else if name == "dir" {
 		return []fs.DirEntry{&fakeDirEntry{name: "file2.txt", isDir: false}}, nil
 	}
+
 	return nil, errors.New("file not found")
 }
 func (fakeFS) Stat(name string) (fs.FileInfo, error) {

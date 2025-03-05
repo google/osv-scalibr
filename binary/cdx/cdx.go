@@ -39,5 +39,6 @@ func Write(doc *cyclonedx.BOM, path string, format string) error {
 	}
 	defer f.Close()
 	encoder := cyclonedx.NewBOMEncoder(f, cdxFormat).SetPretty(true)
+
 	return encoder.Encode(doc)
 }

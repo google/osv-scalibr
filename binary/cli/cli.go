@@ -59,6 +59,7 @@ func (i *Array) String() string {
 // For example, in the case of -o foo -o bar the library will call arr.Set("foo") then arr.Set("bar").
 func (i *Array) Set(value string) error {
 	*i = append(*i, strings.TrimSpace(value))
+
 	return nil
 }
 
@@ -85,6 +86,7 @@ func NewStringListFlag(defaultValue []string) StringListFlag {
 func (s *StringListFlag) Set(x string) error {
 	s.value = append(s.value, strings.Split(x, ",")...)
 	s.set = true
+
 	return nil
 }
 
@@ -98,6 +100,7 @@ func (s *StringListFlag) GetSlice() []string {
 	if s.set {
 		return s.value
 	}
+
 	return s.defaultValue
 }
 
@@ -105,6 +108,7 @@ func (s *StringListFlag) String() string {
 	if len(s.value) == 0 {
 		return ""
 	}
+
 	return fmt.Sprint(s.value)
 }
 
@@ -186,6 +190,7 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -196,6 +201,7 @@ func validateResultPath(filePath string) error {
 	if err := proto.ValidExtension(filePath); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -210,6 +216,7 @@ func validateOutput(output []string) error {
 			return fmt.Errorf("output format %q not recognized, supported formats are %v", oFormat, supportedOutputFormats)
 		}
 	}
+
 	return nil
 }
 
@@ -221,6 +228,7 @@ func validateImagePlatform(imagePlatform string) error {
 	if len(platformDetails) < 2 {
 		return fmt.Errorf("Image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
 	}
+
 	return nil
 }
 
@@ -234,6 +242,7 @@ func validateSPDXCreators(creators string) error {
 			return fmt.Errorf("invalid spdx-creators format, should follow a format like --spdx-creators=Tool:SCALIBR,Organization:Google")
 		}
 	}
+
 	return nil
 }
 
@@ -251,6 +260,7 @@ func validateMultiStringArg(arg []string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -259,11 +269,13 @@ func validateRegex(arg string) error {
 		return nil
 	}
 	_, err := regexp.Compile(arg)
+
 	return err
 }
 
 func validateGlob(arg string) error {
 	_, err := glob.Compile(arg)
+
 	return err
 }
 
@@ -296,6 +308,7 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -361,6 +374,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 			})
 		}
 	}
+
 	return converter.SPDXConfig{
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
@@ -416,6 +430,7 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -462,6 +477,7 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 			d.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
 		}
 	}
+
 	return dets, nil
 }
 
@@ -470,6 +486,7 @@ func multiStringToList(arg []string) []string {
 	for _, item := range arg {
 		result = append(result, strings.Split(item, ",")...)
 	}
+
 	return result
 }
 
@@ -501,6 +518,7 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	for _, r := range scanRootPaths {
 		scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
 	}
+
 	return scanRoots, nil
 }
 
@@ -517,6 +535,7 @@ func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
 			},
 		))
 	}
+
 	return &imageOptions, nil
 }
 
@@ -535,6 +554,7 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 			RunningSystem: false,
 		}
 	}
+
 	return &plugin.Capabilities{
 		OS:            platform.OS(),
 		Network:       network,
@@ -567,6 +587,7 @@ func filterByCapabilities(
 			df = append(df, det)
 		}
 	}
+
 	return ff, sf, df
 }
 
@@ -592,6 +613,7 @@ func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 			}
 		}
 	}
+
 	return result
 }
 
@@ -600,5 +622,6 @@ func keys(m map[string][]string) []string {
 	for k := range m {
 		ret = append(ret, k)
 	}
+
 	return ret
 }

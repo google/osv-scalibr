@@ -72,6 +72,7 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 		inv, err := extractor.Extract(ctx, scanInput)
 		if err != nil {
 			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err))
+
 			continue
 		}
 		for _, i := range inv {

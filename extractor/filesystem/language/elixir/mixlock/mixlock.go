@@ -101,10 +101,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	fileinfo, err := api.Stat()
 	if err != nil || (e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes) {
 		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -132,6 +134,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return packages, err
 }
 

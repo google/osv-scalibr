@@ -45,6 +45,7 @@ func SaveToTarball(path string, image v1.Image) error {
 		if strings.Contains(err.Error(), "invalid tar header") {
 			return fmt.Errorf("failed to copy image tar to %q: %v", path, err)
 		}
+
 		return fmt.Errorf("failed to copy image tar to %q: %w", path, err)
 	}
 

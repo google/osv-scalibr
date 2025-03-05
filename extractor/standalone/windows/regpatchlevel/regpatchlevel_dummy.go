@@ -69,6 +69,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	log.Warnf("Trying to use regpatchlevel on %s, which is not supported", runtime.GOOS)
+
 	return nil
 }
 

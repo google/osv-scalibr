@@ -41,6 +41,7 @@ func createDetectorTestFiles(t *testing.T) string {
 	if err := os.WriteFile(passwdFile, []byte("content"), 0644); err != nil {
 		t.Fatalf("Error while creating file %s: %v", passwdFile, err)
 	}
+
 	return dir
 }
 
@@ -61,6 +62,7 @@ func createExtractorTestFiles(t *testing.T) string {
 	if err := os.WriteFile(dstFile, data, 0644); err != nil {
 		t.Fatalf("os.WriteFile(%s): %v", dstFile, err)
 	}
+
 	return dir
 }
 
@@ -72,6 +74,7 @@ func createFailingDetectorTestFiles(t *testing.T) string {
 	if err := os.Mkdir(passwdDir, 0600); err != nil {
 		t.Fatalf("error creating directory %v: %v", passwdDir, err)
 	}
+
 	return dir
 }
 

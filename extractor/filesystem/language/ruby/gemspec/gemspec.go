@@ -106,10 +106,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -136,6 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	i.Locations = []string{input.Path}
+
 	return []*extractor.Inventory{i}, nil
 }
 
@@ -170,6 +173,7 @@ func extract(path string, r io.Reader) (*extractor.Inventory, error) {
 			if start != "" {
 				foundStart = true
 			}
+
 			continue
 		}
 		if gemName != "" && gemVer != "" {
@@ -179,6 +183,7 @@ func extract(path string, r io.Reader) (*extractor.Inventory, error) {
 			nameArr := reName.FindStringSubmatch(line)
 			if len(nameArr) > 1 {
 				gemName = nameArr[1]
+
 				continue
 			}
 		}
@@ -186,6 +191,7 @@ func extract(path string, r io.Reader) (*extractor.Inventory, error) {
 			verArr := reVer.FindStringSubmatch(line)
 			if len(verArr) > 1 {
 				gemVer = verArr[1]
+
 				continue
 			}
 		}
@@ -198,6 +204,7 @@ func extract(path string, r io.Reader) (*extractor.Inventory, error) {
 	// This was likely a marshalled gemspec. Not a readable text file.
 	if !foundStart {
 		log.Warnf("error scanning gemspec (%s) could not find start of spec definition", path)
+
 		return nil, nil
 	}
 

@@ -93,6 +93,7 @@ func validateConfig(config *Config) error {
 	if config.MaxSymlinkDepth < 0 {
 		return fmt.Errorf("%w: max symlink depth must be non-negative: %d", ErrInvalidConfig, config.MaxSymlinkDepth)
 	}
+
 	return nil
 }
 
@@ -111,6 +112,7 @@ func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
 	for _, chainLayer := range img.chainLayers {
 		scalibrChainLayers = append(scalibrChainLayers, chainLayer)
 	}
+
 	return scalibrChainLayers, nil
 }
 
@@ -125,6 +127,7 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
+
 	return FromV1Image(v1Image, config)
 }
 
@@ -135,6 +138,7 @@ func FromTarball(tarPath string, config *Config) (*Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from tarball with path %q: %w", tarPath, err)
 	}
+
 	return FromV1Image(v1Image, config)
 }
 
@@ -246,6 +250,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 				if err != nil {
 					return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
 				}
+
 				return nil
 			}()
 
@@ -263,6 +268,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		for _, isRequired := range requiredTargets {
 			if isRequired {
 				stillHaveRequiredTargets = true
+
 				break
 			}
 		}
@@ -271,6 +277,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			break
 		}
 	}
+
 	return &outputImage, nil
 }
 
@@ -308,6 +315,7 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSy
 				maxSymlinkDepth: maxSymlinkDepth,
 			})
 			historyIndex++
+
 			continue
 		}
 
@@ -436,6 +444,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		for _, p := range []string{realFilePath, cleanedFilePath, virtualPath} {
 			if requirer.FileRequired(p, header.FileInfo()) {
 				required = true
+
 				break
 			}
 			if _, ok := requiredTargets[p]; ok {
@@ -443,6 +452,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 
 				// The required target has been checked, so it can be marked as not required.
 				requiredTargets[p] = false
+
 				break
 			}
 		}
@@ -462,14 +472,17 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 			newNode, err = img.handleSymlink(virtualPath, originLayerID, tarReader, header, isWhiteout, requiredTargets)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
+
 			continue
 		}
 
 		if err != nil {
 			if errors.Is(err, ErrFileReadLimitExceeded) {
 				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
+
 				continue
 			}
+
 			return nil, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
@@ -486,6 +499,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		layer := currentChainLayer.latestLayer.(*Layer)
 		layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
+
 	return requiredTargets, nil
 }
 
@@ -527,6 +541,7 @@ func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *ta
 
 	if symlink.TargetOutsideRoot(virtualPath, targetPath) {
 		log.Warnf("Found symlink that points outside the root, skipping: %q -> %q", virtualPath, targetPath)
+
 		return nil, fmt.Errorf("%w: %q -> %q", ErrSymlinkPointsOutsideRoot, virtualPath, targetPath)
 	}
 
@@ -651,5 +666,6 @@ func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 
 		filePath = dirname
 	}
+
 	return false
 }

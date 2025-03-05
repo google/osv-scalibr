@@ -86,12 +86,14 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		p := ToPURL(i)
 		if p == nil {
 			log.Warnf("Inventory %v has no PURL, skipping", i)
+
 			continue
 		}
 		pName := p.Name
 		pVersion := p.Version
 		if pName == "" || pVersion == "" {
 			log.Warnf("Inventory %v PURL name or version empty, skipping", i)
+
 			continue
 		}
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
@@ -148,6 +150,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		},
 	}
 	creators = append(creators, c.Creators...)
+
 	return &v2_3.Document{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
@@ -173,6 +176,7 @@ func toDocElementID(id string) common.DocElementID {
 			SpecialID: NoAssertion,
 		}
 	}
+
 	return common.DocElementID{
 		ElementRefID: common.ElementID(id),
 	}
@@ -260,5 +264,6 @@ func extractCPEs(i *extractor.Inventory) []string {
 	if m, ok := i.Metadata.(*cdxe.Metadata); ok {
 		return m.CPEs
 	}
+
 	return nil
 }

@@ -52,6 +52,7 @@ func ParseFilename(filePath string) *JarProps {
 		// We attempt to extract such group IDs here.
 		groupID = name[:i]
 	}
+
 	return &JarProps{ArtifactID: name, Version: version, GroupID: groupID}
 }
 
@@ -93,5 +94,6 @@ func isVersion(str string) bool {
 	if buildAndDigit.MatchString(str) {
 		return true
 	}
+
 	return releaseAndDigit.MatchString(str)
 }

@@ -63,6 +63,7 @@ func (f *fileNode) Stat() (fs.FileInfo, error) {
 	if f.isWhiteout {
 		return nil, fs.ErrNotExist
 	}
+
 	return f, nil
 }
 
@@ -77,6 +78,7 @@ func (f *fileNode) Read(b []byte) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return f.file.Read(b)
 }
 
@@ -91,6 +93,7 @@ func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return f.file.ReadAt(b, off)
 }
 
@@ -104,6 +107,7 @@ func (f *fileNode) Seek(offset int64, whence int) (n int64, err error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return f.file.Seek(offset, whence)
 }
 
@@ -112,8 +116,10 @@ func (f *fileNode) Close() error {
 	if f.file != nil {
 		err := f.file.Close()
 		f.file = nil
+
 		return err
 	}
+
 	return nil
 }
 
@@ -130,6 +136,7 @@ func (f *fileNode) RealFilePath() string {
 // Name returns the name of the fileNode. Name is also used to implement the fs.FileInfo interface.
 func (f *fileNode) Name() string {
 	_, filename := path.Split(f.virtualPath)
+
 	return filename
 }
 

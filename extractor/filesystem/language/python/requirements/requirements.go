@@ -117,10 +117,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -175,6 +177,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		newInv, newPaths, err := openAndExtractFromFile(path, fs)
 		if err != nil {
 			log.Warnf("openAndExtractFromFile(%s): %w", path, err)
+
 			continue
 		}
 		found[path] = true
@@ -195,6 +198,7 @@ func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventor
 		return nil, nil, err
 	}
 	defer reader.Close()
+
 	return extractFromPath(reader, path, fs)
 }
 
@@ -269,6 +273,7 @@ func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
 	if strings.HasSuffix(l, `\`) {
 		builder.WriteString(l[:len(l)-1])
 		scanner.Scan()
+
 		return readLine(scanner, builder)
 	} else {
 		builder.WriteString(l)
@@ -302,6 +307,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 		if strings.Contains(s, sep) {
 			t = strings.SplitN(s, sep, 2)
 			comp = sep
+
 			break
 		}
 	}
@@ -346,6 +352,7 @@ func splitPerRequirementOptions(s string) (string, []string) {
 	for _, hashOptionMatch := range reHashOption.FindAllStringSubmatch(s, -1) {
 		hashes = append(hashes, hashOptionMatch[1])
 	}
+
 	return reTextAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
 }
 

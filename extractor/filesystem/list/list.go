@@ -254,6 +254,7 @@ func concat(InitMaps ...InitMap) InitMap {
 	for _, m := range InitMaps {
 		maps.Copy(result, m)
 	}
+
 	return result
 }
 
@@ -271,6 +272,7 @@ func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
 			all = append(all, initer())
 		}
 	}
+
 	return FilterByCapabilities(all, capabs)
 }
 
@@ -284,6 +286,7 @@ func FilterByCapabilities(exs []filesystem.Extractor, capabs *plugin.Capabilitie
 			result = append(result, ex)
 		}
 	}
+
 	return result
 }
 
@@ -306,6 +309,7 @@ func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
 	for _, e := range resultMap {
 		result = append(result, e)
 	}
+
 	return result, nil
 }
 
@@ -322,5 +326,6 @@ func ExtractorFromName(name string) (filesystem.Extractor, error) {
 	if e.Name() != name {
 		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
 	}
+
 	return e, nil
 }

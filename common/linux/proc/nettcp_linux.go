@@ -167,6 +167,7 @@ func parseIP(hexa string) (*net.IP, error) {
 
 	if len(b) == 4 {
 		ip := net.IPv4(b[3], b[2], b[1], b[0])
+
 		return &ip, nil
 	}
 

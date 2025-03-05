@@ -43,6 +43,7 @@ func New(name string, version int, finding *detector.Finding, err error) detecto
 		c = &detector.Finding{}
 		*c = *finding
 	}
+
 	return &fakeDetector{
 		DetName:    name,
 		DetVersion: version,
@@ -68,6 +69,7 @@ func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, i
 	if d.Finding == nil {
 		return nil, d.Err
 	}
+
 	return []*detector.Finding{d.Finding}, d.Err
 }
 
@@ -115,5 +117,6 @@ func NewWithOptions(opts ...Option) detector.Detector {
 	for _, opt := range opts {
 		opt(fd)
 	}
+
 	return fd
 }

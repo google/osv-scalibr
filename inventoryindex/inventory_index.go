@@ -40,6 +40,7 @@ func New(inv []*extractor.Inventory) (*InventoryIndex, error) {
 		}
 		invMap[p.Type][p.Name] = append(invMap[p.Type][p.Name], i)
 	}
+
 	return &InventoryIndex{invMap: invMap}, nil
 }
 
@@ -51,6 +52,7 @@ func (ix *InventoryIndex) GetAll() []*extractor.Inventory {
 			result = append(result, i...)
 		}
 	}
+
 	return result
 }
 
@@ -65,6 +67,7 @@ func (ix *InventoryIndex) GetAllOfType(packageType string) []*extractor.Inventor
 	for _, i := range m {
 		result = append(result, i...)
 	}
+
 	return result
 }
 
@@ -79,6 +82,7 @@ func (ix *InventoryIndex) GetSpecific(name string, packageType string) []*extrac
 	if !ok {
 		return result
 	}
+
 	return i
 }
 

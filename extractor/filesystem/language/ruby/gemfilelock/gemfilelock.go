@@ -106,6 +106,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	if currentSection != nil {
 		sections = append(sections, currentSection)
 	}
+
 	return sections, nil
 }
 
@@ -125,6 +126,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			m := nameVersionRegexp.FindStringSubmatch(s)
 			if len(m) < 3 || m[1] == "" || m[2] == "" {
 				log.Errorf("Invalid spec line: %s", s)
+
 				continue
 			}
 			name, version := m[1], m[2]
@@ -141,6 +143,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			invs = append(invs, i)
 		}
 	}
+
 	return invs, nil
 }
 

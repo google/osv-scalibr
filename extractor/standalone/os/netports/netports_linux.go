@@ -94,12 +94,14 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 			pid, ok := inodeToPID[entry.Inode]
 			if !ok {
 				inventories = append(inventories, e.newInventory(ctx, port, proto, []string{"unknown"}))
+
 				continue
 			}
 
 			cmdline, cached := pidCommandLinesCache[pid]
 			if cached {
 				inventories = append(inventories, e.newInventory(ctx, port, proto, cmdline))
+
 				continue
 			}
 

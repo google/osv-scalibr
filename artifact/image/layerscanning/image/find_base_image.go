@@ -114,5 +114,6 @@ func findBaseImageIndex(histories []v1.History) (int, error) {
 			}
 		}
 	}
+
 	return 0, ErrBaseImageNotFound
 }

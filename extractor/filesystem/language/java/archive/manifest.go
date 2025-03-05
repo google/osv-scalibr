@@ -126,6 +126,7 @@ func getGroupID(h textproto.MIMEHeader) string {
 	if strings.Contains(g, ";") {
 		g = strings.Split(g, ";")[0]
 	}
+
 	return g
 }
 
@@ -139,6 +140,7 @@ func getFirstValidGroupID(h textproto.MIMEHeader, names []string) string {
 			return strings.ToLower(groupID)
 		}
 	}
+
 	return ""
 }
 
@@ -169,6 +171,7 @@ func getArtifactID(h textproto.MIMEHeader) string {
 	for _, k := range keys {
 		log.Debugf("  %s: %s\n", k, h.Get(k))
 	}
+
 	return getFirstValidArtifactID(h, keys)
 }
 
@@ -199,6 +202,7 @@ func getFirst(h textproto.MIMEHeader, names []string) string {
 			return h.Get(n)
 		}
 	}
+
 	return ""
 }
 
@@ -243,6 +247,7 @@ func getFirstValidArtifactID(h textproto.MIMEHeader, names []string) string {
 			return h.Get(n)
 		}
 	}
+
 	return ""
 }
 

@@ -100,10 +100,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -136,11 +138,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err != nil {
 		log.Debugf("error parsing the contents of Go binary (%s) for extraction: %v", input.Path, err)
 		e.reportFileExtracted(input.Path, input.Info, err)
+
 		return []*extractor.Inventory{}, nil
 	}
 
 	inventory, err := e.extractPackagesFromBuildInfo(binfo, input.Path)
 	e.reportFileExtracted(input.Path, input.Info, err)
+
 	return inventory, err
 }
 
@@ -205,6 +209,7 @@ func validateGoVersion(vers string) (string, error) {
 
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")
+
 	return res, nil
 }
 

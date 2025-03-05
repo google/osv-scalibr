@@ -62,6 +62,7 @@ func (d Detector) Requirements() *plugin.Capabilities {
 	if d.OfflineVulnDBPath == "" {
 		net = plugin.NetworkAny
 	}
+
 	return &plugin.Capabilities{Network: net, DirectFS: true}
 }
 
@@ -91,16 +92,19 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			out, err := d.runGovulncheck(ctx, l, scanRoot.Path)
 			if err != nil {
 				allErrs = appendError(allErrs, fmt.Errorf("d.runGovulncheck(%s): %w", l, err))
+
 				continue
 			}
 			r, err := parseVulnsFromOutput(out, l)
 			if err != nil {
 				allErrs = appendError(allErrs, fmt.Errorf("d.parseVulnsFromOutput(%v, %s): %w", out, l, err))
+
 				continue
 			}
 			result = append(result, r...)
 		}
 	}
+
 	return result, allErrs
 }
 
@@ -122,6 +126,7 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 		return nil, err
 	}
 	log.Debugf("govulncheck complete")
+
 	return &out, nil
 }
 
@@ -171,6 +176,7 @@ func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Fin
 			Extra:  extra,
 		})
 	}
+
 	return result, nil
 }
 
@@ -185,6 +191,7 @@ func getAdvisoryID(e *osvEntry) *detector.AdvisoryID {
 		} else {
 			continue
 		}
+
 		return &detector.AdvisoryID{
 			Publisher: publisher,
 			Reference: a,
@@ -201,5 +208,6 @@ func appendError(err1, err2 error) error {
 	if err1 == nil {
 		return err2
 	}
+
 	return fmt.Errorf("%w\n%w", err1, err2)
 }

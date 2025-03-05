@@ -59,6 +59,7 @@ func (f fakeFS) Open(name string) (fs.File, error) {
 	if content, ok := f.files[name]; ok {
 		return &fakeFile{content, 0}, nil
 	}
+
 	return nil, os.ErrNotExist
 }
 func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
@@ -81,8 +82,10 @@ func (f *fakeFile) Read(buffer []byte) (count int, err error) {
 	size := copy(buffer, f.content[f.position:])
 	if size > 0 {
 		f.position += size
+
 		return size, nil
 	}
+
 	return 0, io.EOF
 }
 

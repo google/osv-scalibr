@@ -379,6 +379,7 @@ func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
 	if cfg.MaxFileSizeBytes > 0 {
 		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
 	}
+
 	return newCfg
 }
 

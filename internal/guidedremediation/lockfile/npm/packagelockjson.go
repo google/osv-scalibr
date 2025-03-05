@@ -133,6 +133,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 				// But there are some cases (with workspaces) that npm doesn't error,
 				// so just always ignore the error to make it work.
 				log.Warnf("package-lock.json is missing dependency %s for %s", depName, node.ActualName)
+
 				continue
 			}
 			if err := g.AddEdge(node.NodeID, depNode, depSpec.Version, depSpec.DepType); err != nil {

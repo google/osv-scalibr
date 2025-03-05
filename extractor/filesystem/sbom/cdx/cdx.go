@@ -92,6 +92,7 @@ func findExtractor(path string) extractFunc {
 		if hasFileExtension(path, ext) {
 			return func(rdr io.Reader) (cyclonedx.BOM, error) {
 				var cdxBOM cyclonedx.BOM
+
 				return cdxBOM, cyclonedx.NewBOMDecoder(rdr, format).Decode(&cdxBOM)
 			}
 		}
@@ -101,6 +102,7 @@ func findExtractor(path string) extractFunc {
 		if strings.ToLower(filepath.Base(path)) == name {
 			return func(rdr io.Reader) (cyclonedx.BOM, error) {
 				var cdxBOM cyclonedx.BOM
+
 				return cdxBOM, cyclonedx.NewBOMDecoder(rdr, format).Decode(&cdxBOM)
 			}
 		}
@@ -144,6 +146,7 @@ func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) 
 		inv.Metadata = m
 		if m.PURL == nil && len(m.CPEs) == 0 {
 			log.Warnf("Neither CPE nor PURL found for package: %+v", cdxPkg)
+
 			continue
 		}
 		results = append(results, inv)

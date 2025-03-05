@@ -112,10 +112,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -145,6 +147,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -182,8 +185,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		if err != nil {
 			if err == io.EOF {
 				log.Warnf("Reached EOF for desc file in %v", input.Path)
+
 				break
 			}
+
 			return pkgs, fmt.Errorf("%s halted at %q: %v", e.Name(), input.Path, err)
 		}
 	}
@@ -256,6 +261,7 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	if m.OSVersionID == "" {
 		return osID
 	}
+
 	return osID + ":" + m.OSVersionID
 }
 
@@ -264,6 +270,7 @@ func toNamespace(m *Metadata) string {
 		return m.OSID
 	}
 	log.Errorf("os-id not set, fallback to 'linux'")
+
 	return "linux"
 }
 
@@ -294,5 +301,6 @@ func toDistro(m *Metadata) string {
 		return m.OSVersionID
 	}
 	log.Errorf("VERSION_ID not set in os-release")
+
 	return ""
 }

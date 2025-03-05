@@ -110,10 +110,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -142,6 +144,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -190,9 +193,11 @@ func toDistro(m *Metadata) string {
 
 	if m.OSVersion != "" {
 		log.Warnf("VERSION_ID not set in os-release, fallback to VERSION")
+
 		return fmt.Sprintf("cos-%s", m.OSVersion)
 	}
 	log.Errorf("VERSION and VERSION_ID not set in os-release")
+
 	return ""
 }
 
@@ -204,6 +209,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	if distro != "" {
 		q[purl.Distro] = distro
 	}
+
 	return &purl.PackageURL{
 		Type:       purl.TypeCOS,
 		Name:       i.Name,

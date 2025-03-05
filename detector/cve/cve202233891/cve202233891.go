@@ -102,6 +102,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	sparkUIVersion, inventory, affectedVersions := findApacheSparkUIPackage(ix)
 	if sparkUIVersion == "" {
 		log.Debugf("No Apache Spark UI version found")
+
 		return nil, nil
 	}
 
@@ -114,6 +115,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", sparkUIVersion)
+
 		return nil, nil
 	}
 	log.Infof("Found Potentially vulnerable Apache Spark UI version %v", sparkUIVersion)
@@ -126,6 +128,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		// We expect to receive a 403 error
 		if retCode != 403 {
 			log.Infof("Version %q not vuln (HTTP query didn't return 403: %v)", sparkUIVersion, retCode)
+
 			continue
 		}
 
@@ -136,6 +139,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			}
 			log.Infof("File %v found, this server is vulnerable. Removing the file now", randFilePath)
 			vulnerable = true
+
 			break
 		}
 		log.Infof("Version %q not vuln (Temp file not found)", sparkUIVersion)
@@ -143,6 +147,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	if !vulnerable {
 		return nil, nil
 	}
+
 	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
@@ -172,6 +177,7 @@ func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cm
 
 	if err != nil {
 		log.Infof("Error when sending request %s to the server", targetURL)
+
 		return 0
 	}
 
@@ -187,11 +193,13 @@ func findApacheSparkUIPackage(ix *inventoryindex.InventoryIndex) (string, *extra
 			return i.Version, i, r.affectedVersions
 		}
 	}
+
 	return "", nil, []string{}
 }
 
 func fileExists(filesys scalibrfs.FS, path string) bool {
 	_, err := fs.Stat(filesys, path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -201,5 +209,6 @@ func randomString(length int) string {
 	for i := range b {
 		b[i] = charSet[seededRand.Intn(len(charSet)-1)]
 	}
+
 	return string(b)
 }

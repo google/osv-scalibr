@@ -102,6 +102,7 @@ func typeForPath(filePath string) (*fileType, error) {
 // ValidExtension returns an error if the file extension is not a proto file.
 func ValidExtension(path string) error {
 	_, err := typeForPath(path)
+
 	return err
 }
 
@@ -112,6 +113,7 @@ func Write(filePath string, outputProto proto.Message) error {
 	if err != nil {
 		return err
 	}
+
 	return write(filePath, outputProto, ft)
 }
 
@@ -119,6 +121,7 @@ func Write(filePath string, outputProto proto.Message) error {
 // on the value of the format parameter ("textproto" or "binproto")
 func WriteWithFormat(filePath string, outputProto proto.Message, format string) error {
 	ft := &fileType{isGZipped: false, isBinProto: format == "binproto"}
+
 	return write(filePath, outputProto, ft)
 }
 
@@ -154,6 +157,7 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 	} else if _, err := f.Write(p); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -205,6 +209,7 @@ func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
 	default:
 		e = spb.ScanStatus_UNSPECIFIED
 	}
+
 	return &spb.ScanStatus{Status: e, FailureReason: s.FailureReason}
 }
 
@@ -233,6 +238,7 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		LayerDetails: layerDetailsToProto(i.LayerDetails),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
+
 	return inventoryProto, nil
 }
 
@@ -514,6 +520,7 @@ func personsToProto(persons []*packagejson.Person) []string {
 	for _, p := range persons {
 		personStrings = append(personStrings, p.PersonString())
 	}
+
 	return personStrings
 }
 
@@ -521,6 +528,7 @@ func purlToProto(p *purl.PackageURL) *spb.Purl {
 	if p == nil {
 		return nil
 	}
+
 	return &spb.Purl{
 		Purl:       p.String(),
 		Type:       p.Type,
@@ -540,6 +548,7 @@ func annotationsToProto(as []extractor.Annotation) []spb.Inventory_AnnotationEnu
 	for _, a := range as {
 		ps = append(ps, annotationToProto(a))
 	}
+
 	return ps
 }
 
@@ -555,6 +564,7 @@ func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
 	default:
 		e = spb.Inventory_UNSPECIFIED
 	}
+
 	return e
 }
 
@@ -562,6 +572,7 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 	if ld == nil {
 		return nil
 	}
+
 	return &spb.LayerDetails{
 		Index:       int32(ld.Index),
 		DiffId:      ld.DiffID,
@@ -574,6 +585,7 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 	if s == nil {
 		return nil
 	}
+
 	return &spb.SourceCodeIdentifier{
 		Repo:   s.Repo,
 		Commit: s.Commit,
@@ -585,6 +597,7 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 	for _, q := range qs {
 		result = append(result, &spb.Qualifier{Key: q.Key, Value: q.Value})
 	}
+
 	return result
 }
 
@@ -612,6 +625,7 @@ func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	if f.Adv.ID == nil {
 		return nil, ErrAdvisoryIDMissing
 	}
+
 	return &spb.Finding{
 		Adv: &spb.Advisory{
 			Id: &spb.AdvisoryId{
@@ -662,6 +676,7 @@ func severityToProto(s *detector.Severity) *spb.Severity {
 	if s.CVSSV3 != nil {
 		r.CvssV3 = cvssToProto(s.CVSSV3)
 	}
+
 	return r
 }
 

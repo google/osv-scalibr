@@ -92,6 +92,7 @@ func (opts *Options) matchSeverity(v resolution.Vulnerability) bool {
 			for _, affected := range v.OSV.Affected {
 				if vulns.IsAffected(&osvschema.Vulnerability{Affected: []osvschema.Affected{affected}}, inv) {
 					severities = append(severities, affected.Severity...)
+
 					break
 				}
 			}
@@ -217,6 +218,7 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) Patch {
 				VersionFrom: "",
 				VersionTo:   req.Version,
 			})
+
 			continue
 		}
 		if req.Version == oldReq.Version {

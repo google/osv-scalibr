@@ -52,6 +52,7 @@ func ReadProcessCmdline(ctx context.Context, pid int64, root string, fsys scalib
 	}
 
 	cmd := strings.Trim(string(cmdline), "\x00")
+
 	return strings.Split(cmd, string('\x00')), nil
 }
 

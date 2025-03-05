@@ -219,6 +219,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 					wc.printStatus()
 				case <-quit:
 					ticker.Stop()
+
 					return
 				}
 			}
@@ -285,6 +286,7 @@ func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) e
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -310,6 +312,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		} else {
 			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
+
 		return nil
 	}
 	if d.Type().IsDir() {
@@ -317,6 +320,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
 			return fs.SkipDir
 		}
+
 		return nil
 	}
 
@@ -340,6 +344,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			wc.runExtractor(ex, path)
 		}
 	}
+
 	return nil
 }
 
@@ -359,6 +364,7 @@ func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
 		api.currentStatCalled = true
 		api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
 	}
+
 	return api.currentFileInfo, api.currentStatErr
 }
 
@@ -372,6 +378,7 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	if wc.skipDirGlob != nil {
 		return wc.skipDirGlob.Match(path)
 	}
+
 	return false
 }
 
@@ -379,6 +386,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	rc, err := wc.fs.Open(path)
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %v", path, err))
+
 		return
 	}
 	defer rc.Close()
@@ -386,6 +394,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	info, err := rc.Stat()
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %v", path, err))
+
 		return
 	}
 
@@ -423,6 +432,7 @@ func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	wc.fileAPI.fs = fs
+
 	return nil
 }
 
@@ -431,6 +441,7 @@ func expandAbsolutePath(scanRoot string, paths []string) []string {
 	for _, l := range paths {
 		locations = append(locations, filepath.Join(scanRoot, l))
 	}
+
 	return locations
 }
 
@@ -493,6 +504,7 @@ func pathStringListToMap(paths []string) map[string]bool {
 	for _, p := range paths {
 		result[p] = true
 	}
+
 	return result
 }
 
@@ -509,6 +521,7 @@ func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, erro
 	for _, ex := range extractors {
 		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))
 	}
+
 	return result
 }
 
@@ -602,5 +615,6 @@ func IsInterestingExecutable(api FileAPI) bool {
 	}
 
 	mode, err := api.Stat()
+
 	return err == nil && mode.Mode()&0111 != 0
 }

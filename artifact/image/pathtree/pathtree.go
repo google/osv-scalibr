@@ -57,6 +57,7 @@ func (node *Node[V]) Insert(path string, value *V) error {
 	// the path.
 	if path == "" {
 		node.value = value
+
 		return nil
 	}
 
@@ -100,6 +101,7 @@ func (node *Node[V]) getNode(path string) *Node[V] {
 		}
 		cursor = next
 	}
+
 	return cursor
 }
 
@@ -110,6 +112,7 @@ func (node *Node[V]) Get(path string) *V {
 	if pathNode == nil {
 		return nil
 	}
+
 	return pathNode.value
 }
 

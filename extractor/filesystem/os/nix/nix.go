@@ -123,6 +123,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	pkgVersion := matches[3]
 	if pkgHash == "" || pkgName == "" || pkgVersion == "" {
 		log.Warnf("NIX package name/version/hash is empty (name: %v, version: %v, hash: %v)", pkgName, pkgVersion, pkgHash)
+
 		return nil, nil
 	}
 

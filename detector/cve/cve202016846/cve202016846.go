@@ -124,6 +124,7 @@ func findSaltVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inv
 			return i.Version, i, r.affectedVersions
 		}
 	}
+
 	return "", nil, []string{}
 }
 
@@ -132,6 +133,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	saltVersion, inventory, affectedVersions := findSaltVersions(ix)
 	if saltVersion == "" {
 		log.Debugf("No Salt version found")
+
 		return nil, nil
 	}
 	isVulnVersion := false
@@ -143,6 +145,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", saltVersion)
+
 		return nil, nil
 	}
 
@@ -150,11 +153,13 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !CheckForCherrypy(saltServerIP, saltServerPort) {
 		log.Infof("Cherry py not found. Version %q not vulnerable", saltVersion)
+
 		return nil, nil
 	}
 
 	if !ExploitSalt(ctx, saltServerIP, saltServerPort) {
 		log.Infof("Version %q not vulnerable", saltVersion)
+
 		return nil, nil
 	}
 
@@ -198,11 +203,13 @@ func CheckForCherrypy(saltIP string, saltServerPort int) bool {
 	resp, err := client.Get(target)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
 
 	serverHeader := resp.Header.Get("Server")
+
 	return strings.Contains(serverHeader, "CherryPy")
 }
 
@@ -220,6 +227,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.Infof("Error marshaling JSON:", err)
+
 		return false
 	}
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
@@ -228,6 +236,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 	req, err := http.NewRequestWithContext(ctx, "POST", target, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Infof("Error creating request: %v\n", err)
+
 		return false
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -237,15 +246,18 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			log.Infof("Request needs to timeout. POST request hangs up otherwise")
+
 			return true
 		}
 		log.Infof("Error sending request: %v\n", err)
+
 		return false
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		log.Infof("Unexpected status code: %d\n", resp.StatusCode)
+
 		return false
 	}
 
@@ -254,6 +266,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 
 func fileExists(filesys scalibrfs.FS, path string) bool {
 	_, err := fs.Stat(filesys, path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -263,5 +276,6 @@ func randomString(length int) string {
 	for i := range b {
 		b[i] = charSet[seededRand.Intn(len(charSet)-1)]
 	}
+
 	return string(b)
 }

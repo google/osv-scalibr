@@ -50,6 +50,7 @@ func Write23(doc *v2_3.Document, path string, format string) error {
 	if err = writeFun(doc, f); err != nil {
 		return err
 	}
+
 	return nil
 }
 

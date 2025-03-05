@@ -35,5 +35,6 @@ func ExtractorErrorToFileExtractedResult(err error) stats.FileExtractedResult {
 	} else if errors.Is(err, ErrExtractorMemoryLimitExceeded) {
 		return stats.FileExtractedResultErrorMemoryLimitExceeded
 	}
+
 	return stats.FileExtractedResultErrorUnknown
 }

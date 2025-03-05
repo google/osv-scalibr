@@ -63,6 +63,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 			if !errors.Is(r.err, errOverrideImpossible) {
 				log.Warnf("error attempting to compute override patch for vulns %v: %v", r.vulnIDs, r.err)
 			}
+
 			continue
 		}
 
@@ -221,6 +222,7 @@ func getVersionsGreater(ctx context.Context, cl resolve.Client, vk resolve.Versi
 		parsed, err := sv.Parse(ver.Version)
 		if err != nil {
 			log.Warnf("error parsing version %s: %v", parsed, err)
+
 			continue
 		}
 		semvers[ver.VersionKey] = parsed

@@ -48,6 +48,7 @@ func (o *OfflineOpener) Open() (Registry, error) {
 	reg, err := regparser.NewRegistry(f)
 	if err != nil {
 		f.Close()
+
 		return nil, err
 	}
 

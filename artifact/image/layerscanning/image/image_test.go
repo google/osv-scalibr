@@ -74,6 +74,7 @@ func (fakeV1Image *fakeV1Image) Layers() ([]v1.Layer, error) {
 	if fakeV1Image.errorOnLayers {
 		return nil, fmt.Errorf("error on layers")
 	}
+
 	return fakeV1Image.layers, nil
 }
 
@@ -81,6 +82,7 @@ func (fakeV1Image *fakeV1Image) ConfigFile() (*v1.ConfigFile, error) {
 	if fakeV1Image.errorOnConfigFile {
 		return nil, fmt.Errorf("error on config file")
 	}
+
 	return fakeV1Image.config, nil
 }
 
@@ -1036,5 +1038,6 @@ func constructImage(ctx context.Context, version, fakePackageName string) (*v1.I
 		return nil, fmt.Errorf("unable to create layer: %v", err)
 	}
 	image, err := mutate.AppendLayers(empty.Image, layer)
+
 	return &image, err
 }

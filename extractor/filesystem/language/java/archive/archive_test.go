@@ -663,6 +663,7 @@ func defaultConfigWith(cfg archive.Config) archive.Config {
 	// ignores defaults
 	newCfg.ExtractFromFilename = cfg.ExtractFromFilename
 	newCfg.HashJars = cfg.HashJars
+
 	return newCfg
 }
 

@@ -98,6 +98,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if p == nil {
 		return []*extractor.Inventory{}, nil
 	}
+
 	return []*extractor.Inventory{
 		{
 			Name:      p.AppName,
@@ -123,6 +124,7 @@ func SplitPath(path string) *BrewPath {
 			}
 		}
 	}
+
 	return nil
 }
 

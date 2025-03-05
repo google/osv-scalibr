@@ -90,5 +90,6 @@ func parseFlags() *cli.Flags {
 		log.Errorf("Error parsing CLI args: %v", err)
 		os.Exit(1)
 	}
+
 	return flags
 }

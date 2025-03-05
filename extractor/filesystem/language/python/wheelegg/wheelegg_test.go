@@ -300,6 +300,7 @@ func defaultConfigWith(cfg wheelegg.Config) wheelegg.Config {
 	if cfg.Stats != nil {
 		newCfg.Stats = cfg.Stats
 	}
+
 	return newCfg
 }
 

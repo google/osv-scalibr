@@ -61,6 +61,7 @@ func NewConfig(registry string) Config {
 		URL:             registry,
 		ReleasesEnabled: true,
 	})
+
 	return Config{
 		DependencyClient:       depClient,
 		MavenRegistryAPIClient: mavenClient,
@@ -232,6 +233,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	g, a, _ := strings.Cut(i.Name, ":")
+
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: g,

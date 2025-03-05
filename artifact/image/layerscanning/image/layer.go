@@ -83,6 +83,7 @@ func (layer *Layer) Uncompressed() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUncompressedReaderMissingFromLayer, err)
 	}
+
 	return uncompressed, nil
 }
 
@@ -200,6 +201,7 @@ func (chainfs FS) Open(name string) (fs.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", fileNode.virtualPath, err)
 	}
+
 	return resolvedNode, nil
 }
 
@@ -214,6 +216,7 @@ func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", node.virtualPath, err)
 	}
+
 	return resolvedNode.Stat()
 }
 
@@ -246,6 +249,7 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	slices.SortFunc(dirEntries, func(a, b fs.DirEntry) int {
 		return strings.Compare(a.Name(), b.Name())
 	})
+
 	return dirEntries, nil
 }
 
@@ -260,6 +264,7 @@ func (chainfs *FS) getFileNode(path string) (*fileNode, error) {
 	if node == nil {
 		return nil, fs.ErrNotExist
 	}
+
 	return node, nil
 }
 
@@ -272,6 +277,7 @@ func (chainfs *FS) getFileNodeChildren(path string) ([]*fileNode, error) {
 	if children == nil {
 		return nil, fs.ErrNotExist
 	}
+
 	return children, nil
 }
 
@@ -288,5 +294,6 @@ func normalizePath(path string) string {
 	if path[0] != '/' {
 		path = "/" + path
 	}
+
 	return path
 }

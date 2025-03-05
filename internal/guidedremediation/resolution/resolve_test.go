@@ -83,6 +83,7 @@ func (m mockManifest) Requirements() []resolve.RequirementVersion {
 			Type: r.typ.Clone(),
 		}
 	}
+
 	return reqs
 }
 
@@ -95,6 +96,7 @@ func (m mockManifest) LocalManifests() []manifest.Manifest {
 	for i, lm := range m.localManifests {
 		ret[i] = lm
 	}
+
 	return ret
 }
 
@@ -114,6 +116,7 @@ func TestResolveNPM(t *testing.T) {
 	aliasType := func(knownAs string) dep.Type {
 		var typ dep.Type
 		typ.AddAttr(dep.KnownAs, knownAs)
+
 		return typ
 	}
 	// Create a mock manifest with dependencies, including aliases and workspaces.

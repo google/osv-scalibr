@@ -135,6 +135,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	for _, p := range packages {
 		dedupedPs[mapKey{name: p.Name, version: p.Version}] = p
 	}
+
 	return maps.Values(dedupedPs), nil
 }
 

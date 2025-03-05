@@ -45,6 +45,7 @@ func MakeRequirementKey(requirement resolve.RequirementVersion) manifest.Require
 	// Declaring a dependency in multiple places (dependencies, devDependencies, optionalDependencies) only installs it once at one version.
 	// Aliases & non-registry dependencies are keyed on their 'KnownAs' attribute.
 	knownAs, _ := requirement.Type.GetAttr(dep.KnownAs)
+
 	return RequirementKey{
 		PackageKey: requirement.PackageKey,
 		KnownAs:    knownAs,
@@ -90,6 +91,7 @@ func (m *npmManifest) LocalManifests() []manifest.Manifest {
 	for i, l := range m.localManifests {
 		locals[i] = l
 	}
+
 	return locals
 }
 
@@ -231,11 +233,13 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 		req, ok := makeNPMReqVer(pkg, ver)
 		if !ok {
 			log.Warnf("Skipping unsupported requirement: \"%s\": \"%s\"", pkg, ver)
+
 			continue
 		}
 		if isWorkspace(req) {
 			// workspaces seem to always be evaluated separately
 			workspaceReqVers[req.PackageKey] = req
+
 			continue
 		}
 		manif.requirements = append(manif.requirements, req)
@@ -245,12 +249,14 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 		req, ok := makeNPMReqVer(pkg, ver)
 		if !ok {
 			log.Warnf("Skipping unsupported requirement: \"%s\": \"%s\"", pkg, ver)
+
 			continue
 		}
 		req.Type.AddAttr(dep.Opt, "")
 		if isWorkspace(req) {
 			// workspaces seem to always be evaluated separately
 			workspaceReqVers[req.PackageKey] = req
+
 			continue
 		}
 		idx := slices.IndexFunc(manif.requirements, func(imp resolve.RequirementVersion) bool {
@@ -268,11 +274,13 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 		req, ok := makeNPMReqVer(pkg, ver)
 		if !ok {
 			log.Warnf("Skipping unsupported requirement: \"%s\": \"%s\"", pkg, ver)
+
 			continue
 		}
 		if isWorkspace(req) {
 			// workspaces seem to always be evaluated separately
 			workspaceReqVers[req.PackageKey] = req
+
 			continue
 		}
 		idx := slices.IndexFunc(manif.requirements, func(imp resolve.RequirementVersion) bool {

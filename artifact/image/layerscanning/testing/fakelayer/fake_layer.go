@@ -50,6 +50,7 @@ func New(testDir string, diffID digest.Digest, buildCommand string, files map[st
 			}
 		}
 	}
+
 	return &FakeLayer{
 		testDir:      testDir,
 		diffID:       diffID,
@@ -91,8 +92,10 @@ func (fakeLayer *FakeLayer) Uncompressed() (io.ReadCloser, error) {
 func (fakeLayer *FakeLayer) Open(name string) (fs.File, error) {
 	if _, ok := fakeLayer.files[name]; ok {
 		filename := filepath.Join(fakeLayer.testDir, name)
+
 		return os.Open(filename)
 	}
+
 	return nil, os.ErrNotExist
 }
 
@@ -101,6 +104,7 @@ func (fakeLayer *FakeLayer) Stat(name string) (fs.FileInfo, error) {
 	if _, ok := fakeLayer.files[name]; ok {
 		return os.Stat(path.Join(fakeLayer.testDir, name))
 	}
+
 	return nil, os.ErrNotExist
 }
 

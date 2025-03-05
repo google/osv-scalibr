@@ -150,6 +150,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			for _, oldInv := range oldInventory {
 				if areInventoriesEqual(inv, oldInv) {
 					foundPackage = true
+
 					break
 				}
 			}
@@ -158,6 +159,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			if !foundPackage {
 				layerDetails = chainLayerDetailsList[i+1]
 				foundOrigin = true
+
 				break
 			}
 		}
@@ -196,6 +198,7 @@ func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) b
 	if !slices.Equal(locations1, locations2) {
 		return false
 	}
+
 	return true
 }
 
@@ -228,5 +231,6 @@ func filesExistInLayer(chainLayer scalibrImage.ChainLayer, fileLocations []strin
 			return true
 		}
 	}
+
 	return false
 }

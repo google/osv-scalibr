@@ -44,6 +44,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 			// Successfully skipped directory.
 			err = nil
 		}
+
 		return err
 	}
 
@@ -57,6 +58,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 			if err == fs.SkipDir && d.IsDir() {
 				err = nil
 			}
+
 			return err
 		}
 		// End iteration after an error
@@ -79,6 +81,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 				if err == fs.SkipDir && d.IsDir() {
 					err = nil
 				}
+
 				return err
 			}
 			// End iteration after an error
@@ -89,9 +92,11 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 			if err == fs.SkipDir {
 				break
 			}
+
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -113,6 +118,7 @@ func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc) error {
 	if err == fs.SkipDir || err == fs.SkipAll {
 		return nil
 	}
+
 	return err
 }
 
@@ -136,8 +142,10 @@ func readDir(fsys scalibrfs.FS, name string) (*dirIterator, error) {
 		if err != nil {
 			return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
 		}
+
 		return &dirIterator{files: files, curr: 0}, nil
 	}
+
 	return &dirIterator{dir: dir}, nil
 }
 
@@ -158,6 +166,7 @@ func (i *dirIterator) next() (fs.DirEntry, error) {
 			return nil, io.EOF
 		}
 		i.curr++
+
 		return i.files[i.curr-1], nil
 	}
 
@@ -174,5 +183,6 @@ func (i *dirIterator) close() error {
 	if i.dir == nil {
 		return nil
 	}
+
 	return i.dir.Close()
 }

@@ -77,6 +77,7 @@ func (c *CtrdClient) LoadContainer(ctx context.Context, id string) (containerd.C
 	if ctr, ok := c.ctrTasksIDs[id]; ok {
 		return ctr, nil
 	}
+
 	return nil, fmt.Errorf("no container found with task id %v", id)
 }
 
@@ -103,6 +104,7 @@ func initContainerTasks(tsks []*task.Process, ctrs []containerd.Container) (map[
 		for _, task := range tsks {
 			if task.ID == ctr.ID() {
 				ctrTasksIDs[ctr.ID()] = ctr
+
 				break
 			}
 		}
@@ -111,6 +113,7 @@ func initContainerTasks(tsks []*task.Process, ctrs []containerd.Container) (map[
 			return nil, fmt.Errorf("no task found for container %v", ctr.ID())
 		}
 	}
+
 	return ctrTasksIDs, nil
 }
 
@@ -147,6 +150,7 @@ func (s *TasksService) List(ctx context.Context, in *tasks.ListTasksRequest, opt
 		for _, t := range s.tasks {
 			if id == t.ID {
 				tsks = append(tsks, t)
+
 				break
 			}
 		}

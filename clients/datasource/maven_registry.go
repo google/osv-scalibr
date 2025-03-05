@@ -164,6 +164,7 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 			if sv.Extension == "pom" {
 				// We only look for pom.xml for project metadata.
 				snapshot = string(sv.Value)
+
 				break
 			}
 		}

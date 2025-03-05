@@ -197,6 +197,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			gotIndex, gotErr := findBaseImageIndex(test.histories)
 			if test.wantError != gotErr {
 				t.Errorf("findBaseImageIndex(%v) returned error: %v, want error: %v", test.histories, gotErr, test.wantError)
+
 				return
 			}
 

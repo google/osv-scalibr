@@ -75,11 +75,13 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {
 		log.Debugf("No OpenSSH version found")
+
 		return nil, nil
 	}
 	isVulnVersion := versionLessEqual("5.5", openSSHVersion) && versionLessEqual(openSSHVersion, "9.3p1")
 	if !isVulnVersion {
 		log.Debugf("Version %q not vuln", openSSHVersion)
+
 		return nil, nil
 	}
 	log.Debugf("Found OpenSSH in range 5.5 to 9.3p1 (inclusive): %v", openSSHVersion)
@@ -151,6 +153,7 @@ func getOpenSSHVersion() string {
 	log.Debugf("ssh -V stdout: %s", string(out))
 	if err != nil {
 		log.Errorf("Command \"ssh -V\": %v", err)
+
 		return ""
 	}
 
@@ -158,6 +161,7 @@ func getOpenSSHVersion() string {
 	if len(matches) >= 2 {
 		return matches[1]
 	}
+
 	return ""
 }
 
@@ -171,11 +175,13 @@ func buildExtra(isVulnVersion bool, configsWithForward []fileLocations, socketFi
 			slist = append(slist, "0")
 		}
 	}
+
 	return strings.Join(slist, ":")
 }
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -205,6 +211,7 @@ func sshConfigContainsForward(path string) []int {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Warnf("sshConfigContainsForward(%q): %v", path, err)
+
 		return nil
 	}
 	defer f.Close()
@@ -254,6 +261,7 @@ func findHistoryFiles() []string {
 	if err != nil {
 		log.Errorf("filepath.Glob(\"/root/.histfile\"): %v", err)
 	}
+
 	return append(append(append(pHistory, pHistfile...), pRootHistory...), pRootHistfile...)
 }
 
@@ -261,6 +269,7 @@ func findString(path string, re *regexp.Regexp) []int {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Warnf("findString(%q, %v): %v", path, re, err)
+
 		return nil
 	}
 	defer f.Close()

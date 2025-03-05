@@ -146,10 +146,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -179,6 +181,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			UncompressedBytes: openedBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -199,6 +202,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	if int(input.Info.Size()) < e.minZipBytes {
 		log.Warnf("%s ignoring zip with size %d because it is smaller than min size %d at %q",
 			e.Name(), input.Info.Size(), e.minZipBytes, input.Path)
+
 		return nil, openedBytes, nil
 	}
 
@@ -268,6 +272,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			if err != nil {
 				log.Errorf("%s failed to extract from pom.properties at %q: %v", e.Name(), path, err)
 				errs = append(errs, err)
+
 				continue
 			}
 			if pp.valid() {
@@ -288,6 +293,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			if err != nil {
 				log.Errorf("%s failed to extract from manifest.mf at %q: %v", e.Name(), path, err)
 				errs = append(errs, err)
+
 				continue
 			}
 			if mf.valid() {
@@ -310,6 +316,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				if err != nil {
 					log.Errorf("%s failed to open file  %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
+
 					return
 				}
 				// Do not need to handle error from f.Close() because it only happens if the file was previously closed.
@@ -324,6 +331,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
+
 					return
 				}
 				inventory = append(inventory, subInventory...)
@@ -424,6 +432,7 @@ func IsArchive(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -434,6 +443,7 @@ func isManifest(path string) bool {
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*Metadata)
+
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),

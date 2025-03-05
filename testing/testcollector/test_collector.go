@@ -50,6 +50,7 @@ func (c *Collector) FileRequiredResult(path string) stats.FileRequiredResult {
 	if filestats, ok := c.fileRequiredStats[path]; ok {
 		return filestats.Result
 	}
+
 	return ""
 }
 
@@ -59,6 +60,7 @@ func (c *Collector) FileExtractedResult(path string) stats.FileExtractedResult {
 	if filestats, ok := c.fileExtractedStats[path]; ok {
 		return filestats.Result
 	}
+
 	return ""
 }
 
@@ -68,5 +70,6 @@ func (c *Collector) FileExtractedFileSize(path string) int64 {
 	if filestats, ok := c.fileExtractedStats[path]; ok {
 		return filestats.FileSizeBytes
 	}
+
 	return 0
 }

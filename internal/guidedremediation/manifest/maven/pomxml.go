@@ -179,6 +179,7 @@ func GetReadWriter(registry string) (manifest.ReadWriter, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return readWriter{MavenRegistryAPIClient: client}, nil
 }
 

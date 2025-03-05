@@ -128,10 +128,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -166,6 +168,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if i == nil {
 		return []*extractor.Inventory{}, nil
 	}
+
 	return []*extractor.Inventory{i}, nil
 }
 
@@ -219,6 +222,7 @@ func toNamespace(m *Metadata) string {
 		return m.OSID
 	}
 	log.Errorf("os-release[ID] not set, fallback to ''")
+
 	return ""
 }
 
@@ -228,6 +232,7 @@ func toDistro(m *Metadata) string {
 		v = m.OSBuildID
 		if v == "" {
 			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
+
 			return ""
 		}
 		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
@@ -236,8 +241,10 @@ func toDistro(m *Metadata) string {
 	id := m.OSID
 	if id == "" {
 		log.Errorf("os-release[ID] not set, fallback to ''")
+
 		return v
 	}
+
 	return fmt.Sprintf("%s-%s", id, v)
 }
 
@@ -249,6 +256,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	if distro != "" {
 		q[purl.Distro] = distro
 	}
+
 	return &purl.PackageURL{
 		Type:       purl.TypeFlatpak,
 		Namespace:  toNamespace(m),

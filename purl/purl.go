@@ -135,6 +135,7 @@ func QualifiersFromMap(mm map[string]string) Qualifiers {
 			delete(mm, key)
 		}
 	}
+
 	return Qualifiers(packageurl.QualifiersFromMap(mm))
 }
 
@@ -147,6 +148,7 @@ func (p PackageURL) String() string {
 		Qualifiers: packageurl.Qualifiers(p.Qualifiers),
 		Subpath:    p.Subpath,
 	}
+
 	return (&purl).String()
 }
 
@@ -159,6 +161,7 @@ func FromString(purl string) (PackageURL, error) {
 	if !validType(p.Type) {
 		return PackageURL{}, fmt.Errorf("invalid PURL type %q", p.Type)
 	}
+
 	return PackageURL{
 		Type:       p.Type,
 		Namespace:  p.Namespace,
@@ -214,6 +217,7 @@ func validType(t string) bool {
 	// purl type is case-insensitive, canonical form is lower-case
 	t = strings.ToLower(t)
 	_, ok := types[t]
+
 	return ok
 }
 

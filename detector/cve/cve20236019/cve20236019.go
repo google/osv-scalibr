@@ -74,6 +74,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	rayVersion, inventory := findRayPackage(ix)
 	if rayVersion == "" {
 		log.Debugf("No Ray version found")
+
 		return nil, nil
 	}
 	log.Infof("Ray version found")
@@ -81,6 +82,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	// Check if Ray version is vulnerable (< 2.8.1)
 	if !isVulnerableVersion(rayVersion) {
 		log.Infof("Ray version %q is not vulnerable", rayVersion)
+
 		return nil, nil
 	}
 	log.Infof("Found potentially vulnerable Ray version %v", rayVersion)
@@ -88,6 +90,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	// Check for the "Ray Dashboard" string in the HTTP response
 	if !isDashboardPresent(ctx) {
 		log.Infof("Ray Dashboard not found in HTTP response")
+
 		return nil, nil
 	}
 	// Attempt the curl request
@@ -96,8 +99,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Vulnerability exploited successfully")
 	} else {
 		log.Infof("Exploit attempt failed")
+
 		return nil, nil
 	}
+
 	return []*detector.Finding{{
 		Adv: &detector.Advisory{
 			ID: &detector.AdvisoryID{
@@ -123,6 +128,7 @@ func findRayPackage(ix *inventoryindex.InventoryIndex) (string, *extractor.Inven
 	for _, i := range inventory {
 		return i.Version, i
 	}
+
 	return "", nil
 }
 
@@ -132,17 +138,20 @@ func isVulnerableVersion(version string) bool {
 	parts := strings.Split(version, ".")
 	if len(parts) < 2 {
 		log.Errorf("Invalid Ray version format: %s", version)
+
 		return false // Consider this not vulnerable to avoid false positives
 	}
 	// Parse the major and minor version components
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
 		log.Errorf("Error parsing major version: %v", err)
+
 		return false
 	}
 	minor, err := strconv.Atoi(parts[1])
 	if err != nil {
 		log.Errorf("Error parsing minor version: %v", err)
+
 		return false
 	}
 	// Check if the version is less than 2.8.1
@@ -155,6 +164,7 @@ func isDashboardPresent(ctx context.Context) bool {
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:8265", nil)
 	if err != nil {
 		log.Errorf("Error creating HTTP request: %v", err)
+
 		return false
 	}
 
@@ -163,6 +173,7 @@ func isDashboardPresent(ctx context.Context) bool {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Errorf("Error making HTTP request: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
@@ -172,12 +183,14 @@ func isDashboardPresent(ctx context.Context) bool {
 	for scanner.Scan() {
 		if strings.Contains(scanner.Text(), "Ray Dashboard") {
 			log.Infof("Ray Dashboard found in HTTP response")
+
 			return true
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Errorf("Error reading HTTP response: %v", err)
 	}
+
 	return false
 }
 
@@ -191,6 +204,7 @@ func attemptExploit(ctx context.Context) string {
 	// Perform the HTTP query
 	statusCode := rayRequest(ctx, "127.0.0.1", 8265, testCmd)
 	log.Infof("HTTP request returned status code: %d", statusCode)
+
 	return randomFilePath
 }
 
@@ -202,6 +216,7 @@ func rayRequest(ctx context.Context, host string, port int, cmd string) int {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		log.Errorf("Error creating HTTP request: %v", err)
+
 		return 500 // Return an error code
 	}
 
@@ -210,6 +225,7 @@ func rayRequest(ctx context.Context, host string, port int, cmd string) int {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Infof("Error when sending request %s to the server", url)
+
 		return 500 // Return an error code
 	}
 	defer resp.Body.Close()
@@ -220,6 +236,7 @@ func rayRequest(ctx context.Context, host string, port int, cmd string) int {
 
 func fileExists(filesys scalibrfs.FS, path string) bool {
 	_, err := fs.Stat(filesys, path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -232,5 +249,6 @@ func generateRandomString(length int) string {
 	for i := range length {
 		bytes[i] = letters[rand.Intn(len(letters))]
 	}
+
 	return string(bytes)
 }

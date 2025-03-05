@@ -77,6 +77,7 @@ func concat(InitMaps ...InitMap) InitMap {
 	for _, m := range InitMaps {
 		maps.Copy(result, m)
 	}
+
 	return result
 }
 
@@ -94,6 +95,7 @@ func FromCapabilities(capabs *plugin.Capabilities) []detector.Detector {
 			all = append(all, initer())
 		}
 	}
+
 	return FilterByCapabilities(all, capabs)
 }
 
@@ -107,6 +109,7 @@ func FilterByCapabilities(dets []detector.Detector, capabs *plugin.Capabilities)
 			result = append(result, det)
 		}
 	}
+
 	return result
 }
 
@@ -129,5 +132,6 @@ func DetectorsFromNames(names []string) ([]detector.Detector, error) {
 	for _, d := range resultMap {
 		result = append(result, d)
 	}
+
 	return result, nil
 }

@@ -37,6 +37,7 @@ var specialCharRunFinder = regexp.MustCompile("[-_.]+")
 // return them as is.
 func MakePackageURL(i *extractor.Inventory) *purl.PackageURL {
 	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(i.Name), "-")
+
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
 		Name:    normalizedName,

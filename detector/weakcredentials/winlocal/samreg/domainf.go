@@ -98,6 +98,7 @@ func (s *domainF) deriveSyskeyAES(origSyskey []byte, fDomKeyPart []byte) ([]byte
 	mode := cipher.NewCBCDecrypter(block, keyData.Salt[:])
 	derivedKey := make([]byte, keyData.DataLength)
 	mode.CryptBlocks(derivedKey, data)
+
 	return derivedKey[:16], nil
 }
 

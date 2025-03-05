@@ -49,6 +49,7 @@ func RemoveObsoleteSymlinks(root string) error {
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Warnf("Failed to walk directory %q: %v", path, err)
+
 			return fmt.Errorf("failed to walk directory %q: %w", path, err)
 		}
 
@@ -60,6 +61,7 @@ func RemoveObsoleteSymlinks(root string) error {
 		linkTarget, err := os.Readlink(path)
 		if err != nil {
 			log.Warnf("Failed to read target of symlink %q: %v", path, err)
+
 			return fmt.Errorf("failed to read target of symlink %q: %w", path, err)
 		}
 
@@ -77,11 +79,14 @@ func RemoveObsoleteSymlinks(root string) error {
 		err = os.Remove(path)
 		if err != nil {
 			log.Warnf("Failed to remove symlink %q: %v", path, err)
+
 			return err
 		}
 		log.Infof("Removed symlink %q", path)
+
 		return nil
 	})
+
 	return err
 }
 
@@ -130,6 +135,7 @@ func ResolveInterLayerSymlinks(root, layerDigest, squashedImageDirectory string)
 	err := filepath.WalkDir(layerPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Warnf("Failed to walk directory %q: %v", path, err)
+
 			return fmt.Errorf("failed to walk directory %q: %w", path, err)
 		}
 
@@ -141,11 +147,13 @@ func ResolveInterLayerSymlinks(root, layerDigest, squashedImageDirectory string)
 		if err = resolveSingleSymlink(root, path, layerPath, squashedImageDirectory); err != nil {
 			return fmt.Errorf("failed to resolve symlink %q: %w", path, err)
 		}
+
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to walk directory %q: %w", layerPath, err)
 	}
+
 	return nil
 }
 
@@ -170,6 +178,7 @@ func resolveSingleSymlink(root, symlink, layerPath, resolvedDirectory string) er
 	// Remove the existing symlink.
 	if err := os.Remove(symlink); err != nil && !os.IsNotExist(err) {
 		log.Warnf("Failed to remove symlink %q: %v", symlink, err)
+
 		return fmt.Errorf("failed to remove symlink %q: %w", symlink, err)
 	}
 
@@ -184,8 +193,10 @@ func resolveSingleSymlink(root, symlink, layerPath, resolvedDirectory string) er
 	// Recreate the symlink with the new destination path.
 	if err := os.Symlink(targetPathInSquashedLayer, symlink); err != nil {
 		log.Warnf("Failed to create symlink %q: %v", symlink, err)
+
 		return fmt.Errorf("failed to create symlink %q: %w", symlink, err)
 	}
+
 	return nil
 }
 
@@ -204,9 +215,11 @@ func TargetOutsideRoot(path, target string) bool {
 		// Absolute paths may still point outside of the root directory.
 		// e.g. "/../file.txt"
 		markerTarget := filepath.Join(markerDir, target)
+
 		return !strings.Contains(markerTarget, markerDir)
 	}
 
 	markerTargetAbs := filepath.Join(markerDir, filepath.Dir(path), target)
+
 	return !strings.Contains(markerTargetAbs, markerDir)
 }

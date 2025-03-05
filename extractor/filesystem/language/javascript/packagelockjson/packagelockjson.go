@@ -254,10 +254,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileInfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileInfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileInfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 

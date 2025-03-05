@@ -53,6 +53,7 @@ func (c passwordCracker) Crack(ctx context.Context, hash string) (string, error)
 	case strings.HasPrefix(hash, sha512_crypt.MagicPrefix):
 		return c.sha512cryptCracker.Crack(ctx, hash)
 	}
+
 	return "", ErrNotCracked
 }
 
@@ -70,6 +71,7 @@ func (c bcryptCracker) Crack(ctx context.Context, hash string) (string, error) {
 			return v, nil
 		}
 	}
+
 	return "", ErrNotCracked
 }
 
@@ -88,5 +90,6 @@ func (c sha512CryptCracker) Crack(ctx context.Context, hash string) (string, err
 			return v, nil
 		}
 	}
+
 	return "", ErrNotCracked
 }

@@ -66,6 +66,7 @@ var (
 
 func shouldSkipYarnLine(line string) bool {
 	line = strings.TrimSpace(line)
+
 	return line == "" || strings.HasPrefix(line, "#")
 }
 
@@ -142,6 +143,7 @@ func extractYarnPackageName(header string) string {
 	if isScoped {
 		name = "@" + name
 	}
+
 	return name
 }
 
@@ -153,6 +155,7 @@ func determineYarnPackageVersion(props []string) string {
 			return matched[1]
 		}
 	}
+
 	return ""
 }
 
@@ -163,6 +166,7 @@ func determineYarnPackageResolution(props []string) string {
 			return matched[1]
 		}
 	}
+
 	return ""
 }
 

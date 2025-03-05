@@ -50,14 +50,17 @@ type pathsMapFS struct {
 
 func (fsys pathsMapFS) Open(name string) (fs.File, error) {
 	name = filepath.ToSlash(name)
+
 	return fsys.mapfs.Open(name)
 }
 func (fsys pathsMapFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	name = filepath.ToSlash(name)
+
 	return fsys.mapfs.ReadDir(name)
 }
 func (fsys pathsMapFS) Stat(name string) (fs.FileInfo, error) {
 	name = filepath.ToSlash(name)
+
 	return fsys.mapfs.Stat(name)
 }
 
@@ -613,6 +616,7 @@ func invLess(i1, i2 *extractor.Inventory) bool {
 	if i1.Name != i2.Name {
 		return i1.Name < i2.Name
 	}
+
 	return false
 }
 
@@ -623,6 +627,7 @@ func (fakeFS) Open(name string) (fs.File, error) {
 	if name == "." {
 		return &fakeDir{dirs: []fs.DirEntry{&fakeDirEntry{}}}, nil
 	}
+
 	return nil, errors.New("failed to open")
 }
 func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
@@ -643,6 +648,7 @@ func (f *fakeDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	if n <= 0 {
 		t := f.dirs
 		f.dirs = []fs.DirEntry{}
+
 		return t, nil
 	}
 	if len(f.dirs) == 0 {
@@ -651,6 +657,7 @@ func (f *fakeDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	n = min(n, len(f.dirs))
 	t := f.dirs[:n]
 	f.dirs = f.dirs[n:]
+
 	return t, nil
 }
 
@@ -662,6 +669,7 @@ func (i *fakeFileInfo) Mode() fs.FileMode {
 	if i.dir {
 		return fs.ModeDir + 0777
 	}
+
 	return 0777
 }
 func (fakeFileInfo) ModTime() time.Time { return time.Now() }

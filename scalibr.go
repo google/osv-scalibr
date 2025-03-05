@@ -126,6 +126,7 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -148,6 +149,7 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 			errs = append(errs, err)
 		}
 	}
+
 	return errors.Join(errs...)
 }
 
@@ -192,6 +194,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 	if sro.Err != nil {
 		sro.EndTime = time.Now()
+
 		return newScanResult(sro)
 	}
 	extractorConfig := &filesystem.Config{
@@ -212,6 +215,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
+
 		return newScanResult(sro)
 	}
 
@@ -226,6 +230,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
+
 		return newScanResult(sro)
 	}
 
@@ -236,6 +241,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
+
 		return newScanResult(sro)
 	}
 
@@ -249,6 +255,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	sro.EndTime = time.Now()
+
 	return newScanResult(sro)
 }
 
@@ -297,6 +304,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, inventory, chainLayers, extractorConfig)
+
 	return scanResult, nil
 }
 
@@ -329,6 +337,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 
 	// Sort results for better diffing.
 	sortResults(r)
+
 	return r
 }
 
@@ -338,6 +347,7 @@ func hasFailedPlugins(statuses []*plugin.Status) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -364,6 +374,7 @@ func CmpInventories(a, b *extractor.Inventory) int {
 	}
 	aloc := fmt.Sprintf("%v", a.Locations)
 	bloc := fmt.Sprintf("%v", b.Locations)
+
 	return cmp.Compare(aloc, bloc)
 }
 
@@ -375,6 +386,7 @@ func cmpFindings(a, b *detector.Finding) int {
 	if a.Adv.ID.Reference != b.Adv.ID.Reference {
 		return cmpString(a.Adv.ID.Reference, b.Adv.ID.Reference)
 	}
+
 	return cmpString(a.Extra, b.Extra)
 }
 
@@ -384,5 +396,6 @@ func cmpString(a, b string) int {
 	} else if a > b {
 		return 1
 	}
+
 	return 0
 }

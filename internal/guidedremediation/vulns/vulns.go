@@ -86,6 +86,7 @@ func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
 				if e.Fixed != "" {
 					return e.Fixed
 				}
+
 				return e.LastAffected
 			}
 			slices.SortFunc(events, func(a, b osvschema.Event) int {
@@ -95,6 +96,7 @@ func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
 					if bVer == "0" {
 						return 0
 					}
+
 					return -1
 				}
 				if bVer == "0" {
@@ -108,6 +110,7 @@ func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
 				if eVer == "0" {
 					return -1
 				}
+
 				return sys.Compare(eVer, v)
 			})
 			if exact {
@@ -124,5 +127,6 @@ func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
 			}
 		}
 	}
+
 	return false
 }

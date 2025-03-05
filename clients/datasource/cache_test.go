@@ -42,6 +42,7 @@ func TestRequestCache(t *testing.T) {
 					// Count how many times this function gets called for this key,
 					// then return the key as the value.
 					atomic.AddInt32(&fnCalls[i], 1)
+
 					return i, nil
 				})
 				wg.Done()

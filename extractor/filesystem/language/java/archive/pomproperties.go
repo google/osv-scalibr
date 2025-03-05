@@ -66,5 +66,6 @@ func parsePomProps(f *zip.File) (PomProps, error) {
 		return p, fmt.Errorf("error while scanning zip file %q for pom properties: %w", f.Name, s.Err())
 	}
 	log.Debugf("Data from pom.properties: groupid: %s artifactid: %s version: %s", p.GroupID, p.ArtifactID, p.Version)
+
 	return p, nil
 }

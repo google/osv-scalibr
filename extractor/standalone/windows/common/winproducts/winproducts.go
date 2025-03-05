@@ -65,6 +65,7 @@ func windowsFlavor(installType string) string {
 	}
 
 	log.Infof("Please report to scalibr devteam: unknown Windows flavor: %q", flavor)
+
 	return "server"
 }
 

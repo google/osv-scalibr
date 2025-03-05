@@ -34,6 +34,7 @@ func RunScan(flags *cli.Flags) int {
 	cfg, err := flags.GetScanConfig()
 	if err != nil {
 		log.Errorf("%v.GetScanConfig(): %v", flags, err)
+
 		return 1
 	}
 
@@ -52,11 +53,13 @@ func RunScan(flags *cli.Flags) int {
 
 	if err := flags.WriteScanResults(result); err != nil {
 		log.Errorf("Error writing scan results: %v", err)
+
 		return 1
 	}
 
 	if result.Status.Status != plugin.ScanStatusSucceeded {
 		log.Errorf("Scan wasn't successful: %s", result.Status.FailureReason)
+
 		return 1
 	}
 

@@ -218,6 +218,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*javalockfile.Metadata)
+
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),

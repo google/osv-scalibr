@@ -36,6 +36,7 @@ func aliasType(t *testing.T, aliasedName string) dep.Type {
 
 func makeVK(t *testing.T, name, version string, versionType resolve.VersionType) resolve.VersionKey {
 	t.Helper()
+
 	return resolve.VersionKey{
 		PackageKey: resolve.PackageKey{
 			System: resolve.NPM,

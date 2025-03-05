@@ -153,6 +153,7 @@ func Run(ctx context.Context, c stats.Collector, detectors []Detector, scanRoot 
 	if err := validateAdvisories(findings); err != nil {
 		return []*Finding{}, status, err
 	}
+
 	return findings, status, nil
 }
 
@@ -173,5 +174,6 @@ func validateAdvisories(findings []*Finding) error {
 		}
 		ids[*f.Adv.ID] = *f.Adv
 	}
+
 	return nil
 }

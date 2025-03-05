@@ -33,6 +33,7 @@ func TestFindVulnerabilities(t *testing.T) {
 	aliasType := func(knownAs string) dep.Type {
 		var typ dep.Type
 		typ.AddAttr(dep.KnownAs, knownAs)
+
 		return typ
 	}
 	m := mockManifest{

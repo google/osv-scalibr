@@ -97,10 +97,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -129,6 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -150,6 +153,7 @@ func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
 			}
 
 			group[key] = val
+
 			continue
 		}
 
@@ -213,6 +217,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 		if pkg.Name == "" || pkg.Version == "" {
 			log.Warnf("APK package name or version is empty (name: %q, version: %q)", pkg.Name, pkg.Version)
+
 			continue
 		}
 
@@ -227,6 +232,7 @@ func toNamespace(m *Metadata) string {
 		return m.OSID
 	}
 	log.Errorf("os-release[ID] not set, fallback to 'alpine'")
+
 	return "alpine"
 }
 
@@ -236,6 +242,7 @@ func toDistro(m *Metadata) string {
 		return m.OSVersionID
 	}
 	log.Errorf("VERSION_ID not set in os-release")
+
 	return ""
 }
 
@@ -253,6 +260,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	if m.Architecture != "" {
 		q[purl.Arch] = m.Architecture
 	}
+
 	return &purl.PackageURL{
 		Type:       purl.TypeApk,
 		Name:       strings.ToLower(i.Name),
@@ -268,6 +276,7 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	if version == "" {
 		return "Alpine"
 	}
+
 	return "Alpine:" + trimDistroVersion(version)
 }
 
@@ -279,5 +288,6 @@ func trimDistroVersion(distro string) string {
 	if len(parts) < 2 {
 		return "v" + distro
 	}
+
 	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
 }

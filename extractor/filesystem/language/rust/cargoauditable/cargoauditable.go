@@ -122,6 +122,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 			FileSizeBytes: fileinfo.Size(),
 		})
 	}
+
 	return !sizeLimitExceeded
 }
 
@@ -140,6 +141,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			return []*extractor.Inventory{}, nil
 		}
 		log.Debugf("error getting dependency information from binary (%s) for extraction: %v", input.Path, err)
+
 		return nil, fmt.Errorf("rustaudit.GetDependencyInfo(%q): %w", input.Path, err)
 	}
 
@@ -155,6 +157,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			})
 		}
 	}
+
 	return inventory, nil
 }
 

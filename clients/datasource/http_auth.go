@@ -139,6 +139,7 @@ func (auth *HTTPAuthentication) Get(ctx context.Context, httpClient *http.Client
 		}
 		if ok {
 			usedMethod = method
+
 			break
 		}
 	}
@@ -157,6 +158,7 @@ func (auth *HTTPAuthentication) Get(ctx context.Context, httpClient *http.Client
 func (auth *HTTPAuthentication) authIndex(wwwAuth []string, authScheme string) int {
 	return slices.IndexFunc(wwwAuth, func(s string) bool {
 		scheme, _, _ := strings.Cut(s, " ")
+
 		return scheme == authScheme
 	})
 }

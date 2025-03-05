@@ -168,6 +168,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 
 			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+
 				return
 			}
 

@@ -125,5 +125,6 @@ func setupInventoryIndex(names []string) *inventoryindex.InventoryIndex {
 		})
 	}
 	ix, _ := inventoryindex.New(invs)
+
 	return ix
 }

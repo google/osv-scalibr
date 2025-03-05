@@ -58,6 +58,7 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 			// This is a git dependency line, doesn't have version info
 			if len(match) < 4 {
 				log.Errorf("invalid mix.lock dependency line %q", line)
+
 				continue
 			}
 			name = match[1]
@@ -71,6 +72,7 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 			}
 			if len(match) < 6 {
 				log.Errorf("invalid mix.lock dependency line %q", line)
+
 				continue
 			}
 			name = match[1]

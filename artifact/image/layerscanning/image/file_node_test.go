@@ -134,6 +134,7 @@ func TestStat(t *testing.T) {
 				if diff := cmp.Diff(tc.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("Stat(%v) returned unexpected error (-want +got): %v", tc.node, diff)
 				}
+
 				return
 			}
 
@@ -389,6 +390,7 @@ func TestReadAt(t *testing.T) {
 
 			if diff := cmp.Diff(tc.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("ReadAt(%v) returned unexpected error (-want +got): %v", tc.node, diff)
+
 				return
 			}
 

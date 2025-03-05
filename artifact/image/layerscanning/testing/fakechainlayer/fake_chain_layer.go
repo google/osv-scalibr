@@ -53,6 +53,7 @@ func New(testDir string, index int, diffID digest.Digest, command string, layer 
 			}
 		}
 	}
+
 	return &FakeChainLayer{
 		index:   index,
 		diffID:  diffID,
@@ -91,8 +92,10 @@ func (fakeChainLayer *FakeChainLayer) FS() scalibrfs.FS {
 func (fakeChainLayer *FakeChainLayer) Open(name string) (fs.File, error) {
 	if _, ok := fakeChainLayer.files[name]; ok {
 		filename := filepath.Join(fakeChainLayer.testDir, name)
+
 		return os.Open(filename)
 	}
+
 	return nil, os.ErrNotExist
 }
 
@@ -101,6 +104,7 @@ func (fakeChainLayer *FakeChainLayer) Stat(name string) (fs.FileInfo, error) {
 	if _, ok := fakeChainLayer.files[name]; ok {
 		return os.Stat(path.Join(fakeChainLayer.testDir, name))
 	}
+
 	return nil, os.ErrNotExist
 }
 

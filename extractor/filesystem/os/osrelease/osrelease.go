@@ -34,9 +34,11 @@ func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {
 			if os.IsNotExist(err) {
 				continue
 			}
+
 			return nil, err
 		}
 		defer f.Close()
+
 		return parse(f), nil
 	}
 
@@ -58,6 +60,7 @@ func parse(r io.Reader) map[string]string {
 		kv := strings.SplitN(line, "=", 2)
 		m[kv[0]] = resolveString(kv[1])
 	}
+
 	return m
 }
 
@@ -67,5 +70,6 @@ func resolveString(s string) string {
 	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") {
 		s = s[1 : len(s)-1]
 	}
+
 	return s
 }

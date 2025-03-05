@@ -47,6 +47,7 @@ func (fakeV1Layer *FakeV1Layer) DiffID() (v1.Hash, error) {
 	if fakeV1Layer.diffID == "" {
 		return v1.Hash{}, fmt.Errorf("diffID is empty")
 	}
+
 	return v1.Hash{
 		Algorithm: "sha256",
 		Hex:       fakeV1Layer.diffID,

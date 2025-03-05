@@ -38,6 +38,7 @@ func gobMarshal(v any) ([]byte, error) {
 
 func gobUnmarshal(b []byte, v any) error {
 	dec := gob.NewDecoder(bytes.NewReader(b))
+
 	return dec.Decode(v)
 }
 
@@ -69,6 +70,7 @@ func (rq *RequestCache[K, V]) Get(key K, fn func() (V, error)) (V, error) {
 	rq.mu.Lock()
 	if v, ok := rq.cache[key]; ok {
 		rq.mu.Unlock()
+
 		return v, nil
 	}
 

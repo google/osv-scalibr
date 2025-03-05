@@ -64,6 +64,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			// File doesn't exist, check not applicable.
 			return nil, nil
 		}
+
 		return nil, err
 	}
 	defer f.Close()

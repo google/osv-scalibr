@@ -43,6 +43,7 @@ func CalculateScore(severity osvschema.Severity) (float64, error) {
 		if err != nil {
 			return -1.0, err
 		}
+
 		return vec.BaseScore(), nil
 	case osvschema.SeverityCVSSV3:
 		switch {
@@ -51,12 +52,14 @@ func CalculateScore(severity osvschema.Severity) (float64, error) {
 			if err != nil {
 				return -1.0, err
 			}
+
 			return vec.BaseScore(), nil
 		case strings.HasPrefix(severity.Score, "CVSS:3.1/"):
 			vec, err := gocvss31.ParseVector(severity.Score)
 			if err != nil {
 				return -1.0, err
 			}
+
 			return vec.BaseScore(), nil
 		default:
 			return -1.0, fmt.Errorf("unsupported CVSS_V3 version: %s", severity.Score)
@@ -66,6 +69,7 @@ func CalculateScore(severity osvschema.Severity) (float64, error) {
 		if err != nil {
 			return -1.0, err
 		}
+
 		return vec.Score(), nil
 
 	default:

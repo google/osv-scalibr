@@ -112,10 +112,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -153,6 +155,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 		FileSizeBytes: fileSizeBytes,
 	})
+
 	return inventory, err
 }
 
@@ -167,6 +170,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	content, err := io.ReadAll(input.Reader)
 	if err != nil {
 		log.Errorf("unable to read file %s: %v", input.Path, err)
+
 		return nil, err
 	}
 
@@ -205,6 +209,7 @@ func splitPackageAndVersion(path string) (string, string) {
 		if len(part) > 0 && unicode.IsDigit(rune(part[0])) {
 			versionParts = parts[i:]
 			nameParts = parts[:i]
+
 			break
 		}
 	}
@@ -221,6 +226,7 @@ func toNamespace(m *Metadata) string {
 		return m.OSID
 	}
 	log.Errorf("os-release[ID] not set, fallback to 'linux'")
+
 	return "linux"
 }
 
@@ -229,6 +235,7 @@ func toDistro(m *Metadata) string {
 		return m.OSVersionID
 	}
 	log.Errorf("VERSION_ID not set in os-release")
+
 	return ""
 }
 
@@ -240,6 +247,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	if distro != "" {
 		q[purl.Distro] = distro
 	}
+
 	return &purl.PackageURL{
 		Type:       purl.TypePortage,
 		Name:       m.PackageName,
@@ -256,5 +264,6 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 	if m.OSVersionID == "" {
 		return osID
 	}
+
 	return osID + ":" + m.OSVersionID
 }

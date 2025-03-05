@@ -97,6 +97,7 @@ func TestCompareVersions(t *testing.T) {
 	}
 	semVer := func(version string) *semver.Version {
 		parsed, _ := resolve.Maven.Semver().Parse(version)
+
 		return parsed
 	}
 

@@ -75,6 +75,7 @@ func (p *Person) PersonString() string {
 	if p.URL != "" {
 		result += fmt.Sprintf(" (%s)", p.URL)
 	}
+
 	return result
 }
 
@@ -92,5 +93,6 @@ func rawToPerson(rawJSON map[string]any) map[string]string {
 			personMap[key] = val
 		}
 	}
+
 	return personMap
 }

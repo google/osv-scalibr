@@ -98,24 +98,28 @@ func DefaultUnpackerConfig() *UnpackerConfig {
 // WithMaxPass returns a UnpackerConfig with the specified MaxPass param.
 func (cfg *UnpackerConfig) WithMaxPass(maxPass int) *UnpackerConfig {
 	cfg.MaxPass = maxPass
+
 	return cfg
 }
 
 // WithMaxFileBytes returns a UnpackerConfig with the specified MaxFileBytes param.
 func (cfg *UnpackerConfig) WithMaxFileBytes(maxFileBytes int64) *UnpackerConfig {
 	cfg.MaxFileBytes = maxFileBytes
+
 	return cfg
 }
 
 // WithSymlinkResolution returns a UnpackerConfig with the specified SymlinkResolution param.
 func (cfg *UnpackerConfig) WithSymlinkResolution(resolution SymlinkResolution) *UnpackerConfig {
 	cfg.SymlinkResolution = resolution
+
 	return cfg
 }
 
 // WithRequirer returns a UnpackerConfig with the specified FileRequirer param.
 func (cfg *UnpackerConfig) WithRequirer(requirer require.FileRequirer) *UnpackerConfig {
 	cfg.Requirer = requirer
+
 	return cfg
 }
 
@@ -182,6 +186,7 @@ func (u *Unpacker) UnpackSquashed(dir string, image v1.Image) error {
 		if strings.Contains(err.Error(), "invalid tar header") {
 			return fmt.Errorf("invalid tar header when saving image to tarball (error message %q) with %q", tarPath, err.Error())
 		}
+
 		return fmt.Errorf("failed to save image to tarball %q: %w", tarPath, err)
 	}
 
@@ -203,6 +208,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 		reader, err := os.Open(tarPath)
 		if err != nil {
 			log.Errorf("Failed to open tarball of image at %q: %v", tarPath, err)
+
 			return fmt.Errorf("failed to open tarball of image at %q: %w", tarPath, err)
 		}
 		log.Infof("Unpacking pass %d of %d", pass+1, u.MaxPass)
@@ -305,11 +311,13 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			if err == io.EOF {
 				break
 			}
+
 			return nil, fmt.Errorf("failed to read next header in tarball: %w", err)
 		}
 
 		if header.Size > maxSizeBytes {
 			log.Infof("skipping file %q because its size (%d bytes) is larger than the max size (%d bytes)", header.Name, header.Size, maxSizeBytes)
+
 			continue
 		}
 
@@ -332,10 +340,12 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 		for _, p := range []string{fullPath, cleanPath, filepath.Join("/", cleanPath)} {
 			if requirer.FileRequired(p, header.FileInfo()) {
 				required = true
+
 				break
 			}
 			if _, ok := currRequiredTargets[p]; ok {
 				required = true
+
 				break
 			}
 		}
@@ -356,6 +366,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			err := os.MkdirAll(parent, fs.ModePerm)
 			if err != nil {
 				log.Errorf("failed to create directory %q: %v", parent, err)
+
 				return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
 			}
 
@@ -364,6 +375,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			err = os.WriteFile(fullPath, content, modeWithOwnerReadWrite)
 			if err != nil {
 				log.Errorf("failed to write file %q: %v", fullPath, err)
+
 				return nil, fmt.Errorf("failed to write file %q: %w", fullPath, err)
 			}
 
@@ -381,6 +393,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 			if symlink.TargetOutsideRoot(cleanPath, target) {
 				log.Warnf("Found symlink that points outside the root, skipping: %q -> %q", cleanPath, target)
+
 				continue
 			}
 
@@ -400,9 +413,11 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 					if symlinkErrStrategy == SymlinkErrReturn {
 						return nil, fmt.Errorf("failed to symlink %q to %q: %w", fullPath, targetPath, err)
 					}
+
 					continue
 				}
 				log.Infof("created symlink %q to %q", fullPath, targetPath)
+
 				continue
 			}
 
@@ -446,5 +461,6 @@ func (u *Unpacker) addSquashedImageDirectory(root string, image v1.Image) error 
 	if err := u.UnpackSquashed(squashedImagePath, image); err != nil {
 		return fmt.Errorf("failed to unpack all squashed image: %w", err)
 	}
+
 	return nil
 }

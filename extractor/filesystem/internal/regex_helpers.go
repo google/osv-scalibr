@@ -41,6 +41,7 @@ func MatchNamedCaptureGroups(regEx *regexp.Regexp, content string) map[string]st
 			break
 		}
 	}
+
 	return results
 }
 
@@ -53,5 +54,6 @@ func isEmptyMap(m map[string]string) bool {
 			return false
 		}
 	}
+
 	return true
 }

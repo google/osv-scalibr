@@ -64,6 +64,7 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ScanRoot{FS: r.FS, Path: absroot}, nil
 }
 

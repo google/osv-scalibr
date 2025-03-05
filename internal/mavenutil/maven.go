@@ -132,6 +132,7 @@ func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path stri
 		// Only mark parent as found when the identifiers and packaging are expected.
 		return false, "", nil
 	}
+
 	return true, parentPath, nil
 }
 
@@ -149,6 +150,7 @@ func loadParentRemote(ctx context.Context, mavenClient *datasource.MavenRegistry
 		// The identifiers in parent does not match what we want.
 		return maven.Project{}, fmt.Errorf("parent identifiers mismatch: %v, expect %v", proj.ProjectKey, parent.ProjectKey)
 	}
+
 	return proj, nil
 }
 

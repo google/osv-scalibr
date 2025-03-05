@@ -98,9 +98,11 @@ func findBentomlVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 		inventory := ix.GetSpecific(r.name, r.packageType)
 		if len(inventory) > 0 {
 			i := inventory[0]
+
 			return i.Version, i, r.fixedVersion
 		}
 	}
+
 	return "", nil, ""
 }
 
@@ -111,6 +113,7 @@ func CheckAccessibility(ctx context.Context, ip string, port int) bool {
 	req, err := http.NewRequestWithContext(ctx, "GET", target, nil)
 	if err != nil {
 		log.Infof("Error creating request: %v", err)
+
 		return false
 	}
 
@@ -118,9 +121,11 @@ func CheckAccessibility(ctx context.Context, ip string, port int) bool {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+
 		return false
 	}
 	defer resp.Body.Close()
+
 	return true
 }
 
@@ -131,6 +136,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	payload, err := base64.StdEncoding.DecodeString(string(pickledPayload))
 	if err != nil {
 		log.Infof("Payload decode failed: %v", err)
+
 		return false
 	}
 
@@ -140,6 +146,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	req, err := http.NewRequestWithContext(ctx, "POST", target, bytes.NewBuffer(payload))
 	if err != nil {
 		log.Infof("Error creating request: %v", err)
+
 		return false
 	}
 	req.Header.Set("Content-Type", "application/vnd.bentoml+pickle")
@@ -148,6 +155,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Infof("Error sending request: %v\n", err)
+
 		return false
 	}
 	defer resp.Body.Close()
@@ -155,6 +163,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	// The payload is expected to trigger a 400 Bad Request status code
 	if resp.StatusCode != 400 {
 		log.Infof("Unexpected status code: %d\n", resp.StatusCode)
+
 		return false
 	}
 
@@ -163,6 +172,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 
 func fileExists(filesys scalibrfs.FS, path string) bool {
 	_, err := fs.Stat(filesys, path)
+
 	return !os.IsNotExist(err)
 }
 
@@ -171,6 +181,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	bentomlVersion, inventory, fixedVersion := findBentomlVersions(ix)
 	if bentomlVersion == "" {
 		log.Debugf("No BentoML version found")
+
 		return nil, nil
 	}
 
@@ -178,6 +189,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	fbv := strings.Split(fixedVersion, ".")
 	if len(bv) < 3 {
 		log.Infof("Unable to parse version: %q", bentomlVersion)
+
 		return nil, nil
 	}
 
@@ -193,6 +205,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !isVulnVersion {
 		log.Infof("Version not vulnerable: %q", bentomlVersion)
+
 		return nil, nil
 	} else {
 		log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
@@ -200,11 +213,13 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML server not accessible")
+
 		return nil, nil
 	}
 
 	if !ExploitBentoml(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML exploit unsuccessful")
+
 		return nil, nil
 	}
 
@@ -212,6 +227,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !fileExists(scanRoot.FS, payloadPath) {
 		log.Infof("No POC file detected")
+
 		return nil, nil
 	}
 

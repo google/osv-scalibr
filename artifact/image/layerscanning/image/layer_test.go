@@ -89,6 +89,7 @@ func TestChainLayerFS(t *testing.T) {
 	testDir := func() string {
 		dir := t.TempDir()
 		os.WriteFile(path.Join(dir, "file1"), []byte("file1"), 0600)
+
 		return dir
 	}()
 
@@ -110,12 +111,14 @@ func TestChainLayerFS(t *testing.T) {
 	emptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
 		tree.Insert("/", root)
+
 		return tree
 	}()
 	nonEmptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
 		tree.Insert("/", root)
 		tree.Insert("/file1", file1)
+
 		return tree
 	}()
 
@@ -156,6 +159,7 @@ func TestChainLayerFS(t *testing.T) {
 					t.Errorf("WalkDir(%v) returned error: %v", path, err)
 				}
 				gotPaths = append(gotPaths, path)
+
 				return nil
 			})
 
@@ -292,11 +296,13 @@ func TestChainFSOpen(t *testing.T) {
 				if !errors.Is(gotErr, tc.wantErr) {
 					t.Fatalf("Open(%v) returned error: %v, want error: %v", tc.path, gotErr, tc.wantErr)
 				}
+
 				return
 			}
 
 			if gotErr != nil {
 				t.Fatalf("Open(%v) returned error: %v", tc.path, gotErr)
+
 				return
 			}
 
@@ -347,6 +353,7 @@ func TestChainFSStat(t *testing.T) {
 				if !errors.Is(gotErr, tc.wantErr) {
 					t.Fatalf("Stat(%v) returned error: %v, want error: %v", tc.path, gotErr, tc.wantErr)
 				}
+
 				return
 			}
 
@@ -539,11 +546,13 @@ func TestChainFSReadDir(t *testing.T) {
 				if !errors.Is(gotErr, tc.wantErr) {
 					t.Fatalf("ReadDir(%v) returned error: %v, want error: %v", tc.path, gotErr, tc.wantErr)
 				}
+
 				return
 			}
 
 			if gotErr != nil {
 				t.Fatalf("ReadDir(%v) returned error: %v", tc.path, gotErr)
+
 				return
 			}
 
@@ -591,11 +600,13 @@ func checkError(t *testing.T, funcName string, gotErr error, wantErr error) {
 		if !errors.Is(gotErr, wantErr) {
 			t.Fatalf("%s returned error: %v, want error: %v", funcName, gotErr, wantErr)
 		}
+
 		return
 	}
 
 	if gotErr != nil {
 		t.Fatalf("%s returned error: %v", funcName, gotErr)
+
 		return
 	}
 }
@@ -758,5 +769,6 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
 		}
 	}
+
 	return chainfs, tempDir
 }

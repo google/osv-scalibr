@@ -69,6 +69,7 @@ var extensionHandlers = map[string]extractFunc{
 // FileRequired returns true if the specified file is a supported spdx file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	_, isSupported := findExtractor(api.Path())
+
 	return isSupported
 }
 
@@ -134,6 +135,7 @@ func (e Extractor) convertSpdxDocToInventory(spdxDoc *spdx.Document, path string
 		inv.Metadata = m
 		if m.PURL == nil && len(m.CPEs) == 0 {
 			log.Warnf("Neither CPE nor PURL found for package: %+v", spdxPkg)
+
 			continue
 		}
 		results = append(results, inv)

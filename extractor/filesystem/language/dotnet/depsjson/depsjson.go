@@ -98,10 +98,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	fileinfo, err := api.Stat()
 	if err != nil || (e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes) {
 		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -129,6 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return packages, err
 }
 
@@ -151,12 +154,14 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	decoder := json.NewDecoder(input.Reader)
 	if err := decoder.Decode(&deps); err != nil {
 		log.Errorf("Error parsing deps.json: %v", err)
+
 		return nil, err
 	}
 
 	// Check if the decoded content is empty (i.e., no libraries)
 	if len(deps.Libraries) == 0 {
 		log.Warn("Empty deps.json file or no libraries found")
+
 		return nil, fmt.Errorf("empty deps.json file or no libraries found")
 	}
 
@@ -166,6 +171,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		name, version := splitNameAndVersion(nameVersion)
 		if name == "" || version == "" {
 			log.Warnf("Skipping library with missing name or version: %s", nameVersion)
+
 			continue
 		}
 		// If the library type is "project", this is the root/main package.
@@ -191,6 +197,7 @@ func splitNameAndVersion(nameVersion string) (string, string) {
 	if len(parts) != 2 {
 		return "", ""
 	}
+
 	return parts[0], parts[1]
 }
 

@@ -124,13 +124,16 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 			// file at all, so we check the file size after checking the file suffix.
 			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 				e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 				return false
 			}
 
 			e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -169,6 +172,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -204,6 +208,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		}
 		inventory = append(inventory, i)
 	}
+
 	return inventory, nil
 }
 
@@ -230,6 +235,7 @@ func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Inven
 	}
 
 	i.Locations = []string{path}
+
 	return i, nil
 }
 
@@ -244,6 +250,7 @@ func parse(r io.Reader) (*extractor.Inventory, error) {
 		if err != nil {
 			return nil, fmt.Errorf("ReadMIMEHeader(): %w %s %s", err, h.Get("Name"), h.Get("version"))
 		}
+
 		return nil, fmt.Errorf("Name or version is empty (name: %q, version: %q)", name, version)
 	}
 

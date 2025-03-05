@@ -59,6 +59,7 @@ func TestTargetOutsideRoot(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				return "\\\\..\\t.txt"
 			}
+
 			return "/../t.txt"
 		}(),
 		want: true,

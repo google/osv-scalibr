@@ -417,6 +417,7 @@ func getInventory(path, pkgName, origin, version, osID, osVersionID, maintainer,
 			Commit: commit,
 		}
 	}
+
 	return i
 }
 

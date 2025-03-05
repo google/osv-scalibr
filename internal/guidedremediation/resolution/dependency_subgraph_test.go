@@ -120,6 +120,7 @@ func checkSubgraphVersions(t *testing.T, sg *resolution.DependencySubgraph, g *r
 	for nID, node := range sg.Nodes {
 		if nID < 0 || int(nID) >= len(g.Nodes) {
 			t.Errorf("DependencySubgraph contains invalid node ID: %v", nID)
+
 			continue
 		}
 		want := g.Nodes[nID].Version
@@ -161,6 +162,7 @@ func checkSubgraphEdges(t *testing.T, sg *resolution.DependencySubgraph) {
 		for _, e := range node.Parents {
 			if e.To != nID {
 				t.Errorf("DependencySubgraph node %v contains invalid parent edge: %v", nID, e)
+
 				continue
 			}
 			parent, ok := sg.Nodes[e.From]
@@ -179,6 +181,7 @@ func checkSubgraphEdges(t *testing.T, sg *resolution.DependencySubgraph) {
 		for _, e := range node.Children {
 			if e.From != nID {
 				t.Errorf("DependencySubgraph node %v contains invalid child edge: %v", nID, e)
+
 				continue
 			}
 			child, ok := sg.Nodes[e.To]
@@ -205,6 +208,7 @@ func checkSubgraphNodesReachable(t *testing.T, sg *resolution.DependencySubgraph
 		node, ok := sg.Nodes[nID]
 		if !ok {
 			t.Errorf("DependencySubgraph missing expected node %v", nID)
+
 			continue
 		}
 		for _, e := range node.Children {
@@ -244,6 +248,7 @@ func checkSubgraphDistances(t *testing.T, sg *resolution.DependencySubgraph) {
 
 		if len(node.Children) == 0 {
 			t.Errorf("DependencySubgraph node %v has no child nodes", nID)
+
 			continue
 		}
 		e := slices.MinFunc(node.Children, func(a, b resolve.Edge) int { return cmp.Compare(sg.Nodes[a.To].Distance, sg.Nodes[b.To].Distance) })

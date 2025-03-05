@@ -29,8 +29,10 @@ func (f *fakeFS) Open(name string) (fs.File, error) {
 		if f.exists {
 			return &fakeFile{perms: f.perms, uid: f.uid, gid: f.gid}, nil
 		}
+
 		return nil, os.ErrNotExist
 	}
+
 	return nil, errors.New("failed to open")
 }
 func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {

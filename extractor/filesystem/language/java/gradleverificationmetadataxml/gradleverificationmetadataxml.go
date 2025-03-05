@@ -62,6 +62,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // FileRequired returns true if the specified file matches Gradle verification metadata lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
+
 	return filepath.Base(filepath.Dir(path)) == "gradle" && filepath.Base(path) == "verification-metadata.xml"
 }
 
@@ -95,6 +96,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	m := i.Metadata.(*javalockfile.Metadata)
+
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),

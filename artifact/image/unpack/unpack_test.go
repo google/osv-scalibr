@@ -204,6 +204,7 @@ func TestUnpackSquashed(t *testing.T) {
 				t.Fatalf("Failed to create temp dir: %v", err)
 			}
 			os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("some secret\n"), 0644)
+
 			return innerDir
 		}(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
@@ -488,6 +489,7 @@ func mustNewUnpacker(t *testing.T, cfg *unpack.UnpackerConfig) *unpack.Unpacker 
 	if err != nil {
 		t.Fatalf("Failed to create unpacker: %v", err)
 	}
+
 	return u
 }
 
@@ -622,6 +624,7 @@ func mustNewSquashedImage(t *testing.T, pathsToContent map[string]contentAndMode
 	if err != nil {
 		t.Fatalf("unable append layer to image: %v", err)
 	}
+
 	return image
 }
 
@@ -632,6 +635,7 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 	if err != nil {
 		t.Fatalf("Failed to load image from path %q: %v", path, err)
 	}
+
 	return image
 }
 
@@ -642,5 +646,6 @@ func mustMkdirTemp(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
+
 	return dir
 }

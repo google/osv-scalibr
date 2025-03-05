@@ -120,10 +120,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -143,6 +145,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	i, err := parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
+
 		return nil, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
 	}
 
@@ -153,6 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	e.reportFileExtracted(input.Path, input.Info, nil)
+
 	return inventory, nil
 }
 
@@ -183,14 +187,17 @@ func parse(path string, r io.Reader) (*extractor.Inventory, error) {
 
 	if !p.hasNameAndVersionValues() {
 		log.Debugf("package.json file %s does not have a version and/or name", path)
+
 		return nil, nil
 	}
 	if p.isVSCodeExtension() {
 		log.Debugf("package.json file %s is a Visual Studio Code Extension Manifest, not an NPM package", path)
+
 		return nil, nil
 	}
 	if p.isUnityPackage() {
 		log.Debugf("package.json file %s is a Unity package, not an NPM package", path)
+
 		return nil, nil
 	}
 
@@ -223,6 +230,7 @@ func (p packageJSON) isVSCodeExtension() bool {
 			return true
 		}
 	}
+
 	return p.Contributes != nil
 }
 
@@ -244,6 +252,7 @@ func removeEmptyPersons(persons []*Person) []*Person {
 			result = append(result, p)
 		}
 	}
+
 	return result
 }
 

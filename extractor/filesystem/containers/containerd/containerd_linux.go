@@ -151,6 +151,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root, snapshotsMetadata)
 	if err != nil {
 		log.Errorf("Could not get container inventory from the containerd metadb file: %v", err)
+
 		return inventory, err
 	}
 
@@ -163,6 +164,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 		inventory = append(inventory, pkg)
 	}
+
 	return inventory, nil
 }
 
@@ -175,6 +177,7 @@ func fileSizeCheck(filepath string, maxFileSize int64) (err error) {
 	if fileInfo.Size() > maxFileSize {
 		return fmt.Errorf("File %s is too large: %d", filepath, fileInfo.Size())
 	}
+
 	return nil
 }
 
@@ -189,6 +192,7 @@ func namespacesFromMetaDB(ctx context.Context, metaDB *bolt.DB) ([]string, error
 			return err
 		}
 		namespaces = nss
+
 		return nil
 	})
 
@@ -252,6 +256,7 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 					WorkDir:     workDir})
 		}
 	}
+
 	return containersMetadata, nil
 }
 
@@ -270,6 +275,7 @@ func digestSnapshotInfoMapping(snapshotsMetadata []SnapshotMetadata) map[string]
 		shorterDigest := snapshotMetadata.Digest[digestSplitterIndex+1:]
 		digestSnapshotInfoMapping[shorterDigest] = snapshotMetadata
 	}
+
 	return digestSnapshotInfoMapping
 }
 
@@ -288,9 +294,11 @@ func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshot
 		if strings.Contains(snapshotMetadata.Digest, snapshotKey) {
 			upperDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "fs")
 			workDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "work")
+
 			return lowerDir, upperDir, workDir
 		}
 	}
+
 	return lowerDir, "", ""
 }
 
@@ -299,6 +307,7 @@ func getParentSnapshotIDByDigest(snapshotsMetadata []SnapshotMetadata, digest st
 	snapshotMetadataDict := digestSnapshotInfoMapping(snapshotsMetadata)
 	if _, ok := snapshotMetadataDict[digest]; !ok {
 		log.Errorf("Could not find the parent snapshot info in the metadata.db file for digest: %v", digest)
+
 		return parentIDList
 	}
 	parentSnapshotMetadata := snapshotMetadataDict[digest]
@@ -310,6 +319,7 @@ func getParentSnapshotIDByDigest(snapshotsMetadata []SnapshotMetadata, digest st
 		return parentIDList
 	}
 	shorterDigest := parentSnapshotMetadata.Parent[strings.LastIndex(snapshotMetadataDict[digest].Parent, "/")+1:]
+
 	return getParentSnapshotIDByDigest(snapshotsMetadata, shorterDigest, parentIDList)
 }
 
@@ -336,12 +346,15 @@ func snapshotsMetadataFromDB(fullMetadataDBPath string, maxMetaDBFileSize int64,
 		}
 		// Store the important info of the snapshots into snapshotMetadata struct.
 		snapshotsMetadata = snapshotMetadataFromSnapshotsBuckets(tx, snapshotsBucketByDigest, snapshotsMetadata, fileSystemDriver)
+
 		return nil
 	})
 	if err != nil {
 		log.Errorf("Not able to view the db: %v", err)
+
 		return nil, err
 	}
+
 	return snapshotsMetadata, nil
 }
 
@@ -367,8 +380,10 @@ func snapshotsBucketByDigest(tx *bolt.Tx) ([]string, error) {
 		if v == nil {
 			snapshotsBucketByDigest = append(snapshotsBucketByDigest, string(k))
 		}
+
 		return nil
 	})
+
 	return snapshotsBucketByDigest, err
 }
 
@@ -409,6 +424,7 @@ func snapshotMetadataFromSnapshotsBuckets(tx *bolt.Tx, snapshotsBucketByDigest [
 
 		snapshotsMetadata = append(snapshotsMetadata, SnapshotMetadata{Digest: shaDigest, ID: id, Kind: kind, Parent: parent, FilesystemType: fileSystemDriver})
 	}
+
 	return snapshotsMetadata
 }
 
@@ -433,6 +449,7 @@ func runcInitPid(scanRoot string, runtimeName string, id string) int {
 	statusPath := filepath.Join(scanRoot, criPluginStatusFilePrefix, id, "status")
 	if _, err := os.Stat(statusPath); err != nil {
 		log.Info("File status does not exists for container %v, error: %v", id, err)
+
 		return -1
 	}
 
@@ -446,20 +463,24 @@ func runcInitPid(scanRoot string, runtimeName string, id string) int {
 	statusContent, err := os.ReadFile(statusPath)
 	if err != nil {
 		log.Errorf("Could not read for %s status for container: %v, error: %v", id, err)
+
 		return -1
 	}
 	var grpcContainerStatus map[string]*json.RawMessage
 	if err := json.Unmarshal(statusContent, &grpcContainerStatus); err != nil {
 		log.Errorf("Can't unmarshal status for container %v , error: %v", id, err)
+
 		return -1
 	}
 
 	if _, ok := grpcContainerStatus["Pid"]; !ok {
 		log.Errorf("Can't find field pid filed in status for container %v", id)
+
 		return -1
 	}
 	if err := json.Unmarshal(*grpcContainerStatus["Pid"], &initPID); err != nil {
 		log.Errorf("Can't unmarshal pid in status for container %v, error: %v", id, err)
+
 		return -1
 	}
 
@@ -473,20 +494,24 @@ func runhcsInitPid(scanRoot string, runtimeName string, namespace string, id str
 	shimPIDPath := filepath.Join(scanRoot, runhcsStateFilePrefix, namespace, id, "shim.pid")
 	if _, err := os.Stat(shimPIDPath); err != nil {
 		log.Info("File shim.pid does not exists for container %v, error: %v", id, err)
+
 		return -1
 	}
 
 	shimPIDContent, err := os.ReadFile(shimPIDPath)
 	if err != nil {
 		log.Errorf("Could not read for %s shim.pid for container: %v, error: %v", id, err)
+
 		return -1
 	}
 	shimPidStr := strings.TrimSpace(string(shimPIDContent))
 	initPID, err := strconv.Atoi(shimPidStr)
 	if err != nil {
 		log.Errorf("Can't convert shim.pid content to int for container %v, error: %v", id, err)
+
 		return -1
 	}
+
 	return initPID
 }
 

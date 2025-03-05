@@ -132,6 +132,7 @@ func ValidateRequirements(p Plugin, capabs *Capabilities) error {
 	if len(errs) == 0 {
 		return nil
 	}
+
 	return fmt.Errorf("plugin %s can't be enabled: %s", p.Name(), strings.Join(errs, ", "))
 }
 
@@ -148,6 +149,7 @@ func StatusFromErr(p Plugin, partial bool, err error) *Status {
 		}
 		status.FailureReason = err.Error()
 	}
+
 	return &Status{
 		Name:    p.Name(),
 		Version: p.Version(),
@@ -165,5 +167,6 @@ func (s *ScanStatus) String() string {
 	case ScanStatusFailed:
 		return fmt.Sprintf("FAILED: %s", s.FailureReason)
 	}
+
 	return "UNSPECIFIED"
 }

@@ -88,6 +88,7 @@ func deriveRID(rid []byte) ([]byte, []byte, error) {
 
 	rid1 := []byte{rid[0], rid[1], rid[2], rid[3], rid[0], rid[1], rid[2]}
 	rid2 := []byte{rid[3], rid[0], rid[1], rid[2], rid[3], rid[0], rid[1]}
+
 	return transformRID(rid1), transformRID(rid2), nil
 }
 
@@ -113,6 +114,7 @@ func decryptDES(rid []byte, encryptedHash []byte) ([]byte, error) {
 	decryptedHash := make([]byte, 16)
 	block1.Decrypt(decryptedHash[:8], encryptedHash[:8])
 	block2.Decrypt(decryptedHash[8:], encryptedHash[8:])
+
 	return decryptedHash, nil
 }
 
@@ -127,6 +129,7 @@ func decryptRC4Hash(rid []byte, syskey, hash []byte, hashConstant []byte) ([]byt
 
 	rc4Decrypted := make([]byte, 16)
 	c.XORKeyStream(rc4Decrypted, hash)
+
 	return decryptDES(rid, rc4Decrypted[:16])
 }
 
@@ -149,5 +152,6 @@ func decryptAESHash(rid []byte, syskey, hash []byte, iv []byte) ([]byte, error) 
 	mode := cipher.NewCBCDecrypter(block, iv)
 	aesDecrypted := make([]byte, 32)
 	mode.CryptBlocks(aesDecrypted, hash)
+
 	return decryptDES(rid, aesDecrypted)
 }

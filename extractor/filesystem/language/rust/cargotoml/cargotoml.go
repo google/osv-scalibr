@@ -75,6 +75,7 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 			// if the key exists but the type is wrong return an error
 			return "", fmt.Errorf("invalid type for key %q: expected string, got %T", key, v)
 		}
+
 		return s, nil
 	}
 
@@ -82,6 +83,7 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 	case string:
 		// if the type is string then the data is version
 		v.Version = data
+
 		return nil
 	case map[string]any:
 		var err error
@@ -94,6 +96,7 @@ func (v *cargoTomlDependency) UnmarshalTOML(data any) error {
 		if v.Rev, err = getString(data, "rev"); err != nil {
 			return err
 		}
+
 		return nil
 	default:
 		return errors.New("invalid format for Cargo.toml dependency")

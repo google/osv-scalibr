@@ -223,5 +223,6 @@ func purlFromString(t *testing.T, purlStr string) *purl.PackageURL {
 	if err != nil {
 		t.Fatalf("purlFromString(%s): %v", purlStr, err)
 	}
+
 	return &res
 }

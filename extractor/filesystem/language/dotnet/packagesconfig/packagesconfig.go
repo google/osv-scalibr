@@ -111,10 +111,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	fileinfo, err := api.Stat()
 	if err != nil || (e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes) {
 		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -142,6 +144,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return packages, err
 }
 
@@ -160,6 +163,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	decoder := xml.NewDecoder(input.Reader)
 	if err := decoder.Decode(&packages); err != nil {
 		log.Errorf("Error parsing packages.config: %v", err)
+
 		return nil, err
 	}
 
@@ -167,6 +171,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	for _, pkg := range packages.Packages {
 		if pkg.ID == "" || pkg.Version == "" {
 			log.Warnf("Skipping package with missing name or version: %+v", pkg)
+
 			continue
 		}
 

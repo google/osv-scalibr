@@ -268,6 +268,7 @@ func TestNode_Walk(t *testing.T) {
 			got := []keyValue{}
 			err := tt.tree.Walk(func(path string, node *testVal) error {
 				got = append(got, keyValue{key: path, val: node.string})
+
 				return nil
 			})
 			if err != nil {
@@ -277,6 +278,7 @@ func TestNode_Walk(t *testing.T) {
 				if a.key == b.key {
 					return a.val < b.val
 				}
+
 				return a.key < b.key
 			})); diff != "" {
 				t.Errorf("Node.Walk() (-want +got): %v", diff)

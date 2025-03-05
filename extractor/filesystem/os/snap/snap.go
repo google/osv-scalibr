@@ -119,10 +119,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+
 		return false
 	}
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+
 	return true
 }
 
@@ -151,6 +153,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
+
 	return inventory, err
 }
 
@@ -189,6 +192,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		},
 		Locations: []string{input.Path},
 	}
+
 	return []*extractor.Inventory{inventory}, nil
 }
 
@@ -197,6 +201,7 @@ func toNamespace(m *Metadata) string {
 		return m.OSID
 	}
 	log.Errorf("os-release[ID] not set, fallback to ''")
+
 	return ""
 }
 
@@ -208,9 +213,11 @@ func toDistro(m *Metadata) string {
 	// fallback: e.g. 22.04
 	if m.OSVersionID != "" {
 		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
+
 		return m.OSVersionID
 	}
 	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+
 	return ""
 }
 
@@ -239,5 +246,6 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 		return "Ubuntu"
 	}
 	log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
+
 	return ""
 }

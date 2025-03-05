@@ -131,6 +131,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	if e.checkIfSocketExists {
 		if _, err := os.Stat(e.socketAddr); err != nil {
 			log.Infof("Containerd socket %v does not exist, skipping extraction.", e.socketAddr)
+
 			return inventory, err
 		}
 	}
@@ -141,6 +142,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		cli, err := containerd.New(e.socketAddr)
 		if err != nil {
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
+
 			return inventory, err
 		}
 		e.client = cli
@@ -154,6 +156,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	ctrMetadata, err := containersFromAPI(ctx, e.client)
 	if err != nil {
 		log.Errorf("Could not get container inventory from the containerd: %v", err)
+
 		return inventory, err
 	}
 
@@ -168,6 +171,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	defer e.client.Close()
+
 	return inventory, nil
 }
 
@@ -178,6 +182,7 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 	nss, err := namespacesFromAPI(ctx, client)
 	if err != nil {
 		log.Errorf("Could not get a list of namespaces from the containerd: %v", err)
+
 		return nil, err
 	}
 
@@ -187,11 +192,13 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 		ctrs, err := containersMetadata(ctx, client, ns, defaultContainerdRootfsPrefix)
 		if err != nil {
 			log.Errorf("Could not get a list of containers from the containerd: %v", err)
+
 			return nil, err
 		}
 		// Merge all containers metadata items for all namespaces into a single list.
 		metadata = append(metadata, ctrs...)
 	}
+
 	return metadata, nil
 }
 
@@ -221,11 +228,13 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 		md, err := taskMetadata(ctx, client, task, namespace, defaultAbsoluteToBundlePath)
 		if err != nil {
 			log.Errorf("Failed to get task metadata for task %v: %v", task.ID, err)
+
 			continue
 		}
 
 		containersMetadata = append(containersMetadata, md)
 	}
+
 	return containersMetadata, nil
 }
 
@@ -235,30 +244,35 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	container, err := client.LoadContainer(ctx, task.ID)
 	if err != nil {
 		log.Errorf("Failed to load container for task %v, error: %v", task.ID, err)
+
 		return md, err
 	}
 
 	info, err := container.Info(ctx)
 	if err != nil {
 		log.Errorf("Failed to obtain container info for container %v, error: %v", task.ID, err)
+
 		return md, err
 	}
 
 	image, err := container.Image(ctx)
 	if err != nil {
 		log.Errorf("Failed to obtain container image for container %v, error: %v", task.ID, err)
+
 		return md, err
 	}
 
 	ctdTask, err := container.Task(ctx, nil)
 	if err != nil {
 		log.Errorf("Failed to obtain containerd container task data for container %v, error: %v", task.ID, err)
+
 		return md, err
 	}
 
 	spec, err := ctdTask.Spec(ctx)
 	if err != nil {
 		log.Errorf("Failed to obtain containerd container task spec for container %v, error: %v", task.ID, err)
+
 		return md, err
 	}
 	// Defined in https://github.com/opencontainers/runtime-spec/blob/main/config.md#root. For POSIX

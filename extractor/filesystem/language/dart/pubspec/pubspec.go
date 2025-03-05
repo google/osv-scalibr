@@ -50,6 +50,7 @@ func (pld *pubspecLockDescription) UnmarshalYAML(value *yaml.Node) error {
 	}
 	if err := value.Decode(&m); err == nil {
 		pld.Ref = m.Ref
+
 		return nil
 	}
 
@@ -111,6 +112,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		for _, str := range strings.Split(pkg.Dependency, " ") {
 			if str == "dev" {
 				pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
+
 				break
 			}
 		}
