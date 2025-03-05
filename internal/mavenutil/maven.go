@@ -113,7 +113,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 // loadParentLocal loads a parent Maven project from local file system
 // and returns whether parent is found locally as well as parent path.
 func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path string, result *maven.Project) (bool, string, error) {
-	parentPath := parentPOMPath(input, path, string(parent.RelativePath))
+	parentPath := ParentPOMPath(input, path, string(parent.RelativePath))
 	if parentPath == "" {
 		return false, "", nil
 	}
@@ -165,11 +165,11 @@ func ProjectKey(proj maven.Project) maven.ProjectKey {
 	return proj.ProjectKey
 }
 
-// parentPOMPath returns the path of a parent pom.xml.
+// ParentPOMPath returns the path of a parent pom.xml.
 // Maven looks for the parent POM first in 'relativePath', then
 // the local repository '../pom.xml', and lastly in the remote repo.
 // An empty string is returned if failed to resolve the parent path.
-func parentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
+func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
 	if relativePath == "" {
 		relativePath = "../pom.xml"
 	}

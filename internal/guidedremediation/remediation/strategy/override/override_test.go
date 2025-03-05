@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
@@ -27,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven"
 	"github.com/google/osv-scalibr/internal/guidedremediation/matchertest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy/override"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/upgrade"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
@@ -113,7 +115,7 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed opening wantFile: %v", err)
 			}
 			defer wantFile.Close()
-			var want []remediation.Patch
+			var want []result.Patch
 			if err := json.NewDecoder(wantFile).Decode(&want); err != nil {
 				t.Fatalf("failed decoding wantFile: %v", err)
 			}
@@ -139,7 +141,10 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed computing patches: %v", err)
 			}
 
-			if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+			// Type is not in exported to json, just treat them all as equal
+			typeCmp := func(dep.Type, dep.Type) bool { return true }
+
+			if diff := cmp.Diff(want, got, cmpopts.EquateEmpty(), cmp.Comparer(typeCmp)); diff != "" {
 				t.Errorf("ComputePatches: unexpected diff (-want +got):\n%s", diff)
 			}
 		})
