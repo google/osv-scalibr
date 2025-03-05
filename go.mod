@@ -25,6 +25,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20250210065807-ab8a4f6e6389
 	github.com/package-url/packageurl-go v0.1.2
+	github.com/pandatix/go-cvss v0.6.2
 	github.com/spdx/tools-golang v0.5.3
 	github.com/tidwall/jsonc v0.3.2
 	go.etcd.io/bbolt v1.3.10
@@ -68,7 +69,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect

@@ -18,6 +18,7 @@ package remediation
 import (
 	"cmp"
 	"context"
+	"math"
 	"slices"
 
 	"deps.dev/util/resolve"
@@ -25,6 +26,9 @@ import (
 	"github.com/google/osv-scalibr/internal/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/upgrade"
 	"github.com/google/osv-scalibr/internal/guidedremediation/resolution"
+	"github.com/google/osv-scalibr/internal/guidedremediation/severity"
+	"github.com/google/osv-scalibr/internal/guidedremediation/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // Options is the configuration for remediation.
@@ -77,8 +81,34 @@ func (opts *Options) matchID(v resolution.Vulnerability, ids []string) bool {
 }
 
 func (opts *Options) matchSeverity(v resolution.Vulnerability) bool {
-	// TODO(#454): need to import github.com/pandatix/go-cvss
-	return true
+	maxScore := -1.0
+	severities := v.OSV.Severity
+	if len(severities) == 0 {
+		// There are no top-level severity, see if there are individual affected[].severity field.
+		severities = []osvschema.Severity{}
+		for _, sg := range v.Subgraphs {
+			inv := vulns.VKToInventory(sg.Nodes[sg.Dependency].Version)
+			// Make and match a dummy OSV record per affected[] entry to determine which applies.
+			for _, affected := range v.OSV.Affected {
+				if vulns.IsAffected(&osvschema.Vulnerability{Affected: []osvschema.Affected{affected}}, inv) {
+					severities = append(severities, affected.Severity...)
+					break
+				}
+			}
+		}
+	}
+
+	for _, sev := range severities {
+		if score, err := severity.CalculateScore(sev); err == nil { // skip errors
+			maxScore = max(maxScore, score)
+		}
+	}
+
+	// CVSS scores are meant to only be to 1 decimal place
+	// and we want to avoid something being falsely rejected/included due to floating point precision.
+	// Multiply and round to only consider relevant parts of the score.
+	return math.Round(10*maxScore) >= math.Round(10*opts.MinSeverity) ||
+		maxScore < 0 // Always include vulns with unknown severities
 }
 
 func (opts *Options) matchDepth(v resolution.Vulnerability) bool {
