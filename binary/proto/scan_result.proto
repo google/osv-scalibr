@@ -107,6 +107,7 @@ message Inventory {
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
+    ChromeExtensionsMetadata chrome_extensions_metadata = 45;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -469,3 +470,15 @@ message WindowsOSVersion {
 
 // The additional data found in Homebrew packages.
 message HomebrewPackageMetadata {}
+
+// The additional data found in Chrome extensions.
+message ChromeExtensionsMetadata {
+  string name = 1;
+  string description = 2;
+  string author_email = 3;
+  repeated string host_permissions = 4;
+  int32 manifest_version = 5;
+  string minimum_chrome_version = 6;
+  repeated string permissions = 7;
+  string update_url = 8;
+}
