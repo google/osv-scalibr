@@ -116,7 +116,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // Extract parses the deps.json file to extract .NET package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	packages, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -146,7 +146,7 @@ type DepsJSON struct {
 	} `json:"libraries"`
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var deps DepsJSON
 	decoder := json.NewDecoder(input.Reader)
 	if err := decoder.Decode(&deps); err != nil {
@@ -160,7 +160,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		return nil, fmt.Errorf("empty deps.json file or no libraries found")
 	}
 
-	var inventories []*extractor.Inventory
+	var packages []*extractor.Package
 	for nameVersion, library := range deps.Libraries {
 		// Split name and version from "package/version" format
 		name, version := splitNameAndVersion(nameVersion)
@@ -169,7 +169,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 		// If the library type is "project", this is the root/main package.
-		i := &extractor.Inventory{
+		p := &extractor.Package{
 			Name:    name,
 			Version: version,
 			Metadata: &Metadata{
@@ -179,10 +179,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			},
 			Locations: []string{input.Path},
 		}
-		inventories = append(inventories, i)
+		packages = append(packages, p)
 	}
 
-	return inventories, nil
+	return packages, nil
 }
 
 // splitNameAndVersion splits the name and version from a "package/version" string.
@@ -194,16 +194,16 @@ func splitNameAndVersion(nameVersion string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
+func (Extractor) Ecosystem(p *extractor.Package) string {
 	return "NuGet"
 }

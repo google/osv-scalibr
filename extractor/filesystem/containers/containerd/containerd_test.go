@@ -91,7 +91,7 @@ func TestExtract(t *testing.T) {
 		containerdID      string
 		cfg               containerd.Config
 		onGoos            string
-		wantInventory     []*extractor.Inventory
+		wantPackages      []*extractor.Package
 		wantErr           error
 	}{
 		{
@@ -105,7 +105,7 @@ func TestExtract(t *testing.T) {
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
 			onGoos: "linux",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
 					Version: "sha256:832ad48c9872fdcae32f2ea369d9874fa34f2ea369d9874fa34f271b4dbc58ce04393c757befa462",
@@ -137,8 +137,8 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
+			wantPackages: []*extractor.Package{},
+			wantErr:      cmpopts.AnyError,
 		},
 		{
 			name:              "metadb too large",
@@ -151,8 +151,8 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 1 * units.KiB,
 			},
-			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
+			wantPackages: []*extractor.Package{},
+			wantErr:      cmpopts.AnyError,
 		},
 		{
 			name:              "invalid status file",
@@ -165,7 +165,7 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name:            "metadb valid windows",
@@ -178,7 +178,7 @@ func TestExtract(t *testing.T) {
 			},
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos: "ignore",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "mcr.microsoft.com/windows/nanoserver:ltsc2022",
 					Version: "sha256:31c8aa02d47af7d65c11da9c3a279c8407c32afd3fc6bec2e9a544db8e3715b3",
@@ -205,7 +205,7 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
+			wantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -238,7 +238,7 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			if diff := cmp.Diff(tt.wantPackages, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 		})

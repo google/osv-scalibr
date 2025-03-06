@@ -79,7 +79,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract the DISM patch level on Windows.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
 	reg, err := e.opener.Open()
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	flavor := winproducts.WindowsFlavorFromRegistry(reg)
 	fullVersion := fmt.Sprintf("%s.%s.%s", currentVersion, buildNumber, revision)
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
-	return []*extractor.Inventory{
+	return []*extractor.Package{
 		{
 			Name:    winproduct,
 			Version: fullVersion,
@@ -158,14 +158,14 @@ func (e Extractor) windowsRevision(key registry.Key) (string, error) {
 	return buildLabParts[1], nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	var qualifiers purl.Qualifiers
 
-	switch i.Metadata.(type) {
+	switch p.Metadata.(type) {
 	case metadata.OSVersion:
 		qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Metadata.(metadata.OSVersion).FullVersion,
+			purl.BuildNumber: p.Metadata.(metadata.OSVersion).FullVersion,
 		})
 	default:
 		return nil
@@ -174,10 +174,10 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:       purl.TypeGeneric,
 		Namespace:  "microsoft",
-		Name:       i.Name,
+		Name:       p.Name,
 		Qualifiers: qualifiers,
 	}
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regosversion yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

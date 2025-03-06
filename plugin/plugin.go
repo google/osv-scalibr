@@ -79,7 +79,7 @@ type Plugin interface {
 
 // LINT.IfChange
 
-// Status contains the status and version of the inventory+vuln plugins that ran.
+// Status contains the status and version of the plugins that ran.
 type Status struct {
 	Name    string
 	Version int

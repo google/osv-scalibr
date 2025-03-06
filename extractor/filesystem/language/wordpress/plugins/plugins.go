@@ -126,7 +126,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract parses the PHP file to extract Wordpress package.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	pkg, err := parsePHPFile(input.Reader)
 	if err != nil {
 		return nil, err
@@ -136,13 +136,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, nil
 	}
 
-	inventory := &extractor.Inventory{
+	return []*extractor.Package{&extractor.Package{
 		Name:      pkg.Name,
 		Version:   pkg.Version,
 		Locations: []string{input.Path},
-	}
-
-	return []*extractor.Inventory{inventory}, nil
+	}}, nil
 }
 
 type wpPackage struct {
@@ -181,17 +179,17 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 	return &wpPackage{Name: name, Version: version}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeWordpress,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Package) string {
 	// wordpress ecosystem does not exist in OSV
 	return ""
 }

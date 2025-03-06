@@ -69,7 +69,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract parses the CycloneDX SBOM and returns a list purls from the SBOM.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var cdxExtractor = findExtractor(input.Path)
 
 	if cdxExtractor == nil {
@@ -81,7 +81,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, err
 	}
 
-	return e.convertCdxBomToInventory(&cdxBOM, input.Path)
+	return e.convertCdxBomToPackage(&cdxBOM, input.Path)
 }
 
 func findExtractor(path string) extractFunc {
@@ -109,21 +109,21 @@ func findExtractor(path string) extractFunc {
 	return nil
 }
 
-func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) ([]*extractor.Inventory, error) {
-	results := []*extractor.Inventory{}
+func (e Extractor) convertCdxBomToPackage(cdxBom *cyclonedx.BOM, path string) ([]*extractor.Package, error) {
+	results := []*extractor.Package{}
 
 	if cdxBom == nil {
 		return results, nil
 	}
 
 	for _, cdxPkg := range *cdxBom.Components {
-		inv := &extractor.Inventory{
+		pkg := &extractor.Package{
 			Locations: []string{path},
 			Metadata:  &Metadata{},
 		}
-		m := inv.Metadata.(*Metadata)
-		inv.Name = cdxPkg.Name
-		inv.Version = cdxPkg.Version
+		m := pkg.Metadata.(*Metadata)
+		pkg.Name = cdxPkg.Name
+		pkg.Version = cdxPkg.Version
 		if cdxPkg.CPE != "" {
 			m.CPEs = append(m.CPEs, cdxPkg.CPE)
 		}
@@ -133,20 +133,20 @@ func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) 
 				log.Warnf("Invalid PURL %q for package ref: %q", cdxPkg.PackageURL, cdxPkg.BOMRef)
 			} else {
 				m.PURL = &packageURL
-				if inv.Name == "" {
-					inv.Name = packageURL.Name
+				if pkg.Name == "" {
+					pkg.Name = packageURL.Name
 				}
-				if inv.Version == "" {
-					inv.Version = packageURL.Version
+				if pkg.Version == "" {
+					pkg.Version = packageURL.Version
 				}
 			}
 		}
-		inv.Metadata = m
+		pkg.Metadata = m
 		if m.PURL == nil && len(m.CPEs) == 0 {
 			log.Warnf("Neither CPE nor PURL found for package: %+v", cdxPkg)
 			continue
 		}
-		results = append(results, inv)
+		results = append(results, pkg)
 	}
 
 	return results, nil
@@ -156,14 +156,14 @@ func hasFileExtension(path string, extension string) bool {
 	return strings.HasSuffix(strings.ToLower(path), extension)
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return i.Metadata.(*Metadata).PURL
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return p.Metadata.(*Metadata).PURL
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	purl := i.Metadata.(*Metadata).PURL
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	purl := p.Metadata.(*Metadata).PURL
 	if purl == nil {
 		return ""
 	}

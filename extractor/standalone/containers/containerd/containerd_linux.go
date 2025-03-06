@@ -14,7 +14,7 @@
 
 //go:build linux
 
-// Package containerd extracts container inventory from containerd API.
+// Package containerd extracts container package from containerd API.
 package containerd
 
 import (
@@ -77,7 +77,7 @@ type Extractor struct {
 	initNewCtrdClient   bool
 }
 
-// New creates a new containerd client and returns a containerd container inventory extractor.
+// New creates a new containerd client and returns a containerd container package extractor.
 func New(cfg Config) standalone.Extractor {
 	return &Extractor{
 		client:              nil,
@@ -126,12 +126,12 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extractor extracts containers from the containerd API.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	var inventory = []*extractor.Inventory{}
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
+	var result = []*extractor.Package{}
 	if e.checkIfSocketExists {
 		if _, err := os.Stat(e.socketAddr); err != nil {
 			log.Infof("Containerd socket %v does not exist, skipping extraction.", e.socketAddr)
-			return inventory, err
+			return result, err
 		}
 	}
 	// Creating client here instead of New() to prevent client creation when extractor is not in use.
@@ -141,34 +141,34 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		cli, err := containerd.New(e.socketAddr)
 		if err != nil {
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
-			return inventory, err
+			return result, err
 		}
 		e.client = cli
 		e.initNewCtrdClient = false
 	}
 
 	if e.client == nil {
-		return inventory, fmt.Errorf("Containerd API client is not initialized")
+		return result, fmt.Errorf("Containerd API client is not initialized")
 	}
 
 	ctrMetadata, err := containersFromAPI(ctx, e.client)
 	if err != nil {
-		log.Errorf("Could not get container inventory from the containerd: %v", err)
-		return inventory, err
+		log.Errorf("Could not get container package from the containerd: %v", err)
+		return result, err
 	}
 
 	for _, ctr := range ctrMetadata {
-		pkg := &extractor.Inventory{
+		pkg := &extractor.Package{
 			Name:      ctr.ImageName,
 			Version:   ctr.ImageDigest,
 			Locations: []string{ctr.RootFS},
 			Metadata:  &ctr,
 		}
-		inventory = append(inventory, pkg)
+		result = append(result, pkg)
 	}
 
 	defer e.client.Close()
-	return inventory, nil
+	return result, nil
 }
 
 func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, error) {
@@ -294,10 +294,10 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	return md, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return nil
 }
 
-// Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+// Ecosystem returns no ecosystem since the Package is not a software package.
+func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

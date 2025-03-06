@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package trace provides functionality to trace the origin of an inventory in a container image.
+// Package trace provides functionality to trace the origin of a package in a container image.
 package trace
 
 import (
@@ -36,8 +36,8 @@ type locationAndIndex struct {
 	index    int
 }
 
-// PopulateLayerDetails populates the LayerDetails field of the inventory with the origin details
-// obtained by tracing the inventory in the image.
+// PopulateLayerDetails populates the LayerDetails field of the package with the origin details
+// obtained by tracing the package in the image.
 //
 // It does this by looking at each consecutive pair (n, n+1) of chain layers in reverse order and
 // checking if a package is present in layer n+1, but not layer n. For example, consider the chain
@@ -54,10 +54,10 @@ type locationAndIndex struct {
 //
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
-func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
+func PopulateLayerDetails(ctx context.Context, pkgs []*extractor.Package, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
 	chainLayerDetailsList := []*extractor.LayerDetails{}
 
-	// Create list of layer details struct to be referenced by inventory.
+	// Create list of layer details struct to be referenced by package.
 	for i, chainLayer := range chainLayers {
 		var diffID string
 		if chainLayer.Layer().IsEmpty() {
@@ -85,76 +85,76 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 		}
 	}
 
-	// locationIndexToInventory is used as an inventory cache to avoid re-extracting the same
-	// inventory from a file multiple times.
-	locationIndexToInventory := map[locationAndIndex][]*extractor.Inventory{}
+	// locationIndexToPackage is used as a package cache to avoid re-extracting the same
+	// package from a file multiple times.
+	locationIndexToPackage := map[locationAndIndex][]*extractor.Package{}
 	lastLayerIndex := len(chainLayers) - 1
 
-	for _, inv := range inventory {
+	for _, pkg := range pkgs {
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
-		invExtractor, isFilesystemExtractor := inv.Extractor.(filesystem.Extractor)
+		pkgExtractor, isFilesystemExtractor := pkg.Extractor.(filesystem.Extractor)
 
-		// Only filesystem extractors are supported for layer scanning. Also, if the inventory has no
+		// Only filesystem extractors are supported for layer scanning. Also, if the package has no
 		// locations, it cannot be traced.
-		isInventoryTraceable := isFilesystemExtractor && len(inv.Locations) > 0
-		if !isInventoryTraceable {
+		isPackageTraceable := isFilesystemExtractor && len(pkg.Locations) > 0
+		if !isPackageTraceable {
 			continue
 		}
 
 		var foundOrigin bool
-		fileLocation := inv.Locations[0]
+		fileLocation := pkg.Locations[0]
 
-		// Go backwards through the chain layers and find the first layer where the inventory is not
-		// present. Such layer is the layer in which the inventory was introduced. If the inventory is
+		// Go backwards through the chain layers and find the first layer where the package is not
+		// present. Such layer is the layer in which the package was introduced. If the package is
 		// present in all layers, then it means it was introduced in the first layer.
 		for i := len(chainLayers) - 2; i >= 0; i-- {
 			oldChainLayer := chainLayers[i]
 
-			invLocationAndIndex := locationAndIndex{
+			pkgLocationAndIndex := locationAndIndex{
 				location: fileLocation,
 				index:    i,
 			}
 
-			var oldInventory []*extractor.Inventory
-			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
-				oldInventory = cachedInventory
+			var oldPackages []*extractor.Package
+			if cachedPackage, ok := locationIndexToPackage[pkgLocationAndIndex]; ok {
+				oldPackages = cachedPackage
 			} else if _, err := oldChainLayer.FS().Stat(fileLocation); errors.Is(err, fs.ErrNotExist) {
 				// Check if file still exist in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				oldInventory = []*extractor.Inventory{}
-			} else if filesExistInLayer(oldChainLayer, inv.Locations) {
+				oldPackages = []*extractor.Package{}
+			} else if filesExistInLayer(oldChainLayer, pkg.Locations) {
 				// Update the extractor config to use the files from the current layer.
 				// We only take extract the first location because other locations are derived from the initial
 				// extraction location. If other locations can no longer be determined from the first location
 				// they should not be included here, and the trace for those packages stops here.
-				updateExtractorConfig([]string{fileLocation}, invExtractor, oldChainLayer.FS())
+				updateExtractorConfig([]string{fileLocation}, pkgExtractor, oldChainLayer.FS())
 
 				var err error
 				// Runs SCALIBR extraction on the file of interest in oldChainLayer.
-				oldInventory, _, err = filesystem.Run(ctx, config)
+				oldPackages, _, err = filesystem.Run(ctx, config)
 				if err != nil {
 					break
 				}
 			} else {
-				// If none of the files from the inventory are present in the underlying layer, then there
-				// will be no difference in the extracted inventory from oldChainLayer, so extraction can be
-				// skipped in the chain layer. This is an optimization to avoid extracting the same inventory
+				// If none of the files from the packages are present in the underlying layer, then there
+				// will be no difference in the extracted packages from oldChainLayer, so extraction can be
+				// skipped in the chain layer. This is an optimization to avoid extracting the same package
 				// multiple times.
 				continue
 			}
 
-			// Cache the inventory for future use.
-			locationIndexToInventory[invLocationAndIndex] = oldInventory
+			// Cache the packages for future use.
+			locationIndexToPackage[pkgLocationAndIndex] = oldPackages
 
 			foundPackage := false
-			for _, oldInv := range oldInventory {
-				if areInventoriesEqual(inv, oldInv) {
+			for _, oldPKG := range oldPackages {
+				if arePackagesEqual(pkg, oldPKG) {
 					foundPackage = true
 					break
 				}
 			}
 
-			// If the inventory is not present in the old layer, then it was introduced in layer i+1.
+			// If the package is not present in the old layer, then it was introduced in layer i+1.
 			if !foundPackage {
 				layerDetails = chainLayerDetailsList[i+1]
 				foundOrigin = true
@@ -162,35 +162,35 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			}
 		}
 
-		// If the inventory is present in every layer, then it means it was introduced in the first
+		// If the package is present in every layer, then it means it was introduced in the first
 		// layer.
 		if !foundOrigin {
 			layerDetails = chainLayerDetailsList[0]
 		}
-		inv.LayerDetails = layerDetails
+		pkg.LayerDetails = layerDetails
 	}
 }
 
-// areInventoriesEqual checks if two inventories are equal. It does this by comparing the PURLs and
-// the locations of the inventories.
-func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) bool {
-	if inv1.Extractor == nil || inv2.Extractor == nil {
+// arePackagesEqual checks if two packages are equal. It does this by comparing the PURLs and
+// the locations of the packages.
+func arePackagesEqual(pkg1 *extractor.Package, pkg2 *extractor.Package) bool {
+	if pkg1.Extractor == nil || pkg2.Extractor == nil {
 		return false
 	}
 
 	// Check if the PURLs are equal.
-	purl1 := inv1.Extractor.ToPURL(inv1)
-	purl2 := inv2.Extractor.ToPURL(inv2)
+	purl1 := pkg1.Extractor.ToPURL(pkg1)
+	purl2 := pkg2.Extractor.ToPURL(pkg2)
 
 	if purl1.String() != purl2.String() {
 		return false
 	}
 
 	// Check if the locations are equal.
-	locations1 := inv1.Locations[:]
+	locations1 := pkg1.Locations[:]
 	sort.Strings(locations1)
 
-	locations2 := inv2.Locations[:]
+	locations2 := pkg2.Locations[:]
 	sort.Strings(locations2)
 
 	if !slices.Equal(locations1, locations2) {

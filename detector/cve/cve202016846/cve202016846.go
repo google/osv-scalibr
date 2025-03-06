@@ -44,13 +44,13 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
 type saltPackageNames struct {
-	packageType      string
+	pkgType          string
 	name             string
 	affectedVersions []string
 }
@@ -69,8 +69,8 @@ var (
 	randFilePath = fmt.Sprintf("/tmp/%s", randomString(16))
 	saltPackages = []saltPackageNames{
 		{
-			packageType: "pypi",
-			name:        "salt",
+			pkgType: "pypi",
+			name:    "salt",
 			affectedVersions: []string{
 				"2015.8.10",
 				"2015.8.13",
@@ -117,19 +117,19 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
-func findSaltVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory, []string) {
+func findSaltVersions(px *packageindex.PackageIndex) (string, *extractor.Package, []string) {
 	for _, r := range saltPackages {
-		inventory := ix.GetSpecific(r.name, r.packageType)
-		for _, i := range inventory {
-			return i.Version, i, r.affectedVersions
+		pkgs := px.GetSpecific(r.name, r.pkgType)
+		for _, p := range pkgs {
+			return p.Version, p, r.affectedVersions
 		}
 	}
 	return "", nil, []string{}
 }
 
 // Scan checks for the presence of the Salt CVE-2020-16846 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	saltVersion, inventory, affectedVersions := findSaltVersions(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+	saltVersion, pkg, affectedVersions := findSaltVersions(px)
 	if saltVersion == "" {
 		log.Debugf("No Salt version found")
 		return nil, nil
@@ -184,9 +184,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
 		Target: &detector.TargetDetails{
-			Inventory: inventory,
+			Package: pkg,
 		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
+		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 	}}, nil
 }
 

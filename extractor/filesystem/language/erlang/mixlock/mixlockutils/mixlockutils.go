@@ -43,10 +43,10 @@ type Package struct {
 }
 
 // ParseMixLockFile extracts packages from Erlang Mix.lock files passed through the scan input.
-func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	scanner := bufio.NewScanner(input.Reader)
 
-	var inventories []*extractor.Inventory
+	var packages []*extractor.Package
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -78,8 +78,8 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 			commit = match[5]
 		}
 
-		// Directly appending to inventories
-		inventories = append(inventories, &extractor.Inventory{
+		// Directly appending to packages
+		packages = append(packages, &extractor.Package{
 			Name:      name,
 			Version:   version,
 			Locations: []string{input.Path},
@@ -93,14 +93,14 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 		return nil, fmt.Errorf("error while scanning %s: %w", input.Path, err)
 	}
 
-	return inventories, nil
+	return packages, nil
 }
 
 // ToPURL converts a package into a PURL.
-func ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeHex,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
+		Name:    strings.ToLower(p.Name),
+		Version: p.Version,
 	}
 }

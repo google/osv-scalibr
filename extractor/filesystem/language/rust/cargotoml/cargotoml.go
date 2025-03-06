@@ -138,7 +138,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract extracts packages from Cargo.toml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedTomlFile cargoTomlFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
@@ -146,9 +146,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(parsedTomlFile.Dependencies)+1)
+	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
-	packages = append(packages, &extractor.Inventory{
+	packages = append(packages, &extractor.Package{
 		Name:      parsedTomlFile.Package.Name,
 		Version:   parsedTomlFile.Package.Version,
 		Locations: []string{input.Path},
@@ -172,7 +172,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
 			Locations:  []string{input.Path},
@@ -183,17 +183,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeCargo,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Package) string {
 	return "crates.io"
 }
 

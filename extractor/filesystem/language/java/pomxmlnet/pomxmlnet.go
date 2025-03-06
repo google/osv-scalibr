@@ -103,7 +103,7 @@ func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from pom.xml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
@@ -198,12 +198,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		g.Edges[i] = e
 	}
 
-	details := map[string]*extractor.Inventory{}
+	details := map[string]*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		depGroups := []string{}
-		inventory := extractor.Inventory{
+		pkg := extractor.Package{
 			Name:    node.Version.Name,
 			Version: node.Version.Version,
 			// TODO(#408): Add merged paths in here as well
@@ -213,36 +213,36 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		// not transitive dependencies because the nodes in the resolve graph does
 		// not have the scope information.
 		for _, dep := range project.Dependencies {
-			if dep.Name() != inventory.Name {
+			if dep.Name() != pkg.Name {
 				continue
 			}
 			if dep.Scope != "" && dep.Scope != "compile" {
 				depGroups = append(depGroups, string(dep.Scope))
 			}
 		}
-		inventory.Metadata = osv.DepGroupMetadata{
+		pkg.Metadata = osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
 		}
-		details[inventory.Name] = &inventory
+		details[pkg.Name] = &pkg
 	}
 
 	return maps.Values(details), nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	g, a, _ := strings.Cut(i.Name, ":")
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	g, a, _ := strings.Cut(p.Name, ":")
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: g,
 		Name:      a,
-		Version:   i.Version,
+		Version:   p.Version,
 		// TODO(#426): add Maven classifier and type to PURL.
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Package) string {
 	return "Maven"
 }
 

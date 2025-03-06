@@ -131,8 +131,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from "desc" files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -145,10 +145,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return pkgs, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -156,12 +156,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	s := bufio.NewScanner(input.Reader)
 	var pkgName, pkgVersion, pkgDependencies string
-	pkgs := []*extractor.Inventory{}
+	packages := []*extractor.Package{}
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
 		}
 
 		line := s.Text()
@@ -184,12 +184,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				log.Warnf("Reached EOF for desc file in %v", input.Path)
 				break
 			}
-			return pkgs, fmt.Errorf("%s halted at %q: %v", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q: %v", e.Name(), input.Path, err)
 		}
 	}
 
 	if pkgName != "" && pkgVersion != "" {
-		i := &extractor.Inventory{
+		p := &extractor.Package{
 			Name:    pkgName,
 			Version: pkgVersion,
 			Metadata: &Metadata{
@@ -202,13 +202,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if len(pkgDependencies) != 0 {
-			i.Metadata.(*Metadata).PackageDependencies = pkgDependencies
+			p.Metadata.(*Metadata).PackageDependencies = pkgDependencies
 		}
 
-		pkgs = append(pkgs, i)
+		packages = append(packages, p)
 	}
 
-	return pkgs, nil
+	return packages, nil
 }
 
 func extractValue(scanner *bufio.Scanner) (string, error) {
@@ -250,8 +250,8 @@ func extractValues(scanner *bufio.Scanner) (string, error) {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	m := p.Metadata.(*Metadata)
 	osID := cases.Title(language.English).String(toNamespace(m))
 	if m.OSVersionID == "" {
 		return osID
@@ -267,9 +267,9 @@ func toNamespace(m *Metadata) string {
 	return "linux"
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*Metadata)
 	q := map[string]string{}
 	distro := toDistro(m)
 	if distro != "" {
@@ -283,7 +283,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 		Type:       purl.TypePacman,
 		Name:       m.PackageName,
 		Namespace:  toNamespace(m),
-		Version:    i.Version,
+		Version:    p.Version,
 		Qualifiers: purl.QualifiersFromMap(q),
 	}
 }

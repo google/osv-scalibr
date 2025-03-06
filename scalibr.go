@@ -33,8 +33,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 
@@ -68,7 +68,7 @@ type ScanConfig struct {
 	// Example use case: Scanning a container image or source code repo that is
 	// mounted to a local dir.
 	ScanRoots []*scalibrfs.ScanRoot
-	// Optional: Individual files to extract inventory from. If specified, the
+	// Optional: Individual files to extract package from. If specified, the
 	// extractors will only look at these files during the filesystem traversal.
 	// Note that on real filesystems these are not relative to the ScanRoots and
 	// thus need to be in sub-directories of one of the ScanRoots.
@@ -88,7 +88,7 @@ type ScanConfig struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
-	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
+	// Optional: By default, inventory paths are relative to the scan root. If StoreAbsolutePath
 	// is set, the absolute path is stored instead.
 	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
@@ -153,17 +153,23 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 
 // LINT.IfChange
 
-// ScanResult stores the software inventory and security findings that a scan run found.
+// ScanResult stores the results of a scan incl. scan status and artifacts found.
 type ScanResult struct {
 	Version   string
 	StartTime time.Time
 	EndTime   time.Time
 	// Status of the overall scan.
 	Status *plugin.ScanStatus
-	// Status and versions of the inventory+vuln plugins that ran.
+	// Status and versions of the plugins that ran.
 	PluginStatus []*plugin.Status
-	Inventories  []*extractor.Inventory
-	Findings     []*detector.Finding
+	Inventory    *Inventory
+}
+
+// Inventory stores the artifacts (e.g. software packages, security findings)
+// that a scan found.
+type Inventory struct {
+	Packages []*extractor.Package
+	Findings []*detector.Finding
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
@@ -177,9 +183,8 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		config.Stats.AfterScan(time.Since(sr.StartTime), sr.Status)
 	}()
 	sro := &newScanResultOptions{
-		StartTime:   time.Now(),
-		Inventories: []*extractor.Inventory{},
-		Findings:    []*detector.Finding{},
+		StartTime: time.Now(),
+		Inventory: &Inventory{},
 	}
 	if err := config.EnableRequiredExtractors(); err != nil {
 		sro.Err = err
@@ -208,31 +213,31 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 	}
-	inventories, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
+	packages, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
 
-	sro.Inventories = inventories
+	sro.Inventory.Packages = packages
 	sro.ExtractorStatus = extractorStatus
 	sysroot := config.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
 		Extractors: config.StandaloneExtractors,
 		ScanRoot:   &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path},
 	}
-	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
+	standalonePKGs, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
 
-	sro.Inventories = append(sro.Inventories, standaloneInv...)
+	sro.Inventory.Packages = append(sro.Inventory.Packages, standalonePKGs...)
 	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
 
-	ix, err := inventoryindex.New(sro.Inventories)
+	px, err := packageindex.New(sro.Inventory.Packages)
 	if err != nil {
 		sro.Err = err
 		sro.EndTime = time.Now()
@@ -240,9 +245,9 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	findings, detectorStatus, err := detector.Run(
-		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, ix,
+		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
-	sro.Findings = findings
+	sro.Inventory.Findings = findings
 	sro.DetectorStatus = detectorStatus
 	if err != nil {
 		sro.Err = err
@@ -252,8 +257,8 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	return newScanResult(sro)
 }
 
-// ScanContainer scans the provided container image for inventory and security findings using the
-// provided scan config. It populates the LayerDetails field of the inventory with the origin layer
+// ScanContainer scans the provided container image for package and security findings using the
+// provided scan config. It populates the LayerDetails field of the package with the origin layer
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
 func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
@@ -280,7 +285,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	scanResult := s.Scan(ctx, config)
-	inventory := scanResult.Inventories
+	pkg := scanResult.Inventory.Packages
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
@@ -295,8 +300,8 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 	}
 
-	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, inventory, chainLayers, extractorConfig)
+	// Populate the LayerDetails field of the package by tracing the layer origins.
+	trace.PopulateLayerDetails(ctx, pkg, chainLayers, extractorConfig)
 	return scanResult, nil
 }
 
@@ -304,9 +309,8 @@ type newScanResultOptions struct {
 	StartTime       time.Time
 	EndTime         time.Time
 	ExtractorStatus []*plugin.Status
-	Inventories     []*extractor.Inventory
 	DetectorStatus  []*plugin.Status
-	Findings        []*detector.Finding
+	Inventory       *Inventory
 	Err             error
 }
 
@@ -323,8 +327,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		EndTime:      o.EndTime,
 		Status:       status,
 		PluginStatus: append(o.ExtractorStatus, o.DetectorStatus...),
-		Inventories:  o.Inventories,
-		Findings:     o.Findings,
+		Inventory:    o.Inventory,
 	}
 
 	// Sort results for better diffing.
@@ -343,17 +346,17 @@ func hasFailedPlugins(statuses []*plugin.Status) bool {
 
 // sortResults sorts the result to make the output deterministic and diffable.
 func sortResults(results *ScanResult) {
-	for _, inventory := range results.Inventories {
-		sort.Strings(inventory.Locations)
+	for _, pkg := range results.Inventory.Packages {
+		sort.Strings(pkg.Locations)
 	}
 
 	slices.SortFunc(results.PluginStatus, cmpStatus)
-	slices.SortFunc(results.Inventories, CmpInventories)
-	slices.SortFunc(results.Findings, cmpFindings)
+	slices.SortFunc(results.Inventory.Packages, CmpPackages)
+	slices.SortFunc(results.Inventory.Findings, cmpFindings)
 }
 
-// CmpInventories is a comparison helper fun to be used for sorting Inventory structs.
-func CmpInventories(a, b *extractor.Inventory) int {
+// CmpPackages is a comparison helper fun to be used for sorting Package structs.
+func CmpPackages(a, b *extractor.Package) int {
 	res := cmp.Or(
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.Version, b.Version),

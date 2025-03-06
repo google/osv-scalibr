@@ -51,14 +51,14 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract is a no-op for non Linux.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Package, error) {
 	return nil, fmt.Errorf("only supported on Linux")
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e *Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return nil
 }
 
 // Ecosystem returns no ecosystem.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

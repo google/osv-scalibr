@@ -119,7 +119,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // Extract parses the mix.lock file to extract Elixir package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	packages, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -135,17 +135,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	// Parse the Mix.lock file into a list of packages and return Inventory directly
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	// Parse the Mix.lock file into a list of packages and return Package directly
 	return mixlockutils.ParseMixLockFile(input)
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return mixlockutils.ToPURL(i)
+// ToPURL converts a package created by this extractor into a PURL using mixlockutils.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return mixlockutils.ToPURL(p)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
+func (Extractor) Ecosystem(p *extractor.Package) string {
 	return "Hex"
 }

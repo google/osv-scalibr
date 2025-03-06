@@ -1,7 +1,7 @@
 # Add a new Extractor
 
-Extractors are plugins that extract a inventory information, represented by the
-Inventory struct. They are called on every file of system (filesystem
+Extractors are plugins that extract inventory information, represented by the
+Package struct. They are called on every file of system (filesystem
 extractor).
 
 There should be one Extractor per parsing logic. In python for example there are
@@ -69,12 +69,12 @@ which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 ## Output
 
 The `Extract` method should return a list of
-[Inventory](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
+[Package](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
 
-<!--  See extractor/extractor.go symbol \bInventory\b -->
+<!--  See extractor/extractor.go symbol \bPackage\b -->
 
-You can return an empty list in case you don't find inventory in the file or
-multiple Inventory entries in case there are multiple in one file.
+You can return an empty list in case you don't find software packages in the
+file or multiple Package entries in case there are multiple in one file.
 
 ## Code location
 
@@ -120,7 +120,7 @@ extractor as an example.
 1.  Implement `FileRequired` to return true in case filename and fileMode
     matches a file you need to parse. For example, the JavaScript `package.json`
     extractor returns true for any file named `package.json`.
-1.  Implement `Extract` to extract inventory inside the file.
+1.  Implement `Extract` to extract software packages inside the file.
 1.  If you introduced any new metadata type, be sure to add them to the scan_results.proto
     as well and re-generate the go_proto:
 
@@ -134,7 +134,7 @@ extractor as an example.
     $ `go mod tidy`
     ```
 
-1.  Implement `ToPURL` to generate PURLs from the Inventory
+1.  Implement `ToPURL` to generate PURLs from the Package
     extracted. If your extractor doesn't support CPEs feel free to return an empty
     list.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid

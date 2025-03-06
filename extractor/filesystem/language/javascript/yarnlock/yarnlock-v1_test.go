@@ -32,14 +32,14 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "balanced-match",
 					Version:   "1.0.2",
@@ -55,7 +55,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-version.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "balanced-match",
 					Version:   "1.0.2",
@@ -71,7 +71,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "concat-stream",
 					Version:   "1.6.2",
@@ -95,7 +95,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-quotes.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "concat-stream",
 					Version:   "1.6.2",
@@ -119,7 +119,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-versions.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "define-properties",
 					Version:   "1.1.3",
@@ -159,7 +159,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-constraints.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/code-frame",
 					Version:   "7.12.13",
@@ -183,7 +183,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/code-frame",
 					Version:   "7.12.11",
@@ -207,7 +207,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-prerelease.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "css-tree",
 					Version:   "1.0.0-alpha.37",
@@ -255,7 +255,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-build-string.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "domino",
 					Version:   "2.1.6+git",
@@ -279,7 +279,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "mine1",
 					Version:   "1.0.0-alpha.37",
@@ -431,7 +431,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "etag",
 					Version:   "1.8.1",
@@ -487,7 +487,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-aliases.v1.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@babel/helper-validator-identifier",
 					Version:   "7.22.20",
@@ -530,7 +530,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

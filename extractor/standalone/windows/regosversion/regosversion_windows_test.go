@@ -31,7 +31,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		reg     *mockregistry.MockRegistry
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr bool
 	}{
 		{
@@ -65,7 +65,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "windows_11:21H2",
 					Version: "10.0.22000.1234",
@@ -107,7 +107,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "unknownWindows",
 					Version: "10.0.12345.1234",
@@ -145,7 +145,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "windows_xp",
 					Version: "5.1.2600.1234",
@@ -183,7 +183,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
 					Name:    "unknownWindows",
 					Version: "5.1.1234.1234",

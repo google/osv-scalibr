@@ -93,12 +93,12 @@ func isCaskroom(filePath string) bool {
 }
 
 // Extract parses the recognised Homebrew file path and returns information about the installed package.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	p := SplitPath(input.Path)
 	if p == nil {
-		return []*extractor.Inventory{}, nil
+		return []*extractor.Package{}, nil
 	}
-	return []*extractor.Inventory{
+	return []*extractor.Package{
 		{
 			Name:      p.AppName,
 			Version:   p.AppVersion,
@@ -126,14 +126,14 @@ func SplitPath(path string) *BrewPath {
 	return nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeBrew,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
