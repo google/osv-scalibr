@@ -21,6 +21,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Flatpak
 * Homebrew (used by OS X)
 * Applications (Installed on OS X)
+* VSCode Extensions
 * Windows
   * Build number (using either the registry or DISM)
   * DISM-like hotpatches (using either the registry or DISM)
