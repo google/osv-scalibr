@@ -136,7 +136,6 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 				if err != nil {
 					break
 				}
-
 			} else {
 				// If none of the files from the inventory are present in the underlying layer, then there
 				// will be no difference in the extracted inventory from oldChainLayer, so extraction can be
