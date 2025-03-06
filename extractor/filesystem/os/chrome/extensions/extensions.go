@@ -49,38 +49,15 @@ type manifest struct {
 	Author struct {
 		Email string `json:"email"`
 	} `json:"author"`
-	Background struct {
-		ServiceWorker string `json:"service_worker"`
-	} `json:"background"`
-	ContentCapabilities struct {
-		Matches     []string `json:"matches"`
-		Permissions []string `json:"permissions"`
-	} `json:"content_capabilities"`
-	ContentSecurityPolicy struct {
-		ExtensionPages string `json:"extension_pages"`
-	} `json:"content_security_policy"`
-	DefaultLocale           string `json:"default_locale"`
-	Description             string `json:"description"`
-	DifferentialFingerprint string `json:"differential_fingerprint"`
-	ExternallyConnectable   struct {
-		Matches []string `json:"matches"`
-	} `json:"externally_connectable"`
-	HostPermissions      []string          `json:"host_permissions"`
-	Icons                map[string]string `json:"icons"`
-	Key                  string            `json:"key"`
-	ManifestVersion      int               `json:"manifest_version"`
-	MinimumChromeVersion string            `json:"minimum_chrome_version"`
-	Name                 string            `json:"name"`
-	Permissions          []string          `json:"permissions"`
-	Storage              struct {
-		ManagedSchema string `json:"managed_schema"`
-	} `json:"storage"`
-	UpdateURL              string `json:"update_url"`
-	Version                string `json:"version"`
-	WebAccessibleResources []struct {
-		Matches   []string `json:"matches"`
-		Resources []string `json:"resources"`
-	} `json:"web_accessible_resources"`
+	DefaultLocale        string   `json:"default_locale"`
+	Description          string   `json:"description"`
+	HostPermissions      []string `json:"host_permissions"`
+	ManifestVersion      int      `json:"manifest_version"`
+	MinimumChromeVersion string   `json:"minimum_chrome_version"`
+	Name                 string   `json:"name"`
+	Permissions          []string `json:"permissions"`
+	UpdateURL            string   `json:"update_url"`
+	Version              string   `json:"version"`
 }
 
 func (m *manifest) validate() error {
