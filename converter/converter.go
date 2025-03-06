@@ -97,7 +97,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
 		pSourceInfo := fmt.Sprintf("Identified by the %s extractor", i.Extractor.Name())
 		if len(i.Locations) == 1 {
-			pSourceInfo += fmt.Sprintf(" from %s", i.Locations[0])
+			pSourceInfo += " from " + i.Locations[0]
 		} else if l := len(i.Locations); l > 1 {
 			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, i.Locations[0], i.Locations[1])
 		}

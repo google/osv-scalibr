@@ -17,6 +17,7 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -39,7 +40,7 @@ import (
 var (
 	// ErrNotRelativeToScanRoots is returned when one of the file or directory to be retrieved or
 	// skipped is not relative to any of the scan roots.
-	ErrNotRelativeToScanRoots = fmt.Errorf("path not relative to any of the scan roots")
+	ErrNotRelativeToScanRoots = errors.New("path not relative to any of the scan roots")
 )
 
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
@@ -202,7 +203,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
-		return nil, nil, fmt.Errorf("walk context is nil")
+		return nil, nil, errors.New("walk context is nil")
 	}
 
 	var err error

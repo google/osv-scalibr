@@ -16,6 +16,7 @@
 package samreg
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/osv-scalibr/common/windows/registry"
@@ -27,9 +28,9 @@ const (
 )
 
 var (
-	errFailedToParseUsers   = fmt.Errorf("SAM hive: failed to parse users")
-	errFailedToParseDomainF = fmt.Errorf("SAM hive: failed to parse domain F structure")
-	errFailedToOpenDomain   = fmt.Errorf("SAM hive: failed to open the account domain registry")
+	errFailedToParseUsers   = errors.New("SAM hive: failed to parse users")
+	errFailedToParseDomainF = errors.New("SAM hive: failed to parse domain F structure")
+	errFailedToOpenDomain   = errors.New("SAM hive: failed to open the account domain registry")
 )
 
 // SAMRegistry is a wrapper around a loaded SAM registry.

@@ -17,14 +17,14 @@ package samreg
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"errors"
 
 	"golang.org/x/text/encoding/unicode"
 )
 
 var (
-	errReadOutOfBounds = fmt.Errorf("failed to read: out of bounds")
-	errNoHashInfoFound = fmt.Errorf("no hash information found")
+	errReadOutOfBounds = errors.New("failed to read: out of bounds")
+	errNoHashInfoFound = errors.New("no hash information found")
 )
 
 // userV is the V structure containing the user's information in the SAM hive.
