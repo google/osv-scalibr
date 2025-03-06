@@ -25,8 +25,10 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -226,7 +228,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 // CheckAccessibility checks if the airflow server is accessible.
 func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/test", airflowIP, airflowServerPort)
+	target := fmt.Sprintf("http://%s/api/experimental/test", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
@@ -240,7 +242,7 @@ func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
 
 // CheckForBashTask checks if the airflow server has a bash task.
 func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/tasks/bash_task", airflowIP, airflowServerPort)
+	target := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/tasks/bash_task", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
@@ -281,7 +283,7 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 
 // CheckForPause checks if the airflow server has a paused dag.
 func CheckForPause(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/paused/false", airflowIP, airflowServerPort)
+	target := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/paused/false", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
@@ -295,7 +297,7 @@ func CheckForPause(airflowIP string, airflowServerPort int) bool {
 
 // triggerAndWaitForDAG achieves command execution via DAG scheduling using the example bash task from above.
 func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPort int) bool {
-	dagURL := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/dag_runs", airflowIP, airflowServerPort)
+	dagURL := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/dag_runs", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 	payload := map[string]any{
 		"conf": map[string]string{
 			"message": fmt.Sprintf(`"; id > %s #`, randFilePath),
@@ -349,8 +351,10 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		return false
 	}
 
-	waitURL := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/dag_runs/%s/tasks/bash_task",
-		airflowIP, airflowServerPort, resBody["execution_date"])
+	waitURL := fmt.Sprintf(
+		"http://%s/api/experimental/dags/example_trigger_target_dag/dag_runs/%s/tasks/bash_task",
+		net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)), resBody["execution_date"],
+	)
 
 	log.Infof("Waiting for the scheduler to run the DAG... This might take a minute.")
 	log.Infof("If the bash task is never queued, then the scheduler might not be running.")

@@ -61,7 +61,7 @@ linters:
 #    - nlreturn
 #    - noctx
     - nolintlint
-#    - nosprintfhostport
+    - nosprintfhostport
 #    - perfsprint
 #    - prealloc
     - predeclared
