@@ -108,7 +108,7 @@ func findBentomlVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.
 func CheckAccessibility(ctx context.Context, ip string, port int) bool {
 	target := fmt.Sprintf("http://%s:%d/summarize", ip, port)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", target, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		log.Infof("Error creating request: %v", err)
 		return false
@@ -137,7 +137,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", target, bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewBuffer(payload))
 	if err != nil {
 		log.Infof("Error creating request: %v", err)
 		return false
@@ -153,7 +153,7 @@ func ExploitBentoml(ctx context.Context, ip string, port int) bool {
 	defer resp.Body.Close()
 
 	// The payload is expected to trigger a 400 Bad Request status code
-	if resp.StatusCode != 400 {
+	if resp.StatusCode != http.StatusBadRequest {
 		log.Infof("Unexpected status code: %d\n", resp.StatusCode)
 		return false
 	}
