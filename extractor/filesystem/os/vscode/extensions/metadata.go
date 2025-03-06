@@ -8,5 +8,4 @@ type Metadata struct {
 	Updated              bool   `json:"updated"`
 	IsPreReleaseVersion  bool   `json:"isPreReleaseVersion"`
 	InstalledTimestamp   int64  `json:"installedTimestamp"`
-	PreRelease           bool   `json:"preRelease"`
 }

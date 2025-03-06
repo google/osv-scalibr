@@ -165,6 +165,59 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "extensions on windows",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/extensions-windows.json",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:    "ms-python.debugpy",
+					Version: "2025.4.0",
+					Locations: []string{
+						"/c:/Users/username/.vscode/extensions/ms-python.debugpy-2025.4.0-win32-arm64",
+						"testdata/extensions-windows.json",
+					},
+					Metadata: &extensions.Metadata{
+						ID:                   "4bd5d2c9-9d65-401a-b0b2-7498d9f17615",
+						PublisherID:          "998b010b-e2af-44a5-a6cd-0b5fd3b9b6f8",
+						PublisherDisplayName: "Microsoft",
+						TargetPlatform:       "win32-arm64",
+						InstalledTimestamp:   1741259706875,
+					},
+				},
+				{
+					Name:    "ms-python.python",
+					Version: "2025.2.0",
+					Locations: []string{
+						"/c:/Users/username/.vscode/extensions/ms-python.python-2025.2.0-win32-arm64",
+						"testdata/extensions-windows.json",
+					},
+					Metadata: &extensions.Metadata{
+						ID:                   "f1f59ae4-9318-4f3c-a9b5-81b2eaa5f8a5",
+						PublisherID:          "998b010b-e2af-44a5-a6cd-0b5fd3b9b6f8",
+						PublisherDisplayName: "Microsoft",
+						TargetPlatform:       "win32-arm64",
+						InstalledTimestamp:   1741259706874,
+					},
+				},
+				{
+					Name:    "ms-vscode.cpptools",
+					Version: "1.23.6",
+					Locations: []string{
+						"/c:/Users/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-win32-arm64",
+						"testdata/extensions-windows.json",
+					},
+					Metadata: &extensions.Metadata{
+						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
+						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+						PublisherDisplayName: "Microsoft",
+						TargetPlatform:       "win32-arm64",
+						InstalledTimestamp:   1741259863413,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

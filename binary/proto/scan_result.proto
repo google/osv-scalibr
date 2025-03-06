@@ -481,5 +481,4 @@ message VSCodeExtensionsMetadata {
     bool updated = 5;
     bool is_pre_release_version = 6;
     int64 installed_timestamp = 7;
-    bool pre_release = 8;
 }

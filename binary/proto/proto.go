@@ -517,7 +517,6 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Updated:              m.Updated,
 				IsPreReleaseVersion:  m.IsPreReleaseVersion,
 				InstalledTimestamp:   m.InstalledTimestamp,
-				PreRelease:           m.PreRelease,
 			},
 		}
 	}
