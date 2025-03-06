@@ -83,7 +83,7 @@ linters:
     - unconvert
 #    - unparam
 #    - unused
-#    - usestdlibvars
+    - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint
