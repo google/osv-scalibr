@@ -130,7 +130,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 
 // Extract parses the packages.config file to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	packages, err := e.extractFromInput(ctx, input)
+	packages, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -155,7 +155,7 @@ type dotNETPackages struct {
 	Packages []dotNETPackage `xml:"package"`
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var packages dotNETPackages
 	decoder := xml.NewDecoder(input.Reader)
 	if err := decoder.Decode(&packages); err != nil {

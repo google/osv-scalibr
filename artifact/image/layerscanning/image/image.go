@@ -455,11 +455,11 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
+			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, header, isWhiteout)
 		case tar.TypeReg:
 			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
-			newNode, err = img.handleSymlink(virtualPath, originLayerID, tarReader, header, isWhiteout, requiredTargets)
+			newNode, err = img.handleSymlink(virtualPath, originLayerID, header, isWhiteout, requiredTargets)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
@@ -519,7 +519,7 @@ func populateEmptyDirectoryNodes(virtualPath, originLayerID, extractDir string, 
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
 // the symlink mode with additional metadata.
-func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool, requiredTargets map[string]bool) (*fileNode, error) {
+func (img *Image) handleSymlink(virtualPath, originLayerID string, header *tar.Header, isWhiteout bool, requiredTargets map[string]bool) (*fileNode, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
 		return nil, fmt.Errorf("symlink header has no target path")
@@ -548,7 +548,7 @@ func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *ta
 }
 
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
 	if _, err := os.Stat(realFilePath); err != nil {
 		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
 			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
