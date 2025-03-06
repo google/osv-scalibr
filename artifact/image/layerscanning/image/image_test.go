@@ -15,6 +15,7 @@
 package image
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
@@ -25,7 +26,6 @@ import (
 	"strings"
 	"testing"
 
-	"archive/tar"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"

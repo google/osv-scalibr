@@ -17,6 +17,7 @@
 package image
 
 import (
+	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
@@ -25,8 +26,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"archive/tar"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
