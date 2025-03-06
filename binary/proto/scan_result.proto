@@ -107,6 +107,7 @@ message Inventory {
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
+    VSCodeExtensionsMetadata vscode_extensions_metadata = 43;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -470,3 +471,15 @@ message WindowsOSVersion {
 
 // The additional data found in Homebrew packages.
 message HomebrewPackageMetadata {}
+
+// The additional data found in VSCode extensions.
+message VSCodeExtensionsMetadata {
+    string id = 1;
+    string publisher_id = 2;
+    string publisher_display_name = 3;
+    string target_platform = 4;
+    bool updated = 5;
+    bool is_pre_release_version = 6;
+    int64 installed_timestamp = 7;
+    bool pre_release = 8;
+}

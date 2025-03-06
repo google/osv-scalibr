@@ -52,6 +52,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	vscodeextensions "github.com/google/osv-scalibr/extractor/filesystem/os/vscode/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
@@ -504,6 +505,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     m.Product,
 				FullVersion: m.FullVersion,
+			},
+		}
+	case *vscodeextensions.Metadata:
+		i.Metadata = &spb.Inventory_VscodeExtensionsMetadata{
+			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
+				Id:                   m.ID,
+				PublisherId:          m.PublisherID,
+				PublisherDisplayName: m.PublisherDisplayName,
+				TargetPlatform:       m.TargetPlatform,
+				Updated:              m.Updated,
+				IsPreReleaseVersion:  m.IsPreReleaseVersion,
+				InstalledTimestamp:   m.InstalledTimestamp,
+				PreRelease:           m.PreRelease,
 			},
 		}
 	}
