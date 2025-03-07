@@ -518,10 +518,23 @@ func TestFromTarball(t *testing.T) {
 			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
-			name:                       "image with symlink pointing outside of root",
-			tarPath:                    filepath.Join(testdataDir, "symlink-attack.tar"),
-			config:                     DefaultConfig(),
-			wantErrDuringImageCreation: ErrSymlinkPointsOutsideRoot,
+			name:    "image with symlink pointing outside of root",
+			tarPath: filepath.Join(testdataDir, "symlink-attack.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/attack-symlink.txt",
+						},
+						{
+							filepath: "dir1/attack-symlink-absolute.txt",
+						},
+					},
+				},
+			},
+			// The symlinks pointing outside of the root should not be stored in the chain layer.
+			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
 			name:    "require single file from images",
