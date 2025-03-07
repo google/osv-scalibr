@@ -78,7 +78,7 @@ func TestParentPOMPath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		got := parentPOMPath(&input, tt.currentPath, tt.relativePath)
+		got := ParentPOMPath(&input, tt.currentPath, tt.relativePath)
 		if got != filepath.ToSlash(tt.want) {
 			t.Errorf("ParentPOMPath(%s, %s): got %s, want %s", tt.currentPath, tt.relativePath, got, tt.want)
 		}
