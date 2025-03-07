@@ -1,0 +1,40 @@
+{
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CryptoX"
+  },
+  "background": {
+    "service_worker": "static/js/serviceWorker.js"
+  },
+  "content_scripts": [
+    {
+      "js": ["static/js/script.js"],
+      "matches": ["<all_urls>"],
+      "run_at": "document_start"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none';"
+  },
+  "description": "A decentralized wallet for blockchain transactions.",
+  "host_permissions": ["file://*/*", "http://*/*", "https://*/*"],
+  "icons": {
+    "128": "icon128.png",
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn63z2qlY6z95k7bDJzL4lFr5DpblIH7woqBb0g1dXjQe06cXaZxwLRqf9nDh8vsoAnpHeVRkg1zEyX3soIE9n8Vzoz93ayW9V/6hnAqGpgV6FJpyDe+USU99YcM46vEv9cVPLlKDBpCV9vUs3sKXsLM8F1yEDyHRnkH1WAFfhFzZ44hBBIzpDZjSY45rE2ceJJyibITWzXbHCjOBtS7d9Hpkwu2YctV5lksy+OadTpZ8hpaKr+EjLojquvZTIZDNOVI1OdxW9z5GpBz5cTb8d/6c5pM6ANpMQYLRDiZ84FwJmeo3hfaC8EplIZpMy2cym9B+7+rVo6BLyxLDlB9V+Zg+ruQIDAQAB",
+  "manifest_version": 3,
+  "name": "CryptoX Blockchain Wallet",
+  "permissions": ["storage", "tabs", "alarms"],
+  "short_name": "CryptoX",
+  "update_url": "https://clients2.google.com/service/update2/crx",
+  "version": "1.2.85",
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": ["static/js/inpageScript.js"]
+    }
+  ]
+}
