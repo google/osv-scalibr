@@ -26,15 +26,11 @@
       <artifactId>my.package</artifactId>
       <version>${my.package.version}</version>
     </dependency>
-  </dependencies>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.mine</groupId>
-        <artifactId>ranged-package</artifactId>
-        <version>${version-range}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+    <dependency>
+      <groupId>org.mine</groupId>
+      <artifactId>ranged-package</artifactId>
+      <version>${version-range}</version>
+    </dependency>
+  </dependencies>
 </project>
