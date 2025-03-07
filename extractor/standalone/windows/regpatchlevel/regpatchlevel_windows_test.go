@@ -17,7 +17,6 @@
 package regpatchlevel
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -131,7 +130,7 @@ func TestExtract(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := Configuration{mockregistry.NewOpener(tc.reg)}
 			e := New(cfg)
-			got, err := e.Extract(context.Background(), nil)
+			got, err := e.Extract(t.Context(), nil)
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("Extract() returned an unexpected error: %v", err)
 			}

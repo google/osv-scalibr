@@ -15,7 +15,6 @@
 package gemspec_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -195,7 +194,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: test.path, Reader: r, Info: info}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)
 			}
