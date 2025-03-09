@@ -27,7 +27,7 @@ linters:
     - errname
 #    - errorlint
 #    - exhaustive
-#    - fatcontext
+    - fatcontext
     - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
@@ -83,7 +83,7 @@ linters:
     - unconvert
 #    - unparam
 #    - unused
-#    - usestdlibvars
+    - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint

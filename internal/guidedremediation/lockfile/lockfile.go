@@ -18,11 +18,13 @@ package lockfile
 import (
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 )
 
 // ReadWriter is the interface for parsing and applying remediation patches to a lockfile.
 type ReadWriter interface {
 	System() resolve.System
 	Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
+	SupportedStrategies() []strategy.Strategy
 	// TODO(#454): Write()
 }

@@ -72,6 +72,8 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Swift
   * Podfile.lock
   * Package.resolved
+* Wordpress plugins
+  * Installed plugins
 
 ## Container inventory
 

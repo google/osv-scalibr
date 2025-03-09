@@ -178,8 +178,8 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 
 	version.epoch = big.NewInt(0)
 
-	if epoch := match[pypiVersionFinder.SubexpIndex("epoch")]; epoch != "" {
-		epoch, err := convertToBigInt(epoch)
+	if epStr := match[pypiVersionFinder.SubexpIndex("epoch")]; epStr != "" {
+		epoch, err := convertToBigInt(epStr)
 
 		if err != nil {
 			return pyPIVersion{}, err

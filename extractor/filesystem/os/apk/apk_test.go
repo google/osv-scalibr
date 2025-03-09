@@ -215,6 +215,15 @@ func TestExtract(t *testing.T) {
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
+		{
+			name:      "different arch",
+			path:      "testdata/different-arch",
+			osrelease: "",
+			wantInventory: []*extractor.Inventory{
+				getInventory("testdata/different-arch", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "noarch", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 	}
 
 	for _, tt := range tests {

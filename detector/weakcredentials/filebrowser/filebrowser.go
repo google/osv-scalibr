@@ -127,7 +127,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 	client := &http.Client{Timeout: requestTimeout}
 	targetURL := fmt.Sprintf("http://%s:%d/", fileBrowserIP, fileBrowserPort)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
@@ -144,7 +144,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return false
 	}
 
@@ -180,7 +180,7 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 		"recaptcha": "",
 	})
 
-	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
@@ -198,5 +198,5 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 	}
 	defer resp.Body.Close()
 
-	return resp.StatusCode == 200
+	return resp.StatusCode == http.StatusOK
 }

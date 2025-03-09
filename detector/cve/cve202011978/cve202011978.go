@@ -250,7 +250,7 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	}
 	defer resp.Body.Close()
 
-	BashTaskPresence := resp.StatusCode == 200
+	BashTaskPresence := resp.StatusCode == http.StatusOK
 	if !BashTaskPresence {
 		return false
 	}
@@ -290,7 +290,7 @@ func CheckForPause(airflowIP string, airflowServerPort int) bool {
 		return false
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode == 200
+	return resp.StatusCode == http.StatusOK
 }
 
 // triggerAndWaitForDAG achieves command execution via DAG scheduling using the example bash task from above.
@@ -307,7 +307,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		return false
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", dagURL, bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, dagURL, bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return false
 	}
@@ -325,7 +325,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return false
 	}
 

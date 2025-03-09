@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package resolved extracts Package.resolved files
+// Package packageresolved extracts Package.resolved files
 package packageresolved
 
 import (

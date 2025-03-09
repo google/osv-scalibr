@@ -3591,6 +3591,13 @@ func (x *ContainerdContainerMetadata) GetId() string {
 	return ""
 }
 
+func (x *ContainerdContainerMetadata) GetPodName() string {
+	if x != nil {
+		return x.PodName
+	}
+	return ""
+}
+
 type ContainerdRuntimeContainerMetadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NamespaceName string                 `protobuf:"bytes,1,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
