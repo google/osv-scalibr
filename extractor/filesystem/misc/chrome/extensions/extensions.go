@@ -97,6 +97,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	path = filepath.ToSlash(path)
 
+	// pre-check to improve performances
+	if !strings.HasSuffix(path, "manifest.json") {
+		return false
+	}
+
 	switch runtime.GOOS {
 	case "windows":
 		return windowsChromeExtensionsPattern.MatchString(path) || windowsChromiumExtensionsPattern.MatchString(path)
