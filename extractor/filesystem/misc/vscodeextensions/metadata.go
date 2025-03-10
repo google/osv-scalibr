@@ -1,4 +1,4 @@
-package extensions
+package vscodeextensions
 
 type Metadata struct {
 	ID                   string `json:"id"`

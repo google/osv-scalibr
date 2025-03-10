@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package extensions extracts vscode extensions.
-package extensions
+package vscodeextensions
 
 import (
 	"context"

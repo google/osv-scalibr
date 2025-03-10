@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extensions_test
+package vscodeextensions_test
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/vscode/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
@@ -59,7 +59,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e := extensions.Extractor{}
+			e := vscodeextensions.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -90,7 +90,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/one-extension.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
 						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
 						PublisherDisplayName: "Microsoft",
@@ -110,7 +110,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "golang.go",
 					Version:   "0.46.1",
 					Locations: []string{"/home/username/.vscode/extensions/golang.go-0.46.1", "testdata/extensions.json"},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "d6f6cfea-4b6f-41f4-b571-6ad2ab7918da",
 						PublisherID:          "dbf6ae0a-da75-4167-ac8b-75b4512f2153",
 						PublisherDisplayName: "Go Team at Google",
@@ -125,7 +125,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/google.geminicodeassist-2.28.0",
 						"testdata/extensions.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "51643712-2cb2-4384-b7cc-d55b01b8274b",
 						PublisherID:          "93a45bde-b507-401c-9deb-7a098ebcded8",
 						PublisherDisplayName: "Google",
@@ -140,7 +140,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/googlecloudtools.cloudcode-2.27.0",
 						"testdata/extensions.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "5e8803a2-3dc8-42b3-9c5f-ea9d37828c03",
 						PublisherID:          "f24fd523-af08-49d8-bb0b-f4eda502706e",
 						PublisherDisplayName: "Google Cloud",
@@ -155,7 +155,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/extensions.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
 						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
 						PublisherDisplayName: "Microsoft",
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/c:/Users/username/.vscode/extensions/ms-python.debugpy-2025.4.0-win32-arm64",
 						"testdata/extensions-windows.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "4bd5d2c9-9d65-401a-b0b2-7498d9f17615",
 						PublisherID:          "998b010b-e2af-44a5-a6cd-0b5fd3b9b6f8",
 						PublisherDisplayName: "Microsoft",
@@ -193,7 +193,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/c:/Users/username/.vscode/extensions/ms-python.python-2025.2.0-win32-arm64",
 						"testdata/extensions-windows.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "f1f59ae4-9318-4f3c-a9b5-81b2eaa5f8a5",
 						PublisherID:          "998b010b-e2af-44a5-a6cd-0b5fd3b9b6f8",
 						PublisherDisplayName: "Microsoft",
@@ -208,7 +208,7 @@ func TestExtractor_Extract(t *testing.T) {
 						"/c:/Users/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-win32-arm64",
 						"testdata/extensions-windows.json",
 					},
-					Metadata: &extensions.Metadata{
+					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
 						PublisherID:          "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
 						PublisherDisplayName: "Microsoft",
@@ -222,7 +222,7 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := extensions.New()
+			extr := vscodeextensions.New()
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
