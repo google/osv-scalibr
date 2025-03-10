@@ -21,7 +21,6 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Flatpak
 * Homebrew (used by OS X)
 * Applications (Installed on OS X)
-* VSCode extensions
 * Windows
   * Build number (using either the registry or DISM)
   * DISM-like hotpatches (using either the registry or DISM)
@@ -73,8 +72,12 @@ SCALIBR supports extracting software package information from a variety of OS an
 * Swift
   * Podfile.lock
   * Package.resolved
+
+## Misc
+
 * Wordpress plugins
   * Installed plugins
+* VSCode extensions
 
 ## Container inventory
 
