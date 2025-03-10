@@ -27,7 +27,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"github.com/microsoft/go-rustaudit"
+	"github.com/rust-secure-code/go-rustaudit"
 )
 
 const (
