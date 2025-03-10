@@ -225,8 +225,6 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 
 // Generate a random string of the given length
 func generateRandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
-
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := make([]byte, length)
 	for i := range length {
