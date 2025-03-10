@@ -754,7 +754,7 @@ func TestScanResultToProto(t *testing.T) {
 		Metadata: &javalockfile.Metadata{
 			GroupID:    "abc",
 			ArtifactID: "xyz",
-			IsDirect:   false,
+			IsDirect:   true,
 		},
 	}
 	mavenInventoryProto := &spb.Inventory{
@@ -774,7 +774,7 @@ func TestScanResultToProto(t *testing.T) {
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId: "xyz",
 				GroupId:    "abc",
-				IsDirect:   false,
+				IsDirect:   true,
 			},
 		},
 	}
