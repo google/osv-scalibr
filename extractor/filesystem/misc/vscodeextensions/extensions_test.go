@@ -56,6 +56,9 @@ func TestExtractor_FileRequired(t *testing.T) {
 		{
 			inputPath: "/home/username/.vscode/extensions/extensions/badjson", want: false,
 		},
+		{
+			inputPath: "/home/username/.vscode/extensions/bad/extensions.json", want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
