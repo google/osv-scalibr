@@ -16,9 +16,11 @@ package maven
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	mavenutil "deps.dev/util/maven"
@@ -92,6 +94,29 @@ func checkManifest(t *testing.T, name string, got manifest.Manifest, want testMa
 	}
 	if diff := cmp.Diff(want.EcosystemSpecific, got.EcosystemSpecific()); diff != "" {
 		t.Errorf("%s.EcosystemSpecific() (-want +got):\n%s", name, diff)
+	}
+}
+
+func compareToFile(t *testing.T, got io.Reader, wantFile string) {
+	t.Helper()
+	wantBytes, err := os.ReadFile(wantFile)
+	if err != nil {
+		t.Fatalf("error reading %s: %v", wantFile, err)
+	}
+	gotBytes, err := io.ReadAll(got)
+	if err != nil {
+		t.Fatalf("error reading manifest: %v", err)
+	}
+
+	if runtime.GOOS == "windows" {
+		// Go doesn't write CRLF in xml on Windows, trying to fix this is difficult.
+		// Just ignore it in the tests.
+		wantBytes = bytes.ReplaceAll(wantBytes, []byte("\r\n"), []byte("\n"))
+		gotBytes = bytes.ReplaceAll(gotBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	if diff := cmp.Diff(wantBytes, gotBytes); diff != "" {
+		t.Errorf("%s (-want +got):\n%s", wantFile, diff)
 	}
 }
 
@@ -447,41 +472,26 @@ func TestReadWrite(t *testing.T) {
 		t.Fatalf("error writing manifest: %v", err)
 	}
 
-	wantBytes, err := os.ReadFile("testdata/my-app/pom.xml")
+	gotFile, err := os.Open(filepath.Join(dir, "my-app", "pom.xml"))
 	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
+		t.Fatalf("error opening pom.xml: %v", err)
 	}
-	gotBytes, err := os.ReadFile(filepath.Join(dir, "my-app", "pom.xml"))
-	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
-	}
-	if diff := cmp.Diff(wantBytes, gotBytes); diff != "" {
-		t.Errorf("my-app/pom.xml (-want +got):\n%s", diff)
-	}
+	defer gotFile.Close()
+	compareToFile(t, gotFile, "testdata/my-app/pom.xml")
 
-	wantBytes, err = os.ReadFile("testdata/parent/pom.xml")
+	gotFile, err = os.Open(filepath.Join(dir, "parent", "pom.xml"))
 	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
+		t.Fatalf("error opening pom.xml: %v", err)
 	}
-	gotBytes, err = os.ReadFile(filepath.Join(dir, "parent", "pom.xml"))
-	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
-	}
-	if diff := cmp.Diff(wantBytes, gotBytes); diff != "" {
-		t.Errorf("parent/pom.xml (-want +got):\n%s", diff)
-	}
+	defer gotFile.Close()
+	compareToFile(t, gotFile, "testdata/parent/pom.xml")
 
-	wantBytes, err = os.ReadFile("testdata/parent/grandparent/pom.xml")
+	gotFile, err = os.Open(filepath.Join(dir, "parent", "grandparent", "pom.xml"))
 	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
+		t.Fatalf("error opening pom.xml: %v", err)
 	}
-	gotBytes, err = os.ReadFile(filepath.Join(dir, "parent", "grandparent", "pom.xml"))
-	if err != nil {
-		t.Fatalf("error reading pom.xml: %v", err)
-	}
-	if diff := cmp.Diff(wantBytes, gotBytes); diff != "" {
-		t.Errorf("parent/grandparent/pom.xml (-want +got):\n%s", diff)
-	}
+	defer gotFile.Close()
+	compareToFile(t, gotFile, "testdata/parent/grandparent/pom.xml")
 }
 
 func TestMavenWrite(t *testing.T) {
@@ -490,11 +500,6 @@ func TestMavenWrite(t *testing.T) {
 		t.Fatalf("failed to get current directory: %v", err)
 	}
 	in, err := os.ReadFile(filepath.Join(dir, "testdata", "my-app", "pom.xml"))
-	if err != nil {
-		t.Fatalf("fail to open file: %v", err)
-	}
-
-	want, err := os.ReadFile(filepath.Join(dir, "testdata", "my-app", "write_want.pom.xml"))
 	if err != nil {
 		t.Fatalf("fail to open file: %v", err)
 	}
@@ -590,10 +595,7 @@ func TestMavenWrite(t *testing.T) {
 	if err := write(string(in), out, patches); err != nil {
 		t.Fatalf("unable to update Maven pom.xml: %v", err)
 	}
-
-	if diff := cmp.Diff(string(want), out.String()); diff != "" {
-		t.Errorf("(-want +got):\n%s", diff)
-	}
+	compareToFile(t, out, filepath.Join(dir, "testdata", "my-app", "write_want.pom.xml"))
 }
 
 func TestMavenWriteDM(t *testing.T) {
@@ -602,11 +604,6 @@ func TestMavenWriteDM(t *testing.T) {
 		t.Fatalf("failed to get current directory: %v", err)
 	}
 	in, err := os.ReadFile(filepath.Join(dir, "testdata", "no-dependency-management", "pom.xml"))
-	if err != nil {
-		t.Fatalf("fail to open file: %v", err)
-	}
-
-	want, err := os.ReadFile(filepath.Join(dir, "testdata", "no-dependency-management", "want.pom.xml"))
 	if err != nil {
 		t.Fatalf("fail to open file: %v", err)
 	}
@@ -658,9 +655,7 @@ func TestMavenWriteDM(t *testing.T) {
 	if err := write(string(in), out, patches); err != nil {
 		t.Fatalf("unable to update Maven pom.xml: %v", err)
 	}
-	if diff := cmp.Diff(string(want), out.String()); diff != "" {
-		t.Errorf("(-want +got):\n%s", diff)
-	}
+	compareToFile(t, out, filepath.Join(dir, "testdata", "no-dependency-management", "want.pom.xml"))
 }
 
 func Test_buildPatches(t *testing.T) {
