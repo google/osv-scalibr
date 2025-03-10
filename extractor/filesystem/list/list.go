@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
+	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -176,19 +177,20 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {dpkg.NewDefault},
-		apk.Name:      {apk.NewDefault},
-		rpm.Name:      {rpm.NewDefault},
-		cos.Name:      {cos.NewDefault},
-		snap.Name:     {snap.NewDefault},
-		nix.Name:      {nix.New},
-		module.Name:   {module.NewDefault},
-		vmlinuz.Name:  {vmlinuz.NewDefault},
-		pacman.Name:   {pacman.NewDefault},
-		portage.Name:  {portage.NewDefault},
-		flatpak.Name:  {flatpak.NewDefault},
-		homebrew.Name: {homebrew.New},
-		macapps.Name:  {macapps.NewDefault},
+		dpkg.Name:             {dpkg.NewDefault},
+		apk.Name:              {apk.NewDefault},
+		rpm.Name:              {rpm.NewDefault},
+		cos.Name:              {cos.NewDefault},
+		snap.Name:             {snap.NewDefault},
+		nix.Name:              {nix.New},
+		module.Name:           {module.NewDefault},
+		vmlinuz.Name:          {vmlinuz.NewDefault},
+		pacman.Name:           {pacman.NewDefault},
+		portage.Name:          {portage.NewDefault},
+		flatpak.Name:          {flatpak.NewDefault},
+		homebrew.Name:         {homebrew.New},
+		macapps.Name:          {macapps.NewDefault},
+		chromeextensions.Name: {chromeextensions.New},
 	}
 
 	// Collections of extractors.
