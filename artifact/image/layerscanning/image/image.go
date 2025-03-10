@@ -486,7 +486,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 
 		// Add the fileNode to the node tree of the underlying layer.
 		layer := currentChainLayer.latestLayer.(*Layer)
-		layer.fileNodeTree.Insert(virtualPath, newNode)
+		_ = layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 	return requiredTargets, nil
 }
@@ -627,7 +627,7 @@ func fillChainLayersWithFileNode(chainLayersToFill []*chainLayer, newNode *fileN
 
 		// Add the file to the chain layer. If there is an error, then we fail open.
 		// TODO: b/379154069 - Add logging for fail open errors.
-		chainLayer.fileNodeTree.Insert(virtualPath, newNode)
+		_ = chainLayer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 }
 

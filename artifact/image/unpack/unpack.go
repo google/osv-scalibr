@@ -207,7 +207,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 		}
 		log.Infof("Unpacking pass %d of %d", pass+1, u.MaxPass)
 		requiredTargets, err = unpack(dir, reader, u.SymlinkResolution, u.SymlinkErrStrategy, u.Requirer, requiredTargets, finalPass, u.MaxSizeBytes)
-		reader.Close()
+		_ = reader.Close()
 		if err != nil {
 			return err
 		}
@@ -257,7 +257,7 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 		layerDigests = append(layerDigests, digest.String())
 
 		layerPath := filepath.Join(dir, strings.Replace(digest.String(), ":", "-", -1))
-		os.Mkdir(layerPath, fs.ModePerm)
+		_ = os.Mkdir(layerPath, fs.ModePerm)
 
 		// requiredTargets stores targets that symlinks point to.
 		// This is needed because the symlink may be required by u.requirer, but the target may not be.
@@ -441,7 +441,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 func (u *Unpacker) addSquashedImageDirectory(root string, image v1.Image) error {
 	squashedImagePath := filepath.Join(root, squashedImageDirectory)
 
-	os.Mkdir(squashedImagePath, fs.ModePerm)
+	_ = os.Mkdir(squashedImagePath, fs.ModePerm)
 
 	if err := u.UnpackSquashed(squashedImagePath, image); err != nil {
 		return fmt.Errorf("failed to unpack all squashed image: %w", err)

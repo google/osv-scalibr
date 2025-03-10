@@ -104,9 +104,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	// Sort users to avoid non-determinism in the processing order from users map.
 	sort.Strings(problemUsers)
 	buf := new(strings.Builder)
-	fmt.Fprintln(buf, "The following users have weak passwords:")
+	_, _ = fmt.Fprintln(buf, "The following users have weak passwords:")
 	for _, u := range problemUsers {
-		fmt.Fprintln(buf, u)
+		_, _ = fmt.Fprintln(buf, u)
 	}
 	problemDescription := buf.String()
 
