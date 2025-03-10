@@ -36,10 +36,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
-	internalxml "github.com/google/osv-scalibr/internal/guidedremediation/manifest/maven/internal/thirdparty/xml"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	forkedxml "github.com/michaelkedar/xml"
 )
 
 // RequirementKey is a comparable type that uniquely identifies a package dependency in a manifest.
@@ -806,8 +806,8 @@ func compareDependency(d1, d2 dependency) int {
 }
 
 func write(raw string, w io.Writer, patches MavenPatches) error {
-	dec := internalxml.NewDecoder(bytes.NewReader([]byte(raw)))
-	enc := internalxml.NewEncoder(w)
+	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
+	enc := forkedxml.NewEncoder(w)
 
 	for {
 		token, err := dec.Token()
@@ -818,7 +818,7 @@ func write(raw string, w io.Writer, patches MavenPatches) error {
 			return fmt.Errorf("getting token: %w", err)
 		}
 
-		if tt, ok := token.(internalxml.StartElement); ok {
+		if tt, ok := token.(forkedxml.StartElement); ok {
 			if tt.Name.Local == "project" {
 				type RawProject struct {
 					InnerXML string `xml:",innerxml"`
@@ -884,8 +884,8 @@ func write(raw string, w io.Writer, patches MavenPatches) error {
 	return nil
 }
 
-func writeProject(w io.Writer, enc *internalxml.Encoder, raw, prefix, id string, patches MavenDependencyPatches, properties MavenPropertyPatches, updated map[string]bool) error {
-	dec := internalxml.NewDecoder(bytes.NewReader([]byte(raw)))
+func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, patches MavenDependencyPatches, properties MavenPropertyPatches, updated map[string]bool) error {
+	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
 		token, err := dec.Token()
 		if errors.Is(err, io.EOF) {
@@ -895,7 +895,7 @@ func writeProject(w io.Writer, enc *internalxml.Encoder, raw, prefix, id string,
 			return err
 		}
 
-		if tt, ok := token.(internalxml.StartElement); ok {
+		if tt, ok := token.(forkedxml.StartElement); ok {
 			switch tt.Name.Local {
 			case "parent":
 				updated["parent"] = true
@@ -1015,8 +1015,8 @@ func writeProject(w io.Writer, enc *internalxml.Encoder, raw, prefix, id string,
 	return enc.Flush()
 }
 
-func writeDependency(w io.Writer, enc *internalxml.Encoder, raw string, patches map[MavenPatch]bool) error {
-	dec := internalxml.NewDecoder(bytes.NewReader([]byte(raw)))
+func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches map[MavenPatch]bool) error {
+	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
 		token, err := dec.Token()
 		if errors.Is(err, io.EOF) {
@@ -1026,7 +1026,7 @@ func writeDependency(w io.Writer, enc *internalxml.Encoder, raw string, patches 
 			return err
 		}
 
-		if tt, ok := token.(internalxml.StartElement); ok {
+		if tt, ok := token.(forkedxml.StartElement); ok {
 			if tt.Name.Local == "dependencies" {
 				// We still need to write the start element <dependencies>
 				if err := enc.EncodeToken(token); err != nil {
@@ -1099,8 +1099,8 @@ func writeDependency(w io.Writer, enc *internalxml.Encoder, raw string, patches 
 }
 
 // writeString writes XML string specified by raw with replacements specified in values.
-func writeString(enc *internalxml.Encoder, raw string, values map[string]string) error {
-	dec := internalxml.NewDecoder(bytes.NewReader([]byte(raw)))
+func writeString(enc *forkedxml.Encoder, raw string, values map[string]string) error {
+	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
 		token, err := dec.Token()
 		if errors.Is(err, io.EOF) {
@@ -1109,7 +1109,7 @@ func writeString(enc *internalxml.Encoder, raw string, values map[string]string)
 		if err != nil {
 			return err
 		}
-		if tt, ok := token.(internalxml.StartElement); ok {
+		if tt, ok := token.(forkedxml.StartElement); ok {
 			if value, ok2 := values[tt.Name.Local]; ok2 {
 				var str string
 				if err := dec.DecodeElement(&str, &tt); err != nil {
