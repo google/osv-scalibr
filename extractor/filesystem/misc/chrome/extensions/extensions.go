@@ -170,7 +170,7 @@ func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
 // extractLocaleInfo extract locale information from the _locales/LOCALE_CODE/messages.json
 // following manifest.json v3 specification
 func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
-	messagePath := filepath.Join(filepath.Dir(input.Path), "/_locales/", m.DefaultLocale, "message.json")
+	messagePath := filepath.Join(filepath.Dir(input.Path), "_locales/", m.DefaultLocale, "message.json")
 
 	f, err := input.FS.Open(messagePath)
 	if err != nil {
