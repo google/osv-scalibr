@@ -450,6 +450,7 @@ message ContainerdContainerMetadata {
   string upper_dir = 9;
   string work_dir = 10;
   string id = 11;
+  string pod_name = 12;
 }
 
 message ContainerdRuntimeContainerMetadata {

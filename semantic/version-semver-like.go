@@ -55,20 +55,18 @@ func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (componen
 func parseSemverLikeVersion(line string, maxComponents int) semverLikeVersion {
 	v := parseSemverLike(line)
 
-	// TODO: refactor to avoid shadowing the components type
-	components, build := v.fetchComponentsAndBuild(maxComponents)
+	comps, build := v.fetchComponentsAndBuild(maxComponents)
 
 	return semverLikeVersion{
 		LeadingV:   v.LeadingV,
-		Components: components,
+		Components: comps,
 		Build:      build,
 		Original:   v.Original,
 	}
 }
 
 func parseSemverLike(line string) semverLikeVersion {
-	// TODO: refactor to avoid shadowing the components type
-	var components []*big.Int
+	var comps []*big.Int
 	originStr := line
 
 	currentCom := ""
@@ -104,7 +102,7 @@ func parseSemverLike(line string) semverLikeVersion {
 		if currentCom != "" {
 			v, _ := new(big.Int).SetString(currentCom, 10)
 
-			components = append(components, v)
+			comps = append(comps, v)
 			currentCom = ""
 		}
 
@@ -124,13 +122,13 @@ func parseSemverLike(line string) semverLikeVersion {
 	if !foundBuild && currentCom != "" {
 		v, _ := new(big.Int).SetString(currentCom, 10)
 
-		components = append(components, v)
+		comps = append(comps, v)
 		currentCom = ""
 	}
 
 	return semverLikeVersion{
 		LeadingV:   leadingV,
-		Components: components,
+		Components: comps,
 		Build:      currentCom,
 		Original:   originStr,
 	}

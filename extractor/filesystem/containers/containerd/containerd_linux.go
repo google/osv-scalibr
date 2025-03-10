@@ -211,7 +211,7 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 	imageStore := metadata.NewImageStore(containerdDB)
 	for _, ns := range nss {
 		// For each namespace stored in the metadb, get the container list to handle.
-		ctx = namespaces.WithNamespace(ctx, ns)
+		ctx := namespaces.WithNamespace(ctx, ns)
 		ctrs, err := containerStore.List(ctx)
 		if err != nil {
 			return nil, err
@@ -242,6 +242,7 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 					ImageName:   img.Name,
 					ImageDigest: img.Target.Digest.String(),
 					Runtime:     ctr.Runtime.Name,
+					PodName:     ctr.Labels["io.kubernetes.pod.name"],
 					ID:          id,
 					PID:         initPID,
 					Snapshotter: ctr.Snapshotter,
@@ -414,18 +415,18 @@ func snapshotMetadataFromSnapshotsBuckets(tx *bolt.Tx, snapshotsBucketByDigest [
 func containerInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
 	// A typical Linux case.
 	if runtimeName == "io.containerd.runc.v2" {
-		return runcInitPid(scanRoot, runtimeName, id)
+		return runcInitPid(scanRoot, id)
 	}
 
 	// A typical Windows case.
 	if runtimeName == "io.containerd.runhcs.v1" {
-		return runhcsInitPid(scanRoot, runtimeName, namespace, id)
+		return runhcsInitPid(scanRoot, namespace, id)
 	}
 
 	return -1
 }
 
-func runcInitPid(scanRoot string, runtimeName string, id string) int {
+func runcInitPid(scanRoot string, id string) int {
 	// If a container is running by runc, the init pid is stored in the grpc status file.
 	// status file is located at the
 	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/state.json path.
@@ -465,7 +466,7 @@ func runcInitPid(scanRoot string, runtimeName string, id string) int {
 	return initPID
 }
 
-func runhcsInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+func runhcsInitPid(scanRoot string, namespace string, id string) int {
 	// If a container is running by runhcs, the init pid is stored in the runhcs shim.pid file.
 	// shim.pid file is located at the
 	// <scanRoot>/<runhcsStateFilePrefix>/<namespace_name>/<container_id>/shim.pid.

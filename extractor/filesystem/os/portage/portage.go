@@ -140,7 +140,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from portage database files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	inventory, err := e.extractFromInput(input)
 	if e.stats == nil {
 		return inventory, err
 	}
@@ -156,7 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	osRelease, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.GetOSRelease(): %v", err)

@@ -139,6 +139,7 @@ type Flags struct {
 	FilterByCapabilities  bool
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
+	Offline               bool
 }
 
 var supportedOutputFormats = []string{
@@ -521,18 +522,22 @@ func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
 
 // All capabilities are enabled when running SCALIBR as a binary.
 func (f *Flags) capabilities() *plugin.Capabilities {
+	network := plugin.NetworkOnline
+	if f.Offline {
+		network = plugin.NetworkOffline
+	}
 	if f.RemoteImage != "" {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
 			OS:            plugin.OSLinux,
-			Network:       plugin.NetworkOnline,
+			Network:       network,
 			DirectFS:      true,
 			RunningSystem: false,
 		}
 	}
 	return &plugin.Capabilities{
 		OS:            platform.OS(),
-		Network:       plugin.NetworkOnline,
+		Network:       network,
 		DirectFS:      true,
 		RunningSystem: true,
 	}

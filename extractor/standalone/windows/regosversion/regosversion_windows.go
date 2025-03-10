@@ -115,7 +115,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		{
 			Name:    winproduct,
 			Version: fullVersion,
-			Metadata: metadata.OSVersion{
+			Metadata: &metadata.OSVersion{
 				Product:     winproduct,
 				FullVersion: fullVersion,
 			},
@@ -163,9 +163,9 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	var qualifiers purl.Qualifiers
 
 	switch i.Metadata.(type) {
-	case metadata.OSVersion:
+	case *metadata.OSVersion:
 		qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Metadata.(metadata.OSVersion).FullVersion,
+			purl.BuildNumber: i.Metadata.(*metadata.OSVersion).FullVersion,
 		})
 	default:
 		return nil

@@ -1,0 +1,22 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "com.google.guava:guava",
+        "versionFrom": "22.0-android",
+        "versionTo": "24.0-android"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-000",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "22.0-android"
+          }
+        ]
+      }
+    ]
+  }
+]

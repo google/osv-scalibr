@@ -166,7 +166,7 @@ func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cm
 	client := &http.Client{Timeout: defaultTimeout}
 
 	targetURL := fmt.Sprintf("http://%s:%d/?doAs=`%s`", sparkDomain, sparkPort, cmdExec)
-	req, _ := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	req.Header.Add("Accept", "*/*")
 	resp, err := client.Do(req)
 

@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -170,7 +171,10 @@ var (
 	}
 
 	// Containers extractors.
-	Containers = InitMap{containerd.Name: {containerd.NewDefault}}
+	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
+
+	// Wordpress extractors.
+	Wordpress = InitMap{plugins.Name: {plugins.NewDefault}}
 
 	// OS extractors.
 	OS = InitMap{
@@ -213,6 +217,7 @@ var (
 		Swift,
 		OS,
 		Containers,
+		Wordpress,
 	)
 
 	extractorNames = concat(All, InitMap{
@@ -236,6 +241,7 @@ var (
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
 		"containers": vals(Containers),
+		"wordpress":  vals(Wordpress),
 
 		// Collections.
 		"default": vals(Default),

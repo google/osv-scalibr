@@ -142,7 +142,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// Additional paths to recursive files found during extraction.
 	var extraPaths pathQueue
 	var inv []*extractor.Inventory
-	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path, input.FS)
+	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -195,10 +195,10 @@ func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventor
 		return nil, nil, err
 	}
 	defer reader.Close()
-	return extractFromPath(reader, path, fs)
+	return extractFromPath(reader, path)
 }
 
-func extractFromPath(reader io.Reader, path string, fs scalibrfs.FS) ([]*extractor.Inventory, pathQueue, error) {
+func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pathQueue, error) {
 	var inv []*extractor.Inventory
 	var extraPaths pathQueue
 	s := bufio.NewScanner(reader)
