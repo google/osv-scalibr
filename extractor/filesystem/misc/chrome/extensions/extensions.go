@@ -211,7 +211,7 @@ func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 	return nil
 }
 
-// cutPrefixSuffix cuts the specified prefix and suffix
+// cutPrefixSuffix cuts the specified prefix and suffix if they exist, returns false otherwise
 func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
 	if !strings.HasPrefix(s, prefix) {
 		return "", false
