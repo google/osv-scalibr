@@ -119,7 +119,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return nil, fmt.Errorf("bad format in manifest %s: %w", input.Path, err)
 	}
 
-	// extract the extensions ID from the path
 	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
 		return nil, fmt.Errorf("could not extract extension id from %s: %w", input.Path, err)
