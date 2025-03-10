@@ -466,7 +466,9 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		}
 
 		if err != nil {
-			if errors.Is(err, ErrFileReadLimitExceeded) {
+			// If the error is due to a file read limit being exceeded or a symlink pointing outside the
+			// root, then we fail open and skip the file.
+			if errors.Is(err, ErrFileReadLimitExceeded) || errors.Is(err, ErrSymlinkPointsOutsideRoot) {
 				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
 				continue
 			}
