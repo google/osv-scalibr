@@ -282,7 +282,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // v1.Layers found in the image from the tarball, and the max symlink depth.
 func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSymlinkDepth int) ([]*chainLayer, error) {
 	if configFile == nil {
-		return nil, fmt.Errorf("config file is nil")
+		return nil, errors.New("config file is nil")
 	}
 
 	var chainLayers []*chainLayer
@@ -524,7 +524,7 @@ func populateEmptyDirectoryNodes(virtualPath, originLayerID, extractDir string, 
 func (img *Image) handleSymlink(virtualPath, originLayerID string, header *tar.Header, isWhiteout bool, requiredTargets map[string]bool) (*fileNode, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
-		return nil, fmt.Errorf("symlink header has no target path")
+		return nil, errors.New("symlink header has no target path")
 	}
 
 	if symlink.TargetOutsideRoot(virtualPath, targetPath) {

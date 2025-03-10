@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"debug/elf"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -175,7 +176,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	// to identify malicious modules if the author intentionally stripped the module name.
 	section := elfFile.Section(".modinfo")
 	if section == nil {
-		return nil, fmt.Errorf("no .modinfo section found")
+		return nil, errors.New("no .modinfo section found")
 	}
 
 	sectionData, err := section.Data()

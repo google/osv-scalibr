@@ -72,14 +72,14 @@ type fakeV1Image struct {
 
 func (fakeV1Image *fakeV1Image) Layers() ([]v1.Layer, error) {
 	if fakeV1Image.errorOnLayers {
-		return nil, fmt.Errorf("error on layers")
+		return nil, errors.New("error on layers")
 	}
 	return fakeV1Image.layers, nil
 }
 
 func (fakeV1Image *fakeV1Image) ConfigFile() (*v1.ConfigFile, error) {
 	if fakeV1Image.errorOnConfigFile {
-		return nil, fmt.Errorf("error on config file")
+		return nil, errors.New("error on config file")
 	}
 	return fakeV1Image.config, nil
 }

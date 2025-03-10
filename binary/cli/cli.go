@@ -203,7 +203,7 @@ func validateOutput(output []string) error {
 	for _, item := range output {
 		o := strings.Split(item, "=")
 		if len(o) != 2 {
-			return fmt.Errorf("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
+			return errors.New("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
 		}
 		oFormat := o[0]
 		if !slices.Contains(supportedOutputFormats, oFormat) {
@@ -231,7 +231,7 @@ func validateSPDXCreators(creators string) error {
 	for _, item := range strings.Split(creators, ",") {
 		c := strings.Split(item, ":")
 		if len(c) != 2 {
-			return fmt.Errorf("invalid spdx-creators format, should follow a format like --spdx-creators=Tool:SCALIBR,Organization:Google")
+			return errors.New("invalid spdx-creators format, should follow a format like --spdx-creators=Tool:SCALIBR,Organization:Google")
 		}
 	}
 	return nil
@@ -247,7 +247,7 @@ func validateMultiStringArg(arg []string) error {
 		}
 		for _, item := range strings.Split(item, ",") {
 			if len(item) == 0 {
-				return fmt.Errorf("list item cannot be left empty")
+				return errors.New("list item cannot be left empty")
 			}
 		}
 	}

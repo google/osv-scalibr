@@ -18,6 +18,7 @@ package condameta
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -159,7 +160,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 
 	// Return an empty slice if the package name or version is empty
 	if pkg.Name == "" || pkg.Version == "" {
-		return nil, fmt.Errorf("package name or version is empty")
+		return nil, errors.New("package name or version is empty")
 	}
 
 	inventory := &extractor.Inventory{

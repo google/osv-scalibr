@@ -20,7 +20,7 @@ import (
 	"crypto/des"
 	"crypto/md5"
 	"crypto/rc4"
-	"fmt"
+	"errors"
 	"slices"
 )
 
@@ -54,7 +54,7 @@ const (
 )
 
 var (
-	errInvalidRIDSize = fmt.Errorf("RID cannot be derived: is not 4 bytes")
+	errInvalidRIDSize = errors.New("RID cannot be derived: is not 4 bytes")
 )
 
 // transformRID performs a set of bitwise operations on the provided key to derive one of the two
@@ -138,7 +138,7 @@ func decryptAESHash(rid []byte, syskey, hash []byte, iv []byte) ([]byte, error) 
 	}
 
 	if len(hash)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("hash length not aligned with AES block size")
+		return nil, errors.New("hash length not aligned with AES block size")
 	}
 
 	block, err := aes.NewCipher(syskey)

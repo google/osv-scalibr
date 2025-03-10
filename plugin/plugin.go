@@ -163,7 +163,7 @@ func (s *ScanStatus) String() string {
 	case ScanStatusPartiallySucceeded:
 		return "PARTIALLY_SUCCEEDED"
 	case ScanStatusFailed:
-		return fmt.Sprintf("FAILED: %s", s.FailureReason)
+		return "FAILED: " + s.FailureReason
 	}
 	return "UNSPECIFIED"
 }

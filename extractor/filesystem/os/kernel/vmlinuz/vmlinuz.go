@@ -17,6 +17,7 @@ package vmlinuz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -169,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 
 	if len(magicType) == 0 || magicType[0] != "Linux kernel" {
-		return nil, fmt.Errorf("no match with linux kernel found")
+		return nil, errors.New("no match with linux kernel found")
 	}
 
 	metadata := parseVmlinuzMetadata(magicType)
