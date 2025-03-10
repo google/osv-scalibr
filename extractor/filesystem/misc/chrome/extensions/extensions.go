@@ -158,11 +158,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 //
 //	/extensionID/version/manifest.json
 func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
-	path, err := filepath.Abs(input.Path)
-	if err != nil {
-		return "", fmt.Errorf("could not extract full path: %w", err)
-	}
-	parts := strings.Split(filepath.ToSlash(path), "/")
+	parts := strings.Split(filepath.ToSlash(input.Path), "/")
 	if len(parts) < 3 {
 		return "", errors.New("cold not find id expected path format '/extensionID/version/manifest.json'")
 	}
