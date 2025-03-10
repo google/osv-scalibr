@@ -23,7 +23,7 @@ linters:
     - dupword
     - durationcheck
 #    - errcheck
-#    - errchkjson
+    - errchkjson
     - errname
 #    - errorlint
 #    - exhaustive
