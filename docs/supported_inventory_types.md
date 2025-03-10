@@ -32,6 +32,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * packages.lock.json
   * packages.config
   * deps.json
+  * portable executables
 * C++
   * Conan packages
 * Dart
