@@ -90,7 +90,11 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		RunningSystem: true,
+	}
+}
 
 // FileRequired returns true if the file is chrome manifest extension
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
