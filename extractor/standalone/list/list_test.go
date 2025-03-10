@@ -12,47 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package semantic
+package list_test
 
 import (
-	"fmt"
-	"math/big"
+	"regexp"
+	"testing"
+
+	el "github.com/google/osv-scalibr/extractor/standalone/list"
 )
 
-func convertToBigIntOrPanic(str string) *big.Int {
-	if num, isNumber := convertToBigInt(str); isNumber {
-		return num
+var (
+	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+)
+
+func TestPluginNamesValid(t *testing.T) {
+	for _, initers := range el.All {
+		for _, initer := range initers {
+			name := initer().Name()
+			if !reValidName.MatchString(name) {
+				t.Errorf("Invalid plugin name %q", name)
+			}
+		}
 	}
-
-	panic(fmt.Sprintf("failed to convert %s to a number", str))
-}
-
-func convertToBigInt(str string) (*big.Int, bool) {
-	i, ok := new(big.Int).SetString(str, 10)
-
-	return i, ok
-}
-
-func minInt(x, y int) int {
-	if x > y {
-		return y
-	}
-
-	return x
-}
-
-func maxInt(x, y int) int {
-	if x < y {
-		return y
-	}
-
-	return x
-}
-
-func fetch(slice []string, i int, def string) string {
-	if len(slice) <= i {
-		return def
-	}
-
-	return slice[i]
 }

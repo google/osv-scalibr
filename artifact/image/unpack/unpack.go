@@ -16,6 +16,7 @@
 package unpack
 
 import (
+	"archive/tar"
 	"bytes"
 	"errors"
 	"fmt"
@@ -25,8 +26,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"archive/tar"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/require"

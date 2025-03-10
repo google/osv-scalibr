@@ -50,11 +50,14 @@ type Layer struct {
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
+	fileNodeTree *pathtree.Node[fileNode]
 }
 
 // FS returns a scalibr compliant file system.
 func (layer *Layer) FS() scalibrfs.FS {
-	return nil
+	return &FS{
+		tree: layer.fileNodeTree,
+	}
 }
 
 // IsEmpty returns whether the layer is empty.
@@ -96,6 +99,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, err
 		diffID:       digest.Digest(diffID.String()),
 		buildCommand: command,
 		isEmpty:      isEmpty,
+		fileNodeTree: pathtree.NewNode[fileNode](),
 	}, nil
 }
 

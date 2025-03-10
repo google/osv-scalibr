@@ -26,16 +26,16 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
-	"github.com/google/osv-scalibr/detector/cve/cve202338408/semantic"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/semantic"
 )
 
 const (
 	// Name of the detector.
-	Name = "cve/CVE-2023-38408"
+	Name = "cve/cve-2023-38408"
 )
 
 var (
@@ -234,7 +234,13 @@ type fileLocations struct {
 
 func versionLessEqual(lower, upper string) bool {
 	// Version format looks like this: 3.7.1p2, 3.7, 3.2.3, 2.9p2
-	return semantic.ParsePackagistVersion(lower).CompareStr(upper) <= 0
+	r, err := semantic.MustParse(lower, "Packagist").CompareStr(upper)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return r <= 0
 }
 
 func findHistoryFiles() []string {

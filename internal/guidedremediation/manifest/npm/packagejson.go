@@ -27,6 +27,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -114,6 +115,12 @@ func (m *npmManifest) Clone() manifest.Manifest {
 	return clone
 }
 
+// PatchRequirement modifies the manifest's requirements to include the new requirement version.
+func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
+	// TODO(#454): implement this for npm when adding relax strategy
+	return nil
+}
+
 type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for package.json manifest files.
@@ -127,13 +134,23 @@ func (r readWriter) System() resolve.System {
 	return resolve.NPM
 }
 
-type packageJSON struct {
+// SupportedStrategies returns the remediation strategies supported for this manifest.
+func (r readWriter) SupportedStrategies() []strategy.Strategy {
+	return []strategy.Strategy{}
+}
+
+// PackageJSON is the structure for the contents of a package.json file.
+type PackageJSON struct {
 	Name                 string            `json:"name"`
 	Version              string            `json:"version"`
 	Workspaces           []string          `json:"workspaces"`
 	Dependencies         map[string]string `json:"dependencies"`
 	DevDependencies      map[string]string `json:"devDependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
+	PeerDependencies     map[string]string `json:"peerDependencies"`
+	PeerDependenciesMeta map[string]struct {
+		Optional bool `json:"optional,omitempty"`
+	} `json:"peerDependenciesMeta,omitempty"`
 }
 
 // Read parses the manifest from the given file.
@@ -150,7 +167,7 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	var pkgJSON packageJSON
+	var pkgJSON PackageJSON
 	if err := dec.Decode(&pkgJSON); err != nil {
 		return nil, err
 	}

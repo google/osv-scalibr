@@ -211,7 +211,7 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 	imageStore := metadata.NewImageStore(containerdDB)
 	for _, ns := range nss {
 		// For each namespace stored in the metadb, get the container list to handle.
-		ctx = namespaces.WithNamespace(ctx, ns)
+		ctx := namespaces.WithNamespace(ctx, ns)
 		ctrs, err := containerStore.List(ctx)
 		if err != nil {
 			return nil, err
@@ -242,6 +242,7 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 					ImageName:   img.Name,
 					ImageDigest: img.Target.Digest.String(),
 					Runtime:     ctr.Runtime.Name,
+					PodName:     ctr.Labels["io.kubernetes.pod.name"],
 					ID:          id,
 					PID:         initPID,
 					Snapshotter: ctr.Snapshotter,

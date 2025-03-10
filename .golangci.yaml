@@ -19,7 +19,7 @@ linters:
     - decorder
 #    - depguard
     - dogsled
-#    - dupl
+    - dupl
     - dupword
     - durationcheck
 #    - errcheck
@@ -27,7 +27,7 @@ linters:
     - errname
 #    - errorlint
 #    - exhaustive
-#    - fatcontext
+    - fatcontext
     - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
@@ -83,7 +83,7 @@ linters:
     - unconvert
 #    - unparam
 #    - unused
-#    - usestdlibvars
+    - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint
@@ -103,3 +103,7 @@ linters-settings:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl

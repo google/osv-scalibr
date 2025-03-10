@@ -56,8 +56,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -94,15 +96,9 @@ var (
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
 		javaarchive.Name:                   {javaarchive.NewDefault},
-		pomxml.Name:                        {pomxml.New},
-	}
-	// TODO(#441): enable pomxmlnet extractor when network is accesible.
-	// JavaNet extractors requiring network access.
-	JavaNet = InitMap{
-		gradlelockfile.Name:                {gradlelockfile.New},
-		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
-		javaarchive.Name:                   {javaarchive.NewDefault},
-		pomxmlnet.Name:                     {pomxmlnet.NewDefault},
+		// pom.xml extraction for environments with and without network access.
+		pomxml.Name:    {pomxml.New},
+		pomxmlnet.Name: {pomxmlnet.NewDefault},
 	}
 	// Javascript extractors.
 	Javascript = InitMap{
@@ -150,6 +146,7 @@ var (
 	Rust = InitMap{
 		cargolock.Name:      {cargolock.New},
 		cargoauditable.Name: {cargoauditable.NewDefault},
+		cargotoml.Name:      {cargotoml.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -172,7 +169,10 @@ var (
 	}
 
 	// Containers extractors.
-	Containers = InitMap{containerd.Name: {containerd.NewDefault}}
+	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
+
+	// Wordpress extractors.
+	Wordpress = InitMap{plugins.Name: {plugins.NewDefault}}
 
 	// OS extractors.
 	OS = InitMap{
@@ -195,8 +195,6 @@ var (
 
 	// Default extractors that are recommended to be enabled.
 	Default = concat(Java, Javascript, Python, Go, OS)
-	// DefaultNet defines the list of recommended extractors that require network access.
-	DefaultNet = concat(JavaNet, Javascript, Python, Go, OS)
 	// All extractors available from SCALIBR.
 	All = concat(
 		Cpp,
@@ -217,6 +215,7 @@ var (
 		Swift,
 		OS,
 		Containers,
+		Wordpress,
 	)
 
 	extractorNames = concat(All, InitMap{
@@ -240,11 +239,11 @@ var (
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
 		"containers": vals(Containers),
+		"wordpress":  vals(Wordpress),
 
 		// Collections.
-		"default":    vals(Default),
-		"defaultnet": vals(DefaultNet),
-		"all":        vals(All),
+		"default": vals(Default),
+		"all":     vals(All),
 	})
 )
 

@@ -21,6 +21,7 @@ type Metadata struct {
 	ImageDigest string
 	Runtime     string
 	ID          string
+	PodName     string
 	PID         int
 	// the type of filesystem implementation. For example, overlayfs
 	Snapshotter string
