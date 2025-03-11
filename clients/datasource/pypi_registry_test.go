@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/clients/datasource/internal/pypi"
 )
 
 func TestGetVersions(t *testing.T) {
@@ -145,7 +146,7 @@ func TestGetVersions(t *testing.T) {
 	}
 }
 
-func TestGetRequiresDist(t *testing.T) {
+func TestGetVersionJson(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL)
 	srv.SetResponse(t, "pypi/abc/1.0.0/json", []byte(`
@@ -253,16 +254,33 @@ func TestGetRequiresDist(t *testing.T) {
 	}
 	`))
 
-	got, err := client.GetRequiresDist(context.Background(), "abc", "1.0.0")
+	got, err := client.GetVersionJson(context.Background(), "abc", "1.0.0")
 	if err != nil {
-		t.Fatalf("failed to get requires dist of PyPI project %s %s: %v", "abc", "1.0.0", err)
+		t.Fatalf("failed to get version JSON of PyPI project %s %s: %v", "abc", "1.0.0", err)
 	}
-	want := []string{
-		"peppercorn",
-		"check-manifest ; extra == 'dev'",
-		"coverage ; extra == 'test'",
+	want := pypi.JsonResponse{
+		Info: pypi.Info{
+			RequiresDist: []string{
+				"peppercorn",
+				"check-manifest ; extra == 'dev'",
+				"coverage ; extra == 'test'",
+			},
+			Yanked: false,
+		},
+		URLs: []pypi.URL{
+			{
+				Digests: pypi.Digests{
+					SHA256: "2e52702990c22cf1ce50206606b769fe0dbd5646a32873916144bd5aec5473b3",
+				},
+			},
+			{
+				Digests: pypi.Digests{
+					SHA256: "117ed88e5db073bb92969a7545745fd977ee85b7019706dd256a64058f70963d",
+				},
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("GetRequiresDist(%s, %s) mismatch (-want +got):\n%s", "abc", "1.0.0", diff)
+		t.Errorf("GetVersionJson(%s, %s) mismatch (-want +got):\n%s", "abc", "1.0.0", diff)
 	}
 }

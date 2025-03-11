@@ -52,25 +52,8 @@ func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
 	}
 }
 
-// GetVersions queries the Index API and returns the list of versions.
-func (p *PyPIRegistryAPIClient) GetVersions(ctx context.Context, project string) ([]string, error) {
-	resp, err := p.getIndex(ctx, project)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Versions, nil
-}
-
 // GetRequiresDist queries the JSON API and returns the requires dist for a specific version.
-func (p *PyPIRegistryAPIClient) GetRequiresDist(ctx context.Context, project, version string) ([]string, error) {
-	resp, err := p.getVersionJson(ctx, project, version)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Info.RequiresDist, nil
-}
-
-func (p *PyPIRegistryAPIClient) getVersionJson(ctx context.Context, project, version string) (pypi.JsonResponse, error) {
+func (p *PyPIRegistryAPIClient) GetVersionJson(ctx context.Context, project, version string) (pypi.JsonResponse, error) {
 	path, err := url.JoinPath(p.registry, "pypi", project, version, "json")
 	if err != nil {
 		return pypi.JsonResponse{}, err
@@ -79,6 +62,15 @@ func (p *PyPIRegistryAPIClient) getVersionJson(ctx context.Context, project, ver
 	var jsonResp pypi.JsonResponse
 	err = p.get(ctx, path, false, &jsonResp)
 	return jsonResp, err
+}
+
+// GetVersions queries the Index API and returns the list of versions.
+func (p *PyPIRegistryAPIClient) GetVersions(ctx context.Context, project string) ([]string, error) {
+	resp, err := p.getIndex(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Versions, nil
 }
 
 func (p *PyPIRegistryAPIClient) getIndex(ctx context.Context, project string) (pypi.IndexReponse, error) {
