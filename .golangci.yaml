@@ -72,7 +72,7 @@ linters:
     - sloglint
     - spancheck
     - sqlclosecheck
-#    - staticcheck
+    - staticcheck
 #    - stylecheck
     - tagalign
     - tenv
