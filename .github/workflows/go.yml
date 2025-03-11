@@ -23,6 +23,10 @@ jobs:
         with:
           go-version: 1.23.x
 
+      - name: fix imports on windows
+        if: matrix.os == 'windows-latest'
+        run: go run golang.org/x/tools/cmd/goimports@latest
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
