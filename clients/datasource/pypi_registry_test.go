@@ -26,7 +26,7 @@ import (
 func TestGetVersions(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL)
-	srv.SetResponse(t, "/simple/abc", []byte(`
+	srv.SetResponse(t, "/simple/abc/", []byte(`
 	{
 		"files": [
 		  {

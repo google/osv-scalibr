@@ -27,7 +27,7 @@ import (
 
 func TestVersions(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	srv.SetResponse(t, "/simple/abc", []byte(`
+	srv.SetResponse(t, "/simple/abc/", []byte(`
 	{
 		"files": [
 		  {
