@@ -16,13 +16,11 @@ package datasource
 
 import (
 	"time"
-
-	"github.com/google/osv-scalibr/clients/datasource/internal/pypi"
 )
 
 type pypiRegistryCache struct {
 	Timestamp *time.Time
-	Responses map[string]pypi.Response // url -> response
+	Responses map[string]response // url -> response
 }
 
 // GobEncode encodes cache to bytes.

@@ -16,10 +16,12 @@ package resolution
 
 import (
 	"context"
+	"slices"
 
 	"deps.dev/util/pypi"
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/clients/datasource"
 )
 
@@ -42,14 +44,16 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
 func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
-	pkgInfo, err := c.api.GetPackageInfo(ctx, pk.Name)
+	vers, err := c.api.GetVersions(ctx, pk.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	var vks []resolve.Version
-	for v := range pkgInfo.Releases {
-		vks = append(vks, resolve.Version{
+	slices.SortFunc(vers, func(a, b string) int { return semver.PyPI.Compare(a, b) })
+
+	var versions []resolve.Version
+	for _, v := range vers {
+		versions = append(versions, resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     v,
@@ -57,18 +61,18 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 			}})
 	}
 
-	return vks, nil
+	return versions, nil
 }
 
 // Requirements returns requirements of a version specified by the VersionKey.
 func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
-	verInfo, err := c.api.GetVersionInfo(ctx, vk.Name, vk.Version)
+	requiresDist, err := c.api.GetRequiresDist(ctx, vk.Name, vk.Version)
 	if err != nil {
 		return nil, err
 	}
 
 	var reqs []resolve.RequirementVersion
-	for _, dist := range verInfo.Info.RequiresDist {
+	for _, dist := range requiresDist {
 		d, err := pypi.ParseDependency(dist)
 		if err != nil {
 			return nil, err

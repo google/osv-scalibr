@@ -17,19 +17,20 @@ package datasource
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/osv-scalibr/clients/datasource/internal/pypi"
 )
 
-// PyPIAPI holds the base of the URL of PyPI JSON API.
-const PyPIAPI = "https://pypi.org/pypi/"
+// PyPIAPI holds the base of the URL of PyPI JSON and Index API.
+const PyPIAPI = "https://pypi.org/"
 
 // PyPIRegistryAPIClient defines a client to fetch metadata from a PyPI registry.
 type PyPIRegistryAPIClient struct {
@@ -38,7 +39,7 @@ type PyPIRegistryAPIClient struct {
 	// Cache fields
 	mu             *sync.Mutex
 	cacheTimestamp *time.Time // If set, this means we loaded from a cache
-	responses      *RequestCache[string, pypi.Response]
+	responses      *RequestCache[string, response]
 }
 
 // NewPyPIRegistryAPIClient returns a new PyPIRegistryAPIClient.
@@ -46,51 +47,90 @@ func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
 	return &PyPIRegistryAPIClient{
 		registry:  registry,
 		mu:        &sync.Mutex{},
-		responses: NewRequestCache[string, pypi.Response](),
+		responses: NewRequestCache[string, response](),
 	}
 }
 
-func (p *PyPIRegistryAPIClient) GetPackageInfo(ctx context.Context, name string) (pypi.Response, error) {
-	path, err := url.JoinPath(p.registry, name, "json")
+// GetVersions queries the Index API and returns the list of versions.
+func (p *PyPIRegistryAPIClient) GetVersions(ctx context.Context, project string) ([]string, error) {
+	resp, err := p.getIndex(ctx, project)
 	if err != nil {
-		return pypi.Response{}, err
+		return nil, err
 	}
-	return p.get(ctx, path)
+	return resp.Versions, nil
 }
 
-func (p *PyPIRegistryAPIClient) GetVersionInfo(ctx context.Context, name, version string) (pypi.Response, error) {
-	path, err := url.JoinPath(p.registry, name, version, "json")
+// GetRequiresDist queries the JSON API and returns the requires dist for a specific version.
+func (p *PyPIRegistryAPIClient) GetRequiresDist(ctx context.Context, project, version string) ([]string, error) {
+	resp, err := p.getVersionJson(ctx, project, version)
 	if err != nil {
-		return pypi.Response{}, err
+		return nil, err
 	}
-	return p.get(ctx, path)
+	return resp.Info.RequiresDist, nil
 }
 
-func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string) (pypi.Response, error) {
-	return p.responses.Get(url, func() (pypi.Response, error) {
+func (p *PyPIRegistryAPIClient) getVersionJson(ctx context.Context, project, version string) (pypi.JsonResponse, error) {
+	path, err := url.JoinPath(p.registry, "pypi", project, version, "json")
+	if err != nil {
+		return pypi.JsonResponse{}, err
+	}
+
+	var jsonResp pypi.JsonResponse
+	err = p.get(ctx, path, false, &jsonResp)
+	return jsonResp, err
+}
+
+func (p *PyPIRegistryAPIClient) getIndex(ctx context.Context, project string) (pypi.IndexReponse, error) {
+	path, err := url.JoinPath(p.registry, "simple", project)
+	if err != nil {
+		return pypi.IndexReponse{}, err
+	}
+
+	// The Index API requires an ending slash.
+	if !strings.HasSuffix(path, "/") {
+		path += "/"
+	}
+
+	var indexResp pypi.IndexReponse
+	err = p.get(ctx, path, true, &indexResp)
+	return indexResp, err
+}
+
+func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool, dst interface{}) error {
+	resp, err := p.responses.Get(url, func() (response, error) {
+		fmt.Println(url)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
-			return pypi.Response{}, err
+			return response{}, err
 		}
 
+		if queryIndex {
+			req.Header.Set("Accept", "application/vnd.pypi.simple.v1+json")
+		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return pypi.Response{}, fmt.Errorf("%w: PyPI registry query failed: %w", errAPIFailed, err)
+			return response{}, fmt.Errorf("%w: PyPI registry query failed: %w", errAPIFailed, err)
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			return pypi.Response{}, errors.New(resp.Status)
+		if !slices.Contains([]int{http.StatusOK, http.StatusNotFound, http.StatusUnauthorized}, resp.StatusCode) {
+			// Only cache responses with Status OK, NotFound, or Unauthorized
+			return response{}, fmt.Errorf("%w: PyPI registry query status: %d", errAPIFailed, resp.StatusCode)
 		}
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return pypi.Response{}, err
+		if b, err := io.ReadAll(resp.Body); err == nil {
+			return response{StatusCode: resp.StatusCode, Body: b}, nil
 		}
 
-		var result pypi.Response
-		err = json.Unmarshal(body, &result)
-
-		return result, err
+		return response{}, fmt.Errorf("failed to read body: %w", err)
 	})
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%w: PyPI registry query status: %d", errAPIFailed, resp.StatusCode)
+	}
+
+	return json.Unmarshal(resp.Body, dst)
 }

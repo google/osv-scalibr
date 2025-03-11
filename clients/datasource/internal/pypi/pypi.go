@@ -15,10 +15,15 @@
 // Package pypi defines the structures to parse PyPI JSON API response.
 package pypi
 
-// Response defines the response of PyPI JSON API.
-type Response struct {
-	Info     Info     `json:"info"`
-	Releases Releases `json:"releases"`
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// JsonResponse defines the response of JSON API.
+// https://docs.pypi.org/api/json/
+type JsonResponse struct {
+	Info Info `json:"info"`
 }
 
 // Info holds the info in the response of PyPI JSON API.
@@ -26,15 +31,40 @@ type Info struct {
 	RequiresDist []string `json:"requires_dist"`
 }
 
-// Release is a map of version to its release information.
-type Releases map[string][]Release
-
-// Release holds the information about a release.
-type Release struct {
-	Digests Digests `json:"digests"`
+// IndexReponse defines the response of Index API.
+// https://docs.pypi.org/api/index-api/
+type IndexReponse struct {
+	Files    []File   `json:"files"`
+	Versions []string `json:"versions"`
 }
 
-// Digests holds the information of digests of a release.
-type Digests struct {
+// File has the information of a file in Index API.
+type File struct {
+	Hashes Hashes       `json:"hashes"`
+	Yanked BoolOrString `json:"yanked"`
+}
+
+// Hashes holds the information of digests of a release.
+type Hashes struct {
 	SHA256 string `json:"sha256"`
+}
+
+type BoolOrString struct {
+	Value interface{} // Can hold either bool or string
+}
+
+func (bos *BoolOrString) UnmarshalJSON(data []byte) error {
+	var b bool
+	if err := json.Unmarshal(data, &b); err == nil {
+		bos.Value = b
+		return nil
+	}
+
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		bos.Value = s
+		return nil
+	}
+
+	return fmt.Errorf("could not unmarshal %s into bool or string", data)
 }
