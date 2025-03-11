@@ -121,6 +121,8 @@ linters-settings:
         disabled: false
       - name: indent-error-flow
         disabled: false
+      - name: package-comments
+        disabled: false
       - name: range
         disabled: false
       - name: receiver-naming
@@ -137,6 +139,8 @@ linters-settings:
         disabled: false
 
 issues:
+  include:
+    - EXC0015 # revive package-comments
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
