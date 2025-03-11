@@ -18,6 +18,7 @@ package yarnlock
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -46,22 +47,6 @@ var (
 	// Format for yarn.lock v1: `resolved "git+ssh://git@github.com:G-Rath/repo-2#hash"`
 	// Format for yarn.lock v2: `resolution: "@my-scope/my-first-package@https://github.com/my-org/my-first-package.git#commit=hash"`
 	yarnPackageResolutionRe = regexp.MustCompile(`^ {2}"?(?:resolution:|resolved)"? "([^ '"]+)"$`)
-	// Regexes for matching commit hashes in the resolution.
-	commitMatchers = []*regexp.Regexp{
-		// ssh://...
-		// git://...
-		// git+ssh://...
-		// git+https://...
-		regexp.MustCompile(`(?:^|.+@)(?:git(?:\+(?:ssh|https))?|ssh)://.+#(\w+)$`),
-		// https://....git/...
-		regexp.MustCompile(`(?:^|.+@)https://.+\.git#(\w+)$`),
-		regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+){2}/tar\.gz/(\w+)$`),
-		regexp.MustCompile(`.+#commit[:=](\w+)$`),
-		// github:...
-		// gitlab:...
-		// bitbucket:...
-		regexp.MustCompile(`^(?:github|gitlab|bitbucket):.+#(\w+)$`),
-	}
 )
 
 func shouldSkipYarnLine(line string) bool {
@@ -108,7 +93,7 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 			}
 			current = &packageDescription{header: line}
 		} else if current == nil {
-			return nil, fmt.Errorf("malformed yarn.lock")
+			return nil, errors.New("malformed yarn.lock")
 		} else {
 			current.props = append(current.props, line)
 		}

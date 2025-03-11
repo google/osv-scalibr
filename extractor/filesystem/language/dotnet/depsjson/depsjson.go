@@ -18,7 +18,7 @@ package depsjson
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -157,7 +157,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	// Check if the decoded content is empty (i.e., no libraries)
 	if len(deps.Libraries) == 0 {
 		log.Warn("Empty deps.json file or no libraries found")
-		return nil, fmt.Errorf("empty deps.json file or no libraries found")
+		return nil, errors.New("empty deps.json file or no libraries found")
 	}
 
 	var inventories []*extractor.Inventory

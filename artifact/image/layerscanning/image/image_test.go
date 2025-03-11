@@ -72,14 +72,14 @@ type fakeV1Image struct {
 
 func (fakeV1Image *fakeV1Image) Layers() ([]v1.Layer, error) {
 	if fakeV1Image.errorOnLayers {
-		return nil, fmt.Errorf("error on layers")
+		return nil, errors.New("error on layers")
 	}
 	return fakeV1Image.layers, nil
 }
 
 func (fakeV1Image *fakeV1Image) ConfigFile() (*v1.ConfigFile, error) {
 	if fakeV1Image.errorOnConfigFile {
-		return nil, fmt.Errorf("error on config file")
+		return nil, errors.New("error on config file")
 	}
 	return fakeV1Image.config, nil
 }
@@ -518,10 +518,23 @@ func TestFromTarball(t *testing.T) {
 			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
-			name:                       "image with symlink pointing outside of root",
-			tarPath:                    filepath.Join(testdataDir, "symlink-attack.tar"),
-			config:                     DefaultConfig(),
-			wantErrDuringImageCreation: ErrSymlinkPointsOutsideRoot,
+			name:    "image with symlink pointing outside of root",
+			tarPath: filepath.Join(testdataDir, "symlink-attack.tar"),
+			config:  DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "dir1/attack-symlink.txt",
+						},
+						{
+							filepath: "dir1/attack-symlink-absolute.txt",
+						},
+					},
+				},
+			},
+			// The symlinks pointing outside of the root should not be stored in the chain layer.
+			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
 			name:    "require single file from images",

@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,8 +122,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	vulnerable := false
 	for _, port := range sparkServersPorts {
-		randFilePath := fmt.Sprintf("/tmp/%s", randomString(16))
-		testCmd := fmt.Sprintf("touch%%20%s", randFilePath)
+		randFilePath := "/tmp/" + randomString(16)
+		testCmd := "touch%%20" + randFilePath
 		retCode := sparkUIHTTPQuery(ctx, "127.0.0.1", port, testCmd)
 		// We expect to receive a 403 error
 		if retCode != 403 {
@@ -165,7 +167,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cmdExec string) int {
 	client := &http.Client{Timeout: defaultTimeout}
 
-	targetURL := fmt.Sprintf("http://%s:%d/?doAs=`%s`", sparkDomain, sparkPort, cmdExec)
+	targetURL := fmt.Sprintf("http://%s/?doAs=`%s`", net.JoinHostPort(sparkDomain, strconv.Itoa(sparkPort)), cmdExec)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	req.Header.Add("Accept", "*/*")
 	resp, err := client.Do(req)

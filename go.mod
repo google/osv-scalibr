@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	deps.dev/api/v3 v3.0.0-20250307021655-d811e36f9cad
 	deps.dev/util/maven v0.0.0-20250307021655-d811e36f9cad
-	deps.dev/util/resolve v0.0.0-20250307021655-d811e36f9cad
+	deps.dev/util/resolve v0.0.0-20250310223405-f4cf91c9e684
 	deps.dev/util/semver v0.0.0-20250307021655-d811e36f9cad
 	github.com/BurntSushi/toml v1.3.2
 	github.com/CycloneDX/cyclonedx-go v0.9.0

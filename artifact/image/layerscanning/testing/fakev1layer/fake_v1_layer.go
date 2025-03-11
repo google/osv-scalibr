@@ -17,7 +17,7 @@
 package fakev1layer
 
 import (
-	"fmt"
+	"errors"
 	"io"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -45,7 +45,7 @@ func New(diffID string, buildCommand string, isEmpty bool, uncompressed io.ReadC
 // DiffID returns the diffID of the layer.
 func (fakeV1Layer *FakeV1Layer) DiffID() (v1.Hash, error) {
 	if fakeV1Layer.diffID == "" {
-		return v1.Hash{}, fmt.Errorf("diffID is empty")
+		return v1.Hash{}, errors.New("diffID is empty")
 	}
 	return v1.Hash{
 		Algorithm: "sha256",
@@ -65,12 +65,12 @@ func (fakeV1Layer *FakeV1Layer) Uncompressed() (io.ReadCloser, error) {
 
 // Compressed is not used for the purposes of layer scanning, thus a nil value is returned.
 func (fakeV1Layer *FakeV1Layer) Compressed() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 // Size is not used for the purposes of layer scanning, thus a zero value is returned.
 func (fakeV1Layer *FakeV1Layer) Size() (int64, error) {
-	return 0, fmt.Errorf("not implemented")
+	return 0, errors.New("not implemented")
 }
 
 // MediaType returns a fake media type.
