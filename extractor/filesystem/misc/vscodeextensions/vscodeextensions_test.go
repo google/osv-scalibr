@@ -16,6 +16,8 @@ package vscodeextensions_test
 
 import (
 	"context"
+	"os"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,6 +33,8 @@ func TestExtractor_FileRequired(t *testing.T) {
 		name      string
 		inputPath string
 		want      bool
+		// running OS's separator, using '/' as default
+		separator rune
 	}{
 		{
 			inputPath: "", want: false,
@@ -49,9 +53,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 		},
 		{
 			inputPath: "C:\\Users\\username\\.vscode\\extensions\\bad.json", want: false,
+			separator: '\\',
 		},
 		{
-			inputPath: "C:\\Users\\username\\.vscode\\extensions\\extensions.json", want: false,
+			inputPath: "C:\\Users\\username\\.vscode\\extensions\\extensions.json", want: true,
+			separator: '\\',
 		},
 		{
 			inputPath: "/home/username/.vscode/extensions/extensions/badjson", want: false,
@@ -62,6 +68,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
+
+			if tt.separator == 0 {
+				tt.separator = '/'
+			}
+
+			if !os.IsPathSeparator(uint8(tt.separator)) {
+				t.Skipf("Skipping test on %s", runtime.GOOS)
+			}
+
 			e := vscodeextensions.Extractor{}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
