@@ -33,6 +33,7 @@ import (
 const PyPIAPI = "https://pypi.org/"
 
 // PyPIRegistryAPIClient defines a client to fetch metadata from a PyPI registry.
+// TODO(#541): support multiple registries and authentication
 type PyPIRegistryAPIClient struct {
 	registry string
 
