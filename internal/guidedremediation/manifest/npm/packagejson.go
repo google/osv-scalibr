@@ -375,7 +375,7 @@ func SplitNPMAlias(v string) (name, version string) {
 }
 
 // Write applies the patches to the original manifest, writing the resulting manifest file to the file path in the filesystem.
-func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, path string) error {
+func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
 	// TODO(#454): implement with relax
 	return errors.New("not implemented")
 }

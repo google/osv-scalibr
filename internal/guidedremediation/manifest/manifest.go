@@ -51,5 +51,5 @@ type ReadWriter interface {
 	//
 	// original is the manifest without patches. fsys is the FS that the manifest was read from.
 	// outputPath is the path on disk (*not* in fsys) to write the entire patched manifest to (this can overwrite the original manifest).
-	Write(original Manifest, fsys scalibrfs.FS, patches []result.Patch, path string) error
+	Write(original Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error
 }
