@@ -18,6 +18,7 @@ package yarnlock
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -108,7 +109,7 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 			}
 			current = &packageDescription{header: line}
 		} else if current == nil {
-			return nil, fmt.Errorf("malformed yarn.lock")
+			return nil, errors.New("malformed yarn.lock")
 		} else {
 			current.props = append(current.props, line)
 		}

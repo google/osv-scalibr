@@ -20,6 +20,7 @@ package containerd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -352,13 +353,13 @@ func snapshotsBucketByDigest(tx *bolt.Tx) ([]string, error) {
 	var snapshotsBucketByDigest []string
 	//  metadata db structure: v1-> snapshots -> <snapshot_digest> -> <snapshot_info_fields>
 	if tx == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("The transaction is nil")
+		return snapshotsBucketByDigest, errors.New("The transaction is nil")
 	}
 	if tx.Bucket([]byte("v1")) == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("Could not find the v1 bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("Could not find the v1 bucket in the metadata.db file")
 	}
 	if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")) == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("Could not find the snapshots bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("Could not find the snapshots bucket in the metadata.db file")
 	}
 	snapshotsMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots"))
 	err := snapshotsMetadataBucket.ForEach(func(k []byte, v []byte) error {

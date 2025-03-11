@@ -21,7 +21,7 @@ import (
 	"crypto/md5"
 	"crypto/rc4"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"slices"
 )
 
@@ -30,9 +30,9 @@ const (
 )
 
 var (
-	errDomainFTooShort = fmt.Errorf("domain F structure is too short")
-	errInvalidChecksum = fmt.Errorf("error while deriving syskey: invalid checksum")
-	errInvalidRevision = fmt.Errorf("error while deriving syskey: invalid revision")
+	errDomainFTooShort = errors.New("domain F structure is too short")
+	errInvalidChecksum = errors.New("error while deriving syskey: invalid checksum")
+	errInvalidRevision = errors.New("error while deriving syskey: invalid revision")
 )
 
 // domainF is a lazy-parsed domain F structure containing the domain's information in the

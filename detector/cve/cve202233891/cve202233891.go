@@ -122,8 +122,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	vulnerable := false
 	for _, port := range sparkServersPorts {
-		randFilePath := fmt.Sprintf("/tmp/%s", randomString(16))
-		testCmd := fmt.Sprintf("touch%%20%s", randFilePath)
+		randFilePath := "/tmp/" + randomString(16)
+		testCmd := "touch%%20" + randFilePath
 		retCode := sparkUIHTTPQuery(ctx, "127.0.0.1", port, testCmd)
 		// We expect to receive a 403 error
 		if retCode != 403 {

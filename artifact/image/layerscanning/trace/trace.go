@@ -18,7 +18,6 @@ package trace
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"slices"
 	"sort"
@@ -207,12 +206,12 @@ func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) b
 func getLayerFSFromChainLayer(chainLayer scalibrImage.ChainLayer) (scalibrfs.FS, error) {
 	layer := chainLayer.Layer()
 	if layer == nil {
-		return nil, fmt.Errorf("chain layer has no layer")
+		return nil, errors.New("chain layer has no layer")
 	}
 
 	fs := layer.FS()
 	if fs == nil {
-		return nil, fmt.Errorf("layer has no filesystem")
+		return nil, errors.New("layer has no filesystem")
 	}
 
 	return fs, nil

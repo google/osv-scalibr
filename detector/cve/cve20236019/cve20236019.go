@@ -185,10 +185,10 @@ func isDashboardPresent(ctx context.Context) bool {
 // attemptExploit attempts to exploit the vulnerability by touching a random file via HTTP query
 func attemptExploit(ctx context.Context) string {
 	// Generate a random file path
-	randomFilePath := fmt.Sprintf("/tmp/%s", generateRandomString(16))
+	randomFilePath := "/tmp/" + generateRandomString(16)
 
 	// Format the command for the query
-	testCmd := fmt.Sprintf("touch%%20%s", randomFilePath)
+	testCmd := "touch%%20" + randomFilePath
 	// Perform the HTTP query
 	statusCode := rayRequest(ctx, "127.0.0.1", 8265, testCmd)
 	log.Infof("HTTP request returned status code: %d", statusCode)

@@ -17,7 +17,7 @@
 package fakelayer
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -80,7 +80,7 @@ func (fakeLayer *FakeLayer) IsEmpty() bool {
 
 // Uncompressed is not used for the purposes of layer scanning, thus a nil value is returned.
 func (fakeLayer *FakeLayer) Uncompressed() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -107,5 +107,5 @@ func (fakeLayer *FakeLayer) Stat(name string) (fs.FileInfo, error) {
 // ReadDir is not used in the trace package since individual files are opened instead of
 // directories.
 func (fakeLayer *FakeLayer) ReadDir(name string) ([]fs.DirEntry, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }

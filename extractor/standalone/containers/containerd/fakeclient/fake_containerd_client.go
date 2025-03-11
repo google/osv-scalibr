@@ -19,6 +19,7 @@ package fakeclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	containerd "github.com/containerd/containerd"
@@ -135,7 +136,7 @@ func (s *TasksService) List(ctx context.Context, in *tasks.ListTasksRequest, opt
 
 	ns, ok := namespaces.Namespace(ctx)
 	if !ok {
-		return &tasks.ListTasksResponse{Tasks: []*task.Process{}}, fmt.Errorf("no namespace found in context")
+		return &tasks.ListTasksResponse{Tasks: []*task.Process{}}, errors.New("no namespace found in context")
 	}
 
 	ids := s.nssTaskIDs[ns]

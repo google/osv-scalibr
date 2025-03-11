@@ -58,11 +58,10 @@ linters:
     - nakedret
     - nilerr
 #    - nilnil
-#    - nlreturn
 #    - noctx
     - nolintlint
     - nosprintfhostport
-#    - perfsprint
+    - perfsprint
 #    - prealloc
     - predeclared
     - promlinter
@@ -89,6 +88,7 @@ linters:
     - zerologlint
   disable-all: true
 #  disable:
+#    - nlreturn     # Not feasible until it's supported by the internal linter
 #    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
 #    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
 
