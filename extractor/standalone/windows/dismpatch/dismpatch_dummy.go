@@ -14,6 +14,7 @@
 
 //go:build !windows
 
+// Package dismpatch extract patch level from the DISM command line tool.
 package dismpatch
 
 import (
