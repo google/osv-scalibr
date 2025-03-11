@@ -20,10 +20,10 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"deps.dev/util/resolve/version"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/resolution"
-	"deps.dev/util/resolve/version"
 )
 
 func TestVersions(t *testing.T) {
