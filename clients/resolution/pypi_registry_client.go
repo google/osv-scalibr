@@ -38,9 +38,20 @@ func NewPyPIRegistryClient(registry string) *PyPIRegistryClient {
 
 // Version returns metadata of a version specified by the VersionKey.
 func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
-	// Version is not used by the PyPI resolver for now, so here only returns the VersionKey.
+	// Version is not used by the PyPI resolver for now, so here
+	// only returns the VersionKey with yanked or not.
 	// We may need to add more metadata in the future.
-	return resolve.Version{VersionKey: vk}, nil
+	resp, err := c.api.GetVersionJson(ctx, vk.Name, vk.Version)
+	if err != nil {
+		return resolve.Version{}, err
+	}
+	ver := resolve.Version{VersionKey: vk}
+	if resp.Info.Yanked {
+		var yanked version.AttrSet
+		yanked.SetAttr(version.Blocked, "")
+		ver.AttrSet = yanked
+	}
+	return ver, nil
 }
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
@@ -56,23 +67,23 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 	yanked.SetAttr(version.Blocked, "")
 
 	var versions []resolve.Version
-	for _, v := range vers {
-		version := resolve.Version{
+	for _, ver := range vers {
+		v := resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
-				Version:     v,
+				Version:     ver,
 				VersionType: resolve.Concrete,
 			},
 		}
 
-		resp, err := c.api.GetVersionJson(ctx, pk.Name, v)
+		resp, err := c.api.GetVersionJson(ctx, pk.Name, ver)
 		if err != nil {
 			return nil, err
 		}
 		if resp.Info.Yanked {
-			version.AttrSet = yanked
+			v.AttrSet = yanked
 		}
-		versions = append(versions, version)
+		versions = append(versions, v)
 	}
 
 	return versions, nil

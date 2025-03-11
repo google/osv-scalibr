@@ -27,7 +27,7 @@ import (
 func TestGetVersions(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL)
-	srv.SetResponse(t, "/simple/abc/", []byte(`
+	srv.SetResponse(t, "/simple/beautifulsoup4/", []byte(`
 	{
 		"files": [
 		  {
@@ -128,12 +128,12 @@ func TestGetVersions(t *testing.T) {
 		  "4.12.3",
 		  "4.13.0b2"
 		]
-	  }
+  }
 	`))
 
-	got, err := client.GetVersions(context.Background(), "abc")
+	got, err := client.GetVersions(context.Background(), "beautifulsoup4")
 	if err != nil {
-		t.Fatalf("failed to get versions of PyPI project %s: %v", "abc", err)
+		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}
 	want := []string{
 		"4.0.1",
@@ -142,14 +142,14 @@ func TestGetVersions(t *testing.T) {
 		"4.13.0b2",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("GetVersions(%s) mismatch (-want +got):\n%s", "abc", diff)
+		t.Errorf("GetVersions(%s) mismatch (-want +got):\n%s", "beautifulsoup4", diff)
 	}
 }
 
 func TestGetVersionJson(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL)
-	srv.SetResponse(t, "pypi/abc/1.0.0/json", []byte(`
+	srv.SetResponse(t, "pypi/sampleproject/3.0.0/json", []byte(`
 	{
 		"info": {
 			"author": "",
@@ -254,9 +254,9 @@ func TestGetVersionJson(t *testing.T) {
 	}
 	`))
 
-	got, err := client.GetVersionJson(context.Background(), "abc", "1.0.0")
+	got, err := client.GetVersionJson(context.Background(), "sampleproject", "3.0.0")
 	if err != nil {
-		t.Fatalf("failed to get version JSON of PyPI project %s %s: %v", "abc", "1.0.0", err)
+		t.Fatalf("failed to get version JSON of PyPI project %s %s: %v", "sampleproject", "3.0.0", err)
 	}
 	want := pypi.JsonResponse{
 		Info: pypi.Info{
@@ -281,6 +281,6 @@ func TestGetVersionJson(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("GetVersionJson(%s, %s) mismatch (-want +got):\n%s", "abc", "1.0.0", diff)
+		t.Errorf("GetVersionJson(%s, %s) mismatch (-want +got):\n%s", "sampleproject", "3.0.0", diff)
 	}
 }

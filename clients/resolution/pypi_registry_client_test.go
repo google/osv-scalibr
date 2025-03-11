@@ -23,11 +23,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"deps.dev/util/resolve/version"
 )
 
 func TestVersions(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	srv.SetResponse(t, "/simple/abc/", []byte(`
+	srv.SetResponse(t, "/simple/beautifulsoup4/", []byte(`
 	{
 		"files": [
 		  {
@@ -128,41 +129,65 @@ func TestVersions(t *testing.T) {
 		  "4.12.3",
 		  "4.13.0b2"
 		]
-	  }
+  }
 	`))
+	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.1/json", []byte(`{
+		"info": {
+			"yanked": true
+		}
+	}`))
+	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.2/json", []byte(`{
+		"info": {
+			"yanked": false
+		}
+	}`))
+	srv.SetResponse(t, "pypi/beautifulsoup4/4.12.3/json", []byte(`
+  {
+		"info": {
+			"yanked": false
+		}
+	}`))
+	srv.SetResponse(t, "pypi/beautifulsoup4/4.13.0b2/json", []byte(`{
+		"info": {
+			"yanked": false
+		}
+	}`))
 
 	pk := resolve.PackageKey{
 		System: resolve.PyPI,
-		Name:   "abc",
+		Name:   "beautifulsoup4",
 	}
 	client := resolution.NewPyPIRegistryClient(srv.URL)
 	got, err := client.Versions(context.Background(), pk)
 	if err != nil {
 		t.Fatalf("failed to get versions %v: %v", pk, err)
 	}
+	var yanked version.AttrSet
+	yanked.SetAttr(version.Blocked, "")
 	want := []resolve.Version{
-		resolve.Version{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     "4.0.1",
 				VersionType: resolve.Concrete,
 			},
+			AttrSet: yanked,
 		},
-		resolve.Version{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     "4.0.2",
 				VersionType: resolve.Concrete,
 			},
 		},
-		resolve.Version{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     "4.12.3",
 				VersionType: resolve.Concrete,
 			},
 		},
-		resolve.Version{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     "4.13.0b2",
@@ -177,7 +202,7 @@ func TestVersions(t *testing.T) {
 
 func TestRequirements(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	srv.SetResponse(t, "pypi/abc/1.0.0/json", []byte(`
+	srv.SetResponse(t, "pypi/sampleproject/3.0.0/json", []byte(`
 	{
 		"info": {
 			"author": "",
@@ -285,9 +310,9 @@ func TestRequirements(t *testing.T) {
 	vk := resolve.VersionKey{
 		PackageKey: resolve.PackageKey{
 			System: resolve.PyPI,
-			Name:   "abc",
+			Name:   "sampleproject",
 		},
-		Version:     "1.0.0",
+		Version:     "3.0.0",
 		VersionType: resolve.Concrete,
 	}
 	client := resolution.NewPyPIRegistryClient(srv.URL)
@@ -303,7 +328,7 @@ func TestRequirements(t *testing.T) {
 	}
 
 	want := []resolve.RequirementVersion{
-		resolve.RequirementVersion{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
@@ -313,7 +338,7 @@ func TestRequirements(t *testing.T) {
 				VersionType: resolve.Requirement,
 			},
 		},
-		resolve.RequirementVersion{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
@@ -324,7 +349,7 @@ func TestRequirements(t *testing.T) {
 			},
 			Type: depType("dev"),
 		},
-		resolve.RequirementVersion{
+		{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
