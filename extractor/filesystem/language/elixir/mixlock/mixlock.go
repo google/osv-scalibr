@@ -120,7 +120,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 
 // Extract parses the mix.lock file to extract Elixir package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	packages, err := e.extractFromInput(ctx, input)
+	packages, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -135,7 +135,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return packages, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Parse the Mix.lock file into a list of packages and return Inventory directly
 	return mixlockutils.ParseMixLockFile(input)
 }

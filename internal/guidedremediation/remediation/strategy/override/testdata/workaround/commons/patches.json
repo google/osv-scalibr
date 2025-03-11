@@ -1,0 +1,22 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "commons-beanutils:commons-beanutils",
+        "versionFrom": "20020520",
+        "versionTo": "1.9.4"
+      }
+    ],
+    "fixed": [
+      {
+        "id": "GHSA-6phf-73q6-gh87",
+        "packages": [
+          {
+            "name": "commons-beanutils:commons-beanutils",
+            "version": "20020520"
+          }
+        ]
+      }
+    ]
+  }
+]

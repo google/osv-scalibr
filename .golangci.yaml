@@ -19,15 +19,15 @@ linters:
     - decorder
 #    - depguard
     - dogsled
-#    - dupl
+    - dupl
     - dupword
     - durationcheck
 #    - errcheck
-#    - errchkjson
+    - errchkjson
     - errname
 #    - errorlint
 #    - exhaustive
-#    - fatcontext
+    - fatcontext
     - forbidigo
     - ginkgolinter
     - gocheckcompilerdirectives
@@ -58,7 +58,6 @@ linters:
     - nakedret
     - nilerr
 #    - nilnil
-#    - nlreturn
 #    - noctx
     - nolintlint
 #    - nosprintfhostport
@@ -83,12 +82,13 @@ linters:
     - unconvert
 #    - unparam
 #    - unused
-#    - usestdlibvars
+    - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint
   disable-all: true
 #  disable:
+#    - nlreturn     # Not feasible until it's supported by the internal linter
 #    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
 #    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
 
@@ -103,3 +103,7 @@ linters-settings:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl

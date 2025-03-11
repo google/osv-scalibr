@@ -3,11 +3,10 @@ module github.com/google/osv-scalibr
 go 1.23.4
 
 require (
-	deps.dev/api/v3 v3.0.0-20240311054650-e1e6a3d70fb7
-	deps.dev/util/maven v0.0.0-20250114022823-c1ebdca3d00a
-	deps.dev/util/pypi v0.0.0-20250303052001-679acc0481eb
-	deps.dev/util/resolve v0.0.0-20250303052001-679acc0481eb
-	deps.dev/util/semver v0.0.0-20250114022823-c1ebdca3d00a
+	deps.dev/api/v3 v3.0.0-20250307021655-d811e36f9cad
+	deps.dev/util/maven v0.0.0-20250307021655-d811e36f9cad
+	deps.dev/util/resolve v0.0.0-20250310223405-f4cf91c9e684
+	deps.dev/util/semver v0.0.0-20250307021655-d811e36f9cad
 	github.com/BurntSushi/toml v1.3.2
 	github.com/CycloneDX/cyclonedx-go v0.9.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
@@ -20,12 +19,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/groob/plist v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/microsoft/go-rustaudit v0.0.0-20240820110456-0e2abec02f8b
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20250210065807-ab8a4f6e6389
 	github.com/package-url/packageurl-go v0.1.2
+	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
+	github.com/pandatix/go-cvss v0.6.2
 	github.com/spdx/tools-golang v0.5.3
 	github.com/tidwall/jsonc v0.3.2
 	go.etcd.io/bbolt v1.3.10
@@ -38,7 +38,7 @@ require (
 	golang.org/x/text v0.21.0
 	golang.org/x/vuln v1.0.4
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.35.2
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v3 v3.0.1
 	www.velocidex.com/golang/regparser v0.0.0-20240404115756-2169ac0e3c09
 )
@@ -69,7 +69,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect

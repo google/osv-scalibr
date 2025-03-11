@@ -22,8 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
 	"github.com/google/osv-scalibr/internal/guidedremediation/matcher"
-	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/internal/guidedremediation/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -86,34 +85,8 @@ func graphToInventory(g *resolve.Graph) []*extractor.Inventory {
 	// g.Nodes[0] is the root node of the graph that should be excluded.
 	inv := make([]*extractor.Inventory, len(g.Nodes)-1)
 	for i, n := range g.Nodes[1:] {
-		inv[i] = &extractor.Inventory{
-			Name:      n.Version.Name,
-			Version:   n.Version.Version,
-			Extractor: mockExtractor{},
-			Metadata:  n.Version.System,
-		}
+		inv[i] = vulns.VKToInventory(n.Version)
 	}
 
 	return inv
 }
-
-// mockExtractor is for graphToInventory to get the ecosystem.
-type mockExtractor struct{}
-
-func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
-	switch inv.Metadata.(resolve.System) {
-	case resolve.NPM:
-		return "npm"
-	case resolve.Maven:
-		return "Maven"
-	case resolve.UnknownSystem:
-		return ""
-	default:
-		return ""
-	}
-}
-
-func (e mockExtractor) Name() string                                 { return "" }
-func (e mockExtractor) Requirements() *plugin.Capabilities           { return nil }
-func (e mockExtractor) ToPURL(*extractor.Inventory) *purl.PackageURL { return nil }
-func (e mockExtractor) Version() int                                 { return 0 }

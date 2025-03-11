@@ -93,13 +93,13 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 			port := entry.LocalPort
 			pid, ok := inodeToPID[entry.Inode]
 			if !ok {
-				inventories = append(inventories, e.newInventory(ctx, port, proto, []string{"unknown"}))
+				inventories = append(inventories, e.newInventory(port, proto, []string{"unknown"}))
 				continue
 			}
 
 			cmdline, cached := pidCommandLinesCache[pid]
 			if cached {
-				inventories = append(inventories, e.newInventory(ctx, port, proto, cmdline))
+				inventories = append(inventories, e.newInventory(port, proto, cmdline))
 				continue
 			}
 
@@ -109,7 +109,7 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 			}
 
 			pidCommandLinesCache[pid] = cmdline
-			inventories = append(inventories, e.newInventory(ctx, port, proto, cmdline))
+			inventories = append(inventories, e.newInventory(port, proto, cmdline))
 		}
 	}
 
@@ -150,7 +150,7 @@ func (e Extractor) extractPortsFromFile(ctx context.Context, path string) (*proc
 	return proc.ParseNetTCP(ctx, f)
 }
 
-func (e Extractor) newInventory(ctx context.Context, port uint32, protocol string, cmdline []string) *extractor.Inventory {
+func (e Extractor) newInventory(port uint32, protocol string, cmdline []string) *extractor.Inventory {
 	return &extractor.Inventory{
 		Name: fmt.Sprintf("network-port-%d", port),
 		Metadata: &Metadata{
