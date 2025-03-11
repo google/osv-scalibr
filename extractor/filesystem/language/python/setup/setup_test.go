@@ -390,15 +390,3 @@ func TestToPURL(t *testing.T) {
 		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }
-
-func defaultConfigWith(cfg setup.Config) setup.Config {
-	newCfg := setup.DefaultConfig()
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	return newCfg
-}
