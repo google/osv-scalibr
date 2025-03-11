@@ -150,7 +150,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	log.Infof("Found Potentially vulnerable Salt version %v", saltVersion)
 
-	if !CheckForCherrypy(saltServerIP, saltServerPort) {
+	if !CheckForCherrypy(ctx, saltServerIP, saltServerPort) {
 		log.Infof("Cherry py not found. Version %q not vulnerable", saltVersion)
 		return nil, nil
 	}
@@ -193,15 +193,24 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 }
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.
-func CheckForCherrypy(saltIP string, saltServerPort int) bool {
+func CheckForCherrypy(ctx context.Context, saltIP string, saltServerPort int) bool {
 	target := fmt.Sprintf("http://%s", net.JoinHostPort(saltIP, strconv.Itoa(saltServerPort)))
 
-	client := &http.Client{Timeout: defaultTimeout}
-	resp, err := client.Get(target)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+
 	if err != nil {
 		log.Infof("Request failed: %v", err)
 		return false
 	}
+
+	client := &http.Client{Timeout: defaultTimeout}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Infof("Request failed: %v", err)
+		return false
+	}
+
 	defer resp.Body.Close()
 
 	serverHeader := resp.Header.Get("Server")
