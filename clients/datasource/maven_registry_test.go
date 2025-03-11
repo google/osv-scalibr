@@ -15,7 +15,6 @@
 package datasource_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -35,7 +34,7 @@ func TestGetProject(t *testing.T) {
 	</project>
 	`))
 
-	got, err := client.GetProject(context.Background(), "org.example", "x.y.z", "1.0.0")
+	got, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
 	}
@@ -87,7 +86,7 @@ func TestGetProjectSnapshot(t *testing.T) {
 	</project>
 	`))
 
-	got, err := client.GetProject(context.Background(), "org.example", "x.y.z", "3.3.1-SNAPSHOT")
+	got, err := client.GetProject(t.Context(), "org.example", "x.y.z", "3.3.1-SNAPSHOT")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "3.3.1-SNAPSHOT", err)
 	}
@@ -168,7 +167,7 @@ func TestMultipleRegistry(t *testing.T) {
 	</project>
 	`))
 
-	gotProj, err := client.GetProject(context.Background(), "org.example", "x.y.z", "1.0.0")
+	gotProj, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
 	}
@@ -183,7 +182,7 @@ func TestMultipleRegistry(t *testing.T) {
 		t.Errorf("GetProject(%s, %s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", "1.0.0", gotProj, wantProj)
 	}
 
-	gotVersions, err := client.GetVersions(context.Background(), "org.example", "x.y.z")
+	gotVersions, err := client.GetVersions(t.Context(), "org.example", "x.y.z")
 	if err != nil {
 		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
 	}

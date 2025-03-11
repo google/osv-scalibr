@@ -50,7 +50,7 @@ func TestPasswordHashCracker(t *testing.T) {
 		"sha512crypt": true,
 	}
 	for k, v := range testHashes {
-		password, err := cracker.Crack(context.Background(), v)
+		password, err := cracker.Crack(t.Context(), v)
 		_, isCrackable := crackableHash[k]
 		if isCrackable && err != nil {
 			t.Errorf("not cracked supported hash: [%v] [%v]", k, v)
@@ -81,7 +81,7 @@ func TestPasswordHashCrackerBadHashes(t *testing.T) {
 	}
 
 	for _, v := range badValues {
-		if _, err := cracker.Crack(context.Background(), v); err != etcshadow.ErrNotCracked {
+		if _, err := cracker.Crack(t.Context(), v); err != etcshadow.ErrNotCracked {
 			t.Errorf("expected ErrNotCracked on hash [%s] received [%v]", v, err)
 		}
 	}
@@ -89,7 +89,7 @@ func TestPasswordHashCrackerBadHashes(t *testing.T) {
 
 func TestPasswordHashCrackerCancelled(t *testing.T) {
 	cracker := etcshadow.NewPasswordCracker()
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	cancelFunc()
 	_, err := cracker.Crack(ctx, testHashes["bcrypt"])
 	if err != ctx.Err() {

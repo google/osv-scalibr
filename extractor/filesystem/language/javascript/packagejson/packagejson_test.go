@@ -15,7 +15,6 @@
 package packagejson_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -338,7 +337,7 @@ func TestExtract(t *testing.T) {
 				Info:   info,
 			}
 			e := packagejson.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}

@@ -15,7 +15,6 @@
 package datasource_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -302,7 +301,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			}
 			httpClient := &http.Client{Transport: mt}
 			for _, want := range tt.expectedResponseCodes {
-				resp, err := tt.httpAuth.Get(context.Background(), httpClient, tt.requestURL)
+				resp, err := tt.httpAuth.Get(t.Context(), httpClient, tt.requestURL)
 				if err != nil {
 					t.Fatalf("error making request: %v", err)
 				}
