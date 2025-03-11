@@ -17,6 +17,7 @@ package systemreg
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/google/osv-scalibr/common/windows/registry"
@@ -26,7 +27,7 @@ import (
 var (
 	syskeyPaths = []string{"JD", "Skew1", "GBG", "Data"}
 
-	errNoCurrentControlSet = fmt.Errorf("system hive: failed to find CurrentControlSet")
+	errNoCurrentControlSet = errors.New("system hive: failed to find CurrentControlSet")
 )
 
 // SystemRegistry is a wrapper around a SYSTEM registry.

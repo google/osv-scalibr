@@ -445,7 +445,7 @@ func TestRunFS(t *testing.T) {
 			},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusPartiallySucceeded, FailureReason: fmt.Sprintf("%s: extraction failed", path1),
+					Status: plugin.ScanStatusPartiallySucceeded, FailureReason: path1 + ": extraction failed",
 				}},
 			},
 			wantInodeCount: 6,
@@ -458,7 +458,7 @@ func TestRunFS(t *testing.T) {
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusFailed, FailureReason: fmt.Sprintf("%s: extraction failed", path1),
+					Status: plugin.ScanStatusFailed, FailureReason: path1 + ": extraction failed",
 				}},
 			},
 			wantInodeCount: 6,

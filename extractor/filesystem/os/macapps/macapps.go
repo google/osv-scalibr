@@ -17,6 +17,7 @@ package macapps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -169,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inv
 	var metadata Metadata
 
 	if !ok {
-		return nil, fmt.Errorf("input.Reader does not support readseeker")
+		return nil, errors.New("input.Reader does not support readseeker")
 	}
 	if string(header) == "bplist00" {
 		// Binary plist
