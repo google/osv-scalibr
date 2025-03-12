@@ -16,13 +16,14 @@ package containerd
 
 // Metadata contains metadata about a containerd container.
 type Metadata struct {
-	Namespace   string
-	ImageName   string
-	ImageDigest string
-	Runtime     string
-	ID          string
-	PodName     string
-	PID         int
+	Namespace        string
+	ImageName        string
+	ImageDigest      string
+	Runtime          string
+	ID               string
+	PodName          string
+	PodNamespaceName string
+	PID              int
 	// the type of filesystem implementation. For example, overlayfs
 	Snapshotter string
 	// string that is the sha digest

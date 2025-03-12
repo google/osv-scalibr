@@ -22,11 +22,12 @@
 package scan_result_go_proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -3468,21 +3469,22 @@ func (x *PythonSetupMetadata) GetVersionComparator() string {
 }
 
 type ContainerdContainerMetadata struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NamespaceName string                 `protobuf:"bytes,1,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
-	ImageName     string                 `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
-	ImageDigest   string                 `protobuf:"bytes,3,opt,name=image_digest,json=imageDigest,proto3" json:"image_digest,omitempty"`
-	Runtime       string                 `protobuf:"bytes,4,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	Pid           int32                  `protobuf:"varint,5,opt,name=pid,proto3" json:"pid,omitempty"`
-	Snapshotter   string                 `protobuf:"bytes,6,opt,name=snapshotter,proto3" json:"snapshotter,omitempty"`
-	SnapshotKey   string                 `protobuf:"bytes,7,opt,name=snapshot_key,json=snapshotKey,proto3" json:"snapshot_key,omitempty"`
-	LowerDir      string                 `protobuf:"bytes,8,opt,name=lower_dir,json=lowerDir,proto3" json:"lower_dir,omitempty"`
-	UpperDir      string                 `protobuf:"bytes,9,opt,name=upper_dir,json=upperDir,proto3" json:"upper_dir,omitempty"`
-	WorkDir       string                 `protobuf:"bytes,10,opt,name=work_dir,json=workDir,proto3" json:"work_dir,omitempty"`
-	Id            string                 `protobuf:"bytes,11,opt,name=id,proto3" json:"id,omitempty"`
-	PodName       string                 `protobuf:"bytes,12,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	NamespaceName    string                 `protobuf:"bytes,1,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
+	ImageName        string                 `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
+	ImageDigest      string                 `protobuf:"bytes,3,opt,name=image_digest,json=imageDigest,proto3" json:"image_digest,omitempty"`
+	Runtime          string                 `protobuf:"bytes,4,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	Pid              int32                  `protobuf:"varint,5,opt,name=pid,proto3" json:"pid,omitempty"`
+	Snapshotter      string                 `protobuf:"bytes,6,opt,name=snapshotter,proto3" json:"snapshotter,omitempty"`
+	SnapshotKey      string                 `protobuf:"bytes,7,opt,name=snapshot_key,json=snapshotKey,proto3" json:"snapshot_key,omitempty"`
+	LowerDir         string                 `protobuf:"bytes,8,opt,name=lower_dir,json=lowerDir,proto3" json:"lower_dir,omitempty"`
+	UpperDir         string                 `protobuf:"bytes,9,opt,name=upper_dir,json=upperDir,proto3" json:"upper_dir,omitempty"`
+	WorkDir          string                 `protobuf:"bytes,10,opt,name=work_dir,json=workDir,proto3" json:"work_dir,omitempty"`
+	Id               string                 `protobuf:"bytes,11,opt,name=id,proto3" json:"id,omitempty"`
+	PodName          string                 `protobuf:"bytes,12,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
+	PodNamespaceName string                 `protobuf:"bytes,12,opt,name=pod_namespace_name,json=podNamespaceName,proto3" json:"pod_namespace_name,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ContainerdContainerMetadata) Reset() {
@@ -3595,6 +3597,13 @@ func (x *ContainerdContainerMetadata) GetId() string {
 func (x *ContainerdContainerMetadata) GetPodName() string {
 	if x != nil {
 		return x.PodName
+	}
+	return ""
+}
+
+func (x *ContainerdContainerMetadata) GetPodNamespaceName() string {
+	if x != nil {
+		return x.PodNamespaceName
 	}
 	return ""
 }

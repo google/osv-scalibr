@@ -421,18 +421,19 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 	case *ctrdfs.Metadata:
 		i.Metadata = &spb.Inventory_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
-				NamespaceName: m.Namespace,
-				ImageName:     m.ImageName,
-				ImageDigest:   m.ImageDigest,
-				Runtime:       m.Runtime,
-				Id:            m.ID,
-				PodName:       m.PodName,
-				Pid:           int32(m.PID),
-				Snapshotter:   m.Snapshotter,
-				SnapshotKey:   m.SnapshotKey,
-				LowerDir:      m.LowerDir,
-				UpperDir:      m.UpperDir,
-				WorkDir:       m.WorkDir,
+				NamespaceName:    m.Namespace,
+				ImageName:        m.ImageName,
+				ImageDigest:      m.ImageDigest,
+				Runtime:          m.Runtime,
+				Id:               m.ID,
+				PodName:          m.PodName,
+				PodNamespaceName: m.PodNamespaceName,
+				Pid:              int32(m.PID),
+				Snapshotter:      m.Snapshotter,
+				SnapshotKey:      m.SnapshotKey,
+				LowerDir:         m.LowerDir,
+				UpperDir:         m.UpperDir,
+				WorkDir:          m.WorkDir,
 			},
 		}
 	case *ctrdruntime.Metadata:
