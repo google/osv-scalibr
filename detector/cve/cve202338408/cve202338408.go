@@ -18,6 +18,7 @@ package cve202338408
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -70,13 +71,10 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 func isVersionWithinRange(openSSHVersion string, lower string, upper string) (bool, error) {
-	isWithinRange, err := versionLessEqual(lower, openSSHVersion)
+	lessEq, err1 := versionLessEqual(lower, openSSHVersion)
+	greaterEq, err2 := versionLessEqual(openSSHVersion, upper)
 
-	if !isWithinRange || err != nil {
-		return false, err
-	}
-
-	return versionLessEqual(openSSHVersion, upper)
+	return lessEq && greaterEq, errors.Join(err1, err2)
 }
 
 // Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
