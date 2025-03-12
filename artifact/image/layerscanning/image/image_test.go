@@ -15,16 +15,18 @@
 package image
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"archive/tar"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -664,18 +666,48 @@ func TestFromV1Image(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "image error during tar extraction",
+			v1Image: &fakeV1Image{
+				layers: []v1.Layer{
+					// Layer will fail on Uncompressed() call.
+					fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
+				},
+				config: &v1.ConfigFile{
+					History: []v1.History{
+						{
+							CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Need to record scalibr files found in /tmp before the rpm extractor runs, as it may create
+			// some. This is needed to compare the files found after the extractor runs.
+			filesInTmpWant := scalibrFilesInTmp(t)
+
 			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
-			defer func() {
-				if gotImage != nil {
-					_ = gotImage.CleanUp()
-				}
-			}()
 
 			if tc.wantErr != (gotErr != nil) {
-				t.Errorf("Load(%v) returned error: %v, want error: %v", tc.v1Image, gotErr, tc.wantErr)
+				t.Errorf("FromV1Image(%v) returned error: %v", tc.v1Image, gotErr)
+			}
+
+			if gotImage != nil {
+				if err := gotImage.CleanUp(); err != nil {
+					t.Fatalf("CleanUp() returned error: %v", err)
+				}
+			}
+
+			// Check that no scalibr files remain in /tmp. This is to make sure that the image's
+			// extraction directory was cleaned up correctly.
+			filesInTmpGot := scalibrFilesInTmp(t)
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less)); diff != "" {
+				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -720,10 +752,29 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 	}
 }
 
+// scalibrFilesInTmp returns the list of filenames in /tmp that start with "osv-scalibr-".
+func scalibrFilesInTmp(t *testing.T) []string {
+	t.Helper()
+
+	filenames := []string{}
+	files, err := os.ReadDir(os.TempDir())
+	if err != nil {
+		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)
+	}
+
+	for _, f := range files {
+		name := f.Name()
+		if strings.HasPrefix(name, "osv-scalibr-") {
+			filenames = append(filenames, f.Name())
+		}
+	}
+	return filenames
+}
+
 func TestInitializeChainLayers(t *testing.T) {
-	fakeV1Layer1 := fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil)
-	fakeV1Layer2 := fakev1layer.New("456", "COPY ./bar.txt /bar.txt # buildkit", false, nil)
-	fakeV1Layer3 := fakev1layer.New("789", "COPY ./baz.txt /baz.txt # buildkit", false, nil)
+	fakeV1Layer1 := fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
+	fakeV1Layer2 := fakev1layer.New("456", "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
+	fakeV1Layer3 := fakev1layer.New("789", "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
 
 	tests := []struct {
 		name            string

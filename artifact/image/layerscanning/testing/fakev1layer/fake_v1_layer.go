@@ -26,19 +26,21 @@ import (
 
 // FakeV1Layer is a fake implementation of the v1.Layer interface for testing purposes.
 type FakeV1Layer struct {
-	diffID       string
-	buildCommand string
-	isEmpty      bool
-	uncompressed io.ReadCloser
+	diffID                  string
+	buildCommand            string
+	isEmpty                 bool
+	uncompressed            io.ReadCloser
+	failGettingUncompressed bool
 }
 
 // New creates a new FakeV1Layer.
-func New(diffID string, buildCommand string, isEmpty bool, uncompressed io.ReadCloser) *FakeV1Layer {
+func New(diffID string, buildCommand string, isEmpty bool, uncompressed io.ReadCloser, failGettingUncompressed bool) *FakeV1Layer {
 	return &FakeV1Layer{
-		diffID:       diffID,
-		buildCommand: buildCommand,
-		isEmpty:      isEmpty,
-		uncompressed: uncompressed,
+		diffID:                  diffID,
+		buildCommand:            buildCommand,
+		isEmpty:                 isEmpty,
+		uncompressed:            uncompressed,
+		failGettingUncompressed: failGettingUncompressed,
 	}
 }
 
@@ -60,6 +62,9 @@ func (fakeV1Layer *FakeV1Layer) Digest() (v1.Hash, error) {
 
 // Uncompressed returns the uncompressed tar reader.
 func (fakeV1Layer *FakeV1Layer) Uncompressed() (io.ReadCloser, error) {
+	if fakeV1Layer.failGettingUncompressed {
+		return nil, errors.New("failed to get uncompressed")
+	}
 	return fakeV1Layer.uncompressed, nil
 }
 

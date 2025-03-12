@@ -44,11 +44,11 @@ func TestConvertV1Layer(t *testing.T) {
 	}{
 		{
 			name:    "valid layer",
-			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader),
+			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader, false),
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
-				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader),
+				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader, false),
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
@@ -57,14 +57,14 @@ func TestConvertV1Layer(t *testing.T) {
 		},
 		{
 			name:      "v1 layer missing diffID",
-			v1Layer:   fakev1layer.New("", "ADD file", false, reader),
+			v1Layer:   fakev1layer.New("", "ADD file", false, reader, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrDiffIDMissingFromLayer,
 		},
 		{
 			name:      "v1 layer missing tar reader",
-			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil),
+			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrUncompressedReaderMissingFromLayer,

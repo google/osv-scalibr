@@ -17,7 +17,6 @@
 package image
 
 import (
-	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +25,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"archive/tar"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -202,7 +203,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		})
 
 		if err != nil {
-			return &outputImage, fmt.Errorf("failed to insert root node in path tree: %w", err)
+			return handleImageError(&outputImage, fmt.Errorf("failed to insert root node in path tree: %w", err))
 		}
 	}
 
@@ -228,13 +229,13 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			// Use filepath here as it is a path that will be written to disk.
 			dirPath := filepath.Join(tempPath, originLayerID)
 			if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
-				return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
+				return handleImageError(&outputImage, fmt.Errorf("failed to create chain layer directory: %w", err))
 			}
 
 			chainLayersToFill := chainLayers[i:]
 			layerReader, err := chainLayer.latestLayer.Uncompressed()
 			if err != nil {
-				return &outputImage, err
+				return handleImageError(&outputImage, err)
 			}
 
 			err = func() error {
@@ -250,7 +251,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			}()
 
 			if err != nil {
-				return &outputImage, err
+				return handleImageError(&outputImage, err)
 			}
 		}
 
@@ -277,6 +278,15 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // ========================================================
 // Helper functions
 // ========================================================
+
+// handleImageError cleans up the image and returns the provided error. The image is cleaned up
+// regardless of the error, as the image is in an invalid state if an error is returned.
+func handleImageError(image *Image, err error) (*Image, error) {
+	if image != nil {
+		image.CleanUp()
+	}
+	return nil, err
+}
 
 // initializeChainLayers initializes the chain layers based on the config file history, the
 // v1.Layers found in the image from the tarball, and the max symlink depth.
