@@ -752,9 +752,9 @@ func TestScanResultToProto(t *testing.T) {
 		Locations: []string{"/pom.xml"},
 		Extractor: pomxmlnet.New(pomxmlnet.DefaultConfig()),
 		Metadata: &javalockfile.Metadata{
-			GroupID:    "abc",
-			ArtifactID: "xyz",
-			IsDirect:   true,
+			GroupID:      "abc",
+			ArtifactID:   "xyz",
+			IsTransitive: true,
 		},
 	}
 	mavenInventoryProto := &spb.Inventory{
@@ -772,9 +772,9 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "java/pomxmlnet",
 		Metadata: &spb.Inventory_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId: "xyz",
-				GroupId:    "abc",
-				IsDirect:   true,
+				ArtifactId:   "xyz",
+				GroupId:      "abc",
+				IsTransitive: true,
 			},
 		},
 	}

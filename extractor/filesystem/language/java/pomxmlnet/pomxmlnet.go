@@ -225,7 +225,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 		inventory.Metadata = javalockfile.Metadata{
 			DepGroupVals: depGroups,
-			IsDirect:     isDirect,
+			IsTransitive: !isDirect,
 		}
 		details[inventory.Name] = &inventory
 	}

@@ -419,7 +419,7 @@ message JavaLockfileMetadata {
   string artifact_id = 1;
   string group_id = 2;
   repeated string dep_group_vals = 3;
-  bool is_direct = 4;
+  bool is_transitive = 4;
 }
 
 // The additional data for packages extracted by an OSV extractor wrapper.
