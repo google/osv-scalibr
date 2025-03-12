@@ -194,7 +194,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.
 func CheckForCherrypy(saltIP string, saltServerPort int) bool {
-	target := fmt.Sprintf("http://%s", net.JoinHostPort(saltIP, strconv.Itoa(saltServerPort)))
+	target := "http://" + net.JoinHostPort(saltIP, strconv.Itoa(saltServerPort))
 
 	client := &http.Client{Timeout: defaultTimeout}
 	resp, err := client.Get(target)
