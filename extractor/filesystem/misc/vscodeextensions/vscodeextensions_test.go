@@ -67,7 +67,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-
 			if tt.separator == 0 {
 				tt.separator = '/'
 			}
