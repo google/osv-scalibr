@@ -67,7 +67,7 @@ linters:
     - promlinter
 #    - protogetter
     - reassign
-#    - revive
+    - revive
     - rowserrcheck
     - sloglint
     - spancheck
@@ -99,6 +99,10 @@ linters-settings:
       - p: ^testing.T.Parallel$
         pkg: ^testing$
     analyze-types: true
+  revive:
+    rules:
+      - name: use-any
+        disabled: false
 
 issues:
   max-issues-per-linter: 0
