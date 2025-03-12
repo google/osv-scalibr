@@ -472,8 +472,9 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 	case *javalockfile.Metadata:
 		i.Metadata = &spb.Inventory_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId: m.ArtifactID,
-				GroupId:    m.GroupID,
+				ArtifactId:   m.ArtifactID,
+				GroupId:      m.GroupID,
+				IsTransitive: m.IsTransitive,
 			},
 		}
 	case *osv.Metadata:
