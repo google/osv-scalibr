@@ -22,12 +22,13 @@
 package scan_result_go_proto
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -3498,6 +3499,7 @@ type ContainerdContainerMetadata struct {
 	WorkDir       string                 `protobuf:"bytes,10,opt,name=work_dir,json=workDir,proto3" json:"work_dir,omitempty"`
 	Id            string                 `protobuf:"bytes,11,opt,name=id,proto3" json:"id,omitempty"`
 	PodName       string                 `protobuf:"bytes,12,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
+	PodNamespace  string                 `protobuf:"bytes,12,opt,name=pod_namespace,json=podNamespace,proto3" json:"pod_namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3612,6 +3614,13 @@ func (x *ContainerdContainerMetadata) GetId() string {
 func (x *ContainerdContainerMetadata) GetPodName() string {
 	if x != nil {
 		return x.PodName
+	}
+	return ""
+}
+
+func (x *ContainerdContainerMetadata) GetPodNamespace() string {
+	if x != nil {
+		return x.PodNamespace
 	}
 	return ""
 }

@@ -453,6 +453,7 @@ message ContainerdContainerMetadata {
   string work_dir = 10;
   string id = 11;
   string pod_name = 12;
+  string pod_namespace = 13;
 }
 
 message ContainerdRuntimeContainerMetadata {
