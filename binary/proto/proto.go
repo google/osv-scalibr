@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -504,6 +505,18 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     m.Product,
 				FullVersion: m.FullVersion,
+			},
+		}
+	case *vscodeextensions.Metadata:
+		i.Metadata = &spb.Inventory_VscodeExtensionsMetadata{
+			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
+				Id:                   m.ID,
+				PublisherId:          m.PublisherID,
+				PublisherDisplayName: m.PublisherDisplayName,
+				TargetPlatform:       m.TargetPlatform,
+				Updated:              m.Updated,
+				IsPreReleaseVersion:  m.IsPreReleaseVersion,
+				InstalledTimestamp:   m.InstalledTimestamp,
 			},
 		}
 	}

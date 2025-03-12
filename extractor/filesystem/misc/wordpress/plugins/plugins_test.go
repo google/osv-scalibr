@@ -25,7 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
