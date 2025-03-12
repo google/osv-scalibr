@@ -247,7 +247,7 @@ func TestExtract(t *testing.T) {
 
 func createFileFromTestData(t *testing.T, root string, subPath string, fileName string, testDataFilePath string) {
 	t.Helper()
-	os.MkdirAll(filepath.Join(root, subPath), 0755)
+	_ = os.MkdirAll(filepath.Join(root, subPath), 0755)
 	testData, err := os.ReadFile(testDataFilePath)
 	if err != nil {
 		t.Fatalf("read from %s: %v\n", testDataFilePath, err)

@@ -203,7 +203,7 @@ func TestUnpackSquashed(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create temp dir: %v", err)
 			}
-			os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("some secret\n"), 0644)
+			_ = os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("some secret\n"), 0644)
 			return innerDir
 		}(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
@@ -611,7 +611,7 @@ func mustNewSquashedImage(t *testing.T, pathsToContent map[string]contentAndMode
 			t.Fatalf("couldn't write %s: %v", path, err)
 		}
 	}
-	w.Close()
+	_ = w.Close()
 	layer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
 		return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
 	})

@@ -112,6 +112,7 @@ func TestWalkDir(t *testing.T) {
 	if err = os.Chdir(tmpDir); err != nil {
 		t.Fatal("entering temp dir:", err)
 	}
+	//nolint:errcheck
 	defer os.Chdir(origDir)
 
 	fsys := makeTree()
@@ -147,6 +148,7 @@ func TestIssue51617(t *testing.T) {
 	if err := os.Chmod(bad, 0); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:errcheck
 	defer os.Chmod(bad, 0700) // avoid errors on cleanup
 	var saw []string
 	err := WalkDirUnsorted(scalibrfs.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
