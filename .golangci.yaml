@@ -67,12 +67,12 @@ linters:
     - promlinter
 #    - protogetter
     - reassign
-#    - revive
+    - revive
     - rowserrcheck
     - sloglint
     - spancheck
     - sqlclosecheck
-#    - staticcheck
+    - staticcheck
 #    - stylecheck
     - tagalign
     - tenv
@@ -99,6 +99,10 @@ linters-settings:
       - p: ^testing.T.Parallel$
         pkg: ^testing$
     analyze-types: true
+  revive:
+    rules:
+      - name: use-any
+        disabled: false
 
 issues:
   max-issues-per-linter: 0
