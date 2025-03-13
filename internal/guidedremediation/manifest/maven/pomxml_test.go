@@ -34,8 +34,11 @@ import (
 )
 
 var (
-	depMgmt   = depTypeWithOrigin("management")
-	depParent = depTypeWithOrigin("parent")
+	depMgmt           = depTypeWithOrigin("management")
+	depParent         = depTypeWithOrigin("parent")
+	depPlugin         = depTypeWithOrigin("plugin@org.plugin:plugin")
+	depProfileOne     = depTypeWithOrigin("profile@profile-one")
+	depProfileTwoMgmt = depTypeWithOrigin("profile@profile-two@management")
 )
 
 func depTypeWithOrigin(origin string) dep.Type {
