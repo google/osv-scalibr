@@ -62,10 +62,10 @@ type manifest struct {
 
 func (m *manifest) validate() error {
 	if m.Name == "" {
-		return fmt.Errorf("field 'Name' must be specified")
+		return errors.New("field 'Name' must be specified")
 	}
 	if m.Version == "" {
-		return fmt.Errorf("field 'Version' must be specified")
+		return errors.New("field 'Version' must be specified")
 	}
 	return nil
 }
