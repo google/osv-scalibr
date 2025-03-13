@@ -48,6 +48,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome Canary/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
 		{GOOS: "darwin", inputPath: `~/Library/Application Support/Google/Chrome for Testing/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
 		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
+		{GOOS: "darwin", inputPath: `/Users/username/Library/Application Support/Google/Chrome/Default/Extensions/aapbdbdomjkkjkaonfhkkikfgjllcleb/1.0.0.6_0/manifest.json`, want: true},
 
 		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/invalid-id/version/manifest.json`, want: false},
 		{GOOS: "darwin", inputPath: `~/Library/Application Support/Chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bad/path/manifest.json`, want: false},
@@ -59,9 +60,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: true},
 
 		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/invalid-id/version/manifest.json`, want: false},
-		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/version/manifest.json`, want: false},
-
-		{inputPath: `/Users/username/Library/Application Support/Google/Chrome/Default/Extensions/aapbdbdomjkkjkaonfhkkikfgjllcleb/1.0.0.6_0/manifest.json`, want: true},
+		{GOOS: "linux", inputPath: `~/.config/chromium/Default/Extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bad/path/manifest.json`, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
