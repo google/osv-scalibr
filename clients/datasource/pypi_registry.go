@@ -89,7 +89,7 @@ func (p *PyPIRegistryAPIClient) getIndex(ctx context.Context, project string) (p
 	return indexResp, err
 }
 
-func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool, dst interface{}) error {
+func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool, dst any) error {
 	resp, err := p.responses.Get(url, func() (response, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
