@@ -216,17 +216,16 @@ func TestExtract(t *testing.T) {
 			}
 
 			var input *filesystem.ScanInput
-			d := "/tmp/TestExtractmetadb_valid_linux1567346986/001"
 			if tt.onGoos == "linux" {
-				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
-				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
-				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.grpc.v1.cri/containers/b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c", "status", tt.statusFilePath)
-				input = createScanInput(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
+				createFileFromTestData(t, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
+				createFileFromTestData(t, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
+				createFileFromTestData(t, "var/lib/containerd/io.containerd.grpc.v1.cri/containers/b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c", "status", tt.statusFilePath)
+				input = createScanInput(t, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
 			}
 			if tt.onGoos == "windows" {
-				createFileFromTestData(t, d, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
-				createFileFromTestData(t, d, filepath.Join("ProgramData/containerd/state/io.containerd.runtime.v2.task/", tt.namespace, tt.containerdID), "shim.pid", tt.shimPIDFilePath)
-				input = createScanInput(t, d, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")
+				createFileFromTestData(t, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
+				createFileFromTestData(t, filepath.Join("ProgramData/containerd/state/io.containerd.runtime.v2.task/", tt.namespace, tt.containerdID), "shim.pid", tt.shimPIDFilePath)
+				input = createScanInput(t, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")
 			}
 
 			e := containerd.New(defaultConfigWith(tt.cfg))
@@ -245,23 +244,25 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func createFileFromTestData(t *testing.T, root string, subPath string, fileName string, testDataFilePath string) {
+var imageRoot = "/tmp/TestExtractmetadb_valid_linux1567346986/001"
+
+func createFileFromTestData(t *testing.T, subPath string, fileName string, testDataFilePath string) {
 	t.Helper()
-	_ = os.MkdirAll(filepath.Join(root, subPath), 0755)
+	_ = os.MkdirAll(filepath.Join(imageRoot, subPath), 0755)
 	testData, err := os.ReadFile(testDataFilePath)
 	if err != nil {
 		t.Fatalf("read from %s: %v\n", testDataFilePath, err)
 	}
-	err = os.WriteFile(filepath.Join(root, subPath, fileName), testData, 0644)
+	err = os.WriteFile(filepath.Join(imageRoot, subPath, fileName), testData, 0644)
 	if err != nil {
-		t.Fatalf("write to %s: %v\n", filepath.Join(root, subPath, fileName), err)
+		t.Fatalf("write to %s: %v\n", filepath.Join(imageRoot, subPath, fileName), err)
 	}
 }
 
-func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInput {
+func createScanInput(t *testing.T, path string) *filesystem.ScanInput {
 	t.Helper()
 
-	finalPath := filepath.Join(root, path)
+	finalPath := filepath.Join(imageRoot, path)
 	reader, err := os.Open(finalPath)
 	defer func() {
 		if err = reader.Close(); err != nil {
@@ -276,7 +277,7 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: root, Info: info}
+	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: imageRoot, Info: info}
 	return input
 }
 
