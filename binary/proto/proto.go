@@ -166,10 +166,7 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 
 	inventories := make([]*spb.Inventory, 0, len(r.Inventories))
 	for _, i := range r.Inventories {
-		p, err := inventoryToProto(i)
-		if err != nil {
-			return nil, err
-		}
+		p := inventoryToProto(i)
 		inventories = append(inventories, p)
 	}
 
@@ -216,9 +213,9 @@ func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	}
 }
 
-func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
+func inventoryToProto(i *extractor.Inventory) *spb.Inventory {
 	if i == nil {
-		return nil, nil
+		return nil
 	}
 	p := converter.ToPURL(i)
 	inventoryProto := &spb.Inventory{
@@ -233,7 +230,7 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		LayerDetails: layerDetailsToProto(i.LayerDetails),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
-	return inventoryProto, nil
+	return inventoryProto
 }
 
 func setProtoMetadata(meta any, i *spb.Inventory) {
@@ -614,10 +611,7 @@ func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	}
 	var target *spb.TargetDetails
 	if f.Target != nil {
-		i, err := inventoryToProto(f.Target.Inventory)
-		if err != nil {
-			return nil, err
-		}
+		i := inventoryToProto(f.Target.Inventory)
 		target = &spb.TargetDetails{
 			Location:  f.Target.Location,
 			Inventory: i,
