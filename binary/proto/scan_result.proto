@@ -108,6 +108,7 @@ message Inventory {
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
     ChromeExtensionsMetadata chrome_extensions_metadata = 45;
+    VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -420,6 +421,7 @@ message JavaLockfileMetadata {
   string artifact_id = 1;
   string group_id = 2;
   repeated string dep_group_vals = 3;
+  bool is_transitive = 4;
 }
 
 // The additional data for packages extracted by an OSV extractor wrapper.
@@ -452,6 +454,7 @@ message ContainerdContainerMetadata {
   string work_dir = 10;
   string id = 11;
   string pod_name = 12;
+  string pod_namespace = 13;
 }
 
 message ContainerdRuntimeContainerMetadata {
@@ -482,4 +485,15 @@ message ChromeExtensionsMetadata {
   string minimum_chrome_version = 6;
   repeated string permissions = 7;
   string update_url = 8;
+}
+
+// The additional data found in VSCode extensions.
+message VSCodeExtensionsMetadata {
+  string id = 1;
+  string publisher_id = 2;
+  string publisher_display_name = 3;
+  string target_platform = 4;
+  bool updated = 5;
+  bool is_pre_release_version = 6;
+  int64 installed_timestamp = 7;
 }

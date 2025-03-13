@@ -44,11 +44,11 @@ func TestConvertV1Layer(t *testing.T) {
 	}{
 		{
 			name:    "valid layer",
-			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader),
+			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader, false),
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
-				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader),
+				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader, false),
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
@@ -57,14 +57,14 @@ func TestConvertV1Layer(t *testing.T) {
 		},
 		{
 			name:      "v1 layer missing diffID",
-			v1Layer:   fakev1layer.New("", "ADD file", false, reader),
+			v1Layer:   fakev1layer.New("", "ADD file", false, reader, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrDiffIDMissingFromLayer,
 		},
 		{
 			name:      "v1 layer missing tar reader",
-			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil),
+			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrUncompressedReaderMissingFromLayer,
@@ -88,7 +88,7 @@ func TestConvertV1Layer(t *testing.T) {
 func TestChainLayerFS(t *testing.T) {
 	testDir := func() string {
 		dir := t.TempDir()
-		os.WriteFile(path.Join(dir, "file1"), []byte("file1"), 0600)
+		_ = os.WriteFile(path.Join(dir, "file1"), []byte("file1"), 0600)
 		return dir
 	}()
 
@@ -109,13 +109,13 @@ func TestChainLayerFS(t *testing.T) {
 
 	emptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
-		tree.Insert("/", root)
+		_ = tree.Insert("/", root)
 		return tree
 	}()
 	nonEmptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
-		tree.Insert("/", root)
-		tree.Insert("/file1", file1)
+		_ = tree.Insert("/", root)
+		_ = tree.Insert("/file1", file1)
 		return tree
 	}()
 
@@ -151,7 +151,7 @@ func TestChainLayerFS(t *testing.T) {
 			chainfs := tc.chainLayer.FS()
 
 			gotPaths := []string{}
-			fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
+			_ = fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					t.Errorf("WalkDir(%v) returned error: %v", path, err)
 				}
@@ -585,21 +585,6 @@ func TestChainFSReadDir(t *testing.T) {
 // CHAINLAYER TESTING HELPER METHODS
 // ========================================================
 
-func checkError(t *testing.T, funcName string, gotErr error, wantErr error) {
-	t.Helper()
-	if wantErr != nil {
-		if !errors.Is(gotErr, wantErr) {
-			t.Fatalf("%s returned error: %v, want error: %v", funcName, gotErr, wantErr)
-		}
-		return
-	}
-
-	if gotErr != nil {
-		t.Fatalf("%s returned error: %v", funcName, gotErr)
-		return
-	}
-}
-
 func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
@@ -747,15 +732,15 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 	}
 
 	for path, node := range vfsMap {
-		chainfs.tree.Insert(path, node)
+		_ = chainfs.tree.Insert(path, node)
 
 		if node.IsDir() {
-			os.MkdirAll(node.RealFilePath(), dirPermission)
+			_ = os.MkdirAll(node.RealFilePath(), dirPermission)
 		} else {
 			if node.mode == fs.ModeSymlink {
 				continue
 			}
-			os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
+			_ = os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
 		}
 	}
 	return chainfs, tempDir

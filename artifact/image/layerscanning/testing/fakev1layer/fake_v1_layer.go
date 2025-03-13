@@ -17,7 +17,7 @@
 package fakev1layer
 
 import (
-	"fmt"
+	"errors"
 	"io"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -26,26 +26,28 @@ import (
 
 // FakeV1Layer is a fake implementation of the v1.Layer interface for testing purposes.
 type FakeV1Layer struct {
-	diffID       string
-	buildCommand string
-	isEmpty      bool
-	uncompressed io.ReadCloser
+	diffID                  string
+	buildCommand            string
+	isEmpty                 bool
+	uncompressed            io.ReadCloser
+	failGettingUncompressed bool
 }
 
 // New creates a new FakeV1Layer.
-func New(diffID string, buildCommand string, isEmpty bool, uncompressed io.ReadCloser) *FakeV1Layer {
+func New(diffID string, buildCommand string, isEmpty bool, uncompressed io.ReadCloser, failGettingUncompressed bool) *FakeV1Layer {
 	return &FakeV1Layer{
-		diffID:       diffID,
-		buildCommand: buildCommand,
-		isEmpty:      isEmpty,
-		uncompressed: uncompressed,
+		diffID:                  diffID,
+		buildCommand:            buildCommand,
+		isEmpty:                 isEmpty,
+		uncompressed:            uncompressed,
+		failGettingUncompressed: failGettingUncompressed,
 	}
 }
 
 // DiffID returns the diffID of the layer.
 func (fakeV1Layer *FakeV1Layer) DiffID() (v1.Hash, error) {
 	if fakeV1Layer.diffID == "" {
-		return v1.Hash{}, fmt.Errorf("diffID is empty")
+		return v1.Hash{}, errors.New("diffID is empty")
 	}
 	return v1.Hash{
 		Algorithm: "sha256",
@@ -60,17 +62,20 @@ func (fakeV1Layer *FakeV1Layer) Digest() (v1.Hash, error) {
 
 // Uncompressed returns the uncompressed tar reader.
 func (fakeV1Layer *FakeV1Layer) Uncompressed() (io.ReadCloser, error) {
+	if fakeV1Layer.failGettingUncompressed {
+		return nil, errors.New("failed to get uncompressed")
+	}
 	return fakeV1Layer.uncompressed, nil
 }
 
 // Compressed is not used for the purposes of layer scanning, thus a nil value is returned.
 func (fakeV1Layer *FakeV1Layer) Compressed() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 // Size is not used for the purposes of layer scanning, thus a zero value is returned.
 func (fakeV1Layer *FakeV1Layer) Size() (int64, error) {
-	return 0, fmt.Errorf("not implemented")
+	return 0, errors.New("not implemented")
 }
 
 // MediaType returns a fake media type.

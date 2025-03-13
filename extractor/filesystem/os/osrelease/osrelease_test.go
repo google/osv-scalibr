@@ -104,8 +104,8 @@ func TestGetOSRelease(t *testing.T) {
 			}
 
 			d := t.TempDir()
-			os.Mkdir(filepath.Join(d, "etc"), 0744)
-			os.MkdirAll(filepath.Join(d, "usr/lib"), 0744)
+			_ = os.Mkdir(filepath.Join(d, "etc"), 0744)
+			_ = os.MkdirAll(filepath.Join(d, "usr/lib"), 0744)
 			p := filepath.Join(d, tt.path)
 			err := os.WriteFile(p, []byte(tt.content), tt.mode)
 			if err != nil {

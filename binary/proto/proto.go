@@ -18,7 +18,6 @@ package proto
 import (
 	"compress/gzip"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -167,10 +167,7 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 
 	inventories := make([]*spb.Inventory, 0, len(r.Inventories))
 	for _, i := range r.Inventories {
-		p, err := inventoryToProto(i)
-		if err != nil {
-			return nil, err
-		}
+		p := inventoryToProto(i)
 		inventories = append(inventories, p)
 	}
 
@@ -217,9 +214,9 @@ func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	}
 }
 
-func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
+func inventoryToProto(i *extractor.Inventory) *spb.Inventory {
 	if i == nil {
-		return nil, nil
+		return nil
 	}
 	p := converter.ToPURL(i)
 	inventoryProto := &spb.Inventory{
@@ -234,7 +231,7 @@ func inventoryToProto(i *extractor.Inventory) (*spb.Inventory, error) {
 		LayerDetails: layerDetailsToProto(i.LayerDetails),
 	}
 	setProtoMetadata(i.Metadata, inventoryProto)
-	return inventoryProto, nil
+	return inventoryProto
 }
 
 func setProtoMetadata(meta any, i *spb.Inventory) {
@@ -429,6 +426,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Runtime:       m.Runtime,
 				Id:            m.ID,
 				PodName:       m.PodName,
+				PodNamespace:  m.PodNamespace,
 				Pid:           int32(m.PID),
 				Snapshotter:   m.Snapshotter,
 				SnapshotKey:   m.SnapshotKey,
@@ -474,8 +472,9 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 	case *javalockfile.Metadata:
 		i.Metadata = &spb.Inventory_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId: m.ArtifactID,
-				GroupId:    m.GroupID,
+				ArtifactId:   m.ArtifactID,
+				GroupId:      m.GroupID,
+				IsTransitive: m.IsTransitive,
 			},
 		}
 	case *osv.Metadata:
@@ -518,6 +517,18 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				MinimumChromeVersion: m.MinimumChromeVersion,
 				Permissions:          m.Permissions,
 				UpdateUrl:            m.UpdateURL,
+			},
+		}
+	case *vscodeextensions.Metadata:
+		i.Metadata = &spb.Inventory_VscodeExtensionsMetadata{
+			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
+				Id:                   m.ID,
+				PublisherId:          m.PublisherID,
+				PublisherDisplayName: m.PublisherDisplayName,
+				TargetPlatform:       m.TargetPlatform,
+				Updated:              m.Updated,
+				IsPreReleaseVersion:  m.IsPreReleaseVersion,
+				InstalledTimestamp:   m.InstalledTimestamp,
 			},
 		}
 	}
@@ -603,10 +614,10 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 }
 
 // ErrAdvisoryMissing will be returned if the Advisory is not set on a finding.
-var ErrAdvisoryMissing = fmt.Errorf("Advisory missing in finding")
+var ErrAdvisoryMissing = errors.New("Advisory missing in finding")
 
 // ErrAdvisoryIDMissing will be returned if the Advisory ID is not set on a finding.
-var ErrAdvisoryIDMissing = fmt.Errorf("Advisory ID missing in finding")
+var ErrAdvisoryIDMissing = errors.New("Advisory ID missing in finding")
 
 func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	if f.Adv == nil {
@@ -614,10 +625,7 @@ func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	}
 	var target *spb.TargetDetails
 	if f.Target != nil {
-		i, err := inventoryToProto(f.Target.Inventory)
-		if err != nil {
-			return nil, err
-		}
+		i := inventoryToProto(f.Target.Inventory)
 		target = &spb.TargetDetails{
 			Location:  f.Target.Location,
 			Inventory: i,

@@ -59,8 +59,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/wordpress/plugins"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
+	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -172,24 +173,27 @@ var (
 	// Containers extractors.
 	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
 
-	// Wordpress extractors.
-	Wordpress = InitMap{plugins.Name: {plugins.NewDefault}}
-
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:             {dpkg.NewDefault},
-		apk.Name:              {apk.NewDefault},
-		rpm.Name:              {rpm.NewDefault},
-		cos.Name:              {cos.NewDefault},
-		snap.Name:             {snap.NewDefault},
-		nix.Name:              {nix.New},
-		module.Name:           {module.NewDefault},
-		vmlinuz.Name:          {vmlinuz.NewDefault},
-		pacman.Name:           {pacman.NewDefault},
-		portage.Name:          {portage.NewDefault},
-		flatpak.Name:          {flatpak.NewDefault},
-		homebrew.Name:         {homebrew.New},
-		macapps.Name:          {macapps.NewDefault},
+		dpkg.Name:     {dpkg.NewDefault},
+		apk.Name:      {apk.NewDefault},
+		rpm.Name:      {rpm.NewDefault},
+		cos.Name:      {cos.NewDefault},
+		snap.Name:     {snap.NewDefault},
+		nix.Name:      {nix.New},
+		module.Name:   {module.NewDefault},
+		vmlinuz.Name:  {vmlinuz.NewDefault},
+		pacman.Name:   {pacman.NewDefault},
+		portage.Name:  {portage.NewDefault},
+		flatpak.Name:  {flatpak.NewDefault},
+		homebrew.Name: {homebrew.New},
+		macapps.Name:  {macapps.NewDefault},
+	}
+
+	// Misc extractors.
+	Misc = InitMap{
+		vscodeextensions.Name: {vscodeextensions.New},
+		wordpressplugins.Name: {wordpressplugins.NewDefault},
 		chromeextensions.Name: {chromeextensions.New},
 	}
 
@@ -216,8 +220,8 @@ var (
 		SBOM,
 		Swift,
 		OS,
+		Misc,
 		Containers,
-		Wordpress,
 	)
 
 	extractorNames = concat(All, InitMap{
@@ -241,7 +245,7 @@ var (
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
 		"containers": vals(Containers),
-		"wordpress":  vals(Wordpress),
+		"misc":       vals(Misc),
 
 		// Collections.
 		"default": vals(Default),

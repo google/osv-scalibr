@@ -19,11 +19,11 @@ linters:
     - decorder
 #    - depguard
     - dogsled
-#    - dupl
+    - dupl
     - dupword
     - durationcheck
-#    - errcheck
-#    - errchkjson
+    - errcheck
+    - errchkjson
     - errname
 #    - errorlint
 #    - exhaustive
@@ -58,22 +58,21 @@ linters:
     - nakedret
     - nilerr
 #    - nilnil
-#    - nlreturn
-#    - noctx
+    - noctx
     - nolintlint
-#    - nosprintfhostport
-#    - perfsprint
+    - nosprintfhostport
+    - perfsprint
 #    - prealloc
     - predeclared
     - promlinter
 #    - protogetter
     - reassign
-#    - revive
+    - revive
     - rowserrcheck
     - sloglint
     - spancheck
     - sqlclosecheck
-#    - staticcheck
+    - staticcheck
 #    - stylecheck
     - tagalign
     - tenv
@@ -82,13 +81,14 @@ linters:
     - thelper
     - unconvert
 #    - unparam
-#    - unused
+    - unused
     - usestdlibvars
     - wastedassign
     - whitespace
     - zerologlint
   disable-all: true
 #  disable:
+#    - nlreturn     # Not feasible until it's supported by the internal linter
 #    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
 #    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
 
@@ -99,7 +99,15 @@ linters-settings:
       - p: ^testing.T.Parallel$
         pkg: ^testing$
     analyze-types: true
+  revive:
+    rules:
+      - name: use-any
+        disabled: false
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl

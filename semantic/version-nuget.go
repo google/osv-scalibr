@@ -29,15 +29,9 @@ func (v nuGetVersion) compare(w nuGetVersion) int {
 }
 
 func (v nuGetVersion) CompareStr(str string) (int, error) {
-	w, err := parseNuGetVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return v.compare(w), nil
+	return v.compare(parseNuGetVersion(str)), nil
 }
 
-func parseNuGetVersion(str string) (nuGetVersion, error) {
-	return nuGetVersion{parseSemverLikeVersion(str, 4)}, nil
+func parseNuGetVersion(str string) nuGetVersion {
+	return nuGetVersion{parseSemverLikeVersion(str, 4)}
 }

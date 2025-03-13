@@ -17,6 +17,7 @@ package macapps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -133,7 +134,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from Info.plist files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	i, err := e.extractFromInput(ctx, input)
+	i, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -154,7 +155,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return []*extractor.Inventory{i}, nil
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) (*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inventory, error) {
 	// Read the first 8 bytes to check for binary plist header
 	header := make([]byte, 8)
 	_, err := io.ReadFull(input.Reader, header)
@@ -169,7 +170,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	var metadata Metadata
 
 	if !ok {
-		return nil, fmt.Errorf("input.Reader does not support readseeker")
+		return nil, errors.New("input.Reader does not support readseeker")
 	}
 	if string(header) == "bplist00" {
 		// Binary plist

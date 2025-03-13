@@ -30,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -744,6 +746,38 @@ func TestScanResultToProto(t *testing.T) {
 			InBaseImage: true,
 		},
 	}
+	mavenInventory := &extractor.Inventory{
+		Name:      "abc:xyz",
+		Version:   "1.0.0",
+		Locations: []string{"/pom.xml"},
+		Extractor: pomxmlnet.New(pomxmlnet.DefaultConfig()),
+		Metadata: &javalockfile.Metadata{
+			GroupID:      "abc",
+			ArtifactID:   "xyz",
+			IsTransitive: true,
+		},
+	}
+	mavenInventoryProto := &spb.Inventory{
+		Name:      "abc:xyz",
+		Version:   "1.0.0",
+		Ecosystem: "Maven",
+		Purl: &spb.Purl{
+			Purl:      "pkg:maven/abc/xyz@1.0.0",
+			Type:      purl.TypeMaven,
+			Name:      "xyz",
+			Namespace: "abc",
+			Version:   "1.0.0",
+		},
+		Locations: []string{"/pom.xml"},
+		Extractor: "java/pomxmlnet",
+		Metadata: &spb.Inventory_JavaLockfileMetadata{
+			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
+				ArtifactId:   "xyz",
+				GroupId:      "abc",
+				IsTransitive: true,
+			},
+		},
+	}
 
 	testCases := []struct {
 		desc         string
@@ -1283,6 +1317,24 @@ func TestScanResultToProto(t *testing.T) {
 						Status:  failureProto,
 					},
 				},
+			},
+		},
+		{
+			desc: "pom.xml inventories with transitive dependencies",
+			res: &scalibr.ScanResult{
+				Version:     "1.0.0",
+				StartTime:   startTime,
+				EndTime:     endTime,
+				Status:      success,
+				Inventories: []*extractor.Inventory{mavenInventory},
+			},
+			want: &spb.ScanResult{
+				Version:     "1.0.0",
+				StartTime:   timestamppb.New(startTime),
+				EndTime:     timestamppb.New(endTime),
+				Status:      successProto,
+				Inventories: []*spb.Inventory{mavenInventoryProto},
+				Findings:    []*spb.Finding{},
 			},
 		},
 	}

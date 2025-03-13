@@ -203,7 +203,7 @@ func validateOutput(output []string) error {
 	for _, item := range output {
 		o := strings.Split(item, "=")
 		if len(o) != 2 {
-			return fmt.Errorf("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
+			return errors.New("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
 		}
 		oFormat := o[0]
 		if !slices.Contains(supportedOutputFormats, oFormat) {
@@ -224,19 +224,6 @@ func validateImagePlatform(imagePlatform string) error {
 	return nil
 }
 
-func validateSPDXCreators(creators string) error {
-	if len(creators) == 0 {
-		return nil
-	}
-	for _, item := range strings.Split(creators, ",") {
-		c := strings.Split(item, ":")
-		if len(c) != 2 {
-			return fmt.Errorf("invalid spdx-creators format, should follow a format like --spdx-creators=Tool:SCALIBR,Organization:Google")
-		}
-	}
-	return nil
-}
-
 func validateMultiStringArg(arg []string) error {
 	if len(arg) == 0 {
 		return nil
@@ -247,7 +234,7 @@ func validateMultiStringArg(arg []string) error {
 		}
 		for _, item := range strings.Split(item, ",") {
 			if len(item) == 0 {
-				return fmt.Errorf("list item cannot be left empty")
+				return errors.New("list item cannot be left empty")
 			}
 		}
 	}
@@ -475,10 +462,7 @@ func multiStringToList(arg []string) []string {
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	if f.RemoteImage != "" {
-		imageOptions, err := f.scanRemoteImageOptions()
-		if err != nil {
-			return nil, err
-		}
+		imageOptions := f.scanRemoteImageOptions()
 		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
 		if err != nil {
 			return nil, err
@@ -504,7 +488,7 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	return scanRoots, nil
 }
 
-func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
+func (f *Flags) scanRemoteImageOptions() *[]remote.Option {
 	imageOptions := []remote.Option{
 		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 	}
@@ -517,7 +501,7 @@ func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
 			},
 		))
 	}
-	return &imageOptions, nil
+	return &imageOptions
 }
 
 // All capabilities are enabled when running SCALIBR as a binary.
@@ -593,12 +577,4 @@ func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 		}
 	}
 	return result
-}
-
-func keys(m map[string][]string) []string {
-	ret := make([]string, 0, len(m))
-	for k := range m {
-		ret = append(ret, k)
-	}
-	return ret
 }

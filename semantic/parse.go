@@ -46,33 +46,33 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "Alpine":
 		return parseAlpineVersion(str)
 	case "ConanCenter":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "CRAN":
-		return parseCRANVersion(str)
+		return parseCRANVersion(str), nil
 	case "crates.io":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "Debian":
 		return parseDebianVersion(str)
 	case "Go":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "Hex":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "Maven":
-		return parseMavenVersion(str)
+		return parseMavenVersion(str), nil
 	case "npm":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "NuGet":
-		return parseNuGetVersion(str)
+		return parseNuGetVersion(str), nil
 	case "Packagist":
-		return parsePackagistVersion(str)
+		return parsePackagistVersion(str), nil
 	case "Pub":
-		return parseSemverVersion(str)
+		return parseSemverVersion(str), nil
 	case "PyPI":
 		return parsePyPIVersion(str)
 	case "Red Hat":
-		return parseRedHatVersion(str)
+		return parseRedHatVersion(str), nil
 	case "RubyGems":
-		return parseRubyGemsVersion(str)
+		return parseRubyGemsVersion(str), nil
 	case "Ubuntu":
 		return parseDebianVersion(str)
 	}

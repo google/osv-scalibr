@@ -14,14 +14,14 @@
 
 package samreg
 
-import "fmt"
+import "errors"
 
 const (
 	userFAccountEnabledOffset = 0x38
 )
 
 var (
-	errUserFTooShort = fmt.Errorf("userF structure is too short")
+	errUserFTooShort = errors.New("userF structure is too short")
 )
 
 // userF is a lazy-parsed user F structure containing the user's information in the SAM hive.

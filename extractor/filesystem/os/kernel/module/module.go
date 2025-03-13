@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"debug/elf"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -131,7 +132,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from .ko files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	inventory, err := e.extractFromInput(input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -147,7 +148,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	pkgs := []*extractor.Inventory{}
 
 	m, err := osrelease.GetOSRelease(input.FS)
@@ -175,7 +176,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	// to identify malicious modules if the author intentionally stripped the module name.
 	section := elfFile.Section(".modinfo")
 	if section == nil {
-		return nil, fmt.Errorf("no .modinfo section found")
+		return nil, errors.New("no .modinfo section found")
 	}
 
 	sectionData, err := section.Data()

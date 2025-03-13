@@ -20,6 +20,7 @@ package containerd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -239,17 +240,18 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 
 			containersMetadata = append(containersMetadata,
 				Metadata{Namespace: ns,
-					ImageName:   img.Name,
-					ImageDigest: img.Target.Digest.String(),
-					Runtime:     ctr.Runtime.Name,
-					PodName:     ctr.Labels["io.kubernetes.pod.name"],
-					ID:          id,
-					PID:         initPID,
-					Snapshotter: ctr.Snapshotter,
-					SnapshotKey: ctr.SnapshotKey,
-					LowerDir:    lowerDir,
-					UpperDir:    upperDir,
-					WorkDir:     workDir})
+					ImageName:    img.Name,
+					ImageDigest:  img.Target.Digest.String(),
+					Runtime:      ctr.Runtime.Name,
+					PodName:      ctr.Labels["io.kubernetes.pod.name"],
+					PodNamespace: ctr.Labels["io.kubernetes.pod.namespace"],
+					ID:           id,
+					PID:          initPID,
+					Snapshotter:  ctr.Snapshotter,
+					SnapshotKey:  ctr.SnapshotKey,
+					LowerDir:     lowerDir,
+					UpperDir:     upperDir,
+					WorkDir:      workDir})
 		}
 	}
 	return containersMetadata, nil
@@ -352,13 +354,13 @@ func snapshotsBucketByDigest(tx *bolt.Tx) ([]string, error) {
 	var snapshotsBucketByDigest []string
 	//  metadata db structure: v1-> snapshots -> <snapshot_digest> -> <snapshot_info_fields>
 	if tx == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("The transaction is nil")
+		return snapshotsBucketByDigest, errors.New("The transaction is nil")
 	}
 	if tx.Bucket([]byte("v1")) == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("Could not find the v1 bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("Could not find the v1 bucket in the metadata.db file")
 	}
 	if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")) == nil {
-		return snapshotsBucketByDigest, fmt.Errorf("Could not find the snapshots bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("Could not find the snapshots bucket in the metadata.db file")
 	}
 	snapshotsMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots"))
 	err := snapshotsMetadataBucket.ForEach(func(k []byte, v []byte) error {
@@ -415,18 +417,18 @@ func snapshotMetadataFromSnapshotsBuckets(tx *bolt.Tx, snapshotsBucketByDigest [
 func containerInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
 	// A typical Linux case.
 	if runtimeName == "io.containerd.runc.v2" {
-		return runcInitPid(scanRoot, runtimeName, id)
+		return runcInitPid(scanRoot, id)
 	}
 
 	// A typical Windows case.
 	if runtimeName == "io.containerd.runhcs.v1" {
-		return runhcsInitPid(scanRoot, runtimeName, namespace, id)
+		return runhcsInitPid(scanRoot, namespace, id)
 	}
 
 	return -1
 }
 
-func runcInitPid(scanRoot string, runtimeName string, id string) int {
+func runcInitPid(scanRoot string, id string) int {
 	// If a container is running by runc, the init pid is stored in the grpc status file.
 	// status file is located at the
 	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/state.json path.
@@ -466,7 +468,7 @@ func runcInitPid(scanRoot string, runtimeName string, id string) int {
 	return initPID
 }
 
-func runhcsInitPid(scanRoot string, runtimeName string, namespace string, id string) int {
+func runhcsInitPid(scanRoot string, namespace string, id string) int {
 	// If a container is running by runhcs, the init pid is stored in the runhcs shim.pid file.
 	// shim.pid file is located at the
 	// <scanRoot>/<runhcsStateFilePrefix>/<namespace_name>/<container_id>/shim.pid.

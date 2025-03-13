@@ -18,6 +18,7 @@ package condameta
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -135,7 +136,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract parses and extracts dependency data from Conda metadata files.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	inventory, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -150,7 +151,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Parse the metadata and get a package
 	pkg, err := parse(input.Reader)
 	if err != nil {
@@ -159,7 +160,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	// Return an empty slice if the package name or version is empty
 	if pkg.Name == "" || pkg.Version == "" {
-		return nil, fmt.Errorf("package name or version is empty")
+		return nil, errors.New("package name or version is empty")
 	}
 
 	inventory := &extractor.Inventory{

@@ -16,6 +16,7 @@
 package swiftutils
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -43,7 +44,7 @@ func ParsePodfileLock(reader io.Reader) ([]Package, error) {
 
 	// Check if the file is empty
 	if len(bytes) == 0 {
-		return nil, fmt.Errorf("file is empty")
+		return nil, errors.New("file is empty")
 	}
 
 	var podfile podfileLock
@@ -62,7 +63,7 @@ func ParsePodfileLock(reader io.Reader) ([]Package, error) {
 		case string:
 			podBlob = v
 		default:
-			return nil, fmt.Errorf("malformed Podfile.lock")
+			return nil, errors.New("malformed Podfile.lock")
 		}
 
 		splits := strings.Split(podBlob, " ")

@@ -18,7 +18,6 @@ package trace
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"slices"
 	"sort"
@@ -103,6 +102,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 
 		var foundOrigin bool
 		fileLocation := inv.Locations[0]
+		lastScannedLayerIndex := len(chainLayers) - 1
 
 		// Go backwards through the chain layers and find the first layer where the inventory is not
 		// present. Such layer is the layer in which the inventory was introduced. If the inventory is
@@ -154,12 +154,15 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 				}
 			}
 
-			// If the inventory is not present in the old layer, then it was introduced in layer i+1.
+			// If the inventory is not present in the old layer, then it was introduced in the previous layer we actually scanned
 			if !foundPackage {
-				layerDetails = chainLayerDetailsList[i+1]
+				layerDetails = chainLayerDetailsList[lastScannedLayerIndex]
 				foundOrigin = true
 				break
 			}
+
+			// This is now the latest scanned layer
+			lastScannedLayerIndex = i
 		}
 
 		// If the inventory is present in every layer, then it means it was introduced in the first
@@ -203,12 +206,12 @@ func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) b
 func getLayerFSFromChainLayer(chainLayer scalibrImage.ChainLayer) (scalibrfs.FS, error) {
 	layer := chainLayer.Layer()
 	if layer == nil {
-		return nil, fmt.Errorf("chain layer has no layer")
+		return nil, errors.New("chain layer has no layer")
 	}
 
 	fs := layer.FS()
 	if fs == nil {
-		return nil, fmt.Errorf("layer has no filesystem")
+		return nil, errors.New("layer has no filesystem")
 	}
 
 	return fs, nil

