@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
@@ -159,6 +160,7 @@ var (
 		depsjson.Name:         {depsjson.NewDefault},
 		packagesconfig.Name:   {packagesconfig.NewDefault},
 		packageslockjson.Name: {packageslockjson.NewDefault},
+		dotnetpe.Name:         {dotnetpe.NewDefault},
 	}
 	// PHP extractors.
 	PHP = InitMap{composerlock.Name: {composerlock.New}}
