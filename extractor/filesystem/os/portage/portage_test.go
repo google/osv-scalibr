@@ -21,9 +21,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/purl"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
@@ -31,6 +28,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -169,7 +169,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              portage.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -177,7 +177,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid PF file",
 			path:      "testdata/valid",
 			osrelease: Gentoo,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "Getopt-Long",
 					Version: "2.580.0",
@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 			name:             "not valid PF file",
 			path:             "testdata/invalid",
 			osrelease:        Gentoo,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -204,15 +204,15 @@ func TestExtract(t *testing.T) {
 			name:             "no version PF file",
 			path:             "testdata/noversion",
 			osrelease:        Gentoo,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name:             "no pkg name PF file",
+			name:             "no package name PF file",
 			path:             "testdata/nopackage",
 			osrelease:        Gentoo,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -220,7 +220,7 @@ func TestExtract(t *testing.T) {
 			name:             "empty PF file",
 			path:             "testdata/empty",
 			osrelease:        Gentoo,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -259,8 +259,9 @@ func TestExtract(t *testing.T) {
 
 			got, err := e.Extract(context.Background(), input)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
@@ -335,15 +336,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -379,12 +380,12 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Metadata: tt.metadata,
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -107,22 +108,22 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-xml.txt",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.xml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.apache.pdfbox:pdfbox",
 					Version:   "2.0.17",
@@ -136,7 +137,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.apache.pdfbox:pdfbox",
 					Version:   "2.0.17",
@@ -156,7 +157,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-versions.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "androidx.activity:activity",
 					Version:   "1.2.1",
@@ -272,7 +273,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/odd-versions.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "com.google:google",
 					Version:   "1",
@@ -462,7 +463,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

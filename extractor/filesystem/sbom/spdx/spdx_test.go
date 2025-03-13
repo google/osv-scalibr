@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -97,15 +98,15 @@ func TestExtract(t *testing.T) {
 	var e filesystem.Extractor = spdx.Extractor{}
 
 	tests := []struct {
-		name          string
-		path          string
-		wantErr       error
-		wantInventory []*extractor.Inventory
+		name         string
+		path         string
+		wantErr      error
+		wantPackages []*extractor.Package
 	}{
 		{
 			name: "sbom.spdx.json",
 			path: "testdata/sbom.spdx.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdx.Metadata{
@@ -125,7 +126,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "purl_and_cpe.spdx.json",
 			path: "testdata/purl_and_cpe.spdx.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "nginx",
 					Metadata: &spdx.Metadata{
@@ -146,7 +147,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sbom.spdx",
 			path: "testdata/sbom.spdx",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdx.Metadata{
@@ -166,7 +167,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sbom.spdx.yml",
 			path: "testdata/sbom.spdx.yml",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdx.Metadata{
@@ -186,7 +187,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sbom.spdx.rdf",
 			path: "testdata/sbom.spdx.rdf",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdx.Metadata{
@@ -234,9 +235,9 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(invLess)); diff != "" {
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 		})
@@ -251,7 +252,7 @@ func TestToPURL(t *testing.T) {
 		Namespace: "namespace",
 		Version:   "1.2.3",
 	}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name: "name",
 		Metadata: &spdx.Metadata{
 			PURL: want,
@@ -259,13 +260,13 @@ func TestToPURL(t *testing.T) {
 		},
 		Locations: []string{"location"},
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }
 
-func invLess(i1, i2 *extractor.Inventory) bool {
+func pkgLess(i1, i2 *extractor.Package) bool {
 	return i1.Name < i2.Name
 }
 

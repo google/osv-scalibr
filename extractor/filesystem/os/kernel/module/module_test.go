@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -173,7 +174,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              module.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -181,7 +182,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid *.ko file",
 			path:      "testdata/valid",
 			osrelease: UbuntuJammy,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "intel_oaktrail",
 					Version: "0.4ac1",
@@ -204,7 +205,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid *.ko file without version, deps, author",
 			path:      "testdata/valid_no_vers_deps_auth",
 			osrelease: UbuntuJammy,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name: "intel_mrfld_pwrbtn",
 					Metadata: &module.Metadata{
@@ -224,7 +225,7 @@ func TestExtract(t *testing.T) {
 			name:             "invalid *.ko file, no .modinfo section",
 			path:             "testdata/invalid",
 			osrelease:        UbuntuJammy,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -232,7 +233,7 @@ func TestExtract(t *testing.T) {
 			name:      "no os version",
 			path:      "testdata/valid",
 			osrelease: `ID=ubuntu`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "intel_oaktrail",
 					Version: "0.4ac1",
@@ -252,7 +253,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "missing osrelease",
 			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "intel_oaktrail",
 					Version: "0.4ac1",
@@ -303,8 +304,9 @@ func TestExtract(t *testing.T) {
 
 			got, err := e.Extract(context.Background(), input)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
@@ -318,7 +320,7 @@ func TestToPURL(t *testing.T) {
 	pkgName := "pkgName"
 	pkgVersion := "pkgVersion"
 	pkgVermagic := "pkgVermagic"
-	pkgSourceVersionIdentifier := "pkgSourceVersionIdentifier"
+	packageSourceVersionIdentifier := "packageSourceVersionIdentifier"
 	pkgAuthor := "pkgAuthor"
 
 	e := module.Extractor{}
@@ -333,7 +335,7 @@ func TestToPURL(t *testing.T) {
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
+				PackageSourceVersionIdentifier: packageSourceVersionIdentifier,
 				PackageAuthor:                  pkgAuthor,
 				OSID:                           "ubuntu",
 				OSVersionCodename:              "jammy",
@@ -355,7 +357,7 @@ func TestToPURL(t *testing.T) {
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
+				PackageSourceVersionIdentifier: packageSourceVersionIdentifier,
 				PackageAuthor:                  pkgAuthor,
 				OSID:                           "ubuntu",
 				OSVersionID:                    "22.04",
@@ -376,7 +378,7 @@ func TestToPURL(t *testing.T) {
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
+				PackageSourceVersionIdentifier: packageSourceVersionIdentifier,
 				PackageAuthor:                  pkgAuthor,
 				OSVersionID:                    "22.04",
 			},
@@ -393,15 +395,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -437,12 +439,12 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Metadata: tt.metadata,
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

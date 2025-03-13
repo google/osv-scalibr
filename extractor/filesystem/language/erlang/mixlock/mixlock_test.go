@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -81,7 +82,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "plug",
 					Version:   "1.11.1",
@@ -97,7 +98,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "plug",
 					Version:   "1.11.1",
@@ -121,7 +122,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/many.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "backoff",
 					Version:   "1.1.6",
@@ -297,7 +298,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "foe",
 					Version:   "",
@@ -340,7 +341,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

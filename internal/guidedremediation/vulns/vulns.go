@@ -25,9 +25,9 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-// VKToInventory converts a resolve.VersionKey to an *extractor.Inventory
-func VKToInventory(vk resolve.VersionKey) *extractor.Inventory {
-	return &extractor.Inventory{
+// VKToPackage converts a resolve.VersionKey to an *extractor.Package
+func VKToPackage(vk resolve.VersionKey) *extractor.Package {
+	return &extractor.Package{
 		Name:      vk.Name,
 		Version:   vk.Version,
 		Extractor: mockExtractor{},
@@ -35,12 +35,12 @@ func VKToInventory(vk resolve.VersionKey) *extractor.Inventory {
 	}
 }
 
-// mockExtractor is for VKToInventory to get the ecosystem.
+// mockExtractor is for VKToPackage to get the ecosystem.
 type mockExtractor struct{}
 
-// Ecosystem returns the ecosystem of the inventory.
-func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
-	switch inv.Metadata.(resolve.System) {
+// Ecosystem returns the ecosystem of the package.
+func (e mockExtractor) Ecosystem(pkg *extractor.Package) string {
+	switch pkg.Metadata.(resolve.System) {
 	case resolve.NPM:
 		return "npm"
 	case resolve.Maven:
@@ -53,24 +53,24 @@ func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
 }
 
 // Unnecessary methods stubbed out.
-func (e mockExtractor) Name() string                                 { return "" }
-func (e mockExtractor) Requirements() *plugin.Capabilities           { return nil }
-func (e mockExtractor) ToPURL(*extractor.Inventory) *purl.PackageURL { return nil }
-func (e mockExtractor) Version() int                                 { return 0 }
+func (e mockExtractor) Name() string                               { return "" }
+func (e mockExtractor) Requirements() *plugin.Capabilities         { return nil }
+func (e mockExtractor) ToPURL(*extractor.Package) *purl.PackageURL { return nil }
+func (e mockExtractor) Version() int                               { return 0 }
 
-// IsAffected returns true if the Vulnerability applies to the package version of the Inventory.
-func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
-	resolveSys, ok := inv.Metadata.(resolve.System)
+// IsAffected returns true if the Vulnerability applies to the package version of the Package.
+func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
+	resolveSys, ok := pkg.Metadata.(resolve.System)
 	if !ok {
 		return false
 	}
 	sys := resolveSys.Semver()
 	for _, affected := range vuln.Affected {
-		if affected.Package.Ecosystem != inv.Ecosystem() ||
-			affected.Package.Name != inv.Name {
+		if affected.Package.Ecosystem != pkg.Ecosystem() ||
+			affected.Package.Name != pkg.Name {
 			continue
 		}
-		if slices.Contains(affected.Versions, inv.Version) {
+		if slices.Contains(affected.Versions, pkg.Version) {
 			return true
 		}
 		for _, r := range affected.Ranges {
@@ -103,7 +103,7 @@ func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
 				// sys.Compare on strings is expensive, should consider precomputing sys.Parse
 				return sys.Compare(aVer, bVer)
 			})
-			idx, exact := slices.BinarySearchFunc(events, inv.Version, func(e osvschema.Event, v string) int {
+			idx, exact := slices.BinarySearchFunc(events, pkg.Version, func(e osvschema.Event, v string) int {
 				eVer := eventVersion(e)
 				if eVer == "0" {
 					return -1

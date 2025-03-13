@@ -77,39 +77,39 @@ func createFailingDetectorTestFiles(t *testing.T) string {
 
 func TestRunScan(t *testing.T) {
 	testCases := []struct {
-		desc               string
-		setupFunc          func(t *testing.T) string
-		flags              *cli.Flags
-		wantPluginStatus   []spb.ScanStatus_ScanStatusEnum
-		wantInventoryCount int
-		wantFindingCount   int
-		excludeOS          []string // test will not run on these operating systems
+		desc              string
+		setupFunc         func(t *testing.T) string
+		flags             *cli.Flags
+		wantPluginStatus  []spb.ScanStatus_ScanStatusEnum
+		wantPackagesCount int
+		wantFindingCount  int
+		excludeOS         []string // test will not run on these operating systems
 	}{
 		{
-			desc:               "Successful detector run",
-			setupFunc:          createDetectorTestFiles,
-			flags:              &cli.Flags{DetectorsToRun: []string{"cis"}},
-			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
-			wantInventoryCount: 0,
-			wantFindingCount:   1,
+			desc:              "Successful detector run",
+			setupFunc:         createDetectorTestFiles,
+			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 0,
+			wantFindingCount:  1,
 			// TODO: b/343368902: Fix once we have a detector for Windows.
 			excludeOS: []string{"windows"},
 		},
 		{
-			desc:               "Successful extractor run",
-			setupFunc:          createExtractorTestFiles,
-			flags:              &cli.Flags{ExtractorsToRun: []string{"python/wheelegg"}},
-			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
-			wantInventoryCount: 1,
-			wantFindingCount:   0,
+			desc:              "Successful extractor run",
+			setupFunc:         createExtractorTestFiles,
+			flags:             &cli.Flags{ExtractorsToRun: []string{"python/wheelegg"}},
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 1,
+			wantFindingCount:  0,
 		},
 		{
-			desc:               "Unsuccessful plugin run",
-			setupFunc:          createFailingDetectorTestFiles,
-			flags:              &cli.Flags{DetectorsToRun: []string{"cis"}},
-			wantPluginStatus:   []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
-			wantInventoryCount: 0,
-			wantFindingCount:   0,
+			desc:              "Unsuccessful plugin run",
+			setupFunc:         createFailingDetectorTestFiles,
+			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
+			wantPackagesCount: 0,
+			wantFindingCount:  0,
 			// TODO: b/343368902: Fix once we have a detector for Windows.
 			excludeOS: []string{"windows"},
 		},
@@ -149,11 +149,11 @@ func TestRunScan(t *testing.T) {
 			if diff := cmp.Diff(tc.wantPluginStatus, gotPS); diff != "" {
 				t.Errorf("Unexpected plugin status (-want +got):\n%s", diff)
 			}
-			if len(result.Inventories) != tc.wantInventoryCount {
-				t.Errorf("Unexpected inventory count, want %d got %d", tc.wantInventoryCount, len(result.Inventories))
+			if len(result.Inventory.Packages) != tc.wantPackagesCount {
+				t.Errorf("Unexpected package count, want %d got %d", tc.wantPackagesCount, len(result.Inventory.Packages))
 			}
-			if len(result.Findings) != tc.wantFindingCount {
-				t.Errorf("Unexpected finding count, want %d got %d", tc.wantFindingCount, len(result.Findings))
+			if len(result.Inventory.Findings) != tc.wantFindingCount {
+				t.Errorf("Unexpected finding count, want %d got %d", tc.wantFindingCount, len(result.Inventory.Findings))
 			}
 		})
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -138,8 +139,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts snap info from snap.yaml file passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -151,10 +152,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -174,7 +175,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		return nil, fmt.Errorf("missing snap version from %q", input.Path)
 	}
 
-	inventory := &extractor.Inventory{
+	pkg := &extractor.Package{
 		Name:    snap.Name,
 		Version: snap.Version,
 		Metadata: &Metadata{
@@ -189,7 +190,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		},
 		Locations: []string{input.Path},
 	}
-	return []*extractor.Inventory{inventory}, nil
+	return []*extractor.Package{pkg}, nil
 }
 
 func toNamespace(m *Metadata) string {
@@ -214,9 +215,9 @@ func toDistro(m *Metadata) string {
 	return ""
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*Metadata)
 	q := map[string]string{}
 	distro := toDistro(m)
 	if distro != "" {
@@ -233,8 +234,8 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	m := p.Metadata.(*Metadata)
 	if m.OSID == "ubuntu" {
 		return "Ubuntu"
 	}

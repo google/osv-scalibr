@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -134,7 +135,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
@@ -154,7 +155,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "with version",
 			path: "testdata/with_versions.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{Name: "nltk", Version: "3.2.2"},
 				{Name: "tabulate", Version: "0.7.7"},
 				{
@@ -182,7 +183,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "comments",
 			path: "testdata/comments.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{Name: "PyCrypto", Version: "1.2-alpha"},
 				{Name: "GMPY2", Version: "1"},
 				{Name: "SymPy", Version: "1.2"},
@@ -194,7 +195,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "pip example",
 			path: "testdata/example.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				// not pytest, because no version
 				// not pytest-cov, because no version
 				// not beautifulsoup4, because no version
@@ -223,7 +224,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "extras",
 			path: "testdata/extras.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{Name: "pyjwt", Version: "2.1.0"},
 				{Name: "celery", Version: "4.4.7"},
 			},
@@ -232,7 +233,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "env variable",
 			path: "testdata/env_var.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{Name: "asdf", Version: "1.2"},
 				{Name: "another", Version: "1.0"},
 			},
@@ -246,7 +247,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "per requirement options",
 			path: "testdata/per_req_options.txt",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					// foo1==1.0 --hash=sha256:123
 					Name:     "foo1",
@@ -344,18 +345,18 @@ func TestExtract(t *testing.T) {
 
 	// fill Location and Extractor
 	for _, t := range tests {
-		for _, i := range t.wantInventory {
-			if i.Locations == nil {
-				i.Locations = []string{t.path}
+		for _, p := range t.wantPackages {
+			if p.Locations == nil {
+				p.Locations = []string{t.path}
 			}
-			if i.Metadata == nil {
-				i.Metadata = &requirements.Metadata{}
+			if p.Metadata == nil {
+				p.Metadata = &requirements.Metadata{}
 			}
-			if i.Metadata.(*requirements.Metadata).HashCheckingModeValues == nil {
-				i.Metadata.(*requirements.Metadata).HashCheckingModeValues = []string{}
+			if p.Metadata.(*requirements.Metadata).HashCheckingModeValues == nil {
+				p.Metadata.(*requirements.Metadata).HashCheckingModeValues = []string{}
 			}
-			if i.Metadata.(*requirements.Metadata).VersionComparator == "" {
-				i.Metadata.(*requirements.Metadata).VersionComparator = "=="
+			if p.Metadata.(*requirements.Metadata).VersionComparator == "" {
+				p.Metadata.(*requirements.Metadata).VersionComparator = "=="
 			}
 		}
 	}
@@ -389,7 +390,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
@@ -409,7 +410,7 @@ func TestExtract(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := requirements.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -420,8 +421,8 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }

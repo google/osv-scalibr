@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
 	"github.com/opencontainers/go-digest"
@@ -142,21 +143,21 @@ func TestPopulateLayerDetails(t *testing.T) {
 	})
 
 	tests := []struct {
-		name          string
-		inventory     []*extractor.Inventory
-		extractor     filesystem.Extractor
-		chainLayers   []image.ChainLayer
-		wantInventory []*extractor.Inventory
+		name         string
+		pkgs         []*extractor.Package
+		extractor    filesystem.Extractor
+		chainLayers  []image.ChainLayer
+		wantPackages []*extractor.Package
 	}{
 		{
-			name:          "empty inventory",
-			inventory:     []*extractor.Inventory{},
-			chainLayers:   []image.ChainLayer{},
-			wantInventory: []*extractor.Inventory{},
+			name:         "empty package",
+			pkgs:         []*extractor.Package{},
+			chainLayers:  []image.ChainLayer{},
+			wantPackages: []*extractor.Package{},
 		},
 		{
-			name: "inventory in single chain layer",
-			inventory: []*extractor.Inventory{
+			name: "package in single chain layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
@@ -172,7 +173,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			chainLayers: []image.ChainLayer{
 				fakeChainLayer1,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
@@ -198,8 +199,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in two chain layers - package deleted in second layer",
-			inventory: []*extractor.Inventory{
+			name: "package in two chain layers - package deleted in second layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
 					Locations: []string{fooFile},
@@ -211,7 +212,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayer1,
 				fakeChainLayer2,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
@@ -226,8 +227,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in multiple chain layers - package added in third layer",
-			inventory: []*extractor.Inventory{
+			name: "packages in multiple chain layers - package added in third layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
 					Locations: []string{fooFile},
@@ -245,7 +246,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayer2,
 				fakeChainLayer3,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
@@ -271,8 +272,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in multiple chain layers - bar package added back in last layer",
-			inventory: []*extractor.Inventory{
+			name: "packages in multiple chain layers - bar package added back in last layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
 					Locations: []string{fooFile},
@@ -296,7 +297,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayer3,
 				fakeChainLayer4,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
@@ -341,30 +342,31 @@ func TestPopulateLayerDetails(t *testing.T) {
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 
-			PopulateLayerDetails(context.Background(), tc.inventory, tc.chainLayers, config)
-			if diff := cmp.Diff(tc.wantInventory, tc.inventory, cmpopts.IgnoreFields(extractor.Inventory{}, "Extractor")); diff != "" {
-				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.inventory, tc.chainLayers, diff)
+			inv := inventory.Inventory{Packages: tc.pkgs}
+			PopulateLayerDetails(context.Background(), inv, tc.chainLayers, config)
+			if diff := cmp.Diff(tc.wantPackages, inv.Packages, cmpopts.IgnoreFields(extractor.Package{}, "Extractor")); diff != "" {
+				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.pkgs, tc.chainLayers, diff)
 			}
 		})
 	}
 }
 
-func TestAreInventoriesEqual(t *testing.T) {
+func TestArePackagesEqual(t *testing.T) {
 	tests := []struct {
 		name string
-		inv1 *extractor.Inventory
-		inv2 *extractor.Inventory
+		pkg1 *extractor.Package
+		pkg2 *extractor.Package
 		want bool
 	}{
 		{
 			name: "nil extractor",
-			inv1: &extractor.Inventory{
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt"},
 				Extractor: nil,
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt"},
@@ -373,8 +375,8 @@ func TestAreInventoriesEqual(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "same inventory",
-			inv1: &extractor.Inventory{
+			name: "same package",
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt"},
@@ -384,7 +386,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 					},
 				}),
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt"},
@@ -397,8 +399,8 @@ func TestAreInventoriesEqual(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "same inventory with multiple locations",
-			inv1: &extractor.Inventory{
+			name: "same package with multiple locations",
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt", "another-foo.txt"},
@@ -408,7 +410,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 					},
 				}),
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"another-foo.txt", "foo.txt"},
@@ -422,7 +424,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 		},
 		{
 			name: "different name",
-			inv1: &extractor.Inventory{
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Locations: []string{"foo.txt"},
 				Extractor: fakeextractor.New("fake-extractor", 1, []string{"foo.txt"}, map[string]fakeextractor.NamesErr{
@@ -431,7 +433,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 					},
 				}),
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "bar",
 				Locations: []string{"foo.txt"},
 				Extractor: fakeextractor.New("fake-extractor", 1, []string{"foo.txt"}, map[string]fakeextractor.NamesErr{
@@ -444,7 +446,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 		},
 		{
 			name: "different version",
-			inv1: &extractor.Inventory{
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Version:   "1.0",
 				Locations: []string{"foo.txt"},
@@ -454,7 +456,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 					},
 				}),
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "foo",
 				Version:   "2.0",
 				Locations: []string{"foo.txt"},
@@ -468,7 +470,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 		},
 		{
 			name: "different locations",
-			inv1: &extractor.Inventory{
+			pkg1: &extractor.Package{
 				Name:      "foo",
 				Locations: []string{"foo.txt"},
 				Extractor: fakeextractor.New("fake-extractor", 1, []string{"foo.txt"}, map[string]fakeextractor.NamesErr{
@@ -477,7 +479,7 @@ func TestAreInventoriesEqual(t *testing.T) {
 					},
 				}),
 			},
-			inv2: &extractor.Inventory{
+			pkg2: &extractor.Package{
 				Name:      "foo",
 				Locations: []string{"another-foo.txt"},
 				Extractor: fakeextractor.New("fake-extractor", 1, []string{"foo.txt"}, map[string]fakeextractor.NamesErr{
@@ -491,8 +493,8 @@ func TestAreInventoriesEqual(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := areInventoriesEqual(tc.inv1, tc.inv2); got != tc.want {
-				t.Errorf("areInventoriesEqual(%v, %v) = %v, want: %v", tc.inv1, tc.inv2, got, tc.want)
+			if got := arePackagesEqual(tc.pkg1, tc.pkg2); got != tc.want {
+				t.Errorf("arePackagesEqual(%v, %v) = %v, want: %v", tc.pkg1, tc.pkg2, got, tc.want)
 			}
 		})
 	}

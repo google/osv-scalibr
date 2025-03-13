@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -85,7 +86,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract retrieves the patch level from the Windows registry.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	reg, err := e.opener.Open()
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, err
 	}
 
-	var inventory []*extractor.Inventory
+	var pkgs []*extractor.Package
 
 	for _, subkey := range subkeys {
 		entry, err := e.handleKey(reg, regPackagesRoot, subkey)
@@ -115,13 +116,13 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 			return nil, err
 		}
 
-		inventory = append(inventory, entry)
+		pkgs = append(pkgs, entry)
 	}
 
-	return inventory, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName string) (*extractor.Inventory, error) {
+func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName string) (*extractor.Package, error) {
 	keyPath := fmt.Sprintf("%s\\%s", registryPath, keyName)
 	key, err := reg.OpenKey("HKLM", keyPath)
 	if err != nil {
@@ -149,21 +150,21 @@ func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName strin
 		return nil, errSkipEntry
 	}
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    keyName,
 		Version: submatch[1],
 	}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:      purl.TypeGeneric,
 		Namespace: "microsoft",
-		Name:      i.Name,
-		Version:   i.Version,
+		Name:      p.Name,
+		Version:   p.Version,
 	}
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
