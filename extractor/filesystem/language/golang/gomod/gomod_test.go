@@ -121,6 +121,24 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "toolchain",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/toolchain.mod",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "github.com/BurntSushi/toml",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/toolchain.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "go1.23.6",
+					Locations: []string{"testdata/toolchain.mod"},
+				},
+			},
+		},
+		{
 			Name: "indirect packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/indirect-packages.mod",
