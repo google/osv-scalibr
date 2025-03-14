@@ -101,6 +101,8 @@ linters-settings:
     analyze-types: true
   revive:
     rules:
+      - name: indent-error-flow
+        disabled: false
       - name: use-any
         disabled: false
 

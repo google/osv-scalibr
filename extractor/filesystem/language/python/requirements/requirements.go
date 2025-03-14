@@ -270,9 +270,9 @@ func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
 		builder.WriteString(l[:len(l)-1])
 		scanner.Scan()
 		return readLine(scanner, builder)
-	} else {
-		builder.WriteString(l)
 	}
+
+	builder.WriteString(l)
 
 	return builder.String()
 }

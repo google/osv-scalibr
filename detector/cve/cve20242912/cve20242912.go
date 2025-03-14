@@ -196,9 +196,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	if !isVulnVersion {
 		log.Infof("Version not vulnerable: %q", bentomlVersion)
 		return nil, nil
-	} else {
-		log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
 	}
+
+	log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
 
 	if !CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML server not accessible")
