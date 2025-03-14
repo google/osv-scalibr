@@ -25,5 +25,3 @@ docker run --entrypoint "" -v "$tmp:/scalibr_working_dir:rw" "$1" /scalibr_worki
 
 # Move the results to the CWD.
 cp $tmp/scalibr-result.textproto scalibr-result.textproto
-
-
