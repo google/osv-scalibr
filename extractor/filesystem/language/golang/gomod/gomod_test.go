@@ -139,6 +139,24 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "toolchain with suffix",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/toolchain-with-suffix.mod",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "github.com/BurntSushi/toml",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/toolchain-with-suffix.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.23.6",
+					Locations: []string{"testdata/toolchain-with-suffix.mod"},
+				},
+			},
+		},
+		{
 			Name: "indirect packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/indirect-packages.mod",

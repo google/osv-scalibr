@@ -131,9 +131,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	// Give the toolchain version priority, if present
 	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
+		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
+
 		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
-			Version:   strings.TrimPrefix(parsedLockfile.Toolchain.Name, "go"),
+			Version:   strings.TrimPrefix(version, "go"),
 			Locations: []string{input.Path},
 		}
 	}
