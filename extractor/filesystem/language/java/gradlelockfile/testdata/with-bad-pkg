@@ -12,8 +12,3 @@ org.springframework.boot:spring-boot-autoconfigure:2.7.4=compileClasspath,develo
 
 
 org.springframework.boot:spring-boot-configuration-processor:2.7.5=compileClasspath,developmentOnly,productionRuntimeClasspath,runtimeClasspath
-
-
-
-
-
