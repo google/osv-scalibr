@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -195,6 +196,7 @@ var (
 	Misc = InitMap{
 		vscodeextensions.Name: {vscodeextensions.New},
 		wordpressplugins.Name: {wordpressplugins.NewDefault},
+		chromeextensions.Name: {chromeextensions.New},
 	}
 
 	// Collections of extractors.

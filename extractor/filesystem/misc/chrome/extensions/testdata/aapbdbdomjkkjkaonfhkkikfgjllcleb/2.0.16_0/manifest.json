@@ -1,0 +1,44 @@
+{
+   "action": {
+      "default_icon": {
+         "19": "icons/19.png",
+         "38": "icons/38.png"
+      },
+      "default_popup": "popup.html",
+      "default_title": "__MSG_2509634311667449183__"
+   },
+   "author": {
+      "email": "google-translate-chrome-extension-owners@google.com"
+   },
+   "background": {
+      "service_worker": "main_compiled.js"
+   },
+   "content_scripts": [ {
+      "all_frames": true,
+      "css": [ "bubble_gss.css" ],
+      "js": [ "bubble_compiled.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   } ],
+   "default_locale": "en",
+   "description": "__MSG_5636646071825253269__",
+   "icons": {
+      "128": "icons/128.png",
+      "16": "icons/16.png",
+      "19": "icons/19.png",
+      "32": "icons/32.png",
+      "38": "icons/38.png",
+      "48": "icons/48.png"
+   },
+   "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCfHy1M+jghaHyaVAILzx/c/Dy+RXtcaP9/5pC7EY8JlNEI/G4DIIng9IzlrH8UWStpMWMyGUsdyusn2PkYFrqfVzhc2azVF3PX9D0KHG3FLN3mNoz1YTBHvO5QSXJf292qW0tTYuoGqeTfXtF9odLdg20Xd0YrLmtS4TQkpSYGDwIDAQAB",
+   "manifest_version": 3,
+   "minimum_chrome_version": "115",
+   "name": "__MSG_8969005060131950570__",
+   "options_page": "options.html",
+   "permissions": [ "activeTab", "contextMenus", "storage", "offscreen", "scripting" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "2.0.16",
+   "web_accessible_resources": [ {
+      "matches": [ "\u003Call_urls>" ],
+      "resources": [ "popup_css_compiled.css" ]
+   } ]
+}
