@@ -19,11 +19,10 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"slices"
-	"sort"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/log"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -54,6 +53,13 @@ type locationAndIndex struct {
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
 func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
+	// If there are no chain layers, then there is nothing to trace. This should not happen, but we
+	// should handle it gracefully.
+	if len(chainLayers) == 0 {
+		log.Warnf("No chain layers found, cannot trace inventory.")
+		return
+	}
+
 	chainLayerDetailsList := []*extractor.LayerDetails{}
 
 	// Create list of layer details struct to be referenced by inventory.
@@ -98,6 +104,11 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 		isInventoryTraceable := isFilesystemExtractor && len(inv.Locations) > 0
 		if !isInventoryTraceable {
 			continue
+		}
+
+		var invPURL string
+		if inv.Extractor != nil {
+			invPURL = inv.Extractor.ToPURL(inv).String()
 		}
 
 		var foundOrigin bool
@@ -148,10 +159,22 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 
 			foundPackage := false
 			for _, oldInv := range oldInventory {
-				if areInventoriesEqual(inv, oldInv) {
-					foundPackage = true
-					break
+				if oldInv.Extractor == nil {
+					continue
 				}
+
+				// PURLs are being used as a package key, so if they are different, skip this inventory.
+				oldInvPURL := oldInv.Extractor.ToPURL(oldInv).String()
+				if oldInvPURL != invPURL {
+					continue
+				}
+
+				if !areLocationsEqual(oldInv.Locations, inv.Locations) {
+					continue
+				}
+
+				foundPackage = true
+				break
 			}
 
 			// If the inventory is not present in the old layer, then it was introduced in the previous layer we actually scanned
@@ -174,32 +197,14 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 	}
 }
 
-// areInventoriesEqual checks if two inventories are equal. It does this by comparing the PURLs and
-// the locations of the inventories.
-func areInventoriesEqual(inv1 *extractor.Inventory, inv2 *extractor.Inventory) bool {
-	if inv1.Extractor == nil || inv2.Extractor == nil {
+// areLocationsEqual checks if the inventory location strings are equal.
+func areLocationsEqual(fileLocations []string, otherFileLocations []string) bool {
+	if len(fileLocations) == 0 || len(otherFileLocations) == 0 {
+		log.Warnf("Empty file locations found. This should not happen.")
 		return false
 	}
 
-	// Check if the PURLs are equal.
-	purl1 := inv1.Extractor.ToPURL(inv1)
-	purl2 := inv2.Extractor.ToPURL(inv2)
-
-	if purl1.String() != purl2.String() {
-		return false
-	}
-
-	// Check if the locations are equal.
-	locations1 := inv1.Locations[:]
-	sort.Strings(locations1)
-
-	locations2 := inv2.Locations[:]
-	sort.Strings(locations2)
-
-	if !slices.Equal(locations1, locations2) {
-		return false
-	}
-	return true
+	return fileLocations[0] == otherFileLocations[0]
 }
 
 // getSingleLayerFSFromChainLayer returns the filesystem of the underlying layer in the chain layer.
