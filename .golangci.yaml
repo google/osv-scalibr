@@ -80,7 +80,7 @@ linters:
     - testifylint
     - thelper
     - unconvert
-#    - unparam
+    - unparam
     - unused
     - usestdlibvars
     - wastedassign
