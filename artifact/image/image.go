@@ -18,7 +18,6 @@ package image
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -47,8 +46,6 @@ type Layer interface {
 	DiffID() digest.Digest
 	// Command is the specific command that produced the layer.
 	Command() string
-	// Uncompressed gives the uncompressed tar as a file reader.
-	Uncompressed() (io.ReadCloser, error)
 }
 
 // ChainLayer is a filesystem derived from container layers that can be scanned for software

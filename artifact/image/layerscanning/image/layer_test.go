@@ -48,7 +48,6 @@ func TestConvertV1Layer(t *testing.T) {
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
-				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader, false),
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,

@@ -17,7 +17,6 @@ package image
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"slices"
 	"strings"
@@ -46,7 +45,6 @@ var (
 
 // Layer implements the Layer interface.
 type Layer struct {
-	v1Layer      v1.Layer
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
@@ -75,17 +73,6 @@ func (layer *Layer) Command() string {
 	return layer.buildCommand
 }
 
-// Uncompressed returns a new uncompressed ReadCloser from the v1 layer which holds all files in the
-// layer.
-// TODO: b/378938357 - Figure out a better way to get the uncompressed ReadCloser.
-func (layer *Layer) Uncompressed() (io.ReadCloser, error) {
-	uncompressed, err := layer.v1Layer.Uncompressed()
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrUncompressedReaderMissingFromLayer, err)
-	}
-	return uncompressed, nil
-}
-
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
 func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, error) {
@@ -95,7 +82,6 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, err
 	}
 
 	return &Layer{
-		v1Layer:      v1Layer,
 		diffID:       digest.Digest(diffID.String()),
 		buildCommand: command,
 		isEmpty:      isEmpty,

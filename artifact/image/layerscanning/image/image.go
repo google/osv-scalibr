@@ -165,6 +165,15 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("failed to load layers: %w", err)
 	}
 
+	diffIDToV1Layer := map[string]v1.Layer{}
+	for _, v1Layer := range v1Layers {
+		diffID, err := v1Layer.DiffID()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get diffID from v1 layer: %w", err)
+		}
+		diffIDToV1Layer[diffID.Hex] = v1Layer
+	}
+
 	chainLayers, err := initializeChainLayers(v1Layers, configFile, config.MaxSymlinkDepth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize chain layers: %w", err)
@@ -213,7 +222,13 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		}
 
 		chainLayersToFill := chainLayers[i:]
-		layerReader, err := chainLayer.latestLayer.Uncompressed()
+		v1Layer, ok := diffIDToV1Layer[originLayerID]
+		if !ok {
+			// This should not happen, as the diffID should always be found in the diffIDToV1Layer map.
+			return handleImageError(outputImage, fmt.Errorf("failed to find v1 layer for diffID %q", originLayerID))
+		}
+
+		layerReader, err := v1Layer.Uncompressed()
 		if err != nil {
 			return handleImageError(outputImage, err)
 		}

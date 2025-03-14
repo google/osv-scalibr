@@ -805,7 +805,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					index:        0,
 					latestLayer: &Layer{
 						diffID:  "sha256:123",
-						v1Layer: fakeV1Layer1,
 						isEmpty: false,
 					},
 				},
@@ -830,7 +829,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
 						diffID:       "sha256:123",
-						v1Layer:      fakeV1Layer1,
 						isEmpty:      false,
 					},
 				},
@@ -863,7 +861,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
 						diffID:       "sha256:123",
-						v1Layer:      fakeV1Layer1,
 						isEmpty:      false,
 					},
 				},
@@ -873,7 +870,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
 						diffID:       "sha256:456",
-						v1Layer:      fakeV1Layer2,
 						isEmpty:      false,
 					},
 				},
@@ -883,7 +879,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
 						diffID:       "sha256:789",
-						v1Layer:      fakeV1Layer3,
 						isEmpty:      false,
 					},
 				},
@@ -931,7 +926,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
 						diffID:       "sha256:123",
-						v1Layer:      fakeV1Layer1,
 						isEmpty:      false,
 					},
 				},
@@ -949,7 +943,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
 						diffID:       "sha256:456",
-						v1Layer:      fakeV1Layer2,
 						isEmpty:      false,
 					},
 				},
@@ -967,7 +960,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
 						diffID:       "sha256:789",
-						v1Layer:      fakeV1Layer3,
 						isEmpty:      false,
 					},
 				},
@@ -1003,7 +995,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
 						diffID:       "sha256:123",
-						v1Layer:      fakeV1Layer1,
 						isEmpty:      false,
 					},
 				},
@@ -1012,7 +1003,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					index:        1,
 					latestLayer: &Layer{
 						diffID:  "sha256:456",
-						v1Layer: fakeV1Layer2,
 						isEmpty: false,
 					},
 				},
@@ -1021,7 +1011,6 @@ func TestInitializeChainLayers(t *testing.T) {
 					index:        2,
 					latestLayer: &Layer{
 						diffID:  "sha256:789",
-						v1Layer: fakeV1Layer3,
 						isEmpty: false,
 					},
 				},
