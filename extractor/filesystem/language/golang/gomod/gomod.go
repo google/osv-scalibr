@@ -133,7 +133,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
 		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
-			Version:   parsedLockfile.Toolchain.Name,
+			Version:   strings.TrimPrefix(parsedLockfile.Toolchain.Name, "go"),
 			Locations: []string{input.Path},
 		}
 	}

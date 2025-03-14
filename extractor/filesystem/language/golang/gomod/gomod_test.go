@@ -133,7 +133,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:      "stdlib",
-					Version:   "go1.23.6",
+					Version:   "1.23.6",
 					Locations: []string{"testdata/toolchain.mod"},
 				},
 			},
