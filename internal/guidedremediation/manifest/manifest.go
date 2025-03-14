@@ -18,6 +18,7 @@ package manifest
 import (
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 )
 
@@ -45,5 +46,10 @@ type ReadWriter interface {
 	System() resolve.System
 	Read(path string, fsys scalibrfs.FS) (Manifest, error)
 	SupportedStrategies() []strategy.Strategy
-	// TODO(#454): Write()
+
+	// Write writes the manifest after applying the patches to outputPath.
+	//
+	// original is the manifest without patches. fsys is the FS that the manifest was read from.
+	// outputPath is the path on disk (*not* in fsys) to write the entire patched manifest to (this can overwrite the original manifest).
+	Write(original Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error
 }

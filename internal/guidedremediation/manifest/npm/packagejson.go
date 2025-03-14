@@ -17,6 +17,7 @@ package npm
 
 import (
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"maps"
 	"path/filepath"
@@ -27,6 +28,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/guidedremediation/manifest"
+	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/result"
 	"github.com/google/osv-scalibr/internal/guidedremediation/remediation/strategy"
 	"github.com/google/osv-scalibr/log"
 )
@@ -370,4 +372,10 @@ func SplitNPMAlias(v string) (name, version string) {
 	}
 
 	return "", v // not an alias
+}
+
+// Write applies the patches to the original manifest, writing the resulting manifest file to the file path in the filesystem.
+func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+	// TODO(#454): implement with relax
+	return errors.New("not implemented")
 }
