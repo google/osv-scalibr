@@ -283,7 +283,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // regardless of the error, as the image is in an invalid state if an error is returned.
 func handleImageError(image *Image, err error) (*Image, error) {
 	if image != nil {
-		image.CleanUp()
+		_ = image.CleanUp()
 	}
 	return nil, err
 }
