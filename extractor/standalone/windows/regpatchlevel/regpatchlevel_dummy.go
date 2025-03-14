@@ -14,6 +14,7 @@
 
 //go:build !windows
 
+// Package regpatchlevel extract patch level from the Windows registry.
 package regpatchlevel
 
 import (

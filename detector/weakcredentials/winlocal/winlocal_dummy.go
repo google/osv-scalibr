@@ -14,6 +14,7 @@
 
 //go:build !windows
 
+// Package winlocal implements a weak passwords detector for local accounts on Windows.
 package winlocal
 
 import (

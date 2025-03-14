@@ -14,6 +14,7 @@
 
 //go:build !windows
 
+// Package ospackages extracts installed softwares on Windows.
 package ospackages
 
 import (

@@ -14,6 +14,7 @@
 
 //go:build !windows
 
+// Package regosversion extracts the OS version (build, major, minor release) from the registry.
 package regosversion
 
 import (

@@ -103,10 +103,14 @@ linters-settings:
     rules:
       - name: indent-error-flow
         disabled: false
+      - name: package-comments
+        disabled: false
       - name: use-any
         disabled: false
 
 issues:
+  include:
+    - EXC0015 # revive package-comments
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
