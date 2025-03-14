@@ -287,7 +287,7 @@ func isNodeRequired(node *fileNode, requirer require.FileRequirer) bool {
 func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) error {
 	for _, chainLayer := range chainLayers {
 		filesRequired := map[string]bool{}
-		chainLayer.fileNodeTree.Walk(func(virtualPath string, node *fileNode) error {
+		_ = chainLayer.fileNodeTree.Walk(func(virtualPath string, node *fileNode) error {
 			if filesRequired[virtualPath] {
 				return nil
 			}
