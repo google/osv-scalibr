@@ -19,32 +19,32 @@ import (
 	"time"
 )
 
-type mavenRegistryCache struct {
+type pypiRegistryCache struct {
 	Timestamp *time.Time
 	Responses map[string]response // url -> response
 }
 
 // GobEncode encodes cache to bytes.
-func (m *MavenRegistryAPIClient) GobEncode() ([]byte, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (p *PyPIRegistryAPIClient) GobEncode() ([]byte, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	if m.cacheTimestamp == nil {
+	if p.cacheTimestamp == nil {
 		now := time.Now().UTC()
-		m.cacheTimestamp = &now
+		p.cacheTimestamp = &now
 	}
 
-	cache := mavenRegistryCache{
-		Timestamp: m.cacheTimestamp,
-		Responses: m.responses.GetMap(),
+	cache := pypiRegistryCache{
+		Timestamp: p.cacheTimestamp,
+		Responses: p.responses.GetMap(),
 	}
 
 	return gobMarshal(&cache)
 }
 
 // GobDecode encodes bytes to cache.
-func (m *MavenRegistryAPIClient) GobDecode(b []byte) error {
-	var cache mavenRegistryCache
+func (p *PyPIRegistryAPIClient) GobDecode(b []byte) error {
+	var cache pypiRegistryCache
 	if err := gobUnmarshal(b, &cache); err != nil {
 		return err
 	}
@@ -54,11 +54,11 @@ func (m *MavenRegistryAPIClient) GobDecode(b []byte) error {
 		return nil
 	}
 
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	m.cacheTimestamp = cache.Timestamp
-	m.responses.SetMap(cache.Responses)
+	p.cacheTimestamp = cache.Timestamp
+	p.responses.SetMap(cache.Responses)
 
 	return nil
 }
