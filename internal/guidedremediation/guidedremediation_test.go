@@ -15,9 +15,11 @@
 package guidedremediation_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -117,6 +119,10 @@ func TestFixOverride(t *testing.T) {
 			gotManifest, err := os.ReadFile(manifestPath)
 			if err != nil {
 				t.Fatalf("failed reading got manifest for comparison: %v", err)
+			}
+			if runtime.GOOS == "windows" {
+				wantManifest = bytes.ReplaceAll(wantManifest, []byte("\r\n"), []byte("\n"))
+				gotManifest = bytes.ReplaceAll(gotManifest, []byte("\r\n"), []byte("\n"))
 			}
 
 			if diff := cmp.Diff(wantManifest, gotManifest); diff != "" {
