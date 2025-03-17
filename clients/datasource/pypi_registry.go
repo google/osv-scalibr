@@ -29,9 +29,6 @@ import (
 	"github.com/google/osv-scalibr/clients/datasource/internal/pypi"
 )
 
-// PyPIAPI holds the base of the URL of PyPI JSON and Index API.
-const PyPIAPI = "https://pypi.org/"
-
 // PyPIRegistryAPIClient defines a client to fetch metadata from a PyPI registry.
 // TODO(#541): support multiple registries and authentication
 type PyPIRegistryAPIClient struct {
