@@ -17,7 +17,6 @@
 package winlocal
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -83,7 +82,7 @@ func TestInternalScan(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			d := Detector{}
-			findings, err := d.internalScan(context.Background(), tc.hashes)
+			findings, err := d.internalScan(t.Context(), tc.hashes)
 			if err != nil {
 				t.Fatalf("internalScan(...) unexpected error, got: %v, want: %v", err, tc.wantErr)
 			}
@@ -154,7 +153,7 @@ func TestBruteforce(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			d := Detector{}
-			gotMap, err := d.bruteforce(context.Background(), tc.hashes)
+			gotMap, err := d.bruteforce(t.Context(), tc.hashes)
 			if err != nil {
 				t.Fatalf("bruteforce(...) unexpected error: %v", err)
 			}

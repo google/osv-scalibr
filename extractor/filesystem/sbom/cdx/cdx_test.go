@@ -15,7 +15,6 @@
 package cdx_test
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -176,7 +175,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Reader: r}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
 			}

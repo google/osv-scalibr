@@ -158,7 +158,7 @@ func TestExtract(t *testing.T) {
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {nil, nil},
 			}),
-			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
+			args: args{t.Context(), &filesystem.ScanInput{Path: "some path"}},
 			want: []*extractor.Inventory{},
 		},
 		{
@@ -166,7 +166,7 @@ func TestExtract(t *testing.T) {
 			extractor: fakeextractor.New("extractor name", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {[]string{name1, name2}, nil},
 			}),
-			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
+			args: args{t.Context(), &filesystem.ScanInput{Path: "some path"}},
 			want: multipleInventories,
 		},
 		{
@@ -174,7 +174,7 @@ func TestExtract(t *testing.T) {
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {nil, nil},
 			}),
-			args:    args{context.Background(), &filesystem.ScanInput{Path: "another path"}},
+			args:    args{t.Context(), &filesystem.ScanInput{Path: "another path"}},
 			wantErr: cmpopts.AnyError,
 		},
 	}

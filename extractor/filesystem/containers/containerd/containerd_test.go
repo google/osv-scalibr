@@ -15,7 +15,6 @@
 package containerd_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -230,7 +229,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			e := containerd.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}

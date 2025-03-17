@@ -15,7 +15,6 @@
 package detector_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -153,7 +152,7 @@ func TestRun(t *testing.T) {
 			ix, _ := inventoryindex.New([]*extractor.Inventory{})
 			tmp := t.TempDir()
 			gotFindings, gotStatus, err := detector.Run(
-				context.Background(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), ix,
+				t.Context(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), ix,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
