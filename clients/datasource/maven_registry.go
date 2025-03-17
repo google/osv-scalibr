@@ -34,11 +34,7 @@ import (
 )
 
 // MavenCentral holds the URL of Maven Central Repository.
-const MavenCentral = "https://repo.maven.apache.org/maven2"
-
-// MavenCentralMirror holds the URL of Maven Central mirror hosted on Google Cloud Storage.
-// https://storage-download.googleapis.com/maven-central/index.html
-const MavenCentralMirror = "https://maven-central.storage-download.googleapis.com/maven2/"
+const mavenCentral = "https://repo.maven.apache.org/maven2"
 
 var errAPIFailed = errors.New("API query failed")
 
@@ -73,7 +69,7 @@ type MavenRegistry struct {
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
 func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
-		registry.URL = MavenCentral
+		registry.URL = mavenCentral
 		registry.ID = "central"
 	}
 	u, err := url.Parse(registry.URL)
