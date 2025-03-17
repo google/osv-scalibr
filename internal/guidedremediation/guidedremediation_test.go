@@ -59,7 +59,7 @@ func TestFixOverride(t *testing.T) {
 		{
 			name:             "max upgrades",
 			universeDir:      "testdata/maven",
-			manifest:         "testdata/maven/maxupgrades/pom.xml",
+			manifest:         "testdata/maven/patchchoice/pom.xml",
 			wantManifestPath: "testdata/maven/maxupgrades/want.pom.xml",
 			wantResultPath:   "testdata/maven/maxupgrades/result.json",
 			remOpts:          *remediation.DefaultOptions(),
