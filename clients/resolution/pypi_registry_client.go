@@ -41,7 +41,7 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 	// Version is not used by the PyPI resolver for now, so here
 	// only returns the VersionKey with yanked or not.
 	// We may need to add more metadata in the future.
-	resp, err := c.api.GetVersionJson(ctx, vk.Name, vk.Version)
+	resp, err := c.api.GetVersionJSON(ctx, vk.Name, vk.Version)
 	if err != nil {
 		return resolve.Version{}, err
 	}
@@ -76,7 +76,7 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 			},
 		}
 
-		resp, err := c.api.GetVersionJson(ctx, pk.Name, ver)
+		resp, err := c.api.GetVersionJSON(ctx, pk.Name, ver)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 
 // Requirements returns requirements of a version specified by the VersionKey.
 func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
-	resp, err := c.api.GetVersionJson(ctx, vk.Name, vk.Version)
+	resp, err := c.api.GetVersionJSON(ctx, vk.Name, vk.Version)
 	if err != nil {
 		return nil, err
 	}

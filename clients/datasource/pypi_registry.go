@@ -52,14 +52,14 @@ func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
 	}
 }
 
-// GetRequiresDist queries the JSON API and returns the requires dist for a specific version.
-func (p *PyPIRegistryAPIClient) GetVersionJson(ctx context.Context, project, version string) (pypi.JsonResponse, error) {
+// GetVersionJSON queries the JSON API and returns the requires dist for a specific version.
+func (p *PyPIRegistryAPIClient) GetVersionJSON(ctx context.Context, project, version string) (pypi.JSONResponse, error) {
 	path, err := url.JoinPath(p.registry, "pypi", project, version, "json")
 	if err != nil {
-		return pypi.JsonResponse{}, err
+		return pypi.JSONResponse{}, err
 	}
 
-	var jsonResp pypi.JsonResponse
+	var jsonResp pypi.JSONResponse
 	err = p.get(ctx, path, false, &jsonResp)
 	return jsonResp, err
 }

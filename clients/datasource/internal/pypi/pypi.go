@@ -15,9 +15,9 @@
 // Package pypi defines the structures to parse PyPI JSON API response.
 package pypi
 
-// JsonResponse defines the response of JSON API.
+// JSONResponse defines the response of JSON API.
 // https://docs.pypi.org/api/json/
-type JsonResponse struct {
+type JSONResponse struct {
 	Info Info  `json:"info"`
 	URLs []URL `json:"urls"`
 }

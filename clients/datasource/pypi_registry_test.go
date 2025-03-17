@@ -254,11 +254,11 @@ func TestGetVersionJson(t *testing.T) {
 	}
 	`))
 
-	got, err := client.GetVersionJson(context.Background(), "sampleproject", "3.0.0")
+	got, err := client.GetVersionJSON(context.Background(), "sampleproject", "3.0.0")
 	if err != nil {
 		t.Fatalf("failed to get version JSON of PyPI project %s %s: %v", "sampleproject", "3.0.0", err)
 	}
-	want := pypi.JsonResponse{
+	want := pypi.JSONResponse{
 		Info: pypi.Info{
 			RequiresDist: []string{
 				"peppercorn",
@@ -281,6 +281,6 @@ func TestGetVersionJson(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("GetVersionJson(%s, %s) mismatch (-want +got):\n%s", "sampleproject", "3.0.0", diff)
+		t.Errorf("GetVersionJSON(%s, %s) mismatch (-want +got):\n%s", "sampleproject", "3.0.0", diff)
 	}
 }
