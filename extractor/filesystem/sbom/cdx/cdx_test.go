@@ -130,6 +130,36 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "sbom-with-nested-comps.cdx.json",
+			path: "testdata/sbom-with-nested-comps.cdx.json",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "Nginx",
+					Version: "1.21.1",
+					Metadata: &cdx.Metadata{
+						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+					},
+					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+				},
+				{
+					Name:    "openssl",
+					Version: "1.1.1",
+					Metadata: &cdx.Metadata{
+						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
+					},
+					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+				},
+				{
+					Name:    "rustls",
+					Version: "0.23.13",
+					Metadata: &cdx.Metadata{
+						PURL: purlFromString(t, "pkg:cargo/rustls@0.23.13"),
+					},
+					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+				},
+			},
+		},
+		{
 			name: "sbom.cdx.xml",
 			path: "testdata/sbom.cdx.xml",
 			wantInventory: []*extractor.Inventory{
