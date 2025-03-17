@@ -4,7 +4,8 @@
       {
         "name": "com.google.guava:guava",
         "versionFrom": "20.0",
-        "versionTo": "24.0-jre"
+        "versionTo": "24.0-jre",
+        "transitive": false
       }
     ],
     "fixed": [

@@ -4,7 +4,8 @@
       {
         "name": "org.apache.commons:commons-configuration2",
         "versionFrom": "2.8.0",
-        "versionTo": "2.10.1"
+        "versionTo": "2.10.1",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -33,7 +34,8 @@
       {
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
-        "versionTo": "1.13.0"
+        "versionTo": "1.13.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -62,7 +64,8 @@
       {
         "name": "org.apache.shiro:shiro-core",
         "versionFrom": "1.10.0",
-        "versionTo": "1.13.0"
+        "versionTo": "1.13.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -82,7 +85,8 @@
       {
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
-        "versionTo": "1.12.0"
+        "versionTo": "1.12.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -102,7 +106,8 @@
       {
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
-        "versionTo": "0.14.0"
+        "versionTo": "0.14.0",
+        "transitive": true
       }
     ],
     "fixed": [

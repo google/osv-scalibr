@@ -63,7 +63,8 @@
         {
           "name": "pkg:b",
           "versionFrom": "1.0.0",
-          "versionTo": "3.0.0"
+          "versionTo": "3.0.0",
+          "transitive": false
         }
       ],
       "fixed": [
@@ -101,7 +102,8 @@
         {
           "name": "pkg:a",
           "versionFrom": "",
-          "versionTo": "1.1.0"
+          "versionTo": "1.1.0",
+          "transitive": true
         }
       ],
       "fixed": [

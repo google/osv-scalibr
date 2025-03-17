@@ -4,7 +4,8 @@
       {
         "name": "io.atomix:atomix",
         "versionFrom": "",
-        "versionTo": "3.1.6"
+        "versionTo": "3.1.6",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -89,7 +90,8 @@
       {
         "name": "org.apache.pdfbox:pdfbox",
         "versionFrom": "",
-        "versionTo": "2.0.24"
+        "versionTo": "2.0.24",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -136,7 +138,8 @@
       {
         "name": "xerces:xercesImpl",
         "versionFrom": "",
-        "versionTo": "2.12.2"
+        "versionTo": "2.12.2",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -183,12 +186,14 @@
       {
         "name": "io.atomix:atomix",
         "versionFrom": "",
-        "versionTo": "3.1.6"
+        "versionTo": "3.1.6",
+        "transitive": true
       },
       {
         "name": "io.github.classgraph:classgraph",
         "versionFrom": "",
-        "versionTo": "4.8.112"
+        "versionTo": "4.8.112",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -262,7 +267,8 @@
       {
         "name": "com.google.guava:guava",
         "versionFrom": "",
-        "versionTo": "32.0.0-jre"
+        "versionTo": "32.0.0-jre",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -300,7 +306,8 @@
       {
         "name": "xerces:xercesImpl",
         "versionFrom": "",
-        "versionTo": "2.12.1"
+        "versionTo": "2.12.1",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -338,7 +345,8 @@
       {
         "name": "com.fasterxml.jackson.core:jackson-databind",
         "versionFrom": "2.12.6.1",
-        "versionTo": "2.12.7.1"
+        "versionTo": "2.12.7.1",
+        "transitive": false
       }
     ],
     "fixed": [
@@ -367,7 +375,8 @@
       {
         "name": "io.netty:netty-handler",
         "versionFrom": "",
-        "versionTo": "4.1.94.Final"
+        "versionTo": "4.1.94.Final",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -396,7 +405,8 @@
       {
         "name": "org.apache.commons:commons-compress",
         "versionFrom": "",
-        "versionTo": "1.26.0"
+        "versionTo": "1.26.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -425,7 +435,8 @@
       {
         "name": "org.apache.commons:commons-configuration2",
         "versionFrom": "2.8.0",
-        "versionTo": "2.10.1"
+        "versionTo": "2.10.1",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -454,7 +465,8 @@
       {
         "name": "org.apache.mina:mina-core",
         "versionFrom": "",
-        "versionTo": "2.0.22"
+        "versionTo": "2.0.22",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -483,7 +495,8 @@
       {
         "name": "org.apache.pdfbox:pdfbox",
         "versionFrom": "",
-        "versionTo": "2.0.23"
+        "versionTo": "2.0.23",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -512,7 +525,8 @@
       {
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
-        "versionTo": "1.13.0"
+        "versionTo": "1.13.0",
+        "transitive": false
       }
     ],
     "fixed": [
@@ -541,7 +555,8 @@
       {
         "name": "org.eclipse.jgit:org.eclipse.jgit",
         "versionFrom": "",
-        "versionTo": "5.13.3.202401111512-r"
+        "versionTo": "5.13.3.202401111512-r",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -570,7 +585,8 @@
       {
         "name": "xerces:xercesImpl",
         "versionFrom": "",
-        "versionTo": "2.12.0"
+        "versionTo": "2.12.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -599,17 +615,20 @@
       {
         "name": "commons-net:commons-net",
         "versionFrom": "",
-        "versionTo": "3.9.0"
+        "versionTo": "3.9.0",
+        "transitive": true
       },
       {
         "name": "net.sourceforge.htmlunit:htmlunit",
         "versionFrom": "",
-        "versionTo": "2.37.0"
+        "versionTo": "2.37.0",
+        "transitive": true
       },
       {
         "name": "net.sourceforge.htmlunit:neko-htmlunit",
         "versionFrom": "",
-        "versionTo": "2.61.0"
+        "versionTo": "2.61.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -665,7 +684,8 @@
       {
         "name": "net.sourceforge.htmlunit:htmlunit",
         "versionFrom": "",
-        "versionTo": "2.37.0"
+        "versionTo": "2.37.0",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -723,7 +743,8 @@
       {
         "name": "com.google.guava:guava",
         "versionFrom": "",
-        "versionTo": "24.1.1-jre"
+        "versionTo": "24.1.1-jre",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -743,7 +764,8 @@
       {
         "name": "com.jcraft:jsch",
         "versionFrom": "",
-        "versionTo": "0.1.54"
+        "versionTo": "0.1.54",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -763,7 +785,8 @@
       {
         "name": "com.nimbusds:nimbus-jose-jwt",
         "versionFrom": "9.13",
-        "versionTo": "9.37.2"
+        "versionTo": "9.37.2",
+        "transitive": false
       }
     ],
     "fixed": [
@@ -783,7 +806,8 @@
       {
         "name": "io.netty:netty",
         "versionFrom": "",
-        "versionTo": "3.9.8.Final"
+        "versionTo": "3.9.8.Final",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -803,7 +827,8 @@
       {
         "name": "io.netty:netty-handler",
         "versionFrom": "",
-        "versionTo": "4.1.46.Final"
+        "versionTo": "4.1.46.Final",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -823,7 +848,8 @@
       {
         "name": "org.apache.directory.api:api-ldap-model",
         "versionFrom": "",
-        "versionTo": "1.0.0-M31"
+        "versionTo": "1.0.0-M31",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -843,7 +869,8 @@
       {
         "name": "org.apache.mina:mina-core",
         "versionFrom": "",
-        "versionTo": "2.0.21"
+        "versionTo": "2.0.21",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -863,7 +890,8 @@
       {
         "name": "org.apache.shiro:shiro-core",
         "versionFrom": "1.10.0",
-        "versionTo": "1.13.0"
+        "versionTo": "1.13.0",
+        "transitive": false
       }
     ],
     "fixed": [
@@ -883,7 +911,8 @@
       {
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
-        "versionTo": "1.12.0"
+        "versionTo": "1.12.0",
+        "transitive": false
       }
     ],
     "fixed": [
@@ -903,7 +932,8 @@
       {
         "name": "org.glassfish.jersey.core:jersey-common",
         "versionFrom": "",
-        "versionTo": "2.34"
+        "versionTo": "2.34",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -923,7 +953,8 @@
       {
         "name": "xalan:xalan",
         "versionFrom": "",
-        "versionTo": "2.7.3"
+        "versionTo": "2.7.3",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -943,12 +974,14 @@
       {
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
-        "versionTo": "0.14.0"
+        "versionTo": "0.14.0",
+        "transitive": true
       },
       {
         "name": "org.apache.tomcat.embed:tomcat-embed-core",
         "versionFrom": "",
-        "versionTo": "8.5.99"
+        "versionTo": "8.5.99",
+        "transitive": true
       }
     ],
     "fixed": [
@@ -968,7 +1001,8 @@
       {
         "name": "io.netty:netty-codec",
         "versionFrom": "",
-        "versionTo": "4.1.68.Final"
+        "versionTo": "4.1.68.Final",
+        "transitive": true
       }
     ],
     "fixed": []
@@ -978,7 +1012,8 @@
       {
         "name": "io.netty:netty-handler",
         "versionFrom": "",
-        "versionTo": "4.1.45.Final"
+        "versionTo": "4.1.45.Final",
+        "transitive": true
       }
     ],
     "fixed": []
@@ -988,7 +1023,8 @@
       {
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
-        "versionTo": "0.14.0"
+        "versionTo": "0.14.0",
+        "transitive": true
       }
     ],
     "fixed": [

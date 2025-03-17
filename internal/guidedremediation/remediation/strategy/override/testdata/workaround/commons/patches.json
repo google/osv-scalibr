@@ -4,7 +4,8 @@
       {
         "name": "commons-beanutils:commons-beanutils",
         "versionFrom": "20020520",
-        "versionTo": "1.9.4"
+        "versionTo": "1.9.4",
+        "transitive": false
       }
     ],
     "fixed": [

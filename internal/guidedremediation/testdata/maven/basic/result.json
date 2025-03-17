@@ -18,7 +18,8 @@
         {
           "name": "pkg:a",
           "versionFrom": "1.0.0",
-          "versionTo": "1.1.0"
+          "versionTo": "1.1.0",
+          "transitive": false
         }
       ],
       "fixed": [
