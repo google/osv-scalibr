@@ -33,7 +33,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-// MavenCentral holds the URL of Maven Central Repository.
+// mavenCentral holds the URL of Maven Central Repository.
 const mavenCentral = "https://repo.maven.apache.org/maven2"
 
 var errAPIFailed = errors.New("API query failed")
