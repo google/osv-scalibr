@@ -1,0 +1,120 @@
+{
+  "ecosystem": "Maven",
+  "strategy": "override",
+  "vulnerabilities": [
+    {
+      "id": "OSV-000-000",
+      "packages": [
+        {
+          "name": "pkg:a",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-001",
+      "packages": [
+        {
+          "name": "pkg:b",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-002",
+      "packages": [
+        {
+          "name": "pkg:b",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-003",
+      "packages": [
+        {
+          "name": "pkg:c",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-004",
+      "packages": [
+        {
+          "name": "pkg:d",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-005",
+      "packages": [
+        {
+          "name": "pkg:d",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "pkg:b",
+          "versionFrom": "1.0.0",
+          "versionTo": "3.0.0"
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-001",
+          "packages": [
+            {
+              "name": "pkg:b",
+              "version": "1.0.0"
+            }
+          ]
+        },
+        {
+          "id": "OSV-000-002",
+          "packages": [
+            {
+              "name": "pkg:b",
+              "version": "1.0.0"
+            }
+          ]
+        },
+        {
+          "id": "OSV-000-003",
+          "packages": [
+            {
+              "name": "pkg:c",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageUpdates": [
+        {
+          "name": "pkg:a",
+          "versionFrom": "",
+          "versionTo": "1.1.0"
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-000",
+          "packages": [
+            {
+              "name": "pkg:a",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

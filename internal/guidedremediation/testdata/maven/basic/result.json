@@ -1,0 +1,37 @@
+{
+  "ecosystem": "Maven",
+  "strategy": "override",
+  "vulnerabilities": [
+    {
+      "id": "OSV-000-000",
+      "packages": [
+        {
+          "name": "pkg:a",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "pkg:a",
+          "versionFrom": "1.0.0",
+          "versionTo": "1.1.0"
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-000",
+          "packages": [
+            {
+              "name": "pkg:a",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
