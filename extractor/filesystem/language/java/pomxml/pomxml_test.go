@@ -165,6 +165,16 @@ func TestExtractor_Extract(t *testing.T) {
 						DepGroupVals: []string{},
 					},
 				},
+				{
+					Name:      "com.google.code.findbugs:jsr305",
+					Version:   "3.0.2",
+					Locations: []string{"testdata/with-dependency-management.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "jsr305",
+						GroupID:      "com.google.code.findbugs",
+						DepGroupVals: []string{},
+					},
+				},
 			},
 		},
 		{
