@@ -40,23 +40,34 @@ const (
 // MaxParent sets a limit on the number of parents to avoid indefinite loop.
 const MaxParent = 100
 
+// Options for merging parent data.
+//   - Input is the scan input for the current project.
+//   - Client is the Maven registry API client for fetching remote pom.xml.
+//   - AllowLocal indicates whether parsing local parent pom.xml is allowed.
+//   - InitialParentIndex indicates the index of the current parent project, which is
+//     used to check if the packaging has to be `pom`.
+type Options struct {
+	Input  *filesystem.ScanInput
+	Client *datasource.MavenRegistryAPIClient
+
+	AllowLocal         bool
+	InitialParentIndex int
+}
+
 // MergeParents parses local accessible parent pom.xml or fetches it from
 // upstream, merges into root project, then interpolate the properties.
-//   - result holds the Maven project to merge into, this is modified in place.
 //   - current holds the current parent project to merge.
-//   - parentIndex indicates the index of the current parent project, which is
-//     used to check if the packaging has to be `pom`.
-//   - allowLocal indicates whether parsing local parent pom.xml is allowed.
-//   - path holds the path to the current pom.xml, which is used to compute the
-//     relative path of parent.
-func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, initialParentIndex int, allowLocal bool) error {
+//   - result holds the Maven project to merge into, this is modified in place.
+//   - opts holds the options for merging parent data.
+func MergeParents(ctx context.Context, current maven.Parent, result *maven.Project, opts Options) error {
 	currentPath := ""
-	if input != nil {
-		currentPath = input.Path
+	if opts.Input != nil {
+		currentPath = opts.Input.Path
 	}
 
+	allowLocal := opts.AllowLocal
 	visited := make(map[maven.ProjectKey]struct{}, MaxParent)
-	for n := initialParentIndex; n < MaxParent; n++ {
+	for n := opts.InitialParentIndex; n < MaxParent; n++ {
 		if current.GroupID == "" || current.ArtifactID == "" || current.Version == "" {
 			break
 		}
@@ -71,7 +82,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 		if allowLocal {
 			var parentPath string
 			var err error
-			parentFoundLocally, parentPath, err = loadParentLocal(input, current, currentPath, &proj)
+			parentFoundLocally, parentPath, err = loadParentLocal(opts.Input, current, currentPath, &proj)
 			if err != nil {
 				return fmt.Errorf("failed to load parent at %s: %w", currentPath, err)
 			}
@@ -84,7 +95,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 			// allow parsing parent pom.xml locally anymore.
 			allowLocal = false
 			var err error
-			proj, err = loadParentRemote(ctx, mavenClient, current, n)
+			proj, err = loadParentRemote(ctx, opts.Client, current, n)
 			if err != nil {
 				return fmt.Errorf("failed to load parent from remote: %w", err)
 			}
@@ -94,7 +105,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 			return fmt.Errorf("failed to merge default profiles: %w", err)
 		}
 		for _, repo := range proj.Repositories {
-			if err := mavenClient.AddRegistry(datasource.MavenRegistry{
+			if err := opts.Client.AddRegistry(datasource.MavenRegistry{
 				URL:              string(repo.URL),
 				ID:               string(repo.ID),
 				ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -137,6 +148,11 @@ func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path stri
 
 // loadParentRemote loads a parent from remote registry.
 func loadParentRemote(ctx context.Context, mavenClient *datasource.MavenRegistryAPIClient, parent maven.Parent, parentIndex int) (maven.Project, error) {
+	if mavenClient == nil {
+		// The client is not available, so return an empty project.
+		return maven.Project{}, nil
+	}
+
 	proj, err := mavenClient.GetProject(ctx, string(parent.GroupID), string(parent.ArtifactID), string(parent.Version))
 	if err != nil {
 		return maven.Project{}, fmt.Errorf("failed to get Maven project %s:%s:%s: %w", parent.GroupID, parent.ArtifactID, parent.Version, err)
@@ -196,7 +212,11 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 	// To get dependency management from another project, we need the
 	// project with parents merged, so we call MergeParents by passing
 	// an empty project.
-	if err := MergeParents(ctx, nil, client.WithoutRegistries(), &result, root, 0, false); err != nil {
+	if err := MergeParents(ctx, root, &result, Options{
+		Client:             client.WithoutRegistries(),
+		AllowLocal:         false,
+		InitialParentIndex: 0,
+	}); err != nil {
 		return maven.DependencyManagement{}, err
 	}
 

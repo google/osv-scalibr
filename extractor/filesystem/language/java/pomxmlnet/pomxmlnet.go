@@ -125,7 +125,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
-	if err := mavenutil.MergeParents(ctx, input, e.mavenClient, &project, project.Parent, 1, true); err != nil {
+	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
+		Input:              input,
+		Client:             e.mavenClient,
+		AllowLocal:         true,
+		InitialParentIndex: 1,
+	}); err != nil {
 		return nil, fmt.Errorf("failed to merge parents: %w", err)
 	}
 	// Process the dependencies:
