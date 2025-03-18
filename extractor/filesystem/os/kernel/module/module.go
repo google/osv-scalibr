@@ -169,7 +169,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	}
 	elfFile, err := elf.NewFile(readerAt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ELF file: %v", err)
+		return nil, fmt.Errorf("failed to parse ELF file: %w", err)
 	}
 
 	// Note that it's possible to strip section names from the binary so we might not be able
@@ -181,7 +181,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 
 	sectionData, err := section.Data()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read .modinfo section: %v", err)
+		return nil, fmt.Errorf("failed to read .modinfo section: %w", err)
 	}
 
 	var metadata Metadata

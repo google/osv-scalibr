@@ -379,14 +379,14 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	rc, err := wc.fs.Open(path)
 	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %v", path, err))
+		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
 		return
 	}
 	defer rc.Close()
 
 	info, err := rc.Stat()
 	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %v", path, err))
+		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
 		return
 	}
 

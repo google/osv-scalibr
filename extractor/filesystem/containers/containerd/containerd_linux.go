@@ -134,7 +134,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// This will still allow to handle the snapshot of a machine.
 	metaDB, err := bolt.Open(filepath.Join(input.Root, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return inventory, fmt.Errorf("Could not read the containerd metadb file: %v", err)
+		return inventory, fmt.Errorf("Could not read the containerd metadb file: %w", err)
 	}
 
 	defer metaDB.Close()
@@ -145,7 +145,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		fullMetadataDBPath := filepath.Join(input.Root, snapshotterMetadataDBPath)
 		snapshotsMetadata, err = snapshotsMetadataFromDB(fullMetadataDBPath, e.maxMetaDBFileSize, "overlayfs")
 		if err != nil {
-			return inventory, fmt.Errorf("Could not collect snapshots metadata from DB: %v", err)
+			return inventory, fmt.Errorf("Could not collect snapshots metadata from DB: %w", err)
 		}
 	}
 
@@ -323,18 +323,18 @@ func snapshotsMetadataFromDB(fullMetadataDBPath string, maxMetaDBFileSize int64,
 	// Check if the file is valid to be opened, and make sure it's not too large.
 	err := fileSizeCheck(fullMetadataDBPath, maxMetaDBFileSize)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read the containerd metadb file: %v", err)
+		return nil, fmt.Errorf("Could not read the containerd metadb file: %w", err)
 	}
 
 	metadataDB, err := bolt.Open(fullMetadataDBPath, 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("Could not read the containerd metadb file: %v", err)
+		return nil, fmt.Errorf("Could not read the containerd metadb file: %w", err)
 	}
 	defer metadataDB.Close()
 	err = metadataDB.View(func(tx *bolt.Tx) error {
 		snapshotsBucketByDigest, err := snapshotsBucketByDigest(tx)
 		if err != nil {
-			return fmt.Errorf("Not able to grab the names of the snapshot buckets: %v", err)
+			return fmt.Errorf("Not able to grab the names of the snapshot buckets: %w", err)
 		}
 		// Store the important info of the snapshots into snapshotMetadata struct.
 		snapshotsMetadata = snapshotMetadataFromSnapshotsBuckets(tx, snapshotsBucketByDigest, snapshotsMetadata, fileSystemDriver)

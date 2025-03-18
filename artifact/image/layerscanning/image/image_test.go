@@ -1087,7 +1087,7 @@ func constructImage(ctx context.Context, version, fakePackageName string) (*v1.I
 		return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to create layer: %v", err)
+		return nil, fmt.Errorf("unable to create layer: %w", err)
 	}
 	image, err := mutate.AppendLayers(empty.Image, layer)
 	return &image, err

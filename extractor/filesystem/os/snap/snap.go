@@ -163,7 +163,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	snap := snap{}
 	dec := yaml.NewDecoder(input.Reader)
 	if err := dec.Decode(&snap); err != nil {
-		return nil, fmt.Errorf("failed to yaml decode %q: %v", input.Path, err)
+		return nil, fmt.Errorf("failed to yaml decode %q: %w", input.Path, err)
 	}
 
 	if snap.Name == "" {

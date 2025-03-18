@@ -153,7 +153,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	dec := json.NewDecoder(input.Reader)
 	var packages cosPackageInfo
 	if err := dec.Decode(&packages); err != nil {
-		err := fmt.Errorf("failed to json decode %q: %v", input.Path, err)
+		err := fmt.Errorf("failed to json decode %q: %w", input.Path, err)
 		log.Debugf(err.Error())
 		// TODO(b/281023532): We should not mark the overall SCALIBR scan as failed if we can't parse a file.
 		return nil, fmt.Errorf("%w", err)
