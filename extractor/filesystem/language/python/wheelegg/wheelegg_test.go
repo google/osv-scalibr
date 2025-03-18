@@ -17,6 +17,7 @@ package wheelegg_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -452,7 +453,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	e := wheelegg.Extractor{}
 	_, gotErr := e.Extract(context.Background(), input)
 	wantErr := wheelegg.ErrSizeNotSet
-	if gotErr != wantErr {
+	if !errors.Is(gotErr, wantErr) {
 		t.Fatalf("Extract(%s) got err: '%v', want err: '%v'", path, gotErr, wantErr)
 	}
 }

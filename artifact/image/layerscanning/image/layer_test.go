@@ -74,7 +74,7 @@ func TestConvertV1Layer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotLayer, gotError := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
 
-			if tc.wantError != nil && gotError == tc.wantError {
+			if tc.wantError != nil && errors.Is(gotError, tc.wantError) {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned error: %v, want error: %v", tc.v1Layer, tc.command, tc.isEmpty, gotError, tc.wantError)
 			}
 			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, pathtree.Node[fileNode]{})); tc.wantLayer != nil && diff != "" {
