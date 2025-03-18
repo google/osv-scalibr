@@ -101,9 +101,37 @@ linters-settings:
     analyze-types: true
   revive:
     rules:
+      - name: blank-imports
+        disabled: false
+      - name: context-as-argument
+        disabled: false
+      - name: context-keys-type
+        disabled: false
+      - name: dot-imports
+        disabled: false
+      - name: empty-block
+        disabled: false
+      - name: error-naming
+        disabled: false
+      - name: error-return
+        disabled: false
+      - name: error-strings
+        disabled: false
+      - name: errorf
+        disabled: false
       - name: indent-error-flow
         disabled: false
-      - name: use-any
+      - name: range
+        disabled: false
+      - name: receiver-naming
+        disabled: false
+      - name: redefines-builtin-id
+        disabled: false
+      - name: superfluous-else
+        disabled: false
+      - name: time-naming
+        disabled: false
+      - name: unreachable-code
         disabled: false
       - name: var-naming
         disabled: false
