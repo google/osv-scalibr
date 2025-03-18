@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -168,13 +169,13 @@ func TestMatchVuln(t *testing.T) {
 	tests := []struct {
 		name string
 		vuln resolution.Vulnerability
-		opt  remediation.Options
+		opt  options.RemediationOptions
 		want bool
 	}{
 		{
 			name: "basic match",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:  true,
 				MaxDepth: -1,
 			},
@@ -183,7 +184,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "accept depth",
 			vuln: vuln2,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:  true,
 				MaxDepth: 2,
 			},
@@ -192,7 +193,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "reject depth",
 			vuln: vuln2,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:  true,
 				MaxDepth: 1,
 			},
@@ -201,7 +202,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "accept severity",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				MinSeverity: 6.6,
@@ -211,7 +212,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "reject severity",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				MinSeverity: 6.7,
@@ -221,7 +222,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "accept unknown severity",
 			vuln: vuln2,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				MinSeverity: 10.0,
@@ -231,7 +232,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "accept non-dev",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:  false,
 				MaxDepth: -1,
 			},
@@ -240,7 +241,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "reject dev",
 			vuln: vuln2,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:  false,
 				MaxDepth: -1,
 			},
@@ -249,7 +250,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "reject ID excluded",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				IgnoreVulns: []string{"VULN-001"},
@@ -259,7 +260,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "accept matching multiple",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     false,
 				MaxDepth:    3,
 				MinSeverity: 5.0,
@@ -270,7 +271,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "reject excluded ID in alias",
 			vuln: vuln1,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				IgnoreVulns: []string{"OSV-2"},
@@ -280,7 +281,7 @@ func TestMatchVuln(t *testing.T) {
 		{
 			name: "check per-affected severity",
 			vuln: vuln3,
-			opt: remediation.Options{
+			opt: options.RemediationOptions{
 				DevDeps:     true,
 				MaxDepth:    -1,
 				MinSeverity: 8.0,
@@ -291,7 +292,7 @@ func TestMatchVuln(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.opt.MatchVuln(tt.vuln); got != tt.want {
+			if got := remediation.MatchVuln(tt.opt, tt.vuln); got != tt.want {
 				t.Errorf("MatchVuln() = %v, want %v", got, tt.want)
 			}
 		})

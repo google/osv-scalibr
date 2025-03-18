@@ -25,7 +25,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
@@ -39,8 +39,8 @@ type ResolvedManifest struct {
 }
 
 // ResolveManifest resolves and find vulnerabilities in a manifest.
-func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, m manifest.Manifest, opts *remediation.Options) (*ResolvedManifest, error) {
-	g, err := resolution.Resolve(ctx, cl, m, opts.ResolutionOpts)
+func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, m manifest.Manifest, opts *options.RemediationOptions) (*ResolvedManifest, error) {
+	g, err := resolution.Resolve(ctx, cl, m, opts.ResolutionOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 	}
 
 	filteredVulns := slices.Clone(allVulns)
-	filteredVulns = slices.DeleteFunc(filteredVulns, func(v resolution.Vulnerability) bool { return !opts.MatchVuln(v) })
+	filteredVulns = slices.DeleteFunc(filteredVulns, func(v resolution.Vulnerability) bool { return !MatchVuln(*opts, v) })
 
 	return &ResolvedManifest{
 		Manifest:        m,

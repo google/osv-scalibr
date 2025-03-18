@@ -29,12 +29,12 @@ import (
 	client "github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
-	"github.com/google/osv-scalibr/guidedremediation/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 
 // Resolve resolves the dependencies in the manifest using the provided client.
-func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts resolution.Options) (*resolve.Graph, error) {
+func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts options.ResolutionOptions) (*resolve.Graph, error) {
 	// Insert the manifest dependency into the client
 	cl := client.NewOverrideClient(c)
 	cl.AddVersion(m.Root(), m.Requirements())
@@ -65,7 +65,7 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts re
 	return resolvePostProcess(ctx, cl, m, opts, graph)
 }
 
-func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manifest, opts resolution.Options, graph *resolve.Graph) (*resolve.Graph, error) {
+func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manifest, opts options.ResolutionOptions, graph *resolve.Graph) (*resolve.Graph, error) {
 	if m.System() == resolve.Maven && opts.MavenManagement {
 		// Add a node & edge for each dependency in dependencyManagement that doesn't already appear in the resolved graph
 		manifestSpecific, ok := m.EcosystemSpecific().(maven.ManifestSpecific)

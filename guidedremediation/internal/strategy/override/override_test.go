@@ -27,10 +27,9 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
-	remediationimpl "github.com/google/osv-scalibr/guidedremediation/internal/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
-	"github.com/google/osv-scalibr/guidedremediation/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
@@ -41,7 +40,7 @@ func TestComputePatches(t *testing.T) {
 		universeFile string
 		vulnsFile    string
 		manifestPath string
-		opts         remediation.Options
+		opts         options.RemediationOptions
 		wantFile     string
 	}{
 		{
@@ -49,7 +48,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/zeppelin-server/universe.yaml",
 			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
 			manifestPath: "zeppelin-server/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/zeppelin-server/patches.json",
 		},
 		{
@@ -57,7 +56,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/maven-classifier/universe.yaml",
 			vulnsFile:    "testdata/maven-classifier/vulnerabilities.yaml",
 			manifestPath: "maven-classifier/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/maven-classifier/patches.json",
 		},
 		{
@@ -65,8 +64,8 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/zeppelin-server/universe.yaml",
 			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
 			manifestPath: "zeppelin-server/parent/pom.xml",
-			opts: remediation.Options{
-				ResolutionOpts: resolution.Options{
+			opts: options.RemediationOptions{
+				ResolutionOptions: options.ResolutionOptions{
 					MavenManagement: true,
 				},
 				DevDeps:       true,
@@ -80,7 +79,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/none-to-jre/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/none-to-jre/patches.json",
 		},
 		{
@@ -88,7 +87,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/jre-to-jre/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/jre-to-jre/patches.json",
 		},
 		{
@@ -96,7 +95,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/android-to-android/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/android-to-android/patches.json",
 		},
 		{
@@ -104,7 +103,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/commons/pom.xml",
-			opts:         remediation.DefaultOptions(),
+			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/commons/patches.json",
 		},
 	}
@@ -133,7 +132,7 @@ func TestComputePatches(t *testing.T) {
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
 			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolved, err := remediationimpl.ResolveManifest(context.Background(), cl, vm, m, &tt.opts)
+			resolved, err := remediation.ResolveManifest(context.Background(), cl, vm, m, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}

@@ -29,32 +29,19 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
-	remediationimpl "github.com/google/osv-scalibr/guidedremediation/internal/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 )
-
-// RemediationOptions are the options for FixVulns.
-type RemediationOptions struct {
-	Manifest          string
-	Lockfile          string
-	Strategy          strategy.Strategy
-	MaxUpgrades       int
-	MatcherClient     matcher.VulnerabilityMatcher
-	ResolveClient     resolve.Client
-	DefaultRepository string
-	RemOpts           remediation.Options
-}
 
 // FixVulns remediates vulnerabilities in the manifest/lockfile using a remediation strategy,
 // which are specified in the RemediationOptions.
 // FixVulns will overwrite the manifest/lockfile(s) on disk with the dependencies
 // patched to remove vulnerabilities. It also returns a Result describing the changes made.
-func FixVulns(opts RemediationOptions) (result.Result, error) {
+func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	var (
 		hasManifest bool = (opts.Manifest != "")
 		hasLockfile bool = (opts.Lockfile != "")
@@ -107,7 +94,7 @@ func FixVulns(opts RemediationOptions) (result.Result, error) {
 	return result.Result{}, fmt.Errorf("unsupported strategy: %q", stgy)
 }
 
-func doOverride(ctx context.Context, rw manifest.ReadWriter, opts RemediationOptions) (result.Result, error) {
+func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
 	m, err := parseManifest(opts.Manifest, rw)
 	if err != nil {
 		return result.Result{}, err
@@ -119,13 +106,13 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts RemediationOpt
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
-	resolved, err := remediationimpl.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemOpts)
+	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving manifest: %w", err)
 	}
 
 	res.Errors = computeResolveErrors(resolved.Graph)
-	allPatches, err := override.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemOpts)
+	allPatches, err := override.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
@@ -137,7 +124,7 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts RemediationOpt
 	return res, err
 }
 
-func computeVulnsResult(resolved *remediationimpl.ResolvedManifest, allPatches []result.Patch) []result.Vuln {
+func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []result.Patch) []result.Vuln {
 	fixableVulns := make(map[string]struct{})
 	for _, p := range allPatches {
 		for _, v := range p.Fixed {

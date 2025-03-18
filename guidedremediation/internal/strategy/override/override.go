@@ -24,11 +24,11 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"deps.dev/util/semver"
-	remediationimpl "github.com/google/osv-scalibr/guidedremediation/internal/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/internal/mavenutil"
@@ -38,11 +38,11 @@ import (
 // ComputePatches attempts to resolve each vulnerability found in result independently, returning the list of unique possible patches.
 // Vulnerabilities are resolved by directly overriding versions of vulnerable packages to non-vulnerable versions.
 // If a patch introduces new vulnerabilities, additional overrides are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediationimpl.ResolvedManifest, opts *remediation.Options) ([]result.Patch, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) ([]result.Patch, error) {
 	// Do the remediation attempts concurrently
 	type overrideResult struct {
 		vulnIDs  []string
-		resolved *remediationimpl.ResolvedManifest
+		resolved *remediation.ResolvedManifest
 		err      error
 	}
 	ch := make(chan overrideResult)
@@ -68,7 +68,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 			continue
 		}
 
-		patch := remediationimpl.ConstructPatches(resolved, r.resolved)
+		patch := remediation.ConstructPatches(resolved, r.resolved)
 		if len(patch.PackageUpdates) == 0 {
 			continue
 		}
@@ -99,8 +99,8 @@ var errOverrideImpossible = errors.New("cannot fix vulns by overrides")
 
 // patchVulns tries to fix as many vulns in vulnIDs as possible by overriding dependency versions.
 // returns errOverrideImpossible if 0 vulns are patchable, otherwise returns the most possible patches.
-func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediationimpl.ResolvedManifest, vulnIDs []string, opts *remediation.Options) (*remediationimpl.ResolvedManifest, error) {
-	resolved = &remediationimpl.ResolvedManifest{
+func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
+	resolved = &remediation.ResolvedManifest{
 		Manifest:        resolved.Manifest.Clone(),
 		Graph:           resolved.Graph,
 		Vulns:           resolved.Vulns,
@@ -195,7 +195,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 
 		// Re-resolve the manifest
 		var err error
-		resolved.Graph, err = resolution.Resolve(ctx, cl, resolved.Manifest, opts.ResolutionOpts)
+		resolved.Graph, err = resolution.Resolve(ctx, cl, resolved.Manifest, opts.ResolutionOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +204,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 			return nil, err
 		}
 		resolved.Vulns = slices.Clone(resolved.UnfilteredVulns)
-		resolved.Vulns = slices.DeleteFunc(resolved.Vulns, func(v resolution.Vulnerability) bool { return !opts.MatchVuln(v) })
+		resolved.Vulns = slices.DeleteFunc(resolved.Vulns, func(v resolution.Vulnerability) bool { return !remediation.MatchVuln(*opts, v) })
 	}
 
 	return resolved, nil

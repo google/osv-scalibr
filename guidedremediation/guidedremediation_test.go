@@ -27,7 +27,7 @@ import (
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/guidedremediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
-	"github.com/google/osv-scalibr/guidedremediation/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 )
@@ -39,7 +39,7 @@ func TestFixOverride(t *testing.T) {
 		manifest         string
 		wantManifestPath string
 		wantResultPath   string
-		remOpts          remediation.Options
+		remOpts          options.RemediationOptions
 		maxUpgrades      int
 	}{
 		{
@@ -48,7 +48,7 @@ func TestFixOverride(t *testing.T) {
 			manifest:         "testdata/maven/basic/pom.xml",
 			wantManifestPath: "testdata/maven/basic/want.pom.xml",
 			wantResultPath:   "testdata/maven/basic/result.json",
-			remOpts:          remediation.DefaultOptions(),
+			remOpts:          options.DefaultRemediationOptions(),
 		},
 		{
 			name:             "patch choice",
@@ -56,7 +56,7 @@ func TestFixOverride(t *testing.T) {
 			manifest:         "testdata/maven/patchchoice/pom.xml",
 			wantManifestPath: "testdata/maven/patchchoice/want.pom.xml",
 			wantResultPath:   "testdata/maven/patchchoice/result.json",
-			remOpts:          remediation.DefaultOptions(),
+			remOpts:          options.DefaultRemediationOptions(),
 		},
 		{
 			name:             "max upgrades",
@@ -64,7 +64,7 @@ func TestFixOverride(t *testing.T) {
 			manifest:         "testdata/maven/patchchoice/pom.xml",
 			wantManifestPath: "testdata/maven/maxupgrades/want.pom.xml",
 			wantResultPath:   "testdata/maven/maxupgrades/result.json",
-			remOpts:          remediation.DefaultOptions(),
+			remOpts:          options.DefaultRemediationOptions(),
 			maxUpgrades:      2,
 		},
 	} {
@@ -82,13 +82,13 @@ func TestFixOverride(t *testing.T) {
 				t.Fatalf("failed copying manifest: %v", err)
 			}
 
-			opts := guidedremediation.RemediationOptions{
-				Manifest:      manifestPath,
-				Strategy:      strategy.StrategyOverride,
-				MatcherClient: matcher,
-				ResolveClient: client,
-				RemOpts:       tt.remOpts,
-				MaxUpgrades:   tt.maxUpgrades,
+			opts := options.FixVulnsOptions{
+				Manifest:           manifestPath,
+				Strategy:           strategy.StrategyOverride,
+				MatcherClient:      matcher,
+				ResolveClient:      client,
+				RemediationOptions: tt.remOpts,
+				MaxUpgrades:        tt.maxUpgrades,
 			}
 
 			gotRes, err := guidedremediation.FixVulns(opts)

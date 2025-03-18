@@ -12,46 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package remediation has the configuration options for vulnerability remediation.
 package remediation
 
 import (
 	"math"
 	"slices"
 
-	resolutionimpl "github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
-	"github.com/google/osv-scalibr/guidedremediation/resolution"
-	"github.com/google/osv-scalibr/guidedremediation/upgrade"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-// Options is the configuration for remediation.
-type Options struct {
-	ResolutionOpts resolution.Options
-	IgnoreVulns    []string // Vulnerability IDs to ignore
-	ExplicitVulns  []string // If set, only consider these vulnerability IDs & ignore all others
-
-	DevDeps     bool    // Whether to consider vulnerabilities in dev dependencies
-	MinSeverity float64 // Minimum vulnerability CVSS score to consider
-	MaxDepth    int     // Maximum depth of dependency to consider vulnerabilities for (e.g. 1 for direct only)
-
-	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
-}
-
-// DefaultOptions creates a default initialized remediation configuration.
-func DefaultOptions() Options {
-	return Options{
-		DevDeps:       true,
-		MaxDepth:      -1,
-		UpgradeConfig: upgrade.NewConfig(),
-	}
-}
-
 // MatchVuln checks whether a found vulnerability should be considered according to the remediation options.
-func (opts Options) MatchVuln(v resolutionimpl.Vulnerability) bool {
-	if opts.matchID(v, opts.IgnoreVulns) {
+func MatchVuln(opts options.RemediationOptions, v resolution.Vulnerability) bool {
+	if matchID(v, opts.IgnoreVulns) {
 		return false
 	}
 
@@ -59,10 +35,10 @@ func (opts Options) MatchVuln(v resolutionimpl.Vulnerability) bool {
 		return false
 	}
 
-	return opts.matchSeverity(v) && opts.matchDepth(v)
+	return matchSeverity(v, opts.MinSeverity) && matchDepth(v, opts.MaxDepth)
 }
 
-func (opts Options) matchID(v resolutionimpl.Vulnerability, ids []string) bool {
+func matchID(v resolution.Vulnerability, ids []string) bool {
 	if slices.Contains(ids, v.OSV.ID) {
 		return true
 	}
@@ -76,7 +52,7 @@ func (opts Options) matchID(v resolutionimpl.Vulnerability, ids []string) bool {
 	return false
 }
 
-func (opts Options) matchSeverity(v resolutionimpl.Vulnerability) bool {
+func matchSeverity(v resolution.Vulnerability, minSeverity float64) bool {
 	maxScore := -1.0
 	severities := v.OSV.Severity
 	if len(severities) == 0 {
@@ -103,17 +79,17 @@ func (opts Options) matchSeverity(v resolutionimpl.Vulnerability) bool {
 	// CVSS scores are meant to only be to 1 decimal place
 	// and we want to avoid something being falsely rejected/included due to floating point precision.
 	// Multiply and round to only consider relevant parts of the score.
-	return math.Round(10*maxScore) >= math.Round(10*opts.MinSeverity) ||
+	return math.Round(10*maxScore) >= math.Round(10*minSeverity) ||
 		maxScore < 0 // Always include vulns with unknown severities
 }
 
-func (opts Options) matchDepth(v resolutionimpl.Vulnerability) bool {
-	if opts.MaxDepth <= 0 {
+func matchDepth(v resolution.Vulnerability, maxDepth int) bool {
+	if maxDepth <= 0 {
 		return true
 	}
 
 	for _, sg := range v.Subgraphs {
-		if sg.Nodes[0].Distance <= opts.MaxDepth {
+		if sg.Nodes[0].Distance <= maxDepth {
 			return true
 		}
 	}

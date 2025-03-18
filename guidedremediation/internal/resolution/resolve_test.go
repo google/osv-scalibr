@@ -27,7 +27,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	mavenmanifest "github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	resolutionopts "github.com/google/osv-scalibr/guidedremediation/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/options"
 )
 
 // mockManifest represents a manifest file for testing purposes.
@@ -175,7 +175,7 @@ func TestResolveNPM(t *testing.T) {
 	}
 	cl := clienttest.NewMockResolutionClient(t, "testdata/universe/npm.yaml")
 
-	got, err := resolution.Resolve(context.Background(), cl, m, resolutionopts.Options{})
+	got, err := resolution.Resolve(context.Background(), cl, m, options.ResolutionOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +263,7 @@ func TestResolveMaven(t *testing.T) {
 	}
 	cl := clienttest.NewMockResolutionClient(t, "testdata/universe/maven.yaml")
 
-	got, err := resolution.Resolve(context.Background(), cl, m, resolutionopts.Options{MavenManagement: true})
+	got, err := resolution.Resolve(context.Background(), cl, m, options.ResolutionOptions{MavenManagement: true})
 	if err != nil {
 		t.Fatal(err)
 	}
