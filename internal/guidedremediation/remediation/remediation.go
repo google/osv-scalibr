@@ -222,6 +222,7 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 				VersionFrom: "",
 				VersionTo:   req.Version,
 				Type:        typ,
+				Transitive:  true,
 			})
 			continue
 		}
@@ -229,11 +230,22 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 			continue
 		}
 
+		// In Maven, a dependency can be in both <dependencies> and <dependencyManagement>.
+		// To work out if this is direct or transitive, we need to check if this is appears the regular dependencies.
+		direct := slices.ContainsFunc(oldRes.Manifest.Requirements(), func(r resolve.RequirementVersion) bool {
+			if r.Name != req.Name {
+				return false
+			}
+			origin, _ := r.Type.GetAttr(dep.MavenDependencyOrigin)
+			return origin != mavenutil.OriginManagement
+		})
+
 		output.PackageUpdates = append(output.PackageUpdates, result.PackageUpdate{
 			Name:        req.Name,
 			VersionFrom: oldReq.Version,
 			VersionTo:   req.Version,
 			Type:        oldReq.Type.Clone(),
+			Transitive:  !direct,
 		})
 	}
 	slices.SortFunc(output.PackageUpdates, func(a, b result.PackageUpdate) int {

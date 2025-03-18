@@ -107,8 +107,7 @@ type PackageUpdate struct {
 	Name        string `json:"name"`        // name of dependency being updated.
 	VersionFrom string `json:"versionFrom"` // version of the dependency before the patch.
 	VersionTo   string `json:"versionTo"`   // version of the dependency after the patch.
-	// TODO(#454): reevaluate if transitive flag is useful/necessary
-	// Transitive  bool   `json:"transitive"`  // false if this package is a direct dependency, true if indirect.
+	Transitive  bool   `json:"transitive"`  // false if this package is a direct dependency, true if indirect.
 
 	Type dep.Type `json:"-"`
 }

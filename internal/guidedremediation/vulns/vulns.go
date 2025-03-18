@@ -20,6 +20,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/internal/guidedremediation/util"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -40,16 +41,7 @@ type mockExtractor struct{}
 
 // Ecosystem returns the ecosystem of the inventory.
 func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
-	switch inv.Metadata.(resolve.System) {
-	case resolve.NPM:
-		return "npm"
-	case resolve.Maven:
-		return "Maven"
-	case resolve.UnknownSystem:
-		return ""
-	default:
-		return ""
-	}
+	return string(util.DepsDevToOSVEcosystem(inv.Metadata.(resolve.System)))
 }
 
 // Unnecessary methods stubbed out.
@@ -60,8 +52,8 @@ func (e mockExtractor) Version() int                                 { return 0 
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Inventory.
 func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
-	resolveSys, ok := inv.Metadata.(resolve.System)
-	if !ok {
+	resolveSys := util.OSVToDepsDevSystem(osvschema.Ecosystem(inv.Ecosystem()))
+	if resolveSys == resolve.UnknownSystem {
 		return false
 	}
 	sys := resolveSys.Semver()

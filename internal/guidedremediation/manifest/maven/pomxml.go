@@ -497,6 +497,9 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 
 	for _, patchPath := range paths {
 		patches := allPatches[patchPath]
+		if patchPath == original.FilePath() {
+			patches = allPatches[""]
+		}
 		depFile, err := fsys.Open(patchPath)
 		if err != nil {
 			return err
