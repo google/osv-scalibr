@@ -250,9 +250,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 
 	// Remove any unnecessary file nodes from the chain layers based on the configured requirer.
-	if err := removeUnnecessaryFileNodes(outputImage.chainLayers, config.Requirer, config.MaxSymlinkDepth); err != nil {
-		return outputImage, fmt.Errorf("failed to remove unnecessary file nodes: %w", err)
-	}
+	removeUnnecessaryFileNodes(outputImage.chainLayers, config.Requirer, config.MaxSymlinkDepth)
 
 	return outputImage, nil
 }
@@ -284,7 +282,7 @@ func isNodeRequired(node *fileNode, requirer require.FileRequirer) bool {
 // removeUnnecessaryFileNodes removes any file nodes from the chain layers that are not required by
 // the requirer. Symlink nodes are accounted for by preserving target nodes if the symlink node is
 // required.
-func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) error {
+func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) {
 	for _, chainLayer := range chainLayers {
 		filesRequired := map[string]bool{}
 		_ = chainLayer.fileNodeTree.Walk(func(virtualPath string, node *fileNode) error {
@@ -335,7 +333,6 @@ func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.File
 			}
 		}
 	}
-	return nil
 }
 
 // addRootDirectoryToChainLayers adds the root ("\"") directory to each chain layer.
