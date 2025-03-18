@@ -260,10 +260,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 
 	// Remove any unnecessary file nodes from the chain layers based on the configured requirer.
-	bytesRemoved, err := removeUnnecessaryFileNodes(chainLayers, config.Requirer, config.MaxSymlinkDepth)
-	if err != nil {
-		return outputImage, fmt.Errorf("failed to remove unnecessary file nodes: %w", err)
-	}
+	bytesRemoved := removeUnnecessaryFileNodes(chainLayers, config.Requirer, config.MaxSymlinkDepth)
 	outputImage.size -= bytesRemoved
 
 	return outputImage, nil
@@ -300,10 +297,10 @@ func isNodeRequired(node *fileNode, requirer require.FileRequirer) bool {
 // removeUnnecessaryFileNodes removes any file nodes from the chain layers that are not required by
 // the requirer. Symlink nodes are accounted for by preserving target nodes if the symlink node is
 // required.
-func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) (int64, error) {
+func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) int64 {
 	// If there are no chain layers, then there are no nodes to remove.
 	if len(chainLayers) == 0 {
-		return 0, nil
+		return 0
 	}
 
 	// Prune only the final chain layer since SCALIBR scans the last layer.
@@ -358,7 +355,7 @@ func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.File
 			bytesRemoved += node.Size()
 		}
 	}
-	return bytesRemoved, nil
+	return bytesRemoved
 }
 
 // addRootDirectoryToChainLayers adds the root ("\"") directory to each chain layer.
