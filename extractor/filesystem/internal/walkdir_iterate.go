@@ -40,7 +40,7 @@ import (
 func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc) error {
 	// This is the main call to walkDirFn for files and directories, without errors.
 	if err := walkDirFn(name, d, nil); err != nil || !d.IsDir() {
-		if err == fs.SkipDir && d.IsDir() {
+		if errors.Is(err, fs.SkipDir) && d.IsDir() {
 			// Successfully skipped directory.
 			err = nil
 		}
@@ -54,7 +54,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 		// which can decide to continue (nil), SkipDir or skip all by other errors (e.g. SkipAll).
 		err = walkDirFn(name, d, err)
 		if err != nil {
-			if err == fs.SkipDir && d.IsDir() {
+			if errors.Is(err, fs.SkipDir) && d.IsDir() {
 				err = nil
 			}
 			return err
@@ -68,7 +68,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 	for {
 		d1, err := dirs.next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			// Second call, to report ReadDir error.
@@ -76,7 +76,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 			// which can decide to continue (nil), SkipDir or skip all by other errors (e.g. SkipAll).
 			err = walkDirFn(name, d, err)
 			if err != nil {
-				if err == fs.SkipDir && d.IsDir() {
+				if errors.Is(err, fs.SkipDir) && d.IsDir() {
 					err = nil
 				}
 				return err
@@ -86,7 +86,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 		}
 		name1 := path.Join(name, d1.Name())
 		if err := walkDirUnsorted(fsys, name1, d1, walkDirFn); err != nil {
-			if err == fs.SkipDir {
+			if errors.Is(err, fs.SkipDir) {
 				break
 			}
 			return err
@@ -110,7 +110,7 @@ func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc) error {
 	} else {
 		err = walkDirUnsorted(fsys, root, fs.FileInfoToDirEntry(info), fn)
 	}
-	if err == fs.SkipDir || err == fs.SkipAll {
+	if errors.Is(err, fs.SkipDir) || errors.Is(err, fs.SkipAll) {
 		return nil
 	}
 	return err

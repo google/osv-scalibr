@@ -16,6 +16,7 @@ package dismpatch
 
 import (
 	_ "embed"
+	"errors"
 	"os"
 	"testing"
 
@@ -90,7 +91,7 @@ func TestInventoryFromOutput(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			got, gotErr := inventoryFromOutput(tc.flavor, tc.output)
-			if gotErr != tc.wantErr {
+			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("inventoryFromOutput(%q, %q) returned an unexpected error: %v", tc.flavor, tc.output, gotErr)
 			}
 

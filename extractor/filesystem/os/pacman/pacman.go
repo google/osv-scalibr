@@ -18,6 +18,7 @@ package pacman
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -180,7 +181,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				log.Warnf("Reached EOF for desc file in %v", input.Path)
 				break
 			}
