@@ -392,6 +392,7 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Infof("failed to get task status: %v", err)
+			return false
 		}
 
 		var statusBody map[string]any
