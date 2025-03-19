@@ -166,7 +166,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 
 	magicType, err := magic.GetType(r)
 	if err != nil {
-		return nil, fmt.Errorf("error determining magic type: %s", err)
+		return nil, fmt.Errorf("error determining magic type: %w", err)
 	}
 
 	if len(magicType) == 0 || magicType[0] != "Linux kernel" {

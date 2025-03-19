@@ -161,7 +161,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return pkgs, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 		}
 
 		line := s.Text()
@@ -184,7 +184,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				log.Warnf("Reached EOF for desc file in %v", input.Path)
 				break
 			}
-			return pkgs, fmt.Errorf("%s halted at %q: %v", e.Name(), input.Path, err)
+			return pkgs, fmt.Errorf("%s halted at %q: %w", e.Name(), input.Path, err)
 		}
 	}
 

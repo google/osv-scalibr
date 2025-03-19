@@ -178,7 +178,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inv
 	var f Metainfo
 	err = xml.NewDecoder(input.Reader).Decode(&f)
 	if err != nil {
-		return nil, fmt.Errorf("failed to xml decode: %v", err)
+		return nil, fmt.Errorf("failed to xml decode: %w", err)
 	}
 
 	pkgName := ""

@@ -156,7 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	for name, dependency := range parsedTomlFile.Dependencies {
 		if err := ctx.Err(); err != nil {
-			return packages, fmt.Errorf("%s halted at %q because of context error: %v", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 		}
 
 		var srcCode *extractor.SourceCodeIdentifier
