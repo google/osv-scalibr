@@ -14,4 +14,5 @@
 
 //go:build !linux
 
+// Package proc provides utilities to parse /proc files.
 package proc

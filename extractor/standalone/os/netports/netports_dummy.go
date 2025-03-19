@@ -14,6 +14,8 @@
 
 //go:build !linux
 
+// Package netports extracts open ports on the system and maps them to running processes when
+// possible.
 package netports
 
 import (
