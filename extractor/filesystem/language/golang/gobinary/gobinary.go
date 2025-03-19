@@ -221,10 +221,12 @@ func parseDependency(d *debug.Module) (string, string) {
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+	nameParts := strings.Split(i.Name, "/")
 	return &purl.PackageURL{
-		Type:    purl.TypeGolang,
-		Name:    i.Name,
-		Version: i.Version,
+		Type:      purl.TypeGolang,
+		Name:      nameParts[len(nameParts)-1],
+		Namespace: strings.Join(nameParts[:len(nameParts)-1], "/"),
+		Version:   i.Version,
 	}
 }
 
