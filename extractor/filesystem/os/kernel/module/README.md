@@ -12,4 +12,3 @@ This README provides the steps to reproduce the creation of the test data files,
 
 ### 3. Compile Kernel Modules
    - Compile the modules (e.g. `make modules`)
-

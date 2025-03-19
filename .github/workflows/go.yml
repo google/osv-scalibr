@@ -10,6 +10,11 @@ on:
     branches: [ "main" ]
 
 jobs:
+  linelint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: fernandrone/linelint@7907a5dca0c28ea7dd05c6d8d8cacded713aca11 # v0.0.6
   lint:
     strategy:
       fail-fast: false
