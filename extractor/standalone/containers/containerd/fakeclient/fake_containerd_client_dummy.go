@@ -14,8 +14,9 @@
 
 //go:build !linux
 
+// Package fakeclient contains a fake implementation of the containerd client for testing purposes.
 package fakeclient
 
-// CtrdClientDummy  is a no-op for non-Linux.
+// CtrdClientDummy is a no-op for non-Linux.
 type CtrdClientDummy struct {
 }

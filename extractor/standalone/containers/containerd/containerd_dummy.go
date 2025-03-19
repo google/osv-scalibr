@@ -14,6 +14,7 @@
 
 //go:build !linux
 
+// Package containerd extracts container inventory from containerd API.
 package containerd
 
 import (

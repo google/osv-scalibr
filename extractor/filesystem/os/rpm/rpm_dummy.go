@@ -14,6 +14,7 @@
 
 //go:build !linux
 
+// Package rpm extracts packages from rpm database.
 package rpm
 
 import (
