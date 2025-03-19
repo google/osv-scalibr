@@ -21,29 +21,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/artifact/image"
-	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakechainlayer"
-	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/stats"
-	"github.com/google/osv-scalibr/testing/fakeextractor"
-	"github.com/opencontainers/go-digest"
 )
-
-func setupFakeChainLayer(t *testing.T, testDir string, index int, diffID digest.Digest, command string, layerContents map[string]string, chainLayerContents map[string]string) *fakechainlayer.FakeChainLayer {
-	t.Helper()
-
-	layer, err := fakelayer.New(testDir, diffID, command, layerContents, false)
-	if err != nil {
-		t.Fatalf("fakelayer.New(%q, %q, %q, %v, %v) failed: %v", testDir, diffID, command, layerContents, false, err)
-	}
-
-	chainLayer, err := fakechainlayer.New(testDir, index, diffID, command, layer, chainLayerContents, false)
-	if err != nil {
-		t.Fatalf("fakechainlayer.New(%d, %q, %q, %v, %v) failed: %v", index, diffID, command, layer, chainLayerContents, err)
-	}
-	return chainLayer
-}
 
 func TestPopulateLayerDetails(t *testing.T) {
 	const (
@@ -53,93 +35,14 @@ func TestPopulateLayerDetails(t *testing.T) {
 		bazFile = "baz.txt"
 
 		// Fake package names used in tests.
-		fooPackage = "foo"
-		barPackage = "bar"
-		bazPackage = "baz"
+		fooPackage  = "foo"
+		foo2Package = "foo2"
+		barPackage  = "bar"
+		bazPackage  = "baz"
 	)
 
-	// Chain Layer 1: Start with foo and bar packages.
-	// - foo.txt
-	// - bar.txt
-	layerContents1 := map[string]string{
-		fooFile: fooPackage,
-		barFile: barPackage,
-	}
-	chainLayerContents1 := map[string]string{
-		fooFile: fooPackage,
-		barFile: barPackage,
-	}
-	digest1 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-1")
-	fakeChainLayer1 := setupFakeChainLayer(t, t.TempDir(), 0, digest1, "command-1", layerContents1, chainLayerContents1)
-	fakeExtractor1 := fakeextractor.New("fake-extractor-1", 1, []string{fooFile, barFile}, map[string]fakeextractor.NamesErr{
-		fooFile: fakeextractor.NamesErr{
-			Names: []string{fooPackage},
-		},
-		barFile: fakeextractor.NamesErr{
-			Names: []string{barPackage},
-		},
-	})
-
-	layerContents2 := map[string]string{}
-	chainLayerContents2 := map[string]string{
-		fooFile: fooPackage,
-	}
-	// Chain Layer 2: Deletes bar package.
-	// - foo.txt
-	digest2 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-2")
-	fakeChainLayer2 := setupFakeChainLayer(t, t.TempDir(), 1, digest2, "command-2", layerContents2, chainLayerContents2)
-	fakeExtractor2 := fakeextractor.New("fake-extractor-2", 1, []string{fooFile}, map[string]fakeextractor.NamesErr{
-		fooFile: fakeextractor.NamesErr{
-			Names: []string{fooPackage},
-		},
-	})
-
-	// Chain Layer 3: Adds baz package.
-	// - foo.txt
-	// - baz.txt
-	layerContents3 := map[string]string{
-		bazFile: bazPackage,
-	}
-	chainLayerContents3 := map[string]string{
-		fooFile: fooPackage,
-		bazFile: bazPackage,
-	}
-	digest3 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-3")
-	fakeChainLayer3 := setupFakeChainLayer(t, t.TempDir(), 2, digest3, "command-3", layerContents3, chainLayerContents3)
-	fakeExtractor3 := fakeextractor.New("fake-extractor-3", 1, []string{fooFile, bazFile}, map[string]fakeextractor.NamesErr{
-		fooFile: fakeextractor.NamesErr{
-			Names: []string{fooPackage},
-		},
-		bazFile: fakeextractor.NamesErr{
-			Names: []string{bazPackage},
-		},
-	})
-
-	// Chain Layer 4: Adds bar package back.
-	// - foo.txt
-	// - bar.txt
-	// - baz.txt
-	layerContents4 := map[string]string{
-		barFile: barPackage,
-	}
-	chainLayerContents4 := map[string]string{
-		fooFile: fooPackage,
-		barFile: barPackage,
-		bazFile: bazPackage,
-	}
-	digest4 := digest.NewDigestFromEncoded(digest.SHA256, "diff-id-4")
-	fakeChainLayer4 := setupFakeChainLayer(t, t.TempDir(), 3, digest4, "command-4", layerContents4, chainLayerContents4)
-	fakeExtractor4 := fakeextractor.New("fake-extractor-4", 1, []string{fooFile, barFile, bazFile}, map[string]fakeextractor.NamesErr{
-		fooFile: fakeextractor.NamesErr{
-			Names: []string{fooPackage},
-		},
-		barFile: fakeextractor.NamesErr{
-			Names: []string{barPackage},
-		},
-		bazFile: fakeextractor.NamesErr{
-			Names: []string{bazPackage},
-		},
-	})
+	fakeLayerExtractor := fakelayerbuilder.FakeTestLayersExtractor{}
+	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(), "testdata/populatelayers.yml")
 
 	tests := []struct {
 		name          string
@@ -160,7 +63,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 				},
 			},
 			chainLayers: []image.ChainLayer{},
@@ -168,7 +71,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 				},
 			},
 		},
@@ -181,7 +84,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 			},
 			chainLayers: []image.ChainLayer{
-				fakeChainLayer1,
+				fakeChainLayers[0],
 			},
 			wantInventory: []*extractor.Inventory{
 				{
@@ -196,38 +99,38 @@ func TestPopulateLayerDetails(t *testing.T) {
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      barPackage,
 					Locations: []string{barFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 				},
 			},
-			extractor: fakeExtractor1,
+			extractor: fakeLayerExtractor,
 			chainLayers: []image.ChainLayer{
-				fakeChainLayer1,
+				fakeChainLayers[0],
 			},
 			wantInventory: []*extractor.Inventory{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
-						DiffID:      "diff-id-1",
-						Command:     "command-1",
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
 						InBaseImage: false,
 					},
 				},
 				{
 					Name:      barPackage,
 					Locations: []string{barFile},
-					Extractor: fakeExtractor1,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
-						DiffID:      "diff-id-1",
-						Command:     "command-1",
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
 						InBaseImage: false,
 					},
 				},
@@ -239,23 +142,23 @@ func TestPopulateLayerDetails(t *testing.T) {
 				{
 					Name:      "foo",
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor2,
+					Extractor: fakeLayerExtractor,
 				},
 			},
-			extractor: fakeExtractor2,
+			extractor: fakeLayerExtractor,
 			chainLayers: []image.ChainLayer{
-				fakeChainLayer1,
-				fakeChainLayer2,
+				fakeChainLayers[0],
+				fakeChainLayers[1],
 			},
 			wantInventory: []*extractor.Inventory{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor2,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
-						DiffID:      "diff-id-1",
-						Command:     "command-1",
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
 						InBaseImage: false,
 					},
 				},
@@ -267,40 +170,40 @@ func TestPopulateLayerDetails(t *testing.T) {
 				{
 					Name:      "foo",
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor3,
+					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      "baz",
 					Locations: []string{bazFile},
-					Extractor: fakeExtractor3,
+					Extractor: fakeLayerExtractor,
 				},
 			},
-			extractor: fakeExtractor3,
+			extractor: fakeLayerExtractor,
 			chainLayers: []image.ChainLayer{
-				fakeChainLayer1,
-				fakeChainLayer2,
-				fakeChainLayer3,
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
 			},
 			wantInventory: []*extractor.Inventory{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor3,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
-						DiffID:      "diff-id-1",
-						Command:     "command-1",
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
 						InBaseImage: false,
 					},
 				},
 				{
 					Name:      bazPackage,
 					Locations: []string{bazFile},
-					Extractor: fakeExtractor3,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
-						DiffID:      "diff-id-3",
-						Command:     "command-3",
+						DiffID:      "diff-id-2",
+						Command:     "command-2",
 						InBaseImage: false,
 					},
 				},
@@ -310,59 +213,138 @@ func TestPopulateLayerDetails(t *testing.T) {
 			name: "inventory in multiple chain layers - bar package added back in last layer",
 			inventory: []*extractor.Inventory{
 				{
-					Name:      "foo",
+					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 				},
 				{
-					Name:      "bar",
+					Name:      barPackage,
 					Locations: []string{barFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 				},
 				{
-					Name:      "baz",
+					Name:      bazPackage,
 					Locations: []string{bazFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 				},
 			},
-			extractor: fakeExtractor4,
+			extractor: fakeLayerExtractor,
 			chainLayers: []image.ChainLayer{
-				fakeChainLayer1,
-				fakeChainLayer2,
-				fakeChainLayer3,
-				fakeChainLayer4,
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
+				fakeChainLayers[3],
 			},
 			wantInventory: []*extractor.Inventory{
 				{
 					Name:      fooPackage,
 					Locations: []string{fooFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
-						DiffID:      "diff-id-1",
-						Command:     "command-1",
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
 						InBaseImage: false,
 					},
 				},
 				{
 					Name:      barPackage,
 					Locations: []string{barFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       3,
-						DiffID:      "diff-id-4",
-						Command:     "command-4",
+						DiffID:      "diff-id-3",
+						Command:     "command-3",
 						InBaseImage: false,
 					},
 				},
 				{
 					Name:      bazPackage,
 					Locations: []string{bazFile},
-					Extractor: fakeExtractor4,
+					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
+						DiffID:      "diff-id-2",
+						Command:     "command-2",
+						InBaseImage: false,
+					},
+				},
+			},
+		},
+		{
+			name: "inventory in multiple chain layers - foo package overwritten in last layer",
+			inventory: []*extractor.Inventory{
+				{
+					Name:      fooPackage,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+				},
+				{
+					Name:      foo2Package,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+				},
+				{
+					Name:      barPackage,
+					Locations: []string{barFile},
+					Extractor: fakeLayerExtractor,
+				},
+				{
+					Name:      bazPackage,
+					Locations: []string{bazFile},
+					Extractor: fakeLayerExtractor,
+				},
+			},
+			extractor: fakeLayerExtractor,
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
+				fakeChainLayers[3],
+				fakeChainLayers[4],
+			},
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      fooPackage,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+					LayerDetails: &extractor.LayerDetails{
+						Index:       0,
+						DiffID:      "diff-id-0",
+						Command:     "command-0",
+						InBaseImage: false,
+					},
+				},
+				{
+					Name:      foo2Package,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+					LayerDetails: &extractor.LayerDetails{
+						Index:       4,
+						DiffID:      "diff-id-4",
+						Command:     "command-4",
+						InBaseImage: false,
+					},
+				},
+				{
+					Name:      barPackage,
+					Locations: []string{barFile},
+					Extractor: fakeLayerExtractor,
+					LayerDetails: &extractor.LayerDetails{
+						Index:       3,
 						DiffID:      "diff-id-3",
 						Command:     "command-3",
+						InBaseImage: false,
+					},
+				},
+				{
+					Name:      bazPackage,
+					Locations: []string{bazFile},
+					Extractor: fakeLayerExtractor,
+					LayerDetails: &extractor.LayerDetails{
+						Index:       2,
+						DiffID:      "diff-id-2",
+						Command:     "command-2",
 						InBaseImage: false,
 					},
 				},
