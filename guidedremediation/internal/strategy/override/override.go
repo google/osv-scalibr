@@ -235,7 +235,10 @@ func getVersionsGreater(ctx context.Context, cl resolve.Client, vk resolve.Versi
 
 		return sv.Compare(a.Version, b.Version)
 	}
-	slices.SortFunc(versions, cmpFunc)
+	if !slices.IsSortedFunc(versions, cmpFunc) {
+		versions = slices.Clone(versions)
+		slices.SortFunc(versions, cmpFunc)
+	}
 	// Find the index of the next higher version
 	offset, vkFound := slices.BinarySearchFunc(versions, resolve.Version{VersionKey: vk}, cmpFunc)
 	if vkFound { // if the given version somehow doesn't exist, offset will already be at the next higher version
