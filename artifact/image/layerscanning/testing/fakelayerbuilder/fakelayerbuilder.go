@@ -58,6 +58,8 @@ func parseFakeLayerFileFromPath(path string) (FakeTestLayers, error) {
 }
 
 func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath string) []*fakechainlayer.FakeChainLayer {
+	t.Helper()
+
 	layers, err := parseFakeLayerFileFromPath(layerInfoPath)
 	if err != nil {
 		t.Fatalf("Failed to parse fake layer file %q: %q", layerInfoPath, err)
