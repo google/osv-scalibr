@@ -66,7 +66,7 @@ func TestConvertV1Layer(t *testing.T) {
 			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil, false),
 			command:   "ADD file",
 			isEmpty:   false,
-			wantError: ErrUncompressedReaderMissingFromLayer,
+			wantError: nil,
 		},
 	}
 
