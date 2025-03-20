@@ -1,3 +1,17 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package suggest
 
 import (
@@ -74,7 +88,7 @@ func (m testManifest) Root() resolve.Version {
 
 // System returns the ecosystem of this manifest.
 func (m testManifest) System() resolve.System {
-	return resolve.Maven
+	return m.system
 }
 
 // Requirements returns all direct requirements (including dev).
@@ -108,7 +122,6 @@ func (m testManifest) Clone() manifest.Manifest {
 }
 
 func TestMavenSuggester_Suggest(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	client := resolve.NewLocalClient()
 	addVersions := func(sys resolve.System, name string, versions []string) {
@@ -449,7 +462,6 @@ func TestMavenSuggester_Suggest(t *testing.T) {
 }
 
 func Test_suggestMavenVersion(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	lc := resolve.NewLocalClient()
 
@@ -510,7 +522,6 @@ func Test_suggestMavenVersion(t *testing.T) {
 }
 
 func TestSuggestVersion_Guava(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	lc := resolve.NewLocalClient()
 
@@ -568,7 +579,6 @@ func TestSuggestVersion_Guava(t *testing.T) {
 }
 
 func TestSuggestVersion_Commons(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	lc := resolve.NewLocalClient()
 
