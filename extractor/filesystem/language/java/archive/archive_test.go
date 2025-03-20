@@ -586,7 +586,7 @@ func TestExtract(t *testing.T) {
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
-			if err != nil && errors.Is(errAny, tt.wantErr) {
+			if err != nil && errors.Is(tt.wantErr, errAny) {
 				err = errAny
 			}
 			if !errors.Is(err, tt.wantErr) {
