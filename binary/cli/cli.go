@@ -121,7 +121,8 @@ type Flags struct {
 	Output                Array
 	ExtractorsToRun       []string
 	DetectorsToRun        []string
-	FilesToExtract        []string
+	PathsToExtract        []string
+	IgnoreSubDirs         bool
 	DirsToSkip            []string
 	SkipDirRegex          string
 	SkipDirGlob           string
@@ -326,7 +327,8 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
 		Capabilities:         capab,
-		FilesToExtract:       f.FilesToExtract,
+		PathsToExtract:       f.PathsToExtract,
+		IgnoreSubDirs:        f.IgnoreSubDirs,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,

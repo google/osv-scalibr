@@ -66,18 +66,18 @@ func TestInitWalkContext(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		scanRoots      map[string][]string
-		filesToExtract map[string][]string
+		pathsToExtract map[string][]string
 		dirsToSkip     map[string][]string
 		wantErr        error
 	}{
 		{
-			desc: "valid config with filesToExtract raises no error",
+			desc: "valid config with pathsToExtract raises no error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/"},
 				"linux":   {"/scanroot/"},
 				"windows": {"C:\\scanroot\\"},
 			},
-			filesToExtract: map[string][]string{
+			pathsToExtract: map[string][]string{
 				"darwin":  {"/scanroot/file1.txt", "/scanroot/file2.txt"},
 				"linux":   {"/scanroot/file1.txt", "/scanroot/file2.txt"},
 				"windows": {"C:\\scanroot\\file1.txt", "C:\\scanroot\\file2.txt"},
@@ -99,13 +99,13 @@ func TestInitWalkContext(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "filesToExtract not relative to any root raises error",
+			desc: "pathsToExtract not relative to any root raises error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/"},
 				"linux":   {"/scanroot/"},
 				"windows": {"C:\\scanroot\\"},
 			},
-			filesToExtract: map[string][]string{
+			pathsToExtract: map[string][]string{
 				"darwin":  {"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
 				"linux":   {"/scanroot/myfile.txt", "/myotherroot/file1.txt"},
 				"windows": {"C:\\scanroot\\myfile.txt", "D:\\myotherroot\\file1.txt"},
@@ -135,7 +135,7 @@ func TestInitWalkContext(t *testing.T) {
 				t.Fatalf("system %q not defined in test, please extend the tests", os)
 			}
 			config := &filesystem.Config{
-				FilesToExtract: tc.filesToExtract[os],
+				PathsToExtract: tc.pathsToExtract[os],
 				DirsToSkip:     tc.dirsToSkip[os],
 			}
 			scanRoots := []*scalibrfs.ScanRoot{}
@@ -181,7 +181,8 @@ func TestRunFS(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		ex             []filesystem.Extractor
-		filesToExtract []string
+		pathsToExtract []string
+		ignoreSubDirs  bool
 		dirsToSkip     []string
 		skipDirGlob    string
 		skipDirRegex   string
@@ -390,7 +391,7 @@ func TestRunFS(t *testing.T) {
 			desc: "Extract specific file",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
-			filesToExtract: []string{path.Join(cwd, path2)},
+			pathsToExtract: []string{path.Join(cwd, path2)},
 			wantInv: []*extractor.Inventory{
 				{
 					Name:      name2,
@@ -407,7 +408,7 @@ func TestRunFS(t *testing.T) {
 		{
 			desc:           "Extract specific file with absolute path",
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
-			filesToExtract: []string{path2},
+			pathsToExtract: []string{path2},
 			wantInv: []*extractor.Inventory{
 				{
 					Name:      name2,
@@ -420,6 +421,53 @@ func TestRunFS(t *testing.T) {
 				{Name: "ex2", Version: 2, Status: success},
 			},
 			wantInodeCount: 1,
+		},
+		{
+			desc:           "Extract directory contents",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			pathsToExtract: []string{"dir2"},
+			wantInv: []*extractor.Inventory{
+				{
+					Name:      name2,
+					Locations: []string{path2},
+					Extractor: fakeEx2,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 3,
+		},
+		{
+			desc:           "Skip sub-dirs: Inventory found in root dir",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			pathsToExtract: []string{"dir1"},
+			ignoreSubDirs:  true,
+			wantInv: []*extractor.Inventory{
+				{
+					Name:      name1,
+					Locations: []string{path1},
+					Extractor: fakeEx1,
+				},
+			},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 2,
+		},
+		{
+			desc:           "Skip sub-dirs: Inventory not found in root dir",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			pathsToExtract: []string{"dir2"},
+			ignoreSubDirs:  true,
+			wantInv:        []*extractor.Inventory{},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 2,
 		},
 		{
 			desc: "nil result",
@@ -551,7 +599,8 @@ func TestRunFS(t *testing.T) {
 			}
 			config := &filesystem.Config{
 				Extractors:     tc.ex,
-				FilesToExtract: tc.filesToExtract,
+				PathsToExtract: tc.pathsToExtract,
+				IgnoreSubDirs:  tc.ignoreSubDirs,
 				DirsToSkip:     tc.dirsToSkip,
 				SkipDirRegex:   skipDirRegex,
 				SkipDirGlob:    skipDirGlob,
