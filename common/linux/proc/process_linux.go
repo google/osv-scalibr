@@ -167,7 +167,7 @@ func iterateDirectory(ctx context.Context, path string, fsys scalibrfs.FS, fn it
 
 		entries, err := rd.ReadDir(1)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 

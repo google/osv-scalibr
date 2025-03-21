@@ -15,6 +15,7 @@
 package samreg
 
 import (
+	"errors"
 	"runtime"
 	"strings"
 	"testing"
@@ -142,7 +143,7 @@ func TestUserRIDs(t *testing.T) {
 			sam := SAMRegistry{tc.registry}
 
 			got, err := sam.UsersRIDs()
-			if err != tc.wantErr {
+			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("UserRIDs() returned an unexpected error: %v", err)
 			}
 
@@ -339,7 +340,7 @@ func TestDeriveSyskey(t *testing.T) {
 			sam := SAMRegistry{tc.registry}
 
 			got, err := sam.DeriveSyskey(tc.syskey)
-			if err != tc.wantErr {
+			if !errors.Is(err, tc.wantErr) {
 				t.Errorf("DeriveSyskey(%x) unexpected error, got: %v, want: %v", tc.syskey, err, tc.wantErr)
 			}
 
