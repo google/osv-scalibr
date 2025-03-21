@@ -61,3 +61,13 @@ func DefaultRemediationOptions() RemediationOptions {
 type ResolutionOptions struct {
 	MavenManagement bool // Whether to include unresolved dependencyManagement dependencies in resolved graph.
 }
+
+// UpdateOptions are the options for performing guidedremediation.Update().
+type UpdateOptions struct {
+	Manifest          string         // Path to manifest file on disk.
+	ResolveClient     resolve.Client // Client for dependency information.
+	DefaultRepository string         // Default registry to fetch dependency information from.
+
+	IgnoreDev     bool           // Whether to ignore updates on dev dependencies
+	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
+}

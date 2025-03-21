@@ -44,7 +44,7 @@ type Vuln struct {
 // Patch represents an isolated patch to one or more dependencies that fixes one or more vulns.
 type Patch struct {
 	PackageUpdates []PackageUpdate `json:"packageUpdates"`       // dependencies that were updated.
-	Fixed          []Vuln          `json:"fixed"`                // vulns fixed by this patch.
+	Fixed          []Vuln          `json:"fixed,omitempty"`      // vulns fixed by this patch.
 	Introduced     []Vuln          `json:"introduced,omitempty"` // vulns introduced by this patch.
 }
 
