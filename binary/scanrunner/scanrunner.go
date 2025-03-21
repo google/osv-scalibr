@@ -42,8 +42,8 @@ func RunScan(flags *cli.Flags) int {
 		len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors), len(cfg.Detectors),
 	)
 	log.Infof("Scan roots: %s", cfg.ScanRoots)
-	if len(cfg.FilesToExtract) > 0 {
-		log.Infof("Files to extract: %s", cfg.FilesToExtract)
+	if len(cfg.PathsToExtract) > 0 {
+		log.Infof("Paths to extract: %s", cfg.PathsToExtract)
 	}
 	result := scalibr.New().Scan(context.Background(), cfg)
 
