@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"testing"
 	"testing/fstest"
@@ -645,6 +646,148 @@ func TestRunFS(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.wantStatus, gotStatus, cmpopts.SortSlices(sortStatus)); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected status (-want +got):\n%s", tc.ex, diff)
+			}
+		})
+	}
+}
+
+func TestRunFSGitignore(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
+
+	name1 := "software1"
+	name2 := "software2"
+	path1 := "dir1/file1.txt"
+	path2 := "dir2/sub/file2.txt"
+	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
+	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
+	ex := []filesystem.Extractor{fakeEx1, fakeEx2}
+
+	testCases := []struct {
+		desc           string
+		mapfs          fstest.MapFS
+		pathToExtract  string
+		wantInv1       bool
+		wantInv2       bool
+		wantInodeCount int
+	}{
+		{
+			desc: "Skip_file",
+			mapfs: fstest.MapFS{
+				".":               {Mode: fs.ModeDir},
+				"dir1":            {Mode: fs.ModeDir},
+				"dir1/file1.txt":  {Data: []byte("Content 1")},
+				"dir1/.gitignore": {Data: []byte("file1.txt")},
+			},
+			pathToExtract:  "dir1",
+			wantInv1:       false,
+			wantInodeCount: 3,
+		},
+		{
+			desc: "Skip_dir",
+			mapfs: fstest.MapFS{
+				".":                  {Mode: fs.ModeDir},
+				"dir2":               {Mode: fs.ModeDir},
+				"dir2/sub":           {Mode: fs.ModeDir},
+				"dir2/sub/file2.txt": {Data: []byte("Content 2")},
+				"dir2/.gitignore":    {Data: []byte("sub")},
+			},
+			pathToExtract:  ".",
+			wantInv2:       false,
+			wantInodeCount: 4,
+		},
+		{
+			desc: "Dont_skip_if_no_match",
+			mapfs: fstest.MapFS{
+				".":               {Mode: fs.ModeDir},
+				"dir1":            {Mode: fs.ModeDir},
+				"dir1/file1.txt":  {Data: []byte("Content 1")},
+				"dir1/.gitignore": {Data: []byte("no-match.txt")},
+			},
+			pathToExtract:  ".",
+			wantInv1:       true,
+			wantInv2:       false,
+			wantInodeCount: 4,
+		},
+		{
+			desc: "Skip_based_on_parent_gitignore",
+			mapfs: fstest.MapFS{
+				".":                  {Mode: fs.ModeDir},
+				"dir2":               {Mode: fs.ModeDir},
+				"dir2/sub":           {Mode: fs.ModeDir},
+				"dir2/sub/file2.txt": {Data: []byte("Content 1")},
+				"dir2/.gitignore":    {Data: []byte("file2.txt")},
+			},
+			pathToExtract:  "dir2/sub",
+			wantInv1:       false,
+			wantInodeCount: 2,
+		},
+		{
+			desc: "Skip_based_on_child_gitignore",
+			mapfs: fstest.MapFS{
+				".":               {Mode: fs.ModeDir},
+				"dir1":            {Mode: fs.ModeDir},
+				"dir2":            {Mode: fs.ModeDir},
+				"dir2/sub":        {Mode: fs.ModeDir},
+				"dir1/file1.txt":  {Data: []byte("Content 1")},
+				"dir1/.gitignore": {Data: []byte("file1.txt\nfile2.txt")},
+				// Not skipped since the skip pattern is in dir1
+				"dir2/sub/file2.txt": {Data: []byte("Content 2")},
+			},
+			pathToExtract:  ".",
+			wantInv1:       false,
+			wantInv2:       true,
+			wantInodeCount: 7,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fc := &fakeCollector{}
+			fsys := pathsMapFS{mapfs: tc.mapfs}
+			config := &filesystem.Config{
+				Extractors:     ex,
+				PathsToExtract: []string{tc.pathToExtract},
+				SkipGitignore:  true,
+				ScanRoots: []*scalibrfs.ScanRoot{{
+					FS: fsys, Path: ".",
+				}},
+				Stats:             fc,
+				StoreAbsolutePath: false,
+			}
+			wc, err := filesystem.InitWalkContext(
+				context.Background(), config, []*scalibrfs.ScanRoot{{
+					FS: fsys, Path: cwd,
+				}},
+			)
+			if err != nil {
+				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
+			}
+			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
+			}
+			gotInv, _, err := filesystem.RunFS(context.Background(), config, wc)
+			if err != nil {
+				t.Errorf("filesystem.RunFS(%v, %v): %v", config, wc, err)
+			}
+
+			if fc.AfterInodeVisitedCount != tc.wantInodeCount {
+				t.Errorf("filesystem.RunFS(%v, %v) inodes visited: got %d, want %d", config, wc, fc.AfterInodeVisitedCount, tc.wantInodeCount)
+			}
+
+			gotInv1 := slices.ContainsFunc(gotInv, func(i *extractor.Inventory) bool {
+				return i.Name == name1
+			})
+			gotInv2 := slices.ContainsFunc(gotInv, func(i *extractor.Inventory) bool {
+				return i.Name == name2
+			})
+			if gotInv1 != tc.wantInv1 {
+				t.Errorf("filesystem.Run(%v, %v): got inv1: %v, want: %v", config, wc, gotInv1, tc.wantInv1)
+			}
+			if gotInv2 != tc.wantInv2 {
+				t.Errorf("filesystem.Run(%v, %v): got inv2: %v, want: %v", config, wc, gotInv2, tc.wantInv2)
 			}
 		})
 	}
