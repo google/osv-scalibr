@@ -152,6 +152,7 @@ func TestFromTarball(t *testing.T) {
 		name                       string
 		tarPath                    string
 		config                     *Config
+		wantNonZeroSize            bool
 		wantChainLayerEntries      []chainLayerEntries
 		wantErrDuringImageCreation error
 		wantErrWhileReadingFiles   error
@@ -174,9 +175,10 @@ func TestFromTarball(t *testing.T) {
 			wantErrDuringImageCreation: ErrInvalidConfig,
 		},
 		{
-			name:    "image with one file",
-			tarPath: filepath.Join(testdataDir, "single-file.tar"),
-			config:  DefaultConfig(),
+			name:            "image with one file",
+			tarPath:         filepath.Join(testdataDir, "single-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -189,9 +191,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "image with two files",
-			tarPath: filepath.Join(testdataDir, "basic.tar"),
-			config:  DefaultConfig(),
+			name:            "image with two files",
+			tarPath:         filepath.Join(testdataDir, "basic.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -216,9 +219,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "second layer overwrites file with different content",
-			tarPath: filepath.Join(testdataDir, "overwrite-file.tar"),
-			config:  DefaultConfig(),
+			name:            "second layer overwrites file with different content",
+			tarPath:         filepath.Join(testdataDir, "overwrite-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -239,9 +243,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "second layer deletes file",
-			tarPath: filepath.Join(testdataDir, "delete-file.tar"),
-			config:  DefaultConfig(),
+			name:            "second layer deletes file",
+			tarPath:         filepath.Join(testdataDir, "delete-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					ignore:               true,
@@ -265,9 +270,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "multiple files and directories added across layers",
-			tarPath: filepath.Join(testdataDir, "multiple-files.tar"),
-			config:  DefaultConfig(),
+			name:            "multiple files and directories added across layers",
+			tarPath:         filepath.Join(testdataDir, "multiple-files.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -297,9 +303,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "file is deleted and later added back",
-			tarPath: filepath.Join(testdataDir, "recreate-file.tar"),
-			config:  DefaultConfig(),
+			name:            "file is deleted and later added back",
+			tarPath:         filepath.Join(testdataDir, "recreate-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					ignore:               true,
@@ -352,9 +359,10 @@ func TestFromTarball(t *testing.T) {
 			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
-			name:    "image with relative, absolute, and chain symlinks",
-			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
-			config:  DefaultConfig(),
+			name:            "image with relative, absolute, and chain symlinks",
+			tarPath:         filepath.Join(testdataDir, "symlink-basic.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -394,6 +402,7 @@ func TestFromTarball(t *testing.T) {
 					"/dir1/absolute-symlink.txt",
 				}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -419,6 +428,7 @@ func TestFromTarball(t *testing.T) {
 					"/dir1/chain-symlink.txt",
 				}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -546,6 +556,7 @@ func TestFromTarball(t *testing.T) {
 				// Only require foo.txt.
 				Requirer: require.NewFileRequirerPaths([]string{"/foo.txt"}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -585,6 +596,10 @@ func TestFromTarball(t *testing.T) {
 			// Only defer call to CleanUp if the image was created successfully.
 			//nolint:errcheck
 			defer gotImage.CleanUp()
+
+			if tc.wantNonZeroSize && gotImage.Size() == 0 {
+				t.Errorf("got image with size 0, but want non-zero size")
+			}
 
 			// Make sure the expected files are in the chain layers.
 			chainLayers, err := gotImage.ChainLayers()
@@ -632,7 +647,7 @@ func TestFromV1Image(t *testing.T) {
 		v1Image               v1.Image
 		wantChainLayerEntries []chainLayerEntries
 		wantErr               bool
-		wantPanic             bool
+		wantNonZeroSize       bool
 	}{
 		{
 			name: "image with no config file",
@@ -665,6 +680,7 @@ func TestFromV1Image(t *testing.T) {
 					},
 				},
 			},
+			wantNonZeroSize: true,
 		},
 		{
 			name: "image error during tar extraction",
@@ -693,7 +709,11 @@ func TestFromV1Image(t *testing.T) {
 			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
 
 			if tc.wantErr != (gotErr != nil) {
-				t.Errorf("FromV1Image(%v) returned error: %v", tc.v1Image, gotErr)
+				t.Errorf("FromV1Image() returned error: %v", gotErr)
+			}
+
+			if tc.wantNonZeroSize && gotImage.Size() == 0 {
+				t.Errorf("got image with size 0, but want non-zero size")
 			}
 
 			if gotImage != nil {

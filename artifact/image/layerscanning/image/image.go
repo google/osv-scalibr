@@ -102,6 +102,7 @@ func validateConfig(config *Config) error {
 type Image struct {
 	chainLayers    []*chainLayer
 	config         *Config
+	size           int64
 	ExtractDir     string
 	BaseImageIndex int
 }
@@ -118,6 +119,11 @@ func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
 // CleanUp removes the temporary directory used to store the image files.
 func (img *Image) CleanUp() error {
 	return os.RemoveAll(img.ExtractDir)
+}
+
+// Size returns the size of the underlying directory of the image in bytes.
+func (img *Image) Size() int64 {
+	return img.size
 }
 
 // FromRemoteName creates an Image from a remote container image name.
@@ -238,9 +244,12 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			defer layerReader.Close()
 
 			tarReader := tar.NewReader(layerReader)
-			if err = fillChainLayersWithFilesFromTar(outputImage, tarReader, originLayerID, dirPath, chainLayersToFill); err != nil {
+			layerSize, err := fillChainLayersWithFilesFromTar(outputImage, tarReader, originLayerID, dirPath, chainLayersToFill)
+			if err != nil {
 				return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
 			}
+
+			outputImage.size += layerSize
 			return nil
 		}()
 
@@ -250,9 +259,11 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 
 	// Remove any unnecessary file nodes from the chain layers based on the configured requirer.
-	if err := removeUnnecessaryFileNodes(chainLayers, config.Requirer, config.MaxSymlinkDepth); err != nil {
+	bytesRemoved, err := removeUnnecessaryFileNodes(chainLayers, config.Requirer, config.MaxSymlinkDepth)
+	if err != nil {
 		return outputImage, fmt.Errorf("failed to remove unnecessary file nodes: %w", err)
 	}
+	outputImage.size -= bytesRemoved
 
 	return outputImage, nil
 }
@@ -284,10 +295,10 @@ func isNodeRequired(node *fileNode, requirer require.FileRequirer) bool {
 // removeUnnecessaryFileNodes removes any file nodes from the chain layers that are not required by
 // the requirer. Symlink nodes are accounted for by preserving target nodes if the symlink node is
 // required.
-func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) error {
+func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) (int64, error) {
 	// If there are no chain layers, then there are no nodes to remove.
 	if len(chainLayers) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	// Prune only the final chain layer since SCALIBR scans the last layer.
@@ -330,6 +341,7 @@ func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.File
 		return nil
 	})
 
+	var bytesRemoved int64
 	// Remove the files that are not required from the chain layer.
 	for path, isRequired := range filesRequired {
 		if !isRequired {
@@ -338,9 +350,10 @@ func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.File
 				continue
 			}
 			_ = os.Remove(node.RealFilePath())
+			bytesRemoved += node.Size()
 		}
 	}
-	return nil
+	return bytesRemoved, nil
 }
 
 // addRootDirectoryToChainLayers adds the root ("\"") directory to each chain layer.
@@ -455,12 +468,15 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSy
 // fillChainLayersWithFilåesFromTar fills the chain layers with the files found in the tar. The
 // chainLayersToFill are the chain layers that will be filled with the files via the virtual
 // filesystem.
-func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer) error {
+func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLayerID string, dirPath string, chainLayersToFill []*chainLayer) (int64, error) {
 	if len(chainLayersToFill) == 0 {
-		return errors.New("no chain layers provided, this should not happen")
+		return 0, errors.New("no chain layers provided, this should not happen")
 	}
 
 	currentChainLayer := chainLayersToFill[0]
+
+	// layerSize is the cumulative size of all the extracted files in the tar.
+	var layerSize int64
 
 	for {
 		header, err := tarReader.Next()
@@ -468,7 +484,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("could not read tar: %w", err)
+			return 0, fmt.Errorf("could not read tar: %w", err)
 		}
 
 		// Some tools prepend everything with "./", so if we don't path.Clean the name, we may have
@@ -550,8 +566,10 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
 				continue
 			}
-			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
+			return 0, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
+
+		layerSize += header.Size
 
 		// If the virtual path has any directories and those directories have not been populated, then
 		// populate them with file nodes.
@@ -566,7 +584,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, originLa
 		layer := currentChainLayer.latestLayer.(*Layer)
 		_ = layer.fileNodeTree.Insert(virtualPath, newNode)
 	}
-	return nil
+	return layerSize, nil
 }
 
 // populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths
