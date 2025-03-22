@@ -31,8 +31,6 @@ import (
 var (
 	// ErrDiffIDMissingFromLayer is returned when the diffID is missing from a v1 layer.
 	ErrDiffIDMissingFromLayer = errors.New("failed to get diffID from v1 layer")
-	// ErrUncompressedReaderMissingFromLayer is returned when the uncompressed reader is missing from a v1 layer.
-	ErrUncompressedReaderMissingFromLayer = errors.New("failed to get uncompressed reader from v1 layer")
 	// ErrSymlinkDepthExceeded is returned when the symlink depth is exceeded.
 	ErrSymlinkDepthExceeded = errors.New("symlink depth exceeded")
 	// ErrSymlinkCycle is returned when a symlink cycle is found.
