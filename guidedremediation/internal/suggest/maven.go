@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 
 	"deps.dev/util/resolve"
@@ -29,7 +30,6 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/internal/mavenutil"
-	"golang.org/x/exp/slices"
 )
 
 // MavenSuggester suggests update patch for Maven dependencies.
