@@ -32,6 +32,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// MavenSuggester suggests update patch for Maven dependencies.
 type MavenSuggester struct{}
 
 // Suggest returns the Patch to update Maven dependencies to a newer
