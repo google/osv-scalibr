@@ -165,16 +165,6 @@ func TestExtractor_Extract(t *testing.T) {
 						DepGroupVals: []string{},
 					},
 				},
-				{
-					Name:      "com.google.code.findbugs:jsr305",
-					Version:   "3.0.2",
-					Locations: []string{"testdata/with-dependency-management.xml"},
-					Metadata: &javalockfile.Metadata{
-						ArtifactID:   "jsr305",
-						GroupID:      "com.google.code.findbugs",
-						DepGroupVals: []string{},
-					},
-				},
 			},
 		},
 		{
@@ -258,6 +248,64 @@ func TestExtractor_Extract(t *testing.T) {
 						GroupID:      "abc",
 						Type:         "pom",
 						Classifier:   "sources",
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "with parent",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-parent.xml",
+			},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:      "org.alice:alice",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/with-parent.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "alice",
+						GroupID:      "org.alice",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.bob:bob",
+					Version:   "2.0.0",
+					Locations: []string{"testdata/with-parent.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "bob",
+						GroupID:      "org.bob",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.chuck:chuck",
+					Version:   "3.0.0",
+					Locations: []string{"testdata/with-parent.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "chuck",
+						GroupID:      "org.chuck",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.dave:dave",
+					Version:   "4.0.0",
+					Locations: []string{"testdata/with-parent.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "dave",
+						GroupID:      "org.dave",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.frank:frank",
+					Version:   "0", // Version is not available in the local pom.xml.
+					Locations: []string{"testdata/with-parent.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "frank",
+						GroupID:      "org.frank",
 						DepGroupVals: []string{},
 					},
 				},
