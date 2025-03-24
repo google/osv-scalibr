@@ -69,7 +69,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	// extract running containers
-	containers, err := e.client.ContainerList(context.Background(), container.ListOptions{})
+	containers, err := e.client.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching containers: %w", err)
 	}
