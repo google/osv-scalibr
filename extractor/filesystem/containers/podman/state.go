@@ -45,8 +45,50 @@ func newBoltState(path string) (State, error) {
 }
 
 // AllContainers return all the pods
-func (b *boltState) AllContainers() ([]*Container, error) {
-	panic("unimplemented")
+func (s *boltState) AllContainers() ([]*Container, error) {
+	ctrs := []*Container{}
+
+	err := s.conn.View(func(tx *bolt.Tx) error {
+		allCtrsBucket := tx.Bucket([]byte("all-ctrs"))
+		if allCtrsBucket == nil {
+			return fmt.Errorf("allCtrs bucket not found in DB")
+		}
+
+		ctrBucket := tx.Bucket([]byte("ctr"))
+		if ctrBucket == nil {
+			return fmt.Errorf("containers bucket not found in DB")
+		}
+
+		return allCtrsBucket.ForEach(func(id, name []byte) error {
+			ctrBucket := ctrBucket.Bucket(id)
+			if ctrBucket == nil {
+				return fmt.Errorf("state is inconsistent - container ID %s in all containers, but container not found", string(id))
+			}
+
+			ctr := new(Container)
+			ctr.config = new(ContainerConfig)
+			ctr.state = new(ContainerState)
+
+			configBytes := ctrBucket.Get([]byte("config"))
+
+			if err := json.Unmarshal(configBytes, ctr.config); err != nil {
+				return fmt.Errorf("unmarshalling container %s config: %w", string(id), err)
+			}
+
+			stateBytes := ctrBucket.Get([]byte("stae"))
+			if err := json.Unmarshal(stateBytes, ctr.state); err != nil {
+				return fmt.Errorf("unmarshalling container %s state: %w", string(id), err)
+			}
+
+			ctrs = append(ctrs, ctr)
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ctrs, nil
 }
 
 // Close closes the bolt db connection
@@ -111,7 +153,7 @@ func getDBState(path string) (State, error) {
 	switch {
 	case strings.HasSuffix(path, "bolt_state.db"):
 		return newBoltState(path)
-	case strings.HasSuffix(path, ".sql"):
+	case strings.HasSuffix(path, "containers/storage/db.sql"):
 		return newSqliteState(path)
 	default:
 		return nil, fmt.Errorf("cannot create state from %s, database not implemented", path)
