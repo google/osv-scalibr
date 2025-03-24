@@ -616,7 +616,7 @@ func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string
 	result := make(map[string]MavenPatches)
 	for patch := range iterUpgrades(patches) {
 		var path string
-		origDep := originalDependency(patch, specific.OriginalRequirements)
+		origDep := OriginalDependency(patch, specific.OriginalRequirements)
 		path, origDep.Origin = parentPathFromOrigin(origDep.Origin)
 		if _, ok := result[path]; !ok {
 			result[path] = MavenPatches{
@@ -698,9 +698,9 @@ func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string
 	return result, nil
 }
 
-// originalDependency returns the original dependency of a dependency patch.
+// OriginalDependency returns the original dependency of a dependency patch.
 // If the dependency is not found in any local pom.xml, an empty dependency is returned.
-func originalDependency(patch result.PackageUpdate, origDeps []DependencyWithOrigin) DependencyWithOrigin {
+func OriginalDependency(patch result.PackageUpdate, origDeps []DependencyWithOrigin) DependencyWithOrigin {
 	IDs := strings.Split(patch.Name, ":")
 	if len(IDs) != 2 {
 		return DependencyWithOrigin{}

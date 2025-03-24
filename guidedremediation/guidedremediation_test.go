@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
+	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
 
 func TestFixOverride(t *testing.T) {
@@ -127,6 +128,116 @@ func TestFixOverride(t *testing.T) {
 
 			if diff := cmp.Diff(wantManifest, gotManifest); diff != "" {
 				t.Errorf("FixVulns() manifest mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	for _, tt := range []struct {
+		name             string
+		universeDir      string
+		manifest         string
+		parentManifest   string
+		wantManifestPath string
+		wantResultPath   string
+		config           upgrade.Config
+		ignoreDev        bool
+	}{
+		{
+			name:             "basic",
+			universeDir:      "testdata/maven",
+			manifest:         "testdata/maven/update/pom.xml",
+			parentManifest:   "testdata/maven/update/parent.xml",
+			wantManifestPath: "testdata/maven/update/want.basic.pom.xml",
+			wantResultPath:   "testdata/maven/update/want.basic.json",
+		},
+		{
+			name:             "upgrade config",
+			universeDir:      "testdata/maven",
+			manifest:         "testdata/maven/update/pom.xml",
+			parentManifest:   "testdata/maven/update/parent.xml",
+			wantManifestPath: "testdata/maven/update/want.config.pom.xml",
+			wantResultPath:   "testdata/maven/update/want.config.json",
+			config: upgrade.Config{
+				"pkg:e": upgrade.Minor,
+			},
+		},
+		{
+			name:             "ignore dev",
+			universeDir:      "testdata/maven",
+			manifest:         "testdata/maven/update/pom.xml",
+			parentManifest:   "testdata/maven/update/parent.xml",
+			wantManifestPath: "testdata/maven/update/want.dev.pom.xml",
+			wantResultPath:   "testdata/maven/update/want.dev.json",
+			ignoreDev:        true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
+
+			tmpDir := t.TempDir()
+			manifestPath := filepath.Join(tmpDir, "pom.xml")
+			data, err := os.ReadFile(tt.manifest)
+			if err != nil {
+				t.Fatalf("failed reading manifest for copy: %v", err)
+			}
+			if err := os.WriteFile(manifestPath, data, 0644); err != nil {
+				t.Fatalf("failed copying manifest: %v", err)
+			}
+
+			parentPath := filepath.Join(tmpDir, "parent.xml")
+			data, err = os.ReadFile(tt.parentManifest)
+			if err != nil {
+				t.Fatalf("failed reading manifest for copy: %v", err)
+			}
+			if err = os.WriteFile(parentPath, data, 0644); err != nil {
+				t.Fatalf("failed copying manifest: %v", err)
+			}
+
+			opts := options.UpdateOptions{
+				Manifest:      manifestPath,
+				ResolveClient: client,
+				UpgradeConfig: tt.config,
+				IgnoreDev:     tt.ignoreDev,
+			}
+
+			gotRes, err := guidedremediation.Update(opts)
+			if err != nil {
+				t.Fatalf("failed to update: %v", err)
+			}
+
+			wantManifest, err := os.ReadFile(tt.wantManifestPath)
+			if err != nil {
+				t.Fatalf("failed reading want manifest for comparison: %v", err)
+			}
+			gotManifest, err := os.ReadFile(manifestPath)
+			if err != nil {
+				t.Fatalf("failed reading got manifest for comparison: %v", err)
+			}
+			if runtime.GOOS == "windows" {
+				wantManifest = bytes.ReplaceAll(wantManifest, []byte("\r\n"), []byte("\n"))
+				gotManifest = bytes.ReplaceAll(gotManifest, []byte("\r\n"), []byte("\n"))
+			}
+			if diff := cmp.Diff(wantManifest, gotManifest); diff != "" {
+				t.Errorf("Update() manifest mismatch (-want +got):\n%s", diff)
+			}
+
+			var wantRes result.Result
+			f, err := os.Open(tt.wantResultPath)
+			if err != nil {
+				t.Fatalf("failed opening result file: %v", err)
+			}
+			defer f.Close()
+			if err := json.NewDecoder(f).Decode(&wantRes); err != nil {
+				t.Fatalf("failed decoding result file: %v", err)
+			}
+			diffOpts := []cmp.Option{
+				cmpopts.IgnoreFields(result.Result{}, "Path"),
+				cmpopts.IgnoreFields(result.PackageUpdate{}, "Type"),
+			}
+			if diff := cmp.Diff(wantRes, gotRes, diffOpts...); diff != "" {
+				t.Errorf("Update() result mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
