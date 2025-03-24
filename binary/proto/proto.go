@@ -57,6 +57,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -529,6 +530,24 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Updated:              m.Updated,
 				IsPreReleaseVersion:  m.IsPreReleaseVersion,
 				InstalledTimestamp:   m.InstalledTimestamp,
+			},
+		}
+	case *docker.Metadata:
+		ports := make([]*spb.DockerPort, 0, len(m.Ports))
+		for _, p := range m.Ports {
+			ports = append(ports, &spb.DockerPort{
+				IP:          p.IP,
+				PrivatePort: uint32(p.PrivatePort),
+				PublicPort:  uint32(p.PublicPort),
+				Type:        p.Type,
+			})
+		}
+		i.Metadata = &spb.Inventory_DockerContainersMetadata{
+			DockerContainersMetadata: &spb.DockerContainersMetadata{
+				ImageName:   m.ImageName,
+				ImageDigest: m.ImageDigest,
+				ID:          m.ID,
+				Ports:       ports,
 			},
 		}
 	}
