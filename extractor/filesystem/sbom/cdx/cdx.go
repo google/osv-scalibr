@@ -109,6 +109,18 @@ func findExtractor(path string) extractFunc {
 	return nil
 }
 
+func enumerateComponents(components []cyclonedx.Component, results *[]*extractor.Inventory) {
+	for _, cdxPkg := range components {
+		inv := convertComponentToInventory(cdxPkg)
+		if inv != nil {
+			*results = append(*results, inv)
+		}
+		if cdxPkg.Components != nil {
+			enumerateComponents(*cdxPkg.Components, results)
+		}
+	}
+}
+
 func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) ([]*extractor.Inventory, error) {
 	results := []*extractor.Inventory{}
 
@@ -116,40 +128,46 @@ func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) 
 		return results, nil
 	}
 
-	for _, cdxPkg := range *cdxBom.Components {
-		inv := &extractor.Inventory{
-			Locations: []string{path},
-			Metadata:  &Metadata{},
-		}
-		m := inv.Metadata.(*Metadata)
-		inv.Name = cdxPkg.Name
-		inv.Version = cdxPkg.Version
-		if cdxPkg.CPE != "" {
-			m.CPEs = append(m.CPEs, cdxPkg.CPE)
-		}
-		if cdxPkg.PackageURL != "" {
-			packageURL, err := purl.FromString(cdxPkg.PackageURL)
-			if err != nil {
-				log.Warnf("Invalid PURL %q for package ref: %q", cdxPkg.PackageURL, cdxPkg.BOMRef)
-			} else {
-				m.PURL = &packageURL
-				if inv.Name == "" {
-					inv.Name = packageURL.Name
-				}
-				if inv.Version == "" {
-					inv.Version = packageURL.Version
-				}
-			}
-		}
-		inv.Metadata = m
-		if m.PURL == nil && len(m.CPEs) == 0 {
-			log.Warnf("Neither CPE nor PURL found for package: %+v", cdxPkg)
-			continue
-		}
-		results = append(results, inv)
+	enumerateComponents(*cdxBom.Components, &results)
+
+	for i := range results {
+		results[i].Locations = []string{path}
 	}
 
 	return results, nil
+}
+
+func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Inventory {
+	inv := &extractor.Inventory{
+		Metadata: &Metadata{},
+	}
+	m := inv.Metadata.(*Metadata)
+	inv.Name = cdxPkg.Name
+	inv.Version = cdxPkg.Version
+	if cdxPkg.CPE != "" {
+		m.CPEs = append(m.CPEs, cdxPkg.CPE)
+	}
+	if cdxPkg.PackageURL != "" {
+		packageURL, err := purl.FromString(cdxPkg.PackageURL)
+		if err != nil {
+			log.Warnf("Invalid PURL %q for package ref: %q", cdxPkg.PackageURL, cdxPkg.BOMRef)
+		} else {
+			m.PURL = &packageURL
+			if inv.Name == "" {
+				inv.Name = packageURL.Name
+			}
+			if inv.Version == "" {
+				inv.Version = packageURL.Version
+			}
+		}
+	}
+	inv.Metadata = m
+	if m.PURL == nil && len(m.CPEs) == 0 {
+		log.Warnf("Neither CPE nor PURL found for package: %+v", cdxPkg)
+		return nil
+	}
+
+	return inv
 }
 
 func hasFileExtension(path string, extension string) bool {
