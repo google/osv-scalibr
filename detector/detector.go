@@ -161,10 +161,10 @@ func validateAdvisories(findings []*Finding) error {
 	ids := make(map[AdvisoryID]Advisory)
 	for _, f := range findings {
 		if f.Adv == nil {
-			return fmt.Errorf("Finding has no advisory set: %v", f)
+			return fmt.Errorf("finding has no advisory set: %v", f)
 		}
 		if f.Adv.ID == nil {
-			return fmt.Errorf("Finding has no advisory ID set: %v", f)
+			return fmt.Errorf("finding has no advisory ID set: %v", f)
 		}
 		if adv, ok := ids[*f.Adv.ID]; ok {
 			if !reflect.DeepEqual(adv, *f.Adv) {

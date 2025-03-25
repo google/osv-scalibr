@@ -220,7 +220,7 @@ func validateImagePlatform(imagePlatform string) error {
 	}
 	platformDetails := strings.Split(imagePlatform, "/")
 	if len(platformDetails) < 2 {
-		return fmt.Errorf("Image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
+		return fmt.Errorf("image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
 	}
 	return nil
 }
@@ -279,7 +279,7 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 		for _, d := range det {
 			for _, req := range d.RequiredExtractors() {
 				if !exMap[req] {
-					return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+					return fmt.Errorf("extractor %s must be turned on for Detector %s to run", req, d.Name())
 				}
 			}
 		}
