@@ -108,6 +108,11 @@ func TestExtract(t *testing.T) {
 		wantInventory []*extractor.Inventory
 	}{
 		{
+			name:          "minimal.cdx.json",
+			path:          "testdata/minimal.cdx.json",
+			wantInventory: []*extractor.Inventory{},
+		},
+		{
 			name: "sbom.cdx.json",
 			path: "testdata/sbom.cdx.json",
 			wantInventory: []*extractor.Inventory{
