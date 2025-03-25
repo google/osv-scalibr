@@ -73,10 +73,7 @@ func TestSaveToTarball(t *testing.T) {
 
 func filesMatch(t *testing.T, path1, path2 string) bool {
 	t.Helper()
-	if mustHashFile(t, path1) != mustHashFile(t, path2) {
-		return true
-	}
-	return false
+	return mustHashFile(t, path1) != mustHashFile(t, path2)
 }
 
 func mustHashFile(t *testing.T, path string) string {

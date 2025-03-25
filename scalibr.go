@@ -269,7 +269,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	finalChainLayer := chainLayers[len(chainLayers)-1]
 	chainfs := finalChainLayer.FS()
 
-	if config.ScanRoots != nil && len(config.ScanRoots) > 0 {
+	if len(config.ScanRoots) > 0 {
 		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
 	}
 	// Overwrite the scan roots with the chain layer filesystem.
