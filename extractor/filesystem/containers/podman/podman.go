@@ -75,16 +75,15 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// FileRequired returns true if the specified file matches podman metaDB file pattern.
+// FileRequired returns true if the specified file matches podman db file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := filepath.ToSlash(api.Path())
 
-	if strings.HasSuffix(path, "containers/db.sql") {
+	if strings.HasSuffix(path, "/containers/storage/db.sql") {
 		return true
 	}
 
-	// todo: verify this
-	if strings.HasSuffix(path, "containers/volt_state.db") {
+	if strings.HasSuffix(path, "/containers/storage/libpod/bolt_state.db") {
 		return true
 	}
 

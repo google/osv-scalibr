@@ -33,10 +33,20 @@ func TestExtractor_FileRequired(t *testing.T) {
 		want      bool
 	}{
 		{
-			inputPath: "",
-			want:      false,
+			inputPath: "", want: false,
 		},
-		// todo: add valid and invalid paths
+		{
+			inputPath: "/home/user/.local/share/containers/storage/db.sql", want: true,
+		},
+		{
+			inputPath: "/home/user/.local/share/containers/storage/libpod/bolt_state.db", want: true,
+		},
+		{
+			inputPath: "/home/user/.local/something.db", want: false,
+		},
+		{
+			inputPath: "/home/user/.local/db.sql", want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
@@ -57,8 +67,7 @@ func must[T any](t T, err error) T {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-
-	// extracttest.TestTableEntry with a config
+	// extracttest.TestTableEntry + podman config
 	type testTableEntry struct {
 		Name          string
 		InputConfig   extracttest.ScanInputMockConfig
@@ -135,6 +144,21 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			Name: "valid using bolt - all",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bolt_state.db",
+			},
+			Config:        podman.Config{All: true},
+			WantInventory: []*extractor.Inventory{},
+		},
+		{
+			Name: "valid using bolt",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bolt_state.db",
+			},
+			WantInventory: []*extractor.Inventory{},
 		},
 	}
 
