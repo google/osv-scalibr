@@ -199,9 +199,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
-	for i, e := range g.Edges {
-		g.Edges[i] = e
-	}
+	copy(g.Edges, g.Edges)
 
 	details := map[string]*extractor.Inventory{}
 	for i := 1; i < len(g.Nodes); i++ {

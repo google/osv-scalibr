@@ -79,9 +79,7 @@ func ToWhiteout(p string) string {
 func ToPath(p string) string {
 	dir, file := path.Split(p)
 
-	if strings.HasPrefix(file, WhiteoutPrefix) {
-		file = strings.TrimPrefix(file, WhiteoutPrefix)
-	}
+	file = strings.TrimPrefix(file, WhiteoutPrefix)
 
 	nonWhitoutPath := path.Join(dir, file)
 
