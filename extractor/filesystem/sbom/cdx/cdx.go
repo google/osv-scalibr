@@ -124,7 +124,7 @@ func enumerateComponents(components []cyclonedx.Component, results *[]*extractor
 func (e Extractor) convertCdxBomToInventory(cdxBom *cyclonedx.BOM, path string) ([]*extractor.Inventory, error) {
 	results := []*extractor.Inventory{}
 
-	if cdxBom == nil {
+	if cdxBom == nil || cdxBom.Components == nil {
 		return results, nil
 	}
 
