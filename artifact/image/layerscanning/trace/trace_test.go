@@ -355,7 +355,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := &filesystem.Config{
 				Stats:          stats.NoopCollector{},
-				FilesToExtract: []string{"Installed"},
+				PathsToExtract: []string{"Installed"},
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 

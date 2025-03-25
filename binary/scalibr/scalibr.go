@@ -51,6 +51,7 @@ func parseFlags(args []string) *cli.Flags {
 	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag([]string{"default"})
 	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
+	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
@@ -74,7 +75,7 @@ func parseFlags(args []string) *cli.Flags {
 		log.Errorf("Error parsing CLI args: %v", err)
 		os.Exit(1)
 	}
-	filesToExtract := fs.Args()
+	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
 		Root:                  *root,
@@ -82,7 +83,8 @@ func parseFlags(args []string) *cli.Flags {
 		Output:                output,
 		ExtractorsToRun:       extractorsToRun.GetSlice(),
 		DetectorsToRun:        detectorsToRun.GetSlice(),
-		FilesToExtract:        filesToExtract,
+		PathsToExtract:        pathsToExtract,
+		IgnoreSubDirs:         *ignoreSubDirs,
 		DirsToSkip:            dirsToSkip.GetSlice(),
 		SkipDirRegex:          *skipDirRegex,
 		SkipDirGlob:           *skipDirGlob,

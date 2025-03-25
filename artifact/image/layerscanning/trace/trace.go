@@ -80,9 +80,9 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 	}
 
 	// Helper function to update the extractor config.
-	updateExtractorConfig := func(filesToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
+	updateExtractorConfig := func(pathsToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
 		config.Extractors = []filesystem.Extractor{extractor}
-		config.FilesToExtract = filesToExtract
+		config.PathsToExtract = pathsToExtract
 		config.ScanRoots = []*scalibrfs.ScanRoot{
 			&scalibrfs.ScanRoot{
 				FS: chainFS,

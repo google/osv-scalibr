@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -85,7 +86,10 @@ type Config struct {
 	// extractors will only look at these files during the filesystem traversal.
 	// Note that these are not relative to the ScanRoots and thus need to be
 	// sub-directories of one of the ScanRoots.
-	FilesToExtract []string
+	PathsToExtract []string
+	// Optional: If true, only the files in the top-level directories in PathsToExtract are
+	// extracted and sub-directories are ignored.
+	IgnoreSubDirs bool
 	// Optional: Directories that the file system walk should ignore.
 	// Note that these are not relative to the ScanRoots and thus need to be
 	// sub-directories of one of the ScanRoots.
@@ -163,7 +167,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 // are expected to be relative to the scan root.
 // This function is exported for TESTS ONLY.
 func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalibrfs.ScanRoot) (*walkContext, error) {
-	filesToExtract, err := stripAllPathPrefixes(config.FilesToExtract, absScanRoots)
+	pathsToExtract, err := stripAllPathPrefixes(config.PathsToExtract, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +180,8 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		ctx:               ctx,
 		stats:             config.Stats,
 		extractors:        config.Extractors,
-		filesToExtract:    filesToExtract,
+		pathsToExtract:    pathsToExtract,
+		ignoreSubDirs:     config.IgnoreSubDirs,
 		dirsToSkip:        pathStringListToMap(dirsToSkip),
 		skipDirRegex:      config.SkipDirRegex,
 		skipDirGlob:       config.SkipDirGlob,
@@ -208,8 +213,8 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 
 	var err error
 	log.Infof("Starting filesystem walk for root: %v", wc.scanRoot)
-	if len(wc.filesToExtract) > 0 {
-		err = walkIndividualFiles(wc.fs, wc.filesToExtract, wc.handleFile)
+	if len(wc.pathsToExtract) > 0 {
+		err = walkIndividualPaths(wc)
 	} else {
 		ticker := time.NewTicker(2 * time.Second)
 		quit := make(chan struct{})
@@ -245,7 +250,8 @@ type walkContext struct {
 	extractors        []Extractor
 	fs                scalibrfs.FS
 	scanRoot          string
-	filesToExtract    []string
+	pathsToExtract    []string
+	ignoreSubDirs     bool
 	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
 	skipDirRegex      *regexp.Regexp
 	skipDirGlob       glob.Glob
@@ -274,13 +280,21 @@ type walkContext struct {
 	fileAPI     *lazyFileAPI
 }
 
-func walkIndividualFiles(fsys scalibrfs.FS, paths []string, fn fs.WalkDirFunc) error {
-	for _, p := range paths {
-		info, err := fs.Stat(fsys, p)
+func walkIndividualPaths(wc *walkContext) error {
+	for _, p := range wc.pathsToExtract {
+		info, err := fs.Stat(wc.fs, p)
+		if info.IsDir() {
+			// Recursively scan the contents of the directory.
+			err = internal.WalkDirUnsorted(wc.fs, p, wc.handleFile)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		if err != nil {
-			err = fn(p, nil, err)
+			err = wc.handleFile(p, nil, err)
 		} else {
-			err = fn(p, fs.FileInfoToDirEntry(info), nil)
+			err = wc.handleFile(p, fs.FileInfoToDirEntry(info), nil)
 		}
 		if err != nil {
 			return err
@@ -365,6 +379,10 @@ func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
 
 func (wc *walkContext) shouldSkipDir(path string) bool {
 	if _, ok := wc.dirsToSkip[path]; ok {
+		return true
+	}
+	if wc.ignoreSubDirs && !slices.Contains(wc.pathsToExtract, path) {
+		// Skip dirs that aren't one of the root dirs.
 		return true
 	}
 	if wc.skipDirRegex != nil {
