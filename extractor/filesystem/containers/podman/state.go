@@ -103,7 +103,7 @@ type sqliteState struct {
 }
 
 func newSqliteState(path string) (State, error) {
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func getDBState(path string) (State, error) {
 	switch {
 	case strings.HasSuffix(path, "bolt_state.db"):
 		return newBoltState(path)
-	case strings.HasSuffix(path, "containers/storage/db.sql"):
+	case strings.HasSuffix(path, "db.sql"):
 		return newSqliteState(path)
 	default:
 		return nil, fmt.Errorf("cannot create state from %s, database not implemented", path)

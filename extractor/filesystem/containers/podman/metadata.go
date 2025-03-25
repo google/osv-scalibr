@@ -13,6 +13,15 @@
 // limitations under the License.
 package podman
 
+import "time"
+
 type Metadata struct {
 	ExposedPorts map[uint16][]string
+	PID          int
+	NameSpace    string
+	StartedTime  time.Time
+	FinishedTime time.Time
+	Status       string
+	ExitCode     int32
+	Exited       bool
 }

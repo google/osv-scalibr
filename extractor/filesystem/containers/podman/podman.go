@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -32,7 +33,9 @@ const (
 )
 
 // Config is the configuration for the Extractor.
-type Config struct{}
+type Config struct {
+	All bool
+}
 
 // DefaultConfig returns the default configuration for the podman extractor.
 func DefaultConfig() Config {
@@ -40,11 +43,13 @@ func DefaultConfig() Config {
 }
 
 // Extractor extracts containers from the podman db file.
-type Extractor struct{}
+type Extractor struct {
+	cfg Config
+}
 
 // New returns a podman container inventory extractor.
 func New(cfg Config) *Extractor {
-	return &Extractor{}
+	return &Extractor{cfg: cfg}
 }
 
 // NewDefault returns an extractor with the default config settings.
@@ -72,12 +77,22 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the specified file matches podman metaDB file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	panic("unimplemented")
+	path := filepath.ToSlash(api.Path())
+
+	if strings.HasSuffix(path, "containers/db.sql") {
+		return true
+	}
+
+	// todo: verify this
+	if strings.HasSuffix(path, "containers/volt_state.db") {
+		return true
+	}
+
+	return false
 }
 
 // Extract container inventory through the podman db file passed as the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-
 	path := filepath.Join(input.Root, input.Path)
 
 	state, err := getDBState(path)
@@ -88,17 +103,27 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	ctrs, err := state.AllContainers()
 	if err != nil {
-		return nil, fmt.Errorf("Error listing pods in file: %s with error: %w", path, err)
+		return nil, fmt.Errorf("Error listing containers in file: %s with error: %w", path, err)
 	}
 
-	ivs := make([]*extractor.Inventory, len(ctrs))
+	ivs := make([]*extractor.Inventory, 0, len(ctrs))
 	for _, ctr := range ctrs {
+		if !e.cfg.All && ctr.state.Exited {
+			continue
+		}
+
 		ivs = append(ivs, &extractor.Inventory{
-			Name:      ctr.config.RootfsImageName,
-			Version:   ctr.config.RootfsImageID,
-			Locations: []string{ctr.config.Rootfs},
+			Name:    ctr.config.RawImageName,
+			Version: ctr.config.RootfsImageID,
 			Metadata: &Metadata{
 				ExposedPorts: ctr.config.ExposedPorts,
+				PID:          ctr.state.PID,
+				NameSpace:    ctr.config.Namespace,
+				StartedTime:  ctr.state.StartedTime,
+				FinishedTime: ctr.state.FinishedTime,
+				Status:       ctr.state.State.String(),
+				ExitCode:     ctr.state.ExitCode,
+				Exited:       ctr.state.Exited,
 			},
 		})
 	}
