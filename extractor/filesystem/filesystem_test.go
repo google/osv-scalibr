@@ -473,7 +473,7 @@ func TestRunFS(t *testing.T) {
 			desc: "nil result",
 			ex: []filesystem.Extractor{
 				// An Extractor that returns nil.
-				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {nil, nil}}),
+				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: nil}}),
 			},
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
