@@ -26,22 +26,34 @@ import (
 )
 
 func main() {
+	os.Exit(run(os.Args))
+}
+
+func run(args []string) int {
 	var subcommand string
-	if len(os.Args) >= 2 {
-		subcommand = os.Args[1]
+	if len(args) >= 2 {
+		subcommand = args[1]
 	}
 	switch subcommand {
 	case "scan":
-		flags := parseFlags(os.Args[2:])
-		os.Exit(scanrunner.RunScan(flags))
+		flags, err := parseFlags(args[2:])
+		if err != nil {
+			log.Errorf("Error parsing CLI args: %v", err)
+			return 1
+		}
+		return scanrunner.RunScan(flags)
 	default:
 		// Assume 'scan' if subcommand is not recognized/specified.
-		flags := parseFlags(os.Args[1:])
-		os.Exit(scanrunner.RunScan(flags))
+		flags, err := parseFlags(args[1:])
+		if err != nil {
+			log.Errorf("Error parsing CLI args: %v", err)
+			return 1
+		}
+		return scanrunner.RunScan(flags)
 	}
 }
 
-func parseFlags(args []string) *cli.Flags {
+func parseFlags(args []string) (*cli.Flags, error) {
 	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
@@ -72,8 +84,7 @@ func parseFlags(args []string) *cli.Flags {
 	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
 
 	if err := fs.Parse(args); err != nil {
-		log.Errorf("Error parsing CLI args: %v", err)
-		os.Exit(1)
+		return nil, err
 	}
 	pathsToExtract := fs.Args()
 
@@ -104,8 +115,7 @@ func parseFlags(args []string) *cli.Flags {
 		Offline:               *offline,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
-		log.Errorf("Error parsing CLI args: %v", err)
-		os.Exit(1)
+		return nil, err
 	}
-	return flags
+	return flags, nil
 }
