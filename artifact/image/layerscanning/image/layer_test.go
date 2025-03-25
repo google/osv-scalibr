@@ -16,7 +16,6 @@ package image
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -33,7 +32,6 @@ import (
 )
 
 func TestConvertV1Layer(t *testing.T) {
-	reader := io.NopCloser(nil)
 	tests := []struct {
 		name      string
 		v1Layer   v1.Layer
@@ -44,7 +42,7 @@ func TestConvertV1Layer(t *testing.T) {
 	}{
 		{
 			name:    "valid layer",
-			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader, false),
+			v1Layer: fakev1layer.New(t, "abc123", "ADD file", false, nil, false),
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
@@ -56,14 +54,14 @@ func TestConvertV1Layer(t *testing.T) {
 		},
 		{
 			name:      "v1 layer missing diffID",
-			v1Layer:   fakev1layer.New("", "ADD file", false, reader, false),
+			v1Layer:   fakev1layer.New(t, "", "ADD file", false, nil, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrDiffIDMissingFromLayer,
 		},
 		{
 			name:      "v1 layer missing tar reader",
-			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil, false),
+			v1Layer:   fakev1layer.New(t, "abc123", "ADD file", false, nil, false),
 			command:   "ADD file",
 			isEmpty:   false,
 			wantError: ErrUncompressedReaderMissingFromLayer,

@@ -161,9 +161,14 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("invalid image config: %w", err)
 	}
 
+	var history []v1.History
 	configFile, err := v1Image.ConfigFile()
+
+	// If the config file is not found, then layers will not have history information.
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config file: %w", err)
+		log.Warnf("failed to load config file: %v", err)
+	} else {
+		history = configFile.History
 	}
 
 	v1Layers, err := v1Image.Layers()
@@ -180,7 +185,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		diffIDToV1Layer[diffID.Hex] = v1Layer
 	}
 
-	chainLayers, err := initializeChainLayers(v1Layers, configFile, config.MaxSymlinkDepth)
+	chainLayers, err := initializeChainLayers(v1Layers, history, config.MaxSymlinkDepth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize chain layers: %w", err)
 	}
@@ -190,7 +195,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
-	baseImageIndex, err := findBaseImageIndex(configFile.History)
+	baseImageIndex, err := findBaseImageIndex(history)
 	if err != nil {
 		baseImageIndex = -1
 	}
@@ -392,11 +397,7 @@ func handleImageError(image *Image, err error) (*Image, error) {
 
 // initializeChainLayers initializes the chain layers based on the config file history, the
 // v1.Layers found in the image from the tarball, and the max symlink depth.
-func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSymlinkDepth int) ([]*chainLayer, error) {
-	if configFile == nil {
-		return nil, errors.New("config file is nil")
-	}
-
+func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlinkDepth int) ([]*chainLayer, error) {
 	var chainLayers []*chainLayer
 	// v1LayerIndex tracks the next v1.Layer that should populated in a chain layer. This does not
 	// include empty layers.
@@ -407,7 +408,7 @@ func initializeChainLayers(v1Layers []v1.Layer, configFile *v1.ConfigFile, maxSy
 	// First loop through the history entries found in the config file. If the entry is an empty
 	// layer, then create an empty chain layer. Otherwise, convert the v1.Layer to a scalibr Layer
 	// and create a chain layer with it.
-	for _, entry := range configFile.History {
+	for _, entry := range history {
 		if entry.EmptyLayer {
 			chainLayers = append(chainLayers, &chainLayer{
 				fileNodeTree: pathtree.NewNode[fileNode](),
