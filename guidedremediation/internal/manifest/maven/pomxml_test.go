@@ -881,6 +881,14 @@ func Test_buildPatches(t *testing.T) {
 						},
 						NewRequire: "2.0.0",
 					}: false,
+					{
+						DependencyKey: mavenutil.DependencyKey{
+							GroupID:    "org.example",
+							ArtifactID: "suggest",
+							Type:       "jar",
+						},
+						NewRequire: "2.0.0",
+					}: false,
 				},
 				"profile@profile-one": map[MavenPatch]bool{
 					{

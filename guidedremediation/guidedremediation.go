@@ -159,7 +159,7 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 	}
 
 	res.Vulnerabilities = computeVulnsResult(resolved, allPatches)
-	res.Patches = choosePatches(allPatches, opts.MaxUpgrades)
+	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce)
 	err = writeManifestPatches(opts.Manifest, m, res.Patches, rw)
 
 	return res, err
@@ -201,7 +201,7 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 
 // choosePatches chooses up to maxUpgrades compatible patches to apply.
 // If maxUpgrades <= 0, chooses as many as possible.
-func choosePatches(allPatches []result.Patch, maxUpgrades int) []result.Patch {
+func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool) []result.Patch {
 	var patches []result.Patch
 	pkgChanges := make(map[result.Package]struct{}) // dependencies we've already applied a patch to
 	fixedVulns := make(map[string]struct{})         // vulns that have already been fixed by a patch
@@ -224,6 +224,10 @@ func choosePatches(allPatches []result.Patch, maxUpgrades int) []result.Patch {
 			_, ok := fixedVulns[v.ID]
 			return ok
 		}) {
+			continue
+		}
+
+		if noIntroduce && len(patch.Introduced) > 0 {
 			continue
 		}
 

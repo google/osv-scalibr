@@ -626,12 +626,9 @@ func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string
 		}
 		if origDep.Name() == ":" {
 			// An empty name indicates the dependency is not found, so the original dependency is not in the base project.
-			// If the patch is from suggest (VersionFrom is set), we ignore this patch.
-			// If the patch is from override (VersionFrom is empty), we add this patch.
-			if patch.VersionFrom == "" {
-				if err := result[path].DependencyPatches.addPatch(patch, false); err != nil {
-					return nil, err
-				}
+			// Add it so that it will be written into the dependencyManagement section.
+			if err := result[path].DependencyPatches.addPatch(patch, false); err != nil {
+				return nil, err
 			}
 
 			continue
