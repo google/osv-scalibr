@@ -57,12 +57,10 @@ linters:
     - musttag
     - nakedret
     - nilerr
-#    - nilnil
     - noctx
     - nolintlint
     - nosprintfhostport
     - perfsprint
-#    - prealloc
     - predeclared
     - promlinter
 #    - protogetter
@@ -91,6 +89,8 @@ linters:
 #    - nlreturn     # Not feasible until it's supported by the internal linter
 #    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
 #    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
+#    - nilnil       # We consider this a valid pattern to use sometimes
+#    - prealloc     # We don't want to preallocate all the time
 
 linters-settings:
   forbidigo:
