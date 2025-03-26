@@ -388,10 +388,43 @@ func handleImageError(image *Image, err error) (*Image, error) {
 	return nil, err
 }
 
+// validateHistory makes sure that the number of v1 layers matches the number of non-empty history
+// entries. Some images may have corrupted or invalid history entries. If so, then some layer
+// metadata such as the build commands cannot be matched with the v1 layers.
+func validateHistory(v1Layers []v1.Layer, history []v1.History) error {
+	nonEmptyHistoryEntries := 0
+	for _, entry := range history {
+		if !entry.EmptyLayer {
+			nonEmptyHistoryEntries++
+		}
+	}
+
+	if len(v1Layers) != nonEmptyHistoryEntries {
+		return fmt.Errorf("mismatch between v1 layers and history entries, %d v1 layers, but %d non-empty history entries", len(v1Layers), nonEmptyHistoryEntries)
+	}
+	return nil
+}
+
 // initializeChainLayers initializes the chain layers based on the config file history, the
 // v1.Layers found in the image from the tarball, and the max symlink depth.
 func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlinkDepth int) ([]*chainLayer, error) {
 	var chainLayers []*chainLayer
+
+	// If history is invalid, then just create the chain layers based on the v1 layers.
+	if err := validateHistory(v1Layers, history); err != nil {
+		log.Warnf("Invalid history entries found in image, layer metadata may not be populated: %v")
+
+		for i, v1Layer := range v1Layers {
+			chainLayers = append(chainLayers, &chainLayer{
+				fileNodeTree:    pathtree.NewNode[fileNode](),
+				index:           i,
+				latestLayer:     convertV1Layer(v1Layer, "", false),
+				maxSymlinkDepth: maxSymlinkDepth,
+			})
+		}
+		return chainLayers, nil
+	}
+
 	// v1LayerIndex tracks the next v1.Layer that should populated in a chain layer. This does not
 	// include empty layers.
 	v1LayerIndex := 0
@@ -422,12 +455,10 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 		}
 
 		nextNonEmptyLayer := v1Layers[v1LayerIndex]
-		layer := convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false)
-
 		chainLayer := &chainLayer{
 			fileNodeTree:    pathtree.NewNode[fileNode](),
 			index:           historyIndex,
-			latestLayer:     layer,
+			latestLayer:     convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false),
 			maxSymlinkDepth: maxSymlinkDepth,
 		}
 		chainLayers = append(chainLayers, chainLayer)
@@ -439,11 +470,10 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	// If there are any remaining v1.Layers, then the history in the config file is missing entries.
 	// This can happen depending on the build process used to create an image.
 	for v1LayerIndex < len(v1Layers) {
-		layer := convertV1Layer(v1Layers[v1LayerIndex], "", false)
 		chainLayers = append(chainLayers, &chainLayer{
 			fileNodeTree:    pathtree.NewNode[fileNode](),
 			index:           historyIndex,
-			latestLayer:     layer,
+			latestLayer:     convertV1Layer(v1Layers[v1LayerIndex], "", false),
 			maxSymlinkDepth: maxSymlinkDepth,
 		})
 		v1LayerIndex++

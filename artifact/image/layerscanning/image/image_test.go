@@ -988,6 +988,9 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 		},
 		{
+			// In this case, the history is invalid because there are more v1 layers than non-empty
+			// history entries. No layer metadata should be populated in the chain layers other than the
+			// layer index.
 			name: "more layers than history entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
@@ -1005,7 +1008,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
 					latestLayer: &Layer{
-						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						buildCommand: "",
 						diffID:       "sha256:123",
 						isEmpty:      false,
 					},
