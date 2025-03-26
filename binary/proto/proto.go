@@ -200,6 +200,8 @@ func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
 		e = spb.ScanStatus_PARTIALLY_SUCCEEDED
 	case plugin.ScanStatusFailed:
 		e = spb.ScanStatus_FAILED
+	case plugin.ScanStatusUnspecified:
+		fallthrough
 	default:
 		e = spb.ScanStatus_UNSPECIFIED
 	}
@@ -577,6 +579,8 @@ func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
 		e = spb.Inventory_INSIDE_OS_PACKAGE
 	case extractor.InsideCacheDir:
 		e = spb.Inventory_INSIDE_CACHE_DIR
+	case extractor.Unknown:
+		fallthrough
 	default:
 		e = spb.Inventory_UNSPECIFIED
 	}
@@ -657,6 +661,8 @@ func typeEnumToProto(e detector.TypeEnum) spb.Advisory_TypeEnum {
 		return spb.Advisory_VULNERABILITY
 	case detector.TypeCISFinding:
 		return spb.Advisory_CIS_FINDING
+	case detector.TypeUnknown:
+		fallthrough
 	default:
 		return spb.Advisory_UNKNOWN
 	}
@@ -675,6 +681,8 @@ func severityToProto(s *detector.Severity) *spb.Severity {
 		r.Severity = spb.Severity_HIGH
 	case detector.SeverityCritical:
 		r.Severity = spb.Severity_CRITICAL
+	case detector.SeverityUnspecified:
+		fallthrough
 	default:
 		r.Severity = spb.Severity_UNSPECIFIED
 	}

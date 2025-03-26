@@ -49,6 +49,8 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts op
 		r = npmresolve.NewResolver(cl)
 	case resolve.Maven:
 		r = mavenresolve.NewResolver(cl)
+	case resolve.PyPI, resolve.UnknownSystem:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("no resolver for ecosystem %v", sys)
 	}
