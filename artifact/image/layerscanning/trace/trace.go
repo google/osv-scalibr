@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -64,11 +65,14 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 
 	// Create list of layer details struct to be referenced by inventory.
 	for i, chainLayer := range chainLayers {
-		var diffID string
-		if chainLayer.Layer().IsEmpty() {
-			diffID = ""
-		} else {
-			diffID = chainLayer.Layer().DiffID().Encoded()
+		// Get the string representation of the diffID, and remove the algorithm prefix if it exists.
+		// TODO: b/406537132 - Determine if diffIDs should be validated via the Validate function in
+		// golang/opencontainers/digest/algorithm.go. Just getting the string representation of the
+		// diffID acts as failing open, but perhaps we should consider validating the diffID and logging
+		// a warning if it isn't.
+		diffID := chainLayer.Layer().DiffID().String()
+		if i := strings.Index(diffID, ":"); i >= 0 {
+			diffID = diffID[i+1:]
 		}
 
 		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
