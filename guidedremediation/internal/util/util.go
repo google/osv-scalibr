@@ -39,7 +39,7 @@ func DepsDevToOSVEcosystem(sys resolve.System) osvschema.Ecosystem {
 
 // OSVToDepsDevEcosystem converts an osvschema.Ecosystem into a deps.dev resolve.System.
 // Unknown / invalid Ecosystems become `resolve.UnknownEcosystem`.
-func OSVToDepsDevSystem(sys osvschema.Ecosystem) resolve.System {
+func OSVToDepsDevEcosystem(sys osvschema.Ecosystem) resolve.System {
 	switch sys {
 	case osvschema.EcosystemMaven:
 		return resolve.Maven
