@@ -9,7 +9,7 @@ linters:
   enable-all: true
   disable:
     - cyclop
-    - depguard         # TODO(#274): work on enabling this
+    - depguard
     - err113
     - errorlint        # TODO(#274): work on enabling this
     - exhaustive       # TODO(#274): work on enabling this
