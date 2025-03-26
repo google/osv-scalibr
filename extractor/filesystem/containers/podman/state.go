@@ -54,13 +54,13 @@ func (s *boltState) AllContainers() ([]*Container, error) {
 			return fmt.Errorf("allCtrs bucket not found in DB")
 		}
 
-		ctrBucket := tx.Bucket([]byte("ctr"))
-		if ctrBucket == nil {
+		ctrBuckets := tx.Bucket([]byte("ctr"))
+		if ctrBuckets == nil {
 			return fmt.Errorf("containers bucket not found in DB")
 		}
 
 		return allCtrsBucket.ForEach(func(id, name []byte) error {
-			ctrBucket := ctrBucket.Bucket(id)
+			ctrBucket := ctrBuckets.Bucket(id)
 			if ctrBucket == nil {
 				return fmt.Errorf("state is inconsistent - container ID %s in all containers, but container not found", string(id))
 			}
@@ -70,12 +70,11 @@ func (s *boltState) AllContainers() ([]*Container, error) {
 			ctr.state = new(ContainerState)
 
 			configBytes := ctrBucket.Get([]byte("config"))
-
 			if err := json.Unmarshal(configBytes, ctr.config); err != nil {
 				return fmt.Errorf("unmarshalling container %s config: %w", string(id), err)
 			}
 
-			stateBytes := ctrBucket.Get([]byte("stae"))
+			stateBytes := ctrBucket.Get([]byte("state"))
 			if err := json.Unmarshal(stateBytes, ctr.state); err != nil {
 				return fmt.Errorf("unmarshalling container %s state: %w", string(id), err)
 			}

@@ -78,11 +78,20 @@ func TestExtractor_Extract(t *testing.T) {
 
 	tests := []testTableEntry{
 		{
-			Name: "invalid",
+			// The SQLite driver doesn't fail when opening an improperly formatted file,
+			// so the error appears during the container listing phase.
+			Name: "invalid sqlite db",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/notdb.sql",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "Error listing containers in file"},
+		},
+		{
+			Name: "invalid boltstatedb",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/not_bolt_state.db",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "Error opening file"},
 		},
 		{
 			Name: "valid using sqlite3 - all",
@@ -150,15 +159,43 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bolt_state.db",
 			},
-			Config:        podman.Config{All: true},
-			WantInventory: []*extractor.Inventory{},
+			Config: podman.Config{All: true},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:    "docker.io/hello-world",
+					Version: "f1f77a0f96b7251d7ef5472705624e2d76db64855b5b121e1cbefe9dc52d0f86",
+					Metadata: &podman.Metadata{
+						Status: "exited",
+						Exited: true,
+					},
+				},
+				{
+					Name:    "docker.io/redis",
+					Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+					Metadata: &podman.Metadata{
+						ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+						PID:          4232,
+						Status:       "running",
+					},
+				},
+			},
 		},
 		{
 			Name: "valid using bolt",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bolt_state.db",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantInventory: []*extractor.Inventory{
+				{
+					Name:    "docker.io/redis",
+					Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+					Metadata: &podman.Metadata{
+						ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+						PID:          4232,
+						Status:       "running",
+					},
+				},
+			},
 		},
 	}
 
