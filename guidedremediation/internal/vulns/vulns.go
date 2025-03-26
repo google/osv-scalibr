@@ -52,7 +52,7 @@ func (e mockExtractor) Version() int                                 { return 0 
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Inventory.
 func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
-	resolveSys := util.OSVToDepsDevSystem(osvschema.Ecosystem(inv.Ecosystem()))
+	resolveSys := util.OSVToDepsDevEcosystem(osvschema.Ecosystem(inv.Ecosystem()))
 	if resolveSys == resolve.UnknownSystem {
 		return false
 	}
