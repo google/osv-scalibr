@@ -222,7 +222,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pat
 			extraPaths = append(extraPaths, p)
 		}
 
-		if strings.HasPrefix("-", l) {
+		if strings.HasPrefix(l, "-") {
 			// Global options other than -r are not implemented.
 			// https://pip.pypa.io/en/stable/reference/requirements-file-format/#global-options
 			// TODO(b/286213823): Implement metric
