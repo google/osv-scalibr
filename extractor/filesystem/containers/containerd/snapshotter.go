@@ -18,7 +18,7 @@ package containerd
 type SnapshotMetadata struct {
 	FilesystemType string
 	Digest         string
-	ID             int
+	ID             uint64
 	Kind           int
 	Parent         string
 }
