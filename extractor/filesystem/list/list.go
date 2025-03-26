@@ -257,16 +257,16 @@ var (
 
 // LINT.ThenChange(/docs/supported_inventory_types.md)
 
-func concat(InitMaps ...InitMap) InitMap {
+func concat(initMaps ...InitMap) InitMap {
 	result := InitMap{}
-	for _, m := range InitMaps {
+	for _, m := range initMaps {
 		maps.Copy(result, m)
 	}
 	return result
 }
 
-func vals(InitMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(InitMap)...)
+func vals(initMap InitMap) []InitFn {
+	return slices.Concat(maps.Values(initMap)...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified
