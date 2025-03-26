@@ -104,14 +104,16 @@ func MergeParents(ctx context.Context, current maven.Parent, result *maven.Proje
 		if err := result.MergeProfiles("", maven.ActivationOS{}); err != nil {
 			return fmt.Errorf("failed to merge default profiles: %w", err)
 		}
-		for _, repo := range proj.Repositories {
-			if err := opts.Client.AddRegistry(datasource.MavenRegistry{
-				URL:              string(repo.URL),
-				ID:               string(repo.ID),
-				ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
-				SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
-			}); err != nil {
-				return fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+		if opts.Client != nil && len(proj.Repositories) > 0 {
+			for _, repo := range proj.Repositories {
+				if err := opts.Client.AddRegistry(datasource.MavenRegistry{
+					URL:              string(repo.URL),
+					ID:               string(repo.ID),
+					ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
+					SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
+				}); err != nil {
+					return fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+				}
 			}
 		}
 		result.MergeParent(proj)
