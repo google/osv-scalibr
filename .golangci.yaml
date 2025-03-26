@@ -6,91 +6,47 @@
 output:
   sort-results: true
 linters:
-  # TODO(#274): currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
-  enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - canonicalheader
-    - containedctx
-    - contextcheck
-    - copyloopvar
-    - decorder
-#    - depguard
-    - dogsled
-    - dupl
-    - dupword
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-#    - errorlint
-#    - exhaustive
-    - fatcontext
-    - forbidigo
-    - ginkgolinter
-    - gocheckcompilerdirectives
-    - gochecknoinits
-    - gochecksumtype
-#    - gocritic
-#    - gofmt
-    - goheader
-    - goimports
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-#    - gosec
-    - gosimple
-    - gosmopolitan
-    - govet
-    - grouper
-    - importas
-    - inamedparam
-    - ineffassign
-    - interfacebloat
-    - intrange
-    - loggercheck
-    - makezero
-    - mirror
-    - misspell
-    - musttag
-    - nakedret
-    - nilerr
-    - noctx
-    - nolintlint
-    - nosprintfhostport
-    - perfsprint
-    - predeclared
-    - promlinter
-#    - protogetter
-    - reassign
-    - revive
-    - rowserrcheck
-    - sloglint
-    - spancheck
-    - sqlclosecheck
-    - staticcheck
-#    - stylecheck
-    - tagalign
-    - tenv
-    - testableexamples
-    - testifylint
-    - thelper
-    - unconvert
-#    - unparam
-    - unused
-    - usestdlibvars
-    - wastedassign
-    - whitespace
-    - zerologlint
-  disable-all: true
-#  disable:
-#    - nlreturn     # Not feasible until it's supported by the internal linter
-#    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
-#    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
-#    - nilnil       # We consider this a valid pattern to use sometimes
-#    - prealloc     # We don't want to preallocate all the time
+  enable-all: true
+  disable:
+    - cyclop
+    - depguard         # TODO(#274): work on enabling this
+    - err113
+    - errorlint        # TODO(#274): work on enabling this
+    - exhaustive       # TODO(#274): work on enabling this
+    - exhaustruct
+    - forcetypeassert
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gocognit
+    - goconst
+    - gocritic         # TODO(#274): work on enabling this
+    - gocyclo
+    - godot
+    - godox
+    - gofmt            # TODO(#274): work on enabling this
+    - gofumpt
+    - gosec            # TODO(#274): work on enabling this
+    - ireturn
+    - lll
+    - maintidx
+    - mnd              # Not every number is magic
+    - nestif
+    - nilnil           # We consider this a valid pattern to use sometimes
+    - nlreturn         # Not feasible until it's supported by the internal linter
+    - nonamedreturns
+    - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - prealloc         # We don't want to preallocate all the time
+    - protogetter      # TODO(#274): work on enabling this
+    - stylecheck       # TODO(#274): work on enabling this
+    - tagliatelle
+    - tenv             # Deprecated
+    - testpackage
+    - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - unparam          # TODO(#274): work on enabling this
+    - varnamelen
+    - wrapcheck
+    - wsl
 
 linters-settings:
   forbidigo:
