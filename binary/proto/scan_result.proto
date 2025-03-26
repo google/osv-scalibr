@@ -109,6 +109,7 @@ message Inventory {
     HomebrewPackageMetadata homebrew_metadata = 42;
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
+    PodmanMetadata podman_metadata = 50;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -496,4 +497,20 @@ message VSCodeExtensionsMetadata {
   bool updated = 5;
   bool is_pre_release_version = 6;
   int64 installed_timestamp = 7;
+}
+
+// The additional data found in Podman containers.
+message PodmanMetadata {
+    map<uint32, Protocol> exposed_ports = 1;
+    int32 pid = 2;
+    string namespace = 3;
+    google.protobuf.Timestamp started_time = 4;
+    google.protobuf.Timestamp finished_time = 5;
+    string status = 6;
+    int32 exit_code = 7;
+    bool exited = 8;
+}
+
+message Protocol{
+  repeated string names=1;
 }
