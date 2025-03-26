@@ -77,6 +77,10 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}, nil
 }
 
+var (
+	groupIDFinder = regexp.MustCompile(`[a-zA-Z0-9-_.]+`)
+)
+
 // Transforms for manifest fields that need a little work to extract the group
 // ID. Note that we intentionally do not combine this as part of the `keys` in
 // the `getGroupID` function because we want to maintain ordering of the keys to
@@ -94,13 +98,8 @@ var groupIDTransforms = map[string]func(string) string{
 	// And we simply want to extract `org.elasticsearch`, which would be the first
 	// match for the regex.
 	"Implementation-Title": func(s string) string {
-		groupIDRegex, err := regexp.Compile(`[a-zA-Z0-9-_\.]+`)
-		if err != nil {
-			log.Warnf("Error compiling group ID regex: %v", err)
-		}
-
 		// Get the first match for a domain-like string.
-		return groupIDRegex.FindString(s)
+		return groupIDFinder.FindString(s)
 	},
 }
 
