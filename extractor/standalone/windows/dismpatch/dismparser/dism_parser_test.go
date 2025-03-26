@@ -15,6 +15,7 @@
 package dismparser
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -116,7 +117,7 @@ func TestParseError(t *testing.T) {
 	}
 
 	_, _, err = Parse(string(content))
-	if err == nil || err.Error() != "Could not parse DISM output successfully" {
-		t.Errorf("Parse: Want: %v, Got: %v", "Could not parse DISM output successfully", err)
+	if !errors.Is(err, ErrParsingError) {
+		t.Errorf("Parse: Want: %v, Got: %v", ErrParsingError, err)
 	}
 }
