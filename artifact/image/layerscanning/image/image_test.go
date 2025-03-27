@@ -773,7 +773,7 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 				t.Fatalf("ReadAll(%v) returned error: %v", filepathContentPair.filepath, err)
 			}
 
-			gotContent := string(contentBytes[:])
+			gotContent := string(contentBytes)
 			if diff := cmp.Diff(gotContent, filepathContentPair.content); diff != "" {
 				t.Errorf("Open(%v) returned incorrect content: got \"%s\", want \"%s\"", filepathContentPair.filepath, gotContent, filepathContentPair.content)
 			}
