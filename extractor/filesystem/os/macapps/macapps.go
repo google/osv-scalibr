@@ -147,7 +147,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Mac OS Application.extract(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("macOS Application.extract(%s): %w", input.Path, err)
 	}
 	if i == nil {
 		return []*extractor.Inventory{}, nil

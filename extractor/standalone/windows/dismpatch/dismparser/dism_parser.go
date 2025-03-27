@@ -23,7 +23,7 @@ import (
 
 var (
 	// ErrParsingError indicates an error while parsing the DISM output.
-	ErrParsingError = errors.New("Could not parse DISM output successfully")
+	ErrParsingError = errors.New("could not parse DISM output successfully")
 
 	versionRegexp = regexp.MustCompile(`~(\d+\.\d+\.\d+\.\d+)$`)
 )

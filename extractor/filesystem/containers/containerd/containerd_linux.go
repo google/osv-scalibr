@@ -128,13 +128,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	var inventory = []*extractor.Inventory{}
 
 	if input.Info != nil && input.Info.Size() > e.maxMetaDBFileSize {
-		return inventory, fmt.Errorf("Containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
+		return inventory, fmt.Errorf("containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
 	}
 	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
 	// This will still allow to handle the snapshot of a machine.
 	metaDB, err := bolt.Open(filepath.Join(input.Root, input.Path), 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return inventory, fmt.Errorf("Could not read the containerd metadb file: %w", err)
+		return inventory, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
 
 	defer metaDB.Close()
@@ -145,7 +145,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		fullMetadataDBPath := filepath.Join(input.Root, snapshotterMetadataDBPath)
 		snapshotsMetadata, err = snapshotsMetadataFromDB(fullMetadataDBPath, e.maxMetaDBFileSize, "overlayfs")
 		if err != nil {
-			return inventory, fmt.Errorf("Could not collect snapshots metadata from DB: %w", err)
+			return inventory, fmt.Errorf("could not collect snapshots metadata from DB: %w", err)
 		}
 	}
 
@@ -174,7 +174,7 @@ func fileSizeCheck(filepath string, maxFileSize int64) (err error) {
 		return err
 	}
 	if fileInfo.Size() > maxFileSize {
-		return fmt.Errorf("File %s is too large: %d", filepath, fileInfo.Size())
+		return fmt.Errorf("file %s is too large: %d", filepath, fileInfo.Size())
 	}
 	return nil
 }
@@ -323,18 +323,18 @@ func snapshotsMetadataFromDB(fullMetadataDBPath string, maxMetaDBFileSize int64,
 	// Check if the file is valid to be opened, and make sure it's not too large.
 	err := fileSizeCheck(fullMetadataDBPath, maxMetaDBFileSize)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read the containerd metadb file: %w", err)
+		return nil, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
 
 	metadataDB, err := bolt.Open(fullMetadataDBPath, 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("Could not read the containerd metadb file: %w", err)
+		return nil, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
 	defer metadataDB.Close()
 	err = metadataDB.View(func(tx *bolt.Tx) error {
 		snapshotsBucketByDigest, err := snapshotsBucketByDigest(tx)
 		if err != nil {
-			return fmt.Errorf("Not able to grab the names of the snapshot buckets: %w", err)
+			return fmt.Errorf("not able to grab the names of the snapshot buckets: %w", err)
 		}
 		// Store the important info of the snapshots into snapshotMetadata struct.
 		snapshotsMetadata = snapshotMetadataFromSnapshotsBuckets(tx, snapshotsBucketByDigest, snapshotsMetadata, fileSystemDriver)
@@ -354,13 +354,13 @@ func snapshotsBucketByDigest(tx *bolt.Tx) ([]string, error) {
 	var snapshotsBucketByDigest []string
 	//  metadata db structure: v1-> snapshots -> <snapshot_digest> -> <snapshot_info_fields>
 	if tx == nil {
-		return snapshotsBucketByDigest, errors.New("The transaction is nil")
+		return snapshotsBucketByDigest, errors.New("the transaction is nil")
 	}
 	if tx.Bucket([]byte("v1")) == nil {
-		return snapshotsBucketByDigest, errors.New("Could not find the v1 bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("could not find the v1 bucket in the metadata.db file")
 	}
 	if tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")) == nil {
-		return snapshotsBucketByDigest, errors.New("Could not find the snapshots bucket in the metadata.db file")
+		return snapshotsBucketByDigest, errors.New("could not find the snapshots bucket in the metadata.db file")
 	}
 	snapshotsMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots"))
 	err := snapshotsMetadataBucket.ForEach(func(k []byte, v []byte) error {
