@@ -19,6 +19,7 @@ package containerd
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -278,18 +279,17 @@ func digestSnapshotInfoMapping(snapshotsMetadata []SnapshotMetadata) map[string]
 // Format the lowerDir, upperDir and workDir for the container.
 func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string) (string, string, string) {
 	var lowerDirs []string
-	var parentSnapshotIDs []int
+	var parentSnapshotIDs []uint64
 	parentSnapshotIDs = getParentSnapshotIDByDigest(snapshotsMetadata, snapshotKey, parentSnapshotIDs)
 	for _, parentSnapshotID := range parentSnapshotIDs {
-		log.Infof("parentSnapshotID: %v", parentSnapshotID)
-		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(parentSnapshotID), "fs"))
+		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.FormatUint(parentSnapshotID, 10), "fs"))
 	}
 	// Sample lowerDir: lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs
 	lowerDir := strings.Join(lowerDirs, ":")
 	for _, snapshotMetadata := range snapshotsMetadata {
 		if strings.Contains(snapshotMetadata.Digest, snapshotKey) {
-			upperDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "fs")
-			workDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.Itoa(snapshotMetadata.ID), "work")
+			upperDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "fs")
+			workDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "work")
 			return lowerDir, upperDir, workDir
 		}
 	}
@@ -297,7 +297,7 @@ func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshot
 }
 
 // Collect the parent snapshot ids of the given snapshot.
-func getParentSnapshotIDByDigest(snapshotsMetadata []SnapshotMetadata, digest string, parentIDList []int) []int {
+func getParentSnapshotIDByDigest(snapshotsMetadata []SnapshotMetadata, digest string, parentIDList []uint64) []uint64 {
 	snapshotMetadataDict := digestSnapshotInfoMapping(snapshotsMetadata)
 	if _, ok := snapshotMetadataDict[digest]; !ok {
 		log.Errorf("Could not find the parent snapshot info in the metadata.db file for digest: %v", digest)
@@ -391,10 +391,10 @@ func snapshotMetadataFromSnapshotsBuckets(tx *bolt.Tx, snapshotsBucketByDigest [
 		// Get the bucket by digest.
 		snapshotMetadataBucket := tx.Bucket([]byte("v1")).Bucket([]byte("snapshots")).Bucket([]byte(shaDigest))
 		// This id is the corresponding folder name in overlayfs/snapshots folder.
-		id := -1
+		id := uint64(0)
 		idByte := snapshotMetadataBucket.Get([]byte("id"))
 		if idByte != nil {
-			id = int(idByte[0])
+			id, _ = binary.Uvarint(idByte)
 		}
 		// The status of the snapshot.
 		kind := -1
@@ -431,7 +431,7 @@ func containerInitPid(scanRoot string, runtimeName string, namespace string, id 
 func runcInitPid(scanRoot string, id string) int {
 	// If a container is running by runc, the init pid is stored in the grpc status file.
 	// status file is located at the
-	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/state.json path.
+	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/status path.
 	statusPath := filepath.Join(scanRoot, criPluginStatusFilePrefix, id, "status")
 	if _, err := os.Stat(statusPath); err != nil {
 		log.Info("File status does not exists for container %v, error: %v", id, err)
