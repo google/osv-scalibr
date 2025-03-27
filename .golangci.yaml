@@ -41,7 +41,6 @@ linters:
     - prealloc         # We don't want to preallocate all the time
     - protogetter      # TODO(#274): work on enabling this
     - recvcheck        # TODO(#274): work on enabling this
-    - stylecheck       # TODO(#274): work on enabling this
     - tagliatelle
     - tenv             # Deprecated
     - testpackage
