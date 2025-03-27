@@ -32,8 +32,9 @@ const (
 	Name = "containers/podman"
 )
 
-// Config is the configuration for the Extractor.
+// Config defines the configuration options for the Extractor.
 type Config struct {
+	// All specifies whether to list all containers, including those that are not currently running.
 	All bool
 }
 
