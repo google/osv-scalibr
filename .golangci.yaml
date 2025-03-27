@@ -13,7 +13,6 @@ linters:
     - err113
     - exhaustive       # TODO(#274): work on enabling this
     - exhaustruct
-    - exptostd         # TODO(#274): work on enabling this
     - forcetypeassert
     - funlen
     - gci
