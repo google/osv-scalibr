@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/google/go-cmp/cmp"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
@@ -43,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/plugin"
@@ -779,6 +781,32 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 
+	dockerInventory := &extractor.Inventory{
+		Name:    "redis",
+		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &docker.Metadata{
+			ImageName:   "redis",
+			ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
+			Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+		},
+	}
+
+	dockerInventoryProto := &spb.Inventory{
+		Name:    "redis",
+		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &spb.Inventory_DockerContainersMetadata{
+			DockerContainersMetadata: &spb.DockerContainersMetadata{
+				ImageName:   "redis",
+				ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+				ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
+				Ports: []*spb.DockerPort{
+					{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"},
+				},
+			},
+		},
+	}
+
 	testCases := []struct {
 		desc         string
 		res          *scalibr.ScanResult
@@ -1126,6 +1154,41 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 				Inventories: []*spb.Inventory{containerdRuntimeInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
+			// on Windows.
+			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful docker scan",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{dockerInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{dockerInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported

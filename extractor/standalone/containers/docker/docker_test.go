@@ -114,7 +114,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid two containers",
+			name: "valid two containers running",
 			ctrs: []types.Container{
 				{
 					ID:      "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
@@ -139,6 +139,28 @@ func TestExtract(t *testing.T) {
 					Labels:  map[string]string{},
 					State:   "running",
 					Status:  "Up 8 minutes",
+				},
+			},
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "redis",
+					Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+					Metadata: &plugin.Metadata{
+						ImageName:   "redis",
+						ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+						ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
+						Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+					},
+				},
+				{
+					Name:    "postgres",
+					Version: "sha256:e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
+					Metadata: &plugin.Metadata{
+						ImageName:   "postgres",
+						ImageDigest: "sha256:e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
+						ID:          "57eaa9ded450bde6c214dfdced8897d6bb67f1611fa6befffc7a768b5d1cbc5a",
+						Ports:       []types.Port{{IP: "", PrivatePort: 5432, PublicPort: 0, Type: "tcp"}},
+					},
 				},
 			},
 		},
