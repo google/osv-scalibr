@@ -16,10 +16,12 @@ package podman
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	// SQLite driver needed for parsing db.sql files.
 	_ "github.com/mattn/go-sqlite3"
 	bolt "go.etcd.io/bbolt"
 )
@@ -51,12 +53,12 @@ func (s *boltState) AllContainers() ([]*Container, error) {
 	err := s.conn.View(func(tx *bolt.Tx) error {
 		allCtrsBucket := tx.Bucket([]byte("all-ctrs"))
 		if allCtrsBucket == nil {
-			return fmt.Errorf("allCtrs bucket not found in DB")
+			return errors.New("allCtrs bucket not found in DB")
 		}
 
 		ctrBuckets := tx.Bucket([]byte("ctr"))
 		if ctrBuckets == nil {
-			return fmt.Errorf("containers bucket not found in DB")
+			return errors.New("containers bucket not found in DB")
 		}
 
 		return allCtrsBucket.ForEach(func(id, name []byte) error {
@@ -91,8 +93,8 @@ func (s *boltState) AllContainers() ([]*Container, error) {
 }
 
 // Close closes the bolt db connection
-func (b *boltState) Close() error {
-	return b.conn.Close()
+func (s *boltState) Close() error {
+	return s.conn.Close()
 }
 
 var _ State = &sqliteState{}

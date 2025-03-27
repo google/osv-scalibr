@@ -59,13 +59,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 }
 
-func must[T any](t T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 func TestExtractor_Extract(t *testing.T) {
 	// extracttest.TestTableEntry + podman config
 	type testTableEntry struct {

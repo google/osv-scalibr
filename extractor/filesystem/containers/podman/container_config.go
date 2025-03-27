@@ -26,7 +26,7 @@ type ContainerConfig struct {
 	LockID        uint32   `json:"lockID"`
 	CreateCommand []string `json:"CreateCommand,omitempty"`
 	RawImageName  string   `json:"RawImageName,omitempty"`
-	Dependencies  []string
+	Dependencies  []string `json:"dependencies,omitempty"`
 
 	// embedded sub-configs
 	ContainerRootFSConfig
@@ -44,12 +44,10 @@ type ContainerRootFSConfig struct {
 }
 
 type ContainerNetworkConfig struct {
-	CreateNetNS        bool                `json:"createNetNS"`
-	StaticIP           net.IP              `json:"staticIP,omitempty"`
-	ExposedPorts       map[uint16][]string `json:"exposedPorts,omitempty"`
-	UseImageResolvConf bool
-	UseImageHostname   bool `json:"useImageHostname"`
-	UseImageHosts      bool
-	BaseHostsFile      string              `json:"baseHostsFile,omitempty"`
-	NetworkOptions     map[string][]string `json:"network_options,omitempty"`
+	CreateNetNS      bool                `json:"createNetNS"`
+	StaticIP         net.IP              `json:"staticIP,omitempty"`
+	ExposedPorts     map[uint16][]string `json:"exposedPorts,omitempty"`
+	UseImageHostname bool                `json:"useImageHostname"`
+	BaseHostsFile    string              `json:"baseHostsFile,omitempty"`
+	NetworkOptions   map[string][]string `json:"network_options,omitempty"`
 }
