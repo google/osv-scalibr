@@ -17,6 +17,7 @@ package list
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/google/osv-scalibr/detector"
@@ -33,7 +34,6 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // InitFn is the detector initializer function.
@@ -103,7 +103,7 @@ func concat(initMaps ...InitMap) InitMap {
 }
 
 func vals(initMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(initMap)...)
+	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
 // FromCapabilities returns all detectors that can run under the specified
