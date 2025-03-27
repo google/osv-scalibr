@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
@@ -779,6 +780,35 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 
+	podmanInventory := &extractor.Inventory{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &podman.Metadata{
+			ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+			PID:          4232,
+			Status:       "running",
+			NameSpace:    "",
+			StartedTime:  endTime.Add(-10 * time.Minute),
+			ExitCode:     0,
+			Exited:       false,
+		},
+	}
+	podmanInventoryProto := &spb.Inventory{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &spb.Inventory_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts: map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
+				Pid:          4232,
+				Namespace:    "",
+				StartedTime:  timestamppb.New(endTime.Add(-10 * time.Minute)),
+				Status:       "running",
+				ExitCode:     0,
+				Exited:       false,
+			},
+		},
+	}
+
 	testCases := []struct {
 		desc         string
 		res          *scalibr.ScanResult
@@ -1126,6 +1156,41 @@ func TestScanResultToProto(t *testing.T) {
 					},
 				},
 				Inventories: []*spb.Inventory{containerdRuntimeInventoryProto},
+				Findings:    []*spb.Finding{},
+			},
+			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
+			// on Windows.
+			excludeForOS: []string{"windows", "darwin"},
+		},
+		{
+			desc: "Successful containerd runtime scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventories: []*extractor.Inventory{podmanInventory},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventories: []*spb.Inventory{podmanInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported

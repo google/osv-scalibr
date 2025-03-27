@@ -112,7 +112,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:    "postgres",
 					Version: "e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
 					Metadata: &podman.Metadata{
-						ExposedPorts: map[uint16][]string{5432: []string{"tcp"}},
+						ExposedPorts: map[uint16][]string{5432: {"tcp"}},
 						PID:          37461,
 						Status:       "running",
 					},
@@ -121,7 +121,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:    "redis",
 					Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 					Metadata: &podman.Metadata{
-						ExposedPorts: map[uint16][]string{6379: []string{"tcp"}},
+						ExposedPorts: map[uint16][]string{6379: {"tcp"}},
 						PID:          37379,
 						Status:       "running",
 					},
@@ -138,7 +138,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:    "postgres",
 					Version: "e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
 					Metadata: &podman.Metadata{
-						ExposedPorts: map[uint16][]string{5432: []string{"tcp"}},
+						ExposedPorts: map[uint16][]string{5432: {"tcp"}},
 						PID:          37461,
 						Status:       "running",
 					},
@@ -147,7 +147,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:    "redis",
 					Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 					Metadata: &podman.Metadata{
-						ExposedPorts: map[uint16][]string{6379: []string{"tcp"}},
+						ExposedPorts: map[uint16][]string{6379: {"tcp"}},
 						PID:          37379,
 						Status:       "running",
 					},

@@ -14,7 +14,6 @@ require (
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/containerd/api v1.8.0
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
-	github.com/docker/docker v25.0.6+incompatible
 	github.com/erikvarga/go-rpmdb v0.0.0-20240208180226-b97e041ef9af
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.7.0
@@ -67,10 +66,9 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v25.0.3+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
+	github.com/docker/docker v25.0.6+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.1 // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/edsrzf/mmap-go v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
