@@ -16,7 +16,6 @@
 package unpack
 
 import (
-	"archive/tar"
 	"bytes"
 	"errors"
 	"fmt"
@@ -26,6 +25,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"archive/tar"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/require"
@@ -355,8 +356,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			parent := filepath.Dir(fullPath)
 			err := os.MkdirAll(parent, fs.ModePerm)
 			if err != nil {
-				log.Errorf("failed to create directory %q: %v", parent, err)
-				return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
+				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
+				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
 
 			// Retain the original file permission but update it so we can always read and write the file.
