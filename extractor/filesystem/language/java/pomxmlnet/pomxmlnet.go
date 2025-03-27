@@ -18,10 +18,10 @@ package pomxmlnet
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/maps"
 
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
@@ -233,7 +233,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		details[inventory.Name] = &inventory
 	}
 
-	return maps.Values(details), nil
+	return slices.Collect(maps.Values(details)), nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
