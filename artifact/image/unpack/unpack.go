@@ -256,7 +256,7 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 		}
 		layerDigests = append(layerDigests, digest.String())
 
-		layerPath := filepath.Join(dir, strings.Replace(digest.String(), ":", "-", -1))
+		layerPath := filepath.Join(dir, strings.ReplaceAll(digest.String(), ":", "-"))
 		_ = os.Mkdir(layerPath, fs.ModePerm)
 
 		// requiredTargets stores targets that symlinks point to.

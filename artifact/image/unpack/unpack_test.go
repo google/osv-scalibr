@@ -573,7 +573,7 @@ func mustReadSubDirs(t *testing.T, dir string) []digestAndContent {
 		}
 		content := mustReadDir(t, filepath.Join(dir, info.Name()))
 		dc = append(dc, digestAndContent{
-			strings.Replace(info.Name(), "-", ":", -1),
+			strings.ReplaceAll(info.Name(), "-", ":"),
 			content,
 		})
 	}
