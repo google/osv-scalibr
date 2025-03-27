@@ -363,8 +363,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			modeWithOwnerReadWrite := header.FileInfo().Mode() | 0600
 			err = os.WriteFile(fullPath, content, modeWithOwnerReadWrite)
 			if err != nil {
-				log.Errorf("failed to write file %q: %v", fullPath, err)
-				return nil, fmt.Errorf("failed to write file %q: %w", fullPath, err)
+				log.Errorf("failed to write regular file %q: %v", fullPath, err)
+				return nil, fmt.Errorf("failed to write regular file %q: %w", fullPath, err)
 			}
 
 		case tar.TypeLink, tar.TypeSymlink:
@@ -421,9 +421,9 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if err := os.WriteFile(fullPath, content, 0644); err != nil {
-				log.Errorf("failed to write file %q: %v", fullPath, err)
+				log.Errorf("failed to write symlink as regular file %q: %v", fullPath, err)
 				if symlinkErrStrategy == SymlinkErrReturn {
-					return nil, fmt.Errorf("failed to write file %q: %w", fullPath, err)
+					return nil, fmt.Errorf("failed to write symlink as regular file %q: %w", fullPath, err)
 				}
 			}
 
