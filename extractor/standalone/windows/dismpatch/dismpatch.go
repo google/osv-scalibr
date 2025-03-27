@@ -66,10 +66,10 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 		Name:      i.Name,
 	}
 
-	switch i.Metadata.(type) {
+	switch meta := i.Metadata.(type) {
 	case *metadata.OSVersion:
 		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: i.Metadata.(*metadata.OSVersion).FullVersion,
+			purl.BuildNumber: meta.FullVersion,
 		})
 	default:
 		p.Version = i.Version
