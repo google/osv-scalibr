@@ -99,8 +99,8 @@ func TestExtract(t *testing.T) {
 			path:              "testdata/meta_linux_test_single.db",
 			snapshotterdbpath: "testdata/metadata_linux_test.db",
 			statusFilePath:    "testdata/status",
-			namespace:         "default",
-			containerdID:      "a24fc689ea380bf71604d7ade8f5655b8de66bbbd1befa6c326797f01ce569ce",
+			namespace:         "k8s.io",
+			containerdID:      "b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
@@ -121,6 +121,40 @@ func TestExtract(t *testing.T) {
 						LowerDir:    "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs",
 						UpperDir:    "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs",
 						WorkDir:     "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/work",
+					},
+					Locations: []string{"var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"},
+				},
+			},
+		},
+		{
+			name:              "long lived metadata linux",
+			path:              "testdata/meta_linux_test_long_lived.db",
+			snapshotterdbpath: "testdata/metadata_linux_test_long_lived.db",
+			statusFilePath:    "testdata/status_long_lived",
+			namespace:         "k8s.io",
+			containerdID:      "b0653b5a8357310c1f18d680cb26c559a8cc9595002888cf542affaaeeb30e99",
+			cfg: containerd.Config{
+				MaxMetaDBFileSize: 500 * units.MiB,
+			},
+			onGoos: "linux",
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:    "us-docker.pkg.dev/google-samples/containers/gke/security/maven-vulns:latest",
+					Version: "sha256:2de1666a491de0d56f4b204a51fedbc27b21a6211c67bfacbce56f18a7fb06ee",
+					Metadata: &containerd.Metadata{
+						Namespace:    "k8s.io",
+						ImageName:    "us-docker.pkg.dev/google-samples/containers/gke/security/maven-vulns:latest",
+						ImageDigest:  "sha256:2de1666a491de0d56f4b204a51fedbc27b21a6211c67bfacbce56f18a7fb06ee",
+						Runtime:      "io.containerd.runc.v2",
+						ID:           "b0653b5a8357310c1f18d680cb26c559a8cc9595002888cf542affaaeeb30e99",
+						PID:          2357250,
+						PodName:      "maven-vulns-58444c9f5d-scl4g",
+						PodNamespace: "default",
+						Snapshotter:  "overlayfs",
+						SnapshotKey:  "b0653b5a8357310c1f18d680cb26c559a8cc9595002888cf542affaaeeb30e99",
+						LowerDir:     "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/442/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/441/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/440/fs:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/439/fs",
+						UpperDir:     "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/443/fs",
+						WorkDir:      "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/443/work",
 					},
 					Locations: []string{"var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"},
 				},
@@ -159,8 +193,8 @@ func TestExtract(t *testing.T) {
 			path:              "testdata/meta_linux_test_single.db",
 			statusFilePath:    "testdata/invalid_status",
 			snapshotterdbpath: "testdata/metadata_linux_test.db",
-			namespace:         "default",
-			containerdID:      "test_pod",
+			namespace:         "k8s.io",
+			containerdID:      "b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c",
 			onGoos:            "linux",
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
@@ -218,9 +252,10 @@ func TestExtract(t *testing.T) {
 			var input *filesystem.ScanInput
 			d := "/tmp/TestExtractmetadb_valid_linux1567346986/001"
 			if tt.onGoos == "linux" {
+				containerStatusPath := filepath.Join("var/lib/containerd/io.containerd.grpc.v1.cri/containers/", tt.containerdID)
 				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
 				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
-				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.grpc.v1.cri/containers/b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c", "status", tt.statusFilePath)
+				createFileFromTestData(t, d, containerStatusPath, "status", tt.statusFilePath)
 				input = createScanInput(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
 			}
 			if tt.onGoos == "windows" {
@@ -240,6 +275,11 @@ func TestExtract(t *testing.T) {
 			})
 			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+			// Remove all files and the test directory.
+			err = os.RemoveAll(d)
+			if err != nil {
+				t.Fatalf("Failed to remove test directory after the test: %v", err)
 			}
 		})
 	}
