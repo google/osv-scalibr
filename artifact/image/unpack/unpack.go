@@ -302,7 +302,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, fmt.Errorf("failed to read next header in tarball: %w", err)
