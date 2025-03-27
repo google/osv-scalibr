@@ -367,6 +367,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 				return nil, fmt.Errorf("failed to write regular file %q: %w", fullPath, err)
 			}
 
+			// TODO: b/406760694 - Remove this once the bug is fixed.
+
 		case tar.TypeLink, tar.TypeSymlink:
 			parent := filepath.Dir(fullPath)
 			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
