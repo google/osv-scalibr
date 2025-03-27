@@ -84,7 +84,7 @@ func ToPath(p string) string {
 	nonWhitoutPath := path.Join(dir, file)
 
 	if dir != "" && file == "" {
-		nonWhitoutPath = nonWhitoutPath + "/"
+		nonWhitoutPath += "/"
 	}
 
 	return nonWhitoutPath
