@@ -10,7 +10,6 @@ linters:
     - cyclop           #
     - depguard         #
     - err113           #
-    - exhaustive       # TODO(#274): work on enabling this
     - exhaustruct      #
     - forcetypeassert  #
     - funcorder        #
