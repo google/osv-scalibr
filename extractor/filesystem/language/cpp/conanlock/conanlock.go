@@ -127,12 +127,13 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Inventory {
 			continue
 		}
 
-		if node.Pref != "" {
-			// old format 0.3 (conan 1.27-) lockfiles use "pref" instead of "ref"
+		switch {
+		// old format 0.3 (conan 1.27-) lockfiles use "pref" instead of "ref"
+		case node.Pref != "":
 			reference = parseConanReference(node.Pref)
-		} else if node.Ref != "" {
+		case node.Ref != "":
 			reference = parseConanReference(node.Ref)
-		} else {
+		default:
 			continue
 		}
 		// skip entries with no name, they are most likely consumer's conanfiles

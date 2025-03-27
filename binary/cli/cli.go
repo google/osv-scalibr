@@ -384,7 +384,8 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 			oFormat := o[0]
 			oPath := o[1]
 			log.Infof("Writing scan results to %s", oPath)
-			if strings.Contains(oFormat, "proto") {
+			switch {
+			case strings.Contains(oFormat, "proto"):
 				resultProto, err := proto.ScanResultToProto(result)
 				if err != nil {
 					return err
@@ -392,12 +393,12 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 				if err := proto.WriteWithFormat(oPath, resultProto, oFormat); err != nil {
 					return err
 				}
-			} else if strings.Contains(oFormat, "spdx23") {
+			case strings.Contains(oFormat, "spdx23"):
 				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
 				if err := spdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
-			} else if strings.Contains(oFormat, "cdx") {
+			case strings.Contains(oFormat, "cdx"):
 				doc := converter.ToCDX(result, f.GetCDXConfig())
 				if err := cdx.Write(doc, oPath, oFormat); err != nil {
 					return err

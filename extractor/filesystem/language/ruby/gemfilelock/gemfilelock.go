@@ -82,19 +82,21 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 			continue
 		}
 		m := indentRegexp.FindStringSubmatch(line)
-		if m == nil { // No spaces at the start, this is a new section.
+		switch {
+		// No spaces at the start, this is a new section.
+		case m == nil:
 			if currentSection != nil {
 				sections = append(sections, currentSection)
 			}
 			currentSection = &gemlockSection{name: line}
-		} else if len(m[0]) == 4 {
-			// Indented with 4 spaces: This line contains a top-level spec for the current section.
+		// Indented with 4 spaces: This line contains a top-level spec for the current section.
+		case len(m[0]) == 4:
 			if currentSection == nil {
 				return nil, fmt.Errorf("%s: invalid lockfile: specs entry before a section declaration", input.Path)
 			}
 			currentSection.specs = append(currentSection.specs, strings.TrimPrefix(line, "    "))
-		} else if strings.HasPrefix(line, "  revision: ") {
-			// The commit for the given section. Always stored at an indentation level of 2.
+		// The commit for the given section. Always stored at an indentation level of 2.
+		case strings.HasPrefix(line, "  revision: "):
 			if currentSection == nil {
 				return nil, fmt.Errorf("%s: invalid lockfile: revision entry before a section declaration", input.Path)
 			}

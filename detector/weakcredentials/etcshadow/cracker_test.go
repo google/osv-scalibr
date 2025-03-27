@@ -53,11 +53,12 @@ func TestPasswordHashCracker(t *testing.T) {
 	for k, v := range testHashes {
 		password, err := cracker.Crack(context.Background(), v)
 		_, isCrackable := crackableHash[k]
-		if isCrackable && err != nil {
+		switch {
+		case isCrackable && err != nil:
 			t.Errorf("not cracked supported hash: [%v] [%v]", k, v)
-		} else if !isCrackable && err == nil {
+		case !isCrackable && err == nil:
 			t.Errorf("cracked unsupported hash: [%v] [%v] [%v]", k, password, v)
-		} else if password != "Password123" && err == nil {
+		case password != "Password123" && err == nil:
 			t.Errorf("cracked password is not 'Password123': [%v] [%v] [%v]", k, password, v)
 		}
 	}
