@@ -92,28 +92,34 @@ type InitMap map[string][]InitFn
 var (
 	// Language extractors.
 
-	// C++ extractors.
-	Cpp = InitMap{conanlock.Name: {conanlock.New}}
-	// Java extractors.
-	Java = InitMap{
+	// C++ source extractors.
+	CppSource = InitMap{conanlock.Name: {conanlock.New}}
+	// Java source extractors.
+	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
-		javaarchive.Name:                   {javaarchive.NewDefault},
 		// pom.xml extraction for environments with and without network access.
 		pomxml.Name:    {pomxml.New},
 		pomxmlnet.Name: {pomxmlnet.NewDefault},
 	}
-	// Javascript extractors.
-	Javascript = InitMap{
+	// Java artifact extractors.
+	JavaArtifact = InitMap{
+		javaarchive.Name: {javaarchive.NewDefault},
+	}
+	// Javascript source extractors.
+	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.NewDefault},
 		packagelockjson.Name: {packagelockjson.NewDefault},
 		pnpmlock.Name:        {pnpmlock.New},
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
 	}
-	// Python extractors.
-	Python = InitMap{
-		wheelegg.Name:     {wheelegg.NewDefault},
+	// Javascript artifact extractors.
+	JavascriptArtifact = InitMap{
+		packagejson.Name: {packagejson.NewDefault},
+	}
+	// Python source extractors.
+	PythonSource = InitMap{
 		requirements.Name: {requirements.NewDefault},
 		setup.Name:        {setup.NewDefault},
 		pipfilelock.Name:  {pipfilelock.New},
@@ -122,31 +128,38 @@ var (
 		condameta.Name:    {condameta.NewDefault},
 		uvlock.Name:       {uvlock.New},
 	}
-	// Go extractors.
-	Go = InitMap{
-		gobinary.Name: {gobinary.NewDefault},
-		gomod.Name:    {gomod.New},
+	// Python artifact extractors.
+	PythonArtifact = InitMap{
+		wheelegg.Name: {wheelegg.NewDefault},
 	}
-	// Dart extractors.
-	Dart = InitMap{pubspec.Name: {pubspec.New}}
-	// Erlang extractors.
-	Erlang = InitMap{mixlock.Name: {mixlock.New}}
-	// Elixir extractors.
-	Elixir = InitMap{elixir.Name: {elixir.NewDefault}}
-	// Haskell extractors.
-	Haskell = InitMap{
+	// Go source extractors.
+	GoSource = InitMap{
+		gomod.Name: {gomod.New},
+	}
+	// Go artifact extractors.
+	GoArtifact = InitMap{
+		gobinary.Name: {gobinary.NewDefault},
+	}
+	// Dart source extractors.
+	DartSource = InitMap{pubspec.Name: {pubspec.New}}
+	// Erlang source extractors.
+	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
+	// Elixir source extractors.
+	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
+	// Haskell source extractors.
+	HaskellSource = InitMap{
 		stacklock.Name: {stacklock.NewDefault},
 		cabal.Name:     {cabal.NewDefault},
 	}
-	// R extractors
-	R = InitMap{renvlock.Name: {renvlock.New}}
-	// Ruby extractors.
-	Ruby = InitMap{
+	// R source extractors
+	RSource = InitMap{renvlock.Name: {renvlock.New}}
+	// Ruby source extractors.
+	RubySource = InitMap{
 		gemspec.Name:     {gemspec.NewDefault},
 		gemfilelock.Name: {gemfilelock.New},
 	}
-	// Rust extractors.
-	Rust = InitMap{
+	// Rust source extractors.
+	RustSource = InitMap{
 		cargolock.Name:      {cargolock.New},
 		cargoauditable.Name: {cargoauditable.NewDefault},
 		cargotoml.Name:      {cargotoml.New},
@@ -156,23 +169,25 @@ var (
 		cdx.Name:  {cdx.New},
 		spdx.Name: {spdx.New},
 	}
-	// Dotnet (.NET) extractors.
-	Dotnet = InitMap{
+	// Dotnet (.NET) source extractors.
+	DotnetSource = InitMap{
 		depsjson.Name:         {depsjson.NewDefault},
 		packagesconfig.Name:   {packagesconfig.NewDefault},
 		packageslockjson.Name: {packageslockjson.NewDefault},
-		dotnetpe.Name:         {dotnetpe.NewDefault},
 	}
-	// PHP extractors.
-	PHP = InitMap{composerlock.Name: {composerlock.New}}
-	// Swift extractors.
-
-	Swift = InitMap{
+	// Dotnet (.NET) artifact extractors.
+	DotnetArtifact = InitMap{
+		dotnetpe.Name: {dotnetpe.NewDefault},
+	}
+	// PHP Source extractors.
+	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
+	// Swift source extractors.
+	SwiftSource = InitMap{
 		packageresolved.Name: {packageresolved.NewDefault},
 		podfilelock.Name:     {podfilelock.NewDefault},
 	}
 
-	// Containers extractors.
+	// Container extractors.
 	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
 
 	// OS extractors.
@@ -201,48 +216,70 @@ var (
 
 	// Collections of extractors.
 
-	// Default extractors that are recommended to be enabled.
-	Default = concat(Java, Javascript, Python, Go, OS)
-	// All extractors available from SCALIBR.
-	All = concat(
-		Cpp,
-		Java,
-		Javascript,
-		Python,
-		Go,
-		Dart,
-		Erlang,
-		Elixir,
-		Haskell,
-		PHP,
-		R,
-		Ruby,
-		Rust,
-		Dotnet,
+	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
+	SourceCode = concat(
+		CppSource,
+		JavaSource,
+		JavascriptSource,
+		PythonSource,
+		GoSource,
+		DartSource,
+		ErlangSource,
+		ElixirSource,
+		HaskellSource,
+		PHPSource,
+		RSource,
+		RubySource,
+		RustSource,
+		DotnetSource,
+		SwiftSource,
+	)
+
+	// Artifact extractors find packages on built systems (e.g. parsing
+	// descriptors of installed packages).
+	Artifact = concat(
+		JavaArtifact,
+		JavascriptArtifact,
+		PythonArtifact,
+		GoArtifact,
+		DotnetArtifact,
 		SBOM,
-		Swift,
 		OS,
 		Misc,
 		Containers,
 	)
 
+	// Default extractors that are recommended to be enabled.
+	Default = concat(
+		JavaSource, JavaArtifact,
+		JavascriptSource, JavascriptArtifact,
+		PythonSource, PythonArtifact,
+		GoSource, GoArtifact,
+		OS,
+	)
+	// All extractors available from SCALIBR.
+	All = concat(
+		SourceCode,
+		Artifact,
+	)
+
 	extractorNames = concat(All, InitMap{
 		// Languages.
-		"cpp":        vals(Cpp),
-		"java":       vals(Java),
-		"javascript": vals(Javascript),
-		"python":     vals(Python),
-		"go":         vals(Go),
-		"dart":       vals(Dart),
-		"erlang":     vals(Erlang),
-		"elixir":     vals(Elixir),
-		"haskell":    vals(Haskell),
-		"r":          vals(R),
-		"ruby":       vals(Ruby),
-		"dotnet":     vals(Dotnet),
-		"php":        vals(PHP),
-		"rust":       vals(Rust),
-		"swift":      vals(Swift),
+		"cpp":        vals(CppSource),
+		"java":       vals(concat(JavaSource, JavaArtifact)),
+		"javascript": vals(concat(JavascriptSource, JavascriptArtifact)),
+		"python":     vals(concat(PythonSource, PythonArtifact)),
+		"go":         vals(concat(GoSource, GoArtifact)),
+		"dart":       vals(DartSource),
+		"erlang":     vals(ErlangSource),
+		"elixir":     vals(ElixirSource),
+		"haskell":    vals(HaskellSource),
+		"r":          vals(RSource),
+		"ruby":       vals(RubySource),
+		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
+		"php":        vals(PHPSource),
+		"rust":       vals(RustSource),
+		"swift":      vals(SwiftSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
@@ -250,8 +287,10 @@ var (
 		"misc":       vals(Misc),
 
 		// Collections.
-		"default": vals(Default),
-		"all":     vals(All),
+		"artifact":   vals(Artifact),
+		"sourcecode": vals(SourceCode),
+		"default":    vals(Default),
+		"all":        vals(All),
 	})
 )
 
