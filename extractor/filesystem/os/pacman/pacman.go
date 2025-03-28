@@ -172,11 +172,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		if strings.HasPrefix(line, "%NAME%") {
+		switch {
+		case strings.HasPrefix(line, "%NAME%"):
 			pkgName, err = extractValue(s)
-		} else if strings.HasPrefix(line, "%VERSION%") {
+		case strings.HasPrefix(line, "%VERSION%"):
 			pkgVersion, err = extractValue(s)
-		} else if strings.HasPrefix(line, "%DEPENDS%") {
+		case strings.HasPrefix(line, "%DEPENDS%"):
 			pkgDependencies, err = extractValues(s)
 		}
 
