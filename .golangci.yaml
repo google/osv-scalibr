@@ -15,7 +15,6 @@ linters:
     - exhaustive       # TODO(#274): work on enabling this
     - exhaustruct
     - exptostd         # TODO(#274): work on enabling this
-    - exportloopref    # Deprecated
     - forcetypeassert
     - funlen
     - gci
