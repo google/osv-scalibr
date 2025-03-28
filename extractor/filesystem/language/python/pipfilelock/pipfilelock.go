@@ -19,7 +19,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -28,8 +30,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -83,11 +83,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	addPkgDetails(details, parsedLockfile.Packages, "")
 	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
 
+	if len(details) == 0 {
+		return []*extractor.Inventory{}, nil
+	}
+
 	for key := range details {
 		details[key].Locations = []string{input.Path}
 	}
 
-	return maps.Values(details), nil
+	return slices.Collect(maps.Values(details)), nil
 }
 
 func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]pipenvPackage, group string) {

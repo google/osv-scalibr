@@ -19,14 +19,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/exp/maps"
 	"golang.org/x/mod/modfile"
 )
 
@@ -140,13 +141,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
+	if len(packages) == 0 {
+		return []*extractor.Inventory{}, nil
+	}
+
 	// The map values might have changed after replacement so we need to run another
 	// deduplication pass.
 	dedupedPs := map[mapKey]*extractor.Inventory{}
 	for _, p := range packages {
 		dedupedPs[mapKey{name: p.Name, version: p.Version}] = p
 	}
-	return maps.Values(dedupedPs), nil
+	return slices.Collect(maps.Values(dedupedPs)), nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
