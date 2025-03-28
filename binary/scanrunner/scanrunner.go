@@ -48,7 +48,7 @@ func RunScan(flags *cli.Flags) int {
 	result := scalibr.New().Scan(context.Background(), cfg)
 
 	log.Infof("Scan status: %v", result.Status)
-	log.Infof("Found %d software inventories, %d security findings", len(result.Inventories), len(result.Findings))
+	log.Infof("Found %d software packages, %d security findings", len(result.Inventory.Packages), len(result.Inventory.Findings))
 
 	if err := flags.WriteScanResults(result); err != nil {
 		log.Errorf("Error writing scan results: %v", err)

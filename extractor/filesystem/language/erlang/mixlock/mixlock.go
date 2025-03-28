@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/mixlockutils"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -54,18 +55,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from Erlang mix.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Parse the Mix.lock file using mixlockutils
 	return mixlockutils.ParseMixLockFile(input)
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return mixlockutils.ToPURL(i)
+// ToPURL converts a package created by this extractor into a PURL using mixlockutils.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return mixlockutils.ToPURL(p)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Hex"
 }
 

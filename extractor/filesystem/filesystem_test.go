@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
@@ -170,7 +171,7 @@ func TestRunFS(t *testing.T) {
 
 	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
 	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
-	fakeEx2WithInv1 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name1}, Err: nil}})
+	fakeEx2WithPKG1 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name1}, Err: nil}})
 	fakeExWithPartialResult := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: errors.New("extraction failed")}})
 
 	cwd, err := os.Getwd()
@@ -189,14 +190,14 @@ func TestRunFS(t *testing.T) {
 		storeAbsPath   bool
 		maxInodes      int
 		wantErr        error
-		wantInv        []*extractor.Inventory
+		wantInv        inventory.Inventory
 		wantStatus     []*plugin.Status
 		wantInodeCount int
 	}{
 		{
 			desc: "Extractors successful",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
@@ -207,7 +208,7 @@ func TestRunFS(t *testing.T) {
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -219,13 +220,13 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			dirsToSkip: []string{path.Join(cwd, "dir1")},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -236,13 +237,13 @@ func TestRunFS(t *testing.T) {
 			desc:       "Dir skipped with absolute path",
 			ex:         []filesystem.Extractor{fakeEx1, fakeEx2},
 			dirsToSkip: []string{"dir1"},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -253,13 +254,13 @@ func TestRunFS(t *testing.T) {
 			desc:         "Dir skipped using regex",
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: ".*1",
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -270,13 +271,13 @@ func TestRunFS(t *testing.T) {
 			desc:         "Dir skipped with full match of dirname",
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "/sub$",
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -287,7 +288,7 @@ func TestRunFS(t *testing.T) {
 			desc:         "skip regex set but not match",
 			ex:           []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirRegex: "asdf",
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
@@ -298,7 +299,7 @@ func TestRunFS(t *testing.T) {
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -309,7 +310,7 @@ func TestRunFS(t *testing.T) {
 			desc:        "Dirs skipped using glob",
 			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirGlob: "dir*",
-			wantInv:     []*extractor.Inventory{},
+			wantInv:     inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -320,13 +321,13 @@ func TestRunFS(t *testing.T) {
 			desc:        "Subdirectory skipped using glob",
 			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirGlob: "**/sub",
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -337,7 +338,7 @@ func TestRunFS(t *testing.T) {
 			desc:        "Dirs skipped using glob pattern lists",
 			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirGlob: "{dir1,dir2}",
-			wantInv:     []*extractor.Inventory{},
+			wantInv:     inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -348,7 +349,7 @@ func TestRunFS(t *testing.T) {
 			desc:        "No directories matched using glob",
 			ex:          []filesystem.Extractor{fakeEx1, fakeEx2},
 			skipDirGlob: "none",
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
@@ -359,7 +360,7 @@ func TestRunFS(t *testing.T) {
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -368,8 +369,8 @@ func TestRunFS(t *testing.T) {
 		},
 		{
 			desc: "Duplicate inventory results kept separate",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithInv1},
-			wantInv: []*extractor.Inventory{
+			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithPKG1},
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
@@ -378,9 +379,9 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path2},
-					Extractor: fakeEx2WithInv1,
+					Extractor: fakeEx2WithPKG1,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -392,13 +393,13 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			pathsToExtract: []string{path.Join(cwd, path2)},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -409,13 +410,13 @@ func TestRunFS(t *testing.T) {
 			desc:           "Extract specific file with absolute path",
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			pathsToExtract: []string{path2},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -426,13 +427,13 @@ func TestRunFS(t *testing.T) {
 			desc:           "Extract directory contents",
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			pathsToExtract: []string{"dir2"},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name2,
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -444,13 +445,13 @@ func TestRunFS(t *testing.T) {
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			pathsToExtract: []string{"dir1"},
 			ignoreSubDirs:  true,
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeEx1,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -462,7 +463,7 @@ func TestRunFS(t *testing.T) {
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			pathsToExtract: []string{"dir2"},
 			ignoreSubDirs:  true,
-			wantInv:        []*extractor.Inventory{},
+			wantInv:        inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -475,7 +476,7 @@ func TestRunFS(t *testing.T) {
 				// An Extractor that returns nil.
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: nil}}),
 			},
-			wantInv: []*extractor.Inventory{},
+			wantInv: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 			},
@@ -484,13 +485,13 @@ func TestRunFS(t *testing.T) {
 		{
 			desc: "Extraction fails with partial results",
 			ex:   []filesystem.Extractor{fakeExWithPartialResult},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
 					Extractor: fakeExWithPartialResult,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status: plugin.ScanStatusPartiallySucceeded, FailureReason: path1 + ": extraction failed",
@@ -503,7 +504,7 @@ func TestRunFS(t *testing.T) {
 			ex: []filesystem.Extractor{
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: errors.New("extraction failed")}}),
 			},
-			wantInv: []*extractor.Inventory{},
+			wantInv: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status: plugin.ScanStatusFailed, FailureReason: path1 + ": extraction failed",
@@ -519,7 +520,7 @@ func TestRunFS(t *testing.T) {
 					path2: {Names: nil, Err: errors.New("extraction failed")},
 				}),
 			},
-			wantInv: []*extractor.Inventory{},
+			wantInv: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
@@ -532,7 +533,7 @@ func TestRunFS(t *testing.T) {
 			desc:      "More inodes visited than limit, Error",
 			ex:        []filesystem.Extractor{fakeEx1, fakeEx2},
 			maxInodes: 2,
-			wantInv:   []*extractor.Inventory{},
+			wantInv:   inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -544,7 +545,7 @@ func TestRunFS(t *testing.T) {
 			desc:      "Less inodes visited than limit, no Error",
 			ex:        []filesystem.Extractor{fakeEx1, fakeEx2},
 			maxInodes: 6,
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{path1},
@@ -555,7 +556,7 @@ func TestRunFS(t *testing.T) {
 					Locations: []string{path2},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -565,7 +566,7 @@ func TestRunFS(t *testing.T) {
 		{
 			desc: "Extractors successful store absolute path when requested",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			wantInv: []*extractor.Inventory{
+			wantInv: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:      name1,
 					Locations: []string{filepath.Join(cwd, path1)},
@@ -576,7 +577,7 @@ func TestRunFS(t *testing.T) {
 					Locations: []string{filepath.Join(cwd, path2)},
 					Extractor: fakeEx2,
 				},
-			},
+			}},
 			storeAbsPath: true,
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
@@ -632,11 +633,11 @@ func TestRunFS(t *testing.T) {
 			}
 
 			// The order of the locations doesn't matter.
-			for _, i := range gotInv {
-				sort.Strings(i.Locations)
+			for _, p := range gotInv.Packages {
+				sort.Strings(p.Locations)
 			}
 
-			if diff := cmp.Diff(tc.wantInv, gotInv, cmpopts.SortSlices(invLess), fe.AllowUnexported, cmpopts.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.wantInv, gotInv, cmpopts.SortSlices(pkgLess), fe.AllowUnexported, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
@@ -658,7 +659,7 @@ type fakeCollector struct {
 
 func (c *fakeCollector) AfterInodeVisited(path string) { c.AfterInodeVisitedCount++ }
 
-func invLess(i1, i2 *extractor.Inventory) bool {
+func pkgLess(i1, i2 *extractor.Package) bool {
 	if i1.Name != i2.Name {
 		return i1.Name < i2.Name
 	}
@@ -755,7 +756,7 @@ func TestRunFS_ReadError(t *testing.T) {
 		t.Fatalf("extractor.Run(%v): %v", ex, err)
 	}
 
-	if len(gotInv) > 0 {
+	if !gotInv.IsEmpty() {
 		t.Errorf("extractor.Run(%v): expected empty inventory, got %v", ex, gotInv)
 	}
 

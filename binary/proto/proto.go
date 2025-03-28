@@ -165,14 +165,14 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		pluginStatus = append(pluginStatus, pluginStatusToProto(s))
 	}
 
-	inventories := make([]*spb.Inventory, 0, len(r.Inventories))
-	for _, i := range r.Inventories {
-		p := inventoryToProto(i)
-		inventories = append(inventories, p)
+	packages := make([]*spb.Package, 0, len(r.Inventory.Packages))
+	for _, p := range r.Inventory.Packages {
+		p := packageToProto(p)
+		packages = append(packages, p)
 	}
 
-	findings := make([]*spb.Finding, 0, len(r.Findings))
-	for _, f := range r.Findings {
+	findings := make([]*spb.Finding, 0, len(r.Inventory.Findings))
+	for _, f := range r.Inventory.Findings {
 		p, err := findingToProto(f)
 		if err != nil {
 			return nil, err
@@ -186,8 +186,11 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		EndTime:      timestamppb.New(r.EndTime),
 		Status:       scanStatusToProto(r.Status),
 		PluginStatus: pluginStatus,
-		Inventories:  inventories,
-		Findings:     findings,
+		// TODO(b/400910349): Stop setting the deprecated fields
+		// once integrators no longer read them.
+		InventoriesDeprecated: packages,
+		FindingsDeprecated:    findings,
+		Inventory:             &spb.Inventory{Packages: packages, Findings: findings},
 	}, nil
 }
 
@@ -214,37 +217,37 @@ func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	}
 }
 
-func inventoryToProto(i *extractor.Inventory) *spb.Inventory {
-	if i == nil {
+func packageToProto(pkg *extractor.Package) *spb.Package {
+	if pkg == nil {
 		return nil
 	}
-	p := converter.ToPURL(i)
-	inventoryProto := &spb.Inventory{
-		Name:         i.Name,
-		Version:      i.Version,
-		SourceCode:   sourceCodeIdentifierToProto(i.SourceCode),
+	p := converter.ToPURL(pkg)
+	packageProto := &spb.Package{
+		Name:         pkg.Name,
+		Version:      pkg.Version,
+		SourceCode:   sourceCodeIdentifierToProto(pkg.SourceCode),
 		Purl:         purlToProto(p),
-		Ecosystem:    i.Ecosystem(),
-		Locations:    i.Locations,
-		Extractor:    i.Extractor.Name(),
-		Annotations:  annotationsToProto(i.Annotations),
-		LayerDetails: layerDetailsToProto(i.LayerDetails),
+		Ecosystem:    pkg.Ecosystem(),
+		Locations:    pkg.Locations,
+		Extractor:    pkg.Extractor.Name(),
+		Annotations:  annotationsToProto(pkg.Annotations),
+		LayerDetails: layerDetailsToProto(pkg.LayerDetails),
 	}
-	setProtoMetadata(i.Metadata, inventoryProto)
-	return inventoryProto
+	setProtoMetadata(pkg.Metadata, packageProto)
+	return packageProto
 }
 
-func setProtoMetadata(meta any, i *spb.Inventory) {
+func setProtoMetadata(meta any, p *spb.Package) {
 	switch m := meta.(type) {
 	case *wheelegg.PythonPackageMetadata:
-		i.Metadata = &spb.Inventory_PythonMetadata{
+		p.Metadata = &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      m.Author,
 				AuthorEmail: m.AuthorEmail,
 			},
 		}
 	case *packagejson.JavascriptPackageJSONMetadata:
-		i.Metadata = &spb.Inventory_JavascriptMetadata{
+		p.Metadata = &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
 				Author:       m.Author.PersonString(),
 				Contributors: personsToProto(m.Contributors),
@@ -252,7 +255,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *depsjson.Metadata:
-		i.Metadata = &spb.Inventory_DepsjsonMetadata{
+		p.Metadata = &spb.Package_DepsjsonMetadata{
 			DepsjsonMetadata: &spb.DEPSJSONMetadata{
 				PackageName:    m.PackageName,
 				PackageVersion: m.PackageVersion,
@@ -260,7 +263,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *apk.Metadata:
-		i.Metadata = &spb.Inventory_ApkMetadata{
+		p.Metadata = &spb.Package_ApkMetadata{
 			ApkMetadata: &spb.APKPackageMetadata{
 				PackageName:  m.PackageName,
 				OriginName:   m.OriginName,
@@ -272,7 +275,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *dpkg.Metadata:
-		i.Metadata = &spb.Inventory_DpkgMetadata{
+		p.Metadata = &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       m.PackageName,
 				SourceName:        m.SourceName,
@@ -287,7 +290,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *snap.Metadata:
-		i.Metadata = &spb.Inventory_SnapMetadata{
+		p.Metadata = &spb.Package_SnapMetadata{
 			SnapMetadata: &spb.SNAPPackageMetadata{
 				Name:              m.Name,
 				Version:           m.Version,
@@ -300,7 +303,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *rpm.Metadata:
-		i.Metadata = &spb.Inventory_RpmMetadata{
+		p.Metadata = &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  m.PackageName,
 				SourceRpm:    m.SourceRPM,
@@ -315,7 +318,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *cos.Metadata:
-		i.Metadata = &spb.Inventory_CosMetadata{
+		p.Metadata = &spb.Package_CosMetadata{
 			CosMetadata: &spb.COSPackageMetadata{
 				Name:        m.Name,
 				Version:     m.Version,
@@ -325,7 +328,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *pacman.Metadata:
-		i.Metadata = &spb.Inventory_PacmanMetadata{
+		p.Metadata = &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:         m.PackageName,
 				PackageVersion:      m.PackageVersion,
@@ -335,7 +338,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *portage.Metadata:
-		i.Metadata = &spb.Inventory_PortageMetadata{
+		p.Metadata = &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    m.PackageName,
 				PackageVersion: m.PackageVersion,
@@ -344,7 +347,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *flatpak.Metadata:
-		i.Metadata = &spb.Inventory_FlatpakMetadata{
+		p.Metadata = &spb.Package_FlatpakMetadata{
 			FlatpakMetadata: &spb.FlatpakPackageMetadata{
 				PackageName:    m.PackageName,
 				PackageId:      m.PackageID,
@@ -358,7 +361,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *nix.Metadata:
-		i.Metadata = &spb.Inventory_NixMetadata{
+		p.Metadata = &spb.Package_NixMetadata{
 			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       m.PackageName,
 				PackageVersion:    m.PackageVersion,
@@ -370,7 +373,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *macapps.Metadata:
-		i.Metadata = &spb.Inventory_MacAppsMetadata{
+		p.Metadata = &spb.Package_MacAppsMetadata{
 			MacAppsMetadata: &spb.MacAppsMetadata{
 				BundleDisplayName:        m.CFBundleDisplayName,
 				BundleIdentifier:         m.CFBundleIdentifier,
@@ -385,11 +388,11 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *homebrew.Metadata:
-		i.Metadata = &spb.Inventory_HomebrewMetadata{
+		p.Metadata = &spb.Package_HomebrewMetadata{
 			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
 		}
 	case *module.Metadata:
-		i.Metadata = &spb.Inventory_KernelModuleMetadata{
+		p.Metadata = &spb.Package_KernelModuleMetadata{
 			KernelModuleMetadata: &spb.KernelModuleMetadata{
 				PackageName:                    m.PackageName,
 				PackageVersion:                 m.PackageVersion,
@@ -401,7 +404,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				PackageAuthor:                  m.PackageAuthor},
 		}
 	case *vmlinuz.Metadata:
-		i.Metadata = &spb.Inventory_VmlinuzMetadata{
+		p.Metadata = &spb.Package_VmlinuzMetadata{
 			VmlinuzMetadata: &spb.VmlinuzMetadata{
 				Name:              m.Name,
 				Version:           m.Version,
@@ -418,7 +421,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *ctrdfs.Metadata:
-		i.Metadata = &spb.Inventory_ContainerdContainerMetadata{
+		p.Metadata = &spb.Package_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName: m.Namespace,
 				ImageName:     m.ImageName,
@@ -436,7 +439,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *ctrdruntime.Metadata:
-		i.Metadata = &spb.Inventory_ContainerdRuntimeContainerMetadata{
+		p.Metadata = &spb.Package_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: m.Namespace,
 				ImageName:     m.ImageName,
@@ -448,21 +451,21 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *spdx.Metadata:
-		i.Metadata = &spb.Inventory_SpdxMetadata{
+		p.Metadata = &spb.Package_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
 	case *cdx.Metadata:
-		i.Metadata = &spb.Inventory_CdxMetadata{
+		p.Metadata = &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
 	case *archive.Metadata:
-		i.Metadata = &spb.Inventory_JavaArchiveMetadata{
+		p.Metadata = &spb.Package_JavaArchiveMetadata{
 			JavaArchiveMetadata: &spb.JavaArchiveMetadata{
 				ArtifactId: m.ArtifactID,
 				GroupId:    m.GroupID,
@@ -470,7 +473,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *javalockfile.Metadata:
-		i.Metadata = &spb.Inventory_JavaLockfileMetadata{
+		p.Metadata = &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   m.ArtifactID,
 				GroupId:      m.GroupID,
@@ -478,7 +481,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *osv.Metadata:
-		i.Metadata = &spb.Inventory_OsvMetadata{
+		p.Metadata = &spb.Package_OsvMetadata{
 			OsvMetadata: &spb.OSVPackageMetadata{
 				PurlType:  m.PURLType,
 				Commit:    m.Commit,
@@ -487,27 +490,27 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *requirements.Metadata:
-		i.Metadata = &spb.Inventory_PythonRequirementsMetadata{
+		p.Metadata = &spb.Package_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
 			},
 		}
 	case *setup.Metadata:
-		i.Metadata = &spb.Inventory_PythonSetupMetadata{
+		p.Metadata = &spb.Package_PythonSetupMetadata{
 			PythonSetupMetadata: &spb.PythonSetupMetadata{
 				VersionComparator: m.VersionComparator,
 			},
 		}
 	case *winmetadata.OSVersion:
-		i.Metadata = &spb.Inventory_WindowsOsVersionMetadata{
+		p.Metadata = &spb.Package_WindowsOsVersionMetadata{
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     m.Product,
 				FullVersion: m.FullVersion,
 			},
 		}
 	case *chromeextensions.Metadata:
-		i.Metadata = &spb.Inventory_ChromeExtensionsMetadata{
+		p.Metadata = &spb.Package_ChromeExtensionsMetadata{
 			ChromeExtensionsMetadata: &spb.ChromeExtensionsMetadata{
 				Name:                 m.Name,
 				Description:          m.Description,
@@ -520,7 +523,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *vscodeextensions.Metadata:
-		i.Metadata = &spb.Inventory_VscodeExtensionsMetadata{
+		p.Metadata = &spb.Package_VscodeExtensionsMetadata{
 			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
 				Id:                   m.ID,
 				PublisherId:          m.PublisherID,
@@ -557,28 +560,28 @@ func purlToProto(p *purl.PackageURL) *spb.Purl {
 	}
 }
 
-func annotationsToProto(as []extractor.Annotation) []spb.Inventory_AnnotationEnum {
+func annotationsToProto(as []extractor.Annotation) []spb.Package_AnnotationEnum {
 	if as == nil {
 		return nil
 	}
-	ps := []spb.Inventory_AnnotationEnum{}
+	ps := []spb.Package_AnnotationEnum{}
 	for _, a := range as {
 		ps = append(ps, annotationToProto(a))
 	}
 	return ps
 }
 
-func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
-	var e spb.Inventory_AnnotationEnum
+func annotationToProto(s extractor.Annotation) spb.Package_AnnotationEnum {
+	var e spb.Package_AnnotationEnum
 	switch s {
 	case extractor.Transitional:
-		e = spb.Inventory_TRANSITIONAL
+		e = spb.Package_TRANSITIONAL
 	case extractor.InsideOSPackage:
-		e = spb.Inventory_INSIDE_OS_PACKAGE
+		e = spb.Package_INSIDE_OS_PACKAGE
 	case extractor.InsideCacheDir:
-		e = spb.Inventory_INSIDE_CACHE_DIR
+		e = spb.Package_INSIDE_CACHE_DIR
 	default:
-		e = spb.Inventory_UNSPECIFIED
+		e = spb.Package_UNSPECIFIED
 	}
 	return e
 }
@@ -625,10 +628,10 @@ func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	}
 	var target *spb.TargetDetails
 	if f.Target != nil {
-		i := inventoryToProto(f.Target.Inventory)
+		p := packageToProto(f.Target.Package)
 		target = &spb.TargetDetails{
-			Location:  f.Target.Location,
-			Inventory: i,
+			Location: f.Target.Location,
+			Package:  p,
 		}
 	}
 	if f.Adv.ID == nil {

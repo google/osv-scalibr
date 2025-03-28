@@ -166,7 +166,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 				// Count the remaining known vulns that affect this version.
 				count := 0 // remaining vulns
 				for _, rv := range vulnerabilities {
-					if vulns.IsAffected(rv.OSV, vulns.VKToInventory(ver.VersionKey)) {
+					if vulns.IsAffected(rv.OSV, vulns.VKToPackage(ver.VersionKey)) {
 						count++
 					}
 				}

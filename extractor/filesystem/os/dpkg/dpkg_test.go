@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -205,7 +206,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              dpkg.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 		wantLogWarn      int
@@ -215,7 +216,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid status file",
 			path:      "testdata/dpkg/valid",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "accountsservice",
 					Version: "22.08.8-6",
@@ -333,7 +334,7 @@ func TestExtract(t *testing.T) {
 			name:      "packages with no version set are skipped",
 			path:      "testdata/dpkg/noversion",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "foo",
 					Version: "1.0",
@@ -368,7 +369,7 @@ func TestExtract(t *testing.T) {
 			name:      "packages with no name set are skipped",
 			path:      "testdata/dpkg/nopackage",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "foo",
 					Version: "1.0",
@@ -403,7 +404,7 @@ func TestExtract(t *testing.T) {
 			name:      "statusfield",
 			path:      "testdata/dpkg/statusfield",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
@@ -454,7 +455,7 @@ func TestExtract(t *testing.T) {
 			cfg: dpkg.Config{
 				IncludeNotInstalled: true,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
@@ -552,14 +553,14 @@ func TestExtract(t *testing.T) {
 			name:             "empty",
 			path:             "testdata/dpkg/empty",
 			osrelease:        DebianBookworm,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "invalid",
 			path:             "testdata/dpkg/invalid",
 			osrelease:        DebianBookworm,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -568,7 +569,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/dpkg/single",
 			osrelease: `VERSION_ID="12"
 			ID=debian`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "acl",
 					Version: "2.3.1-3",
@@ -590,7 +591,7 @@ func TestExtract(t *testing.T) {
 			name:      "no version",
 			path:      "testdata/dpkg/single",
 			osrelease: `ID=debian`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "acl",
 					Version: "2.3.1-3",
@@ -611,7 +612,7 @@ func TestExtract(t *testing.T) {
 			name:      "osrelease id not set",
 			path:      "testdata/dpkg/single",
 			osrelease: "VERSION_CODENAME=bookworm",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "acl",
 					Version: "2.3.1-3",
@@ -635,7 +636,7 @@ func TestExtract(t *testing.T) {
 			VERSION_CODENAME=jammy
 			ID=ubuntu
 			ID_LIKE=debian`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "acl",
 					Version: "2.3.1-3",
@@ -661,7 +662,7 @@ func TestExtract(t *testing.T) {
 			VERSION_CODENAME=jammy
 			ID=ubuntu
 			ID_LIKE=debian`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "acl",
 					Version: "2.3.1-3",
@@ -686,7 +687,7 @@ func TestExtract(t *testing.T) {
 			name:      "status.d file without Status field set should work",
 			path:      "testdata/dpkg/status.d/foo",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "foo",
 					Version: "1.2.3",
@@ -708,7 +709,7 @@ func TestExtract(t *testing.T) {
 			name:             "status.d file without Status field set should work",
 			path:             "testdata/dpkg/status.d/foo.md5sums",
 			osrelease:        DebianBookworm,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantLogWarn:      1,
 		},
@@ -716,7 +717,7 @@ func TestExtract(t *testing.T) {
 			name:      "transitional packages should be annotated",
 			path:      "testdata/dpkg/transitional",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "iceweasel",
 					Version: "78.13.0esr-1~deb10u1",
@@ -741,7 +742,7 @@ func TestExtract(t *testing.T) {
 			name:      "transitional dummy packages should be annotated",
 			path:      "testdata/dpkg/transitional_dummy",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "git-core",
 					Version: "1:2.14.2-1",
@@ -766,7 +767,7 @@ func TestExtract(t *testing.T) {
 			name:      "transitional empty packages should be annotated",
 			path:      "testdata/dpkg/transitional_empty",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "runit-systemd",
 					Version: "2.1.2-54+usrmerge",
@@ -791,7 +792,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid opkg status file",
 			path:      "testdata/opkg/valid", // Path to your OPKG status file in the test data
 			osrelease: OpkgRelease,           // You can mock the os-release data as needed
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -841,7 +842,7 @@ func TestExtract(t *testing.T) {
 			name:      "packages with no version set are skipped",
 			path:      "testdata/opkg/noversion",
 			osrelease: OpkgRelease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -878,7 +879,7 @@ func TestExtract(t *testing.T) {
 			name:      "packages with no name set are skipped",
 			path:      "testdata/opkg/nopackage",
 			osrelease: OpkgRelease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -915,7 +916,7 @@ func TestExtract(t *testing.T) {
 			name:      "statusfield",
 			path:      "testdata/opkg/statusfield", // Path to your OPKG status file in the test data
 			osrelease: OpkgRelease,                 // You can mock the os-release data as needed
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
@@ -953,7 +954,7 @@ func TestExtract(t *testing.T) {
 			cfg: dpkg.Config{
 				IncludeNotInstalled: true,
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "wantinstall_installed",
 					Version: "1.0",
@@ -1038,14 +1039,14 @@ func TestExtract(t *testing.T) {
 			name:             "empty",
 			path:             "testdata/opkg/empty",
 			osrelease:        OpkgRelease,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "invalid",
 			path:             "testdata/opkg/invalid",
 			osrelease:        OpkgRelease,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -1054,7 +1055,7 @@ func TestExtract(t *testing.T) {
 			path: "testdata/opkg/single",
 			osrelease: `VERSION_ID="21.02.1"
 			ID=openwrt`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -1075,7 +1076,7 @@ func TestExtract(t *testing.T) {
 			name:      "no version",
 			path:      "testdata/opkg/single",
 			osrelease: `ID=openwrt`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -1095,7 +1096,7 @@ func TestExtract(t *testing.T) {
 			name:      "osrelease id not set",
 			path:      "testdata/opkg/single",
 			osrelease: `VERSION_CODENAME=openwrt-21.02.1`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -1115,7 +1116,7 @@ func TestExtract(t *testing.T) {
 			name:      "newlines",
 			path:      "testdata/opkg/trailingnewlines",
 			osrelease: OpkgRelease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -1139,7 +1140,7 @@ func TestExtract(t *testing.T) {
 			name:      "transitional packages should be annotated",
 			path:      "testdata/opkg/transitional",
 			osrelease: OpkgRelease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "ubus",
 					Version: "2024.10.20~252a9b0c-r1",
@@ -1200,7 +1201,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -1283,7 +1285,7 @@ func (l *testLogger) Debug(args ...any) {
 func TestExtractNonexistentOSRelease(t *testing.T) {
 	path := "testdata/dpkg/single"
 
-	want := []*extractor.Inventory{
+	want := inventory.Inventory{Packages: []*extractor.Package{
 		{
 			Name:    "acl",
 			Version: "2.3.1-3",
@@ -1298,7 +1300,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 			},
 			Locations: []string{path},
 		},
-	}
+	}}
 
 	r, err := os.Open(path)
 	defer func() {
@@ -1446,15 +1448,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgname,
 				Version:   version,
 				Metadata:  tt.metadata,
 				Locations: []string{tt.location},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -1513,12 +1515,12 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Metadata: tt.metadata,
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

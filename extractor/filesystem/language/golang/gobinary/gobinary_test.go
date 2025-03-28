@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -145,94 +146,94 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name:          "binary_with_module_replacement-darwin-amd64",
-			path:          "testdata/binary_with_module_replacement-darwin-amd64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64"),
+			name:         "binary_with_module_replacement-darwin-amd64",
+			path:         "testdata/binary_with_module_replacement-darwin-amd64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-amd64"),
 		},
 		{
-			name:          "binary_with_module_replacement-darwin-arm64",
-			path:          "testdata/binary_with_module_replacement-darwin-arm64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64"),
+			name:         "binary_with_module_replacement-darwin-arm64",
+			path:         "testdata/binary_with_module_replacement-darwin-arm64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-darwin-arm64"),
 		},
 		{
-			name:          "binary_with_module_replacement-linux-386",
-			path:          "testdata/binary_with_module_replacement-linux-386",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386"),
+			name:         "binary_with_module_replacement-linux-386",
+			path:         "testdata/binary_with_module_replacement-linux-386",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-386"),
 		},
 		{
-			name:          "binary_with_module_replacement-linux-amd64",
-			path:          "testdata/binary_with_module_replacement-linux-amd64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64"),
+			name:         "binary_with_module_replacement-linux-amd64",
+			path:         "testdata/binary_with_module_replacement-linux-amd64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-amd64"),
 		},
 		{
-			name:          "binary_with_module_replacement-linux-arm64",
-			path:          "testdata/binary_with_module_replacement-linux-arm64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64"),
+			name:         "binary_with_module_replacement-linux-arm64",
+			path:         "testdata/binary_with_module_replacement-linux-arm64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-linux-arm64"),
 		},
 		{
-			name:          "binary_with_module_replacement-windows-386",
-			path:          "testdata/binary_with_module_replacement-windows-386",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386"),
+			name:         "binary_with_module_replacement-windows-386",
+			path:         "testdata/binary_with_module_replacement-windows-386",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-386"),
 		},
 		{
-			name:          "binary_with_module_replacement-windows-amd64",
-			path:          "testdata/binary_with_module_replacement-windows-amd64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64"),
+			name:         "binary_with_module_replacement-windows-amd64",
+			path:         "testdata/binary_with_module_replacement-windows-amd64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-amd64"),
 		},
 		{
-			name:          "binary_with_module_replacement-windows-arm64",
-			path:          "testdata/binary_with_module_replacement-windows-arm64",
-			wantInventory: createInventories(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64"),
+			name:         "binary_with_module_replacement-windows-arm64",
+			path:         "testdata/binary_with_module_replacement-windows-arm64",
+			wantPackages: createPackages(append(BinaryWithModuleReplacementPackages, Toolchain), "testdata/binary_with_module_replacement-windows-arm64"),
 		},
 		{
-			name:          "binary_with_modules-darwin-amd64",
-			path:          "testdata/binary_with_modules-darwin-amd64",
-			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64"),
+			name:         "binary_with_modules-darwin-amd64",
+			path:         "testdata/binary_with_modules-darwin-amd64",
+			wantPackages: createPackages(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-amd64"),
 		},
 		{
-			name:          "binary_with_modules-darwin-arm64",
-			path:          "testdata/binary_with_modules-darwin-arm64",
-			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64"),
+			name:         "binary_with_modules-darwin-arm64",
+			path:         "testdata/binary_with_modules-darwin-arm64",
+			wantPackages: createPackages(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-darwin-arm64"),
 		},
 		{
-			name:          "binary_with_modules-linux-386",
-			path:          "testdata/binary_with_modules-linux-386",
-			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386"),
+			name:         "binary_with_modules-linux-386",
+			path:         "testdata/binary_with_modules-linux-386",
+			wantPackages: createPackages(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-386"),
 		},
 		{
-			name:          "binary_with_modules-linux-amd64",
-			path:          "testdata/binary_with_modules-linux-amd64",
-			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64"),
+			name:         "binary_with_modules-linux-amd64",
+			path:         "testdata/binary_with_modules-linux-amd64",
+			wantPackages: createPackages(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-amd64"),
 		},
 		{
-			name:          "binary_with_modules-linux-arm64",
-			path:          "testdata/binary_with_modules-linux-arm64",
-			wantInventory: createInventories(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64"),
+			name:         "binary_with_modules-linux-arm64",
+			path:         "testdata/binary_with_modules-linux-arm64",
+			wantPackages: createPackages(append(BinaryWithModulesPackages, Toolchain), "testdata/binary_with_modules-linux-arm64"),
 		},
 		{
-			name:          "binary_with_modules-windows-386",
-			path:          "testdata/binary_with_modules-windows-386",
-			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386"),
+			name:         "binary_with_modules-windows-386",
+			path:         "testdata/binary_with_modules-windows-386",
+			wantPackages: createPackages(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-386"),
 		},
 		{
-			name:          "binary_with_modules-windows-amd64",
-			path:          "testdata/binary_with_modules-windows-amd64",
-			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64"),
+			name:         "binary_with_modules-windows-amd64",
+			path:         "testdata/binary_with_modules-windows-amd64",
+			wantPackages: createPackages(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-amd64"),
 		},
 		{
-			name:          "binary_with_modules-windows-arm64",
-			path:          "testdata/binary_with_modules-windows-arm64",
-			wantInventory: createInventories(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64"),
+			name:         "binary_with_modules-windows-arm64",
+			path:         "testdata/binary_with_modules-windows-arm64",
+			wantPackages: createPackages(append(BinaryWithModulesPackagesWindows, Toolchain), "testdata/binary_with_modules-windows-arm64"),
 		},
 		{
 			name:             "dummy file that fails to parse will log an error metric, but won't fail extraction",
 			path:             "testdata/dummy",
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
@@ -259,8 +260,9 @@ func TestExtract(t *testing.T) {
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
-			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(tt.wantInventory, got, cmpopts.SortSlices(sort)); diff != "" {
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -283,7 +285,7 @@ func TestExtract(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := gobinary.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -293,9 +295,9 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }
 
@@ -303,7 +305,7 @@ var (
 	// BinaryWithModulesPackagesWindows is a list of packages built into the
 	// binary_with_modules-* testdata binaries, but only on Windows, where there
 	// is an indirect dependency that is not built-in.
-	BinaryWithModulesPackagesWindows = []*extractor.Inventory{
+	BinaryWithModulesPackagesWindows = []*extractor.Package{
 		// direct dependencies
 		goPackage("github.com/ulikunitz/xz", "0.5.11"),
 		goPackage("github.com/gin-gonic/gin", "1.8.1"),
@@ -333,7 +335,7 @@ var (
 
 	// BinaryWithModuleReplacementPackages is a list of packages built into the
 	// binary_with_module_replacement-* testdata binaries.
-	BinaryWithModuleReplacementPackages = []*extractor.Inventory{
+	BinaryWithModuleReplacementPackages = []*extractor.Package{
 		// this binary replaces golang.org/x/xerrors => github.com/golang/xerrors
 		goPackage("github.com/golang/xerrors", "0.0.0-20220907171357-04be3eba64a2"),
 	}
@@ -341,15 +343,15 @@ var (
 	Toolchain = goPackage("go", "1.22.0")
 )
 
-func goPackage(name, version string) *extractor.Inventory {
-	return &extractor.Inventory{Name: name, Version: version}
+func goPackage(name, version string) *extractor.Package {
+	return &extractor.Package{Name: name, Version: version}
 }
 
-func createInventories(invs []*extractor.Inventory, location string) []*extractor.Inventory {
-	res := []*extractor.Inventory{}
-	for _, i := range invs {
-		res = append(res, &extractor.Inventory{
-			Name: i.Name, Version: i.Version, Locations: []string{location},
+func createPackages(pkgs []*extractor.Package, location string) []*extractor.Package {
+	res := []*extractor.Package{}
+	for _, p := range pkgs {
+		res = append(res, &extractor.Package{
+			Name: p.Name, Version: p.Version, Locations: []string{location},
 		})
 	}
 	return res

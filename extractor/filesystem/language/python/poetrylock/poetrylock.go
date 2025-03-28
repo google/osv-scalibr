@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -97,19 +98,19 @@ func resolveGroups(pkg poetryLockPackage) []string {
 }
 
 // Extract extracts packages from poetry.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *poetryLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
+	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, lockPackage := range parsedLockfile.Packages {
-		pkgDetails := &extractor.Inventory{
+		pkgDetails := &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
@@ -125,16 +126,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		packages = append(packages, pkgDetails)
 	}
 
-	return packages, nil
+	return inventory.Inventory{Packages: packages}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return pypipurl.MakePackageURL(p)
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "PyPI"
 }
 

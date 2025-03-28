@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -165,8 +166,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts java packages from archive files passed through input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, openedBytes, err := e.extractWithMax(ctx, input, 1, 0)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, openedBytes, err := e.extractWithMax(ctx, input, 1, 0)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -179,14 +180,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			UncompressedBytes: openedBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
 // extractWithMax recursively unzips and extracts packages from archive files starting at input.
 //
 // It returns early with an error if max depth or max opened bytes is reached.
 // Extracted packages are returned even if an error has occurred.
-func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Inventory, int64, error) {
+func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Package, int64, error) {
 	// Return early if any max/min thresholds are hit.
 	if depth > e.maxZipDepth {
 		return nil, openedBytes, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
@@ -246,19 +247,19 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 
 	// Aggregate errors while looping through files in the zip to continue extraction of other files.
 	errs := []error{}
-	inventory := []*extractor.Inventory{}
-	inventoryPom := []*extractor.Inventory{}
-	inventoryManifest := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
+	packagePom := []*extractor.Package{}
+	packageManifest := []*extractor.Package{}
 
 	for _, file := range zipReader.File {
 		// Return if canceled or exceeding deadline.
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return inventory, openedBytes, fmt.Errorf("%s halted at %q because context deadline exceeded", e.Name(), input.Path)
+			return pkgs, openedBytes, fmt.Errorf("%s halted at %q because context deadline exceeded", e.Name(), input.Path)
 		}
 		if errors.Is(ctx.Err(), context.Canceled) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return inventory, openedBytes, fmt.Errorf("%s halted at %q because context was canceled", e.Name(), input.Path)
+			return pkgs, openedBytes, fmt.Errorf("%s halted at %q because context was canceled", e.Name(), input.Path)
 		}
 
 		path := filepath.Join(input.Path, file.Name)
@@ -271,7 +272,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				continue
 			}
 			if pp.valid() {
-				inventoryPom = append(inventoryPom, &extractor.Inventory{
+				packagePom = append(packagePom, &extractor.Package{
 					Name:    pp.ArtifactID,
 					Version: pp.Version,
 					Metadata: &Metadata{
@@ -291,7 +292,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				continue
 			}
 			if mf.valid() {
-				inventoryManifest = append(inventoryManifest, &extractor.Inventory{
+				packageManifest = append(packageManifest, &extractor.Package{
 					Name:    mf.ArtifactID,
 					Version: mf.Version,
 					Metadata: &Metadata{
@@ -315,27 +316,27 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				// Do not need to handle error from f.Close() because it only happens if the file was previously closed.
 				defer f.Close()
 				subInput := &filesystem.ScanInput{Path: path, Info: file.FileInfo(), Reader: f}
-				var subInventory []*extractor.Inventory
-				subInventory, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
+				var subPackage []*extractor.Package
+				subPackage, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
 				// Prepend the current input path
-				for i := range subInventory {
-					subInventory[i].Locations = append([]string{input.Path}, subInventory[i].Locations...)
+				for i := range subPackage {
+					subPackage[i].Locations = append([]string{input.Path}, subPackage[i].Locations...)
 				}
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
 					return
 				}
-				inventory = append(inventory, subInventory...)
+				pkgs = append(pkgs, subPackage...)
 			}()
 		}
 	}
 
-	inventory = append(inventory, inventoryPom...)
+	pkgs = append(pkgs, packagePom...)
 
 	// If there is no pom.properties, try combining MANIFEST.MF and filename.
-	inventoryFilename := []*extractor.Inventory{}
-	if len(inventoryPom) == 0 && e.extractFromFilename {
+	packageFilename := []*extractor.Package{}
+	if len(packagePom) == 0 && e.extractFromFilename {
 		p := ParseFilename(input.Path)
 		if p != nil {
 			log.Debugf("PropsFromFilename(%q): %+v", input.Path, p)
@@ -353,15 +354,15 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				groupID = strings.ToLower(p.GroupID)
 			}
 			// If manifest.mf was found, use GroupID from manifest instead, if
-			// present. Then remove manifest from the Inventory.
-			if len(inventoryManifest) == 1 {
-				metadata := inventoryManifest[0].Metadata.(*Metadata)
+			// present. Then remove manifest from the Package.
+			if len(packageManifest) == 1 {
+				metadata := packageManifest[0].Metadata.(*Metadata)
 				if metadata.GroupID != "" {
 					groupID = metadata.GroupID
-					inventoryManifest = nil
+					packageManifest = nil
 				}
 			}
-			inventoryFilename = append(inventoryFilename, &extractor.Inventory{
+			packageFilename = append(packageFilename, &extractor.Package{
 				Name:    p.ArtifactID,
 				Version: p.Version,
 				Metadata: &Metadata{
@@ -373,15 +374,15 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			})
 		}
 	}
-	inventory = append(inventory, inventoryFilename...)
+	pkgs = append(pkgs, packageFilename...)
 
-	if len(inventoryPom) == 0 && len(inventoryFilename) == 0 {
-		inventory = append(inventory, inventoryManifest...)
+	if len(packagePom) == 0 && len(packageFilename) == 0 {
+		pkgs = append(pkgs, packageManifest...)
 	}
 
 	// If nothing worked, return the hash.
-	if len(inventory) == 0 && sha1 != "" {
-		inventory = append(inventory, &extractor.Inventory{
+	if len(pkgs) == 0 && sha1 != "" {
+		pkgs = append(pkgs, &extractor.Package{
 			Name:    "unknown",
 			Version: "unknown",
 			Metadata: &Metadata{
@@ -396,10 +397,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	// Aggregate errors.
 	err = multierr.Combine(errs...)
 	if err != nil {
-		return inventory, openedBytes, fmt.Errorf("error(s) in extractor %s: %w", e.Name(), err)
+		return pkgs, openedBytes, fmt.Errorf("error(s) in extractor %s: %w", e.Name(), err)
 	}
 
-	return inventory, openedBytes, err
+	return pkgs, openedBytes, err
 }
 
 // hashJar returns base64(sha1()) of the file. This is compatible to dev.deps.
@@ -431,16 +432,16 @@ func isManifest(path string) bool {
 	return strings.ToLower(filepath.Base(path)) == "manifest.mf"
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*Metadata)
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),
 		Name:      strings.ToLower(m.ArtifactID),
-		Version:   i.Version,
+		Version:   p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Maven" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "Maven" }

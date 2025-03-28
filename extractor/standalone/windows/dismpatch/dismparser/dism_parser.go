@@ -37,9 +37,9 @@ type DismPkg struct {
 	InstallTime     string
 }
 
-// Parse parses dism output into an array of dismPkgs.
+// Parse parses dism output into an array of dismPackages.
 func Parse(input string) ([]DismPkg, string, error) {
-	pkgs := strings.Split(input, "Package Id")
+	packages := strings.Split(input, "Package Id")
 
 	pkgExp, err := regexp.Compile("entity :(.*)\n*State :(.*)\n*Release Type :(.*)\n*Install Time :(.*)\n*")
 	if err != nil {
@@ -52,9 +52,9 @@ func Parse(input string) ([]DismPkg, string, error) {
 	}
 
 	imgVersion := ""
-	dismPkgs := []DismPkg{}
+	dismPackages := []DismPkg{}
 
-	for _, pkg := range pkgs {
+	for _, pkg := range packages {
 		matches := pkgExp.FindStringSubmatch(pkg)
 		if len(matches) > 4 {
 			dismPkg := DismPkg{
@@ -64,7 +64,7 @@ func Parse(input string) ([]DismPkg, string, error) {
 				InstallTime:     strings.TrimSpace(matches[4]),
 			}
 			dismPkg.PackageVersion = findVersion(dismPkg.PackageIdentity)
-			dismPkgs = append(dismPkgs, dismPkg)
+			dismPackages = append(dismPackages, dismPkg)
 		} else {
 			// this is the first entry that has the image version
 			matches = imgExp.FindStringSubmatch(pkg)
@@ -74,11 +74,11 @@ func Parse(input string) ([]DismPkg, string, error) {
 		}
 	}
 
-	if len(dismPkgs) == 0 {
+	if len(dismPackages) == 0 {
 		return nil, "", ErrParsingError
 	}
 
-	return dismPkgs, imgVersion, nil
+	return dismPackages, imgVersion, nil
 }
 
 func findVersion(identity string) string {

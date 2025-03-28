@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"golang.org/x/exp/maps"
@@ -61,14 +62,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from a go.mod file passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	b, err := io.ReadAll(input.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("could not read %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not read %s: %w", input.Path, err)
 	}
 	parsedLockfile, err := modfile.Parse(input.Path, b, nil)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	// Store the packages in a map since they might be overwritten by later entries.
@@ -76,12 +77,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		name    string
 		version string
 	}
-	packages := map[mapKey]*extractor.Inventory{}
+	packages := map[mapKey]*extractor.Package{}
 
 	for _, require := range parsedLockfile.Require {
 		name := require.Mod.Path
 		version := strings.TrimPrefix(require.Mod.Version, "v")
-		packages[mapKey{name: name, version: version}] = &extractor.Inventory{
+		packages[mapKey{name: name, version: version}] = &extractor.Package{
 			Name:      name,
 			Version:   version,
 			Locations: []string{input.Path},
@@ -112,7 +113,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 
 		for _, replacement := range replacements {
-			packages[replacement] = &extractor.Inventory{
+			packages[replacement] = &extractor.Package{
 				Name:      replace.New.Path,
 				Version:   strings.TrimPrefix(replace.New.Version, "v"),
 				Locations: []string{input.Path},
@@ -122,7 +123,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	// Add the Go stdlib as an explicit dependency.
 	if parsedLockfile.Go != nil && parsedLockfile.Go.Version != "" {
-		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
+		packages[mapKey{name: "stdlib"}] = &extractor.Package{
 			Name:      "stdlib",
 			Version:   parsedLockfile.Go.Version,
 			Locations: []string{input.Path},
@@ -133,7 +134,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
 		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
 
-		packages[mapKey{name: "stdlib"}] = &extractor.Inventory{
+		packages[mapKey{name: "stdlib"}] = &extractor.Package{
 			Name:      "stdlib",
 			Version:   strings.TrimPrefix(version, "go"),
 			Locations: []string{input.Path},
@@ -142,24 +143,24 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	// The map values might have changed after replacement so we need to run another
 	// deduplication pass.
-	dedupedPs := map[mapKey]*extractor.Inventory{}
+	dedupedPs := map[mapKey]*extractor.Package{}
 	for _, p := range packages {
 		dedupedPs[mapKey{name: p.Name, version: p.Version}] = p
 	}
-	return maps.Values(dedupedPs), nil
+	return inventory.Inventory{Packages: maps.Values(dedupedPs)}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGolang,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Go"
 }
 

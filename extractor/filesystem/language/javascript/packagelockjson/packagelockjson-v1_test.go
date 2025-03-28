@@ -20,10 +20,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -42,14 +42,14 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -66,7 +66,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -83,7 +83,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -109,7 +109,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -135,7 +135,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "postcss",
 					Version:    "6.0.23",
@@ -188,7 +188,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies-dup.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "supports-color",
 					Version:    "2.0.0",
@@ -547,7 +547,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "@segment/analytics.js-integration-facebook-pixel",
 					Version:   "",
@@ -716,7 +716,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "lodash",
 					Version:    "1.3.1",
@@ -742,7 +742,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/alias.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/code-frame",
 					Version:    "7.0.0",
@@ -777,7 +777,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
@@ -803,7 +803,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/same-package-different-groups.v1.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "eslint",
 					Version:    "1.2.3",
@@ -852,7 +852,8 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 
