@@ -147,7 +147,7 @@ func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin
 	return inventory, status, nil
 }
 
-func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *WalkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
 	abs := ""
 	var err error
 	if !scanRoot.IsVirtual() {
@@ -166,7 +166,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 // InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
 // are expected to be relative to the scan root.
 // This function is exported for TESTS ONLY.
-func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalibrfs.ScanRoot) (*walkContext, error) {
+func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalibrfs.ScanRoot) (*WalkContext, error) {
 	pathsToExtract, err := stripAllPathPrefixes(config.PathsToExtract, absScanRoots)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		return nil, err
 	}
 
-	return &walkContext{
+	return &WalkContext{
 		ctx:               ctx,
 		stats:             config.Stats,
 		extractors:        config.Extractors,
@@ -205,7 +205,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func RunFS(ctx context.Context, config *Config, wc *WalkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
 		return nil, nil, errors.New("walk context is nil")
@@ -243,7 +243,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.I
 	return wc.inventory, errToExtractorStatus(config.Extractors, wc.foundInv, wc.errors), err
 }
 
-type walkContext struct {
+type WalkContext struct {
 	//nolint:containedctx
 	ctx               context.Context
 	stats             stats.Collector
@@ -280,7 +280,7 @@ type walkContext struct {
 	fileAPI     *lazyFileAPI
 }
 
-func walkIndividualPaths(wc *walkContext) error {
+func walkIndividualPaths(wc *WalkContext) error {
 	for _, p := range wc.pathsToExtract {
 		info, err := fs.Stat(wc.fs, p)
 		if info.IsDir() {
@@ -303,7 +303,7 @@ func walkIndividualPaths(wc *walkContext) error {
 	return nil
 }
 
-func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
+func (wc *WalkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
 	wc.currentPath = path
 
 	wc.inodesVisited++
@@ -377,7 +377,7 @@ func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
 	return api.currentFileInfo, api.currentStatErr
 }
 
-func (wc *walkContext) shouldSkipDir(path string) bool {
+func (wc *WalkContext) shouldSkipDir(path string) bool {
 	if _, ok := wc.dirsToSkip[path]; ok {
 		return true
 	}
@@ -394,7 +394,7 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string) {
+func (wc *WalkContext) runExtractor(ex Extractor, path string) {
 	rc, err := wc.fs.Open(path)
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
@@ -438,7 +438,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 
 // UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
 // currentRoot is expected to be an absolute path.
-func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
+func (wc *WalkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	wc.fileAPI.fs = fs
@@ -531,7 +531,7 @@ func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, erro
 	return result
 }
 
-func (wc *walkContext) printStatus() {
+func (wc *WalkContext) printStatus() {
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),
