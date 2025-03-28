@@ -157,19 +157,19 @@ func TestUnpackSquashed(t *testing.T) {
 	}, {
 		name:    "nil image",
 		cfg:     unpack.DefaultUnpackerConfig(),
-		dir:     mustMkdirTemp(t),
+		dir:     t.TempDir(),
 		image:   nil,
 		wantErr: cmpopts.AnyError,
 	}, {
 		name:  "empty image",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: empty.Image,
 		want:  map[string]contentAndMode{},
 	}, {
 		name:  "single layer image",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
 		want: map[string]contentAndMode{
 			"sample.txt":        {content: "sample text file\n", mode: fs.FileMode(0644)},
@@ -178,7 +178,7 @@ func TestUnpackSquashed(t *testing.T) {
 	}, {
 		name:  "large files are skipped",
 		cfg:   unpack.DefaultUnpackerConfig().WithMaxFileBytes(1024),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
 		want: map[string]contentAndMode{
 			"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0644)},
@@ -186,7 +186,7 @@ func TestUnpackSquashed(t *testing.T) {
 	}, {
 		name:  "image with restricted file permissions",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "permissions.tar")),
 		want: map[string]contentAndMode{
 			"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
@@ -197,7 +197,7 @@ func TestUnpackSquashed(t *testing.T) {
 		dir: func() string {
 			// Create an inner directory to unpack in and an outer directory to test if symlinks try pointing to it.
 			// This test checks that symlinks that attempt to point outside the unpack directory are removed.
-			dir := mustMkdirTemp(t)
+			dir := t.TempDir()
 			innerDir := filepath.Join(dir, "innerdir")
 			err := os.Mkdir(innerDir, 0777)
 			if err != nil {
@@ -225,7 +225,7 @@ func TestUnpackSquashed(t *testing.T) {
 				filepath.FromSlash("dir1/absolute-symlink.txt"),
 			}),
 		),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -238,7 +238,7 @@ func TestUnpackSquashed(t *testing.T) {
 				filepath.FromSlash("dir1/chain-symlink.txt"),
 			}),
 		),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: map[string]contentAndMode{
 			filepath.FromSlash("dir1/absolute-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
@@ -252,13 +252,13 @@ func TestUnpackSquashed(t *testing.T) {
 				filepath.FromSlash("dir1/chain-symlink.txt"),
 			}),
 		),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want:  map[string]contentAndMode{},
 	}, {
 		name: "image built from scratch (not through a tool like Docker)",
 		cfg:  unpack.DefaultUnpackerConfig().WithMaxPass(1),
-		dir:  mustMkdirTemp(t),
+		dir:  t.TempDir(),
 		image: mustNewSquashedImage(t, map[string]contentAndMode{
 			filepath.FromSlash("some/file.txt"):     {"some text", 0600},
 			filepath.FromSlash("another/file.json"): {"some other text", 0600},
@@ -270,7 +270,7 @@ func TestUnpackSquashed(t *testing.T) {
 	}, {
 		name: "only some files are required",
 		cfg:  unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{"some/file.txt"})),
-		dir:  mustMkdirTemp(t),
+		dir:  t.TempDir(),
 		image: mustNewSquashedImage(t, map[string]contentAndMode{
 			filepath.FromSlash("some/file.txt"):     {"some text", 0600},
 			filepath.FromSlash("another/file.json"): {"some other text", 0600},
@@ -281,13 +281,13 @@ func TestUnpackSquashed(t *testing.T) {
 	}, {
 		name:  "dangling symlinks are removed",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
 		want:  map[string]contentAndMode{},
 	}, {
 		name:    "return error for unimplemented symlink ignore resolution strategy",
 		cfg:     unpack.DefaultUnpackerConfig().WithSymlinkResolution(unpack.SymlinkIgnore),
-		dir:     mustMkdirTemp(t),
+		dir:     t.TempDir(),
 		image:   mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
 		wantErr: cmpopts.AnyError,
 	}}
@@ -335,19 +335,19 @@ func TestUnpackLayers(t *testing.T) {
 	}, {
 		name:    "nil image",
 		cfg:     unpack.DefaultUnpackerConfig(),
-		dir:     mustMkdirTemp(t),
+		dir:     t.TempDir(),
 		image:   nil,
 		wantErr: cmpopts.AnyError,
 	}, {
 		name:  "empty image",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: empty.Image,
 		want:  []digestAndContent{{digest: "SQUASHED", content: map[string]contentAndMode{}}},
 	}, {
 		name:  "image with restricted file permissions",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "permissions.tar")),
 		want: []digestAndContent{{
 			digest: "SQUASHED",
@@ -363,7 +363,7 @@ func TestUnpackLayers(t *testing.T) {
 	}, {
 		name:  "basic",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
 		want: []digestAndContent{{
 			digest: "SQUASHED",
@@ -385,7 +385,7 @@ func TestUnpackLayers(t *testing.T) {
 	}, {
 		name:  "symlink",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want: []digestAndContent{{
 			digest: "SQUASHED",
@@ -421,7 +421,7 @@ func TestUnpackLayers(t *testing.T) {
 	}, {
 		name:  "dangling symlinks are removed",
 		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   mustMkdirTemp(t),
+		dir:   t.TempDir(),
 		image: mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
 		want: []digestAndContent{{
 			digest:  "SQUASHED",
@@ -633,14 +633,4 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 		t.Fatalf("Failed to load image from path %q: %v", path, err)
 	}
 	return image
-}
-
-// mustMkdirTemp creates a temporary directory and returns its path.
-func mustMkdirTemp(t *testing.T) string {
-	t.Helper()
-	dir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	return dir
 }
