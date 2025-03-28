@@ -277,6 +277,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
 
+//nolint:unparam // TODO(#454): implement pending
 func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
 	// TODO(#454): package-lock.json when in-place strategy is migrated.

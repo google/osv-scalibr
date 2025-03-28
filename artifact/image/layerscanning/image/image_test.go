@@ -16,7 +16,6 @@ package image
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -636,8 +635,7 @@ func TestFromTarball(t *testing.T) {
 //  4. Devise a pathtree that will return an error when inserting a path. Make sure that Load()
 //     returns an error.
 func TestFromV1Image(t *testing.T) {
-	ctx := context.Background()
-	fakeImage, err := constructImage(ctx, "1.0", "fake-package-name")
+	fakeImage, err := constructImage("1.0", "fake-package-name")
 	if err != nil {
 		t.Fatalf("Failed to construct image: %v", err)
 	}
@@ -1062,7 +1060,7 @@ func TestInitializeChainLayers(t *testing.T) {
 //
 // Put them in a single tarball to make a single layer and put that layer in an empty image to
 // make the minimal image that will work.
-func constructImage(ctx context.Context, version, fakePackageName string) (*v1.Image, error) {
+func constructImage(version, fakePackageName string) (*v1.Image, error) {
 	// The file containing the fake package version.
 	statusContents := fmt.Sprintf("Package: %s\nVersion: %s\nStatus: install ok installed", fakePackageName, version)
 

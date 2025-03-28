@@ -285,6 +285,7 @@ func TestExtract(t *testing.T) {
 	}
 }
 
+//nolint:unparam
 func createFileFromTestData(t *testing.T, root string, subPath string, fileName string, testDataFilePath string) {
 	t.Helper()
 	_ = os.MkdirAll(filepath.Join(root, subPath), 0755)
