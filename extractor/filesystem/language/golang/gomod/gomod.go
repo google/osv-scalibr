@@ -141,6 +141,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 
+	if len(packages) == 0 {
+		return []*extractor.Inventory{}, nil
+	}
+
 	// The map values might have changed after replacement so we need to run another
 	// deduplication pass.
 	dedupedPs := map[mapKey]*extractor.Inventory{}

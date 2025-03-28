@@ -140,6 +140,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		details[dep.Name()] = pkgDetails
 	}
 
+	if len(details) == 0 {
+		return []*extractor.Inventory{}, nil
+	}
+
 	return slices.Collect(maps.Values(details)), nil
 }
 

@@ -83,6 +83,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	addPkgDetails(details, parsedLockfile.Packages, "")
 	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
 
+	if len(details) == 0 {
+		return []*extractor.Inventory{}, nil
+	}
+
 	for key := range details {
 		details[key].Locations = []string{input.Path}
 	}
