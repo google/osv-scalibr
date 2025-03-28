@@ -46,7 +46,7 @@ type Package struct {
 func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
 
-	var inventories []*extractor.Inventory
+	inventories := []*extractor.Inventory{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
