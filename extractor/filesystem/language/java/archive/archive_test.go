@@ -694,7 +694,7 @@ func mustJar(t *testing.T, path string) *os.File {
 		t.Fatalf("os.ReadFile(%s) unexpected error: %v", path, err)
 	}
 
-	jarFile, err := os.CreateTemp("", "temp-*.jar")
+	jarFile, err := os.CreateTemp(t.TempDir(), "temp-*.jar")
 	if err != nil {
 		t.Fatalf("os.CreateTemp(\"temp-*.jar\") unexpected error: %v", err)
 	}
