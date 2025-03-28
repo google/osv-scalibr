@@ -45,7 +45,6 @@ linters:
     - tenv             # Deprecated
     - testpackage
     - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
-    - usetesting       # TODO(#274): work on enabling this
     - varnamelen
     - wrapcheck
     - wsl
