@@ -122,7 +122,7 @@ func TestWalkDir(t *testing.T) {
 		return mark(tree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
-	err = WalkDirUnsorted(fsys, ".", markFn)
+	err = WalkDirUnsorted(fsys, ".", markFn, nil)
 	if err != nil {
 		t.Fatalf("no error expected, found: %s", err)
 	}
@@ -159,7 +159,7 @@ func TestIssue51617(t *testing.T) {
 			saw = append(saw, path)
 		}
 		return nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestWalkDirFallbackToDirFS(t *testing.T) {
 		return mark(fakeFSTree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
-	if err := WalkDirUnsorted(fsys, ".", markFn); err != nil {
+	if err := WalkDirUnsorted(fsys, ".", markFn, nil); err != nil {
 		t.Fatalf("no error expected, found: %s", err)
 	}
 	if len(errors) != 0 {

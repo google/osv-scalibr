@@ -126,6 +126,7 @@ type Flags struct {
 	DirsToSkip            []string
 	SkipDirRegex          string
 	SkipDirGlob           string
+	SkipGitignore         bool
 	RemoteImage           string
 	ImagePlatform         string
 	GovulncheckDBPath     string
@@ -332,6 +333,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,
+		SkipGitignore:        f.SkipGitignore,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
 }
