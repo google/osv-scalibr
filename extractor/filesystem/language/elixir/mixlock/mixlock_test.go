@@ -206,6 +206,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
 			},
+			WantInventory: []*extractor.Inventory{},
 		},
 	}
 
