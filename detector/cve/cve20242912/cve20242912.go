@@ -185,11 +185,12 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	// Check if the installed version is lower than the fixed.
 	isVulnVersion := false
-	if bv[0] < fbv[0] {
+	switch {
+	case bv[0] < fbv[0]:
 		isVulnVersion = true
-	} else if bv[0] == fbv[0] && bv[1] < fbv[1] {
+	case bv[0] == fbv[0] && bv[1] < fbv[1]:
 		isVulnVersion = true
-	} else if bv[0] == fbv[0] && bv[1] == fbv[1] && bv[2] < fbv[2] {
+	case bv[0] == fbv[0] && bv[1] == fbv[1] && bv[2] < fbv[2]:
 		isVulnVersion = true
 	}
 

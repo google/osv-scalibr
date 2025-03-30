@@ -86,15 +86,16 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 		}
 
 		// represents the start of a new dependency
-		if !strings.HasPrefix(line, " ") {
-			// Add previous descriptor if it's for a package.
+		switch {
+		// Add previous descriptor if it's for a package.
+		case !strings.HasPrefix(line, " "):
 			if current != nil {
 				result = append(result, current)
 			}
 			current = &packageDescription{header: line}
-		} else if current == nil {
+		case current == nil:
 			return nil, errors.New("malformed yarn.lock")
-		} else {
+		default:
 			current.props = append(current.props, line)
 		}
 	}
