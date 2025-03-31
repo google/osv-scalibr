@@ -76,7 +76,7 @@ func (Detector) RequiredExtractors() []string {
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	result := inventory.Finding{}
 	scanned := make(map[string]bool)
-	var allErrs error = nil
+	var allErrs error
 	for _, p := range px.GetAllOfType(purl.TypeGolang) {
 		// We only look at Go binaries (no source code).
 		if !slices.Contains(p.Plugins, gobinary.Name) {
