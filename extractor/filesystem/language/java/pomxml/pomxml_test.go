@@ -300,8 +300,8 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name: "org.frank:frank",
-					// Version is not available in the local pom.xml.
+					Name:      "org.frank:frank",
+					Version:   "0", // Version is not available in the local pom.xml.
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "frank",

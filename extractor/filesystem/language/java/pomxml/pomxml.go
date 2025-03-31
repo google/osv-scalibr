@@ -49,7 +49,7 @@ func parseResolvedVersion(version maven.String) string {
 	// First capture group will always exist, but might be empty, therefore the slice will always
 	// have a length of 2.
 	if results == nil || results[1] == "" {
-		return ""
+		return "0"
 	}
 
 	return results[1]
