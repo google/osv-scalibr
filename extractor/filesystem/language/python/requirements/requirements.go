@@ -230,8 +230,11 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pat
 		}
 
 		name, version, comp := getLowestVersion(l)
-		if name == "" || version == "" {
-			// Either empty
+		if name == "" {
+			continue
+		}
+		if version == "" && comp != "" {
+			// Version should be non-empty if there is comparator
 			continue
 		}
 		if !isValidPackage(name) {
@@ -306,6 +309,10 @@ func getLowestVersion(s string) (name, version, comparator string) {
 		}
 	}
 
+	if len(t) == 0 {
+		// Length of t being 0 indidates that there is no seaprator.
+		return s, "", ""
+	}
 	if len(t) != 2 {
 		return "", "", ""
 	}
