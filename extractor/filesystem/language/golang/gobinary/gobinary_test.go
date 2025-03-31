@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -352,5 +353,10 @@ func createInventories(invs []*extractor.Inventory, location string) []*extracto
 			Name: i.Name, Version: i.Version, Locations: []string{location},
 		})
 	}
+	// Main package
+	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
+	res = append(res, &extractor.Inventory{
+		Name: mainName, Version: "(devel)", Locations: []string{location},
+	})
 	return res
 }
