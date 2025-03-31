@@ -355,8 +355,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			parent := filepath.Dir(fullPath)
 			err := os.MkdirAll(parent, fs.ModePerm)
 			if err != nil {
-				log.Errorf("failed to create directory %q: %v", parent, err)
-				return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
+				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
+				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
 
 			// Retain the original file permission but update it so we can always read and write the file.
