@@ -139,7 +139,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from package.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	i, err := parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
@@ -259,4 +259,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 // OSV requires the name field to be a npm package. This is a javascript extractor, there is no
 // guarantee that the package is an npm package.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "npm" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "npm" }

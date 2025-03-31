@@ -126,7 +126,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract parses the PHP file to extract Wordpress package.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	pkg, err := parsePHPFile(input.Reader)
 	if err != nil {
 		return nil, err

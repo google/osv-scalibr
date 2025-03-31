@@ -57,25 +57,25 @@ type Collector interface {
 type NoopCollector struct{}
 
 // AfterInodeVisited implements Collector by doing nothing.
-func (c NoopCollector) AfterInodeVisited(path string) {}
+func (c NoopCollector) AfterInodeVisited(_ string) {}
 
 // AfterExtractorRun implements Collector by doing nothing.
-func (c NoopCollector) AfterExtractorRun(name string, runtime time.Duration, err error) {}
+func (c NoopCollector) AfterExtractorRun(_ string, _ time.Duration, _ error) {}
 
 // AfterDetectorRun implements Collector by doing nothing.
-func (c NoopCollector) AfterDetectorRun(name string, runtime time.Duration, err error) {}
+func (c NoopCollector) AfterDetectorRun(_ string, _ time.Duration, _ error) {}
 
 // AfterScan implements Collector by doing nothing.
-func (c NoopCollector) AfterScan(runtime time.Duration, status *plugin.ScanStatus) {}
+func (c NoopCollector) AfterScan(_ time.Duration, _ *plugin.ScanStatus) {}
 
 // AfterResultsExported implements Collector by doing nothing.
-func (c NoopCollector) AfterResultsExported(destination string, bytes int, err error) {}
+func (c NoopCollector) AfterResultsExported(_ string, _ int, _ error) {}
 
 // AfterFileRequired implements Collector by doing nothing.
-func (c NoopCollector) AfterFileRequired(pluginName string, filestats *FileRequiredStats) {}
+func (c NoopCollector) AfterFileRequired(_ string, _ *FileRequiredStats) {}
 
 // AfterFileExtracted implements Collector by doing nothing.
-func (c NoopCollector) AfterFileExtracted(pluginName string, filestats *FileExtractedStats) {}
+func (c NoopCollector) AfterFileExtracted(_ string, _ *FileExtractedStats) {}
 
 // MaxRSS implements Collector by doing nothing.
-func (c NoopCollector) MaxRSS(maxRSS int64) {}
+func (c NoopCollector) MaxRSS(_ int64) {}

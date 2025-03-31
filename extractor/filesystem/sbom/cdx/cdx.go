@@ -69,7 +69,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract parses the CycloneDX SBOM and returns a list purls from the SBOM.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var cdxExtractor = findExtractor(input.Path)
 
 	if cdxExtractor == nil {

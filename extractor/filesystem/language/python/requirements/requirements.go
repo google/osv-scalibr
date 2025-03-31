@@ -138,7 +138,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 type pathQueue []string
 
 // Extract extracts packages from requirements files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	// Additional paths to recursive files found during extraction.
 	var extraPaths pathQueue
 	var inv []*extractor.Inventory
@@ -355,4 +355,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "PyPI" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "PyPI" }

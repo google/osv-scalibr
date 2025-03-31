@@ -82,7 +82,7 @@ func (e FakeTestLayersExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL
 func (e FakeTestLayersExtractor) ToCPEs(_ *extractor.Inventory) []string { return []string{} }
 
 // Ecosystem returns no ecosystem as this is a mock for testing
-func (e FakeTestLayersExtractor) Ecosystem(i *extractor.Inventory) string {
+func (e FakeTestLayersExtractor) Ecosystem(_ *extractor.Inventory) string {
 	return ""
 }
 

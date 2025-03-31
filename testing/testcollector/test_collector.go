@@ -35,12 +35,12 @@ func New() *Collector {
 }
 
 // AfterFileRequired stores the metrics for calls to `FileRequired`.
-func (c *Collector) AfterFileRequired(name string, filestats *stats.FileRequiredStats) {
+func (c *Collector) AfterFileRequired(_ string, filestats *stats.FileRequiredStats) {
 	c.fileRequiredStats[filestats.Path] = filestats
 }
 
 // AfterFileExtracted stores the metrics for calls to `Extract`.
-func (c *Collector) AfterFileExtracted(name string, filestats *stats.FileExtractedStats) {
+func (c *Collector) AfterFileExtracted(_ string, filestats *stats.FileExtractedStats) {
 	c.fileExtractedStats[filestats.Path] = filestats
 }
 

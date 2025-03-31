@@ -142,7 +142,7 @@ func TestChainLayerFS(t *testing.T) {
 			chainfs := tc.chainLayer.FS()
 
 			gotPaths := []string{}
-			_ = fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
+			_ = fs.WalkDir(chainfs, "/", func(path string, _ fs.DirEntry, err error) error {
 				if err != nil {
 					t.Errorf("WalkDir(%v) returned error: %v", path, err)
 				}

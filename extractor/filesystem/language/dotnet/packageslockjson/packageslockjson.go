@@ -130,7 +130,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract returns a list of dependencies in a packages.lock.json file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -190,4 +190,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "NuGet" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "NuGet" }

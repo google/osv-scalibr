@@ -64,7 +64,7 @@ func (d *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Capa
 func (d *fakeDetector) RequiredExtractors() []string { return d.ReqExtractors }
 
 // Scan always returns the same predefined finding or error.
-func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d *fakeDetector) Scan(_ context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	if d.Finding == nil {
 		return nil, d.Err
 	}

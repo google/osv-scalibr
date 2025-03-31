@@ -78,7 +78,7 @@ func isVersionWithinRange(openSSHVersion string, lower string, upper string) (bo
 }
 
 // Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(_ context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	// 1. OpenSSH between and 5.5 and 9.3p1 (inclusive)
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {

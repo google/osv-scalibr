@@ -38,7 +38,7 @@ var (
 type iterateFunc func(d fs.DirEntry) error
 
 // ReadProcessCmdline returns the command line of a specific process identified by its PID.
-func ReadProcessCmdline(ctx context.Context, pid int64, root string, fsys scalibrfs.FS) ([]string, error) {
+func ReadProcessCmdline(_ context.Context, pid int64, _ string, fsys scalibrfs.FS) ([]string, error) {
 	path := filepath.Join("proc", strconv.FormatInt(pid, 10), "cmdline")
 	file, err := fsys.Open(path)
 	if err != nil {

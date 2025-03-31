@@ -118,7 +118,7 @@ func (m *npmManifest) Clone() manifest.Manifest {
 }
 
 // PatchRequirement modifies the manifest's requirements to include the new requirement version.
-func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
+func (m *npmManifest) PatchRequirement(_ resolve.RequirementVersion) error {
 	// TODO(#454): implement this for npm when adding relax strategy
 	return nil
 }
@@ -127,7 +127,7 @@ type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for package.json manifest files.
 // registry is unused.
-func GetReadWriter(registry string) (manifest.ReadWriter, error) {
+func GetReadWriter(_ string) (manifest.ReadWriter, error) {
 	return readWriter{}, nil
 }
 
@@ -375,7 +375,7 @@ func SplitNPMAlias(v string) (name, version string) {
 }
 
 // Write applies the patches to the original manifest, writing the resulting manifest file to the file path in the filesystem.
-func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+func (r readWriter) Write(_ manifest.Manifest, _ scalibrfs.FS, _ []result.Patch, _ string) error {
 	// TODO(#454): implement with relax
 	return errors.New("not implemented")
 }

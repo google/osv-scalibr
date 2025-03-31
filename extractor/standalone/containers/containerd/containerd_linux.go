@@ -126,7 +126,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extractor extracts containers from the containerd API.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, _ *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	var inventory = []*extractor.Inventory{}
 	if e.checkIfSocketExists {
 		if _, err := os.Stat(e.socketAddr); err != nil {
@@ -291,9 +291,9 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(_ *extractor.Inventory) *purl.PackageURL {
 	return nil
 }
 
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }

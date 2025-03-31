@@ -117,7 +117,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract parses and extracts dependency data from a Package.resolved file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -196,4 +196,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem for Swift.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Cocoapods" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "Cocoapods" }

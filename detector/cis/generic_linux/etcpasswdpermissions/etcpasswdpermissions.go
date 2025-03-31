@@ -63,7 +63,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 }
 
 // ScanFS starts the scan from a pseudo-filesystem.
-func (Detector) ScanFS(ctx context.Context, fs fs.FS, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (Detector) ScanFS(_ context.Context, fs fs.FS, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	f, err := fs.Open("etc/passwd")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

@@ -126,7 +126,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from cargo auditable inside rust binaries.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	reader, ok := input.Reader.(io.ReaderAt)
 	if !ok {
 		return nil, errors.New("input.Reader is not a ReaderAt")

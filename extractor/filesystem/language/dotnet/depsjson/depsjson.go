@@ -116,7 +116,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // Extract parses the deps.json file to extract .NET package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	packages, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -204,6 +204,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
+func (Extractor) Ecosystem(_ *extractor.Inventory) string {
 	return "NuGet"
 }

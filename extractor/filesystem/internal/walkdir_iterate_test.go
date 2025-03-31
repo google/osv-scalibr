@@ -87,7 +87,7 @@ func makeTree() scalibrfs.FS {
 // are always accumulated, though.
 func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clearErr bool) error {
 	name := entry.Name()
-	walkTree(tree, tree.name, func(path string, n *Node) {
+	walkTree(tree, tree.name, func(_ string, n *Node) {
 		if n.name == name {
 			n.mark++
 		}
@@ -118,7 +118,7 @@ func TestWalkDir(t *testing.T) {
 	fsys := makeTree()
 	errors := make([]error, 0, 10)
 	clearErr := true
-	markFn := func(path string, entry fs.DirEntry, err error) error {
+	markFn := func(_ string, entry fs.DirEntry, err error) error {
 		return mark(tree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
@@ -173,7 +173,7 @@ func TestIssue51617(t *testing.T) {
 // FS implementation that doesn't implement ReadDirFile on the sub-directories.
 type fakeFS struct{}
 
-func (f fakeFS) Open(name string) (fs.File, error) {
+func (f fakeFS) Open(_ string) (fs.File, error) {
 	return &fakeFile{}, nil
 }
 func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
@@ -193,9 +193,9 @@ func (fakeFS) Stat(name string) (fs.FileInfo, error) {
 
 type fakeFile struct{}
 
-func (f *fakeFile) Stat() (fs.FileInfo, error)                { return nil, nil }
-func (f *fakeFile) Read(buffer []byte) (count int, err error) { return 0, io.EOF }
-func (*fakeFile) Close() error                                { return nil }
+func (f *fakeFile) Stat() (fs.FileInfo, error)           { return nil, nil }
+func (f *fakeFile) Read(_ []byte) (count int, err error) { return 0, io.EOF }
+func (*fakeFile) Close() error                           { return nil }
 
 var fakeFSTree = &Node{
 	".",
@@ -228,7 +228,7 @@ func TestWalkDirFallbackToDirFS(t *testing.T) {
 	fsys := &fakeFS{}
 	errors := make([]error, 0, 10)
 	clearErr := true
-	markFn := func(path string, entry fs.DirEntry, err error) error {
+	markFn := func(_ string, entry fs.DirEntry, err error) error {
 		return mark(fakeFSTree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.

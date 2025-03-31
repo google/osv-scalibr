@@ -27,7 +27,7 @@ type FileRequirer interface {
 type FileRequirerAll struct{}
 
 // FileRequired always returns true.
-func (f *FileRequirerAll) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (f *FileRequirerAll) FileRequired(_ string, _ fs.FileInfo) bool {
 	return true
 }
 
@@ -35,7 +35,7 @@ func (f *FileRequirerAll) FileRequired(path string, fileinfo fs.FileInfo) bool {
 type FileRequirerNone struct{}
 
 // FileRequired always returns false.
-func (f *FileRequirerNone) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (f *FileRequirerNone) FileRequired(_ string, _ fs.FileInfo) bool {
 	return false
 }
 
@@ -56,6 +56,6 @@ func NewFileRequirerPaths(required []string) *FileRequirerPaths {
 }
 
 // FileRequired returns true if the file is required.
-func (fr *FileRequirerPaths) FileRequired(path string, fileinfo fs.FileInfo) bool {
+func (fr *FileRequirerPaths) FileRequired(path string, _ fs.FileInfo) bool {
 	return fr.required[path]
 }
