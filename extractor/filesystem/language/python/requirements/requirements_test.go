@@ -140,9 +140,11 @@ func TestExtract(t *testing.T) {
 		{
 			name: "no version",
 			path: "testdata/no_version.txt",
-			// not PyCrypto, because no version pinned
-			// not GMPY2, because no version pinned
-			// not SymPy, because no version pinned
+			wantInventory: []*extractor.Inventory{
+				{Name: "PyCrypto"},
+				{Name: "GMPY2"},
+				{Name: "SymPy"},
+			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
@@ -195,10 +197,12 @@ func TestExtract(t *testing.T) {
 			name: "pip example",
 			path: "testdata/example.txt",
 			wantInventory: []*extractor.Inventory{
-				// not pytest, because no version
-				// not pytest-cov, because no version
-				// not beautifulsoup4, because no version
+				{Name: "pytest"},
+				{Name: "pytest-cov"},
+				{Name: "beautifulsoup4"},
 				{Name: "docopt", Version: "0.6.1"},
+				// not requests, because it has extras
+				// not urllib3, because it's pinned to a zip file
 				{
 					Name:     "keyring",
 					Version:  "4.1.1",
@@ -210,8 +214,6 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1",
 					Metadata: &requirements.Metadata{VersionComparator: "~="},
 				},
-				// not requests, because it has extras
-				// not urllib3, because it's pinned to a zip file
 				{
 					Name:      "transitive-req",
 					Version:   "1",
@@ -354,7 +356,7 @@ func TestExtract(t *testing.T) {
 			if i.Metadata.(*requirements.Metadata).HashCheckingModeValues == nil {
 				i.Metadata.(*requirements.Metadata).HashCheckingModeValues = []string{}
 			}
-			if i.Metadata.(*requirements.Metadata).VersionComparator == "" {
+			if i.Version != "" && i.Metadata.(*requirements.Metadata).VersionComparator == "" {
 				i.Metadata.(*requirements.Metadata).VersionComparator = "=="
 			}
 		}
