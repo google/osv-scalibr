@@ -656,7 +656,7 @@ type fakeCollector struct {
 	AfterInodeVisitedCount int
 }
 
-func (c *fakeCollector) AfterInodeVisited(path string) { c.AfterInodeVisitedCount++ }
+func (c *fakeCollector) AfterInodeVisited(_ string) { c.AfterInodeVisitedCount++ }
 
 func invLess(i1, i2 *extractor.Inventory) bool {
 	if i1.Name != i2.Name {
@@ -674,10 +674,10 @@ func (fakeFS) Open(name string) (fs.File, error) {
 	}
 	return nil, errors.New("failed to open")
 }
-func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
+func (fakeFS) ReadDir(_ string) ([]fs.DirEntry, error) {
 	return nil, errors.New("not implemented")
 }
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
+func (fakeFS) Stat(_ string) (fs.FileInfo, error) {
 	return &fakeFileInfo{dir: true}, nil
 }
 

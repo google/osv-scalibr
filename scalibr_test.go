@@ -272,11 +272,11 @@ type fakeExNeedsNetwork struct {
 func (fakeExNeedsNetwork) Name() string                           { return "fake-extractor" }
 func (fakeExNeedsNetwork) Version() int                           { return 0 }
 func (fakeExNeedsNetwork) FileRequired(_ filesystem.FileAPI) bool { return false }
-func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
+func (fakeExNeedsNetwork) Extract(_ context.Context, _ *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
 	return nil, nil
 }
-func (e fakeExNeedsNetwork) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
-func (e fakeExNeedsNetwork) Ecosystem(i *extractor.Inventory) string        { return "" }
+func (e fakeExNeedsNetwork) ToPURL(_ *extractor.Inventory) *purl.PackageURL { return nil }
+func (e fakeExNeedsNetwork) Ecosystem(_ *extractor.Inventory) string        { return "" }
 
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
@@ -288,7 +288,7 @@ type fakeDetNeedsFS struct {
 func (fakeDetNeedsFS) Name() string                 { return "fake-extractor" }
 func (fakeDetNeedsFS) Version() int                 { return 0 }
 func (fakeDetNeedsFS) RequiredExtractors() []string { return nil }
-func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (fakeDetNeedsFS) Scan(_ context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	return nil, nil
 }
 func (fakeDetNeedsFS) Requirements() *plugin.Capabilities {
@@ -364,9 +364,9 @@ type errorFS struct {
 	err error
 }
 
-func (f errorFS) Open(name string) (fs.File, error)          { return nil, f.err }
-func (f errorFS) ReadDir(name string) ([]fs.DirEntry, error) { return nil, f.err }
-func (f errorFS) Stat(name string) (fs.FileInfo, error)      { return nil, f.err }
+func (f errorFS) Open(_ string) (fs.File, error)          { return nil, f.err }
+func (f errorFS) ReadDir(_ string) ([]fs.DirEntry, error) { return nil, f.err }
+func (f errorFS) Stat(_ string) (fs.FileInfo, error)      { return nil, f.err }
 
 func TestErrorOnFSErrors(t *testing.T) {
 	cases := []struct {

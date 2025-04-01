@@ -33,10 +33,10 @@ func (f *fakeFS) Open(name string) (fs.File, error) {
 	}
 	return nil, errors.New("failed to open")
 }
-func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
+func (fakeFS) ReadDir(_ string) ([]fs.DirEntry, error) {
 	return nil, errors.New("not implemented")
 }
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
+func (fakeFS) Stat(_ string) (fs.FileInfo, error) {
 	return nil, errors.New("not implemented")
 }
 

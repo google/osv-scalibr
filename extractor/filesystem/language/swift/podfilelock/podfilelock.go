@@ -112,7 +112,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract processes and extracts dependency information from a Podfile.lock file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64

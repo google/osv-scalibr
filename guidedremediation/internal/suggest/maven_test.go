@@ -112,7 +112,7 @@ func (m testManifest) EcosystemSpecific() any {
 }
 
 // EcosystemSpecific returns any ecosystem-specific information for this manifest.
-func (m testManifest) PatchRequirement(req resolve.RequirementVersion) error {
+func (m testManifest) PatchRequirement(_ resolve.RequirementVersion) error {
 	return nil
 }
 

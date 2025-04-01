@@ -493,7 +493,7 @@ func runhcsInitPid(scanRoot string, namespace string, id string) int {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
+func (e Extractor) ToPURL(_ *extractor.Inventory) *purl.PackageURL { return nil }
 
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }

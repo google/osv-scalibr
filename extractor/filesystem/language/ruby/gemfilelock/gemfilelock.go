@@ -109,7 +109,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	return sections, nil
 }
 
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	sections, err := parseLockfileSections(input)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing %s: %w", input.Path, err)
@@ -154,7 +154,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
 	return "RubyGems"
 }
 

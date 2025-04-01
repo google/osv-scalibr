@@ -92,7 +92,7 @@ func (e *fakeExtractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract returns the inventory list and error associated with input.Path from the pathToInventoryErr map used
 // during construction in NewExtractor(..., pathToInventoryErr, ...).
 // Note: because mapfs forces all paths to slash, we have to align with it here.
-func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e *fakeExtractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	path := filepath.ToSlash(input.Path)
 	namesErr, ok := e.pathToNamesErr[path]
 	if !ok {
@@ -120,6 +120,6 @@ func (e *fakeExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns a fake ecosystem.
-func (e *fakeExtractor) Ecosystem(i *extractor.Inventory) string {
+func (e *fakeExtractor) Ecosystem(_ *extractor.Inventory) string {
 	return "FakeEcosystem"
 }

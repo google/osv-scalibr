@@ -233,6 +233,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "npm" }
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "npm" }
 
 var _ filesystem.Extractor = Extractor{}

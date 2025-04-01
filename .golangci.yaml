@@ -91,6 +91,8 @@ linters-settings:
         disabled: false
       - name: unreachable-code
         disabled: false
+      - name: unused-parameter
+        disabled: false
       - name: var-naming
         disabled: false
 

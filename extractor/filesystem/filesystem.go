@@ -205,7 +205,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func RunFS(_ context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
 		return nil, nil, errors.New("walk context is nil")

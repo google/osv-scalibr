@@ -110,7 +110,7 @@ func structurePackageDetails(pkg []any) (string, string, string, error) {
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parsedLockfile *bunLockfile
 
 	b, err := io.ReadAll(input.Reader)

@@ -167,7 +167,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }
 
 func toDistro(m *Metadata) string {
 	if m.OSVersionCodename != "" {

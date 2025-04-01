@@ -199,7 +199,7 @@ func containsTemplate(s string) bool {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "PyPI" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "PyPI" }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {

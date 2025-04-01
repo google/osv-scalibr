@@ -56,7 +56,7 @@ func inventoryFromOutput(flavor, output string) ([]*extractor.Inventory, error) 
 }
 
 // Ecosystem returns no ecosystem since OSV does ont support dism patches yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {

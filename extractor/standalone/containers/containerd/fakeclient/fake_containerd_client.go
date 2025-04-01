@@ -52,7 +52,7 @@ type CtrdClient struct {
 }
 
 // NewFakeCtrdClient creates a new fake containerd client.
-func NewFakeCtrdClient(ctx context.Context, nssTaskIDs map[string][]string, tsks []*task.Process, ctrs []containerd.Container) (CtrdClient, error) {
+func NewFakeCtrdClient(_ context.Context, nssTaskIDs map[string][]string, tsks []*task.Process, ctrs []containerd.Container) (CtrdClient, error) {
 	ctrTasks, err := initContainerTasks(tsks, ctrs)
 	if err != nil {
 		return CtrdClient{}, err
@@ -74,7 +74,7 @@ func NewFakeCtrdClient(ctx context.Context, nssTaskIDs map[string][]string, tsks
 }
 
 // LoadContainer returns the containerd.Container object for the given task ID from ctrTasksIDs.
-func (c *CtrdClient) LoadContainer(ctx context.Context, id string) (containerd.Container, error) {
+func (c *CtrdClient) LoadContainer(_ context.Context, id string) (containerd.Container, error) {
 	if ctr, ok := c.ctrTasksIDs[id]; ok {
 		return ctr, nil
 	}
@@ -131,7 +131,7 @@ func NewFakeTasksService(tasks []*task.Process, nssTaskIDs map[string][]string) 
 }
 
 // List returns a list of tasks for a namespace that is obtained from the context.
-func (s *TasksService) List(ctx context.Context, in *tasks.ListTasksRequest, opts ...grpc.CallOption) (*tasks.ListTasksResponse, error) {
+func (s *TasksService) List(ctx context.Context, _ *tasks.ListTasksRequest, _ ...grpc.CallOption) (*tasks.ListTasksResponse, error) {
 	var tsks []*task.Process
 
 	ns, ok := namespaces.Namespace(ctx)
@@ -170,7 +170,7 @@ func NewFakeNamespacesService(namespaces []string) *NamespacesService {
 }
 
 // List returns a list of all namespaces that are stored in the fake namespaces service.
-func (s *NamespacesService) List(ctx context.Context) ([]string, error) {
+func (s *NamespacesService) List(_ context.Context) ([]string, error) {
 	return s.namespaces, nil
 }
 
@@ -199,7 +199,7 @@ func (c *Container) ID() string {
 }
 
 // Info returns the underlying container record type.
-func (c *Container) Info(ctx context.Context, opts ...containerd.InfoOpts) (containers.Container, error) {
+func (c *Container) Info(_ context.Context, _ ...containerd.InfoOpts) (containers.Container, error) {
 	return containers.Container{
 		ID:    c.id,
 		Image: c.image,
@@ -215,7 +215,7 @@ func (c *Container) Task(context.Context, cio.Attach) (containerd.Task, error) {
 }
 
 // Image returns the underlying container Image object with a given digest.
-func (c *Container) Image(ctx context.Context) (containerd.Image, error) {
+func (c *Container) Image(_ context.Context) (containerd.Image, error) {
 	return NewFakeImage(c.digest), nil
 }
 
@@ -254,6 +254,6 @@ func NewFakeTask(rootfs string) *Task {
 }
 
 // Spec returns the task runtime spec with the rootfs path only.
-func (t *Task) Spec(ctx context.Context) (*oci.Spec, error) {
+func (t *Task) Spec(_ context.Context) (*oci.Spec, error) {
 	return &oci.Spec{Root: &runtimespecs.Root{Path: t.rootfs}}, nil
 }

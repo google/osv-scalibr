@@ -106,6 +106,6 @@ func (fakeChainLayer *FakeChainLayer) Stat(name string) (fs.FileInfo, error) {
 
 // ReadDir is not used in the trace package since individual files are opened instead of
 // directories.
-func (fakeChainLayer *FakeChainLayer) ReadDir(name string) ([]fs.DirEntry, error) {
+func (fakeChainLayer *FakeChainLayer) ReadDir(_ string) ([]fs.DirEntry, error) {
 	return nil, errors.New("not implemented")
 }

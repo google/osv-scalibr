@@ -119,7 +119,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var readerAt io.ReaderAt
 	if fileWithReaderAt, ok := input.Reader.(io.ReaderAt); ok {
 		readerAt = fileWithReaderAt
@@ -238,4 +238,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Go" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "Go" }

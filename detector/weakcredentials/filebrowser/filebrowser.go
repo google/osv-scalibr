@@ -88,7 +88,7 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	for _, fileBrowserPort := range fileBrowserPorts {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()

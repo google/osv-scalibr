@@ -80,7 +80,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts vscode extensions
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var exts []*extension
 	if err := json.NewDecoder(input.Reader).Decode(&exts); err != nil {
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
@@ -112,4 +112,4 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem is not defined.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }

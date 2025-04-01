@@ -77,4 +77,4 @@ func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }

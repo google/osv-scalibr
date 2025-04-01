@@ -17,6 +17,6 @@ package winproducts
 import "github.com/google/osv-scalibr/common/windows/registry"
 
 // WindowsFlavorFromRegistry is a noop on Linux.
-func WindowsFlavorFromRegistry(reg registry.Registry) string {
+func WindowsFlavorFromRegistry(_ registry.Registry) string {
 	return ""
 }

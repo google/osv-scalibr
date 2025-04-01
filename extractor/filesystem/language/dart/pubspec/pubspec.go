@@ -90,7 +90,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts Dart packages from pubspec.lock files passed through the input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var parsedLockfile *pubspecLockfile
 	if err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile); err != nil {
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
@@ -130,6 +130,6 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "Pub" }
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "Pub" }
 
 var _ filesystem.Extractor = Extractor{}

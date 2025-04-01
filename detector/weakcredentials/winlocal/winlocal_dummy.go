@@ -55,6 +55,6 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return nil }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(_ context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	return nil, errors.New("only supported on Windows")
 }

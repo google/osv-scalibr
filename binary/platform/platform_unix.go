@@ -23,7 +23,7 @@ func SystemRoot() (string, error) {
 }
 
 // DefaultScanRoots returns the default list of directories to be scanned for Linux.
-func DefaultScanRoots(allDrives bool) ([]string, error) {
+func DefaultScanRoots(_ bool) ([]string, error) {
 	sysroot, err := SystemRoot()
 	if err != nil {
 		return nil, err

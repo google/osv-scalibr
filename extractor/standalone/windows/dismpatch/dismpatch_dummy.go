@@ -47,6 +47,6 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // Extract is a no-op for Linux.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(_ context.Context, _ *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	return nil, errors.New("only supported on Windows")
 }

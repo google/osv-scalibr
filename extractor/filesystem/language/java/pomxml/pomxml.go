@@ -101,7 +101,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	//  - dedupe dependencies and dependency management
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
-	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
+	project.ProcessDependencies(func(_, _, _ maven.String) (maven.DependencyManagement, error) {
 		// There is no network access so return an empty list of dependency management.
 		return maven.DependencyManagement{}, nil
 	})
@@ -158,7 +158,7 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
 	return "Maven"
 }
 

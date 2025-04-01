@@ -118,12 +118,12 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 // This extractor does not create PURLs.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(_ *extractor.Inventory) *purl.PackageURL {
 	return nil
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }
 
 func (e Extractor) allTCPInfo(ctx context.Context) ([]*proc.NetTCPInfo, error) {
 	var entries []*proc.NetTCPInfo

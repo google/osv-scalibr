@@ -44,7 +44,7 @@ func DefaultConfiguration() Configuration {
 type Extractor struct{}
 
 // New creates a new Extractor from a given configuration.
-func New(config Configuration) standalone.Extractor {
+func New(_ Configuration) standalone.Extractor {
 	return &Extractor{}
 }
 
@@ -63,15 +63,15 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // Extract is a no-op for Linux.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(_ context.Context, _ *standalone.ScanInput) ([]*extractor.Inventory, error) {
 	return nil, errors.New("only supported on Windows")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e *Extractor) ToPURL(_ *extractor.Inventory) *purl.PackageURL {
 	log.Warnf("Trying to use ospackages on %s, which is not supported", runtime.GOOS)
 	return nil
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows ospackages yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "" }

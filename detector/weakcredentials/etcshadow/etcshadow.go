@@ -57,7 +57,7 @@ func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilitie
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
 	f, err := scanRoot.FS.Open("etc/shadow")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
