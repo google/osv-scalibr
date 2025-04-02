@@ -74,7 +74,6 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		return nil, fmt.Errorf("Error fetching containers: %w", err)
 	}
 
-	// todo filter running containers
 	ivs := make([]*extractor.Inventory, 0, len(containers))
 	for _, ctr := range containers {
 		ivs = append(ivs, &extractor.Inventory{
