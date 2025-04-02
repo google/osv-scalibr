@@ -1191,9 +1191,6 @@ func TestScanResultToProto(t *testing.T) {
 				Inventories: []*spb.Inventory{dockerInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
-			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
-			// on Windows.
-			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
 			desc: "no inventory target, still works",
