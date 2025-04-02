@@ -790,6 +790,7 @@ func TestScanResultToProto(t *testing.T) {
 			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
 			Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 		},
+		Extractor: &docker.Extractor{},
 	}
 
 	dockerInventoryProto := &spb.Inventory{
@@ -805,6 +806,7 @@ func TestScanResultToProto(t *testing.T) {
 				},
 			},
 		},
+		Extractor: "containers/docker",
 	}
 
 	testCases := []struct {
