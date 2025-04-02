@@ -16,6 +16,8 @@ package npm_test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"deps.dev/util/resolve"
@@ -24,6 +26,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 func aliasType(t *testing.T, aliasedName string) dep.Type {
@@ -244,4 +247,82 @@ func TestReadWithWorkspaces(t *testing.T) {
 	}
 
 	checkManifest(t, "Manifest", got, want)
+}
+
+func TestWrite(t *testing.T) {
+	rw, err := npm.GetReadWriter("")
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	fsys := scalibrfs.DirFS("./testdata")
+	manif, err := rw.Read("package.json", fsys)
+	if err != nil {
+		t.Fatalf("error reading manifest: %v", err)
+	}
+
+	patches := []result.Patch{
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "lodash",
+					VersionFrom: "4.17.17",
+					VersionTo:   "^4.17.21",
+				},
+				{
+					Name:        "eslint",
+					VersionFrom: "^8.57.0",
+					VersionTo:   "*",
+				},
+				{
+					Name:        "glob",
+					VersionFrom: "^10.3.10",
+					VersionTo:   "^1.0.0",
+				},
+				{
+					Name:        "jquery",
+					VersionFrom: "latest",
+					VersionTo:   "~0.0.1",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "@isaacs/cliui",
+					VersionFrom: "^8.0.2",
+					VersionTo:   "^9.0.0",
+					Type:        aliasType(t, "cliui"),
+				},
+				{
+					Name:        "string-width",
+					VersionFrom: "^5.1.2",
+					VersionTo:   "^7.1.0",
+				},
+				{
+					Name:        "string-width",
+					VersionFrom: "^4.2.3",
+					VersionTo:   "^6.1.0",
+					Type:        aliasType(t, "string-width-aliased"),
+				},
+			},
+		},
+	}
+	outDir := t.TempDir()
+	outFile := filepath.Join(outDir, "package.json")
+
+	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+		t.Fatalf("failed to write package.json: %v", err)
+	}
+
+	got, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatalf("failed to read got package.json: %v", err)
+	}
+	want, err := os.ReadFile(filepath.Join("./testdata", "write_want.package.json"))
+	if err != nil {
+		t.Fatalf("failed to read want package.json: %v", err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("package.json (-want +got):\n%s", diff)
+	}
 }

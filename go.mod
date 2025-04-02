@@ -31,7 +31,9 @@ require (
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
 	github.com/saferwall/pe v1.5.6
 	github.com/spdx/tools-golang v0.5.3
+	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
+	github.com/tidwall/sjson v1.2.5
 	go.etcd.io/bbolt v1.3.10
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.35.0
@@ -91,6 +93,8 @@ require (
 	github.com/secDre4mer/pkcs7 v0.0.0-20240322103146-665324a4461d // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/gordf v0.0.0-20221230105357-b735bd5aac89 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect

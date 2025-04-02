@@ -17,9 +17,11 @@ package npm
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
+	"io"
 	"io/fs"
 	"maps"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -31,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/log"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // RequirementKey is a comparable type that uniquely identifies a package dependency in a manifest.
@@ -376,6 +380,87 @@ func SplitNPMAlias(v string) (name, version string) {
 
 // Write applies the patches to the original manifest, writing the resulting manifest file to the file path in the filesystem.
 func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
-	// TODO(#454): implement with relax
-	return errors.New("not implemented")
+	// Read the whole package.json into memory so we can use sjson to write in-place.
+	f, err := fsys.Open(original.FilePath())
+	if err != nil {
+		return err
+	}
+	manif, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return err
+	}
+
+	for _, patch := range patches {
+		for _, req := range patch.PackageUpdates {
+			name := req.Name
+			origVer := req.VersionFrom
+			newVer := req.VersionTo
+			if knownAs, ok := req.Type.GetAttr(dep.KnownAs); ok {
+				// reconstruct alias versioning
+				origVer = fmt.Sprintf("npm:%s@%s", name, origVer)
+				newVer = fmt.Sprintf("npm:%s@%s", name, newVer)
+				name = knownAs
+			}
+
+			// Don't know what kind of dependency this is, so check them all.
+			// Check them in dev -> optional -> prod because that's the order npm seems to use when they conflict.
+			alreadyMatched := false
+			depStr := "devDependencies." + name
+			if res := gjson.GetBytes(manif, depStr); res.Exists() {
+				ver := res.String()
+				if ver != origVer {
+					return fmt.Errorf("original dependency version does not match patch: %s %q != %q", name, ver, origVer)
+				}
+				manif, err = sjson.SetBytes(manif, depStr, newVer)
+				if err != nil {
+					return err
+				}
+				alreadyMatched = true
+			}
+
+			depStr = "optionalDependencies." + name
+			if res := gjson.GetBytes(manif, depStr); res.Exists() {
+				ver := res.String()
+				if ver != origVer {
+					if !alreadyMatched {
+						return fmt.Errorf("original dependency version does not match patch: %s %q != %q", name, ver, origVer)
+					}
+					// dependency was already matched, so we can ignore it.
+				} else {
+					manif, err = sjson.SetBytes(manif, depStr, newVer)
+					if err != nil {
+						return err
+					}
+					alreadyMatched = true
+				}
+			}
+
+			depStr = "dependencies." + name
+			if res := gjson.GetBytes(manif, depStr); res.Exists() {
+				ver := res.String()
+				if ver != origVer {
+					if !alreadyMatched {
+						return fmt.Errorf("original dependency version does not match patch: %s %q != %q", name, ver, origVer)
+					}
+					// dependency was already matched, so we can ignore it.
+				} else {
+					manif, err = sjson.SetBytes(manif, depStr, newVer)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	// Write the patched manifest to the output path.
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(outputPath, manif, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
