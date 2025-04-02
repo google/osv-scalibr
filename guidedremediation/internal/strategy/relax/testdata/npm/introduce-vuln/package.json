@@ -1,0 +1,7 @@
+{
+  "name": "introduce-vuln",
+  "version": "1.0.0",
+  "dependencies": {
+    "adding": "^1.0.0"
+  }
+}

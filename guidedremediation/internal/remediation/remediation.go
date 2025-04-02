@@ -110,12 +110,12 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 	}
 	slices.SortFunc(output.Introduced, func(a, b result.Vuln) int { return cmp.Compare(a.ID, b.ID) })
 
-	oldReqs := make(map[resolve.PackageKey]resolve.RequirementVersion)
+	oldReqs := make(map[manifest.RequirementKey]resolve.RequirementVersion)
 	for _, req := range oldRes.Manifest.Requirements() {
-		oldReqs[req.PackageKey] = req
+		oldReqs[resolution.MakeRequirementKey(req)] = req
 	}
 	for _, req := range newRes.Manifest.Requirements() {
-		oldReq, ok := oldReqs[req.PackageKey]
+		oldReq, ok := oldReqs[resolution.MakeRequirementKey(req)]
 		if !ok {
 			typ := dep.NewType()
 			typ.AddAttr(dep.MavenDependencyOrigin, mavenutil.OriginManagement)
@@ -150,13 +150,23 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 			Transitive:  !direct,
 		})
 	}
-	slices.SortFunc(output.PackageUpdates, func(a, b result.PackageUpdate) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
+	cmpFn := func(a, b result.PackageUpdate) int {
+		if c := cmp.Compare(a.Name, b.Name); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(a.VersionFrom, b.VersionFrom); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(a.VersionTo, b.VersionTo); c != 0 {
+			return c
+		}
+		return a.Type.Compare(b.Type)
+	}
+	slices.SortFunc(output.PackageUpdates, cmpFn)
 	// It's possible something is in the requirements twice (e.g. with Maven dependencyManagement)
 	// Deduplicate the patches in this case.
 	output.PackageUpdates = slices.CompactFunc(output.PackageUpdates, func(a, b result.PackageUpdate) bool {
-		return a.Name == b.Name && a.VersionFrom == b.VersionFrom && a.VersionTo == b.VersionTo
+		return cmpFn(a, b) == 0
 	})
 
 	return output
