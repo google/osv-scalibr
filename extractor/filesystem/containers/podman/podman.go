@@ -69,8 +69,8 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
-	// todo check this
 	return &plugin.Capabilities{
+		OS:            plugin.OSLinux,
 		DirectFS:      true,
 		RunningSystem: true,
 	}

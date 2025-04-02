@@ -789,9 +789,11 @@ func TestScanResultToProto(t *testing.T) {
 			Status:       "running",
 			NameSpace:    "",
 			StartedTime:  endTime.Add(-10 * time.Minute),
+			FinishedTime: endTime.Add(-5 * time.Minute),
 			ExitCode:     0,
 			Exited:       false,
 		},
+		Extractor: &podman.Extractor{},
 	}
 	podmanInventoryProto := &spb.Inventory{
 		Name:    "docker.io/redis",
@@ -802,11 +804,13 @@ func TestScanResultToProto(t *testing.T) {
 				Pid:          4232,
 				Namespace:    "",
 				StartedTime:  timestamppb.New(endTime.Add(-10 * time.Minute)),
+				FinishedTime: timestamppb.New(endTime.Add(-5 * time.Minute)),
 				Status:       "running",
 				ExitCode:     0,
 				Exited:       false,
 			},
 		},
+		Extractor: "containers/podman",
 	}
 
 	testCases := []struct {
@@ -1193,8 +1197,6 @@ func TestScanResultToProto(t *testing.T) {
 				Inventories: []*spb.Inventory{podmanInventoryProto},
 				Findings:    []*spb.Finding{},
 			},
-			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
-			// on Windows.
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
