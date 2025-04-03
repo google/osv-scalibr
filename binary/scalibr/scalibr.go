@@ -68,6 +68,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
 	skipDirGlob := fs.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
+	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
 	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
 	govulncheckDBPath := fs.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
@@ -99,6 +100,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		DirsToSkip:            dirsToSkip.GetSlice(),
 		SkipDirRegex:          *skipDirRegex,
 		SkipDirGlob:           *skipDirGlob,
+		UseGitignore:          *useGitignore,
 		RemoteImage:           *remoteImage,
 		ImagePlatform:         *imagePlatform,
 		GovulncheckDBPath:     *govulncheckDBPath,

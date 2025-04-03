@@ -17,7 +17,6 @@ package filesystem_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -25,9 +24,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"testing"
-	"testing/fstest"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -42,24 +41,8 @@ import (
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
-// pathsMapFS provides a hooked version of MapFS that forces slashes. Because depending on the
-// tested system, the path might contain backslashes instead but mapfs doesn't support them.
-type pathsMapFS struct {
-	mapfs fstest.MapFS
-}
-
-func (fsys pathsMapFS) Open(name string) (fs.File, error) {
-	name = filepath.ToSlash(name)
-	return fsys.mapfs.Open(name)
-}
-func (fsys pathsMapFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	name = filepath.ToSlash(name)
-	return fsys.mapfs.ReadDir(name)
-}
-func (fsys pathsMapFS) Stat(name string) (fs.FileInfo, error) {
-	name = filepath.ToSlash(name)
-	return fsys.mapfs.Stat(name)
-}
+// Map of file paths to contents. Empty contents denote directories.
+type mapFS map[string][]byte
 
 func TestInitWalkContext(t *testing.T) {
 	dummyFS := scalibrfs.DirFS(".")
@@ -156,15 +139,13 @@ func TestRunFS(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
 	path1 := "dir1/file1.txt"
 	path2 := "dir2/sub/file2.txt"
-	fsys := pathsMapFS{
-		mapfs: fstest.MapFS{
-			".":                  {Mode: fs.ModeDir},
-			"dir1":               {Mode: fs.ModeDir},
-			"dir2":               {Mode: fs.ModeDir},
-			"dir1/file1.txt":     {Data: []byte("Content 1")},
-			"dir2/sub/file2.txt": {Data: []byte("Content 2")},
-		},
-	}
+	fsys := setupMapFS(t, mapFS{
+		".":                  nil,
+		"dir1":               nil,
+		"dir2":               nil,
+		"dir1/file1.txt":     []byte("Content 1"),
+		"dir2/sub/file2.txt": []byte("Content 2"),
+	})
 	name1 := "software1"
 	name2 := "software2"
 
@@ -493,7 +474,7 @@ func TestRunFS(t *testing.T) {
 			},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusPartiallySucceeded, FailureReason: path1 + ": extraction failed",
+					Status: plugin.ScanStatusPartiallySucceeded,
 				}},
 			},
 			wantInodeCount: 6,
@@ -506,7 +487,7 @@ func TestRunFS(t *testing.T) {
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusFailed, FailureReason: path1 + ": extraction failed",
+					Status: plugin.ScanStatusFailed,
 				}},
 			},
 			wantInodeCount: 6,
@@ -522,8 +503,7 @@ func TestRunFS(t *testing.T) {
 			wantInv: []*extractor.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status:        plugin.ScanStatusFailed,
-					FailureReason: fmt.Sprintf("%s: extraction failed\n%s: extraction failed", path1, path2),
+					Status: plugin.ScanStatusFailed,
 				}},
 			},
 			wantInodeCount: 6,
@@ -640,6 +620,11 @@ func TestRunFS(t *testing.T) {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
+			for _, s := range gotStatus {
+				// Failure reason can be non-deterministic depending on the order of
+				// files traversed so we're ignoring it.
+				s.Status.FailureReason = ""
+			}
 			sortStatus := func(s1, s2 *plugin.Status) bool {
 				return s1.Name < s2.Name
 			}
@@ -648,6 +633,174 @@ func TestRunFS(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunFSGitignore(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
+
+	name1 := "software1"
+	name2 := "software2"
+	path1 := "dir1/file1.txt"
+	path2 := "dir2/sub/file2.txt"
+	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
+	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
+	ex := []filesystem.Extractor{fakeEx1, fakeEx2}
+
+	testCases := []struct {
+		desc           string
+		mapFS          mapFS
+		pathToExtract  string
+		wantInv1       bool
+		wantInv2       bool
+		wantInodeCount int
+	}{
+		{
+			desc: "Skip_file",
+			mapFS: mapFS{
+				".":               nil,
+				"dir1":            nil,
+				"dir1/file1.txt":  []byte("Content 1"),
+				"dir1/.gitignore": []byte("file1.txt"),
+			},
+			pathToExtract:  "dir1",
+			wantInv1:       false,
+			wantInodeCount: 3,
+		},
+		{
+			desc: "Skip_dir",
+			mapFS: mapFS{
+				".":                  nil,
+				"dir2":               nil,
+				"dir2/sub":           nil,
+				"dir2/sub/file2.txt": []byte("Content 2"),
+				"dir2/.gitignore":    []byte("sub"),
+			},
+			pathToExtract:  "",
+			wantInv2:       false,
+			wantInodeCount: 4,
+		},
+		{
+			desc: "Dont_skip_if_no_match",
+			mapFS: mapFS{
+				".":               nil,
+				"dir1":            nil,
+				"dir1/file1.txt":  []byte("Content 1"),
+				"dir1/.gitignore": []byte("no-match.txt"),
+			},
+			pathToExtract:  "",
+			wantInv1:       true,
+			wantInv2:       false,
+			wantInodeCount: 4,
+		},
+		{
+			desc: "Skip_based_on_parent_gitignore",
+			mapFS: mapFS{
+				".":                  nil,
+				"dir2":               nil,
+				"dir2/sub":           nil,
+				"dir2/sub/file2.txt": []byte("Content 1"),
+				"dir2/.gitignore":    []byte("file2.txt"),
+			},
+			pathToExtract:  "dir2/sub",
+			wantInv1:       false,
+			wantInodeCount: 2,
+		},
+		{
+			desc: "Skip_based_on_child_gitignore",
+			mapFS: mapFS{
+				".":               nil,
+				"dir1":            nil,
+				"dir2":            nil,
+				"dir2/sub":        nil,
+				"dir1/file1.txt":  []byte("Content 1"),
+				"dir1/.gitignore": []byte("file1.txt\nfile2.txt"),
+				// Not skipped since the skip pattern is in dir1
+				"dir2/sub/file2.txt": []byte("Content 2"),
+			},
+			pathToExtract:  "",
+			wantInv1:       false,
+			wantInv2:       true,
+			wantInodeCount: 7,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fc := &fakeCollector{}
+			fsys := setupMapFS(t, tc.mapFS)
+			config := &filesystem.Config{
+				Extractors:     ex,
+				PathsToExtract: []string{tc.pathToExtract},
+				UseGitignore:   true,
+				ScanRoots: []*scalibrfs.ScanRoot{{
+					FS: fsys, Path: ".",
+				}},
+				Stats:             fc,
+				StoreAbsolutePath: false,
+			}
+			wc, err := filesystem.InitWalkContext(
+				context.Background(), config, []*scalibrfs.ScanRoot{{
+					FS: fsys, Path: cwd,
+				}},
+			)
+			if err != nil {
+				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
+			}
+			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
+			}
+			gotInv, _, err := filesystem.RunFS(context.Background(), config, wc)
+			if err != nil {
+				t.Errorf("filesystem.RunFS(%v, %v): %v", config, wc, err)
+			}
+
+			if fc.AfterInodeVisitedCount != tc.wantInodeCount {
+				t.Errorf("filesystem.RunFS(%v, %v) inodes visited: got %d, want %d", config, wc, fc.AfterInodeVisitedCount, tc.wantInodeCount)
+			}
+
+			gotInv1 := slices.ContainsFunc(gotInv, func(i *extractor.Inventory) bool {
+				return i.Name == name1
+			})
+			gotInv2 := slices.ContainsFunc(gotInv, func(i *extractor.Inventory) bool {
+				return i.Name == name2
+			})
+			if gotInv1 != tc.wantInv1 {
+				t.Errorf("filesystem.Run(%v, %v): got inv1: %v, want: %v", config, wc, gotInv1, tc.wantInv1)
+			}
+			if gotInv2 != tc.wantInv2 {
+				t.Errorf("filesystem.Run(%v, %v): got inv2: %v, want: %v", config, wc, gotInv2, tc.wantInv2)
+			}
+		})
+	}
+}
+
+func setupMapFS(t *testing.T, mapFS mapFS) scalibrfs.FS {
+	t.Helper()
+
+	root := t.TempDir()
+	for path, content := range mapFS {
+		path = filepath.FromSlash(path)
+		if content == nil {
+			err := os.MkdirAll(filepath.Join(root, path), fs.ModePerm)
+			if err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", path, err)
+			}
+		} else {
+			dir := filepath.Dir(path)
+			err := os.MkdirAll(filepath.Join(root, dir), fs.ModePerm)
+			if err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", dir, err)
+			}
+			err = os.WriteFile(filepath.Join(root, path), content, fs.ModePerm)
+			if err != nil {
+				t.Fatalf("os.WriteFile(%q): %v", path, err)
+			}
+		}
+	}
+	return scalibrfs.DirFS(root)
 }
 
 // To not break the test every time we add a new metric, we inherit from the NoopCollector.
@@ -661,6 +814,9 @@ func (c *fakeCollector) AfterInodeVisited(path string) { c.AfterInodeVisitedCoun
 func invLess(i1, i2 *extractor.Inventory) bool {
 	if i1.Name != i2.Name {
 		return i1.Name < i2.Name
+	}
+	if i1.Extractor.Name() != i2.Extractor.Name() {
+		return i1.Extractor.Name() < i2.Extractor.Name()
 	}
 	return false
 }

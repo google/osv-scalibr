@@ -29,6 +29,8 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
+type postWalkDirFunc func(path string, d fs.DirEntry)
+
 // walkDirUnsorted recursively descends path, calling walkDirFn. From caller side this function
 // should be equivalent to fs.walkDir, except that the files are not ordered, but walked in the
 // order returned by the file system. This function does not store the full directory in memory,
@@ -37,7 +39,10 @@ import (
 // during the walk, which is then not seen by the walk. That problem existed also with fs.WalkDir,
 // which would return files which do not exist anymore. More details for unix:
 // https://man7.org/linux/man-pages/man2/getdents.2.html
-func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc) error {
+func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc, postFN postWalkDirFunc) error {
+	if postFN != nil {
+		defer postFN(name, d)
+	}
 	// This is the main call to walkDirFn for files and directories, without errors.
 	if err := walkDirFn(name, d, nil); err != nil || !d.IsDir() {
 		if errors.Is(err, fs.SkipDir) && d.IsDir() {
@@ -85,7 +90,7 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 			return nil
 		}
 		name1 := path.Join(name, d1.Name())
-		if err := walkDirUnsorted(fsys, name1, d1, walkDirFn); err != nil {
+		if err := walkDirUnsorted(fsys, name1, d1, walkDirFn, postFN); err != nil {
 			if errors.Is(err, fs.SkipDir) {
 				break
 			}
@@ -96,19 +101,20 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 }
 
 // WalkDirUnsorted walks the file tree rooted at root, calling fn for each file or
-// directory in the tree, including root.
+// directory in the tree, including root. It also calls postFN after the walk of the
+// file or dir has finished, including the traversal of all sub-directories.
 //
 // All errors that arise visiting files and directories are filtered by fn:
 // see the [fs.WalkDirFunc] documentation for details.
 //
 // WalkDirUnsorted does not follow symbolic links found in directories,
 // but if root itself is a symbolic link, its target will be walked.
-func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc) error {
+func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc, postFN postWalkDirFunc) error {
 	info, err := fs.Stat(fsys, root)
 	if err != nil {
 		err = fn(root, nil, err)
 	} else {
-		err = walkDirUnsorted(fsys, root, fs.FileInfoToDirEntry(info), fn)
+		err = walkDirUnsorted(fsys, root, fs.FileInfoToDirEntry(info), fn, postFN)
 	}
 	if errors.Is(err, fs.SkipDir) || errors.Is(err, fs.SkipAll) {
 		return nil

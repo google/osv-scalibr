@@ -86,6 +86,8 @@ type ScanConfig struct {
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
 	SkipDirGlob glob.Glob
+	// Optional: Skip files declared in .gitignore files in source repos.
+	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
 	// Optional: Whether to read symlinks.
@@ -207,6 +209,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
 		SkipDirGlob:           config.SkipDirGlob,
+		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
@@ -295,6 +298,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
 		SkipDirGlob:           config.SkipDirGlob,
+		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
