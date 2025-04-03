@@ -1,113 +1,118 @@
-# TODO(#274): this should match the configuration of osv-scanner for the most part
-#   currently it does not because using that config raises type errors,
-#   in addition to some of the rules having violations that need addressing,
-#   so the current focus is on getting as many linters as possible running
-
-output:
-  sort-results: true
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
     - cyclop
     - depguard
     - err113
-    - exhaustive       # TODO(#274): work on enabling this
+    - exhaustive
     - exhaustruct
     - forcetypeassert
     - funlen
-    - gci
     - gochecknoglobals
     - gocognit
     - goconst
-    - gocritic         # TODO(#274): work on enabling this
+    - gocritic
     - gocyclo
     - godot
     - godox
-    - gofumpt
-    - gosec            # TODO(#274): work on enabling this
+    - gosec
     - ireturn
     - lll
     - maintidx
-    - mnd              # Not every number is magic
+    - mnd
     - nestif
-    - nilnil           # We consider this a valid pattern to use sometimes
-    - nlreturn         # Not feasible until it's supported by the internal linter
+    - nilnil
+    - nlreturn
     - nonamedreturns
-    - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
-    - prealloc         # We don't want to preallocate all the time
-    - protogetter      # TODO(#274): work on enabling this
-    - recvcheck        # TODO(#274): work on enabling this
-    - stylecheck       # TODO(#274): work on enabling this
+    - paralleltest
+    - prealloc
+    - protogetter
+    - recvcheck
     - tagliatelle
-    - tenv             # Deprecated
     - testpackage
-    - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - tparallel
     - varnamelen
     - wrapcheck
     - wsl
-
-linters-settings:
-  forbidigo:
-    forbid:
-      # Parallel tests mixes up log lines of multiple tests in the internal test runner
-      - p: ^testing.T.Parallel$
-        pkg: ^testing$
-    analyze-types: true
-  gofmt:
-    simplify: false
-  usetesting:
-    # TODO(#274): work on enabling this
-    os-chdir: false
-    context-background: false
-  revive:
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^testing.T.Parallel$
+          pkg: ^testing$
+      analyze-types: true
+    usetesting:
+      os-chdir: false
+      context-background: false
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: context-keys-type
+          disabled: false
+        - name: dot-imports
+          disabled: false
+        - name: empty-block
+          disabled: false
+        - name: error-naming
+          disabled: false
+        - name: error-return
+          disabled: false
+        - name: error-strings
+          disabled: false
+        - name: errorf
+          disabled: false
+        - name: exported
+          disabled: false
+        - name: indent-error-flow
+          disabled: false
+        - name: package-comments
+          disabled: false
+        - name: range
+          disabled: false
+        - name: receiver-naming
+          disabled: false
+        - name: redefines-builtin-id
+          disabled: false
+        - name: superfluous-else
+          disabled: false
+        - name: time-naming
+          disabled: false
+        - name: unreachable-code
+          disabled: false
+        - name: use-any
+          disabled: false
+        - name: var-naming
+          disabled: false
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: blank-imports
-        disabled: false
-      - name: context-as-argument
-        disabled: false
-      - name: context-keys-type
-        disabled: false
-      - name: dot-imports
-        disabled: false
-      - name: empty-block
-        disabled: false
-      - name: error-naming
-        disabled: false
-      - name: error-return
-        disabled: false
-      - name: error-strings
-        disabled: false
-      - name: errorf
-        disabled: false
-      - name: exported
-        disabled: false
-      - name: indent-error-flow
-        disabled: false
-      - name: package-comments
-        disabled: false
-      - name: range
-        disabled: false
-      - name: receiver-naming
-        disabled: false
-      - name: redefines-builtin-id
-        disabled: false
-      - name: superfluous-else
-        disabled: false
-      - name: time-naming
-        disabled: false
-      - name: unreachable-code
-        disabled: false
-      - name: use-any
-        disabled: false
-      - name: var-naming
-        disabled: false
-
+      - linters:
+          - dupl
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  include:
-    - EXC0015 # revive package-comments
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - dupl
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
