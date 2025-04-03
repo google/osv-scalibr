@@ -290,26 +290,26 @@ func walkIndividualPaths(wc *walkContext) error {
 	for _, p := range wc.pathsToExtract {
 		p := filepath.ToSlash(p)
 		info, err := fs.Stat(wc.fs, p)
-		if info.IsDir() {
-			// Recursively scan the contents of the directory.
-			if wc.useGitignore {
-				// Parse parent dir .gitignore files up to the scan root.
-				gitignores, err := internal.ParseParentGitignores(wc.fs, p)
-				if err != nil {
-					return err
-				}
-				wc.gitignores = gitignores
-			}
-			err = internal.WalkDirUnsorted(wc.fs, p, wc.handleFile, wc.postHandleFile)
-			wc.gitignores = nil
-			if err != nil {
-				return err
-			}
-			continue
-		}
 		if err != nil {
 			err = wc.handleFile(p, nil, err)
 		} else {
+			if info.IsDir() {
+				// Recursively scan the contents of the directory.
+				if wc.useGitignore {
+					// Parse parent dir .gitignore files up to the scan root.
+					gitignores, err := internal.ParseParentGitignores(wc.fs, p)
+					if err != nil {
+						return err
+					}
+					wc.gitignores = gitignores
+				}
+				err = internal.WalkDirUnsorted(wc.fs, p, wc.handleFile, wc.postHandleFile)
+				wc.gitignores = nil
+				if err != nil {
+					return err
+				}
+				continue
+			}
 			err = wc.handleFile(p, fs.FileInfoToDirEntry(info), nil)
 		}
 		if err != nil {

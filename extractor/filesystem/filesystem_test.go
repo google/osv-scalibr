@@ -421,6 +421,17 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 3,
 		},
 		{
+			desc:           "Point to nonexistent file",
+			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
+			pathsToExtract: []string{"nonexistent"},
+			wantInv:        []*extractor.Inventory{},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 1,
+		},
+		{
 			desc:           "Skip sub-dirs: Inventory found in root dir",
 			ex:             []filesystem.Extractor{fakeEx1, fakeEx2},
 			pathsToExtract: []string{"dir1"},
