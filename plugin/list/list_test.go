@@ -115,12 +115,12 @@ func TestFromNames(t *testing.T) {
 		{
 			desc:      "Find_all_Plugins_of_a_type",
 			names:     []string{"python", "windows", "cis", "vex", "layerdetails"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "vex/no-executable/dpkg", "baseimage"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "vex/no-executable/dpkg", "baseimage"},
 		},
 		{
 			desc:      "Remove_duplicates",
 			names:     []string{"python", "python"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
 			desc:      "Nonexistent_plugin",
