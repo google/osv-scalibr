@@ -1,47 +1,53 @@
+# TODO(#274): this should match the configuration of osv-scanner for the most part
+#   currently it does not because using that config raises type errors,
+#   in addition to some of the rules having violations that need addressing,
+#   so the current focus is on getting as many linters as possible running
 version: "2"
 linters:
   default: all
   disable:
-    - cyclop
-    - depguard
-    - err113
-    - exhaustive
-    - exhaustruct
-    - forcetypeassert
-    - funlen
-    - gochecknoglobals
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - godot
-    - godox
-    - gosec
-    - ireturn
-    - lll
-    - maintidx
-    - mnd
-    - nestif
-    - nilnil
-    - nlreturn
-    - nonamedreturns
-    - paralleltest
-    - prealloc
-    - protogetter
-    - recvcheck
-    - tagliatelle
-    - testpackage
-    - tparallel
-    - varnamelen
-    - wrapcheck
-    - wsl
+    - cyclop           #
+    - depguard         #
+    - err113           #
+    - exhaustive       # TODO(#274): work on enabling this
+    - exhaustruct      #
+    - forcetypeassert  #
+    - funlen           #
+    - gochecknoglobals #
+    - gocognit         #
+    - goconst          #
+    - gocritic         # TODO(#274): work on enabling this
+    - gocyclo          #
+    - godot            #
+    - godox            #
+    - gosec            # TODO(#274): work on enabling this
+    - ireturn          #
+    - lll              #
+    - maintidx         #
+    - mnd              # Not every number is magic
+    - nestif           #
+    - nilnil           # We consider this a valid pattern to use sometimes
+    - nlreturn         # Not feasible until it's supported by the internal linter
+    - nonamedreturns   #
+    - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - prealloc         # We don't want to preallocate all the time
+    - protogetter      # TODO(#274): work on enabling this
+    - recvcheck        # TODO(#274): work on enabling this
+    - tagliatelle      #
+    - testpackage      #
+    - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - varnamelen       #
+    - wrapcheck        #
+    - wsl              #
   settings:
     forbidigo:
       forbid:
+        # Parallel tests mixes up log lines of multiple tests in the internal test runner
         - pattern: ^testing.T.Parallel$
           pkg: ^testing$
       analyze-types: true
     usetesting:
+      # TODO(#274): work on enabling this
       os-chdir: false
       context-background: false
     revive:
