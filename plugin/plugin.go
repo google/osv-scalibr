@@ -164,6 +164,9 @@ func (s *ScanStatus) String() string {
 		return "PARTIALLY_SUCCEEDED"
 	case ScanStatusFailed:
 		return "FAILED: " + s.FailureReason
+	case ScanStatusUnspecified:
+		fallthrough
+	default:
+		return "UNSPECIFIED"
 	}
-	return "UNSPECIFIED"
 }
