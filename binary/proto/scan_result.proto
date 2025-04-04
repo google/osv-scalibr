@@ -435,6 +435,7 @@ message OSVPackageMetadata {
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
   string version_comparator = 2;
+  string requirement = 3;
 }
 
 message PythonSetupMetadata {

@@ -45,8 +45,9 @@ var (
 	// We currently don't handle the following constraints.
 	// * Version wildcards (*)
 	// * Less than (<)
+	// * Not equal to (!=)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,`)
+	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,|!=`)
 	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
 	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
@@ -206,6 +207,8 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pat
 		l := readLine(s, &strings.Builder{})
 		// Per-requirement options may be present. We extract the --hash options, and discard the others.
 		l, hashOptions := splitPerRequirementOptions(l)
+		requirement := strings.TrimSpace(l)
+
 		l = removeWhiteSpaces(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
@@ -249,6 +252,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pat
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,
+				Requirement:            requirement,
 			},
 		})
 	}
@@ -292,10 +296,18 @@ func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
 	})
 }
 
+func nameFromRequirement(s string) string {
+	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
+		s, _, _ = strings.Cut(s, sep)
+	}
+	return s
+}
+
 func getLowestVersion(s string) (name, version, comparator string) {
 	// TODO(b/286213823): Implement metric
 	if reUnsupportedConstraints.FindString(s) != "" {
-		return "", "", ""
+		// Return the name so the package will be in the list for dependency resolution.
+		return nameFromRequirement(s), "", ""
 	}
 
 	t := []string{}
@@ -310,7 +322,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 	}
 
 	if len(t) == 0 {
-		// Length of t being 0 indidates that there is no seaprator.
+		// Length of t being 0 indicates that there is no separator.
 		return s, "", ""
 	}
 	if len(t) != 2 {

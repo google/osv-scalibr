@@ -21,4 +21,6 @@ type Metadata struct {
 	HashCheckingModeValues []string
 	// The comparator used to compare the package version, e.g. ==, ~=, >=
 	VersionComparator string
+	// The dependency requirement to used for dependency resolution
+	Requirement string
 }
