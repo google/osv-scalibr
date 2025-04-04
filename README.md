@@ -2,23 +2,29 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/google/osv-scalibr.svg)](https://pkg.go.dev/github.com/google/osv-scalibr)
 
-**Note:** The code in this repo is subject to change in the near future as we're merging SCALIBR with [OSV-scanner](https://github.com/google/osv-scanner) to provide a single tool that unifies the two scanners' extraction and vuln scanning capabilities.
-
-SCALIBR (Software Composition Analysis Library) is an extensible file system scanner used to extract software inventory data (e.g. installed language packages) and detect vulnerabilities.
-
-The scanner can either be used as a standalone binary to scan the local machine or as a library with a custom wrapper to perform scans on e.g. container images or remote hosts. It comes with built-in plugins for inventory extraction and vulnerability detection and it also allows users to run their custom plugins.
-
+OSV-SCALIBR (Software Composition Analysis Library) is an extensible library providing:
+- File system scanner used to extract software inventory data (e.g. installed language packages) and detect known vulnerabilities or generate SBOMs. 
 See the [list of currently supported software inventory types](docs/supported_inventory_types.md).
+- Container analysis functionality (e.g. layer-based extraction)
+- Guided Remediation (generating upgrade patches for transitive vulnerabilities)
+- And more! 
+
+This can be used as a library with a custom wrapper to perform scans on e.g. container images or remote hosts, or via the [OSV-Scanner CLI](https://github.com/google/osv-scanner). It comes with built-in plugins for inventory extraction and vulnerability detection and it also allows users to run their custom plugins.
+
 
 ## Prerequisites
 
-To build SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/install.
+To build OSV-SCALIBR, you'll need to have `go` installed. Follow https://go.dev/doc/install.
 
 ## How to use
 
-### As a standalone binary
+### Via the OSV-Scanner CLI
 
-**Note:** This binary is a thin wrapper around the OSV-SCALIBR library. In the near future the [`osv-scanner`](https://github.com/google/osv-scanner) CLI will make all capabilities of OSV-SCALIBR available with convenience features such as vuln matching through OSV.dev.
+If your use case is known vulnerability scanning and extraction in a CLI context, check out the [OSV-Scanner usage guide](https://google.github.io/osv-scanner/usage/).
+
+**Note:** Note all OSV-SCALIBR functionality is available via OSV-Scanner yet. Check out [this issue](https://github.com/google/osv-scanner/issues/1701) for the current status.
+
+### Via the OSV-SCALIBR wrapper binary
 
 1. `go install github.com/google/osv-scalibr/binary/scalibr@latest`
 1. `scalibr --result=result.textproto`
@@ -45,7 +51,7 @@ scalibr --result=result.textproto --remote-image=alpine@sha256:0a4eaa0eecf5f8c05
 
 ### SPDX generation
 
-SCALIBR supports generating the result of inventory extraction as an SPDX v2.3 file in json, yaml or tag-value format. Example usage:
+OSV-SCALIBR supports generating the result of inventory extraction as an SPDX v2.3 file in json, yaml or tag-value format. Example usage:
 
 ```
 scalibr -o spdx23-json=result.spdx.json
@@ -107,9 +113,9 @@ cfg := &scalibr.ScanConfig{
 ```
 
 ## Creating + running custom plugins
-Custom plugins can only be run when using SCALIBR as a library.
+Custom plugins can only be run when using OSV-SCALIBR as a library.
 
-1. Create an implementation of the SCALIBR [Extractor](/extractor/filesystem/extractor.go#L30) or [Detector](/detector/detector.go#L28) interface.
+1. Create an implementation of the OSV-SCALIBR [Extractor](/extractor/filesystem/extractor.go#L30) or [Detector](/detector/detector.go#L28) interface.
 2. Add the newly created struct to the scan config and run the scan, e.g.
 
 ```
@@ -126,8 +132,8 @@ results := scalibr.New().Scan(context.Background(), cfg)
 
 ### A note on cross-platform
 
-SCALIBR is compatible with Linux and has experimental support for Windows and
-Mac. When a new plugin is implemented for SCALIBR, we need to ensure that it
+OSV-SCALIBR is compatible with Linux and has experimental support for Windows and
+Mac. When a new plugin is implemented for OSV-SCALIBR, we need to ensure that it
 will not break other platforms. Our runners will generally catch compatibility
 issue, but to ensure everything is easy when implementing a plugin, here are a
 few recommendations to keep in mind:
@@ -148,7 +154,7 @@ few recommendations to keep in mind:
     [example](https://github.com/google/osv-scalibr/commit/7a87679f5c688e7bac4527d29c1823597a52bb40#diff-72efad005e0fbfe34c60e496dfb55ec15fc50f4b12be0934f08a3acaf7733616L79).
 
 ## Custom logging
-You can make the SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
+You can make the OSV-SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](/log/log.go#L22) interface to `log.SetLogger()`:
 
 ```
 import (
@@ -163,7 +169,7 @@ log.Info(results)
 ```
 
 ## Contributing
-Read how to [contribute to SCALIBR](CONTRIBUTING.md).
+Read how to [contribute to OSV-SCALIBR](CONTRIBUTING.md).
 
 To build and test your local changes, run `make` and `make test`. A local `scalibr` binary will be generated in the repo base.
 
@@ -178,4 +184,4 @@ you'll need install a few dependencies
 and then run `make protos` or `./build_protos.sh`.
 
 ## Disclaimers
-SCALIBR is not an official Google product.
+OSV-SCALIBR is not an official Google product.
