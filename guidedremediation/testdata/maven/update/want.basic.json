@@ -1,0 +1,19 @@
+{
+  "ecosystem": "Maven",
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "pkg:d",
+          "versionFrom": "1.0.0",
+          "versionTo": "3.0.0"
+        },
+        {
+          "name": "pkg:e",
+          "versionFrom": "1.0.0",
+          "versionTo": "2.0.0"
+        }
+      ]
+    }
+  ]
+}

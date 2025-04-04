@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
+	"github.com/google/osv-scalibr/guidedremediation/internal/suggest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -94,6 +95,46 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	return result.Result{}, fmt.Errorf("unsupported strategy: %q", stgy)
 }
 
+// Update updates the dependencies to the latest version based on the UpdateOptions provided.
+// Update overwrites the manifest on disk with the updated dependencies.
+func Update(opts options.UpdateOptions) (result.Result, error) {
+	var (
+		hasManifest bool = (opts.Manifest != "")
+		manifestRW  manifest.ReadWriter
+	)
+	if !hasManifest {
+		return result.Result{}, errors.New("no manifest provided")
+	}
+
+	var err error
+	manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+	if err != nil {
+		return result.Result{}, err
+	}
+
+	mf, err := parseManifest(opts.Manifest, manifestRW)
+	if err != nil {
+		return result.Result{}, err
+	}
+
+	suggester, err := suggest.GetSuggester(manifestRW.System())
+	if err != nil {
+		return result.Result{}, err
+	}
+	patch, err := suggester.Suggest(context.Background(), mf, opts)
+	if err != nil {
+		return result.Result{}, err
+	}
+
+	err = writeManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW)
+
+	return result.Result{
+		Path:      opts.Manifest,
+		Ecosystem: util.DepsDevToOSVEcosystem(manifestRW.System()),
+		Patches:   []result.Patch{patch},
+	}, err
+}
+
 func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
 	m, err := parseManifest(opts.Manifest, rw)
 	if err != nil {
@@ -118,7 +159,7 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 	}
 
 	res.Vulnerabilities = computeVulnsResult(resolved, allPatches)
-	res.Patches = choosePatches(allPatches, opts.MaxUpgrades)
+	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce)
 	err = writeManifestPatches(opts.Manifest, m, res.Patches, rw)
 
 	return res, err
@@ -160,7 +201,7 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 
 // choosePatches chooses up to maxUpgrades compatible patches to apply.
 // If maxUpgrades <= 0, chooses as many as possible.
-func choosePatches(allPatches []result.Patch, maxUpgrades int) []result.Patch {
+func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool) []result.Patch {
 	var patches []result.Patch
 	pkgChanges := make(map[result.Package]struct{}) // dependencies we've already applied a patch to
 	fixedVulns := make(map[string]struct{})         // vulns that have already been fixed by a patch
@@ -183,6 +224,10 @@ func choosePatches(allPatches []result.Patch, maxUpgrades int) []result.Patch {
 			_, ok := fixedVulns[v.ID]
 			return ok
 		}) {
+			continue
+		}
+
+		if noIntroduce && len(patch.Introduced) > 0 {
 			continue
 		}
 
@@ -232,6 +277,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
 
+//nolint:unparam // TODO(#454): implement pending
 func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
 	// TODO(#454): package-lock.json when in-place strategy is migrated.

@@ -507,9 +507,9 @@ func TestMavenWrite(t *testing.T) {
 		t.Fatalf("fail to open file: %v", err)
 	}
 
-	patches := MavenPatches{
-		DependencyPatches: MavenDependencyPatches{
-			"": map[MavenPatch]bool{
+	patches := Patches{
+		DependencyPatches: DependencyPatches{
+			"": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.example",
@@ -527,7 +527,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "2.0.1",
 				}: true,
 			},
-			"management": map[MavenPatch]bool{
+			"management": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.example",
@@ -553,7 +553,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "9.9.9",
 				}: false,
 			},
-			"profile@profile-one": map[MavenPatch]bool{
+			"profile@profile-one": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.profile",
@@ -563,7 +563,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "1.2.4",
 				}: true,
 			},
-			"profile@profile-two@management": map[MavenPatch]bool{
+			"profile@profile-two@management": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.import",
@@ -573,7 +573,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "7.0.0",
 				}: true,
 			},
-			"plugin@org.plugin:plugin": map[MavenPatch]bool{
+			"plugin@org.plugin:plugin": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.dep",
@@ -584,7 +584,7 @@ func TestMavenWrite(t *testing.T) {
 				}: true,
 			},
 		},
-		PropertyPatches: MavenPropertyPatches{
+		PropertyPatches: PropertyPatches{
 			"": {
 				"junit.version": "4.13.2",
 			},
@@ -611,9 +611,9 @@ func TestMavenWriteDM(t *testing.T) {
 		t.Fatalf("fail to open file: %v", err)
 	}
 
-	patches := MavenPatches{
-		DependencyPatches: MavenDependencyPatches{
-			"": map[MavenPatch]bool{
+	patches := Patches{
+		DependencyPatches: DependencyPatches{
+			"": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "junit",
@@ -623,7 +623,7 @@ func TestMavenWriteDM(t *testing.T) {
 					NewRequire: "4.13.2",
 				}: true,
 			},
-			"parent": map[MavenPatch]bool{
+			"parent": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.parent",
@@ -633,7 +633,7 @@ func TestMavenWriteDM(t *testing.T) {
 					NewRequire: "1.2.0",
 				}: true,
 			},
-			"management": map[MavenPatch]bool{
+			"management": map[Patch]bool{
 				{
 					DependencyKey: mavenutil.DependencyKey{
 						GroupID:    "org.management",
@@ -827,10 +827,10 @@ func Test_buildPatches(t *testing.T) {
 			},
 		},
 	}
-	want := map[string]MavenPatches{
+	want := map[string]Patches{
 		"": {
-			DependencyPatches: MavenDependencyPatches{
-				"": map[MavenPatch]bool{
+			DependencyPatches: DependencyPatches{
+				"": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.example",
@@ -856,7 +856,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "2.0.0",
 					}: true,
 				},
-				"management": map[MavenPatch]bool{
+				"management": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.example",
@@ -881,8 +881,16 @@ func Test_buildPatches(t *testing.T) {
 						},
 						NewRequire: "2.0.0",
 					}: false,
+					{
+						DependencyKey: mavenutil.DependencyKey{
+							GroupID:    "org.example",
+							ArtifactID: "suggest",
+							Type:       "jar",
+						},
+						NewRequire: "2.0.0",
+					}: false,
 				},
-				"profile@profile-one": map[MavenPatch]bool{
+				"profile@profile-one": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.profile",
@@ -892,7 +900,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "1.2.4",
 					}: true,
 				},
-				"profile@profile-two@management": map[MavenPatch]bool{
+				"profile@profile-two@management": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.import",
@@ -902,7 +910,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "6.7.0",
 					}: true,
 				},
-				"plugin@org.plugin:plugin": map[MavenPatch]bool{
+				"plugin@org.plugin:plugin": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.dep",
@@ -912,7 +920,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "2.3.4",
 					}: true,
 				},
-				"parent": map[MavenPatch]bool{
+				"parent": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.parent",
@@ -923,7 +931,7 @@ func Test_buildPatches(t *testing.T) {
 					}: true,
 				},
 			},
-			PropertyPatches: MavenPropertyPatches{
+			PropertyPatches: PropertyPatches{
 				"": {
 					"property.version": "1.0.1",
 				},
@@ -933,8 +941,8 @@ func Test_buildPatches(t *testing.T) {
 			},
 		},
 		parentPath: {
-			DependencyPatches: MavenDependencyPatches{
-				"": map[MavenPatch]bool{
+			DependencyPatches: DependencyPatches{
+				"": map[Patch]bool{
 					{
 						DependencyKey: mavenutil.DependencyKey{
 							GroupID:    "org.example",
@@ -945,7 +953,7 @@ func Test_buildPatches(t *testing.T) {
 					}: true,
 				},
 			},
-			PropertyPatches: MavenPropertyPatches{
+			PropertyPatches: PropertyPatches{
 				"": {
 					"aaa.version": "1.2.0",
 				},

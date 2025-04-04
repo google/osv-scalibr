@@ -16,7 +16,6 @@ package image
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -152,6 +151,7 @@ func TestFromTarball(t *testing.T) {
 		name                       string
 		tarPath                    string
 		config                     *Config
+		wantNonZeroSize            bool
 		wantChainLayerEntries      []chainLayerEntries
 		wantErrDuringImageCreation error
 		wantErrWhileReadingFiles   error
@@ -174,9 +174,10 @@ func TestFromTarball(t *testing.T) {
 			wantErrDuringImageCreation: ErrInvalidConfig,
 		},
 		{
-			name:    "image with one file",
-			tarPath: filepath.Join(testdataDir, "single-file.tar"),
-			config:  DefaultConfig(),
+			name:            "image with one file",
+			tarPath:         filepath.Join(testdataDir, "single-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -189,9 +190,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "image with two files",
-			tarPath: filepath.Join(testdataDir, "basic.tar"),
-			config:  DefaultConfig(),
+			name:            "image with two files",
+			tarPath:         filepath.Join(testdataDir, "basic.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -216,9 +218,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "second layer overwrites file with different content",
-			tarPath: filepath.Join(testdataDir, "overwrite-file.tar"),
-			config:  DefaultConfig(),
+			name:            "second layer overwrites file with different content",
+			tarPath:         filepath.Join(testdataDir, "overwrite-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -239,9 +242,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "second layer deletes file",
-			tarPath: filepath.Join(testdataDir, "delete-file.tar"),
-			config:  DefaultConfig(),
+			name:            "second layer deletes file",
+			tarPath:         filepath.Join(testdataDir, "delete-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					ignore:               true,
@@ -265,9 +269,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "multiple files and directories added across layers",
-			tarPath: filepath.Join(testdataDir, "multiple-files.tar"),
-			config:  DefaultConfig(),
+			name:            "multiple files and directories added across layers",
+			tarPath:         filepath.Join(testdataDir, "multiple-files.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -297,9 +302,10 @@ func TestFromTarball(t *testing.T) {
 			},
 		},
 		{
-			name:    "file is deleted and later added back",
-			tarPath: filepath.Join(testdataDir, "recreate-file.tar"),
-			config:  DefaultConfig(),
+			name:            "file is deleted and later added back",
+			tarPath:         filepath.Join(testdataDir, "recreate-file.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					ignore:               true,
@@ -352,9 +358,10 @@ func TestFromTarball(t *testing.T) {
 			wantErrWhileReadingFiles: fs.ErrNotExist,
 		},
 		{
-			name:    "image with relative, absolute, and chain symlinks",
-			tarPath: filepath.Join(testdataDir, "symlink-basic.tar"),
-			config:  DefaultConfig(),
+			name:            "image with relative, absolute, and chain symlinks",
+			tarPath:         filepath.Join(testdataDir, "symlink-basic.tar"),
+			config:          DefaultConfig(),
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -394,6 +401,7 @@ func TestFromTarball(t *testing.T) {
 					"/dir1/absolute-symlink.txt",
 				}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -419,6 +427,7 @@ func TestFromTarball(t *testing.T) {
 					"/dir1/chain-symlink.txt",
 				}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -546,6 +555,7 @@ func TestFromTarball(t *testing.T) {
 				// Only require foo.txt.
 				Requirer: require.NewFileRequirerPaths([]string{"/foo.txt"}),
 			},
+			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
@@ -586,6 +596,10 @@ func TestFromTarball(t *testing.T) {
 			//nolint:errcheck
 			defer gotImage.CleanUp()
 
+			if tc.wantNonZeroSize && gotImage.Size() == 0 {
+				t.Errorf("got image with size 0, but want non-zero size")
+			}
+
 			// Make sure the expected files are in the chain layers.
 			chainLayers, err := gotImage.ChainLayers()
 			if err != nil {
@@ -621,8 +635,7 @@ func TestFromTarball(t *testing.T) {
 //  4. Devise a pathtree that will return an error when inserting a path. Make sure that Load()
 //     returns an error.
 func TestFromV1Image(t *testing.T) {
-	ctx := context.Background()
-	fakeImage, err := constructImage(ctx, "1.0", "fake-package-name")
+	fakeImage, err := constructImage("1.0", "fake-package-name")
 	if err != nil {
 		t.Fatalf("Failed to construct image: %v", err)
 	}
@@ -632,18 +645,27 @@ func TestFromV1Image(t *testing.T) {
 		v1Image               v1.Image
 		wantChainLayerEntries []chainLayerEntries
 		wantErr               bool
-		wantPanic             bool
+		wantNonZeroSize       bool
 	}{
 		{
 			name: "image with no config file",
 			v1Image: &fakeV1Image{
+				layers: []v1.Layer{
+					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
+				},
 				errorOnConfigFile: true,
 			},
-			wantErr: true,
 		},
 		{
 			name: "image with error on layers",
 			v1Image: &fakeV1Image{
+				config: &v1.ConfigFile{
+					History: []v1.History{
+						{
+							CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+						},
+					},
+				},
 				errorOnLayers: true,
 			},
 			wantErr: true,
@@ -665,13 +687,14 @@ func TestFromV1Image(t *testing.T) {
 					},
 				},
 			},
+			wantNonZeroSize: true,
 		},
 		{
 			name: "image error during tar extraction",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
 					// Layer will fail on Uncompressed() call.
-					fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
+					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
 				},
 				config: &v1.ConfigFile{
 					History: []v1.History{
@@ -693,7 +716,11 @@ func TestFromV1Image(t *testing.T) {
 			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
 
 			if tc.wantErr != (gotErr != nil) {
-				t.Errorf("FromV1Image(%v) returned error: %v", tc.v1Image, gotErr)
+				t.Errorf("FromV1Image() returned error: %v", gotErr)
+			}
+
+			if tc.wantNonZeroSize && gotImage.Size() == 0 {
+				t.Errorf("got image with size 0, but want non-zero size")
 			}
 
 			if gotImage != nil {
@@ -744,7 +771,7 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 				t.Fatalf("ReadAll(%v) returned error: %v", filepathContentPair.filepath, err)
 			}
 
-			gotContent := string(contentBytes[:])
+			gotContent := string(contentBytes)
 			if diff := cmp.Diff(gotContent, filepathContentPair.content); diff != "" {
 				t.Errorf("Open(%v) returned incorrect content: got \"%s\", want \"%s\"", filepathContentPair.filepath, gotContent, filepathContentPair.content)
 			}
@@ -772,33 +799,24 @@ func scalibrFilesInTmp(t *testing.T) []string {
 }
 
 func TestInitializeChainLayers(t *testing.T) {
-	fakeV1Layer1 := fakev1layer.New("123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
-	fakeV1Layer2 := fakev1layer.New("456", "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
-	fakeV1Layer3 := fakev1layer.New("789", "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
+	fakeV1Layer1 := fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
+	fakeV1Layer2 := fakev1layer.New(t, "456", "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
+	fakeV1Layer3 := fakev1layer.New(t, "789", "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
 
 	tests := []struct {
 		name            string
 		v1Layers        []v1.Layer
-		configFile      *v1.ConfigFile
+		history         []v1.History
 		maxSymlinkDepth int
 		want            []*chainLayer
 		wantErr         bool
 	}{
 		{
-			name: "nil config file",
+			name: "no history entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 			},
-			wantErr: true,
-		},
-		{
-			name: "no config file history entries",
-			v1Layers: []v1.Layer{
-				fakeV1Layer1,
-			},
-			configFile: &v1.ConfigFile{
-				History: []v1.History{},
-			},
+			history: []v1.History{},
 			want: []*chainLayer{
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
@@ -815,11 +833,9 @@ func TestInitializeChainLayers(t *testing.T) {
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 			},
-			configFile: &v1.ConfigFile{
-				History: []v1.History{
-					{
-						CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
-					},
+			history: []v1.History{
+				{
+					CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
 				},
 			},
 			want: []*chainLayer{
@@ -841,17 +857,15 @@ func TestInitializeChainLayers(t *testing.T) {
 				fakeV1Layer2,
 				fakeV1Layer3,
 			},
-			configFile: &v1.ConfigFile{
-				History: []v1.History{
-					{
-						CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
-					},
-					{
-						CreatedBy: "COPY ./bar.txt /bar.txt # buildkit",
-					},
-					{
-						CreatedBy: "COPY ./baz.txt /baz.txt # buildkit",
-					},
+			history: []v1.History{
+				{
+					CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+				},
+				{
+					CreatedBy: "COPY ./bar.txt /bar.txt # buildkit",
+				},
+				{
+					CreatedBy: "COPY ./baz.txt /baz.txt # buildkit",
 				},
 			},
 			want: []*chainLayer{
@@ -891,32 +905,30 @@ func TestInitializeChainLayers(t *testing.T) {
 				fakeV1Layer2,
 				fakeV1Layer3,
 			},
-			configFile: &v1.ConfigFile{
-				History: []v1.History{
-					{
-						CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
-						EmptyLayer: false,
-					},
-					{
-						CreatedBy:  "ENTRYPOINT [\"/bin/sh\"]",
-						EmptyLayer: true,
-					},
-					{
-						CreatedBy:  "COPY ./bar.txt /bar.txt # buildkit",
-						EmptyLayer: false,
-					},
-					{
-						CreatedBy:  "RANDOM DOCKER COMMAND",
-						EmptyLayer: true,
-					},
-					{
-						CreatedBy:  "COPY ./baz.txt /baz.txt # buildkit",
-						EmptyLayer: false,
-					},
-					{
-						CreatedBy:  "RUN [\"/bin/sh\"]",
-						EmptyLayer: true,
-					},
+			history: []v1.History{
+				{
+					CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
+					EmptyLayer: false,
+				},
+				{
+					CreatedBy:  "ENTRYPOINT [\"/bin/sh\"]",
+					EmptyLayer: true,
+				},
+				{
+					CreatedBy:  "COPY ./bar.txt /bar.txt # buildkit",
+					EmptyLayer: false,
+				},
+				{
+					CreatedBy:  "RANDOM DOCKER COMMAND",
+					EmptyLayer: true,
+				},
+				{
+					CreatedBy:  "COPY ./baz.txt /baz.txt # buildkit",
+					EmptyLayer: false,
+				},
+				{
+					CreatedBy:  "RUN [\"/bin/sh\"]",
+					EmptyLayer: true,
 				},
 			},
 			want: []*chainLayer{
@@ -974,18 +986,19 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 		},
 		{
+			// In this case, the history is invalid because there are more v1 layers than non-empty
+			// history entries. No layer metadata should be populated in the chain layers other than the
+			// layer index.
 			name: "more layers than history entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 				fakeV1Layer2,
 				fakeV1Layer3,
 			},
-			configFile: &v1.ConfigFile{
-				History: []v1.History{
-					{
-						CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
-						EmptyLayer: false,
-					},
+			history: []v1.History{
+				{
+					CreatedBy:  "COPY ./foo.txt /foo.txt # buildkit",
+					EmptyLayer: false,
 				},
 			},
 			want: []*chainLayer{
@@ -993,7 +1006,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
 					latestLayer: &Layer{
-						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						buildCommand: "",
 						diffID:       "sha256:123",
 						isEmpty:      false,
 					},
@@ -1020,20 +1033,20 @@ func TestInitializeChainLayers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.configFile, tc.maxSymlinkDepth)
+			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.history, tc.maxSymlinkDepth)
 			if tc.wantErr {
 				if err != nil {
 					return
 				}
-				t.Fatalf("initializeChainLayers(%v, %v, %v) returned nil error, want error", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth)
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned nil error, want error", tc.v1Layers, tc.history, tc.maxSymlinkDepth)
 			}
 
 			if err != nil {
-				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected error: %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, err)
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected error: %v", tc.v1Layers, tc.history, tc.maxSymlinkDepth, err)
 			}
 
 			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree"), cmpopts.IgnoreFields(Layer{}, "fileNodeTree")); diff != "" {
-				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected diff (-want +got): %v", tc.v1Layers, tc.configFile, tc.maxSymlinkDepth, diff)
+				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected diff (-want +got): %v", tc.v1Layers, tc.history, tc.maxSymlinkDepth, diff)
 			}
 		})
 	}
@@ -1047,7 +1060,7 @@ func TestInitializeChainLayers(t *testing.T) {
 //
 // Put them in a single tarball to make a single layer and put that layer in an empty image to
 // make the minimal image that will work.
-func constructImage(ctx context.Context, version, fakePackageName string) (*v1.Image, error) {
+func constructImage(version, fakePackageName string) (*v1.Image, error) {
 	// The file containing the fake package version.
 	statusContents := fmt.Sprintf("Package: %s\nVersion: %s\nStatus: install ok installed", fakePackageName, version)
 

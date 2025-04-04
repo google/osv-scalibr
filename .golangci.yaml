@@ -6,91 +6,46 @@
 output:
   sort-results: true
 linters:
-  # TODO(#274): currently linting raises a type error, so until that's resolved we've got to be very selective in what we enable
-  enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - canonicalheader
-    - containedctx
-    - contextcheck
-    - copyloopvar
-    - decorder
-#    - depguard
-    - dogsled
-    - dupl
-    - dupword
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-#    - errorlint
-#    - exhaustive
-    - fatcontext
-    - forbidigo
-    - ginkgolinter
-    - gocheckcompilerdirectives
-    - gochecknoinits
-    - gochecksumtype
-#    - gocritic
-#    - gofmt
-    - goheader
-    - goimports
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-#    - gosec
-#    - gosimple
-    - gosmopolitan
-#    - govet
-    - grouper
-    - importas
-    - inamedparam
-    - ineffassign
-    - interfacebloat
-    - intrange
-    - loggercheck
-    - makezero
-    - mirror
-    - misspell
-    - musttag
-    - nakedret
-    - nilerr
-#    - nilnil
-    - noctx
-    - nolintlint
-    - nosprintfhostport
-    - perfsprint
-#    - prealloc
-    - predeclared
-    - promlinter
-#    - protogetter
-    - reassign
-    - revive
-    - rowserrcheck
-    - sloglint
-    - spancheck
-    - sqlclosecheck
-    - staticcheck
-#    - stylecheck
-    - tagalign
-    - tenv
-    - testableexamples
-    - testifylint
-    - thelper
-    - unconvert
-#    - unparam
-    - unused
-    - usestdlibvars
-    - wastedassign
-    - whitespace
-    - zerologlint
-  disable-all: true
-#  disable:
-#    - nlreturn     # Not feasible until it's supported by the internal linter
-#    - paralleltest # Parallel tests mixes up log lines of multiple tests in the internal test runner
-#    - tparallel    # Parallel tests mixes up log lines of multiple tests in the internal test runner
+  enable-all: true
+  disable:
+    - cyclop
+    - depguard
+    - err113
+    - exhaustive       # TODO(#274): work on enabling this
+    - exhaustruct
+    - exptostd         # TODO(#274): work on enabling this
+    - forcetypeassert
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gocognit
+    - goconst
+    - gocritic         # TODO(#274): work on enabling this
+    - gocyclo
+    - godot
+    - godox
+    - gofumpt
+    - gosec            # TODO(#274): work on enabling this
+    - ireturn
+    - lll
+    - maintidx
+    - mnd              # Not every number is magic
+    - nestif
+    - nilnil           # We consider this a valid pattern to use sometimes
+    - nlreturn         # Not feasible until it's supported by the internal linter
+    - nonamedreturns
+    - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - prealloc         # We don't want to preallocate all the time
+    - protogetter      # TODO(#274): work on enabling this
+    - recvcheck        # TODO(#274): work on enabling this
+    - stylecheck       # TODO(#274): work on enabling this
+    - tagliatelle
+    - tenv             # Deprecated
+    - testpackage
+    - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - varnamelen
+    - wrapcheck
+    - wsl
 
 linters-settings:
   forbidigo:
@@ -99,6 +54,12 @@ linters-settings:
       - p: ^testing.T.Parallel$
         pkg: ^testing$
     analyze-types: true
+  gofmt:
+    simplify: false
+  usetesting:
+    # TODO(#274): work on enabling this
+    os-chdir: false
+    context-background: false
   revive:
     rules:
       - name: blank-imports
@@ -119,6 +80,8 @@ linters-settings:
         disabled: false
       - name: errorf
         disabled: false
+      - name: exported
+        disabled: false
       - name: indent-error-flow
         disabled: false
       - name: package-comments
@@ -134,6 +97,8 @@ linters-settings:
       - name: time-naming
         disabled: false
       - name: unreachable-code
+        disabled: false
+      - name: use-any
         disabled: false
       - name: var-naming
         disabled: false

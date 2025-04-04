@@ -190,6 +190,15 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		res = append(res, pkg)
 	}
 
+	// Also extract info about the main module if it's available.
+	if binfo.Main.Path != "" {
+		res = append(res, &extractor.Inventory{
+			Name:      binfo.Main.Path,
+			Version:   binfo.Main.Version,
+			Locations: []string{filename},
+		})
+	}
+
 	return res
 }
 

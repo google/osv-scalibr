@@ -75,6 +75,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
 			},
+			WantInventory: []*extractor.Inventory{},
 		},
 		{
 			Name: "one package",

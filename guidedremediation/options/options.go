@@ -28,6 +28,7 @@ type FixVulnsOptions struct {
 	Lockfile          string                       // Path to lockfile on disk.
 	Strategy          strategy.Strategy            // Remediation strategy to use.
 	MaxUpgrades       int                          // Maximum number of patches to apply. If <= 0 applies as many as possible.
+	NoIntroduce       bool                         // If true, do not apply patches that introduce new vulnerabilities.
 	MatcherClient     matcher.VulnerabilityMatcher // Matcher for vulnerability information.
 	ResolveClient     resolve.Client               // Client for dependency information.
 	DefaultRepository string                       // Default registry to fetch dependency information from.
@@ -48,7 +49,7 @@ type RemediationOptions struct {
 	ResolutionOptions
 }
 
-// DefaultOptions creates a default initialized remediation configuration.
+// DefaultRemediationOptions creates a default initialized remediation configuration.
 func DefaultRemediationOptions() RemediationOptions {
 	return RemediationOptions{
 		DevDeps:       true,
@@ -60,4 +61,14 @@ func DefaultRemediationOptions() RemediationOptions {
 // ResolutionOptions are the configuration options for dependency resolution.
 type ResolutionOptions struct {
 	MavenManagement bool // Whether to include unresolved dependencyManagement dependencies in resolved graph.
+}
+
+// UpdateOptions are the options for performing guidedremediation.Update().
+type UpdateOptions struct {
+	Manifest          string         // Path to manifest file on disk.
+	ResolveClient     resolve.Client // Client for dependency information.
+	DefaultRepository string         // Default registry to fetch dependency information from.
+
+	IgnoreDev     bool           // Whether to ignore updates on dev dependencies
+	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
 }

@@ -1,0 +1,14 @@
+{
+  "ecosystem": "Maven",
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "pkg:e",
+          "versionFrom": "1.0.0",
+          "versionTo": "2.0.0"
+        }
+      ]
+    }
+  ]
+}

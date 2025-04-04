@@ -154,7 +154,7 @@ func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Fin
 		extra := ""
 		affected, err := json.Marshal(osv.Affected)
 		if err == nil {
-			extra = fmt.Sprintf("Vulnerable dependencies for binary %s: %s", binaryPath, string(affected[:]))
+			extra = fmt.Sprintf("Vulnerable dependencies for binary %s: %s", binaryPath, string(affected))
 		} else {
 			log.Warnf("error serializing affected software: %w", err)
 		}

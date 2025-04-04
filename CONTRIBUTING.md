@@ -22,6 +22,11 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+## Style guide
+
+See our [style-guide](docs/style_guide.md) for Golang and SCALIBR specific best
+practices to follow.
+
 ## Community Guidelines
 
 This project follows [Google's Open Source Community
