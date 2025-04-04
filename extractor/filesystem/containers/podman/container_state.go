@@ -15,6 +15,7 @@ package podman
 
 import "time"
 
+// ContainerState contains info about podman's containers state
 type ContainerState struct {
 	State            ContainerStatus `json:"state"`
 	ConfigPath       string          `json:"configPath,omitempty"`

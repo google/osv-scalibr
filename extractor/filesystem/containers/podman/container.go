@@ -13,11 +13,7 @@
 // limitations under the License.
 package podman
 
-// see
-// - https://github.com/containers/podman/blob/e65687291a1b59f98d6e41477f15171a384f93a0/libpod/container.go
-// - https://github.com/containers/podman/blob/e65687291a1b59f98d6e41477f15171a384f93a0/libpod/container_config.go
-// - https://github.com/containers/podman/blob/e65687291a1b59f98d6e41477f15171a384f93a0/libpod/define/containerstate.go
-
+// Container struct contains the podman container metadata
 type Container struct {
 	config *ContainerConfig
 	state  *ContainerState

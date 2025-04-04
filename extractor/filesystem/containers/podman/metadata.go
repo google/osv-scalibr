@@ -15,6 +15,7 @@ package podman
 
 import "time"
 
+// Metadata contains podman inventory metadata
 type Metadata struct {
 	ExposedPorts map[uint16][]string
 	PID          int

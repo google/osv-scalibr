@@ -26,7 +26,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-// subset of https://github.com/containers/podman/blob/main/libpod/state.go
+// State interface must be implemented by each repository returning podman containers info
 type State interface {
 	Close() error
 	AllContainers() ([]*Container, error)
@@ -112,7 +112,6 @@ func newSqliteState(path string) (State, error) {
 }
 
 // AllContainers return all the pods
-// see: https://github.com/containers/podman/blob/e65687291a1b59f98d6e41477f15171a384f93a0/libpod/sqlite_state.go#L820C23-L820C36
 func (s *sqliteState) AllContainers() ([]*Container, error) {
 	rows, err := s.conn.Query("SELECT ContainerConfig.JSON, ContainerState.JSON AS StateJSON FROM ContainerConfig INNER JOIN ContainerState ON ContainerConfig.ID = ContainerState.ID;")
 	if err != nil {

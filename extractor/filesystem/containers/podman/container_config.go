@@ -33,6 +33,7 @@ type ContainerConfig struct {
 	ContainerNetworkConfig
 }
 
+// ContainerRootFSConfig contains the info about podman's Rootfs
 type ContainerRootFSConfig struct {
 	RootfsImageID    string   `json:"rootfsImageID,omitempty"`
 	RootfsImageName  string   `json:"rootfsImageName,omitempty"`
@@ -43,6 +44,7 @@ type ContainerRootFSConfig struct {
 	CreateWorkingDir bool     `json:"createWorkingDir,omitempty"`
 }
 
+// ContainerNetworkConfig contains info about podman's ContainerNetworkConfig
 type ContainerNetworkConfig struct {
 	CreateNetNS      bool                `json:"createNetNS"`
 	StaticIP         net.IP              `json:"staticIP,omitempty"`
