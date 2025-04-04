@@ -345,15 +345,15 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	}
 	if d.Type().IsDir() {
 		wc.dirsVisited++
-		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
-			return fs.SkipDir
-		}
 		if wc.useGitignore {
 			gitignores, err := internal.ParseDirForGitignore(wc.fs, path)
 			if err != nil {
 				return err
 			}
 			wc.gitignores = append(wc.gitignores, gitignores)
+		}
+		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
+			return fs.SkipDir
 		}
 		return nil
 	}
