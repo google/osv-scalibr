@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -87,7 +88,7 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	const NixVicuna = `ANSI_COLOR="1;34"
-	BUG_REPORT_URL="https://github.com/NixOS/nixpkgs/issues"
+	BUG_REPORT_URL="https://github.com/NixOS/nixpackages/issues"
 	BUILD_ID="24.11.710315.b681065d0919"
 	CPE_NAME="cpe:/o:nixos:nixos:24.11"
 	DEFAULT_HOSTNAME=nixos
@@ -114,7 +115,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantError        error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -122,7 +123,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid",
 			path:      "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager-0.28/foo",
 			osrelease: NixVicuna,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "perl5.38.2-FCGI-ProcManager",
 					Version: "0.28",
@@ -144,7 +145,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid",
 			path:      "nix/store/q5dhwzcn82by5ndc7g0q83wsnn13qkqw-webdav-server-rs-unstable-2021-08-16/foo",
 			osrelease: NixVicuna,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "webdav-server-rs",
 					Version: "unstable-2021-08-16",
@@ -163,34 +164,34 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid package hash",
-			path:          "nix/store/foo-webdav-server-rs-unstable-2021-08-16/foo",
-			osrelease:     NixVicuna,
-			wantInventory: nil,
+			name:         "invalid package hash",
+			path:         "nix/store/foo-webdav-server-rs-unstable-2021-08-16/foo",
+			osrelease:    NixVicuna,
+			wantPackages: nil,
 		},
 		{
-			name:          "no package name",
-			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-0.28/foo",
-			osrelease:     NixVicuna,
-			wantInventory: nil,
+			name:         "no package name",
+			path:         "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-0.28/foo",
+			osrelease:    NixVicuna,
+			wantPackages: nil,
 		},
 		{
-			name:          "no package version",
-			path:          "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager/foo",
-			osrelease:     NixVicuna,
-			wantInventory: nil,
+			name:         "no package version",
+			path:         "nix/store/xakcaxsqdzjszym0vji2r8n0wdy2inqc-perl5.38.2-FCGI-ProcManager/foo",
+			osrelease:    NixVicuna,
+			wantPackages: nil,
 		},
 		{
-			name:          "invalid",
-			path:          "nix/store/xzlmnp0lblcbscy36nlgif3js4mc68gm-base-system/etc/group",
-			osrelease:     NixVicuna,
-			wantInventory: nil,
+			name:         "invalid",
+			path:         "nix/store/xzlmnp0lblcbscy36nlgif3js4mc68gm-base-system/etc/group",
+			osrelease:    NixVicuna,
+			wantPackages: nil,
 		},
 		{
-			name:          "invalid",
-			path:          "nix/store/a-b-c-d-e/foo",
-			osrelease:     NixVicuna,
-			wantInventory: nil,
+			name:         "invalid",
+			path:         "nix/store/a-b-c-d-e/foo",
+			osrelease:    NixVicuna,
+			wantPackages: nil,
 		},
 	}
 
@@ -215,8 +216,9 @@ func TestExtract(t *testing.T) {
 				t.Errorf("err = %v", err)
 			}
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -295,15 +297,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

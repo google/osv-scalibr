@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/mockregistry"
 )
@@ -39,7 +40,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		reg     *mockregistry.MockRegistry
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr bool
 	}{
 		{
@@ -102,7 +103,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{Name: "Some software install", Version: "1.0.0"},
 				{Name: "Some software install wow64", Version: "1.4.0"},
 			},
@@ -174,7 +175,7 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{Name: "Some software install for user00", Version: "1.00.1"},
 				{Name: "Some software install for user01", Version: "1.01.1"},
 			},
@@ -182,7 +183,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:    "empty_registry_returns_error",
 			reg:     &mockregistry.MockRegistry{},
-			want:    []*extractor.Inventory{},
+			want:    []*extractor.Package{},
 			wantErr: true,
 		},
 	}
@@ -200,7 +201,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(inventory.Inventory{Packages: tc.want}, got); diff != "" {
 				t.Errorf("Extract() returned an unexpected diff (-want +got): %v", diff)
 			}
 		})
@@ -210,17 +211,17 @@ func TestExtract(t *testing.T) {
 func TestToPURL(t *testing.T) {
 	tests := []struct {
 		name string
-		inv  *extractor.Inventory
+		pkg  *extractor.Package
 		want *purl.PackageURL
 	}{
 		{
 			name: "googet_package",
-			inv:  &extractor.Inventory{Name: "GooGet - some package", Version: "1.0.0"},
+			pkg:  &extractor.Package{Name: "GooGet - some package", Version: "1.0.0"},
 			want: &purl.PackageURL{Type: purl.TypeGooget, Name: "GooGet - some package", Version: "1.0.0"},
 		},
 		{
 			name: "normal_windows_package",
-			inv:  &extractor.Inventory{Name: "Some software", Version: "1.0.0"},
+			pkg:  &extractor.Package{Name: "Some software", Version: "1.0.0"},
 			want: &purl.PackageURL{Type: purl.TypeGeneric, Namespace: "microsoft", Name: "Some software", Version: "1.0.0"},
 		},
 	}
@@ -228,9 +229,9 @@ func TestToPURL(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			e := Extractor{}
-			got := e.ToPURL(tc.inv)
+			got := e.ToPURL(tc.pkg)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) returned an unexpected diff (-want +got): %v", tc.inv, diff)
+				t.Errorf("ToPURL(%v) returned an unexpected diff (-want +got): %v", tc.pkg, diff)
 			}
 		})
 	}

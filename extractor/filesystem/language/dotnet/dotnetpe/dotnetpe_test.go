@@ -148,7 +148,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/HelloWorldApp.dll",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{Name: "Flurl.Http.dll", Version: "4.0.2.0"},
 				{Name: "HelloWorldApp.dll", Version: "1.0.0.0"},
 				{Name: "Newtonsoft.Json.dll", Version: "13.0.0.0"},
@@ -163,7 +163,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/HelloWorldApp.exe",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{Name: "HelloWorldApp.dll", Version: "1.0.0.0"},
 			},
 		},
@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got.Packages, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

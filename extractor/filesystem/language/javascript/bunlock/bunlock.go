@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/tidwall/jsonc"
@@ -75,12 +76,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // structurePackageDetails returns the name, version, and commit of a package
 // specified as a tuple in a bun.lock
-func structurePackageDetails(pkg []any) (string, string, string, error) {
-	if len(pkg) == 0 {
+func structurePackageDetails(pkgs []any) (string, string, string, error) {
+	if len(pkgs) == 0 {
 		return "", "", "", errors.New("empty package tuple")
 	}
 
-	str, ok := pkg[0].(string)
+	str, ok := pkgs[0].(string)
 
 	if !ok {
 		return "", "", "", errors.New("first element of package tuple is not a string")
@@ -110,20 +111,20 @@ func structurePackageDetails(pkg []any) (string, string, string, error) {
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *bunLockfile
 
 	b, err := io.ReadAll(input.Reader)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
 	if err := json.Unmarshal(jsonc.ToJSON(b), &parsedLockfile); err != nil {
-		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	inventories := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
+	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	var errs []error
 
@@ -136,7 +137,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
-		inventories = append(inventories, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:    name,
 			Version: version,
 			SourceCode: &extractor.SourceCodeIdentifier{
@@ -149,17 +150,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 
-	return inventories, errors.Join(errs...)
+	return inventory.Inventory{Packages: packages}, errors.Join(errs...)
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
+		Name:    strings.ToLower(p.Name),
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "npm" }
+func (e Extractor) Ecosystem(_ *extractor.Package) string { return "npm" }

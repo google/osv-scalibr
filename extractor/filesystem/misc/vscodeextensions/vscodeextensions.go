@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -80,18 +81,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts vscode extensions
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var exts []*extension
 	if err := json.NewDecoder(input.Reader).Decode(&exts); err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	ivs := make([]*extractor.Inventory, 0, len(exts))
+	pkgs := make([]*extractor.Package, 0, len(exts))
 	for _, ext := range exts {
 		if err := ext.validate(); err != nil {
-			return nil, fmt.Errorf("bad format in %s: %w", input.Path, err)
+			return inventory.Inventory{}, fmt.Errorf("bad format in %s: %w", input.Path, err)
 		}
-		ivs = append(ivs, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      ext.Identifier.ID,
 			Version:   ext.Version,
 			Locations: []string{ext.Location.Path, input.Path},
@@ -99,17 +100,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 
-	return ivs, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGeneric,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem is not defined.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

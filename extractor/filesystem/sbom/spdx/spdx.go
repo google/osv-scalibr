@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -73,20 +74,21 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract parses the SPDX SBOM and returns a list purls from the SBOM.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parseSbom, isSupported = findExtractor(input.Path)
 
 	if !isSupported {
-		return nil, fmt.Errorf("sbom/spdx extractor: Invalid file format %s, only JSON, YAML, RDF, and TagValue are supported", input.Path)
+		return inventory.Inventory{}, fmt.Errorf("sbom/spdx extractor: Invalid file format %s, only JSON, YAML, RDF, and TagValue are supported", input.Path)
 	}
 
 	spdxDoc, err := parseSbom(input.Reader)
 
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
-	return e.convertSpdxDocToInventory(spdxDoc, input.Path)
+	pkgs := e.convertSpdxDocToPackage(spdxDoc, input.Path)
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 func findExtractor(path string) (extractFunc, bool) {
@@ -102,28 +104,28 @@ func findExtractor(path string) (extractFunc, bool) {
 	return nil, false
 }
 
-func (e Extractor) convertSpdxDocToInventory(spdxDoc *spdx.Document, path string) ([]*extractor.Inventory, error) {
-	results := []*extractor.Inventory{}
+func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) []*extractor.Package {
+	results := []*extractor.Package{}
 
 	for _, spdxPkg := range spdxDoc.Packages {
-		inv := &extractor.Inventory{
+		pkg := &extractor.Package{
 			Locations: []string{path},
 			Metadata:  &Metadata{},
 		}
-		m := inv.Metadata.(*Metadata)
+		m := pkg.Metadata.(*Metadata)
 		for _, extRef := range spdxPkg.PackageExternalReferences {
 			// TODO(b/280991231): Support all RefTypes
 			if extRef.RefType == "cpe23Type" || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
 				m.CPEs = append(m.CPEs, extRef.Locator)
-				if len(inv.Name) == 0 {
-					inv.Name = extRef.Locator
+				if len(pkg.Name) == 0 {
+					pkg.Name = extRef.Locator
 				}
 			} else if extRef.RefType == "purl" || extRef.RefType == "http://spdx.org/rdf/references/purl" {
 				if m.PURL != nil {
 					log.Warnf("Multiple PURLs found for same package: %q and %q", m.PURL, extRef.Locator)
 				}
 				packageURL, err := purl.FromString(extRef.Locator)
-				inv.Name = packageURL.Name
+				pkg.Name = packageURL.Name
 				if err != nil {
 					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
@@ -131,29 +133,29 @@ func (e Extractor) convertSpdxDocToInventory(spdxDoc *spdx.Document, path string
 				}
 			}
 		}
-		inv.Metadata = m
+		pkg.Metadata = m
 		if m.PURL == nil && len(m.CPEs) == 0 {
 			log.Warnf("Neither CPE nor PURL found for package: %+v", spdxPkg)
 			continue
 		}
-		results = append(results, inv)
+		results = append(results, pkg)
 	}
 
-	return results, nil
+	return results
 }
 
 func hasFileExtension(path string, extension string) bool {
 	return strings.HasSuffix(strings.ToLower(path), extension)
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return i.Metadata.(*Metadata).PURL
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return p.Metadata.(*Metadata).PURL
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	purl := i.Metadata.(*Metadata).PURL
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	purl := p.Metadata.(*Metadata).PURL
 	if purl == nil {
 		return ""
 	}

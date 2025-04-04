@@ -39,8 +39,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -95,12 +95,12 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
-func findBentomlVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory, string) {
+func findBentomlVersions(px *packageindex.PackageIndex) (string, *extractor.Package, string) {
 	for _, r := range bentomlPackages {
-		inventory := ix.GetSpecific(r.name, r.packageType)
-		if len(inventory) > 0 {
-			i := inventory[0]
-			return i.Version, i, r.fixedVersion
+		pkg := px.GetSpecific(r.name, r.packageType)
+		if len(pkg) > 0 {
+			p := pkg[0]
+			return p.Version, p, r.fixedVersion
 		}
 	}
 	return "", nil, ""
@@ -169,8 +169,8 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 }
 
 // Scan checks for the presence of the BentoML CVE-2024-2912 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	bentomlVersion, inventory, fixedVersion := findBentomlVersions(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+	bentomlVersion, pkg, fixedVersion := findBentomlVersions(px)
 	if bentomlVersion == "" {
 		log.Debugf("No BentoML version found")
 		return nil, nil
@@ -238,8 +238,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
 		Target: &detector.TargetDetails{
-			Inventory: inventory,
+			Package: pkg,
 		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
+		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 	}}, nil
 }

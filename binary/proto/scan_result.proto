@@ -27,17 +27,25 @@ option java_multiple_files = true;
 // modified make sure to regenerate the go_proto file by running
 // `make protos`
 
-// The software inventory and security findings that a scan run found.
+// The results of a scan incl. scan status and artifacts found.
 message ScanResult {
   string version = 1;
   google.protobuf.Timestamp start_time = 2;
   google.protobuf.Timestamp end_time = 3;
   // Status of the overall scan.
   ScanStatus status = 4;
-  // Status and versions of the inventory+vuln plugins that ran.
+  // Status and versions of the plugins that ran.
   repeated PluginStatus plugin_status = 5;
-  repeated Inventory inventories = 6;
-  repeated Finding findings = 7;
+  // TODO(b/400910349): Remove once integrators stop using these fields.
+  repeated Package inventories_deprecated = 6 [deprecated = true];
+  repeated Finding findings_deprecated = 7 [deprecated = true];
+  Inventory inventory = 8;
+}
+
+// The artifacts (e.g. software inventory, security findings) that a scan found.
+message Inventory {
+  repeated Package packages = 1;
+  repeated Finding findings = 2;
 }
 
 message ScanStatus {
@@ -59,7 +67,7 @@ message PluginStatus {
 
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
-message Inventory {
+message Package {
   reserved 3, 4;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
@@ -226,8 +234,8 @@ message CVSS {
 
 message TargetDetails {
   // The software affected by the finding.
-  Inventory inventory = 1;
-  // Location of vulnerable files not related to the inventory,
+  Package package = 1;
+  // Location of vulnerable files not related to the package,
   // e.g. config files with misconfigurations.
   repeated string location = 3;
 }
