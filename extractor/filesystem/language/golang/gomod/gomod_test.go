@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -312,5 +313,23 @@ func TestExtractor_Extract(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
+	}
+}
+
+func TestExtractor_ToPURL(t *testing.T) {
+	e := gomod.Extractor{}
+	i := &extractor.Inventory{
+		Name:    "github.com/google/osv-scalibr",
+		Version: "1.2.3",
+	}
+	want := &purl.PackageURL{
+		Type:      purl.TypeGolang,
+		Name:      "osv-scalibr",
+		Namespace: "github.com/google",
+		Version:   "1.2.3",
+	}
+	got := e.ToPURL(i)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }
