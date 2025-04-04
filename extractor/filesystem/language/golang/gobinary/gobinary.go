@@ -22,6 +22,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"regexp"
 	"runtime/debug"
 	"strings"
 
@@ -36,6 +37,13 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "go/binary"
+	// devel is the version of the development binary.
+	devel = "(devel)"
+)
+
+var (
+	// reVersion is a regexp to parse the Go version from the binary content.
+	reVersion = regexp.MustCompile(`(\x00|\x{FFFD})(.L)?(?P<version>v?(\d+\.\d+\.\d+[-\w]*[+\w]*))\x00`)
 )
 
 // Config is the configuration for the Extractor.
@@ -46,19 +54,27 @@ type Config struct {
 	// If this limit is greater than zero and a file is encountered that is larger
 	// than this limit, the file is ignored by returning false for `FileRequired`.
 	MaxFileSizeBytes int64
+	// VersionFromContent enables extracting the modelve version from the binary content.
+	// This operation is expensive because it uses a regexp to parse the binary content.
+	VersionFromContent bool
 }
 
 // Extractor extracts packages from buildinfo inside go binaries files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
+
+	// VersionFromBinary enables extracting the modelve version from the binary content.
+	// This operation is expensive because it uses a regexp to parse the binary content.
+	VersionFromContent bool
 }
 
 // DefaultConfig returns a default configuration for the extractor.
 func DefaultConfig() Config {
 	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: 0,
+		Stats:              nil,
+		MaxFileSizeBytes:   0,
+		VersionFromContent: false,
 	}
 }
 
@@ -70,8 +86,9 @@ func DefaultConfig() Config {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		stats:              cfg.Stats,
+		maxFileSizeBytes:   cfg.MaxFileSizeBytes,
+		VersionFromContent: cfg.VersionFromContent,
 	}
 }
 
@@ -140,6 +157,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	}
 
 	inventory := e.extractPackagesFromBuildInfo(binfo, input.Path)
+	mainInv := mainModule(binfo, input.Path)
+	if mainInv != nil {
+		if mainInv.Version == devel && e.VersionFromContent {
+			if version := extractVersionFromConent(input.Reader); version != "" {
+				mainInv.Version = version
+			}
+		}
+		inventory = append(inventory, mainInv)
+	}
+
 	e.reportFileExtracted(input.Path, input.Info, nil)
 	return inventory, nil
 }
@@ -190,15 +217,6 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		res = append(res, pkg)
 	}
 
-	// Also extract info about the main module if it's available.
-	if binfo.Main.Path != "" {
-		res = append(res, &extractor.Inventory{
-			Name:      binfo.Main.Path,
-			Version:   binfo.Main.Version,
-			Locations: []string{filename},
-		})
-	}
-
 	return res
 }
 
@@ -226,6 +244,42 @@ func parseDependency(d *debug.Module) (string, string) {
 	}
 
 	return dep.Path, dep.Version
+}
+
+func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Inventory {
+	if binfo.Main.Path == "" {
+		return nil
+	}
+	version := strings.TrimPrefix(binfo.Main.Version, "v")
+	return &extractor.Inventory{
+		Name:      binfo.Main.Path,
+		Version:   version,
+		Locations: []string{filename},
+	}
+}
+
+func extractVersionFromConent(reader io.Reader) string {
+	buf := bytes.NewBuffer([]byte{})
+	if _, err := io.Copy(buf, reader); err != nil {
+		return ""
+	}
+	matches := reVersion.FindSubmatch(buf.Bytes())
+	if len(matches) == 0 {
+		return ""
+	}
+
+	groupsToMatches := map[string]string{}
+	for i, name := range reVersion.SubexpNames() {
+		if i > 0 && name != "" {
+			groupsToMatches[name] = string(matches[i])
+		}
+	}
+
+	if groupsToMatches["version"] == "" {
+		return ""
+	}
+	version := strings.TrimPrefix(groupsToMatches["version"], "v")
+	return version
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
