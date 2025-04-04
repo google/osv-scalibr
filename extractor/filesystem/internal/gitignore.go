@@ -68,7 +68,8 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern, error) {
 	filePath := ""
 	result := []GitignorePattern{}
-	for _, dir := range strings.Split(dirPath, "/") {
+	components := strings.Split(dirPath, "/")
+	for _, dir := range components[:len(components)-1] {
 		filePath += dir + "/"
 		gitignores, err := ParseDirForGitignore(fs, filePath)
 		if err != nil {

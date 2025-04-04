@@ -87,9 +87,9 @@ func TestFindParentGitignores(t *testing.T) {
 			wantMatch: true,
 		},
 		{
-			name:      "Match_pattern_from_child_dir",
+			name:      "Dont_match_pattern_from_child_dir",
 			path:      []string{"testdata", "subdir", "path", "to", "ignore2.txt"},
-			wantMatch: true,
+			wantMatch: false,
 		},
 	}
 
