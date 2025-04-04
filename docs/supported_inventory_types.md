@@ -85,6 +85,7 @@ SCALIBR supports extracting software package information from a variety of OS an
 ## Container inventory
 
 * Containerd container images that are running on host
+* Docker container images that are running on host
 
 ## SBOM files
 

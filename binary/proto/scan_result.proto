@@ -109,6 +109,7 @@ message Inventory {
     HomebrewPackageMetadata homebrew_metadata = 42;
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
+    DockerContainersMetadata docker_containers_metadata = 48;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -496,4 +497,19 @@ message VSCodeExtensionsMetadata {
   bool updated = 5;
   bool is_pre_release_version = 6;
   int64 installed_timestamp = 7;
+}
+
+// The additional data found in Docker container.
+message DockerContainersMetadata {
+  string ImageName = 1;
+  string ImageDigest = 2;
+  string ID = 3;
+  repeated DockerPort Ports = 4;
+}
+
+message DockerPort {
+  string IP = 1;
+  uint32 PrivatePort = 2;
+  uint32 PublicPort = 3;
+  string Type = 4;
 }
