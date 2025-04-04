@@ -23,12 +23,13 @@ import (
 	"regexp"
 	"strings"
 
+	"deps.dev/util/maven"
 	"golang.org/x/exp/maps"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -41,97 +42,17 @@ const (
 // "Constant" at the top to compile this regex only once.
 var (
 	versionRequirementReg = regexp.MustCompile(`[[(]?(.*?)(?:,|[)\]]|$)`)
-	interpolationReg      = regexp.MustCompile(`\${(.+)}`)
 )
 
-type mavenLockDependency struct {
-	XMLName    xml.Name `xml:"dependency"`
-	GroupID    string   `xml:"groupId"`
-	ArtifactID string   `xml:"artifactId"`
-	Version    string   `xml:"version"`
-	Scope      string   `xml:"scope"`
-	Type       string   `xml:"type"`
-	Classifier string   `xml:"classifier"`
-}
-
-func (mld mavenLockDependency) parseResolvedVersion(version string) string {
-	results := versionRequirementReg.FindStringSubmatch(version)
+func parseResolvedVersion(version maven.String) string {
+	results := versionRequirementReg.FindStringSubmatch(string(version))
 	// First capture group will always exist, but might be empty, therefore the slice will always
 	// have a length of 2.
 	if results == nil || results[1] == "" {
-		return "0"
+		return ""
 	}
 
 	return results[1]
-}
-
-func (mld mavenLockDependency) resolveVersionValue(lockfile mavenLockFile) string {
-	// results will always either be nil or have a length of 2
-	results := interpolationReg.FindStringSubmatch(mld.Version)
-
-	// no interpolation, so just return the version as-is
-	if results == nil {
-		return mld.Version
-	}
-	if val, ok := lockfile.Properties.m[results[1]]; ok {
-		return val
-	}
-
-	log.Errorf(
-		"Failed to resolve version of %s: property \"%s\" could not be found for \"%s\"\n",
-		mld.GroupID+":"+mld.ArtifactID,
-		results[1],
-		lockfile.GroupID+":"+lockfile.ArtifactID,
-	)
-
-	return "0"
-}
-
-func (mld mavenLockDependency) ResolveVersion(lockfile mavenLockFile) string {
-	version := mld.resolveVersionValue(lockfile)
-
-	return mld.parseResolvedVersion(version)
-}
-
-type mavenLockFile struct {
-	XMLName             xml.Name              `xml:"project"`
-	ModelVersion        string                `xml:"modelVersion"`
-	GroupID             string                `xml:"groupId"`
-	ArtifactID          string                `xml:"artifactId"`
-	Properties          mavenLockProperties   `xml:"properties"`
-	Dependencies        []mavenLockDependency `xml:"dependencies>dependency"`
-	ManagedDependencies []mavenLockDependency `xml:"dependencyManagement>dependencies>dependency"`
-}
-
-type mavenLockProperties struct {
-	m map[string]string
-}
-
-func (p *mavenLockProperties) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	p.m = map[string]string{}
-
-	for {
-		t, err := d.Token()
-		if err != nil {
-			return err
-		}
-
-		switch tt := t.(type) {
-		case xml.StartElement:
-			var s string
-
-			if err := d.DecodeElement(&s, &tt); err != nil {
-				return fmt.Errorf("%w", err)
-			}
-
-			p.m[tt.Name.Local] = s
-
-		case xml.EndElement:
-			if tt.Name == start.Name {
-				return nil
-			}
-		}
-	}
 }
 
 // Extractor extracts Maven packages from pom.xml files.
@@ -158,58 +79,64 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from pom.xml files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockfile *mavenLockFile
+	var project *maven.Project
 
-	err := xml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	err := xml.NewDecoder(input.Reader).Decode(&project)
 	if err != nil {
 		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
+	if err := project.Interpolate(); err != nil {
+		return nil, fmt.Errorf("failed to interpolate pom.xml %s: %w", input.Path, err)
+	}
+
+	// Merging parents data by parsing local parent pom.xml.
+	if err := mavenutil.MergeParents(ctx, project.Parent, project, mavenutil.Options{
+		Input:              input,
+		AllowLocal:         true,
+		InitialParentIndex: 1,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to merge parents: %w", err)
+	}
+	// Process the dependencies:
+	//  - dedupe dependencies and dependency management
+	//  - import dependency management
+	//  - fill in missing dependency version requirement
+	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
+		// There is no network access so return an empty list of dependency management.
+		return maven.DependencyManagement{}, nil
+	})
 
 	details := map[string]*extractor.Inventory{}
 
-	for _, lockPackage := range parsedLockfile.ManagedDependencies {
-		finalName := lockPackage.GroupID + ":" + lockPackage.ArtifactID
-		metadata := javalockfile.Metadata{
-			ArtifactID:   lockPackage.ArtifactID,
-			GroupID:      lockPackage.GroupID,
-			DepGroupVals: []string{},
+	for _, dep := range project.Dependencies {
+		g, a, found := strings.Cut(dep.Name(), ":")
+		if !found {
+			return nil, fmt.Errorf("invalid package name: %s", dep.Name())
 		}
 
-		pkgDetails := &extractor.Inventory{
-			Name:      finalName,
-			Version:   lockPackage.ResolveVersion(*parsedLockfile),
-			Locations: []string{input.Path},
-			Metadata:  &metadata,
+		depType := ""
+		if dep.Type != "jar" {
+			depType = string(dep.Type)
 		}
-		if scope := strings.TrimSpace(lockPackage.Scope); scope != "" && scope != "compile" {
-			// Only append non-default scope (compile is the default scope).
-			metadata.DepGroupVals = []string{scope}
-		}
-		details[finalName] = pkgDetails
-	}
 
-	// standard dependencies take precedent over managed dependencies
-	for _, lockPackage := range parsedLockfile.Dependencies {
-		finalName := lockPackage.GroupID + ":" + lockPackage.ArtifactID
 		metadata := javalockfile.Metadata{
-			ArtifactID:   lockPackage.ArtifactID,
-			GroupID:      lockPackage.GroupID,
-			Type:         lockPackage.Type,
-			Classifier:   lockPackage.Classifier,
+			ArtifactID:   a,
+			GroupID:      g,
+			Type:         depType,
+			Classifier:   string(dep.Classifier),
 			DepGroupVals: []string{},
 		}
 		pkgDetails := &extractor.Inventory{
-			Name:      finalName,
-			Version:   lockPackage.ResolveVersion(*parsedLockfile),
+			Name:      dep.Name(),
+			Version:   parseResolvedVersion(dep.Version),
 			Locations: []string{input.Path},
 			Metadata:  &metadata,
 		}
-		if scope := strings.TrimSpace(lockPackage.Scope); scope != "" && scope != "compile" {
+		if scope := strings.TrimSpace(string(dep.Scope)); scope != "" && scope != "compile" {
 			// Only append non-default scope (compile is the default scope).
 			metadata.DepGroupVals = []string{scope}
 		}
-		details[finalName] = pkgDetails
+		details[dep.Name()] = pkgDetails
 	}
 
 	return maps.Values(details), nil

@@ -15,6 +15,7 @@
 package proto_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -1413,7 +1414,7 @@ func TestScanResultToProto(t *testing.T) {
 			}
 
 			got, err := proto.ScanResultToProto(tc.res)
-			if err != tc.wantErr {
+			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
 			}
 			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {

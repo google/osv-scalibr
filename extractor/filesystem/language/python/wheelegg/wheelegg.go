@@ -210,7 +210,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Inventory, error) {
 	r, err := f.Open()
 	if err != nil {
-		return nil, fmt.Errorf("On %q: Open(%s): %w", input.Path, f.Name, err)
+		return nil, fmt.Errorf("on %q: Open(%s): %w", input.Path, f.Name, err)
 	}
 	defer r.Close()
 

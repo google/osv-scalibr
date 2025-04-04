@@ -21,7 +21,12 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
-	"github.com/google/osv-scalibr/detector/cve/cve202338408"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve202338408"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve20236019"
+	"github.com/google/osv-scalibr/detector/cve/untested/cve20242912"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
@@ -39,11 +44,26 @@ type InitMap map[string][]InitFn
 // CIS scanning related detectors.
 var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
 
-// CVE scanning related detectors.
-var CVE = InitMap{cve202338408.Name: {cve202338408.New}}
-
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
+
+// Untested CVE scanning related detectors - since they don't have proper testing they
+// might not work as expected in the future.
+// TODO(b/405223999): Add tests.
+var Untested = InitMap{
+	// CVE-2023-38408 OpenSSH detector.
+	cve202338408.Name: {cve202338408.New},
+	// CVE-2022-33891 Spark UI detector.
+	cve202233891.Name: {cve202233891.New},
+	// CVE-2020-16846 Salt detector.
+	cve202016846.Name: {cve202016846.New},
+	// CVE-2023-6019 Ray Dashboard detector.
+	cve20236019.Name: {cve20236019.New},
+	// CVE-2020-11978 Apache Airflow detector.
+	cve202011978.Name: {cve202011978.New},
+	// CVE-2024-2912 BentoML detector.
+	cve20242912.Name: {cve20242912.New},
+}
 
 // Weakcreds detectors for weak credentials.
 var Weakcreds = InitMap{
@@ -58,30 +78,30 @@ var Default = InitMap{}
 // All detectors internal to SCALIBR.
 var All = concat(
 	CIS,
-	CVE,
 	Govulncheck,
 	Weakcreds,
+	Untested,
 )
 
 var detectorNames = concat(All, InitMap{
 	"cis":         vals(CIS),
-	"cve":         vals(CVE),
 	"govulncheck": vals(Govulncheck),
 	"weakcreds":   vals(Weakcreds),
+	"untested":    vals(Untested),
 	"default":     vals(Default),
 	"all":         vals(All),
 })
 
-func concat(InitMaps ...InitMap) InitMap {
+func concat(initMaps ...InitMap) InitMap {
 	result := InitMap{}
-	for _, m := range InitMaps {
+	for _, m := range initMaps {
 		maps.Copy(result, m)
 	}
 	return result
 }
 
-func vals(InitMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(InitMap)...)
+func vals(initMap InitMap) []InitFn {
+	return slices.Concat(maps.Values(initMap)...)
 }
 
 // FromCapabilities returns all detectors that can run under the specified

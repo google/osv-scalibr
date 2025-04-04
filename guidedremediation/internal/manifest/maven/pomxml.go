@@ -253,7 +253,12 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	}
 
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
-	if err := mavenutil.MergeParents(ctx, &filesystem.ScanInput{FS: fsys, Path: path}, r.MavenRegistryAPIClient, &project, project.Parent, 1, true); err != nil {
+	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
+		Input:              &filesystem.ScanInput{FS: fsys, Path: path},
+		Client:             r.MavenRegistryAPIClient,
+		AllowLocal:         true,
+		InitialParentIndex: 1,
+	}); err != nil {
 		return nil, fmt.Errorf("failed to merge parents: %w", err)
 	}
 
@@ -531,23 +536,23 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 	return nil
 }
 
-type MavenPatches struct {
-	DependencyPatches MavenDependencyPatches
-	PropertyPatches   MavenPropertyPatches
+type Patches struct {
+	DependencyPatches DependencyPatches
+	PropertyPatches   PropertyPatches
 }
 
-type MavenPatch struct {
+type Patch struct {
 	maven.DependencyKey
 	NewRequire string
 }
 
-// MavenDependencyPatches represent the dependencies to be updated, which
+// DependencyPatches represent the dependencies to be updated, which
 // is a map of dependency patches of each origin.
-type MavenDependencyPatches map[string]map[MavenPatch]bool //  origin -> patch -> whether from this project
+type DependencyPatches map[string]map[Patch]bool //  origin -> patch -> whether from this project
 
 // addPatch adds a patch to the patches map indexed by origin.
 // exist indicates whether this patch comes from the project.
-func (m MavenDependencyPatches) addPatch(changedDep result.PackageUpdate, exist bool) error {
+func (m DependencyPatches) addPatch(changedDep result.PackageUpdate, exist bool) error {
 	d, o, err := resolve.MavenDepTypeToDependency(changedDep.Type)
 	if err != nil {
 		return fmt.Errorf("MavenDepTypeToDependency: %w", err)
@@ -566,9 +571,9 @@ func (m MavenDependencyPatches) addPatch(changedDep result.PackageUpdate, exist 
 	d.ArtifactID = maven.String(substrings[1])
 
 	if _, ok := m[o]; !ok {
-		m[o] = make(map[MavenPatch]bool)
+		m[o] = make(map[Patch]bool)
 	}
-	m[o][MavenPatch{
+	m[o][Patch{
 		DependencyKey: d.Key(),
 		NewRequire:    changedDep.VersionTo,
 	}] = exist
@@ -576,9 +581,9 @@ func (m MavenDependencyPatches) addPatch(changedDep result.PackageUpdate, exist 
 	return nil
 }
 
-// MavenPropertyPatches represent the properties to be updated, which
+// PropertyPatches represent the properties to be updated, which
 // is a map of properties of each origin.
-type MavenPropertyPatches map[string]map[string]string // origin -> tag -> value
+type PropertyPatches map[string]map[string]string // origin -> tag -> value
 
 // parentPathFromOrigin returns the parent path embedded in origin,
 // as well as the remaining origin string.
@@ -607,26 +612,23 @@ func iterUpgrades(patches []result.Patch) iter.Seq[result.PackageUpdate] {
 }
 
 // buildPatches returns dependency patches ready for updates.
-func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string]MavenPatches, error) {
-	result := make(map[string]MavenPatches)
+func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string]Patches, error) {
+	result := make(map[string]Patches)
 	for patch := range iterUpgrades(patches) {
 		var path string
-		origDep := originalDependency(patch, specific.OriginalRequirements)
+		origDep := OriginalDependency(patch, specific.OriginalRequirements)
 		path, origDep.Origin = parentPathFromOrigin(origDep.Origin)
 		if _, ok := result[path]; !ok {
-			result[path] = MavenPatches{
-				DependencyPatches: MavenDependencyPatches{},
-				PropertyPatches:   MavenPropertyPatches{},
+			result[path] = Patches{
+				DependencyPatches: DependencyPatches{},
+				PropertyPatches:   PropertyPatches{},
 			}
 		}
 		if origDep.Name() == ":" {
 			// An empty name indicates the dependency is not found, so the original dependency is not in the base project.
-			// If the patch is from suggest (VersionFrom is set), we ignore this patch.
-			// If the patch is from override (VersionFrom is empty), we add this patch.
-			if patch.VersionFrom == "" {
-				if err := result[path].DependencyPatches.addPatch(patch, false); err != nil {
-					return nil, err
-				}
+			// Add it so that it will be written into the dependencyManagement section.
+			if err := result[path].DependencyPatches.addPatch(patch, false); err != nil {
+				return nil, err
 			}
 
 			continue
@@ -693,9 +695,9 @@ func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string
 	return result, nil
 }
 
-// originalDependency returns the original dependency of a dependency patch.
+// OriginalDependency returns the original dependency of a dependency patch.
 // If the dependency is not found in any local pom.xml, an empty dependency is returned.
-func originalDependency(patch result.PackageUpdate, origDeps []DependencyWithOrigin) DependencyWithOrigin {
+func OriginalDependency(patch result.PackageUpdate, origDeps []DependencyWithOrigin) DependencyWithOrigin {
 	IDs := strings.Split(patch.Name, ":")
 	if len(IDs) != 2 {
 		return DependencyWithOrigin{}
@@ -777,7 +779,7 @@ type dependency struct {
 	Classifier string `xml:"classifier,omitempty"`
 }
 
-func makeDependency(patch MavenPatch) dependency {
+func makeDependency(patch Patch) dependency {
 	d := dependency{
 		GroupID:    string(patch.GroupID),
 		ArtifactID: string(patch.ArtifactID),
@@ -808,7 +810,7 @@ func compareDependency(d1, d2 dependency) int {
 	return cmp.Compare(d1.Version, d2.Version)
 }
 
-func write(raw string, w io.Writer, patches MavenPatches) error {
+func write(raw string, w io.Writer, patches Patches) error {
 	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	enc := forkedxml.NewEncoder(w)
 
@@ -887,7 +889,7 @@ func write(raw string, w io.Writer, patches MavenPatches) error {
 	return nil
 }
 
-func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, patches MavenDependencyPatches, properties MavenPropertyPatches, updated map[string]bool) error {
+func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, patches DependencyPatches, properties PropertyPatches, updated map[string]bool) error {
 	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
 		token, err := dec.Token()
@@ -1018,7 +1020,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 	return enc.Flush()
 }
 
-func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches map[MavenPatch]bool) error {
+func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches map[Patch]bool) error {
 	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
 		token, err := dec.Token()

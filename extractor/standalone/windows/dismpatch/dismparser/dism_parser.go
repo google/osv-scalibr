@@ -37,25 +37,20 @@ type DismPkg struct {
 	InstallTime     string
 }
 
+var (
+	pkgExpFinder = regexp.MustCompile("entity :(.*)\n*State :(.*)\n*Release Type :(.*)\n*Install Time :(.*)\n*")
+	imgVerFinder = regexp.MustCompile("Image Version: (.*)")
+)
+
 // Parse parses dism output into an array of dismPkgs.
 func Parse(input string) ([]DismPkg, string, error) {
 	pkgs := strings.Split(input, "Package Id")
-
-	pkgExp, err := regexp.Compile("entity :(.*)\n*State :(.*)\n*Release Type :(.*)\n*Install Time :(.*)\n*")
-	if err != nil {
-		return nil, "", err
-	}
-
-	imgExp, err := regexp.Compile("Image Version: (.*)")
-	if err != nil {
-		return nil, "", err
-	}
 
 	imgVersion := ""
 	dismPkgs := []DismPkg{}
 
 	for _, pkg := range pkgs {
-		matches := pkgExp.FindStringSubmatch(pkg)
+		matches := pkgExpFinder.FindStringSubmatch(pkg)
 		if len(matches) > 4 {
 			dismPkg := DismPkg{
 				PackageIdentity: strings.TrimSpace(matches[1]),
@@ -67,7 +62,7 @@ func Parse(input string) ([]DismPkg, string, error) {
 			dismPkgs = append(dismPkgs, dismPkg)
 		} else {
 			// this is the first entry that has the image version
-			matches = imgExp.FindStringSubmatch(pkg)
+			matches = imgVerFinder.FindStringSubmatch(pkg)
 			if len(matches) > 1 {
 				imgVersion = strings.TrimSpace(matches[1])
 			}

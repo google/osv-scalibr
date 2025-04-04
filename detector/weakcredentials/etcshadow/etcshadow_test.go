@@ -166,7 +166,7 @@ func TestScanCancelled(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
 	findings, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, ix)
-	if findings != nil || err != ctx.Err() {
+	if findings != nil || !errors.Is(err, ctx.Err()) {
 		t.Errorf("expected scan to be cancelled")
 	}
 }

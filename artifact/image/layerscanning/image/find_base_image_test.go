@@ -15,6 +15,7 @@
 package image
 
 import (
+	"errors"
 	"testing"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -195,7 +196,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			gotIndex, gotErr := findBaseImageIndex(test.histories)
-			if test.wantError != gotErr {
+			if !errors.Is(gotErr, test.wantError) {
 				t.Errorf("findBaseImageIndex(%v) returned error: %v, want error: %v", test.histories, gotErr, test.wantError)
 				return
 			}

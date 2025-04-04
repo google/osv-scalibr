@@ -632,10 +632,10 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 }
 
 // ErrAdvisoryMissing will be returned if the Advisory is not set on a finding.
-var ErrAdvisoryMissing = errors.New("Advisory missing in finding")
+var ErrAdvisoryMissing = errors.New("advisory missing in finding")
 
 // ErrAdvisoryIDMissing will be returned if the Advisory ID is not set on a finding.
-var ErrAdvisoryIDMissing = errors.New("Advisory ID missing in finding")
+var ErrAdvisoryIDMissing = errors.New("advisory ID missing in finding")
 
 func findingToProto(f *detector.Finding) (*spb.Finding, error) {
 	if f.Adv == nil {

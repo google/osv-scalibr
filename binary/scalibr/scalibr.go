@@ -26,40 +26,68 @@ import (
 )
 
 func main() {
-	flags := parseFlags()
-	os.Exit(scanrunner.RunScan(flags))
+	os.Exit(run(os.Args))
 }
 
-func parseFlags() *cli.Flags {
-	root := flag.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
-	resultFile := flag.String("result", "", "The path of the output scan result file")
-	var output cli.Array
-	flag.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
-	extractorsToRun := cli.NewStringListFlag([]string{"default"})
-	flag.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
-	detectorsToRun := cli.NewStringListFlag([]string{"default"})
-	flag.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
-	var dirsToSkip cli.StringListFlag
-	flag.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
-	skipDirRegex := flag.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
-	skipDirGlob := flag.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
-	remoteImage := flag.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
-	imagePlatform := flag.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
-	govulncheckDBPath := flag.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
-	spdxDocumentName := flag.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
-	spdxDocumentNamespace := flag.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
-	spdxCreators := flag.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
-	cdxComponentName := flag.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
-	cdxComponentVersion := flag.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
-	cdxAuthors := flag.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
-	verbose := flag.Bool("verbose", false, "Enable this to print debug logs")
-	explicitExtractors := flag.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
-	filterByCapabilities := flag.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
-	windowsAllDrives := flag.Bool("windows-all-drives", false, "Scan all drives on Windows")
-	offline := flag.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
+func run(args []string) int {
+	var subcommand string
+	if len(args) >= 2 {
+		subcommand = args[1]
+	}
+	switch subcommand {
+	case "scan":
+		flags, err := parseFlags(args[2:])
+		if err != nil {
+			log.Errorf("Error parsing CLI args: %v", err)
+			return 1
+		}
+		return scanrunner.RunScan(flags)
+	default:
+		// Assume 'scan' if subcommand is not recognized/specified.
+		flags, err := parseFlags(args[1:])
+		if err != nil {
+			log.Errorf("Error parsing CLI args: %v", err)
+			return 1
+		}
+		return scanrunner.RunScan(flags)
+	}
+}
 
-	flag.Parse()
-	filesToExtract := flag.Args()
+func parseFlags(args []string) (*cli.Flags, error) {
+	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
+	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
+	resultFile := fs.String("result", "", "The path of the output scan result file")
+	var output cli.Array
+	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
+	extractorsToRun := cli.NewStringListFlag([]string{"default"})
+	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
+	detectorsToRun := cli.NewStringListFlag([]string{"default"})
+	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
+	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files only the files in the top-level directory and skip sub-directories")
+	var dirsToSkip cli.StringListFlag
+	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
+	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
+	skipDirGlob := fs.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
+	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
+	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
+	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
+	govulncheckDBPath := fs.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
+	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
+	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
+	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
+	cdxComponentName := fs.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
+	cdxComponentVersion := fs.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
+	cdxAuthors := fs.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
+	verbose := fs.Bool("verbose", false, "Enable this to print debug logs")
+	explicitExtractors := fs.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
+	filterByCapabilities := fs.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
+	windowsAllDrives := fs.Bool("windows-all-drives", false, "Scan all drives on Windows")
+	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
+
+	if err := fs.Parse(args); err != nil {
+		return nil, err
+	}
+	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
 		Root:                  *root,
@@ -67,10 +95,12 @@ func parseFlags() *cli.Flags {
 		Output:                output,
 		ExtractorsToRun:       extractorsToRun.GetSlice(),
 		DetectorsToRun:        detectorsToRun.GetSlice(),
-		FilesToExtract:        filesToExtract,
+		PathsToExtract:        pathsToExtract,
+		IgnoreSubDirs:         *ignoreSubDirs,
 		DirsToSkip:            dirsToSkip.GetSlice(),
 		SkipDirRegex:          *skipDirRegex,
 		SkipDirGlob:           *skipDirGlob,
+		UseGitignore:          *useGitignore,
 		RemoteImage:           *remoteImage,
 		ImagePlatform:         *imagePlatform,
 		GovulncheckDBPath:     *govulncheckDBPath,
@@ -87,8 +117,7 @@ func parseFlags() *cli.Flags {
 		Offline:               *offline,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
-		log.Errorf("Error parsing CLI args: %v", err)
-		os.Exit(1)
+		return nil, err
 	}
-	return flags
+	return flags, nil
 }

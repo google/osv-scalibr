@@ -68,11 +68,15 @@ type ScanConfig struct {
 	// Example use case: Scanning a container image or source code repo that is
 	// mounted to a local dir.
 	ScanRoots []*scalibrfs.ScanRoot
-	// Optional: Individual files to extract inventory from. If specified, the
-	// extractors will only look at these files during the filesystem traversal.
+	// Optional: Individual file or dir paths to extract inventory from. If specified,
+	// the extractors will only look at the specified files or at the contents of the
+	// specified directories during the filesystem traversal.
 	// Note that on real filesystems these are not relative to the ScanRoots and
 	// thus need to be in sub-directories of one of the ScanRoots.
-	FilesToExtract []string
+	PathsToExtract []string
+	// Optional: If true, only the files in the top-level directories in PathsToExtract are
+	// extracted and sub-directories are ignored.
+	IgnoreSubDirs bool
 	// Optional: Directories that the file system walk should ignore.
 	// Note that on real filesystems these are not relative to the ScanRoots and
 	// thus need to be in sub-directories of one of the ScanRoots.
@@ -82,6 +86,8 @@ type ScanConfig struct {
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
 	SkipDirGlob glob.Glob
+	// Optional: Skip files declared in .gitignore files in source repos.
+	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
 	Stats stats.Collector
 	// Optional: Whether to read symlinks.
@@ -187,7 +193,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = err
 	} else if len(config.ScanRoots) == 0 {
 		sro.Err = errNoScanRoot
-	} else if len(config.FilesToExtract) > 0 && len(config.ScanRoots) > 1 {
+	} else if len(config.PathsToExtract) > 0 && len(config.ScanRoots) > 1 {
 		sro.Err = errFilesWithSeveralRoots
 	}
 	if sro.Err != nil {
@@ -198,10 +204,12 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
 		Extractors:            config.FilesystemExtractors,
-		FilesToExtract:        config.FilesToExtract,
+		PathsToExtract:        config.PathsToExtract,
+		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
 		SkipDirGlob:           config.SkipDirGlob,
+		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
@@ -269,7 +277,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	finalChainLayer := chainLayers[len(chainLayers)-1]
 	chainfs := finalChainLayer.FS()
 
-	if config.ScanRoots != nil && len(config.ScanRoots) > 0 {
+	if len(config.ScanRoots) > 0 {
 		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
 	}
 	// Overwrite the scan roots with the chain layer filesystem.
@@ -285,10 +293,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
 		Extractors:            config.FilesystemExtractors,
-		FilesToExtract:        config.FilesToExtract,
+		PathsToExtract:        config.PathsToExtract,
+		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
 		SkipDirGlob:           config.SkipDirGlob,
+		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,

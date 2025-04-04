@@ -16,9 +16,11 @@ package gobinary_test
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -255,7 +257,7 @@ func TestExtract(t *testing.T) {
 
 			e := gobinary.New(gobinary.Config{Stats: collector})
 			got, err := e.Extract(context.Background(), input)
-			if err != tt.wantErr {
+			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
 			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
@@ -351,5 +353,10 @@ func createInventories(invs []*extractor.Inventory, location string) []*extracto
 			Name: i.Name, Version: i.Version, Locations: []string{location},
 		})
 	}
+	// Main package
+	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
+	res = append(res, &extractor.Inventory{
+		Name: mainName, Version: "(devel)", Locations: []string{location},
+	})
 	return res
 }

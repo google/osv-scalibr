@@ -21,10 +21,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakechainlayer"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/opencontainers/go-digest"
 )
 
 func TestPopulateLayerDetails(t *testing.T) {
@@ -350,12 +353,49 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "chain layer with invalid diffID",
+			inventory: []*extractor.Inventory{
+				{
+					Name:      fooPackage,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+				},
+			},
+			chainLayers: []image.ChainLayer{
+				func() image.ChainLayer {
+					tmp := t.TempDir()
+					layer, err := fakelayer.New(tmp, digest.Digest(""), "command-0", map[string]string{fooFile: fooPackage}, false)
+					if err != nil {
+						t.Fatalf("failed creating fake layer: %v", err)
+					}
+					cl, err := fakechainlayer.New(tmp, 0, digest.Digest(""), "command-0", layer, map[string]string{fooFile: fooPackage}, false)
+					if err != nil {
+						t.Fatalf("failed creating fake chain layer: %v", err)
+					}
+					return cl
+				}(),
+			},
+			wantInventory: []*extractor.Inventory{
+				{
+					Name:      fooPackage,
+					Locations: []string{fooFile},
+					Extractor: fakeLayerExtractor,
+					LayerDetails: &extractor.LayerDetails{
+						Index:       0,
+						DiffID:      "",
+						Command:     "command-0",
+						InBaseImage: false,
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			config := &filesystem.Config{
 				Stats:          stats.NoopCollector{},
-				FilesToExtract: []string{"Installed"},
+				PathsToExtract: []string{"Installed"},
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 

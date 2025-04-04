@@ -286,7 +286,7 @@ func parseSourceNameVersion(source string) (string, string, error) {
 	// Format is either "name" or "name (version)"
 	if idx := strings.Index(source, " ("); idx != -1 {
 		if !strings.HasSuffix(source, ")") {
-			return "", "", fmt.Errorf("Invalid DPKG Source field: %q", source)
+			return "", "", fmt.Errorf("invalid DPKG Source field: %q", source)
 		}
 		n := source[:idx]
 		v := source[idx+2 : len(source)-1]

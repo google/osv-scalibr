@@ -25,14 +25,11 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/log"
 	"github.com/opencontainers/go-digest"
 )
 
 var (
-	// ErrDiffIDMissingFromLayer is returned when the diffID is missing from a v1 layer.
-	ErrDiffIDMissingFromLayer = errors.New("failed to get diffID from v1 layer")
-	// ErrUncompressedReaderMissingFromLayer is returned when the uncompressed reader is missing from a v1 layer.
-	ErrUncompressedReaderMissingFromLayer = errors.New("failed to get uncompressed reader from v1 layer")
 	// ErrSymlinkDepthExceeded is returned when the symlink depth is exceeded.
 	ErrSymlinkDepthExceeded = errors.New("symlink depth exceeded")
 	// ErrSymlinkCycle is returned when a symlink cycle is found.
@@ -75,18 +72,21 @@ func (layer *Layer) Command() string {
 
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
-func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, error) {
-	diffID, err := v1Layer.DiffID()
+func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
+	var diffID string
+	d, err := v1Layer.DiffID()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrDiffIDMissingFromLayer, err)
+		log.Warnf("failed to get diffID from v1 layer: %v", err)
+	} else {
+		diffID = d.String()
 	}
 
 	return &Layer{
-		diffID:       digest.Digest(diffID.String()),
+		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
 		fileNodeTree: pathtree.NewNode[fileNode](),
-	}, nil
+	}
 }
 
 // ========================================================

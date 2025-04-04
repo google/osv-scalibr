@@ -15,6 +15,7 @@
 package samreg
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -88,7 +89,7 @@ func TestUserVRead(t *testing.T) {
 			}
 
 			got, gotErr := userV.read(tc.offset, tc.size)
-			if gotErr != tc.wantErr {
+			if !errors.Is(gotErr, tc.wantErr) {
 				t.Errorf("Read(): got error: %v, want: %v", gotErr, tc.wantErr)
 			}
 
@@ -196,7 +197,7 @@ func TestUserVEncryptedHashes(t *testing.T) {
 			}
 
 			gotLM, gotNT, gotErr := userV.EncryptedHashes()
-			if gotErr != tc.wantErr {
+			if !errors.Is(gotErr, tc.wantErr) {
 				t.Errorf("EncryptedHashes(): unexpected error, got: %v, want: %v", gotErr, tc.wantErr)
 			}
 
