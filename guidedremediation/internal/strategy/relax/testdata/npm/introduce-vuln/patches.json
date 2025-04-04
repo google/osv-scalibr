@@ -1,0 +1,75 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "adding",
+        "versionFrom": "^1.0.0",
+        "versionTo": "^4.0.0",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-000",
+        "packages": [
+          {
+            "name": "@bad/one",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ],
+    "introduced": [
+      {
+        "id": "OSV-000-002",
+        "packages": [
+          {
+            "name": "@bad/three",
+            "version": "0.0.1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "adding",
+        "versionFrom": "^1.0.0",
+        "versionTo": "^2.0.0",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-000",
+        "packages": [
+          {
+            "name": "@bad/one",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ],
+    "introduced": [
+      {
+        "id": "OSV-000-001",
+        "packages": [
+          {
+            "name": "@bad/two",
+            "version": "1.0.0"
+          }
+        ]
+      },
+      {
+        "id": "OSV-000-002",
+        "packages": [
+          {
+            "name": "@bad/three",
+            "version": "0.0.1"
+          }
+        ]
+      }
+    ]
+  }
+]
