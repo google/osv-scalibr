@@ -55,6 +55,7 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 }
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
+// TODO(#663): decide if a version is yanked based on the index API response.
 func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
 	vers, err := c.api.GetVersions(ctx, pk.Name)
 	if err != nil {
@@ -63,27 +64,14 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 
 	slices.SortFunc(vers, func(a, b string) int { return semver.PyPI.Compare(a, b) })
 
-	var yanked version.AttrSet
-	yanked.SetAttr(version.Blocked, "")
-
-	var versions []resolve.Version
-	for _, ver := range vers {
-		v := resolve.Version{
+	versions := make([]resolve.Version, len(vers))
+	for i, ver := range vers {
+		versions[i] = resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				Version:     ver,
 				VersionType: resolve.Concrete,
-			},
-		}
-
-		resp, err := c.api.GetVersionJSON(ctx, pk.Name, ver)
-		if err != nil {
-			return nil, err
-		}
-		if resp.Info.Yanked {
-			v.AttrSet = yanked
-		}
-		versions = append(versions, v)
+			}}
 	}
 
 	return versions, nil

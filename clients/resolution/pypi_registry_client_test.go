@@ -131,27 +131,6 @@ func TestVersions(t *testing.T) {
 		]
   }
 	`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.1/json", []byte(`{
-		"info": {
-			"yanked": true
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.2/json", []byte(`{
-		"info": {
-			"yanked": false
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.12.3/json", []byte(`
-  {
-		"info": {
-			"yanked": false
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.13.0b2/json", []byte(`{
-		"info": {
-			"yanked": false
-		}
-	}`))
 
 	pk := resolve.PackageKey{
 		System: resolve.PyPI,
