@@ -3,11 +3,11 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/google/osv-scalibr.svg)](https://pkg.go.dev/github.com/google/osv-scalibr)
 
 OSV-SCALIBR (Software Composition Analysis Library) is an extensible library providing:
-- File system scanner used to extract software inventory data (e.g. installed language packages) and detect known vulnerabilities or generate SBOMs. 
+- File system scanner used to extract software inventory data (e.g. installed language packages) and detect known vulnerabilities or generate SBOMs.
 See the [list of currently supported software inventory types](docs/supported_inventory_types.md).
 - Container analysis functionality (e.g. layer-based extraction)
 - Guided Remediation (generating upgrade patches for transitive vulnerabilities)
-- And more! 
+- And more!
 
 This can be used as a library with a custom wrapper to perform scans on e.g. container images or remote hosts, or via the [OSV-Scanner CLI](https://github.com/google/osv-scanner). It comes with built-in plugins for inventory extraction and vulnerability detection and it also allows users to run their custom plugins.
 
