@@ -166,22 +166,17 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 		goVersion = parsedLockfile.Go.Version
 	}
 
+	// Give the toolchain version priority, if present
+	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
+		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
+		goVersion = strings.TrimPrefix(version, "go")
+	}
+
 	// Add the Go stdlib as an explicit dependency.
 	if goVersion != "" {
 		packages[ivKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
-			Version:   parsedLockfile.Go.Version,
-			Locations: []string{input.Path},
-		}
-	}
-
-	// Give the toolchain version priority, if present
-	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
-		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
-
-		packages[ivKey{name: "stdlib"}] = &extractor.Inventory{
-			Name:      "stdlib",
-			Version:   strings.TrimPrefix(version, "go"),
+			Version:   goVersion,
 			Locations: []string{input.Path},
 		}
 	}
