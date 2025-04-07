@@ -491,6 +491,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
+				Requirement:            m.Requirement,
 			},
 		}
 	case *setup.Metadata:
