@@ -16,6 +16,7 @@ package etcshadow_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
@@ -81,7 +82,7 @@ func TestPasswordHashCrackerBadHashes(t *testing.T) {
 	}
 
 	for _, v := range badValues {
-		if _, err := cracker.Crack(context.Background(), v); err != etcshadow.ErrNotCracked {
+		if _, err := cracker.Crack(context.Background(), v); !errors.Is(err, etcshadow.ErrNotCracked) {
 			t.Errorf("expected ErrNotCracked on hash [%s] received [%v]", v, err)
 		}
 	}
@@ -92,7 +93,7 @@ func TestPasswordHashCrackerCancelled(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
 	_, err := cracker.Crack(ctx, testHashes["bcrypt"])
-	if err != ctx.Err() {
+	if !errors.Is(err, ctx.Err()) {
 		t.Errorf("expected error %v on cancelled context, received error %v", ctx.Err(), err)
 	}
 }

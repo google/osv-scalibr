@@ -123,7 +123,7 @@ func RemoveObsoleteSymlinks(root string) error {
 //	      relative-symlink.txt -> /root/SQUASHED/dir1/sample.txt
 //	      absolute-symlink.txt -> /root/SQUASHED/dir1/sample.txt
 func ResolveInterLayerSymlinks(root, layerDigest, squashedImageDirectory string) error {
-	layerPath := filepath.Join(root, strings.Replace(layerDigest, ":", "-", -1))
+	layerPath := filepath.Join(root, strings.ReplaceAll(layerDigest, ":", "-"))
 
 	// Walk through each symlink in the layer, convert to absolute symlink, then resolve cross layer
 	// symlinks.

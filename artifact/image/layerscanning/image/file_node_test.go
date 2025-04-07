@@ -29,32 +29,32 @@ import (
 
 var (
 	rootDirectory = &fileNode{
-		extractDir:    "/tmp/extract",
-		originLayerID: "layer1",
-		virtualPath:   "/",
-		isWhiteout:    false,
-		mode:          fs.ModeDir | dirPermission,
+		extractDir:  "/tmp/extract",
+		layerDir:    "layer1",
+		virtualPath: "/",
+		isWhiteout:  false,
+		mode:        fs.ModeDir | dirPermission,
 	}
 	rootFile = &fileNode{
-		extractDir:    "/tmp/extract",
-		originLayerID: "layer1",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  "/tmp/extract",
+		layerDir:    "layer1",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	nonRootDirectory = &fileNode{
-		extractDir:    "/tmp/extract",
-		originLayerID: "layer1",
-		virtualPath:   "/dir1/dir2",
-		isWhiteout:    false,
-		mode:          fs.ModeDir | dirPermission,
+		extractDir:  "/tmp/extract",
+		layerDir:    "layer1",
+		virtualPath: "/dir1/dir2",
+		isWhiteout:  false,
+		mode:        fs.ModeDir | dirPermission,
 	}
 	nonRootFile = &fileNode{
-		extractDir:    "/tmp/extract",
-		originLayerID: "layer1",
-		virtualPath:   "/dir1/foo",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  "/tmp/extract",
+		layerDir:    "layer1",
+		virtualPath: "/dir1/foo",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 )
 
@@ -62,30 +62,30 @@ var (
 func TestStat(t *testing.T) {
 	baseTime := time.Now()
 	regularFileNode := &fileNode{
-		extractDir:    "tempDir",
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
-		size:          1,
-		modTime:       baseTime,
+		extractDir:  "tempDir",
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
+		size:        1,
+		modTime:     baseTime,
 	}
 	symlinkFileNode := &fileNode{
-		extractDir:    "tempDir",
-		originLayerID: "",
-		virtualPath:   "/symlink-to-bar",
-		targetPath:    "/bar",
-		isWhiteout:    false,
-		mode:          fs.ModeSymlink | filePermission,
-		size:          1,
-		modTime:       baseTime,
+		extractDir:  "tempDir",
+		layerDir:    "",
+		virtualPath: "/symlink-to-bar",
+		targetPath:  "/bar",
+		isWhiteout:  false,
+		mode:        fs.ModeSymlink | filePermission,
+		size:        1,
+		modTime:     baseTime,
 	}
 	whiteoutFileNode := &fileNode{
-		extractDir:    "tempDir",
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    true,
-		mode:          filePermission,
+		extractDir:  "tempDir",
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  true,
+		mode:        filePermission,
 	}
 
 	type info struct {
@@ -154,9 +154,9 @@ func TestRead(t *testing.T) {
 	const bufferSize = 20
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
@@ -166,44 +166,44 @@ func TestRead(t *testing.T) {
 	// separate test.
 	defer openedRootFile.Close()
 
-	os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
+	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
+	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeWithOpenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/baz",
-		isWhiteout:    false,
-		mode:          filePermission,
-		file:          openedRootFile,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/baz",
+		isWhiteout:  false,
+		mode:        filePermission,
+		file:        openedRootFile,
 	}
 	fileNodeNonRootFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/foo",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/foo",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeNonexistentFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/xyz",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/xyz",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeWhiteoutFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/abc",
-		isWhiteout:    true,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/abc",
+		isWhiteout:  true,
+		mode:        filePermission,
 	}
 	tests := []struct {
 		name    string
@@ -255,7 +255,7 @@ func TestRead(t *testing.T) {
 			}
 
 			// Close the file. The Close method is tested in a separate test.
-			tc.node.Close()
+			_ = tc.node.Close()
 		})
 	}
 }
@@ -264,9 +264,9 @@ func TestReadAt(t *testing.T) {
 	const bufferSize = 20
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
@@ -276,44 +276,44 @@ func TestReadAt(t *testing.T) {
 	// separate test.
 	defer openedRootFile.Close()
 
-	os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
+	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
+	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeWithOpenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/baz",
-		isWhiteout:    false,
-		mode:          filePermission,
-		file:          openedRootFile,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/baz",
+		isWhiteout:  false,
+		mode:        filePermission,
+		file:        openedRootFile,
 	}
 	fileNodeNonRootFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/foo",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/foo",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeNonexistentFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/xyz",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/xyz",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeWhiteoutFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/abc",
-		isWhiteout:    true,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/abc",
+		isWhiteout:  true,
+		mode:        filePermission,
 	}
 	tests := []struct {
 		name    string
@@ -403,7 +403,7 @@ func TestReadAt(t *testing.T) {
 // Test for the Seek method
 func TestSeek(t *testing.T) {
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
 	// Test seeking to different positions
 	tests := []struct {
@@ -454,14 +454,14 @@ func TestSeek(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a fileNode for the opened file
 			fileNode := &fileNode{
-				extractDir:    tempDir,
-				originLayerID: "",
-				virtualPath:   "/bar",
-				isWhiteout:    false,
-				mode:          filePermission,
+				extractDir:  tempDir,
+				layerDir:    "",
+				virtualPath: "/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
 			}
 			gotPos, err := fileNode.Seek(tc.offset, tc.whence)
-			fileNode.Close()
+			_ = fileNode.Close()
 			if err != nil {
 				t.Fatalf("Seek failed: %v", err)
 			}
@@ -474,21 +474,21 @@ func TestSeek(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
 	fileNodeWithUnopenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeNonexistentFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/dir1/xyz",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/dir1/xyz",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 
 	tests := []struct {
@@ -520,27 +520,27 @@ func TestReadingAfterClose(t *testing.T) {
 	const readAndCloseEvents = 2
 
 	tempDir := t.TempDir()
-	os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
-	os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
 	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
 
 	fileNodeWithUnopenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/bar",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/bar",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 	fileNodeWithOpenedFile := &fileNode{
-		extractDir:    tempDir,
-		originLayerID: "",
-		virtualPath:   "/baz",
-		isWhiteout:    false,
-		mode:          filePermission,
-		file:          openedRootFile,
+		extractDir:  tempDir,
+		layerDir:    "",
+		virtualPath: "/baz",
+		isWhiteout:  false,
+		mode:        filePermission,
+		file:        openedRootFile,
 	}
 
 	tests := []struct {

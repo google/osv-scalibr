@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -69,7 +69,7 @@ func NewConfig(registry string) Config {
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
-	return NewConfig(datasource.MavenCentralMirror)
+	return NewConfig("")
 }
 
 // New makes a new pom.xml transitive extractor with the given config.
@@ -125,7 +125,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 	}
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
-	if err := mavenutil.MergeParents(ctx, input, e.mavenClient, &project, project.Parent, 1, true); err != nil {
+	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
+		Input:              input,
+		Client:             e.mavenClient,
+		AllowLocal:         true,
+		InitialParentIndex: 1,
+	}); err != nil {
 		return nil, fmt.Errorf("failed to merge parents: %w", err)
 	}
 	// Process the dependencies:
@@ -194,9 +199,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
-	for i, e := range g.Edges {
-		g.Edges[i] = e
-	}
+	copy(g.Edges, g.Edges)
 
 	details := map[string]*extractor.Inventory{}
 	for i := 1; i < len(g.Nodes); i++ {
@@ -212,16 +215,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		// We are only able to know dependency groups of direct dependencies but
 		// not transitive dependencies because the nodes in the resolve graph does
 		// not have the scope information.
+		isDirect := false
 		for _, dep := range project.Dependencies {
 			if dep.Name() != inventory.Name {
 				continue
 			}
+			isDirect = true
 			if dep.Scope != "" && dep.Scope != "compile" {
 				depGroups = append(depGroups, string(dep.Scope))
 			}
+			break
 		}
-		inventory.Metadata = osv.DepGroupMetadata{
+		inventory.Metadata = javalockfile.Metadata{
 			DepGroupVals: depGroups,
+			IsTransitive: !isDirect,
 		}
 		details[inventory.Name] = &inventory
 	}

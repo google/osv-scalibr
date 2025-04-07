@@ -49,27 +49,20 @@ func (v cranVersion) compare(w cranVersion) int {
 }
 
 func (v cranVersion) CompareStr(str string) (int, error) {
-	w, err := parseCRANVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return v.compare(w), nil
+	return v.compare(parseCRANVersion(str)), nil
 }
 
-func parseCRANVersion(str string) (cranVersion, error) {
+func parseCRANVersion(str string) cranVersion {
 	// dashes and periods have the same weight, so we can just normalize to periods
 	parts := strings.Split(strings.ReplaceAll(str, "-", "."), ".")
 
-	// TODO: refactor to avoid shadowing the components type
-	components := make(components, 0, len(parts))
+	comps := make(components, 0, len(parts))
 
 	for _, s := range parts {
 		v, _ := new(big.Int).SetString(s, 10)
 
-		components = append(components, v)
+		comps = append(comps, v)
 	}
 
-	return cranVersion{components}, nil
+	return cranVersion{comps}
 }

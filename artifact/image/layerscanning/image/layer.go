@@ -17,7 +17,6 @@ package image
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"slices"
 	"strings"
@@ -26,14 +25,11 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/log"
 	"github.com/opencontainers/go-digest"
 )
 
 var (
-	// ErrDiffIDMissingFromLayer is returned when the diffID is missing from a v1 layer.
-	ErrDiffIDMissingFromLayer = errors.New("failed to get diffID from v1 layer")
-	// ErrUncompressedReaderMissingFromLayer is returned when the uncompressed reader is missing from a v1 layer.
-	ErrUncompressedReaderMissingFromLayer = errors.New("failed to get uncompressed reader from v1 layer")
 	// ErrSymlinkDepthExceeded is returned when the symlink depth is exceeded.
 	ErrSymlinkDepthExceeded = errors.New("symlink depth exceeded")
 	// ErrSymlinkCycle is returned when a symlink cycle is found.
@@ -46,15 +42,17 @@ var (
 
 // Layer implements the Layer interface.
 type Layer struct {
-	v1Layer      v1.Layer
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
+	fileNodeTree *pathtree.Node[fileNode]
 }
 
 // FS returns a scalibr compliant file system.
 func (layer *Layer) FS() scalibrfs.FS {
-	return nil
+	return &FS{
+		tree: layer.fileNodeTree,
+	}
 }
 
 // IsEmpty returns whether the layer is empty.
@@ -72,31 +70,23 @@ func (layer *Layer) Command() string {
 	return layer.buildCommand
 }
 
-// Uncompressed returns a new uncompressed ReadCloser from the v1 layer which holds all files in the
-// layer.
-// TODO: b/378938357 - Figure out a better way to get the uncompressed ReadCloser.
-func (layer *Layer) Uncompressed() (io.ReadCloser, error) {
-	uncompressed, err := layer.v1Layer.Uncompressed()
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrUncompressedReaderMissingFromLayer, err)
-	}
-	return uncompressed, nil
-}
-
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
-func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) (*Layer, error) {
-	diffID, err := v1Layer.DiffID()
+func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
+	var diffID string
+	d, err := v1Layer.DiffID()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrDiffIDMissingFromLayer, err)
+		log.Warnf("failed to get diffID from v1 layer: %v", err)
+	} else {
+		diffID = d.String()
 	}
 
 	return &Layer{
-		v1Layer:      v1Layer,
-		diffID:       digest.Digest(diffID.String()),
+		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
-	}, nil
+		fileNodeTree: pathtree.NewNode[fileNode](),
+	}
 }
 
 // ========================================================

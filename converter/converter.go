@@ -97,7 +97,7 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
 		pSourceInfo := fmt.Sprintf("Identified by the %s extractor", i.Extractor.Name())
 		if len(i.Locations) == 1 {
-			pSourceInfo += fmt.Sprintf(" from %s", i.Locations[0])
+			pSourceInfo += " from " + i.Locations[0]
 		} else if l := len(i.Locations); l > 1 {
 			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, i.Locations[0], i.Locations[1])
 		}
@@ -225,8 +225,8 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		pkg := cyclonedx.Component{
 			BOMRef:  uuid.New().String(),
 			Type:    cyclonedx.ComponentTypeLibrary,
-			Name:    (*i).Name,
-			Version: (*i).Version,
+			Name:    i.Name,
+			Version: i.Version,
 		}
 		if p := ToPURL(i); p != nil {
 			pkg.PackageURL = p.String()
@@ -234,9 +234,9 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		if cpes := extractCPEs(i); len(cpes) > 0 {
 			pkg.CPE = cpes[0]
 		}
-		if len((*i).Locations) > 0 {
-			occ := make([]cyclonedx.EvidenceOccurrence, 0, len(((*i).Locations)))
-			for _, loc := range (*i).Locations {
+		if len(i.Locations) > 0 {
+			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((i.Locations)))
+			for _, loc := range i.Locations {
 				occ = append(occ, cyclonedx.EvidenceOccurrence{
 					Location: loc,
 				})

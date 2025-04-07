@@ -14,11 +14,13 @@
 
 //go:build !linux
 
+// Package netports extracts open ports on the system and maps them to running processes when
+// possible.
 package netports
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -52,7 +54,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // Extract is a no-op for non Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("only supported on Linux")
+	return nil, errors.New("only supported on Linux")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

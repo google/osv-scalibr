@@ -18,7 +18,6 @@ package image
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -47,8 +46,6 @@ type Layer interface {
 	DiffID() digest.Digest
 	// Command is the specific command that produced the layer.
 	Command() string
-	// Uncompressed gives the uncompressed tar as a file reader.
-	Uncompressed() (io.ReadCloser, error)
 }
 
 // ChainLayer is a filesystem derived from container layers that can be scanned for software
@@ -88,11 +85,11 @@ func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.
 		}
 		descriptor, err := remote.Get(ref, imageOptions...)
 		if err != nil {
-			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", ref, err)
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", ref, err)
 		}
 		image, err = descriptor.Image()
 		if err != nil {
-			return nil, fmt.Errorf("couldn’t parse image manifest %s: %v", ref, err)
+			return nil, fmt.Errorf("couldn’t parse image manifest %s: %w", ref, err)
 		}
 	} else {
 		// Pull from a tag.
@@ -102,7 +99,7 @@ func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.
 		}
 		image, err = remote.Image(tag, imageOptions...)
 		if err != nil {
-			return nil, fmt.Errorf("couldn’t pull remote image %s: %v", tag, err)
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", tag, err)
 		}
 	}
 	return image, nil
@@ -123,7 +120,7 @@ func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibr
 func NewFromImage(image v1.Image) (scalibrfs.FS, error) {
 	outDir, err := os.MkdirTemp(os.TempDir(), "scalibr-container-")
 	if err != nil {
-		return nil, fmt.Errorf("couldn’t create tmp dir for image: %v", err)
+		return nil, fmt.Errorf("couldn’t create tmp dir for image: %w", err)
 	}
 	// Squash the image's final layer into a directory.
 	cfg := &unpack.UnpackerConfig{

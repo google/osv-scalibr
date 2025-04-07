@@ -139,7 +139,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts snap info from snap.yaml file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+	inventory, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -154,7 +154,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -163,7 +163,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	snap := snap{}
 	dec := yaml.NewDecoder(input.Reader)
 	if err := dec.Decode(&snap); err != nil {
-		return nil, fmt.Errorf("failed to yaml decode %q: %v", input.Path, err)
+		return nil, fmt.Errorf("failed to yaml decode %q: %w", input.Path, err)
 	}
 
 	if snap.Name == "" {

@@ -69,7 +69,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "windows_11:21H2",
 					Version: "10.0.22000.1234",
-					Metadata: metadata.OSVersion{
+					Metadata: &metadata.OSVersion{
 						Product:     "windows_11:21H2",
 						FullVersion: "10.0.22000.1234",
 					},
@@ -111,7 +111,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "unknownWindows",
 					Version: "10.0.12345.1234",
-					Metadata: metadata.OSVersion{
+					Metadata: &metadata.OSVersion{
 						Product:     "unknownWindows",
 						FullVersion: "10.0.12345.1234",
 					},
@@ -149,7 +149,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "windows_xp",
 					Version: "5.1.2600.1234",
-					Metadata: metadata.OSVersion{
+					Metadata: &metadata.OSVersion{
 						Product:     "windows_xp",
 						FullVersion: "5.1.2600.1234",
 					},
@@ -187,7 +187,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "unknownWindows",
 					Version: "5.1.1234.1234",
-					Metadata: metadata.OSVersion{
+					Metadata: &metadata.OSVersion{
 						Product:     "unknownWindows",
 						FullVersion: "5.1.1234.1234",
 					},

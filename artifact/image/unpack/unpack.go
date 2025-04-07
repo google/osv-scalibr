@@ -208,7 +208,7 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 		}
 		log.Infof("Unpacking pass %d of %d", pass+1, u.MaxPass)
 		requiredTargets, err = unpack(dir, reader, u.SymlinkResolution, u.SymlinkErrStrategy, u.Requirer, requiredTargets, finalPass, u.MaxSizeBytes)
-		reader.Close()
+		_ = reader.Close()
 		if err != nil {
 			return err
 		}
@@ -257,8 +257,8 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 		}
 		layerDigests = append(layerDigests, digest.String())
 
-		layerPath := filepath.Join(dir, strings.Replace(digest.String(), ":", "-", -1))
-		os.Mkdir(layerPath, fs.ModePerm)
+		layerPath := filepath.Join(dir, strings.ReplaceAll(digest.String(), ":", "-"))
+		_ = os.Mkdir(layerPath, fs.ModePerm)
 
 		// requiredTargets stores targets that symlinks point to.
 		// This is needed because the symlink may be required by u.requirer, but the target may not be.
@@ -290,6 +290,35 @@ func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
 	return layerDigests, nil
 }
 
+// pathOutsideBaseDirectory checks that the fullPath is within the base directory even after
+// evaluating symlinks. This is to prevent symlinks from escaping the base directory and
+// writing files outside of it.
+// TODO(b/407782695): Figure out why safeopen.WriteFileBeneath didn't work. The suggestion from the
+// Go community is to use the safeopen package, however, our tests wouldn't pass when using the
+// safeopen.WriteFileBeneath function. More investigation is needed here.
+func pathOutsideBaseDirectory(baseDir, fullPath string) bool {
+	parentDir := filepath.Dir(fullPath)
+
+	// Resolve any symlinks in the parent directory. This is to ensure that the parent directory is
+	// within baseDir.
+	resolvedParentDir, err := filepath.EvalSymlinks(parentDir)
+	if err != nil {
+		log.Warnf("failed to resolve symlinks in parent directory: %w", err)
+		return true
+	}
+
+	// The resolved parent directory might still have relative components, so the absolute path is
+	// needed again.
+	canonicalParentDir, err := filepath.Abs(resolvedParentDir)
+	if err != nil {
+		log.Warnf("failed to get canonical path of parent directory: %w", err)
+		return true
+	}
+
+	// Check if the resolved parent directory is within baseDir.
+	return !strings.HasPrefix(canonicalParentDir, baseDir)
+}
+
 func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, symlinkErrStrategy SymlinkErrStrategy, requirer require.FileRequirer, requiredTargets map[string]bool, finalPass bool, maxSizeBytes int64) (map[string]bool, error) {
 	tarReader := tar.NewReader(reader)
 
@@ -299,11 +328,10 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 		currRequiredTargets[t] = true
 	}
 
-	// Tar extraction inspired by `singlePass` in cloud/containers/workflow/extraction/layerextract.go
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, fmt.Errorf("failed to read next header in tarball: %w", err)
@@ -356,17 +384,27 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			parent := filepath.Dir(fullPath)
 			err := os.MkdirAll(parent, fs.ModePerm)
 			if err != nil {
-				log.Errorf("failed to create directory %q: %v", parent, err)
-				return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
+				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
+				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
 
 			// Retain the original file permission but update it so we can always read and write the file.
 			modeWithOwnerReadWrite := header.FileInfo().Mode() | 0600
+
+			// Make sure files are written under dir. This is to prevent symlinks from escaping dir and
+			// writing files outside of the directory.
+			if pathOutsideBaseDirectory(dir, fullPath) {
+				log.Warnf("attempted to write file %q outside of base directory %q", fullPath, dir)
+				continue
+			}
+
 			err = os.WriteFile(fullPath, content, modeWithOwnerReadWrite)
 			if err != nil {
-				log.Errorf("failed to write file %q: %v", fullPath, err)
-				return nil, fmt.Errorf("failed to write file %q: %w", fullPath, err)
+				log.Errorf("failed to write regular file %q: %v", fullPath, err)
+				return nil, fmt.Errorf("failed to write regular file %q: %w", fullPath, err)
 			}
+
+			// TODO: b/406760694 - Remove this once the bug is fixed.
 
 		case tar.TypeLink, tar.TypeSymlink:
 			parent := filepath.Dir(fullPath)
@@ -422,9 +460,9 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if err := os.WriteFile(fullPath, content, 0644); err != nil {
-				log.Errorf("failed to write file %q: %v", fullPath, err)
+				log.Errorf("failed to write symlink as regular file %q: %v", fullPath, err)
 				if symlinkErrStrategy == SymlinkErrReturn {
-					return nil, fmt.Errorf("failed to write file %q: %w", fullPath, err)
+					return nil, fmt.Errorf("failed to write symlink as regular file %q: %w", fullPath, err)
 				}
 			}
 
@@ -442,7 +480,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 func (u *Unpacker) addSquashedImageDirectory(root string, image v1.Image) error {
 	squashedImagePath := filepath.Join(root, squashedImageDirectory)
 
-	os.Mkdir(squashedImagePath, fs.ModePerm)
+	_ = os.Mkdir(squashedImagePath, fs.ModePerm)
 
 	if err := u.UnpackSquashed(squashedImagePath, image); err != nil {
 		return fmt.Errorf("failed to unpack all squashed image: %w", err)

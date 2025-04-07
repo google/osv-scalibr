@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -39,36 +40,6 @@ const (
 	// Name is the unique name of this extractor.
 	Name = "javascript/packagelockjson"
 )
-
-type npmLockDependency struct {
-	// For an aliased package, Version is like "npm:[name]@[version]"
-	Version      string                       `json:"version"`
-	Dependencies map[string]npmLockDependency `json:"dependencies,omitempty"`
-
-	Dev      bool `json:"dev,omitempty"`
-	Optional bool `json:"optional,omitempty"`
-}
-
-type npmLockPackage struct {
-	// For an aliased package, Name is the real package name
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	Resolved string `json:"resolved"`
-
-	Dev         bool `json:"dev,omitempty"`
-	DevOptional bool `json:"devOptional,omitempty"`
-	Optional    bool `json:"optional,omitempty"`
-
-	Link bool `json:"link,omitempty"`
-}
-
-type npmLockfile struct {
-	Version int `json:"lockfileVersion"`
-	// npm v1- lockfiles use "dependencies"
-	Dependencies map[string]npmLockDependency `json:"dependencies,omitempty"`
-	// npm v2+ lockfiles use "packages"
-	Packages map[string]npmLockPackage `json:"packages,omitempty"`
-}
 
 type packageDetails struct {
 	Name      string
@@ -110,21 +81,7 @@ func (pdm npmPackageDetailsMap) add(key string, details packageDetails) {
 	pdm[key] = details
 }
 
-func (dep npmLockDependency) depGroups() []string {
-	if dep.Dev && dep.Optional {
-		return []string{"dev", "optional"}
-	}
-	if dep.Dev {
-		return []string{"dev"}
-	}
-	if dep.Optional {
-		return []string{"optional"}
-	}
-
-	return nil
-}
-
-func parseNpmLockDependencies(dependencies map[string]npmLockDependency) map[string]packageDetails {
+func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for name, detail := range dependencies {
@@ -167,7 +124,7 @@ func parseNpmLockDependencies(dependencies map[string]npmLockDependency) map[str
 			Name:      name,
 			Version:   finalVersion,
 			Commit:    commit,
-			DepGroups: detail.depGroups(),
+			DepGroups: detail.DepGroups(),
 		})
 	}
 
@@ -185,21 +142,7 @@ func extractNpmPackageName(name string) string {
 	return pkgName
 }
 
-func (pkg npmLockPackage) depGroups() []string {
-	if pkg.Dev {
-		return []string{"dev"}
-	}
-	if pkg.Optional {
-		return []string{"optional"}
-	}
-	if pkg.DevOptional {
-		return []string{"dev", "optional"}
-	}
-
-	return nil
-}
-
-func parseNpmLockPackages(packages map[string]npmLockPackage) map[string]packageDetails {
+func parseNpmLockPackages(packages map[string]packagelockjson.Package) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for namePath, detail := range packages {
@@ -226,14 +169,14 @@ func parseNpmLockPackages(packages map[string]npmLockPackage) map[string]package
 			Name:      finalName,
 			Version:   detail.Version,
 			Commit:    commit,
-			DepGroups: detail.depGroups(),
+			DepGroups: detail.DepGroups(),
 		})
 	}
 
 	return details
 }
 
-func parseNpmLock(lockfile npmLockfile) map[string]packageDetails {
+func parseNpmLock(lockfile packagelockjson.LockFile) map[string]packageDetails {
 	if lockfile.Packages != nil {
 		return parseNpmLockPackages(lockfile.Packages)
 	}
@@ -349,7 +292,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 }
 
 func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	var parsedLockfile *npmLockfile
+	var parsedLockfile *packagelockjson.LockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 

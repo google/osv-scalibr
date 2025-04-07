@@ -20,8 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"deps.dev/util/maven"
+	"deps.dev/util/resolve"
+	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 )
@@ -37,23 +40,34 @@ const (
 // MaxParent sets a limit on the number of parents to avoid indefinite loop.
 const MaxParent = 100
 
+// Options for merging parent data.
+//   - Input is the scan input for the current project.
+//   - Client is the Maven registry API client for fetching remote pom.xml.
+//   - AllowLocal indicates whether parsing local parent pom.xml is allowed.
+//   - InitialParentIndex indicates the index of the current parent project, which is
+//     used to check if the packaging has to be `pom`.
+type Options struct {
+	Input  *filesystem.ScanInput
+	Client *datasource.MavenRegistryAPIClient
+
+	AllowLocal         bool
+	InitialParentIndex int
+}
+
 // MergeParents parses local accessible parent pom.xml or fetches it from
 // upstream, merges into root project, then interpolate the properties.
-//   - result holds the Maven project to merge into, this is modified in place.
 //   - current holds the current parent project to merge.
-//   - parentIndex indicates the index of the current parent project, which is
-//     used to check if the packaging has to be `pom`.
-//   - allowLocal indicates whether parsing local parent pom.xml is allowed.
-//   - path holds the path to the current pom.xml, which is used to compute the
-//     relative path of parent.
-func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient *datasource.MavenRegistryAPIClient, result *maven.Project, current maven.Parent, initialParentIndex int, allowLocal bool) error {
+//   - result holds the Maven project to merge into, this is modified in place.
+//   - opts holds the options for merging parent data.
+func MergeParents(ctx context.Context, current maven.Parent, result *maven.Project, opts Options) error {
 	currentPath := ""
-	if input != nil {
-		currentPath = input.Path
+	if opts.Input != nil {
+		currentPath = opts.Input.Path
 	}
 
+	allowLocal := opts.AllowLocal
 	visited := make(map[maven.ProjectKey]struct{}, MaxParent)
-	for n := initialParentIndex; n < MaxParent; n++ {
+	for n := opts.InitialParentIndex; n < MaxParent; n++ {
 		if current.GroupID == "" || current.ArtifactID == "" || current.Version == "" {
 			break
 		}
@@ -68,7 +82,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 		if allowLocal {
 			var parentPath string
 			var err error
-			parentFoundLocally, parentPath, err = loadParentLocal(input, current, currentPath, &proj)
+			parentFoundLocally, parentPath, err = loadParentLocal(opts.Input, current, currentPath, &proj)
 			if err != nil {
 				return fmt.Errorf("failed to load parent at %s: %w", currentPath, err)
 			}
@@ -81,7 +95,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 			// allow parsing parent pom.xml locally anymore.
 			allowLocal = false
 			var err error
-			proj, err = loadParentRemote(ctx, mavenClient, current, n)
+			proj, err = loadParentRemote(ctx, opts.Client, current, n)
 			if err != nil {
 				return fmt.Errorf("failed to load parent from remote: %w", err)
 			}
@@ -90,14 +104,16 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 		if err := result.MergeProfiles("", maven.ActivationOS{}); err != nil {
 			return fmt.Errorf("failed to merge default profiles: %w", err)
 		}
-		for _, repo := range proj.Repositories {
-			if err := mavenClient.AddRegistry(datasource.MavenRegistry{
-				URL:              string(repo.URL),
-				ID:               string(repo.ID),
-				ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
-				SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
-			}); err != nil {
-				return fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+		if opts.Client != nil && len(proj.Repositories) > 0 {
+			for _, repo := range proj.Repositories {
+				if err := opts.Client.AddRegistry(datasource.MavenRegistry{
+					URL:              string(repo.URL),
+					ID:               string(repo.ID),
+					ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
+					SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
+				}); err != nil {
+					return fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+				}
 			}
 		}
 		result.MergeParent(proj)
@@ -110,7 +126,7 @@ func MergeParents(ctx context.Context, input *filesystem.ScanInput, mavenClient 
 // loadParentLocal loads a parent Maven project from local file system
 // and returns whether parent is found locally as well as parent path.
 func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path string, result *maven.Project) (bool, string, error) {
-	parentPath := parentPOMPath(input, path, string(parent.RelativePath))
+	parentPath := ParentPOMPath(input, path, string(parent.RelativePath))
 	if parentPath == "" {
 		return false, "", nil
 	}
@@ -134,6 +150,11 @@ func loadParentLocal(input *filesystem.ScanInput, parent maven.Parent, path stri
 
 // loadParentRemote loads a parent from remote registry.
 func loadParentRemote(ctx context.Context, mavenClient *datasource.MavenRegistryAPIClient, parent maven.Parent, parentIndex int) (maven.Project, error) {
+	if mavenClient == nil {
+		// The client is not available, so return an empty project.
+		return maven.Project{}, nil
+	}
+
 	proj, err := mavenClient.GetProject(ctx, string(parent.GroupID), string(parent.ArtifactID), string(parent.Version))
 	if err != nil {
 		return maven.Project{}, fmt.Errorf("failed to get Maven project %s:%s:%s: %w", parent.GroupID, parent.ArtifactID, parent.Version, err)
@@ -162,11 +183,11 @@ func ProjectKey(proj maven.Project) maven.ProjectKey {
 	return proj.ProjectKey
 }
 
-// parentPOMPath returns the path of a parent pom.xml.
+// ParentPOMPath returns the path of a parent pom.xml.
 // Maven looks for the parent POM first in 'relativePath', then
 // the local repository '../pom.xml', and lastly in the remote repo.
 // An empty string is returned if failed to resolve the parent path.
-func parentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
+func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string) string {
 	if relativePath == "" {
 		relativePath = "../pom.xml"
 	}
@@ -193,9 +214,72 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 	// To get dependency management from another project, we need the
 	// project with parents merged, so we call MergeParents by passing
 	// an empty project.
-	if err := MergeParents(ctx, nil, client.WithoutRegistries(), &result, root, 0, false); err != nil {
+	if err := MergeParents(ctx, root, &result, Options{
+		Client:             client.WithoutRegistries(),
+		AllowLocal:         false,
+		InitialParentIndex: 0,
+	}); err != nil {
 		return maven.DependencyManagement{}, err
 	}
 
 	return result.DependencyManagement, nil
+}
+
+// CompareVersions compares two Maven semver versions with special behaviour for specific packages,
+// producing more desirable ordering using non-standard comparison.
+func CompareVersions(vk resolve.VersionKey, a *semver.Version, b *semver.Version) int {
+	if a == nil || b == nil {
+		if a == nil {
+			return -1
+		}
+
+		return 1
+	}
+
+	if vk.Name == "com.google.guava:guava" {
+		// com.google.guava:guava has 'flavors' with versions ending with -jre or -android.
+		// https://github.com/google/guava/wiki/ReleasePolicy#flavors
+		// To preserve the flavor in updates, we make the opposite flavor considered the earliest versions.
+
+		// Old versions have '22.0' and '22.0-android', and even older version don't have any flavors.
+		// Only check for the android flavor, and assume its jre otherwise.
+		wantAndroid := strings.HasSuffix(vk.Version, "-android")
+
+		aIsAndroid := strings.HasSuffix(a.String(), "-android")
+		bIsAndroid := strings.HasSuffix(b.String(), "-android")
+
+		if aIsAndroid == bIsAndroid {
+			return a.Compare(b)
+		}
+
+		if aIsAndroid == wantAndroid {
+			return 1
+		}
+
+		return -1
+	}
+
+	// Old versions of apache commons-* libraries (commons-io:commons-io, commons-math:commons-math, etc.)
+	// used date-based versions (e.g. 20040118.003354), which naturally sort after the more recent semver versions.
+	// We manually force the date versions to come before the others to prevent downgrades.
+	if strings.HasPrefix(vk.Name, "commons-") {
+		// All date-based versions of these packages seem to be in the years 2002-2005.
+		// It's extremely unlikely we'd see any versions dated before 1999 or after 2010.
+		// It's also unlikely we'd see any major versions of these packages reach up to 200.0.0.
+		// Checking if the version starts with "200" should therefore be sufficient to determine if it's a year.
+		aCal := strings.HasPrefix(a.String(), "200")
+		bCal := strings.HasPrefix(b.String(), "200")
+
+		if aCal == bCal {
+			return a.Compare(b)
+		}
+
+		if aCal {
+			return -1
+		}
+
+		return 1
+	}
+
+	return a.Compare(b)
 }

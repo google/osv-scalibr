@@ -33,9 +33,9 @@ const (
 
 // fileNode represents a file in a virtual filesystem.
 type fileNode struct {
-	// extractDir and originLayerID are used to construct the real file path of the fileNode.
-	extractDir    string
-	originLayerID string
+	// extractDir and layerDir are used to construct the real file path of the fileNode.
+	extractDir string
+	layerDir   string
 
 	// isWhiteout is true if the fileNode represents a whiteout file
 	isWhiteout bool
@@ -120,7 +120,7 @@ func (f *fileNode) Close() error {
 // RealFilePath returns the real file path of the fileNode. This is the concatenation of the
 // root image extract directory, origin layer ID, and the virtual path.
 func (f *fileNode) RealFilePath() string {
-	return filepath.Join(f.extractDir, f.originLayerID, filepath.FromSlash(f.virtualPath))
+	return filepath.Join(f.extractDir, f.layerDir, filepath.FromSlash(f.virtualPath))
 }
 
 // ========================================================

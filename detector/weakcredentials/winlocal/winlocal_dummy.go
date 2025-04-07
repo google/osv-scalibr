@@ -14,11 +14,12 @@
 
 //go:build !windows
 
+// Package winlocal implements a weak passwords detector for local accounts on Windows.
 package winlocal
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -55,5 +56,5 @@ func (Detector) RequiredExtractors() []string { return nil }
 
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	return nil, fmt.Errorf("only supported on Windows")
+	return nil, errors.New("only supported on Windows")
 }

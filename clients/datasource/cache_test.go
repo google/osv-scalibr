@@ -38,7 +38,7 @@ func TestRequestCache(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				t.Helper()
-				requestCache.Get(i, func() (int, error) {
+				_, _ = requestCache.Get(i, func() (int, error) {
 					// Count how many times this function gets called for this key,
 					// then return the key as the value.
 					atomic.AddInt32(&fnCalls[i], 1)

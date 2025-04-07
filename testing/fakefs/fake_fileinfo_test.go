@@ -51,8 +51,7 @@ func TestFakeFileInfo(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			var gotFileInfo fs.FileInfo
-			gotFileInfo = fakefs.FakeFileInfo{
+			var gotFileInfo fs.FileInfo = fakefs.FakeFileInfo{
 				FileName:    test.filename,
 				FileSize:    test.size,
 				FileMode:    test.mode,

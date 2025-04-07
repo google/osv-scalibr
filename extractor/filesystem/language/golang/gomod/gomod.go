@@ -92,12 +92,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return maps.Values(ivs), nil
 	}
 
+	// merge go.sum inventories with go.mod ones
 	for k, sumIv := range sumIvs {
 		if iv, ok := ivs[k]; ok {
 			// if the dependency is already present then add `go.sum` to its Locations slice
 			iv.Locations = append(iv.Locations, sumIv.Locations...)
 		} else {
-			// otherwise add a new decency to the inventory
+			// otherwise add a new dependency to the inventory
 			ivs[k] = sumIv
 		}
 	}
@@ -170,6 +171,17 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 		packages[ivKey{name: "stdlib"}] = &extractor.Inventory{
 			Name:      "stdlib",
 			Version:   parsedLockfile.Go.Version,
+			Locations: []string{input.Path},
+		}
+	}
+
+	// Give the toolchain version priority, if present
+	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
+		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
+
+		packages[ivKey{name: "stdlib"}] = &extractor.Inventory{
+			Name:      "stdlib",
+			Version:   strings.TrimPrefix(version, "go"),
 			Locations: []string{input.Path},
 		}
 	}

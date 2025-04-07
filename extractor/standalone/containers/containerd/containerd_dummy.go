@@ -14,11 +14,12 @@
 
 //go:build !linux
 
+// Package containerd extracts container inventory from containerd API.
 package containerd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -67,7 +68,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // Extract is a no-op for non-Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("only supported on Linux")
+	return nil, errors.New("only supported on Linux")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

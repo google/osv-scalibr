@@ -586,7 +586,7 @@ func TestExtract(t *testing.T) {
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))
 			got, err := e.Extract(context.Background(), input)
-			if err != nil && tt.wantErr == errAny {
+			if err != nil && errors.Is(tt.wantErr, errAny) {
 				err = errAny
 			}
 			if !errors.Is(err, tt.wantErr) {
@@ -694,10 +694,11 @@ func mustJar(t *testing.T, path string) *os.File {
 		t.Fatalf("os.ReadFile(%s) unexpected error: %v", path, err)
 	}
 
-	jarFile, err := os.CreateTemp("", "temp-*.jar")
+	jarFile, err := os.CreateTemp(t.TempDir(), "temp-*.jar")
 	if err != nil {
 		t.Fatalf("os.CreateTemp(\"temp-*.jar\") unexpected error: %v", err)
 	}
+	//nolint:errcheck
 	defer jarFile.Sync()
 
 	zipWriter := zip.NewWriter(jarFile)

@@ -165,3 +165,48 @@ func (node *Node[V]) walk(path string, fn func(string, *V) error) error {
 
 	return nil
 }
+
+// Remove removes the node at the given path.
+func (node *Node[V]) Remove(path string) *V {
+	path, _ = cleanPath(path)
+
+	// If the path is empty, node is the root. Root cannot be removed.
+	if path == "" {
+		return nil
+	}
+
+	segments := strings.Split(path, divider)
+
+	cursor := node
+	pathNodes := []*Node[V]{}
+
+	for _, segment := range segments {
+		pathNodes = append(pathNodes, cursor)
+
+		next, ok := cursor.children[segment]
+		if !ok {
+			// The file node with the given path does not exist.
+			return nil
+		}
+		cursor = next
+	}
+
+	value := cursor.value
+	// Remove the value from the tree.
+	cursor.value = nil
+
+	// Reverse loop through the path nodes to remove the empty parent directory nodes.
+	for i := len(pathNodes) - 1; i > 0; i-- {
+		segment := segments[i]
+		pathNode := pathNodes[i]
+		delete(pathNode.children, segment)
+
+		// If the path node has other children, then break since we don't want to remove the parent
+		// directory.
+		if len(pathNode.children) > 0 {
+			break
+		}
+	}
+
+	return value
+}

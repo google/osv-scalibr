@@ -70,24 +70,20 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// necessarily installed by the root project. We instead use the more specific top-level
 	// lockfile for the root project dependencies.
 	dir := filepath.ToSlash(filepath.Dir(path))
-	if slices.Contains(strings.Split(dir, "/"), "node_modules") {
-		return false
-	}
-
-	return true
+	return !slices.Contains(strings.Split(dir, "/"), "node_modules")
 }
 
 // structurePackageDetails returns the name, version, and commit of a package
 // specified as a tuple in a bun.lock
 func structurePackageDetails(pkg []any) (string, string, string, error) {
 	if len(pkg) == 0 {
-		return "", "", "", fmt.Errorf("empty package tuple")
+		return "", "", "", errors.New("empty package tuple")
 	}
 
 	str, ok := pkg[0].(string)
 
 	if !ok {
-		return "", "", "", fmt.Errorf("first element of package tuple is not a string")
+		return "", "", "", errors.New("first element of package tuple is not a string")
 	}
 
 	str, isScoped := strings.CutPrefix(str, "@")

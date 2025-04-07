@@ -359,15 +359,9 @@ func (mv mavenVersion) compare(w mavenVersion) (int, error) {
 }
 
 func (mv mavenVersion) CompareStr(str string) (int, error) {
-	mw, err := parseMavenVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return mv.compare(mw)
+	return mv.compare(parseMavenVersion(str))
 }
 
-func parseMavenVersion(str string) (mavenVersion, error) {
-	return newMavenVersion(str), nil
+func parseMavenVersion(str string) mavenVersion {
+	return newMavenVersion(str)
 }

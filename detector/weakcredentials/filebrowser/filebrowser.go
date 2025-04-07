@@ -25,7 +25,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,9 +127,9 @@ func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int
 // checkAccessibility checks if the filebrowser instance is accessible given an IP and port.
 func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
 	client := &http.Client{Timeout: requestTimeout}
-	targetURL := fmt.Sprintf("http://%s:%d/", fileBrowserIP, fileBrowserPort)
+	targetURL := fmt.Sprintf("http://%s/", net.JoinHostPort(fileBrowserIP, strconv.Itoa(fileBrowserPort)))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
@@ -144,7 +146,7 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return false
 	}
 
@@ -172,15 +174,16 @@ func checkAccessibility(ctx context.Context, fileBrowserIP string, fileBrowserPo
 // checkLogin checks if the login with default credentials is successful.
 func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {
 	client := &http.Client{Timeout: requestTimeout}
-	targetURL := fmt.Sprintf("http://%s:%d/api/login", fileBrowserIP, fileBrowserPort)
+	targetURL := fmt.Sprintf("http://%s/api/login", net.JoinHostPort(fileBrowserIP, strconv.Itoa(fileBrowserPort)))
 
+	//nolint:errchkjson // this is a static struct, so it cannot fail
 	requestBody, _ := json.Marshal(map[string]string{
 		"username":  "admin",
 		"password":  "admin",
 		"recaptcha": "",
 	})
 
-	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, io.NopCloser(bytes.NewBuffer(requestBody)))
 	if err != nil {
 		log.Infof("Error while constructing request %s to the server: %v", targetURL, err)
 		return false
@@ -198,5 +201,5 @@ func checkLogin(ctx context.Context, fileBrowserIP string, fileBrowserPort int) 
 	}
 	defer resp.Body.Close()
 
-	return resp.StatusCode == 200
+	return resp.StatusCode == http.StatusOK
 }

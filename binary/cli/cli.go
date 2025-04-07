@@ -121,10 +121,12 @@ type Flags struct {
 	Output                Array
 	ExtractorsToRun       []string
 	DetectorsToRun        []string
-	FilesToExtract        []string
+	PathsToExtract        []string
+	IgnoreSubDirs         bool
 	DirsToSkip            []string
 	SkipDirRegex          string
 	SkipDirGlob           string
+	UseGitignore          bool
 	RemoteImage           string
 	ImagePlatform         string
 	GovulncheckDBPath     string
@@ -139,6 +141,7 @@ type Flags struct {
 	FilterByCapabilities  bool
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
+	Offline               bool
 }
 
 var supportedOutputFormats = []string{
@@ -202,7 +205,7 @@ func validateOutput(output []string) error {
 	for _, item := range output {
 		o := strings.Split(item, "=")
 		if len(o) != 2 {
-			return fmt.Errorf("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
+			return errors.New("invalid output format, should follow a format like -o textproto=result.textproto -o spdx23-json=result.spdx.json")
 		}
 		oFormat := o[0]
 		if !slices.Contains(supportedOutputFormats, oFormat) {
@@ -218,20 +221,7 @@ func validateImagePlatform(imagePlatform string) error {
 	}
 	platformDetails := strings.Split(imagePlatform, "/")
 	if len(platformDetails) < 2 {
-		return fmt.Errorf("Image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
-	}
-	return nil
-}
-
-func validateSPDXCreators(creators string) error {
-	if len(creators) == 0 {
-		return nil
-	}
-	for _, item := range strings.Split(creators, ",") {
-		c := strings.Split(item, ":")
-		if len(c) != 2 {
-			return fmt.Errorf("invalid spdx-creators format, should follow a format like --spdx-creators=Tool:SCALIBR,Organization:Google")
-		}
+		return fmt.Errorf("image platform '%s' is invalid. Must be in the form OS/Architecture (e.g. linux/amd64)", imagePlatform)
 	}
 	return nil
 }
@@ -246,7 +236,7 @@ func validateMultiStringArg(arg []string) error {
 		}
 		for _, item := range strings.Split(item, ",") {
 			if len(item) == 0 {
-				return fmt.Errorf("list item cannot be left empty")
+				return errors.New("list item cannot be left empty")
 			}
 		}
 	}
@@ -290,7 +280,7 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 		for _, d := range det {
 			for _, req := range d.RequiredExtractors() {
 				if !exMap[req] {
-					return fmt.Errorf("Extractor %s must be turned on for Detector %s to run", req, d.Name())
+					return fmt.Errorf("extractor %s must be turned on for Detector %s to run", req, d.Name())
 				}
 			}
 		}
@@ -338,10 +328,12 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
 		Capabilities:         capab,
-		FilesToExtract:       f.FilesToExtract,
+		PathsToExtract:       f.PathsToExtract,
+		IgnoreSubDirs:        f.IgnoreSubDirs,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,
+		UseGitignore:         f.UseGitignore,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
 }
@@ -474,10 +466,7 @@ func multiStringToList(arg []string) []string {
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	if f.RemoteImage != "" {
-		imageOptions, err := f.scanRemoteImageOptions()
-		if err != nil {
-			return nil, err
-		}
+		imageOptions := f.scanRemoteImageOptions()
 		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
 		if err != nil {
 			return nil, err
@@ -503,7 +492,7 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	return scanRoots, nil
 }
 
-func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
+func (f *Flags) scanRemoteImageOptions() *[]remote.Option {
 	imageOptions := []remote.Option{
 		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 	}
@@ -516,23 +505,27 @@ func (f *Flags) scanRemoteImageOptions() (*[]remote.Option, error) {
 			},
 		))
 	}
-	return &imageOptions, nil
+	return &imageOptions
 }
 
 // All capabilities are enabled when running SCALIBR as a binary.
 func (f *Flags) capabilities() *plugin.Capabilities {
+	network := plugin.NetworkOnline
+	if f.Offline {
+		network = plugin.NetworkOffline
+	}
 	if f.RemoteImage != "" {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
 			OS:            plugin.OSLinux,
-			Network:       plugin.NetworkOnline,
+			Network:       network,
 			DirectFS:      true,
 			RunningSystem: false,
 		}
 	}
 	return &plugin.Capabilities{
 		OS:            platform.OS(),
-		Network:       plugin.NetworkOnline,
+		Network:       network,
 		DirectFS:      true,
 		RunningSystem: true,
 	}
@@ -588,12 +581,4 @@ func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
 		}
 	}
 	return result
-}
-
-func keys(m map[string][]string) []string {
-	ret := make([]string, 0, len(m))
-	for k := range m {
-		ret = append(ret, k)
-	}
-	return ret
 }

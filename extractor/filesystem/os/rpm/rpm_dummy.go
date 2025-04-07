@@ -14,11 +14,12 @@
 
 //go:build !linux
 
+// Package rpm extracts packages from rpm database.
 package rpm
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -73,7 +74,7 @@ func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 
 // Extract extracts packages from rpm status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("not supported")
+	return nil, errors.New("not supported")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

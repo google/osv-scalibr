@@ -42,7 +42,7 @@ func TestValidateFlags(t *testing.T) {
 				ResultFile:      "result.textproto",
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
-				DetectorsToRun:  []string{"cve,cis"},
+				DetectorsToRun:  []string{"weakcreds,cis"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
@@ -257,6 +257,35 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 			}
 			if diff := cmp.Diff(wantScanRoots, gotScanRoots); diff != "" {
 				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_NetworkCapabilities(t *testing.T) {
+	for _, tc := range []struct {
+		desc        string
+		flags       cli.Flags
+		wantNetwork plugin.Network
+	}{
+		{
+			desc:        "online_if_nothing_set",
+			flags:       cli.Flags{},
+			wantNetwork: plugin.NetworkOnline,
+		},
+		{
+			desc:        "offline_if_offline_flag_set",
+			flags:       cli.Flags{Offline: true},
+			wantNetwork: plugin.NetworkOffline,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if tc.wantNetwork != cfg.Capabilities.Network {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantNetwork, cfg.Capabilities.Network)
 			}
 		})
 	}

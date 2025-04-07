@@ -14,11 +14,12 @@
 
 //go:build !linux
 
+// Package containerd extracts container inventory from containerd metadb database.
 package containerd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -66,7 +67,7 @@ func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 
 // Extract not implemented.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("not supported")
+	return nil, errors.New("not supported")
 }
 
 // ToPURL not implemented.

@@ -16,7 +16,6 @@ package image
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -33,51 +32,44 @@ import (
 )
 
 func TestConvertV1Layer(t *testing.T) {
-	reader := io.NopCloser(nil)
 	tests := []struct {
 		name      string
 		v1Layer   v1.Layer
 		command   string
 		isEmpty   bool
 		wantLayer *Layer
-		wantError error
 	}{
 		{
 			name:    "valid layer",
-			v1Layer: fakev1layer.New("abc123", "ADD file", false, reader),
+			v1Layer: fakev1layer.New(t, "abc123", "ADD file", false, nil, false),
 			command: "ADD file",
 			isEmpty: false,
 			wantLayer: &Layer{
-				v1Layer:      fakev1layer.New("abc123", "ADD file", false, reader),
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
+				fileNodeTree: pathtree.NewNode[fileNode](),
 			},
 		},
 		{
-			name:      "v1 layer missing diffID",
-			v1Layer:   fakev1layer.New("", "ADD file", false, reader),
-			command:   "ADD file",
-			isEmpty:   false,
-			wantError: ErrDiffIDMissingFromLayer,
-		},
-		{
-			name:      "v1 layer missing tar reader",
-			v1Layer:   fakev1layer.New("abc123", "ADD file", false, nil),
-			command:   "ADD file",
-			isEmpty:   false,
-			wantError: ErrUncompressedReaderMissingFromLayer,
+			name:    "valid layer with missing diff ID",
+			v1Layer: fakev1layer.New(t, "", "ADD file", false, nil, false),
+			command: "ADD file",
+			isEmpty: false,
+			wantLayer: &Layer{
+				diffID:       "",
+				buildCommand: "ADD file",
+				isEmpty:      false,
+				fileNodeTree: pathtree.NewNode[fileNode](),
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotLayer, gotError := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
+			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
 
-			if tc.wantError != nil && gotError == tc.wantError {
-				t.Errorf("convertV1Layer(%v, %v, %v) returned error: %v, want error: %v", tc.v1Layer, tc.command, tc.isEmpty, gotError, tc.wantError)
-			}
-			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{})); tc.wantLayer != nil && diff != "" {
+			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, pathtree.Node[fileNode]{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
 			}
 		})
@@ -87,34 +79,34 @@ func TestConvertV1Layer(t *testing.T) {
 func TestChainLayerFS(t *testing.T) {
 	testDir := func() string {
 		dir := t.TempDir()
-		os.WriteFile(path.Join(dir, "file1"), []byte("file1"), 0600)
+		_ = os.WriteFile(path.Join(dir, "file1"), []byte("file1"), 0600)
 		return dir
 	}()
 
 	root := &fileNode{
-		extractDir:    testDir,
-		originLayerID: "",
-		virtualPath:   "/",
-		isWhiteout:    false,
-		mode:          fs.ModeDir | dirPermission,
+		extractDir:  testDir,
+		layerDir:    "",
+		virtualPath: "/",
+		isWhiteout:  false,
+		mode:        fs.ModeDir | dirPermission,
 	}
 	file1 := &fileNode{
-		extractDir:    testDir,
-		originLayerID: "",
-		virtualPath:   "/file1",
-		isWhiteout:    false,
-		mode:          filePermission,
+		extractDir:  testDir,
+		layerDir:    "",
+		virtualPath: "/file1",
+		isWhiteout:  false,
+		mode:        filePermission,
 	}
 
 	emptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
-		tree.Insert("/", root)
+		_ = tree.Insert("/", root)
 		return tree
 	}()
 	nonEmptyTree := func() *pathtree.Node[fileNode] {
 		tree := pathtree.NewNode[fileNode]()
-		tree.Insert("/", root)
-		tree.Insert("/file1", file1)
+		_ = tree.Insert("/", root)
+		_ = tree.Insert("/file1", file1)
 		return tree
 	}()
 
@@ -150,7 +142,7 @@ func TestChainLayerFS(t *testing.T) {
 			chainfs := tc.chainLayer.FS()
 
 			gotPaths := []string{}
-			fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
+			_ = fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					t.Errorf("WalkDir(%v) returned error: %v", path, err)
 				}
@@ -194,11 +186,11 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/",
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer1",
-				virtualPath:   "/",
-				isWhiteout:    false,
-				mode:          fs.ModeDir | dirPermission,
+				extractDir:  extractDir,
+				layerDir:    "layer1",
+				virtualPath: "/",
+				isWhiteout:  false,
+				mode:        fs.ModeDir | dirPermission,
 			},
 		},
 		{
@@ -206,11 +198,11 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/dir1",
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer1",
-				virtualPath:   "/dir1",
-				isWhiteout:    false,
-				mode:          fs.ModeDir | dirPermission,
+				extractDir:  extractDir,
+				layerDir:    "layer1",
+				virtualPath: "/dir1",
+				isWhiteout:  false,
+				mode:        fs.ModeDir | dirPermission,
 			},
 		},
 		{
@@ -218,11 +210,11 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/baz",
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer1",
-				virtualPath:   "/baz",
-				isWhiteout:    false,
-				mode:          filePermission,
+				extractDir:  extractDir,
+				layerDir:    "layer1",
+				virtualPath: "/baz",
+				isWhiteout:  false,
+				mode:        filePermission,
 			},
 		},
 		{
@@ -230,11 +222,11 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/dir1/foo",
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer2",
-				virtualPath:   "/dir1/foo",
-				isWhiteout:    false,
-				mode:          filePermission,
+				extractDir:  extractDir,
+				layerDir:    "layer2",
+				virtualPath: "/dir1/foo",
+				isWhiteout:  false,
+				mode:        filePermission,
 			},
 		},
 		{
@@ -243,11 +235,11 @@ func TestChainFSOpen(t *testing.T) {
 			path:    "/symlink1",
 			// The node the symlink points to is expected.
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer2",
-				virtualPath:   "/dir2/bar",
-				isWhiteout:    false,
-				mode:          filePermission,
+				extractDir:  extractDir,
+				layerDir:    "layer2",
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
 			},
 		},
 		{
@@ -256,11 +248,11 @@ func TestChainFSOpen(t *testing.T) {
 			path:    "/symlink2",
 			// The node the symlink points to is expected.
 			wantNode: &fileNode{
-				extractDir:    extractDir,
-				originLayerID: "layer2",
-				virtualPath:   "/dir2/bar",
-				isWhiteout:    false,
-				mode:          filePermission,
+				extractDir:  extractDir,
+				layerDir:    "layer2",
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
 			},
 		},
 		{
@@ -400,97 +392,97 @@ func TestChainFSReadDir(t *testing.T) {
 			// wh.foobar is a whiteout file and should not be returned.
 			wantNodes: []*fileNode{
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer1",
-					virtualPath:   "/dir1",
-					isWhiteout:    false,
-					mode:          fs.ModeDir | dirPermission,
+					extractDir:  extractDir,
+					layerDir:    "layer1",
+					virtualPath: "/dir1",
+					isWhiteout:  false,
+					mode:        fs.ModeDir | dirPermission,
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer1",
-					virtualPath:   "/baz",
-					isWhiteout:    false,
-					mode:          filePermission,
+					extractDir:  extractDir,
+					layerDir:    "layer1",
+					virtualPath: "/baz",
+					isWhiteout:  false,
+					mode:        filePermission,
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/dir2",
-					isWhiteout:    false,
-					mode:          fs.ModeDir | dirPermission,
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/dir2",
+					isWhiteout:  false,
+					mode:        fs.ModeDir | dirPermission,
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink1",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/dir2/bar",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink1",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/dir2/bar",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink2",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink1",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink2",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink1",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink3",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink2",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink3",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink2",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink4",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink3",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink4",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink3",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink-cycle1",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink-cycle2",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink-cycle1",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-cycle2",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink-cycle2",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink-cycle3",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink-cycle2",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-cycle3",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink-cycle3",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/symlink-cycle1",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink-cycle3",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-cycle1",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink-to-nonexistent-file",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/nonexistent-file",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink-to-nonexistent-file",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/nonexistent-file",
 				},
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/symlink-to-dir",
-					isWhiteout:    false,
-					mode:          fs.ModeSymlink,
-					targetPath:    "/dir2",
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/symlink-to-dir",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/dir2",
 				},
 			},
 		},
@@ -500,11 +492,11 @@ func TestChainFSReadDir(t *testing.T) {
 			path:    "/dir1",
 			wantNodes: []*fileNode{
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/dir1/foo",
-					isWhiteout:    false,
-					mode:          filePermission,
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/dir1/foo",
+					isWhiteout:  false,
+					mode:        filePermission,
 				},
 			},
 		},
@@ -520,11 +512,11 @@ func TestChainFSReadDir(t *testing.T) {
 			path:    "/symlink-to-dir",
 			wantNodes: []*fileNode{
 				{
-					extractDir:    extractDir,
-					originLayerID: "layer2",
-					virtualPath:   "/dir2/bar",
-					isWhiteout:    false,
-					mode:          filePermission,
+					extractDir:  extractDir,
+					layerDir:    "layer2",
+					virtualPath: "/dir2/bar",
+					isWhiteout:  false,
+					mode:        filePermission,
 				},
 			},
 		},
@@ -584,21 +576,6 @@ func TestChainFSReadDir(t *testing.T) {
 // CHAINLAYER TESTING HELPER METHODS
 // ========================================================
 
-func checkError(t *testing.T, funcName string, gotErr error, wantErr error) {
-	t.Helper()
-	if wantErr != nil {
-		if !errors.Is(gotErr, wantErr) {
-			t.Fatalf("%s returned error: %v, want error: %v", funcName, gotErr, wantErr)
-		}
-		return
-	}
-
-	if gotErr != nil {
-		t.Fatalf("%s returned error: %v", funcName, gotErr)
-		return
-	}
-}
-
 func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
@@ -622,139 +599,139 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 	vfsMap := map[string]*fileNode{
 		// Layer 1 files / directories
 		"/": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer1",
-			virtualPath:   "/",
-			isWhiteout:    false,
-			mode:          fs.ModeDir | dirPermission,
+			extractDir:  tempDir,
+			layerDir:    "layer1",
+			virtualPath: "/",
+			isWhiteout:  false,
+			mode:        fs.ModeDir | dirPermission,
 		},
 		"/dir1": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer1",
-			virtualPath:   "/dir1",
-			isWhiteout:    false,
-			mode:          fs.ModeDir | dirPermission,
+			extractDir:  tempDir,
+			layerDir:    "layer1",
+			virtualPath: "/dir1",
+			isWhiteout:  false,
+			mode:        fs.ModeDir | dirPermission,
 		},
 		"/baz": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer1",
-			virtualPath:   "/baz",
-			isWhiteout:    false,
-			mode:          filePermission,
+			extractDir:  tempDir,
+			layerDir:    "layer1",
+			virtualPath: "/baz",
+			isWhiteout:  false,
+			mode:        filePermission,
 		},
 		// Layer 2 files / directories
 		"/dir1/foo": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "/dir1/foo",
-			isWhiteout:    false,
-			mode:          filePermission,
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "/dir1/foo",
+			isWhiteout:  false,
+			mode:        filePermission,
 		},
 		"/dir2": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "/dir2",
-			isWhiteout:    false,
-			mode:          fs.ModeDir | dirPermission,
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "/dir2",
+			isWhiteout:  false,
+			mode:        fs.ModeDir | dirPermission,
 		},
 		"/dir2/bar": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "/dir2/bar",
-			isWhiteout:    false,
-			mode:          filePermission,
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "/dir2/bar",
+			isWhiteout:  false,
+			mode:        filePermission,
 		},
 		"/wh.foobar": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "/wh.foobar",
-			isWhiteout:    true,
-			mode:          filePermission,
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "/wh.foobar",
+			isWhiteout:  true,
+			mode:        filePermission,
 		},
 		"/symlink1": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "/symlink1",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/dir2/bar",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "/symlink1",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/dir2/bar",
 		},
 		"/symlink2": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink2",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink1",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink2",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink1",
 		},
 		"/symlink3": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink3",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink2",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink3",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink2",
 		},
 		"/symlink4": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink4",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink3",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink4",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink3",
 		},
 		"/symlink-to-dir": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink-to-dir",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/dir2",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink-to-dir",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/dir2",
 		},
 		"/symlink-to-nonexistent-file": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink-to-nonexistent-file",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/nonexistent-file",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink-to-nonexistent-file",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/nonexistent-file",
 		},
 		"/symlink-cycle1": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink-cycle1",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink-cycle2",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink-cycle1",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-cycle2",
 		},
 		"/symlink-cycle2": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink-cycle2",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink-cycle3",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink-cycle2",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-cycle3",
 		},
 		"/symlink-cycle3": &fileNode{
-			extractDir:    tempDir,
-			originLayerID: "layer2",
-			virtualPath:   "symlink-cycle3",
-			isWhiteout:    false,
-			mode:          fs.ModeSymlink,
-			targetPath:    "/symlink-cycle1",
+			extractDir:  tempDir,
+			layerDir:    "layer2",
+			virtualPath: "symlink-cycle3",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-cycle1",
 		},
 	}
 
 	for path, node := range vfsMap {
-		chainfs.tree.Insert(path, node)
+		_ = chainfs.tree.Insert(path, node)
 
 		if node.IsDir() {
-			os.MkdirAll(node.RealFilePath(), dirPermission)
+			_ = os.MkdirAll(node.RealFilePath(), dirPermission)
 		} else {
 			if node.mode == fs.ModeSymlink {
 				continue
 			}
-			os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
+			_ = os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
 		}
 	}
 	return chainfs, tempDir

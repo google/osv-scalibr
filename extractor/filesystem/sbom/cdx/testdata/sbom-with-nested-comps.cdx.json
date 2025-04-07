@@ -1,0 +1,31 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "components": [
+    {
+      "bom-ref": "openssl-1.1.1",
+      "type": "library",
+      "name": "openssl",
+      "version": "1.1.1",
+      "purl": "pkg:generic/openssl@1.1.1"
+    },
+    {
+      "bom-ref": "nginx-1.21.1",
+      "type": "application",
+      "name": "Nginx",
+      "version": "1.21.1",
+      "cpe": "cpe:2.3:a:nginx:nginx:1.21.1",
+      "components": [
+        {
+          "type": "library",
+          "bom-ref": "rustls@0.23.13",
+          "name": "rustls",
+          "version": "0.23.13",
+          "purl": "pkg:cargo/rustls@0.23.13"
+        }
+      ]
+    }
+  ]
+}

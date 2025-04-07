@@ -14,11 +14,12 @@
 
 //go:build !windows
 
+// Package dismpatch extract patch level from the DISM command line tool.
 package dismpatch
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -47,5 +48,5 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // Extract is a no-op for Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("only supported on Windows")
+	return nil, errors.New("only supported on Windows")
 }

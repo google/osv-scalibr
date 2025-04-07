@@ -1,0 +1,192 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package npm_test
+
+import (
+	"testing"
+
+	"deps.dev/util/resolve"
+	"deps.dev/util/resolve/schema"
+	"github.com/google/go-cmp/cmp"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
+)
+
+func TestReadV1(t *testing.T) {
+	// This lockfile was generated using a private registry with https://verdaccio.org/
+	// Mock packages were published to it and installed with npm.
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	fsys := scalibrfs.DirFS("./testdata/v1")
+	got, err := rw.Read("package-lock.json", fsys)
+	if err != nil {
+		t.Fatalf("error reading lockfile: %v", err)
+	}
+
+	if err := got.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing got graph: %v", err)
+	}
+
+	want, err := schema.ParseResolve(`
+r 1.0.0
+	@fake-registry/a@^1.2.3 1.2.3
+		$b@^1.0.0
+	b: @fake-registry/b@^1.0.1 1.0.1
+	Dev KnownAs a-dev|@fake-registry/a@^2.3.4 2.3.4
+		# all indirect dependencies become regular because it's impossible to tell type in v1
+		@fake-registry/b@^2.0.0 2.0.0
+			@fake-registry/c@^1.0.0 1.1.1
+				# peerDependencies are not supported in v1
+			@fake-registry/d@^2.0.0 2.2.2
+	# v1 does not support workspaces
+`, resolve.NPM)
+	if err != nil {
+		t.Fatalf("error parsing want graph: %v", err)
+	}
+
+	if err := want.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing want graph: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("npm lockfile mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestReadV2(t *testing.T) {
+	// This lockfile was generated using a private registry with https://verdaccio.org/
+	// Mock packages were published to it and installed with npm.
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	fsys := scalibrfs.DirFS("./testdata/v2")
+	got, err := rw.Read("package-lock.json", fsys)
+	if err != nil {
+		t.Fatalf("error reading lockfile: %v", err)
+	}
+
+	if err := got.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing got graph: %v", err)
+	}
+
+	want, err := schema.ParseResolve(`
+r 1.0.0
+	@fake-registry/a@^1.2.3 1.2.3
+		Opt|$b@^1.0.0
+	b: @fake-registry/b@^1.0.1 1.0.1
+	Dev KnownAs a-dev|@fake-registry/a@^2.3.4 2.3.4
+		@fake-registry/b@^2.0.0 2.0.0
+			c: @fake-registry/c@^1.0.0 1.1.1
+				Scope peer|$d@^2.0.0
+			d: @fake-registry/d@^2.0.0 2.2.2
+	# workspace
+	w@* 1.0.0
+		Dev|@fake-registry/a@^2.3.4 2.3.4
+			@fake-registry/b@^2.0.0 2.0.0
+				$c@^1.0.0
+				$d@^2.0.0
+`, resolve.NPM)
+	if err != nil {
+		t.Fatalf("error parsing want graph: %v", err)
+	}
+
+	if err := want.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing want graph: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("npm lockfile mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestTypeOrdering(t *testing.T) {
+	// Testing the behavior when a package is included in multiple dependency type fields.
+	// Empirically, devDependencies > optionalDependencies > dependencies > peerDependencies
+
+	// This lockfile was manually constructed.
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	fsys := scalibrfs.DirFS("./testdata/type_order")
+	got, err := rw.Read("package-lock.json", fsys)
+	if err != nil {
+		t.Fatalf("error reading lockfile: %v", err)
+	}
+
+	if err := got.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing got graph: %v", err)
+	}
+
+	want, err := schema.ParseResolve(`
+root 1.0.0
+	Dev|a@4.0.0 4.0.0
+	Opt|b@3.0.0 3.0.0
+	c@2.0.0 2.0.0
+	Scope peer|d@1.0.0 1.0.0
+`, resolve.NPM)
+	if err != nil {
+		t.Fatalf("error parsing want graph: %v", err)
+	}
+
+	if err := want.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing want graph: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("npm lockfile mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPeerMeta(t *testing.T) {
+	// Testing the behavior with peerDependencies and peerDependenciesMeta.
+
+	// This lockfile was manually constructed.
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	fsys := scalibrfs.DirFS("./testdata/peer_meta")
+	got, err := rw.Read("package-lock.json", fsys)
+	if err != nil {
+		t.Fatalf("error reading lockfile: %v", err)
+	}
+
+	if err := got.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing got graph: %v", err)
+	}
+
+	want, err := schema.ParseResolve(`
+root 1.0.0
+	dep@^1.0.0 1.0.0
+		p2: Opt Scope peer|peer2@^2.0.0 2.0.0
+		Scope peer KnownAs peer3|peer2@^3.0.0 3.0.0
+	$p2@^2.0.0
+`, resolve.NPM)
+	if err != nil {
+		t.Fatalf("error parsing want graph: %v", err)
+	}
+
+	if err := want.Canon(); err != nil {
+		t.Fatalf("failed canonicalizing want graph: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("npm lockfile mismatch (-want +got):\n%s", diff)
+	}
+}

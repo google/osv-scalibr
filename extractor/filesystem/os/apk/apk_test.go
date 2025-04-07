@@ -215,6 +215,15 @@ func TestExtract(t *testing.T) {
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
+		{
+			name:      "different arch",
+			path:      "testdata/different-arch",
+			osrelease: "",
+			wantInventory: []*extractor.Inventory{
+				getInventory("testdata/different-arch", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "noarch", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 	}
 
 	for _, tt := range tests {
@@ -413,7 +422,7 @@ func getInventory(path, pkgName, origin, version, osID, osVersionID, maintainer,
 
 func createOsRelease(t *testing.T, root string, content string) {
 	t.Helper()
-	os.MkdirAll(filepath.Join(root, "etc"), 0755)
+	_ = os.MkdirAll(filepath.Join(root, "etc"), 0755)
 	err := os.WriteFile(filepath.Join(root, "etc/os-release"), []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)

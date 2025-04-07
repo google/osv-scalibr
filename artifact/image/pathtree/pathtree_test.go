@@ -284,3 +284,145 @@ func TestNode_Walk(t *testing.T) {
 		})
 	}
 }
+
+func TestNode_Remove(t *testing.T) {
+	tests := []struct {
+		name           string
+		tree           *Node[testVal]
+		key            string
+		want           *testVal
+		wantTreeValues []keyValue
+	}{
+		{
+			name:           "empty tree",
+			tree:           NewNode[testVal](),
+			key:            "/a",
+			wantTreeValues: []keyValue{},
+		},
+		{
+			name: "removing single node",
+			tree: func() *Node[testVal] {
+				tree := NewNode[testVal]()
+				_ = tree.Insert("/a", &testVal{"value"})
+
+				return tree
+			}(),
+			key:            "/a",
+			want:           &testVal{"value"},
+			wantTreeValues: []keyValue{},
+		},
+		{
+			name: "nonexistent node in single node tree",
+			tree: func() *Node[testVal] {
+				tree := NewNode[testVal]()
+				_ = tree.Insert("/a", &testVal{"value"})
+
+				return tree
+			}(),
+			key: "/b",
+			wantTreeValues: []keyValue{
+				{"/a", "value"},
+			},
+		},
+		{
+			name: "root node",
+			tree: testTree(t),
+			key:  "/",
+			wantTreeValues: []keyValue{
+				{key: "", val: "value0"},
+				{key: "/a", val: "value1"},
+				{key: "/a/b", val: "value2"},
+				{key: "/a/b/c", val: "value3"},
+				{key: "/a/b/d", val: "value4"},
+				{key: "/a/e", val: "value5"},
+				{key: "/a/e/f", val: "value6"},
+				{key: "/a/b/d/f", val: "value7"},
+				{key: "/a/g", val: "value8"},
+				{key: "/x/y/z", val: "value9"},
+			},
+		},
+		{
+			name: "multiple nodes",
+			tree: testTree(t),
+			key:  "/a/b/c",
+			want: &testVal{"value3"},
+			wantTreeValues: []keyValue{
+				{key: "", val: "value0"},
+				{key: "/a", val: "value1"},
+				{key: "/a/b", val: "value2"},
+				{key: "/a/b/d", val: "value4"},
+				{key: "/a/e", val: "value5"},
+				{key: "/a/e/f", val: "value6"},
+				{key: "/a/b/d/f", val: "value7"},
+				{key: "/a/g", val: "value8"},
+				{key: "/x/y/z", val: "value9"},
+			},
+		},
+		{
+			name: "nonexistent node",
+			tree: testTree(t),
+			key:  "/a/b/g",
+			wantTreeValues: []keyValue{
+				{key: "", val: "value0"},
+				{key: "/a", val: "value1"},
+				{key: "/a/b", val: "value2"},
+				{key: "/a/b/c", val: "value3"},
+				{key: "/a/b/d", val: "value4"},
+				{key: "/a/e", val: "value5"},
+				{key: "/a/e/f", val: "value6"},
+				{key: "/a/b/d/f", val: "value7"},
+				{key: "/a/g", val: "value8"},
+				{key: "/x/y/z", val: "value9"},
+			},
+		},
+		{
+			name: "remove node and parents",
+			tree: func() *Node[testVal] {
+				tree := testTree(t)
+				_ = tree.Insert("/a/1", &testVal{"value10"})
+				_ = tree.Insert("/a/1/2/3", &testVal{"value11"})
+				_ = tree.Insert("/a/1/2/3/4/5", &testVal{"value12"})
+				return tree
+			}(),
+			key:  "/a/1/2/3/4/5",
+			want: &testVal{"value12"},
+			wantTreeValues: []keyValue{
+				{key: "", val: "value0"},
+				{key: "/a", val: "value1"},
+				{key: "/a/b", val: "value2"},
+				{key: "/a/b/c", val: "value3"},
+				{key: "/a/b/d", val: "value4"},
+				{key: "/a/e", val: "value5"},
+				{key: "/a/e/f", val: "value6"},
+				{key: "/a/b/d/f", val: "value7"},
+				{key: "/a/g", val: "value8"},
+				{key: "/x/y/z", val: "value9"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.tree.Remove(tt.key)
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(testVal{})); diff != "" {
+				t.Errorf("Node.Remove() (-want +got): %v", diff)
+			}
+
+			gotValues := []keyValue{}
+			err := tt.tree.Walk(func(path string, node *testVal) error {
+				gotValues = append(gotValues, keyValue{key: path, val: node.string})
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Node.Walk() error = %v", err)
+			}
+			if diff := cmp.Diff(tt.wantTreeValues, gotValues, cmp.AllowUnexported(keyValue{}), cmpopts.SortSlices(func(a, b keyValue) bool {
+				if a.key == b.key {
+					return a.val < b.val
+				}
+				return a.key < b.key
+			})); diff != "" {
+				t.Errorf("Node.Walk() (-want +got): %v", diff)
+			}
+		})
+	}
+}

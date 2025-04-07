@@ -139,9 +139,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		return []*extractor.Inventory{}, nil
 	}
 
-	inventory, err := e.extractPackagesFromBuildInfo(binfo, input.Path)
-	e.reportFileExtracted(input.Path, input.Info, err)
-	return inventory, err
+	inventory := e.extractPackagesFromBuildInfo(binfo, input.Path)
+	e.reportFileExtracted(input.Path, input.Info, nil)
+	return inventory, nil
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
@@ -159,7 +159,7 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 	})
 }
 
-func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) ([]*extractor.Inventory, error) {
+func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Inventory {
 	res := []*extractor.Inventory{}
 
 	validatedGoVers, err := validateGoVersion(binfo.GoVersion)
@@ -190,7 +190,16 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		res = append(res, pkg)
 	}
 
-	return res, nil
+	// Also extract info about the main module if it's available.
+	if binfo.Main.Path != "" {
+		res = append(res, &extractor.Inventory{
+			Name:      binfo.Main.Path,
+			Version:   binfo.Main.Version,
+			Locations: []string{filename},
+		})
+	}
+
+	return res
 }
 
 func validateGoVersion(vers string) (string, error) {

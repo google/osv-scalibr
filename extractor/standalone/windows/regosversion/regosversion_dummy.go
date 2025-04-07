@@ -14,11 +14,12 @@
 
 //go:build !windows
 
+// Package regosversion extracts the OS version (build, major, minor release) from the registry.
 package regosversion
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"runtime"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -63,7 +64,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // Extract is a no-op for non-Windows platforms.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, fmt.Errorf("only supported on Windows")
+	return nil, errors.New("only supported on Windows")
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.

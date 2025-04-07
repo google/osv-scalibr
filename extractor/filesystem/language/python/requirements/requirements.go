@@ -142,7 +142,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// Additional paths to recursive files found during extraction.
 	var extraPaths pathQueue
 	var inv []*extractor.Inventory
-	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path, input.FS)
+	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -195,10 +195,10 @@ func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventor
 		return nil, nil, err
 	}
 	defer reader.Close()
-	return extractFromPath(reader, path, fs)
+	return extractFromPath(reader, path)
 }
 
-func extractFromPath(reader io.Reader, path string, fs scalibrfs.FS) ([]*extractor.Inventory, pathQueue, error) {
+func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pathQueue, error) {
 	var inv []*extractor.Inventory
 	var extraPaths pathQueue
 	s := bufio.NewScanner(reader)
@@ -222,7 +222,7 @@ func extractFromPath(reader io.Reader, path string, fs scalibrfs.FS) ([]*extract
 			extraPaths = append(extraPaths, p)
 		}
 
-		if strings.HasPrefix("-", l) {
+		if strings.HasPrefix(l, "-") {
 			// Global options other than -r are not implemented.
 			// https://pip.pypa.io/en/stable/reference/requirements-file-format/#global-options
 			// TODO(b/286213823): Implement metric
@@ -230,8 +230,11 @@ func extractFromPath(reader io.Reader, path string, fs scalibrfs.FS) ([]*extract
 		}
 
 		name, version, comp := getLowestVersion(l)
-		if name == "" || version == "" {
-			// Either empty
+		if name == "" {
+			continue
+		}
+		if version == "" && comp != "" {
+			// Version should be non-empty if there is comparator
 			continue
 		}
 		if !isValidPackage(name) {
@@ -270,9 +273,9 @@ func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
 		builder.WriteString(l[:len(l)-1])
 		scanner.Scan()
 		return readLine(scanner, builder)
-	} else {
-		builder.WriteString(l)
 	}
+
+	builder.WriteString(l)
 
 	return builder.String()
 }
@@ -306,6 +309,10 @@ func getLowestVersion(s string) (name, version, comparator string) {
 		}
 	}
 
+	if len(t) == 0 {
+		// Length of t being 0 indidates that there is no seaprator.
+		return s, "", ""
+	}
 	if len(t) != 2 {
 		return "", "", ""
 	}

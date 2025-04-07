@@ -49,11 +49,10 @@ func TestSaveToTarball(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := mustMkdirTemp(t)
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			path := filepath.Join(dir, "image.tar")
 			if tc.missingDir {
-				os.RemoveAll(dir)
+				_ = os.RemoveAll(dir)
 			}
 
 			err := tar.SaveToTarball(path, tc.image)
@@ -73,10 +72,7 @@ func TestSaveToTarball(t *testing.T) {
 
 func filesMatch(t *testing.T, path1, path2 string) bool {
 	t.Helper()
-	if mustHashFile(t, path1) != mustHashFile(t, path2) {
-		return true
-	}
-	return false
+	return mustHashFile(t, path1) != mustHashFile(t, path2)
 }
 
 func mustHashFile(t *testing.T, path string) string {
@@ -102,13 +98,4 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 		t.Fatalf("Failed to load image from path %q: %v", path, err)
 	}
 	return image
-}
-
-func mustMkdirTemp(t *testing.T) string {
-	t.Helper()
-	dir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	return dir
 }

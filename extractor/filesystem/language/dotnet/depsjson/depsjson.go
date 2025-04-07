@@ -18,7 +18,7 @@ package depsjson
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -117,7 +117,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 
 // Extract parses the deps.json file to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	packages, err := e.extractFromInput(ctx, input)
+	packages, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -146,7 +146,7 @@ type DepsJSON struct {
 	} `json:"libraries"`
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
 	var deps DepsJSON
 	decoder := json.NewDecoder(input.Reader)
 	if err := decoder.Decode(&deps); err != nil {
@@ -157,7 +157,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	// Check if the decoded content is empty (i.e., no libraries)
 	if len(deps.Libraries) == 0 {
 		log.Warn("Empty deps.json file or no libraries found")
-		return nil, fmt.Errorf("empty deps.json file or no libraries found")
+		return nil, errors.New("empty deps.json file or no libraries found")
 	}
 
 	var inventories []*extractor.Inventory

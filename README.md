@@ -63,20 +63,47 @@ scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-name
 The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the definition files for a list of all built-in plugins and their CLI flags ([extractors (fs)](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)).
 
 ### With the library
-A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
+A collection of all built-in plugin modules can be found in the definition files ([extractors](/extractor/filesystem/list/list.go#L26), [detectors](/detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugin names to the scan config, e.g.
 
 ```
 import (
+  "context"
   scalibr "github.com/google/osv-scalibr"
   el "github.com/google/osv-scalibr/extractor/filesystem/list"
   dl "github.com/google/osv-scalibr/detector/list"
+  scalibrfs "github.com/google/osv-scalibr/fs"
 )
+exs, _ := el.ExtractorsFromNames([]string{"language"})
+dets, _ := dl.DetectorsFromNames([]string{"cis"})
 cfg := &scalibr.ScanConfig{
-  Root:                 "/",
-  FilesystemExtractors: el.Python,
-  Detectors:            dl.CIS,
+  ScanRoots:            scalibrfs.RealFSScanRoots("/"),
+  FilesystemExtractors: exs,
+  Detectors:            dets,
 }
 results := scalibr.New().Scan(context.Background(), cfg)
+```
+
+You can also specify your scanning host's capabilities to only enable plugins
+whose requirements are satisfied (e.g. network access, OS-specific plugins):
+
+```
+import (
+  ...
+  "github.com/google/osv-scalibr/plugin"
+)
+capab := &plugin.Capabilities{
+  OS:            plugin.OSLinux,
+  Network:       plugin.NetworkOnline,
+  DirectFS:      true,
+  RunningSystem: true,
+}
+...
+cfg := &scalibr.ScanConfig{
+  ScanRoots:            scalibrfs.RealFSScanRoots("/"),
+  FilesystemExtractors: el.FilterByCapabilities(exs, capab),
+  Detectors:            dl.FilterByCapabilities(dets, capab),
+}
+...
 ```
 
 ## Creating + running custom plugins

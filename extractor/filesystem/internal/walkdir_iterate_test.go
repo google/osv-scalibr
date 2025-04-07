@@ -112,6 +112,7 @@ func TestWalkDir(t *testing.T) {
 	if err = os.Chdir(tmpDir); err != nil {
 		t.Fatal("entering temp dir:", err)
 	}
+	//nolint:errcheck
 	defer os.Chdir(origDir)
 
 	fsys := makeTree()
@@ -121,7 +122,7 @@ func TestWalkDir(t *testing.T) {
 		return mark(tree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
-	err = WalkDirUnsorted(fsys, ".", markFn)
+	err = WalkDirUnsorted(fsys, ".", markFn, nil)
 	if err != nil {
 		t.Fatalf("no error expected, found: %s", err)
 	}
@@ -147,6 +148,7 @@ func TestIssue51617(t *testing.T) {
 	if err := os.Chmod(bad, 0); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:errcheck
 	defer os.Chmod(bad, 0700) // avoid errors on cleanup
 	var saw []string
 	err := WalkDirUnsorted(scalibrfs.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
@@ -157,7 +159,7 @@ func TestIssue51617(t *testing.T) {
 			saw = append(saw, path)
 		}
 		return nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +232,7 @@ func TestWalkDirFallbackToDirFS(t *testing.T) {
 		return mark(fakeFSTree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
-	if err := WalkDirUnsorted(fsys, ".", markFn); err != nil {
+	if err := WalkDirUnsorted(fsys, ".", markFn, nil); err != nil {
 		t.Fatalf("no error expected, found: %s", err)
 	}
 	if len(errors) != 0 {

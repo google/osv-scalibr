@@ -17,8 +17,12 @@
 package fakelayer
 
 import (
-	"fmt"
+	"errors"
 	"io"
+	"io/fs"
+	"os"
+	"path"
+	"path/filepath"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/opencontainers/go-digest"
@@ -26,21 +30,37 @@ import (
 
 // FakeLayer is a fake implementation of the image.Layer interface for testing purposes.
 type FakeLayer struct {
+	testDir      string
 	diffID       digest.Digest
 	buildCommand string
+	files        map[string]string
 }
 
 // New creates a new FakeLayer.
-func New(diffID digest.Digest, buildCommand string) *FakeLayer {
+func New(testDir string, diffID digest.Digest, buildCommand string, files map[string]string, filesAlreadyExist bool) (*FakeLayer, error) {
+	if !filesAlreadyExist {
+		for name, contents := range files {
+			filename := filepath.Join(testDir, name)
+			if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
+				return nil, err
+			}
+
+			if err := os.WriteFile(filename, []byte(contents), 0600); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return &FakeLayer{
+		testDir:      testDir,
 		diffID:       diffID,
 		buildCommand: buildCommand,
-	}
+		files:        files,
+	}, nil
 }
 
 // FS is not currently used for the purposes of layer scanning, thus a nil value is returned.
 func (fakeLayer *FakeLayer) FS() scalibrfs.FS {
-	return nil
+	return fakeLayer
 }
 
 // DiffID returns the diffID of the layer.
@@ -60,5 +80,32 @@ func (fakeLayer *FakeLayer) IsEmpty() bool {
 
 // Uncompressed is not used for the purposes of layer scanning, thus a nil value is returned.
 func (fakeLayer *FakeLayer) Uncompressed() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
+}
+
+// -------------------------------------------------------------------------------------------------
+// scalibrfs.FS implementation
+// -------------------------------------------------------------------------------------------------
+
+// Open returns a file if it exists in the files map.
+func (fakeLayer *FakeLayer) Open(name string) (fs.File, error) {
+	if _, ok := fakeLayer.files[name]; ok {
+		filename := filepath.Join(fakeLayer.testDir, name)
+		return os.Open(filename)
+	}
+	return nil, os.ErrNotExist
+}
+
+// Stat returns the file info of a file if it exists in the files map.
+func (fakeLayer *FakeLayer) Stat(name string) (fs.FileInfo, error) {
+	if _, ok := fakeLayer.files[name]; ok {
+		return os.Stat(path.Join(fakeLayer.testDir, name))
+	}
+	return nil, os.ErrNotExist
+}
+
+// ReadDir is not used in the trace package since individual files are opened instead of
+// directories.
+func (fakeLayer *FakeLayer) ReadDir(name string) ([]fs.DirEntry, error) {
+	return nil, errors.New("not implemented")
 }

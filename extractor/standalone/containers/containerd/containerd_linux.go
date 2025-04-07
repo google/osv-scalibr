@@ -19,7 +19,7 @@ package containerd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -148,7 +148,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	}
 
 	if e.client == nil {
-		return inventory, fmt.Errorf("Containerd API client is not initialized")
+		return inventory, errors.New("containerd API client is not initialized")
 	}
 
 	ctrMetadata, err := containersFromAPI(ctx, e.client)
@@ -183,12 +183,8 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 
 	for _, ns := range nss {
 		// For each namespace returned by the API, get the containers metadata.
-		ctx = namespaces.WithNamespace(ctx, ns)
-		ctrs, err := containersMetadata(ctx, client, ns, defaultContainerdRootfsPrefix)
-		if err != nil {
-			log.Errorf("Could not get a list of containers from the containerd: %v", err)
-			return nil, err
-		}
+		ctx := namespaces.WithNamespace(ctx, ns)
+		ctrs := containersMetadata(ctx, client, ns, defaultContainerdRootfsPrefix)
 		// Merge all containers metadata items for all namespaces into a single list.
 		metadata = append(metadata, ctrs...)
 	}
@@ -205,7 +201,7 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 	return nss, nil
 }
 
-func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) ([]Metadata, error) {
+func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []Metadata {
 	var containersMetadata []Metadata
 
 	taskService := client.TaskService()
@@ -226,7 +222,7 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 
 		containersMetadata = append(containersMetadata, md)
 	}
-	return containersMetadata, nil
+	return containersMetadata
 }
 
 func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {

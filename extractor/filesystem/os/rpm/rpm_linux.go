@@ -331,7 +331,6 @@ func (Extractor) Ecosystem(i *extractor.Inventory) string {
 		return "Red Hat"
 	} else if m.OSID == "rocky" {
 		return "Rocky Linux"
-	} else {
-		return ""
 	}
+	return ""
 }

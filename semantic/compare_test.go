@@ -100,7 +100,7 @@ func runAgainstEcosystemFixture(t *testing.T, ecosystem string, filename string)
 		t.Errorf("%d of %d failed", failed, total)
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		t.Fatal(err)
 	}
 }

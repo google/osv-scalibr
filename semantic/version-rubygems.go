@@ -119,11 +119,11 @@ type rubyGemsVersion struct {
 	Segments []string
 }
 
-func parseRubyGemsVersion(str string) (rubyGemsVersion, error) {
+func parseRubyGemsVersion(str string) rubyGemsVersion {
 	return rubyGemsVersion{
 		str,
 		canonicalSegments(strings.Split(canonicalizeRubyGemVersion(str), ".")),
-	}, nil
+	}
 }
 
 func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
@@ -131,11 +131,5 @@ func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
 }
 
 func (v rubyGemsVersion) CompareStr(str string) (int, error) {
-	w, err := parseRubyGemsVersion(str)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return v.compare(w), nil
+	return v.compare(parseRubyGemsVersion(str)), nil
 }
