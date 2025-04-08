@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
@@ -56,6 +57,7 @@ var (
 	// Containers standalone extractors.
 	Containers = InitMap{
 		containerd.Name: {containerd.NewDefault},
+		docker.Name:     {docker.New},
 	}
 
 	// Default standalone extractors.
