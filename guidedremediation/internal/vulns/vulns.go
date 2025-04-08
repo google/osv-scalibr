@@ -17,6 +17,7 @@ package vulns
 
 import (
 	"slices"
+	"strings"
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
@@ -45,10 +46,36 @@ func (e mockExtractor) Ecosystem(inv *extractor.Inventory) string {
 }
 
 // Unnecessary methods stubbed out.
-func (e mockExtractor) Name() string                                 { return "" }
-func (e mockExtractor) Requirements() *plugin.Capabilities           { return nil }
-func (e mockExtractor) ToPURL(*extractor.Inventory) *purl.PackageURL { return nil }
-func (e mockExtractor) Version() int                                 { return 0 }
+func (e mockExtractor) Name() string                       { return "" }
+func (e mockExtractor) Requirements() *plugin.Capabilities { return nil }
+func (e mockExtractor) Version() int                       { return 0 }
+
+// ToPURL converts an inventory created by this extractor into a PURL.
+func (e mockExtractor) ToPURL(inv *extractor.Inventory) *purl.PackageURL {
+	switch e.Ecosystem(inv) {
+	case string(osvschema.EcosystemNPM):
+		return &purl.PackageURL{
+			Type:    purl.TypeNPM,
+			Name:    inv.Name,
+			Version: inv.Version,
+		}
+	case string(osvschema.EcosystemMaven):
+		group, artifact, _ := strings.Cut(inv.Name, ":")
+		return &purl.PackageURL{
+			Type:      purl.TypeMaven,
+			Namespace: group,
+			Name:      artifact,
+			Version:   inv.Version,
+		}
+	case string(osvschema.EcosystemPyPI):
+		return &purl.PackageURL{
+			Type:    purl.TypePyPi,
+			Name:    inv.Name,
+			Version: inv.Version,
+		}
+	}
+	return nil
+}
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Inventory.
 func IsAffected(vuln *osvschema.Vulnerability, inv *extractor.Inventory) bool {
