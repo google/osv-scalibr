@@ -4,6 +4,7 @@
 
 OSV-SCALIBR (Software Composition Analysis Library) is an extensible library
 providing:
+
 - File system scanner used to extract software inventory data (e.g.
 installed language packages) and detect known vulnerabilities or generate SBOMs.
 See the
