@@ -355,10 +355,5 @@ func createPackages(pkgs []*extractor.Package, location string) []*extractor.Pac
 			Name: p.Name, Version: p.Version, Locations: []string{location},
 		})
 	}
-	// Main package
-	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
-	res = append(res, &extractor.Package{
-		Name: mainName, Version: "(devel)", Locations: []string{location},
-	})
 	return res
 }
