@@ -26,6 +26,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -470,6 +471,50 @@ func TestGetScanConfig_GovulncheckParams(t *testing.T) {
 	got := cfg.Detectors[0].(*binary.Detector).OfflineVulnDBPath
 	if got != dbPath {
 		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
+	}
+}
+
+func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		flags                  *cli.Flags
+		wantVersionFromContent bool
+	}{
+		{
+			desc: "version_from_content_enabled",
+			flags: &cli.Flags{
+				ExtractorsToRun:            []string{"go"},
+				GoBinaryVersionFromContent: true,
+			},
+			wantVersionFromContent: true,
+		},
+		{
+			desc: "version_from_content_disabled",
+			flags: &cli.Flags{
+				ExtractorsToRun:            []string{"go"},
+				GoBinaryVersionFromContent: false,
+			},
+			wantVersionFromContent: false,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			var gobinaryExt *gobinary.Extractor
+			for _, e := range cfg.FilesystemExtractors {
+				if e.Name() == gobinary.Name {
+					gobinaryExt = e.(*gobinary.Extractor)
+				}
+			}
+			if gobinaryExt == nil {
+				t.Fatalf("%+v.GetScanConfig() want go binary extractor got nil", tc.flags)
+			}
+			if gobinaryExt.VersionFromContent != tc.wantVersionFromContent {
+				t.Errorf("%+v.GetScanConfig() want go binary extractor with version from content %v got %v", tc.flags, tc.wantVersionFromContent, gobinaryExt.VersionFromContent)
+			}
+		})
 	}
 }
 
