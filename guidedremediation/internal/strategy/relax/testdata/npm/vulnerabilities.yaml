@@ -1,0 +1,30 @@
+vulns:
+  - id: OSV-000-000
+    affected:
+      - package:
+          ecosystem: npm
+          name: '@bad/one'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '2.0.0'
+  - id: OSV-000-001
+    affected:
+      - package:
+          ecosystem: npm
+          name: '@bad/two'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '3.0.0'
+  - id: OSV-000-002
+    affected:
+      - package:
+          ecosystem: npm
+          name: '@bad/three'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'

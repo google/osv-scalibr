@@ -1,0 +1,8 @@
+{
+  "name": "diamond",
+  "version": "1.0.0",
+  "dependencies": {
+    "simpledep": "^1.0.0",
+    "indirect": "^1.0.0"
+  }
+}

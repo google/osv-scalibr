@@ -1,0 +1,7 @@
+{
+  "name": "removed-vuln",
+  "version": "1.0.0",
+  "dependencies": {
+    "removed": "1.0.1"
+  }
+}

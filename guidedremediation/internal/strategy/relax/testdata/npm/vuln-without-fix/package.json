@@ -1,0 +1,7 @@
+{
+  "name": "no-fixes",
+  "version": "1.0.0",
+  "dependencies": {
+    "indirect": "^2.0.0"
+  }
+}

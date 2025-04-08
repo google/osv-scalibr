@@ -212,6 +212,7 @@ func TestScanResultToProto(t *testing.T) {
 		Metadata: &requirements.Metadata{
 			HashCheckingModeValues: []string{"sha256:123"},
 			VersionComparator:      ">=",
+			Requirement:            "foo>=1.0",
 		},
 	}
 	purlJavascriptInventory := &extractor.Inventory{
@@ -369,6 +370,7 @@ func TestScanResultToProto(t *testing.T) {
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: []string{"sha256:123"},
 				VersionComparator:      ">=",
+				Requirement:            "foo>=1.0",
 			},
 		},
 	}
