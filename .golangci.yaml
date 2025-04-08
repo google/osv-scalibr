@@ -96,6 +96,8 @@ linters-settings:
         disabled: false
       - name: time-naming
         disabled: false
+      - name: unexported-return
+        disabled: false
       - name: unreachable-code
         disabled: false
       - name: use-any
