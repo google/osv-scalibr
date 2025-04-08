@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -67,46 +68,46 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 type goVersion = string
 
-type ivKey struct {
+type pkgKey struct {
 	name    string
 	version string
 }
 
 // Extract extracts packages from a go.mod file passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	ivs, goVersion, err := e.extractGoMod(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, goVersion, err := e.extractGoMod(input)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	// At go 1.17 and above, the go command adds an indirect requirement for each module that provides any
 	// package imported (even indirectly) by a package or test in the main module or passed as an argument to go get.
 	if goVersion == "" || version.Compare("go"+goVersion, "go1.17") >= 0 {
-		return maps.Values(ivs), nil
+		return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
 	}
 
 	// For versions below 1.17 extract indirect dependencies from the go.sum file
-	sumIvs, err := extractFromSum(input)
+	sumPkgs, err := extractFromSum(input)
 	if err != nil {
 		log.Warnf("could not extract from %s's sum file: %w", input.Path, err)
-		return maps.Values(ivs), nil
+		return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
 	}
 
-	// merge go.sum inventories with go.mod ones
-	for k, sumIv := range sumIvs {
-		if iv, ok := ivs[k]; ok {
+	// merge go.sum packages with go.mod ones
+	for k, sumPkg := range sumPkgs {
+		if pkg, ok := pkgs[k]; ok {
 			// if the dependency is already present then add `go.sum` to its Locations slice
-			iv.Locations = append(iv.Locations, sumIv.Locations...)
+			pkg.Locations = append(pkg.Locations, sumPkg.Locations...)
 		} else {
-			// otherwise add a new dependency to the inventory
-			ivs[k] = sumIv
+			// otherwise add a new dependency to the package
+			pkgs[k] = sumPkg
 		}
 	}
 
-	return maps.Values(ivs), nil
+	return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
 }
 
-func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extractor.Inventory, goVersion, error) {
+func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package, goVersion, error) {
 	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return nil, "", err
@@ -117,12 +118,12 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 	}
 
 	// Store the packages in a map since they might be overwritten by later entries.
-	packages := map[ivKey]*extractor.Inventory{}
+	packages := map[pkgKey]*extractor.Package{}
 
 	for _, require := range parsedLockfile.Require {
 		name := require.Mod.Path
 		version := strings.TrimPrefix(require.Mod.Version, "v")
-		packages[ivKey{name: name, version: version}] = &extractor.Inventory{
+		packages[pkgKey{name: name, version: version}] = &extractor.Package{
 			Name:      name,
 			Version:   version,
 			Locations: []string{input.Path},
@@ -132,7 +133,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 	// Apply go.mod replace directives to the identified packages by updating their
 	// names+versions as instructed by the directive.
 	for _, replace := range parsedLockfile.Replace {
-		var replacements []ivKey
+		var replacements []pkgKey
 
 		if replace.Old.Version == "" {
 			// If the version to replace is omitted, all versions of the module are replaced.
@@ -144,16 +145,16 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 		} else {
 			// If the version to replace is specified only that specific version of the
 			// module is replaced.
-			s := ivKey{name: replace.Old.Path, version: strings.TrimPrefix(replace.Old.Version, "v")}
+			s := pkgKey{name: replace.Old.Path, version: strings.TrimPrefix(replace.Old.Version, "v")}
 
 			// A `replace` directive has no effect if the name or version to replace is not present.
 			if _, ok := packages[s]; ok {
-				replacements = []ivKey{s}
+				replacements = []pkgKey{s}
 			}
 		}
 
 		for _, replacement := range replacements {
-			packages[replacement] = &extractor.Inventory{
+			packages[replacement] = &extractor.Package{
 				Name:      replace.New.Path,
 				Version:   strings.TrimPrefix(replace.New.Version, "v"),
 				Locations: []string{input.Path},
@@ -174,7 +175,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 
 	// Add the Go stdlib as an explicit dependency.
 	if goVersion != "" {
-		packages[ivKey{name: "stdlib"}] = &extractor.Inventory{
+		packages[pkgKey{name: "stdlib"}] = &extractor.Package{
 			Name:      "stdlib",
 			Version:   goVersion,
 			Locations: []string{input.Path},
@@ -183,25 +184,25 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[ivKey]*extract
 
 	// An additional deduplication pass is required.
 	// This is necessary because the values in the map may have changed after the replacement
-	dedupedPs := map[ivKey]*extractor.Inventory{}
+	dedupedPs := map[pkgKey]*extractor.Package{}
 	for _, p := range packages {
-		s := ivKey{name: p.Name, version: p.Version}
+		s := pkgKey{name: p.Name, version: p.Version}
 		dedupedPs[s] = p
 	}
 	return dedupedPs, goVersion, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGolang,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Go"
 }
 

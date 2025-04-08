@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 )
@@ -36,14 +36,15 @@ type Detector interface {
 	// Detector to run.
 	RequiredExtractors() []string
 	// Scan performs the security scan, considering scanRoot to be the root directory.
-	// Implementations may use InventoryIndex to check if a relevant software package is installed and
+	// Implementations may use PackageIndex to check if a relevant software package is installed and
 	// terminate early if it's not.
-	Scan(c context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*Finding, error)
+	Scan(c context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*Finding, error)
 }
 
 // LINT.IfChange
 
 // Finding is the security finding found by a detector. It could describe things like a CVE or a CIS non-compliance.
+// TODO(b/400910349): Move from detector into a separate package such as inventory.
 type Finding struct {
 	// Info specific to the finding. Should always be the same for the same type of finding.
 	Adv *Advisory
@@ -123,9 +124,9 @@ const (
 
 // TargetDetails contains instance-specific details about the security finding.
 type TargetDetails struct {
-	// The software affected by the finding. Taken from the Inventory extraction results.
-	Inventory *extractor.Inventory
-	// Location of vulnerable files not related to the inventory,
+	// The software affected by the finding. Taken from the Package extraction results.
+	Package *extractor.Package
+	// Location of vulnerable files not related to the package,
 	// e.g. config files with misconfigurations.
 	Location []string
 }
@@ -134,7 +135,7 @@ type TargetDetails struct {
 
 // Run runs the specified detectors and returns their findings,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, c stats.Collector, detectors []Detector, scanRoot *scalibrfs.ScanRoot, index *inventoryindex.InventoryIndex) ([]*Finding, []*plugin.Status, error) {
+func Run(ctx context.Context, c stats.Collector, detectors []Detector, scanRoot *scalibrfs.ScanRoot, index *packageindex.PackageIndex) ([]*Finding, []*plugin.Status, error) {
 	findings := []*Finding{}
 	status := []*plugin.Status{}
 	for _, d := range detectors {

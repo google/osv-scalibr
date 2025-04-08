@@ -70,8 +70,8 @@ func TestExtractor_FileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:         "path.to.my.package-lock.json",
-			path:         filepath.FromSlash("path.to.my.package-lock.json"),
+			name:         "path.to.my.package.lock.json",
+			path:         filepath.FromSlash("path.to.my.package.lock.json"),
 			wantRequired: false,
 		},
 		{
@@ -148,7 +148,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := packagelockjson.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -158,9 +158,9 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }
 

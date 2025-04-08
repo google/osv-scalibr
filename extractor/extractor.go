@@ -23,11 +23,11 @@ import (
 // Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
-	// ToPURL converts an inventory created by this extractor into a PURL.
-	ToPURL(i *Inventory) *purl.PackageURL
-	// Ecosystem returns the Ecosystem of the given inventory created by this extractor.
+	// ToPURL converts a package created by this extractor into a PURL.
+	ToPURL(p *Package) *purl.PackageURL
+	// Ecosystem returns the Ecosystem of the given package created by this extractor.
 	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
-	Ecosystem(i *Inventory) string
+	Ecosystem(p *Package) string
 }
 
 // LINT.IfChange
@@ -46,8 +46,11 @@ type LayerDetails struct {
 	InBaseImage bool
 }
 
-// Inventory is an instance of a software package or library found by the extractor.
-type Inventory struct {
+// Package is an instance of a software package or library found by the extractor.
+// TODO(b/400910349): Currently package is also used to store non-package data
+// like open ports. Move these into their own dedicated types.
+// TODO(b/400910349): Move from extractor into a separate package such as inventory.
+type Package struct {
 	// A human-readable name representation of the package. Note that this field
 	// should only be used for things like logging as different packages can have
 	// multiple different types of names (e.g. .deb packages have a source name
@@ -71,7 +74,7 @@ type Inventory struct {
 	Metadata any
 }
 
-// Annotation are additional information about the inventory.
+// Annotation are additional information about the package.
 type Annotation int64
 
 const (
@@ -88,10 +91,10 @@ const (
 	InsideCacheDir
 )
 
-// Ecosystem returns the Ecosystem of the inventory. For software packages this corresponds
+// Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
-func (i *Inventory) Ecosystem() string {
-	return i.Extractor.Ecosystem(i)
+func (p *Package) Ecosystem() string {
+	return p.Extractor.Ecosystem(p)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

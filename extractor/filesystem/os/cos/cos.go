@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -129,8 +130,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from cos package info files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -142,10 +143,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -162,9 +163,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	log.Infof("Found %d installed packages", len(packages.InstalledPackages))
 	log.Infof("Found %d build time packages", len(packages.BuildTimePackages))
 
-	inventory := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, pkg := range packages.InstalledPackages {
-		i := &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:    pkg.Name,
 			Version: pkg.Version,
 			Metadata: &Metadata{
@@ -176,11 +177,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 				EbuildVersion: pkg.EbuildVersion,
 			},
 			Locations: []string{input.Path},
-		}
-		inventory = append(inventory, i)
+		})
 	}
 
-	return inventory, nil
+	return pkgs, nil
 }
 
 func toDistro(m *Metadata) string {
@@ -196,9 +196,9 @@ func toDistro(m *Metadata) string {
 	return ""
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*Metadata)
 	q := map[string]string{}
 	distro := toDistro(m)
 	if distro != "" {
@@ -206,11 +206,11 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	}
 	return &purl.PackageURL{
 		Type:       purl.TypeCOS,
-		Name:       i.Name,
-		Version:    i.Version,
+		Name:       p.Name,
+		Version:    p.Version,
 		Qualifiers: purl.QualifiersFromMap(q),
 	}
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

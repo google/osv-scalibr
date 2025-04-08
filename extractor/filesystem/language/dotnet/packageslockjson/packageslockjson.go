@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -130,8 +131,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract returns a list of dependencies in a packages.lock.json file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -143,25 +144,25 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	p, err := Parse(input.Reader)
 	if err != nil {
 		return nil, err
 	}
-	var res []*extractor.Inventory
-	for _, pkgs := range p.Dependencies {
-		for pkgName, info := range pkgs {
-			inv := &extractor.Inventory{
+	var res []*extractor.Package
+	for _, packages := range p.Dependencies {
+		for pkgName, info := range packages {
+			pkg := &extractor.Package{
 				Name:    pkgName,
 				Version: info.Resolved,
 				Locations: []string{
 					input.Path,
 				},
 			}
-			res = append(res, inv)
+			res = append(res, pkg)
 		}
 	}
 
@@ -180,14 +181,14 @@ func Parse(r io.Reader) (PackagesLockJSON, error) {
 	return p, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "NuGet" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "NuGet" }

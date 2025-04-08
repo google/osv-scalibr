@@ -182,7 +182,7 @@ func TestExtract(t *testing.T) {
 		osrelease  string
 		timeoutval time.Duration
 		// rpm -qa --qf "%{NAME}@%{VERSION}-%{RELEASE}\n" |sort |head -n 3
-		wantInventory []*extractor.Inventory
+		wantPackages []*extractor.Package
 		// rpm -qa | wc -l
 		wantResults      int
 		wantErr          error
@@ -194,7 +194,7 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/Packages.db",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
@@ -252,7 +252,7 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/Packages",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
@@ -307,7 +307,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "file not found",
 			path:             "testdata/foobar",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          os.ErrNotExist,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -315,7 +315,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "empty",
 			path:             "testdata/empty.sqlite",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          io.EOF,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -323,7 +323,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "invalid",
 			path:             "testdata/invalid",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          io.ErrUnexpectedEOF,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -332,7 +332,7 @@ func TestExtract(t *testing.T) {
 			name:             "corrupt db times out",
 			path:             "testdata/timeout/Packages",
 			timeoutval:       1 * time.Second,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -343,7 +343,7 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/rpmdb.sqlite",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
@@ -402,7 +402,7 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=fedora
 			BUILD_ID=asdf`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
@@ -464,7 +464,7 @@ func TestExtract(t *testing.T) {
 			PRETTY_NAME="Fedora 32 (Container Image)"
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "hello",
@@ -519,18 +519,19 @@ func TestExtract(t *testing.T) {
 			}
 
 			// Update location with the temp path.
-			for _, i := range tt.wantInventory {
-				i.Locations = []string{filepath.Base(tmpPath)}
+			for _, p := range tt.wantPackages {
+				p.Locations = []string{filepath.Base(tmpPath)}
 			}
 
-			sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
-			gotFirst3 := got[:min(len(got), 3)]
-			if diff := cmp.Diff(tt.wantInventory, gotFirst3); diff != "" {
+			pkgs := got.Packages
+			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			gotFirst3 := pkgs[:min(len(pkgs), 3)]
+			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tmpPath, diff)
 			}
 
-			if len(got) != tt.wantResults {
-				t.Errorf("Extract(%s): got %d results, want %d\n", tmpPath, len(got), tt.wantResults)
+			if len(pkgs) != tt.wantResults {
+				t.Errorf("Extract(%s): got %d results, want %d\n", tmpPath, len(pkgs), tt.wantResults)
 			}
 
 			gotResultMetric := collector.FileExtractedResult(filepath.Base(tmpPath))
@@ -562,7 +563,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 		osrelease  string
 		timeoutval time.Duration
 		// rpm -qa --qf "%{NAME}@%{VERSION}-%{RELEASE}\n" |sort |head -n 3
-		wantInventory []*extractor.Inventory
+		wantPackages []*extractor.Package
 		// rpm -qa | wc -l
 		wantResults int
 		wantErr     error
@@ -572,7 +573,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:      "testdata/Packages.db",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
@@ -629,7 +630,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:      "testdata/Packages",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
@@ -686,7 +687,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:      "testdata/rpmdb.sqlite",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
@@ -751,7 +752,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			PRETTY_NAME="Fedora 32 (Container Image)"
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
 
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages_epoch"},
 					Name:      "hello",
@@ -771,18 +772,18 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 1,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty.sqlite",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.EOF,
+			name:         "empty",
+			path:         "testdata/empty.sqlite",
+			wantPackages: nil,
+			wantResults:  0,
+			wantErr:      io.EOF,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.ErrUnexpectedEOF,
+			name:         "invalid",
+			path:         "testdata/invalid",
+			wantPackages: nil,
+			wantResults:  0,
+			wantErr:      io.ErrUnexpectedEOF,
 		},
 	}
 
@@ -819,14 +820,15 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
 
-			sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
-			gotFirst3 := got[:min(len(got), 3)]
-			if diff := cmp.Diff(tt.wantInventory, gotFirst3); diff != "" {
+			pkgs := got.Packages
+			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			gotFirst3 := pkgs[:min(len(pkgs), 3)]
+			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
-			if len(got) != tt.wantResults {
-				t.Errorf("Extract(%s): got %d results, want %d\n", tt.path, len(got), tt.wantResults)
+			if len(pkgs) != tt.wantResults {
+				t.Errorf("Extract(%s): got %d results, want %d\n", tt.path, len(pkgs), tt.wantResults)
 			}
 
 			// Check that no scalibr files remain in /tmp.
@@ -922,15 +924,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      pkgname,
 				Version:   version,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -969,12 +971,12 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Metadata: tt.metadata,
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

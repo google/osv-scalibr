@@ -29,7 +29,7 @@ import (
 // but they might be in go.sum, thus we look into it as well.
 //
 // Note: This function may produce false positives, as the go.sum file might be outdated.
-func extractFromSum(input *filesystem.ScanInput) (map[ivKey]*extractor.Inventory, error) {
+func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package, error) {
 	goSumPath := strings.TrimSuffix(input.Path, ".mod") + ".sum"
 	f, err := input.FS.Open(goSumPath)
 	if err != nil {
@@ -37,7 +37,7 @@ func extractFromSum(input *filesystem.ScanInput) (map[ivKey]*extractor.Inventory
 	}
 
 	scanner := bufio.NewScanner(f)
-	packages := map[ivKey]*extractor.Inventory{}
+	packages := map[pkgKey]*extractor.Package{}
 
 	for lineNumber := 0; scanner.Scan(); lineNumber++ {
 		line := scanner.Text()
@@ -60,7 +60,7 @@ func extractFromSum(input *filesystem.ScanInput) (map[ivKey]*extractor.Inventory
 			continue
 		}
 
-		packages[ivKey{name: name, version: version}] = &extractor.Inventory{
+		packages[pkgKey{name: name, version: version}] = &extractor.Package{
 			Name:      name,
 			Version:   version,
 			Locations: []string{goSumPath},

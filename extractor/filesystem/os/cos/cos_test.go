@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -133,7 +134,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -148,14 +149,14 @@ func TestExtract(t *testing.T) {
 			name:             "empty",
 			path:             "testdata/empty.json",
 			osrelease:        cosOSRlease,
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:      "single",
 			path:      "testdata/single.json",
 			osrelease: cosOSRlease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
@@ -176,7 +177,7 @@ func TestExtract(t *testing.T) {
 			name:      "multiple",
 			path:      "testdata/multiple.json",
 			osrelease: cosOSRlease,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
@@ -236,7 +237,7 @@ func TestExtract(t *testing.T) {
 			name:      "no version ID",
 			path:      "testdata/single.json",
 			osrelease: cosOSRleaseNoVersionID,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
@@ -255,7 +256,7 @@ func TestExtract(t *testing.T) {
 			name:      "no version or version ID",
 			path:      "testdata/single.json",
 			osrelease: cosOSRleaseNoVersions,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
@@ -313,7 +314,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -387,15 +389,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      "name",
 				Version:   "1.2.3",
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

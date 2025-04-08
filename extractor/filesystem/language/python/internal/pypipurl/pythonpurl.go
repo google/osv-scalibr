@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pypipurl converts an inventory to a PyPI type PackageURL.
+// Package pypipurl converts a package to a PyPI type PackageURL.
 // TODO(#173, b/365452344): Replace with purl.New() which will contain mapping of all ecosystems
 package pypipurl
 
@@ -35,11 +35,11 @@ var specialCharRunFinder = regexp.MustCompile("[-_.]+")
 //
 // This function does *not* handle package names with invalid characters, and will
 // return them as is.
-func MakePackageURL(i *extractor.Inventory) *purl.PackageURL {
-	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(i.Name), "-")
+func MakePackageURL(p *extractor.Package) *purl.PackageURL {
+	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(p.Name), "-")
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
 		Name:    normalizedName,
-		Version: i.Version,
+		Version: p.Version,
 	}
 }

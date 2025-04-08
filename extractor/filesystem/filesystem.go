@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -54,7 +55,7 @@ type Extractor interface {
 	// library for that.
 	FileRequired(api FileAPI) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
-	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
+	Extract(ctx context.Context, input *ScanInput) (inventory.Inventory, error)
 }
 
 // FileAPI is the interface for accessing file information and path.
@@ -118,48 +119,47 @@ type Config struct {
 
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
+func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.Status, error) {
 	if len(config.Extractors) == 0 {
-		return []*extractor.Inventory{}, []*plugin.Status{}, nil
+		return inventory.Inventory{}, []*plugin.Status{}, nil
 	}
 
 	scanRoots, err := expandAllAbsolutePaths(config.ScanRoots)
 	if err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
 	wc, err := InitWalkContext(ctx, config, scanRoots)
 	if err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
-	var inventory []*extractor.Inventory
 	var status []*plugin.Status
-
+	inv := inventory.Inventory{}
 	for _, root := range scanRoots {
-		inv, st, err := runOnScanRoot(ctx, config, root, wc)
+		newInv, st, err := runOnScanRoot(ctx, config, root, wc)
 		if err != nil {
-			return nil, nil, err
+			return inv, nil, err
 		}
 
-		inventory = append(inventory, inv...)
+		inv.Append(newInv)
 		status = append(status, st...)
 	}
 
-	return inventory, status, nil
+	return inv, status, nil
 }
 
-func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) (inventory.Inventory, []*plugin.Status, error) {
 	abs := ""
 	var err error
 	if !scanRoot.IsVirtual() {
 		abs, err = filepath.Abs(scanRoot.Path)
 		if err != nil {
-			return nil, nil, err
+			return inventory.Inventory{}, nil, err
 		}
 	}
 	if err = wc.UpdateScanRoot(abs, scanRoot.FS); err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
 	return RunFS(ctx, config, wc)
@@ -196,7 +196,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 
 		lastStatus: time.Now(),
 
-		inventory: []*extractor.Inventory{},
+		inventory: inventory.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
 
@@ -208,10 +208,10 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inventory, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
-		return nil, nil, errors.New("walk context is nil")
+		return inventory.Inventory{}, nil, errors.New("walk context is nil")
 	}
 
 	var err error
@@ -268,7 +268,7 @@ type walkContext struct {
 	// applicable gitignore patterns for the current and parent directories.
 	gitignores []internal.GitignorePattern
 	// Inventories found.
-	inventory []*extractor.Inventory
+	inventory inventory.Inventory
 	// Extractor name to runtime errors.
 	errors map[string]error
 	// Whether an extractor found any inventory.
@@ -467,15 +467,15 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
 	}
 
-	if len(results) > 0 {
+	if !results.IsEmpty() {
 		wc.foundInv[ex.Name()] = true
-		for _, r := range results {
+		for _, r := range results.Packages {
 			r.Extractor = ex
 			if wc.storeAbsolutePath {
 				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
 			}
-			wc.inventory = append(wc.inventory, r)
 		}
+		wc.inventory.Append(results)
 	}
 }
 

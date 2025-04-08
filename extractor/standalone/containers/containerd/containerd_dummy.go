@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -41,7 +42,7 @@ func DefaultConfig() Config {
 // Extractor implements the containerd runtime extractor.
 type Extractor struct{}
 
-// New creates a new containerd client and returns a containerd container inventory extractor.
+// New creates a new containerd client and returns a containerd container package extractor.
 // No op for non-Linux.
 func New(cfg Config) standalone.Extractor {
 	return &Extractor{}
@@ -67,14 +68,14 @@ func (e Extractor) Version() int { return 0 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // Extract is a no-op for non-Linux.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, errors.New("only supported on Linux")
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, errors.New("only supported on Linux")
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e *Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e *Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return nil
 }
 
-// Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+// Ecosystem returns no ecosystem since the Package is not a software package.
+func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

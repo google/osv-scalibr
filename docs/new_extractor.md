@@ -68,13 +68,18 @@ which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
 ## Output
 
-The `Extract` method should return a list of
-[Inventory](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
+The `Extract` method should return an [Inventory](https://github.com/google/osv-scalibr/tree/main/inventory/inventory.go) struct.
 
-<!--  See extractor/extractor.go symbol \bInventory\b -->
+<!--  See inventory/inventory.go symbol \bInventory\b -->
 
-You can return an empty list in case you don't find inventory in the file or
-multiple Inventory entries in case there are multiple in one file.
+The Inventory struct should have its appropriate fields set (e.g. `Packages`
+for software packages):
+
+<!--  See extractor/extractor.go symbol \bPackage\b -->
+
+You can return an empty Inventory struct in case you don't find software
+packages or other inventory in the file. You can also add multiple Package
+entries in case there are multiple in one file.
 
 ## Code location
 
