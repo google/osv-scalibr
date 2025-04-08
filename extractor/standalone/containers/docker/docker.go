@@ -90,7 +90,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 	return ivs, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
+// ToPURL returns nil since there is no PURL defined for docker containers
 func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 	return nil
 }

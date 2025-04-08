@@ -20,6 +20,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 )
 
+// Client is an interface that provides an abstraction on top of the docker client.
 type Client interface {
 	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
 }

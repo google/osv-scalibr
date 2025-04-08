@@ -16,7 +16,6 @@ package docker_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -175,8 +174,8 @@ func TestExtract(t *testing.T) {
 
 			got, _ := e.Extract(context.Background(), input)
 
-			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
-				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
+			ignoreOrder := cmpopts.SortSlices(func(a, b *extractor.Inventory) bool {
+				return a.Name < b.Name
 			})
 			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.name, diff)
