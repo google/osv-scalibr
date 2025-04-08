@@ -664,6 +664,7 @@ func TestRunFSGitignore(t *testing.T) {
 		desc           string
 		mapFS          mapFS
 		pathToExtract  string
+		ignoreSubDirs  bool
 		wantInv1       bool
 		wantInv2       bool
 		wantInodeCount int
@@ -736,6 +737,22 @@ func TestRunFSGitignore(t *testing.T) {
 			wantInv2:       true,
 			wantInodeCount: 7,
 		},
+		{
+			desc: "ignore_sub_dirs",
+			mapFS: mapFS{
+				".":              nil,
+				"dir":            nil,
+				".gitignore":     []byte("file1.txt"),
+				"file1.txt":      []byte("Content 1"),
+				"dir/.gitignore": []byte("file1.txt"),
+				"dir/file2.txt":  []byte("Content 2"),
+			},
+			pathToExtract:  "",
+			ignoreSubDirs:  true,
+			wantInv1:       false, // Skipped because of .gitignore
+			wantInv2:       false, // Skipped because of IgnoreSubDirs
+			wantInodeCount: 4,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -745,6 +762,7 @@ func TestRunFSGitignore(t *testing.T) {
 			config := &filesystem.Config{
 				Extractors:     ex,
 				PathsToExtract: []string{tc.pathToExtract},
+				IgnoreSubDirs:  tc.ignoreSubDirs,
 				UseGitignore:   true,
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
