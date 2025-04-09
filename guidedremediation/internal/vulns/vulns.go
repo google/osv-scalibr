@@ -135,11 +135,9 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 				if e.Introduced != "" || e.LastAffected != "" {
 					return true
 				}
-			} else {
 				// Version is between events, only match if previous event is Introduced
-				if idx != 0 && events[idx-1].Introduced != "" {
-					return true
-				}
+			} else if idx != 0 && events[idx-1].Introduced != "" {
+				return true
 			}
 		}
 	}
