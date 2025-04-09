@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata provides metadata structures to annotate Windows inventories.
+// Package metadata provides metadata structures to annotate Windows packages.
 package metadata
 
 // OSVersion provides metadata about the OS version.

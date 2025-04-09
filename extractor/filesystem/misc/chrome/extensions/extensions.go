@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -119,29 +120,29 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts chrome extensions
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var m manifest
 	if err := json.NewDecoder(input.Reader).Decode(&m); err != nil {
-		return nil, fmt.Errorf("could not extract manifest from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract manifest from %s: %w", input.Path, err)
 	}
 	if err := m.validate(); err != nil {
-		return nil, fmt.Errorf("bad format in manifest %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("bad format in manifest %s: %w", input.Path, err)
 	}
 
 	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract extension id from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract extension id from %s: %w", input.Path, err)
 	}
 
 	// if default locale is specified some fields of the manifest may be
 	// written inside the ./_locales/LOCALE_CODE/messages.json file
 	if m.DefaultLocale != "" {
 		if err := extractLocaleInfo(&m, input); err != nil {
-			return nil, fmt.Errorf("could not extract locale info from %s: %w", input.Path, err)
+			return inventory.Inventory{}, fmt.Errorf("could not extract locale info from %s: %w", input.Path, err)
 		}
 	}
 
-	ivs := []*extractor.Inventory{
+	return inventory.Inventory{Packages: []*extractor.Package{
 		{
 			Name:    id,
 			Version: m.Version,
@@ -156,9 +157,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				UpdateURL:            m.UpdateURL,
 			},
 		},
-	}
-
-	return ivs, nil
+	}}, nil
 }
 
 // extractExtensionsIDFromPath extracts the extensions id from the path
@@ -234,13 +233,13 @@ func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeGeneric,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem is not defined.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

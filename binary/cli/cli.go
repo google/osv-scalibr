@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
@@ -116,32 +117,33 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
-	Root                  string
-	ResultFile            string
-	Output                Array
-	ExtractorsToRun       []string
-	DetectorsToRun        []string
-	PathsToExtract        []string
-	IgnoreSubDirs         bool
-	DirsToSkip            []string
-	SkipDirRegex          string
-	SkipDirGlob           string
-	UseGitignore          bool
-	RemoteImage           string
-	ImagePlatform         string
-	GovulncheckDBPath     string
-	SPDXDocumentName      string
-	SPDXDocumentNamespace string
-	SPDXCreators          string
-	CDXComponentName      string
-	CDXComponentVersion   string
-	CDXAuthors            string
-	Verbose               bool
-	ExplicitExtractors    bool
-	FilterByCapabilities  bool
-	StoreAbsolutePath     bool
-	WindowsAllDrives      bool
-	Offline               bool
+	Root                       string
+	ResultFile                 string
+	Output                     Array
+	ExtractorsToRun            []string
+	DetectorsToRun             []string
+	PathsToExtract             []string
+	IgnoreSubDirs              bool
+	DirsToSkip                 []string
+	SkipDirRegex               string
+	SkipDirGlob                string
+	UseGitignore               bool
+	RemoteImage                string
+	ImagePlatform              string
+	GoBinaryVersionFromContent bool
+	GovulncheckDBPath          string
+	SPDXDocumentName           string
+	SPDXDocumentNamespace      string
+	SPDXCreators               string
+	CDXComponentName           string
+	CDXComponentVersion        string
+	CDXAuthors                 string
+	Verbose                    bool
+	ExplicitExtractors         bool
+	FilterByCapabilities       bool
+	StoreAbsolutePath          bool
+	WindowsAllDrives           bool
+	Offline                    bool
 }
 
 var supportedOutputFormats = []string{
@@ -434,6 +436,12 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 
 		if sterr == nil {
 			standaloneExtractors = append(standaloneExtractors, stex...)
+		}
+	}
+
+	for _, e := range fsExtractors {
+		if e.Name() == gobinary.Name {
+			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
 		}
 	}
 

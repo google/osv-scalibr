@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -69,7 +70,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	tests := []extracttest.TestTableEntry{
+	tests := []*extracttest.TestTableEntry{
 		{
 			Name: "invalid",
 			InputConfig: extracttest.ScanInputMockConfig{
@@ -82,14 +83,14 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.mod",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
@@ -102,7 +103,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
@@ -125,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/toolchain.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
@@ -143,7 +144,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/toolchain-with-suffix.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
@@ -161,7 +162,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/indirect-packages.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
@@ -199,7 +200,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-one.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
@@ -212,7 +213,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-mixed.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
@@ -230,7 +231,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-local.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "./fork/net",
 					Version:   "",
@@ -248,7 +249,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-different.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/foe",
 					Version:   "1.4.5",
@@ -266,7 +267,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-not-required.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "golang.org/x/net",
 					Version:   "0.5.6",
@@ -284,7 +285,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-no-version.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
@@ -292,11 +293,79 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "test extractor for go > 1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-1.23.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/sirupsen/logrus",
+					Version:   "1.9.3",
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.23",
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+			},
+		},
+		{
+			Name: "test extractor for go <=1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-1.16.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/davecgh/go-spew",
+					Version:   "1.1.1",
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "github.com/pmezard/go-difflib",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:    "github.com/sirupsen/logrus",
+					Version: "1.9.3",
+					Locations: []string{
+						"testdata/indirect-1.16.mod", "testdata/indirect-1.16.sum",
+					},
+				},
+				{
+					Name:      "github.com/stretchr/testify",
+					Version:   "1.7.0",
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "gopkg.in/yaml.v3",
+					Version:   "3.0.0-20200313102051-9f266ea9e77c",
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.16",
+					Locations: []string{"testdata/indirect-1.16.mod"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := gomod.Extractor{}
+			extr := gomod.New()
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
@@ -308,7 +377,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

@@ -28,8 +28,8 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -78,7 +78,7 @@ func isVersionWithinRange(openSSHVersion string, lower string, upper string) (bo
 }
 
 // Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
 	// 1. OpenSSH between and 5.5 and 9.3p1 (inclusive)
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {

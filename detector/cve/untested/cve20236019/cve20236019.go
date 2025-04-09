@@ -35,8 +35,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -71,8 +71,8 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan scans for the vulnerability
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	rayVersion, inventory := findRayPackage(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+	rayVersion, pkg := findRayPackage(px)
 	if rayVersion == "" {
 		log.Debugf("No Ray version found")
 		return nil, nil
@@ -112,17 +112,17 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
 		Target: &detector.TargetDetails{
-			Inventory: inventory,
+			Package: pkg,
 		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
+		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 	}}, nil
 }
 
 // Find the Ray package and its version
-func findRayPackage(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory) {
-	inventory := ix.GetSpecific("ray", "pypi")
-	for _, i := range inventory {
-		return i.Version, i
+func findRayPackage(px *packageindex.PackageIndex) (string, *extractor.Package) {
+	pkg := px.GetSpecific("ray", "pypi")
+	for _, p := range pkg {
+		return p.Version, p
 	}
 	return "", nil
 }

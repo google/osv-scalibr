@@ -15,6 +15,7 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,26 +35,26 @@ func TestRun(t *testing.T) {
 		{
 			desc:      "scan subcommand",
 			setupFunc: tempDir,
-			args:      []string{"scalibr", "scan", "--root", "{dir}", "--result", "{dir}/result.textproto"},
+			args:      []string{"scalibr", "scan", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
 			want:      0,
 		},
 		{
 			desc:      "no subcommand",
 			setupFunc: tempDir,
-			args:      []string{"scalibr", "--root", "{dir}", "--result", "{dir}/result.textproto"},
+			args:      []string{"scalibr", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
 			want:      0,
 		},
 		{
 			desc:      "scan subcommand with arg before flags",
 			setupFunc: tempDir,
-			args:      []string{"scalibr", "scan", "unknown", "--root", "{dir}", "--result", "{dir}/result.textproto"},
+			args:      []string{"scalibr", "scan", "unknown", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
 			want:      1, // "Error parsing CLI args: either --result or --o needs to be set"
 		},
 		{
 			desc:      "unknown subcommand",
 			setupFunc: tempDir,
 			// 'unknown' should be treated as the first argument to 'scan', which should fail as it's equivalent to the above test.
-			args: []string{"scalibr", "unknown", "--root", "{dir}", "--result", "{dir}/result.textproto"},
+			args: []string{"scalibr", "unknown", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
 			want: 1,
 		},
 	}

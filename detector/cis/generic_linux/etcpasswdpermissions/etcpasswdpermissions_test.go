@@ -27,7 +27,7 @@ import (
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 )
 
 // A fake implementation of fs.FS where the only file is /etc/passwd and it has configurable permissions.
@@ -74,7 +74,7 @@ func TestScan(t *testing.T) {
 		Sev:            &detector.Severity{Severity: detector.SeverityMinimal},
 	}
 
-	ix, _ := inventoryindex.New([]*extractor.Inventory{})
+	px, _ := packageindex.New([]*extractor.Package{})
 	testCases := []struct {
 		desc         string
 		fsys         scalibrfs.FS
@@ -123,7 +123,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			det := etcpasswdpermissions.Detector{}
-			findings, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, ix)
+			findings, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}

@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -147,14 +148,16 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from wheel/egg files passed through the scan input.
 // For .egg files, input.Info.Size() is required to unzip the file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory []*extractor.Inventory, err error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	var err error
+	var pkgs []*extractor.Package
 	if strings.HasSuffix(input.Path, ".egg") {
-		// TODO(b/280417821): In case extractZip returns no inventory, we could parse the filename.
-		inventory, err = e.extractZip(ctx, input)
+		// TODO(b/280417821): In case extractZip returns no packages, we could parse the filename.
+		pkgs, err = e.extractZip(ctx, input)
 	} else {
-		var i *extractor.Inventory
-		if i, err = e.extractSingleFile(input.Reader, input.Path); i != nil {
-			inventory = []*extractor.Inventory{i}
+		var p *extractor.Package
+		if p, err = e.extractSingleFile(input.Reader, input.Path); p != nil {
+			pkgs = []*extractor.Package{p}
 		}
 	}
 
@@ -169,13 +172,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
 // ErrSizeNotSet will trigger when Info.Size() is not set.
 var ErrSizeNotSet = errors.New("input.Info is nil, but should have Size set")
 
-func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("newReaderAt(%s): %w", input.Path, err)
@@ -189,7 +192,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 	if err != nil {
 		return nil, fmt.Errorf("zip.NewReader(%s): %w", input.Path, err)
 	}
-	inventory := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, f := range zr.File {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -198,16 +201,16 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		if !e.FileRequired(simplefileapi.New(f.Name, f.FileInfo())) {
 			continue
 		}
-		i, err := e.openAndExtract(f, input)
+		p, err := e.openAndExtract(f, input)
 		if err != nil {
-			return inventory, err
+			return pkgs, err
 		}
-		inventory = append(inventory, i)
+		pkgs = append(pkgs, p)
 	}
-	return inventory, nil
+	return pkgs, nil
 }
 
-func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Inventory, error) {
+func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Package, error) {
 	r, err := f.Open()
 	if err != nil {
 		return nil, fmt.Errorf("on %q: Open(%s): %w", input.Path, f.Name, err)
@@ -215,25 +218,25 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 	defer r.Close()
 
 	// TODO(b/280438976): Store the path inside the zip file.
-	i, err := e.extractSingleFile(r, input.Path)
+	p, err := e.extractSingleFile(r, input.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	return i, nil
+	return p, nil
 }
 
-func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Inventory, error) {
-	i, err := parse(r)
+func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
+	p, err := parse(r)
 	if err != nil {
 		return nil, fmt.Errorf("wheelegg.parse(%s): %w", path, err)
 	}
 
-	i.Locations = []string{path}
-	return i, nil
+	p.Locations = []string{path}
+	return p, nil
 }
 
-func parse(r io.Reader) (*extractor.Inventory, error) {
+func parse(r io.Reader) (*extractor.Package, error) {
 	rd := textproto.NewReader(bufio.NewReader(r))
 	h, err := rd.ReadMIMEHeader()
 	name := h.Get("Name")
@@ -247,7 +250,7 @@ func parse(r io.Reader) (*extractor.Inventory, error) {
 		return nil, fmt.Errorf("Name or version is empty (name: %q, version: %q)", name, version)
 	}
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    name,
 		Version: version,
 		Metadata: &PythonPackageMetadata{
@@ -257,10 +260,10 @@ func parse(r io.Reader) (*extractor.Inventory, error) {
 	}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return pypipurl.MakePackageURL(p)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "PyPI" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }

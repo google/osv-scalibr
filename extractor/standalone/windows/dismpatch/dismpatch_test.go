@@ -24,9 +24,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch/dismparser"
+	"github.com/google/osv-scalibr/inventory"
 )
 
-func TestInventoryFromOutput(t *testing.T) {
+func TestPackageFromOutput(t *testing.T) {
 	dismTestData, err := os.ReadFile("dismparser/testdata/dism_testdata.txt")
 	if err != nil {
 		t.Fatalf("Failed to read testdata: %v", err)
@@ -36,14 +37,14 @@ func TestInventoryFromOutput(t *testing.T) {
 		desc    string
 		flavor  string
 		output  string
-		want    []*extractor.Inventory
+		want    inventory.Inventory
 		wantErr error
 	}{
 		{
-			desc:   "Valid test data returns inventory",
+			desc:   "Valid test data returns package",
 			flavor: "server",
 			output: string(dismTestData),
-			want: []*extractor.Inventory{
+			want: inventory.Inventory{Packages: []*extractor.Package{
 				{
 					Name:    "windows_server_2019",
 					Version: "10.0.17763.3406",
@@ -76,14 +77,14 @@ func TestInventoryFromOutput(t *testing.T) {
 					Name:    "Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1",
 					Version: "10.0.19041.1",
 				},
-			},
+			}},
 			wantErr: nil,
 		},
 		{
 			desc:    "Empty output returns parsing error",
 			flavor:  "server",
 			output:  "",
-			want:    nil,
+			want:    inventory.Inventory{},
 			wantErr: dismparser.ErrParsingError,
 		},
 	}
@@ -92,7 +93,7 @@ func TestInventoryFromOutput(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			got, gotErr := inventoryFromOutput(tc.flavor, tc.output)
 			if !errors.Is(gotErr, tc.wantErr) {
-				t.Fatalf("inventoryFromOutput(%q, %q) returned an unexpected error: %v", tc.flavor, tc.output, gotErr)
+				t.Fatalf("packageFromOutput(%q, %q) returned an unexpected error: %v", tc.flavor, tc.output, gotErr)
 			}
 
 			if tc.wantErr != nil {
@@ -100,7 +101,7 @@ func TestInventoryFromOutput(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("inventoryFromOutput(%q, %q) returned an unexpected diff (-want +got): %v", tc.flavor, tc.output, diff)
+				t.Errorf("packageFromOutput(%q, %q) returned an unexpected diff (-want +got): %v", tc.flavor, tc.output, diff)
 			}
 		})
 	}

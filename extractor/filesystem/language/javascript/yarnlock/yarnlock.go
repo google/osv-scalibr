@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -45,7 +46,7 @@ var (
 	yarnPackageVersionRe = regexp.MustCompile(`^ {2}"?version"?:? "?([\w-.+]+)"?$`)
 	// Package resolution matcher regex. Might contain commit hashes.
 	// Format for yarn.lock v1: `resolved "git+ssh://git@github.com:G-Rath/repo-2#hash"`
-	// Format for yarn.lock v2: `resolution: "@my-scope/my-first-package@https://github.com/my-org/my-first-package.git#commit=hash"`
+	// Format for yarn.lock v2: `resolution: "@my-scope/my-first-package@https://github.com/my-org/my-first-pkg.git#commit=hash"`
 	yarnPackageResolutionRe = regexp.MustCompile(`^ {2}"?(?:resolution:|resolved)"? "([^ '"]+)"$`)
 )
 
@@ -151,7 +152,7 @@ func determineYarnPackageResolution(props []string) string {
 	return ""
 }
 
-func parseYarnPackageGroup(desc *packageDescription) *extractor.Inventory {
+func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 	name := extractYarnPackageName(desc.header)
 	version := determineYarnPackageVersion(desc.props)
 	resolution := determineYarnPackageResolution(desc.props)
@@ -160,7 +161,7 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Inventory {
 		log.Errorf("Failed to determine version of %s while parsing a yarn.lock", name)
 	}
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    name,
 		Version: version,
 		SourceCode: &extractor.SourceCodeIdentifier{
@@ -200,39 +201,39 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from NPM yarn.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
 
 	packageGroups, err := groupYarnPackageDescriptions(ctx, scanner)
 	if err != nil {
-		return nil, fmt.Errorf("error while scanning %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error while scanning %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(packageGroups))
+	packages := make([]*extractor.Package, 0, len(packageGroups))
 
 	for _, group := range packageGroups {
 		if group.header == "__metadata:" {
 			// This group doesn't describe a package.
 			continue
 		}
-		inv := parseYarnPackageGroup(group)
-		inv.Locations = []string{input.Path}
-		packages = append(packages, inv)
+		pkg := parseYarnPackageGroup(group)
+		pkg.Locations = []string{input.Path}
+		packages = append(packages, pkg)
 	}
 
-	return packages, nil
+	return inventory.Inventory{Packages: packages}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNPM,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "npm" }
+func (e Extractor) Ecosystem(p *extractor.Package) string { return "npm" }
 
 var _ filesystem.Extractor = Extractor{}

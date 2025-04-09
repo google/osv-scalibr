@@ -21,10 +21,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 )
 
-// InventoryCmpLess is a comparator function for Inventories, to be used in
-// tests with cmp.Diff to disregard the order in which the Inventories
+// PackageCmpLess is a comparator function for Packages, to be used in
+// tests with cmp.Diff to disregard the order in which the Packages
 // are reported.
-func InventoryCmpLess(a, b *extractor.Inventory) bool {
+func PackageCmpLess(a, b *extractor.Package) bool {
 	aLoc := fmt.Sprintf("%v", a.Locations)
 	bLoc := fmt.Sprintf("%v", b.Locations)
 

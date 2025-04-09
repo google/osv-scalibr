@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -126,10 +127,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from cargo auditable inside rust binaries.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	reader, ok := input.Reader.(io.ReaderAt)
 	if !ok {
-		return nil, errors.New("input.Reader is not a ReaderAt")
+		return inventory.Inventory{}, errors.New("input.Reader is not a ReaderAt")
 	}
 
 	dependencyInfo, err := rustaudit.GetDependencyInfo(reader)
@@ -137,25 +138,25 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	// Most errors are just that the file is not a cargo auditable rust binary.
 	if err != nil {
 		if errors.Is(err, rustaudit.ErrUnknownFileFormat) || errors.Is(err, rustaudit.ErrNoRustDepInfo) {
-			return []*extractor.Inventory{}, nil
+			return inventory.Inventory{}, nil
 		}
 		log.Debugf("error getting dependency information from binary (%s) for extraction: %v", input.Path, err)
-		return nil, fmt.Errorf("rustaudit.GetDependencyInfo(%q): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("rustaudit.GetDependencyInfo(%q): %w", input.Path, err)
 	}
 
-	inventory := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, dep := range dependencyInfo.Packages {
 		// Cargo auditable also tracks build-only dependencies which we may not want to report.
 		// Note: the main package is reported as a runtime dependency.
 		if dep.Kind == rustaudit.Runtime || e.extractBuildDependencies {
-			inventory = append(inventory, &extractor.Inventory{
+			pkgs = append(pkgs, &extractor.Package{
 				Name:      dep.Name,
 				Version:   dep.Version,
 				Locations: []string{input.Path},
 			})
 		}
 	}
-	return inventory, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 func (e Extractor) reportFileExtracted(input *filesystem.ScanInput, result stats.FileExtractedResult) {
@@ -169,17 +170,17 @@ func (e Extractor) reportFileExtracted(input *filesystem.ScanInput, result stats
 	})
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeCargo,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Package) string {
 	return "crates.io"
 }
 

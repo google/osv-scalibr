@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -138,7 +139,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -146,22 +147,22 @@ func TestExtract(t *testing.T) {
 			name:      "alpine latest",
 			path:      "testdata/installed",
 			osrelease: alpine,
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/installed", "alpine-baselayout", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
-				getInventory("testdata/installed", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
-				getInventory("testdata/installed", "alpine-keys", "alpine-keys", "2.4-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MIT", "aab68f8c9ab434a46710de8e12fb3206e2930a59"),
-				getInventory("testdata/installed", "apk-tools", "apk-tools", "2.14.0-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "028d34f678a5386c3dc488cc3b62467c7a9d1a0b"),
-				getInventory("testdata/installed", "busybox", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
-				getInventory("testdata/installed", "busybox-binsh", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
-				getInventory("testdata/installed", "ca-certificates-bundle", "ca-certificates", "20230506-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MPL-2.0 AND MIT", "59534a02716a92a10d177a118c34066162eff4a6"),
-				getInventory("testdata/installed", "libc-utils", "libc-dev", "0.7.2-r5", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "BSD-2-Clause AND BSD-3-Clause", "988f183cc9d6699930c3e18ccf4a9e36010afb56"),
-				getInventory("testdata/installed", "libcrypto3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0", "730b75e01c670e3dba5d6c05420b5f605edb6201"),
-				getInventory("testdata/installed", "libssl3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0", "730b75e01c670e3dba5d6c05420b5f605edb6201"),
-				getInventory("testdata/installed", "musl", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT", "b0d8a9d948174e28a4aefcee4ef6be872225ccce"),
-				getInventory("testdata/installed", "musl-utils", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT AND BSD-2-Clause AND GPL-2.0-or-later", "b0d8a9d948174e28a4aefcee4ef6be872225ccce"),
-				getInventory("testdata/installed", "scanelf", "pax-utils", "1.3.7-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
-				getInventory("testdata/installed", "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
-				getInventory("testdata/installed", "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/installed", "alpine-baselayout", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+				getPackage("testdata/installed", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+				getPackage("testdata/installed", "alpine-keys", "alpine-keys", "2.4-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MIT", "aab68f8c9ab434a46710de8e12fb3206e2930a59"),
+				getPackage("testdata/installed", "apk-tools", "apk-tools", "2.14.0-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "028d34f678a5386c3dc488cc3b62467c7a9d1a0b"),
+				getPackage("testdata/installed", "busybox", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
+				getPackage("testdata/installed", "busybox-binsh", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
+				getPackage("testdata/installed", "ca-certificates-bundle", "ca-certificates", "20230506-r0", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "MPL-2.0 AND MIT", "59534a02716a92a10d177a118c34066162eff4a6"),
+				getPackage("testdata/installed", "libc-utils", "libc-dev", "0.7.2-r5", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "BSD-2-Clause AND BSD-3-Clause", "988f183cc9d6699930c3e18ccf4a9e36010afb56"),
+				getPackage("testdata/installed", "libcrypto3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0", "730b75e01c670e3dba5d6c05420b5f605edb6201"),
+				getPackage("testdata/installed", "libssl3", "openssl", "3.1.0-r4", "alpine", "3.18.0", "Ariadne Conill <ariadne@dereferenced.org>", "x86_64", "Apache-2.0", "730b75e01c670e3dba5d6c05420b5f605edb6201"),
+				getPackage("testdata/installed", "musl", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT", "b0d8a9d948174e28a4aefcee4ef6be872225ccce"),
+				getPackage("testdata/installed", "musl-utils", "musl", "1.2.4-r0", "alpine", "3.18.0", "Timo Teräs <timo.teras@iki.fi>", "x86_64", "MIT AND BSD-2-Clause AND GPL-2.0-or-later", "b0d8a9d948174e28a4aefcee4ef6be872225ccce"),
+				getPackage("testdata/installed", "scanelf", "pax-utils", "1.3.7-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
+				getPackage("testdata/installed", "ssl_client", "busybox", "1.36.0-r9", "alpine", "3.18.0", "Sören Tempel <soeren+alpine@soeren-tempel.net>", "x86_64", "GPL-2.0-only", "b5c719c244319df3c72ab1f1ee994c2143cab7f0"),
+				getPackage("testdata/installed", "zlib", "zlib", "1.2.13-r1", "alpine", "3.18.0", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "Zlib", "84a227baf001b6e0208e3352b294e4d7a40e93de"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -169,21 +170,21 @@ func TestExtract(t *testing.T) {
 			name:      "origin not set",
 			path:      "testdata/no-origin",
 			osrelease: alpine,
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/no-origin", "pkgname", "", "1.2.3", "alpine", "3.18.0", "", "x86_64", "GPL-2.0-only", ""),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/no-origin", "pkgname", "", "1.2.3", "alpine", "3.18.0", "", "x86_64", "GPL-2.0-only", ""),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "empty",
 			path:             "testdata/empty",
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "invalid",
 			path:             "testdata/invalid",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -192,8 +193,8 @@ func TestExtract(t *testing.T) {
 			path: "testdata/single",
 			osrelease: `ID=openwrt
 			VERSION_ID=1.2.3`,
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "1.2.3", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "1.2.3", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -201,8 +202,8 @@ func TestExtract(t *testing.T) {
 			name:      "osrelease no version",
 			path:      "testdata/single",
 			osrelease: "ID=openwrt",
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "openwrt", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -210,8 +211,8 @@ func TestExtract(t *testing.T) {
 			name:      "no osrelease",
 			path:      "testdata/single",
 			osrelease: "",
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/single", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "x86_64", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -219,8 +220,8 @@ func TestExtract(t *testing.T) {
 			name:      "different arch",
 			path:      "testdata/different-arch",
 			osrelease: "",
-			wantInventory: []*extractor.Inventory{
-				getInventory("testdata/different-arch", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "noarch", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
+			wantPackages: []*extractor.Package{
+				getPackage("testdata/different-arch", "alpine-baselayout-data", "alpine-baselayout", "3.4.3-r1", "", "", "Natanael Copa <ncopa@alpinelinux.org>", "noarch", "GPL-2.0-only", "65502ca9379dd29d1ac4b0bf0dcf03a3dd1b324a"),
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -267,7 +268,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -340,15 +342,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      "Name",
 				Version:   "1.2.3",
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -383,22 +385,22 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      "Name",
 				Version:   "1.2.3",
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
 }
 
-func getInventory(path, pkgName, origin, version, osID, osVersionID, maintainer, arch, license string, commit string) *extractor.Inventory {
-	i := &extractor.Inventory{
+func getPackage(path, pkgName, origin, version, osID, osVersionID, maintainer, arch, license string, commit string) *extractor.Package {
+	p := &extractor.Package{
 		Locations: []string{path},
 		Name:      pkgName,
 		Version:   version,
@@ -413,11 +415,11 @@ func getInventory(path, pkgName, origin, version, osID, osVersionID, maintainer,
 		},
 	}
 	if commit != "" {
-		i.SourceCode = &extractor.SourceCodeIdentifier{
+		p.SourceCode = &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		}
 	}
-	return i
+	return p
 }
 
 func createOsRelease(t *testing.T, root string, content string) {
