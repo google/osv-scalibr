@@ -98,7 +98,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inv, err := e.Extractor.Extract(ctx, input)
 	if err != nil {
-		return inventory.Inventory{}, nil
+		return inventory.Inventory{}, err
 	}
 
 	overrideClient := resolution.NewOverrideClient(e.Client)
