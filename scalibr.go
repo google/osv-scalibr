@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/annotator"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
@@ -237,6 +238,9 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 
 	sro.Inventory.Append(standaloneInv)
 	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
+
+	// add annotations to the pkgs
+	annotator.Annotate(sro.Inventory.Packages)
 
 	px, err := packageindex.New(sro.Inventory.Packages)
 	if err != nil {
