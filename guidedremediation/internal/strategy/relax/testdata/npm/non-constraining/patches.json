@@ -1,0 +1,23 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "simpledep",
+        "versionFrom": "^1.0.0",
+        "versionTo": "^3.0.1",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-000",
+        "packages": [
+          {
+            "name": "@bad/one",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ]
+  }
+]

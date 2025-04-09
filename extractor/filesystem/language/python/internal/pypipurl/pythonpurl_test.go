@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pypipurl converts an inventory to a PyPI type PackageURL.
+// Package pypipurl converts a package to a PyPI type PackageURL.
 package pypipurl_test
 
 import (
@@ -27,11 +27,11 @@ import (
 func TestMakePackageURL(t *testing.T) {
 	tests := []struct {
 		name string
-		arg  extractor.Inventory
+		arg  extractor.Package
 		want *purl.PackageURL
 	}{
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test",
 				Version: "1.0.0",
 			},
@@ -42,7 +42,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test-with-dashes",
 				Version: "1.0.0",
 			},
@@ -53,7 +53,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test_with_underscore",
 				Version: "1.0.0",
 			},
@@ -64,7 +64,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test___with_long__underscore",
 				Version: "1.0.0",
 			},
@@ -75,7 +75,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test.with-mixed_symbols",
 				Version: "1.0.0",
 			},
@@ -86,7 +86,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Inventory{
+			arg: extractor.Package{
 				Name:    "test.__-with_mixed_.--run",
 				Version: "1.0.0",
 			},

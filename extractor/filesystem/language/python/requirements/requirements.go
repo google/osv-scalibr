@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -45,8 +46,9 @@ var (
 	// We currently don't handle the following constraints.
 	// * Version wildcards (*)
 	// * Less than (<)
+	// * Not equal to (!=)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,`)
+	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,|!=`)
 	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
 	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
@@ -138,33 +140,33 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 type pathQueue []string
 
 // Extract extracts packages from requirements files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Additional paths to recursive files found during extraction.
 	var extraPaths pathQueue
-	var inv []*extractor.Inventory
+	var pkgs []*extractor.Package
 	newRepos, newPaths, err := extractFromPath(input.Reader, input.Path)
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 	if e.stats != nil {
 		e.exportStats(input, err)
 	}
 	extraPaths = append(extraPaths, newPaths...)
-	inv = append(inv, newRepos...)
+	pkgs = append(pkgs, newRepos...)
 
 	// Process all the recursive files that we found.
-	extraInv := extractFromExtraPaths(input.Path, extraPaths, input.FS)
-	inv = append(inv, extraInv...)
+	extraPKG := extractFromExtraPaths(input.Path, extraPaths, input.FS)
+	pkgs = append(pkgs, extraPKG...)
 
-	return inv, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS) []*extractor.Inventory {
-	// File paths with inventories already found in this extraction.
+func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS) []*extractor.Package {
+	// File paths with packages already found in this extraction.
 	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
 	var found = map[string]bool{initPath: true}
-	var inv []*extractor.Inventory
+	var pkgs []*extractor.Package
 
 	for len(extraPaths) > 0 {
 		path := extraPaths[0]
@@ -172,24 +174,24 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		if _, exists := found[path]; exists {
 			continue
 		}
-		newInv, newPaths, err := openAndExtractFromFile(path, fs)
+		newPKG, newPaths, err := openAndExtractFromFile(path, fs)
 		if err != nil {
 			log.Warnf("openAndExtractFromFile(%s): %w", path, err)
 			continue
 		}
 		found[path] = true
 		extraPaths = append(extraPaths, newPaths...)
-		for _, i := range newInv {
+		for _, p := range newPKG {
 			// Note the path through which we refer to this requirements.txt file.
-			i.Locations[0] = initPath + ":" + filepath.ToSlash(i.Locations[0])
+			p.Locations[0] = initPath + ":" + filepath.ToSlash(p.Locations[0])
 		}
-		inv = append(inv, newInv...)
+		pkgs = append(pkgs, newPKG...)
 	}
 
-	return inv
+	return pkgs
 }
 
-func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventory, pathQueue, error) {
+func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package, pathQueue, error) {
 	reader, err := fs.Open(filepath.ToSlash(path))
 	if err != nil {
 		return nil, nil, err
@@ -198,14 +200,16 @@ func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Inventor
 	return extractFromPath(reader, path)
 }
 
-func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pathQueue, error) {
-	var inv []*extractor.Inventory
+func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQueue, error) {
+	var pkgs []*extractor.Package
 	var extraPaths pathQueue
 	s := bufio.NewScanner(reader)
 	for s.Scan() {
 		l := readLine(s, &strings.Builder{})
 		// Per-requirement options may be present. We extract the --hash options, and discard the others.
 		l, hashOptions := splitPerRequirementOptions(l)
+		requirement := strings.TrimSpace(l)
+
 		l = removeWhiteSpaces(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
@@ -242,18 +246,19 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Inventory, pat
 			continue
 		}
 
-		inv = append(inv, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      name,
 			Version:   version,
 			Locations: []string{path},
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,
+				Requirement:            requirement,
 			},
 		})
 	}
 
-	return inv, extraPaths, s.Err()
+	return pkgs, extraPaths, s.Err()
 }
 
 // readLine reads a line from the scanner, removes comments and joins it with
@@ -292,10 +297,18 @@ func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
 	})
 }
 
+func nameFromRequirement(s string) string {
+	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
+		s, _, _ = strings.Cut(s, sep)
+	}
+	return s
+}
+
 func getLowestVersion(s string) (name, version, comparator string) {
 	// TODO(b/286213823): Implement metric
 	if reUnsupportedConstraints.FindString(s) != "" {
-		return "", "", ""
+		// Return the name so the package will be in the list for dependency resolution.
+		return nameFromRequirement(s), "", ""
 	}
 
 	t := []string{}
@@ -310,7 +323,7 @@ func getLowestVersion(s string) (name, version, comparator string) {
 	}
 
 	if len(t) == 0 {
-		// Length of t being 0 indidates that there is no seaprator.
+		// Length of t being 0 indicates that there is no separator.
 		return s, "", ""
 	}
 	if len(t) != 2 {
@@ -356,10 +369,10 @@ func splitPerRequirementOptions(s string) (string, []string) {
 	return reTextAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return pypipurl.MakePackageURL(p)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "PyPI" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }

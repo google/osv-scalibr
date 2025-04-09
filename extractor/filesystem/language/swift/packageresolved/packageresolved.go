@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -117,8 +118,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract parses and extracts dependency data from a Package.resolved file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -130,31 +131,30 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs, err := parse(input.Reader)
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	packages, err := parse(input.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	var inventories []*extractor.Inventory
-	for _, pkg := range pkgs {
-		i := &extractor.Inventory{
+	var result []*extractor.Package
+	for _, pkg := range packages {
+		result = append(result, &extractor.Package{
 			Name:    pkg.Name,
 			Version: pkg.Version,
 			Locations: []string{
 				input.Path,
 			},
-		}
-		inventories = append(inventories, i)
+		})
 	}
 
-	return inventories, nil
+	return result, nil
 }
 
-// Package represents a parsed package entry from the Package.resolved file.
+// pkg represents a parsed package entry from the Package.resolved file.
 type pkg struct {
 	Name    string
 	Version string
@@ -186,14 +186,14 @@ func parse(r io.Reader) ([]pkg, error) {
 	return packages, nil
 }
 
-// ToPURL converts an inventory item into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package item into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeCocoapods,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV Ecosystem for Swift.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "Cocoapods" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "Cocoapods" }

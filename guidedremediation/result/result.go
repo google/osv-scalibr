@@ -85,10 +85,20 @@ func (a Patch) Compare(b Patch, sys semver.System) int {
 	}
 
 	// 5. dependency bump amount [asc]
-	// TODO(#454): fix this for relax
 	for i, aDep := range a.PackageUpdates {
 		bDep := b.PackageUpdates[i]
-		if c := sys.Compare(aDep.VersionTo, bDep.VersionTo); c != 0 {
+		aVer, aErr := sys.Parse(aDep.VersionTo)
+		bVer, bErr := sys.Parse(bDep.VersionTo)
+		if aErr != nil || bErr != nil {
+			// Versions don't parse as single versions, most likely a range from relax.
+			// We can't easily compare the bounds of the range, so just do a string comparison.
+			if c := cmp.Compare(aDep.VersionTo, bDep.VersionTo); c != 0 {
+				return c
+			}
+			continue
+		}
+
+		if c := aVer.Compare(bVer); c != 0 {
 			return c
 		}
 	}

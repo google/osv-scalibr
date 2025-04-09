@@ -17,7 +17,6 @@ package override
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 
@@ -26,6 +25,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/common"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
@@ -39,66 +39,19 @@ import (
 // Vulnerabilities are resolved by directly overriding versions of vulnerable packages to non-vulnerable versions.
 // If a patch introduces new vulnerabilities, additional overrides are attempted for the new vulnerabilities.
 func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) ([]result.Patch, error) {
-	// Do the remediation attempts concurrently
-	type overrideResult struct {
-		vulnIDs  []string
-		resolved *remediation.ResolvedManifest
-		err      error
-	}
-	ch := make(chan overrideResult)
-	doOverride := func(vulnIDs []string) {
-		resolved, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
-		ch <- overrideResult{vulnIDs, resolved, err}
+	patchFn := func(vulnIDs []string) common.StrategyResult {
+		patched, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
+		return common.StrategyResult{
+			VulnIDs:  vulnIDs,
+			Resolved: patched,
+			Err:      err}
 	}
 
-	toProcess := 0
-	for _, v := range resolved.Vulns {
-		go doOverride([]string{v.OSV.ID})
-		toProcess++
-	}
-
-	var allResults []result.Patch
-	for toProcess > 0 {
-		r := <-ch
-		toProcess--
-		if r.err != nil {
-			if !errors.Is(r.err, errOverrideImpossible) {
-				log.Warnf("error attempting to compute override patch for vulns %v: %v", r.vulnIDs, r.err)
-			}
-			continue
-		}
-
-		patch := remediation.ConstructPatches(resolved, r.resolved)
-		if len(patch.PackageUpdates) == 0 {
-			continue
-		}
-		allResults = append(allResults, patch)
-
-		// If there are any new vulns, try override them as well
-		var newlyAdded []string
-		for _, v := range patch.Introduced {
-			if !slices.Contains(r.vulnIDs, v.ID) {
-				newlyAdded = append(newlyAdded, v.ID)
-			}
-		}
-		if len(newlyAdded) > 0 {
-			go doOverride(append(r.vulnIDs, newlyAdded...)) // No need to clone r.VulnIDs here
-			toProcess++
-		}
-	}
-
-	// Sort and remove duplicate patches
-	cmpFn := func(a, b result.Patch) int { return a.Compare(b, resolved.Manifest.System().Semver()) }
-	slices.SortFunc(allResults, cmpFn)
-	allResults = slices.CompactFunc(allResults, func(a, b result.Patch) bool { return cmpFn(a, b) == 0 })
-
-	return allResults, nil
+	return common.ComputePatches(patchFn, resolved, true)
 }
 
-var errOverrideImpossible = errors.New("cannot fix vulns by overrides")
-
 // patchVulns tries to fix as many vulns in vulnIDs as possible by overriding dependency versions.
-// returns errOverrideImpossible if 0 vulns are patchable, otherwise returns the most possible patches.
+// returns ErrPatchImpossible if 0 vulns are patchable, otherwise returns the most possible patches.
 func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
 	resolved = &remediation.ResolvedManifest{
 		Manifest:        resolved.Manifest.Clone(),
@@ -124,7 +77,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 					// Blindly updating versions can lead to compilation failures if the artifact+version+classifier+type doesn't exist.
 					// We can't reliably attempt remediation in these cases, so don't try.
 					if e.Type.HasAttr(dep.MavenClassifier) || e.Type.HasAttr(dep.MavenArtifactType) {
-						return nil, fmt.Errorf("%w: cannot fix vulns in artifacts with classifier or type", errOverrideImpossible)
+						return nil, fmt.Errorf("%w: cannot fix vulns in artifacts with classifier or type", common.ErrPatchImpossible)
 					}
 					vk := sg.Nodes[sg.Dependency].Version
 					if _, seen := seenVKs[vk]; !seen {
@@ -166,7 +119,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 				// Count the remaining known vulns that affect this version.
 				count := 0 // remaining vulns
 				for _, rv := range vulnerabilities {
-					if vulns.IsAffected(rv.OSV, vulns.VKToInventory(ver.VersionKey)) {
+					if vulns.IsAffected(rv.OSV, vulns.VKToPackage(ver.VersionKey)) {
 						count++
 					}
 				}

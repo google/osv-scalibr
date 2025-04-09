@@ -62,11 +62,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 func TestExtractor_Extract(t *testing.T) {
 	// extracttest.TestTableEntry + podman config
 	type testTableEntry struct {
-		Name          string
-		InputConfig   extracttest.ScanInputMockConfig
-		WantInventory []*extractor.Inventory
-		WantErr       error
-		Config        podman.Config
+		Name         string
+		InputConfig  extracttest.ScanInputMockConfig
+		WantPackages []*extractor.Package
+		WantErr      error
+		Config       podman.Config
 	}
 
 	tests := []testTableEntry{
@@ -92,7 +92,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/db.sql",
 			},
 			Config: podman.Config{All: true},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",
 					Version: "f1f77a0f96b7251d7ef5472705624e2d76db64855b5b121e1cbefe9dc52d0f86",
@@ -126,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/db.sql",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:    "postgres",
 					Version: "e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
@@ -153,7 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bolt_state.db",
 			},
 			Config: podman.Config{All: true},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",
 					Version: "f1f77a0f96b7251d7ef5472705624e2d76db64855b5b121e1cbefe9dc52d0f86",
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bolt_state.db",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/redis",
 					Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -205,8 +205,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			opts := []cmp.Option{cmpopts.SortSlices(extracttest.InventoryCmpLess), cmpopts.IgnoreTypes(time.Time{})}
-			if diff := cmp.Diff(tt.WantInventory, got, opts...); diff != "" {
+			opts := []cmp.Option{cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.IgnoreTypes(time.Time{})}
+			if diff := cmp.Diff(tt.WantPackages, got.Packages, opts...); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

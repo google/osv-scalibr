@@ -59,7 +59,7 @@ place it in there. Otherwise, feel free to create a new directory.
 
 ## Scan parameters
 
-Detectors can access the filesystem and the results of the inventory extraction
+Detectors can access the filesystem and the results of the package extraction
 step through the parameters of their `Scan()` function.
 
 ### Filesystem access
@@ -69,11 +69,11 @@ allows them to read the contents and permissions of any file on the scanned
 filesystem. Note that the access is read-only: Detectors are not able to make
 changes to the target machine.
 
-### Inventory index
+### Package index
 
-Detectors also receive an
-[`InventoryIndex`](/inventoryindex/inventory_index.go)
-param that can be used to query the software inventory that the extraction step
+Detectors also receive a
+[`PackageIndex`](/packageindex/package_index.go)
+param that can be used to query the software package that the extraction step
 found on the filesystem. This can be used to run the detection logic on each relevant
 software found, or exit early if none are installed. For an example use case see the
 [govulncheck Detector](/detector/govulncheck/binary/binary.go).

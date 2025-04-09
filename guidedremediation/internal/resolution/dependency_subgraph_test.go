@@ -16,6 +16,7 @@ package resolution_test
 
 import (
 	"cmp"
+	"context"
 	"maps"
 	"slices"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestDependencySubgraph(t *testing.T) {
@@ -58,6 +60,96 @@ a 0.0.1
 		checkSubgraphEdges(t, sg)
 		checkSubgraphNodesReachable(t, sg)
 		checkSubgraphDistances(t, sg)
+	}
+}
+
+func TestConstrainingSubgraph(t *testing.T) {
+	const vulnPkgName = "vuln"
+	g, err := schema.ParseResolve(`
+root 1.0.0
+	vuln: vuln@<3 1.0.1
+	nonprob1@^1.0.0 1.0.0
+		$vuln@>1
+	prob1@^1.0.0 1.0.0
+		$vuln@^1.0.0
+	prob2@^2.0.0 2.0.0
+		nonprob2@* 1.0.0
+			$vuln@*
+		$vuln@*
+		dep@3.0.0 3.0.0
+			$vuln@1.0.1
+`, resolve.NPM)
+	if err != nil {
+		t.Fatalf("failed to parse test graph: %v", err)
+	}
+
+	nID := slices.IndexFunc(g.Nodes, func(n resolve.Node) bool { return n.Version.Name == vulnPkgName })
+	if nID < 0 {
+		t.Fatalf("failed to find vulnerable node in test graph")
+	}
+	subgraph := resolution.ComputeSubgraphs(g, []resolve.NodeID{resolve.NodeID(nID)})[0]
+
+	cl := resolve.NewLocalClient()
+	v := resolve.Version{
+		VersionKey: resolve.VersionKey{
+			PackageKey: resolve.PackageKey{
+				System: resolve.NPM,
+				Name:   vulnPkgName,
+			},
+			VersionType: resolve.Concrete,
+		},
+	}
+	v.Version = "1.0.0"
+	cl.AddVersion(v, []resolve.RequirementVersion{})
+	v.Version = "1.0.1"
+	cl.AddVersion(v, []resolve.RequirementVersion{})
+	v.Version = "2.0.0"
+	cl.AddVersion(v, []resolve.RequirementVersion{})
+	vuln := &osvschema.Vulnerability{
+		ID: "VULN-001",
+		Affected: []osvschema.Affected{{
+			Package: osvschema.Package{
+				Ecosystem: "npm",
+				Name:      vulnPkgName,
+			},
+			Ranges: []osvschema.Range{
+				{
+					Type:   "SEMVER",
+					Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.0.0"}},
+				},
+			},
+		},
+		}}
+	got := subgraph.ConstrainingSubgraph(context.Background(), cl, vuln)
+	checkSubgraphVersions(t, got, g)
+	checkSubgraphEdges(t, got)
+	checkSubgraphNodesReachable(t, got)
+	checkSubgraphDistances(t, got)
+
+	// Checking that we have the expected remaining nodes
+	expectedRemoved := []string{"nonprob1", "nonprob2"}
+	for _, pkgName := range expectedRemoved {
+		nID := slices.IndexFunc(g.Nodes, func(n resolve.Node) bool { return n.Version.Name == pkgName })
+		if nID < 0 {
+			t.Fatalf("failed to find expected node in test graph")
+		}
+		if _, found := got.Nodes[resolve.NodeID(nID)]; found {
+			t.Errorf("non-constraining node was not removed from constraining subgraph: %s", pkgName)
+		}
+	}
+	if len(got.Nodes) != len(subgraph.Nodes)-len(expectedRemoved) {
+		t.Errorf("extraneous nodes found in constraining subgraph")
+	}
+	for nID := range got.Nodes {
+		if _, ok := subgraph.Nodes[nID]; !ok {
+			t.Errorf("extraneous node (%v) found in constraining subgraph", nID)
+		}
+	}
+
+	// Check that ConstrainingSubgraph is stable if reapplied
+	again := got.ConstrainingSubgraph(context.Background(), cl, vuln)
+	if diff := gocmp.Diff(got, again); diff != "" {
+		t.Errorf("ConstrainingSubgraph output changed on reapply (-want +got):\n%s", diff)
 	}
 }
 

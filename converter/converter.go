@@ -45,9 +45,9 @@ const (
 // spdx_id must only contain letters, numbers, "." and "-"
 var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 
-// ToPURL converts a SCALIBR inventory structure into a package URL.
-func ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return i.Extractor.ToPURL(i)
+// ToPURL converts a SCALIBR package structure into a package URL.
+func ToPURL(p *extractor.Package) *purl.PackageURL {
+	return p.Extractor.ToPURL(p)
 }
 
 // SPDXConfig describes custom settings that should be applied to the generated SPDX file.
@@ -59,7 +59,7 @@ type SPDXConfig struct {
 
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
 func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
-	packages := make([]*v2_3.Package, 0, len(r.Inventories)+1)
+	packages := make([]*v2_3.Package, 0, len(r.Inventory.Packages)+1)
 
 	// Add a main package that contains all other top-level packages.
 	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
@@ -75,31 +75,31 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 		IsFilesAnalyzedTagPresent: false,
 	})
 
-	relationships := make([]*v2_3.Relationship, 0, 1+2*len(r.Inventories))
+	relationships := make([]*v2_3.Relationship, 0, 1+2*len(r.Inventory.Packages))
 	relationships = append(relationships, &v2_3.Relationship{
 		RefA:         toDocElementID(SPDXDocumentID),
 		RefB:         toDocElementID(mainPackageID),
 		Relationship: "DESCRIBES",
 	})
 
-	for _, i := range r.Inventories {
-		p := ToPURL(i)
+	for _, pkg := range r.Inventory.Packages {
+		p := ToPURL(pkg)
 		if p == nil {
-			log.Warnf("Inventory %v has no PURL, skipping", i)
+			log.Warnf("Package %v has no PURL, skipping", pkg)
 			continue
 		}
 		pName := p.Name
 		pVersion := p.Version
 		if pName == "" || pVersion == "" {
-			log.Warnf("Inventory %v PURL name or version empty, skipping", i)
+			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
 			continue
 		}
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
-		pSourceInfo := fmt.Sprintf("Identified by the %s extractor", i.Extractor.Name())
-		if len(i.Locations) == 1 {
-			pSourceInfo += " from " + i.Locations[0]
-		} else if l := len(i.Locations); l > 1 {
-			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, i.Locations[0], i.Locations[1])
+		pSourceInfo := fmt.Sprintf("Identified by the %s extractor", pkg.Extractor.Name())
+		if len(pkg.Locations) == 1 {
+			pSourceInfo += " from " + pkg.Locations[0]
+		} else if l := len(pkg.Locations); l > 1 {
+			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, pkg.Locations[0], pkg.Locations[1])
 		}
 
 		packages = append(packages, &v2_3.Package{
@@ -220,44 +220,44 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		bom.Metadata.Authors = &authors
 	}
 
-	comps := make([]cyclonedx.Component, 0, len(r.Inventories))
-	for _, i := range r.Inventories {
-		pkg := cyclonedx.Component{
+	comps := make([]cyclonedx.Component, 0, len(r.Inventory.Packages))
+	for _, pkg := range r.Inventory.Packages {
+		comp := cyclonedx.Component{
 			BOMRef:  uuid.New().String(),
 			Type:    cyclonedx.ComponentTypeLibrary,
-			Name:    i.Name,
-			Version: i.Version,
+			Name:    pkg.Name,
+			Version: pkg.Version,
 		}
-		if p := ToPURL(i); p != nil {
-			pkg.PackageURL = p.String()
+		if p := ToPURL(pkg); p != nil {
+			comp.PackageURL = p.String()
 		}
-		if cpes := extractCPEs(i); len(cpes) > 0 {
-			pkg.CPE = cpes[0]
+		if cpes := extractCPEs(pkg); len(cpes) > 0 {
+			comp.CPE = cpes[0]
 		}
-		if len(i.Locations) > 0 {
-			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((i.Locations)))
-			for _, loc := range i.Locations {
+		if len(pkg.Locations) > 0 {
+			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((pkg.Locations)))
+			for _, loc := range pkg.Locations {
 				occ = append(occ, cyclonedx.EvidenceOccurrence{
 					Location: loc,
 				})
 			}
-			pkg.Evidence = &cyclonedx.Evidence{
+			comp.Evidence = &cyclonedx.Evidence{
 				Occurrences: &occ,
 			}
 		}
-		comps = append(comps, pkg)
+		comps = append(comps, comp)
 	}
 	bom.Components = &comps
 
 	return bom
 }
 
-func extractCPEs(i *extractor.Inventory) []string {
-	// Only the two SBOM inventory types support storing CPEs.
-	if m, ok := i.Metadata.(*spdxe.Metadata); ok {
+func extractCPEs(p *extractor.Package) []string {
+	// Only the two SBOM package types support storing CPEs.
+	if m, ok := p.Metadata.(*spdxe.Metadata); ok {
 		return m.CPEs
 	}
-	if m, ok := i.Metadata.(*cdxe.Metadata); ok {
+	if m, ok := p.Metadata.(*cdxe.Metadata); ok {
 		return m.CPEs
 	}
 	return nil

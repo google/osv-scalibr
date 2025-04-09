@@ -123,8 +123,15 @@ func (m *npmManifest) Clone() manifest.Manifest {
 
 // PatchRequirement modifies the manifest's requirements to include the new requirement version.
 func (m *npmManifest) PatchRequirement(req resolve.RequirementVersion) error {
-	// TODO(#454): implement this for npm when adding relax strategy
-	return nil
+	reqKey := MakeRequirementKey(req)
+	for i, oldReq := range m.requirements {
+		if MakeRequirementKey(oldReq) == reqKey {
+			m.requirements[i] = req
+			return nil
+		}
+	}
+
+	return fmt.Errorf("package %s not found in manifest", req.Name)
 }
 
 type readWriter struct{}

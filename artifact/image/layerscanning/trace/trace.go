@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
@@ -53,7 +54,7 @@ type locationAndIndex struct {
 //
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
-func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
+func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
 	// If there are no chain layers, then there is nothing to trace. This should not happen, but we
 	// should handle it gracefully.
 	if len(chainLayers) == 0 {
@@ -94,86 +95,86 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 		}
 	}
 
-	// locationIndexToInventory is used as an inventory cache to avoid re-extracting the same
-	// inventory from a file multiple times.
-	locationIndexToInventory := map[locationAndIndex][]*extractor.Inventory{}
+	// locationIndexToPackages is used as a package cache to avoid re-extracting the same
+	// package from a file multiple times.
+	locationIndexToPackages := map[locationAndIndex][]*extractor.Package{}
 	lastLayerIndex := len(chainLayers) - 1
 
-	for _, inv := range inventory {
+	for _, pkg := range inventory.Packages {
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
-		invExtractor, isFilesystemExtractor := inv.Extractor.(filesystem.Extractor)
+		pkgExtractor, isFilesystemExtractor := pkg.Extractor.(filesystem.Extractor)
 
-		// Only filesystem extractors are supported for layer scanning. Also, if the inventory has no
+		// Only filesystem extractors are supported for layer scanning. Also, if the package has no
 		// locations, it cannot be traced.
-		isInventoryTraceable := isFilesystemExtractor && len(inv.Locations) > 0
-		if !isInventoryTraceable {
+		isPackageTraceable := isFilesystemExtractor && len(pkg.Locations) > 0
+		if !isPackageTraceable {
 			continue
 		}
 
-		var invPURL string
-		if inv.Extractor != nil {
-			invPURL = inv.Extractor.ToPURL(inv).String()
+		var pkgPURL string
+		if pkg.Extractor != nil {
+			pkgPURL = pkg.Extractor.ToPURL(pkg).String()
 		}
 
 		var foundOrigin bool
-		fileLocation := inv.Locations[0]
+		fileLocation := pkg.Locations[0]
 		lastScannedLayerIndex := len(chainLayers) - 1
 
-		// Go backwards through the chain layers and find the first layer where the inventory is not
-		// present. Such layer is the layer in which the inventory was introduced. If the inventory is
+		// Go backwards through the chain layers and find the first layer where the package is not
+		// present. Such layer is the layer in which the package was introduced. If the package is
 		// present in all layers, then it means it was introduced in the first layer.
 		for i := len(chainLayers) - 2; i >= 0; i-- {
 			oldChainLayer := chainLayers[i]
 
-			invLocationAndIndex := locationAndIndex{
+			pkgLocationAndIndex := locationAndIndex{
 				location: fileLocation,
 				index:    i,
 			}
 
-			var oldInventory []*extractor.Inventory
-			if cachedInventory, ok := locationIndexToInventory[invLocationAndIndex]; ok {
-				oldInventory = cachedInventory
+			var oldPackages []*extractor.Package
+			if cachedPackages, ok := locationIndexToPackages[pkgLocationAndIndex]; ok {
+				oldPackages = cachedPackages
 			} else if _, err := oldChainLayer.FS().Stat(fileLocation); errors.Is(err, fs.ErrNotExist) {
 				// Check if file still exist in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				oldInventory = []*extractor.Inventory{}
-			} else if filesExistInLayer(oldChainLayer, inv.Locations) {
+				oldPackages = []*extractor.Package{}
+			} else if filesExistInLayer(oldChainLayer, pkg.Locations) {
 				// Update the extractor config to use the files from the current layer.
 				// We only take extract the first location because other locations are derived from the initial
 				// extraction location. If other locations can no longer be determined from the first location
 				// they should not be included here, and the trace for those packages stops here.
-				updateExtractorConfig([]string{fileLocation}, invExtractor, oldChainLayer.FS())
+				updateExtractorConfig([]string{fileLocation}, pkgExtractor, oldChainLayer.FS())
 
-				var err error
 				// Runs SCALIBR extraction on the file of interest in oldChainLayer.
-				oldInventory, _, err = filesystem.Run(ctx, config)
+				oldInv, _, err := filesystem.Run(ctx, config)
+				oldPackages = oldInv.Packages
 				if err != nil {
 					break
 				}
 			} else {
-				// If none of the files from the inventory are present in the underlying layer, then there
-				// will be no difference in the extracted inventory from oldChainLayer, so extraction can be
-				// skipped in the chain layer. This is an optimization to avoid extracting the same inventory
+				// If none of the files from the packages are present in the underlying layer, then there
+				// will be no difference in the extracted packages from oldChainLayer, so extraction can be
+				// skipped in the chain layer. This is an optimization to avoid extracting the same package
 				// multiple times.
 				continue
 			}
 
-			// Cache the inventory for future use.
-			locationIndexToInventory[invLocationAndIndex] = oldInventory
+			// Cache the packages for future use.
+			locationIndexToPackages[pkgLocationAndIndex] = oldPackages
 
 			foundPackage := false
-			for _, oldInv := range oldInventory {
-				if oldInv.Extractor == nil {
+			for _, oldPKG := range oldPackages {
+				if oldPKG.Extractor == nil {
 					continue
 				}
 
-				// PURLs are being used as a package key, so if they are different, skip this inventory.
-				oldInvPURL := oldInv.Extractor.ToPURL(oldInv).String()
-				if oldInvPURL != invPURL {
+				// PURLs are being used as a package key, so if they are different, skip this package.
+				oldPKGPURL := oldPKG.Extractor.ToPURL(oldPKG).String()
+				if oldPKGPURL != pkgPURL {
 					continue
 				}
 
-				if !areLocationsEqual(oldInv.Locations, inv.Locations) {
+				if !areLocationsEqual(oldPKG.Locations, pkg.Locations) {
 					continue
 				}
 
@@ -181,7 +182,7 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 				break
 			}
 
-			// If the inventory is not present in the old layer, then it was introduced in the previous layer we actually scanned
+			// If the package is not present in the old layer, then it was introduced in the previous layer we actually scanned
 			if !foundPackage {
 				layerDetails = chainLayerDetailsList[lastScannedLayerIndex]
 				foundOrigin = true
@@ -192,16 +193,16 @@ func PopulateLayerDetails(ctx context.Context, inventory []*extractor.Inventory,
 			lastScannedLayerIndex = i
 		}
 
-		// If the inventory is present in every layer, then it means it was introduced in the first
+		// If the package is present in every layer, then it means it was introduced in the first
 		// layer.
 		if !foundOrigin {
 			layerDetails = chainLayerDetailsList[0]
 		}
-		inv.LayerDetails = layerDetails
+		pkg.LayerDetails = layerDetails
 	}
 }
 
-// areLocationsEqual checks if the inventory location strings are equal.
+// areLocationsEqual checks if the package location strings are equal.
 func areLocationsEqual(fileLocations []string, otherFileLocations []string) bool {
 	if len(fileLocations) == 0 || len(otherFileLocations) == 0 {
 		log.Warnf("Empty file locations found. This should not happen.")
