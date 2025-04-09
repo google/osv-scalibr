@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -94,8 +95,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from requirements files passed through the scan input.
 // TODO(#663): do not perform dependency resolution if the requirements file acts as a lockfile,
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	invs, err := e.Extractor.Extract(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	inv, err := e.Extractor.Extract(ctx, input)
 	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := pypiresolve.NewResolver(overrideClient)
 
@@ -109,9 +110,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			VersionType: resolve.Concrete,
 			// Version of root node does not matter
 		}}
-	reqs := make([]resolve.RequirementVersion, len(invs))
-	for i, inv := range invs {
-		m := inv.Metadata.(*requirements.Metadata)
+	reqs := make([]resolve.RequirementVersion, len(inv.Packages))
+	for i, pkg := range inv.Packages {
+		m := pkg.Metadata.(*requirements.Metadata)
 		d, err := pypi.ParseDependency(m.Requirement)
 		if err != nil {
 			log.Errorf("failed to parse requirement %s: %v", m.Requirement, err)
@@ -142,32 +143,31 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed resolving %v: %w", root, err)
+		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
 	for i, e := range g.Edges {
 		g.Edges[i] = e
 	}
 
-	result := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
-		inventory := extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:    node.Version.Name,
 			Version: node.Version.Version,
 			// TODO(#663): record the path if it's from another requirements file.
 			Locations: []string{input.Path},
-		}
-		result = append(result, &inventory)
+		})
 	}
 
-	return result, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
 	return e.Extractor.ToPURL(i)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "PyPI" }
+func (Extractor) Ecosystem(i *extractor.Package) string { return "PyPI" }
