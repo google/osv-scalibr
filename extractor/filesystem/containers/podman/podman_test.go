@@ -100,6 +100,7 @@ func TestExtractor_Extract(t *testing.T) {
 						Status: "exited",
 						Exited: true,
 					},
+					Locations: []string{"testdata/db.sql"},
 				},
 				{
 					Name:    "postgres",
@@ -109,6 +110,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          37461,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/db.sql"},
 				},
 				{
 					Name:    "redis",
@@ -118,6 +120,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          37379,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/db.sql"},
 				},
 			},
 		},
@@ -135,6 +138,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          37461,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/db.sql"},
 				},
 				{
 					Name:    "redis",
@@ -144,6 +148,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          37379,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/db.sql"},
 				},
 			},
 		},
@@ -161,6 +166,7 @@ func TestExtractor_Extract(t *testing.T) {
 						Status: "exited",
 						Exited: true,
 					},
+					Locations: []string{"testdata/bolt_state.db"},
 				},
 				{
 					Name:    "docker.io/redis",
@@ -170,6 +176,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          4232,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/bolt_state.db"},
 				},
 			},
 		},
@@ -187,6 +194,7 @@ func TestExtractor_Extract(t *testing.T) {
 						PID:          4232,
 						Status:       "running",
 					},
+					Locations: []string{"testdata/bolt_state.db"},
 				},
 			},
 		},
