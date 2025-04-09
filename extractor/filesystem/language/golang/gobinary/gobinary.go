@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/internal/golangpurl"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -283,13 +284,7 @@ func extractVersionFromConent(reader io.Reader) string {
 
 // ToPURL converts a package created by this extractor into a PURL.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	nameParts := strings.Split(p.Name, "/")
-	return &purl.PackageURL{
-		Type:      purl.TypeGolang,
-		Name:      nameParts[len(nameParts)-1],
-		Namespace: strings.Join(nameParts[:len(nameParts)-1], "/"),
-		Version:   p.Version,
-	}
+	return golangpurl.MakePackageURL(p)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

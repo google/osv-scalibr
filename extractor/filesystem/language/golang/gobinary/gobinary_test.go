@@ -306,25 +306,6 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	e := gobinary.Extractor{}
-	p := &extractor.Package{
-		Name:      "github.com/google/osv-scalibr",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:      purl.TypeGolang,
-		Name:      "osv-scalibr",
-		Namespace: "github.com/google",
-		Version:   "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}
-
 var (
 	// BinaryWithModulesPackagesWindows is a list of packages built into the
 	// binary_with_modules-* testdata binaries, but only on Windows, where there
