@@ -97,6 +97,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // TODO(#663): do not perform dependency resolution if the requirements file acts as a lockfile,
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inv, err := e.Extractor.Extract(ctx, input)
+	if err != nil {
+		return inventory.Inventory{}, nil
+	}
+
 	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := pypiresolve.NewResolver(overrideClient)
 
@@ -144,9 +148,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
-	}
-	for i, e := range g.Edges {
-		g.Edges[i] = e
 	}
 
 	pkgs := []*extractor.Package{}
