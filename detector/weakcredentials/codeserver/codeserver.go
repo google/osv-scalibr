@@ -19,9 +19,10 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -89,7 +90,7 @@ type Detector struct {
 // DefaultConfig returns the default config for this detector.
 func DefaultConfig() Config {
 	return Config{
-		Remote:        fmt.Sprintf("http://%s:%d", defaultAddress, defaultPort),
+		Remote:        "http://" + net.JoinHostPort(defaultAddress, strconv.Itoa(defaultPort)),
 		ClientTimeout: defaultClientTimeout,
 	}
 }
@@ -176,7 +177,11 @@ func checkAuth(ctx context.Context, client *http.Client, target string) (bool, e
 		return false, ctx.Err()
 	}
 
-	resp, err := client.Get(target)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return false, err
 	}

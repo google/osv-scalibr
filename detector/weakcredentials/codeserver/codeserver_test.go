@@ -121,6 +121,8 @@ func TestScanWithTimeouts(t *testing.T) {
 // validHandler returns a valid handler that will emulate the Code-Server instance. Does not emulate
 // the redirection.
 func validHandler(t *testing.T, authEnabled bool) http.HandlerFunc {
+	t.Helper()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if authEnabled {
 			fmt.Fprintln(w, loadTestFile(t, "testdata/auth_enabled.html"))
