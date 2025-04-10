@@ -34,8 +34,8 @@ type PatchSuggester interface {
 	Suggest(ctx context.Context, mf manifest.Manifest, opts options.UpdateOptions) (result.Patch, error)
 }
 
-// GetSuggester returns the PatchSuggester based on the specified ecosystem.
-func GetSuggester(system resolve.System) (PatchSuggester, error) {
+// NewSuggester returns the PatchSuggester based on the specified ecosystem.
+func NewSuggester(system resolve.System) (PatchSuggester, error) {
 	switch system {
 	case resolve.Maven:
 		return &MavenSuggester{}, nil

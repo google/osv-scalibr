@@ -53,7 +53,7 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 			// and updates on development dependencies are not desired
 			continue
 		}
-		if strings.Contains(req.Name, "${") && strings.Contains(req.Version, "${") {
+		if strings.Contains(req.Name, "${") || strings.Contains(req.Version, "${") {
 			// If there are unresolved properties, we should skip this version.
 			continue
 		}
