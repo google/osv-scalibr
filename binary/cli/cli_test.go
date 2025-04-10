@@ -518,6 +518,39 @@ func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
 	}
 }
 
+func TestGetScanConfig_MaxFileSize(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantMaxFileSize int
+	}{
+		{
+			desc: "max file size unset",
+			flags: &cli.Flags{
+				MaxFileSize: 0,
+			},
+			wantMaxFileSize: 0,
+		},
+		{
+			desc: "max file size set",
+			flags: &cli.Flags{
+				MaxFileSize: 100,
+			},
+			wantMaxFileSize: 100,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if cfg.MaxFileSize != tc.wantMaxFileSize {
+				t.Errorf("%+v.GetScanConfig() got max file size %d, want %d", tc.flags, cfg.MaxFileSize, tc.wantMaxFileSize)
+			}
+		})
+	}
+}
+
 func TestWriteScanResults(t *testing.T) {
 	testDirPath := t.TempDir()
 	result := &scalibr.ScanResult{

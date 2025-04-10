@@ -43,6 +43,8 @@ var (
 	// ErrNotRelativeToScanRoots is returned when one of the file or directory to be retrieved or
 	// skipped is not relative to any of the scan roots.
 	ErrNotRelativeToScanRoots = errors.New("path not relative to any of the scan roots")
+	// ErrFailedToOpenFile is returned when opening a file failes.
+	ErrFailedToOpenFile = errors.New("failed to open file")
 )
 
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
@@ -108,6 +110,8 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
+	MaxFileSize int
 	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
 	// is set, the absolute path is stored instead.
 	StoreAbsolutePath bool
@@ -190,6 +194,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		useGitignore:      config.UseGitignore,
 		readSymlinks:      config.ReadSymlinks,
 		maxInodes:         config.MaxInodes,
+		maxFileSize:       config.MaxFileSize,
 		inodesVisited:     0,
 		storeAbsolutePath: config.StoreAbsolutePath,
 		errorOnFSErrors:   config.ErrorOnFSErrors,
@@ -261,6 +266,7 @@ type walkContext struct {
 	useGitignore      bool
 	maxInodes         int
 	inodesVisited     int
+	maxFileSize       int // In bytes.
 	dirsVisited       int
 	storeAbsolutePath bool
 	errorOnFSErrors   bool
@@ -382,6 +388,15 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 
 	wc.fileAPI.currentPath = path
 	wc.fileAPI.currentStatCalled = false
+
+	fileSize, err := fileSize(wc.fs, path)
+	if err != nil {
+		return fmt.Errorf("failed to get file size for %q: %w", path, err)
+	}
+	if wc.maxFileSize > 0 && fileSize > int64(wc.maxFileSize) {
+		log.Warnf("Skipping file %q because it has size %d bytes and the maxinum is %d bytes", path, fileSize, wc.maxFileSize)
+		return nil
+	}
 
 	for _, ex := range wc.extractors {
 		if ex.FileRequired(wc.fileAPI) {
@@ -665,4 +680,19 @@ func IsInterestingExecutable(api FileAPI) bool {
 
 	mode, err := api.Stat()
 	return err == nil && mode.Mode()&0111 != 0
+}
+
+func fileSize(fs scalibrfs.FS, path string) (int64, error) {
+	rc, err := fs.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer rc.Close()
+
+	info, err := rc.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	return info.Size(), nil
 }

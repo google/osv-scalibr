@@ -127,6 +127,7 @@ type Flags struct {
 	DirsToSkip                 []string
 	SkipDirRegex               string
 	SkipDirGlob                string
+	MaxFileSize                int
 	UseGitignore               bool
 	RemoteImage                string
 	ImagePlatform              string
@@ -335,6 +336,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,
+		MaxFileSize:          f.MaxFileSize,
 		UseGitignore:         f.UseGitignore,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
