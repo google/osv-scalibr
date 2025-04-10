@@ -67,7 +67,7 @@ func (p *PyPIRegistryAPIClient) GetVersionJSON(ctx context.Context, project, ver
 	return jsonResp, err
 }
 
-// GetVersions queries the Index API and returns the list of versions.
+// GetIndex queries the Index API and returns the list of versions.
 func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
 	path, err := url.JoinPath(p.registry, "simple", project)
 	if err != nil {
