@@ -183,7 +183,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		extraPaths = append(extraPaths, newPaths...)
 		for _, p := range newPKG {
 			// Note the path through which we refer to this requirements.txt file.
-			p.Locations[0] = initPath + ":" + filepath.ToSlash(p.Locations[0])
+			p.Locations = append([]string{initPath}, p.Locations...)
 		}
 		pkgs = append(pkgs, newPKG...)
 	}
@@ -249,7 +249,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      name,
 			Version:   version,
-			Locations: []string{path},
+			Locations: []string{filepath.ToSlash(path)},
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,

@@ -221,7 +221,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "transitive-req",
 					Version:   "1",
-					Locations: []string{"testdata/example.txt:testdata/other-requirements.txt"},
+					Locations: []string{"testdata/example.txt", "testdata/other-requirements.txt"},
 					Metadata:  &requirements.Metadata{Requirement: "transitive-req==1"},
 				},
 			},
