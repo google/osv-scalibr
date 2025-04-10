@@ -43,9 +43,9 @@ type Digests struct {
 	SHA256 string `json:"sha256"`
 }
 
-// IndexReponse defines the response of Index API.
+// IndexResponse defines the response of Index API.
 // https://docs.pypi.org/api/index-api/
-type IndexReponse struct {
+type IndexResponse struct {
 	Name     string   `json:"name"`
 	Files    []File   `json:"files"`
 	Versions []string `json:"versions"`
@@ -57,7 +57,8 @@ type File struct {
 	Yanked Yanked `json:"yanked"`
 }
 
-// Custom type to represent the field that can be false or a string
+// Yanked represents the yanked field in the index response.
+// This can either be false or a string representing the yanked reason.
 type Yanked struct {
 	Value bool
 }

@@ -140,7 +140,7 @@ func TestGetVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}
-	want := pypi.IndexReponse{
+	want := pypi.IndexResponse{
 		Name: "beautifulsoup4",
 		Files: []pypi.File{
 			{Name: "beautifulsoup4-4.0.1.tar.gz"},

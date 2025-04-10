@@ -68,10 +68,10 @@ func (p *PyPIRegistryAPIClient) GetVersionJSON(ctx context.Context, project, ver
 }
 
 // GetVersions queries the Index API and returns the list of versions.
-func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexReponse, error) {
+func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
 	path, err := url.JoinPath(p.registry, "simple", project)
 	if err != nil {
-		return pypi.IndexReponse{}, err
+		return pypi.IndexResponse{}, err
 	}
 
 	// The Index API requires an ending slash.
@@ -79,7 +79,7 @@ func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (p
 		path += "/"
 	}
 
-	var indexResp pypi.IndexReponse
+	var indexResp pypi.IndexResponse
 	err = p.get(ctx, path, true, &indexResp)
 	return indexResp, err
 }
