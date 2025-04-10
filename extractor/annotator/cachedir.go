@@ -18,8 +18,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/google/osv-scalibr/log"
 )
 
 type matcher func(string) bool
@@ -48,8 +46,6 @@ func IsInsideCacheDir(path string) bool {
 	if err != nil {
 		return false
 	}
-
-	log.Info(absPath)
 
 	absPath = filepath.ToSlash(absPath)
 
