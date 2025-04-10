@@ -183,7 +183,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		extraPaths = append(extraPaths, newPaths...)
 		for _, p := range newPKG {
 			// Note the path through which we refer to this requirements.txt file.
-			p.Locations = []string{initPath, p.Locations[0]}
+			p.Locations = []string{initPath, filepath.ToSlash(p.Locations[0])}
 		}
 		pkgs = append(pkgs, newPKG...)
 	}
