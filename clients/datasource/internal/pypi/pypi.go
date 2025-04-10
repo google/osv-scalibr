@@ -68,7 +68,8 @@ func (y *Yanked) UnmarshalJSON(data []byte) error {
 	// Try unmarshalling as a boolean
 	var b bool
 	if err := json.Unmarshal(data, &b); err == nil {
-		y.Value = b
+		// If yanked is a boolean, it is always false.
+		y.Value = false
 		return nil
 	}
 
