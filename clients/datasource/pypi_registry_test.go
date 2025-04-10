@@ -115,6 +115,10 @@ func TestGetVersions(t *testing.T) {
 			"upload-time": "2024-03-20T13:00:31.245327Z",
 			"url": "https://files.pythonhosted.org/packages/81/bd/c97d94e2b96f03d1c50bc9de04130e014eda89322ba604923e0c251eb02e/beautifulsoup4-4.13.0b2.tar.gz",
 			"yanked": false
+		  },
+		  {
+			"filename": "beautifulsoup4-4.14.tar.gz",
+			"yanked": "yanked"
 		  }
 		],
 		"meta": {
@@ -126,23 +130,37 @@ func TestGetVersions(t *testing.T) {
 		  "4.0.1",
 		  "4.0.2",
 		  "4.12.3",
-		  "4.13.0b2"
+		  "4.13.0b2",
+		  "4.14"
 		]
   }
 	`))
 
-	got, err := client.GetVersions(context.Background(), "beautifulsoup4")
+	got, err := client.GetIndex(context.Background(), "beautifulsoup4")
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}
-	want := []string{
-		"4.0.1",
-		"4.0.2",
-		"4.12.3",
-		"4.13.0b2",
+	want := pypi.IndexReponse{
+		Name: "beautifulsoup4",
+		Files: []pypi.File{
+			{Name: "beautifulsoup4-4.0.1.tar.gz"},
+			{Name: "beautifulsoup4-4.0.2.tar.gz"},
+			{Name: "beautifulsoup4-4.12.3-py3-none-any.whl"},
+			{Name: "beautifulsoup4-4.12.3.tar.gz"},
+			{Name: "beautifulsoup4-4.13.0b2-py3-none-any.whl"},
+			{Name: "beautifulsoup4-4.13.0b2.tar.gz"},
+			{Name: "beautifulsoup4-4.14.tar.gz", Yanked: pypi.Yanked{Value: true}},
+		},
+		Versions: []string{
+			"4.0.1",
+			"4.0.2",
+			"4.12.3",
+			"4.13.0b2",
+			"4.14",
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("GetVersions(%s) mismatch (-want +got):\n%s", "beautifulsoup4", diff)
+		t.Errorf("GetIndex(%s) mismatch (-want +got):\n%s", "beautifulsoup4", diff)
 	}
 }
 
