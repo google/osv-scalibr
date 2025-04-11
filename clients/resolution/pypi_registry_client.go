@@ -16,6 +16,7 @@ package resolution
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -24,6 +25,7 @@ import (
 	"deps.dev/util/resolve/version"
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/log"
 )
 
 // PyPIRegistryClient is a client to fetch data from PyPI registry.
@@ -56,18 +58,42 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
 func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
-	vers, err := c.api.GetVersions(ctx, pk.Name)
+	resp, err := c.api.GetIndex(ctx, pk.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	slices.SortFunc(vers, func(a, b string) int { return semver.PyPI.Compare(a, b) })
+	slices.SortFunc(resp.Versions, func(a, b string) int { return semver.PyPI.Compare(a, b) })
 
 	var yanked version.AttrSet
 	yanked.SetAttr(version.Blocked, "")
 
+	yankedVersions := make(map[string]bool)
+	for _, file := range resp.Files {
+		var v string
+		switch filepath.Ext(file.Name) {
+		case ".gz":
+			_, v, err = pypi.SdistVersion(resp.Name, file.Name)
+			if err != nil {
+				log.Errorf("failed to extract version from sdist file name %s: %v", file.Name, err)
+				continue
+			}
+		case ".whl":
+			info, err := pypi.ParseWheelName(file.Name)
+			if err != nil {
+				log.Errorf("failed to parse wheel name %s: %v", file.Name, err)
+				continue
+			}
+			v = info.Version
+		}
+		if file.Yanked.Value {
+			// If a file is yanked, assume this version is yanked.
+			yankedVersions[v] = true
+		}
+	}
+
 	var versions []resolve.Version
-	for _, ver := range vers {
+	for _, ver := range resp.Versions {
 		v := resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
@@ -75,12 +101,7 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 				VersionType: resolve.Concrete,
 			},
 		}
-
-		resp, err := c.api.GetVersionJSON(ctx, pk.Name, ver)
-		if err != nil {
-			return nil, err
-		}
-		if resp.Info.Yanked {
+		if yankedVersions[ver] {
 			v.AttrSet = yanked
 		}
 		versions = append(versions, v)
