@@ -29,8 +29,10 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
 	"github.com/google/osv-scalibr/guidedremediation/internal/suggest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/options"
@@ -90,6 +92,8 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	switch stgy {
 	case strategy.StrategyOverride:
 		return doOverride(context.Background(), manifestRW, opts)
+	case strategy.StrategyRelax:
+		return doRelax(context.Background(), manifestRW, opts)
 	}
 
 	return result.Result{}, fmt.Errorf("unsupported strategy: %q", stgy)
@@ -154,6 +158,36 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 
 	res.Errors = computeResolveErrors(resolved.Graph)
 	allPatches, err := override.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	if err != nil {
+		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
+	}
+
+	res.Vulnerabilities = computeVulnsResult(resolved, allPatches)
+	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce)
+	err = writeManifestPatches(opts.Manifest, m, res.Patches, rw)
+
+	return res, err
+}
+
+func doRelax(ctx context.Context, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
+	m, err := parseManifest(opts.Manifest, rw)
+	if err != nil {
+		return result.Result{}, err
+	}
+
+	res := result.Result{
+		Path:      opts.Manifest,
+		Strategy:  strategy.StrategyRelax,
+		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
+	}
+
+	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
+	if err != nil {
+		return result.Result{}, fmt.Errorf("failed resolving manifest: %w", err)
+	}
+
+	res.Errors = computeResolveErrors(resolved.Graph)
+	allPatches, err := relax.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
@@ -272,7 +306,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
 		return maven.GetReadWriter(registry)
-		// TODO(#454): package.json when relax strategy is migrated.
+	case "package.json":
+		return npm.GetReadWriter(registry)
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
