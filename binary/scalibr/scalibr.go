@@ -71,6 +71,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
 	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
+	goBinaryVersionFromContent := fs.Bool("gobinary-version-from-content", false, "Parse the main module version from the binary content. Off by default because this drastically increases latency (~10x).")
 	govulncheckDBPath := fs.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
 	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
@@ -90,31 +91,32 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
-		Root:                  *root,
-		ResultFile:            *resultFile,
-		Output:                output,
-		ExtractorsToRun:       extractorsToRun.GetSlice(),
-		DetectorsToRun:        detectorsToRun.GetSlice(),
-		PathsToExtract:        pathsToExtract,
-		IgnoreSubDirs:         *ignoreSubDirs,
-		DirsToSkip:            dirsToSkip.GetSlice(),
-		SkipDirRegex:          *skipDirRegex,
-		SkipDirGlob:           *skipDirGlob,
-		UseGitignore:          *useGitignore,
-		RemoteImage:           *remoteImage,
-		ImagePlatform:         *imagePlatform,
-		GovulncheckDBPath:     *govulncheckDBPath,
-		SPDXDocumentName:      *spdxDocumentName,
-		SPDXDocumentNamespace: *spdxDocumentNamespace,
-		SPDXCreators:          *spdxCreators,
-		CDXComponentName:      *cdxComponentName,
-		CDXComponentVersion:   *cdxComponentVersion,
-		CDXAuthors:            *cdxAuthors,
-		Verbose:               *verbose,
-		ExplicitExtractors:    *explicitExtractors,
-		FilterByCapabilities:  *filterByCapabilities,
-		WindowsAllDrives:      *windowsAllDrives,
-		Offline:               *offline,
+		Root:                       *root,
+		ResultFile:                 *resultFile,
+		Output:                     output,
+		ExtractorsToRun:            extractorsToRun.GetSlice(),
+		DetectorsToRun:             detectorsToRun.GetSlice(),
+		PathsToExtract:             pathsToExtract,
+		IgnoreSubDirs:              *ignoreSubDirs,
+		DirsToSkip:                 dirsToSkip.GetSlice(),
+		SkipDirRegex:               *skipDirRegex,
+		SkipDirGlob:                *skipDirGlob,
+		UseGitignore:               *useGitignore,
+		RemoteImage:                *remoteImage,
+		ImagePlatform:              *imagePlatform,
+		GoBinaryVersionFromContent: *goBinaryVersionFromContent,
+		GovulncheckDBPath:          *govulncheckDBPath,
+		SPDXDocumentName:           *spdxDocumentName,
+		SPDXDocumentNamespace:      *spdxDocumentNamespace,
+		SPDXCreators:               *spdxCreators,
+		CDXComponentName:           *cdxComponentName,
+		CDXComponentVersion:        *cdxComponentVersion,
+		CDXAuthors:                 *cdxAuthors,
+		Verbose:                    *verbose,
+		ExplicitExtractors:         *explicitExtractors,
+		FilterByCapabilities:       *filterByCapabilities,
+		WindowsAllDrives:           *windowsAllDrives,
+		Offline:                    *offline,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err

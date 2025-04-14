@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -198,7 +199,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              vmlinuz.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -206,7 +207,7 @@ func TestExtract(t *testing.T) {
 			name:      "valid vmlinuz file",
 			path:      "testdata/valid",
 			osrelease: UbuntuJammy,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "Linux Kernel",
 					Version: "6.8.0-49-generic",
@@ -228,10 +229,10 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid vmlinuz file",
-			path:          "testdata/invalid",
-			osrelease:     UbuntuJammy,
-			wantInventory: nil,
+			name:         "invalid vmlinuz file",
+			path:         "testdata/invalid",
+			osrelease:    UbuntuJammy,
+			wantPackages: nil,
 		},
 	}
 
@@ -268,8 +269,9 @@ func TestExtract(t *testing.T) {
 
 			got, err := e.Extract(context.Background(), input)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -370,15 +372,15 @@ func TestToPURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      name,
 				Version:   version,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
-			got := e.ToPURL(i)
+			got := e.ToPURL(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}
@@ -414,12 +416,12 @@ func TestEcosystem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Metadata: tt.metadata,
 			}
-			got := e.Ecosystem(i)
+			got := e.Ecosystem(p)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

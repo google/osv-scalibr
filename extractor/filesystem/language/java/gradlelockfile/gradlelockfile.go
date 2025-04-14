@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -45,7 +46,7 @@ func isGradleLockFileDepLine(line string) bool {
 	return !ret
 }
 
-func parseToGradlePackageDetail(line string) (*extractor.Inventory, error) {
+func parseToGradlePackageDetail(line string) (*extractor.Package, error) {
 	parts := strings.SplitN(line, ":", 3)
 	if len(parts) < 3 {
 		return nil, fmt.Errorf("invalid line in gradle lockfile: %s", line)
@@ -57,7 +58,7 @@ func parseToGradlePackageDetail(line string) (*extractor.Inventory, error) {
 	}
 	version = strings.SplitN(version, "=", 2)[0]
 
-	return &extractor.Inventory{
+	return &extractor.Package{
 		Name:    fmt.Sprintf("%s:%s", group, artifact),
 		Version: version,
 		Metadata: &javalockfile.Metadata{
@@ -92,8 +93,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from Gradle files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs := make([]*extractor.Inventory, 0)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	packages := make([]*extractor.Package, 0)
 	scanner := bufio.NewScanner(input.Reader)
 
 	for scanner.Scan() {
@@ -109,29 +110,29 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 		pkg.Locations = []string{input.Path}
 
-		pkgs = append(pkgs, pkg)
+		packages = append(packages, pkg)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to read: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("failed to read: %w", err)
 	}
 
-	return pkgs, nil
+	return inventory.Inventory{Packages: packages}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*javalockfile.Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*javalockfile.Metadata)
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: strings.ToLower(m.GroupID),
 		Name:      strings.ToLower(m.ArtifactID),
-		Version:   i.Version,
+		Version:   p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "Maven"
 }
 

@@ -31,7 +31,7 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/samreg"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/systemreg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"golang.org/x/sys/windows/registry"
 )
@@ -86,7 +86,7 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return nil }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) ([]*detector.Finding, error) {
 	hashes, err := d.hashes(ctx)
 	if err != nil || len(hashes) == 0 {
 		return nil, err

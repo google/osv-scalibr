@@ -39,7 +39,7 @@ type Vulnerability struct {
 // FindVulnerabilities scans for vulnerabilities in a resolved graph.
 // One Vulnerability is created per unique ID, which may affect multiple graph nodes.
 func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m manifest.Manifest, graph *resolve.Graph) ([]Vulnerability, error) {
-	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToInventory(graph))
+	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToPackage(graph))
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +80,13 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m
 	return vulns, nil
 }
 
-// graphToInventory is a helper function to convert a Graph into an Inventory for use with VulnerabilityMatcher.
-func graphToInventory(g *resolve.Graph) []*extractor.Inventory {
+// graphToPackage is a helper function to convert a Graph into Packages for use with VulnerabilityMatcher.
+func graphToPackage(g *resolve.Graph) []*extractor.Package {
 	// g.Nodes[0] is the root node of the graph that should be excluded.
-	inv := make([]*extractor.Inventory, len(g.Nodes)-1)
+	pkg := make([]*extractor.Package, len(g.Nodes)-1)
 	for i, n := range g.Nodes[1:] {
-		inv[i] = vulns.VKToInventory(n.Version)
+		pkg[i] = vulns.VKToPackage(n.Version)
 	}
 
-	return inv
+	return pkg
 }

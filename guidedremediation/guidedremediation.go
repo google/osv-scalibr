@@ -117,7 +117,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	suggester, err := suggest.GetSuggester(manifestRW.System())
+	suggester, err := suggest.NewSuggester(manifestRW.System())
 	if err != nil {
 		return result.Result{}, err
 	}

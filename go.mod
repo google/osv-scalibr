@@ -47,6 +47,7 @@ require (
 	golang.org/x/vuln v1.0.4
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
+	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 	www.velocidex.com/golang/regparser v0.0.0-20240404115756-2169ac0e3c09
 )

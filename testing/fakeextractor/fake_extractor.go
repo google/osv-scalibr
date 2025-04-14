@@ -23,11 +23,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
-// NamesErr is a list of Inventory names and an error.
+// NamesErr is a list of Package names and an error.
 type NamesErr struct {
 	Names []string
 	Err   error
@@ -48,7 +49,7 @@ var AllowUnexported = cmp.AllowUnexported(fakeExtractor{})
 // New returns a fake fakeExtractor.
 //
 // The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
-// The fakeExtractor returns the inventory and error from pathToNamesErr given the same path to Extract(...).
+// The fakeExtractor returns the package and error from pathToNamesErr given the same path to Extract(...).
 func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
 	rfs := map[string]bool{}
 	for _, path := range requiredFiles {
@@ -87,39 +88,39 @@ func (e *fakeExtractor) FileRequired(api filesystem.FileAPI) bool {
 	return e.requiredFiles[filepath.ToSlash(api.Path())]
 }
 
-// Extract extracts inventory data relevant for the extractor from a given file.
+// Extract extracts package data relevant for the extractor from a given file.
 //
-// Extract returns the inventory list and error associated with input.Path from the pathToInventoryErr map used
-// during construction in NewExtractor(..., pathToInventoryErr, ...).
+// Extract returns the package list and error associated with input.Path from the pathToPackageErr map used
+// during construction in NewExtractor(..., pathToPackageErr, ...).
 // Note: because mapfs forces all paths to slash, we have to align with it here.
-func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	path := filepath.ToSlash(input.Path)
 	namesErr, ok := e.pathToNamesErr[path]
 	if !ok {
-		return nil, errors.New("unrecognized path")
+		return inventory.Inventory{}, errors.New("unrecognized path")
 	}
 
-	invs := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, name := range namesErr.Names {
-		invs = append(invs, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      name,
 			Locations: []string{path},
 		})
 	}
 
-	return invs, namesErr.Err
+	return inventory.Inventory{Packages: pkgs}, namesErr.Err
 }
 
-// ToPURL returns a fake PURL based on the inventory name+version.
-func (e *fakeExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL returns a fake PURL based on the package name+version.
+func (e *fakeExtractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns a fake ecosystem.
-func (e *fakeExtractor) Ecosystem(i *extractor.Inventory) string {
+func (e *fakeExtractor) Ecosystem(p *extractor.Package) string {
 	return "FakeEcosystem"
 }

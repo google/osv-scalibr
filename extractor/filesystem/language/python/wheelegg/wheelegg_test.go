@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -149,14 +150,14 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		cfg              wheelegg.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: ".dist-info/METADATA",
 			path: "testdata/distinfo_meta",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "pip",
 				Version:   "22.2.2",
 				Locations: []string{"testdata/distinfo_meta"},
@@ -169,7 +170,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg/EGG-INFO/PKG-INFO",
 			path: "testdata/egginfo_pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "setuptools",
 				Version:   "57.4.0",
 				Locations: []string{"testdata/egginfo_pkginfo"},
@@ -182,7 +183,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg-info",
 			path: "testdata/egginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "pycups",
 				Version:   "2.0.1",
 				Locations: []string{"testdata/egginfo"},
@@ -195,7 +196,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg-info/PKG-INFO",
 			path: "testdata/pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "httplib2",
 				Version:   "0.20.4",
 				Locations: []string{"testdata/pkginfo"},
@@ -209,7 +210,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "malformed PKG-INFO",
 			path: "testdata/malformed_pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "passlib",
 				Version:   "1.7.4",
 				Locations: []string{"testdata/malformed_pkginfo"},
@@ -222,7 +223,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "monotonic",
 				Version:   "1.6",
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
@@ -233,9 +234,9 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
-			name:          ".egg without PKG-INFO",
-			path:          "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
-			wantInventory: []*extractor.Inventory{},
+			name:         ".egg without PKG-INFO",
+			path:         "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
+			wantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -269,7 +270,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
@@ -308,14 +309,14 @@ func TestExtractWithoutReadAt(t *testing.T) {
 	var e filesystem.Extractor = wheelegg.New(wheelegg.DefaultConfig())
 
 	tests := []struct {
-		name          string
-		path          string
-		wantInventory *extractor.Inventory
+		name         string
+		path         string
+		wantPackages *extractor.Package
 	}{
 		{
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
-			wantInventory: &extractor.Inventory{
+			wantPackages: &extractor.Package{
 				Name:      "monotonic",
 				Version:   "1.6",
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
@@ -353,7 +354,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
 			}
 
-			want := []*extractor.Inventory{tt.wantInventory}
+			want := inventory.Inventory{Packages: []*extractor.Package{tt.wantPackages}}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
@@ -460,7 +461,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 
 func TestToPURL(t *testing.T) {
 	e := wheelegg.Extractor{}
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
 		Locations: []string{"location"},
@@ -470,8 +471,8 @@ func TestToPURL(t *testing.T) {
 		Name:    "name",
 		Version: "1.2.3",
 	}
-	got := e.ToPURL(i)
+	got := e.ToPURL(p)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
+		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }

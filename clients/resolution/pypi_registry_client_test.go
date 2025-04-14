@@ -116,6 +116,10 @@ func TestVersions(t *testing.T) {
 			"upload-time": "2024-03-20T13:00:31.245327Z",
 			"url": "https://files.pythonhosted.org/packages/81/bd/c97d94e2b96f03d1c50bc9de04130e014eda89322ba604923e0c251eb02e/beautifulsoup4-4.13.0b2.tar.gz",
 			"yanked": false
+		  },
+		  {
+			"filename": "beautifulsoup4-4.14.tar.gz",
+			"yanked": "yanked"
 		  }
 		],
 		"meta": {
@@ -127,31 +131,11 @@ func TestVersions(t *testing.T) {
 		  "4.0.1",
 		  "4.0.2",
 		  "4.12.3",
-		  "4.13.0b2"
+		  "4.13.0b2",
+		  "4.14"
 		]
   }
 	`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.1/json", []byte(`{
-		"info": {
-			"yanked": true
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.0.2/json", []byte(`{
-		"info": {
-			"yanked": false
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.12.3/json", []byte(`
-  {
-		"info": {
-			"yanked": false
-		}
-	}`))
-	srv.SetResponse(t, "pypi/beautifulsoup4/4.13.0b2/json", []byte(`{
-		"info": {
-			"yanked": false
-		}
-	}`))
 
 	pk := resolve.PackageKey{
 		System: resolve.PyPI,
@@ -162,6 +146,7 @@ func TestVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get versions %v: %v", pk, err)
 	}
+
 	var yanked version.AttrSet
 	yanked.SetAttr(version.Blocked, "")
 	want := []resolve.Version{
@@ -171,7 +156,6 @@ func TestVersions(t *testing.T) {
 				Version:     "4.0.1",
 				VersionType: resolve.Concrete,
 			},
-			AttrSet: yanked,
 		},
 		{
 			VersionKey: resolve.VersionKey{
@@ -194,9 +178,22 @@ func TestVersions(t *testing.T) {
 				VersionType: resolve.Concrete,
 			},
 		},
+		{
+			VersionKey: resolve.VersionKey{
+				PackageKey:  pk,
+				Version:     "4.14",
+				VersionType: resolve.Concrete,
+			},
+			AttrSet: yanked,
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Versions(%v) mismatch (-want +got):\n%s", pk, diff)
+		t.Fatalf("Versions(%v) mismatch (-want +got):\n%s", pk, diff)
+	}
+	for i, v := range got {
+		if !v.AttrSet.Equal(want[i].AttrSet) {
+			t.Errorf("AttrSet for package %s version %s mismatch", v.Name, v.Version)
+		}
 	}
 }
 

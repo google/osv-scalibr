@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -94,10 +95,10 @@ var packageStoreUnstableRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0
 
 // Extract extracts packages from the filenames of the directories in the nix
 // store path.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Check for cancellation or timeout.
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 	}
 
 	m, err := osrelease.GetOSRelease(input.FS)
@@ -105,17 +106,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		log.Errorf("osrelease.GetOSRelease(): %v", err)
 	}
 
-	pkg := strings.Split(input.Path, "/")[2]
+	pkgs := strings.Split(input.Path, "/")[2]
 
 	var matches []string
-	if strings.Contains(pkg, "unstable") {
-		matches = packageStoreUnstableRegex.FindStringSubmatch(pkg)
+	if strings.Contains(pkgs, "unstable") {
+		matches = packageStoreUnstableRegex.FindStringSubmatch(pkgs)
 	} else {
-		matches = packageStoreRegex.FindStringSubmatch(pkg)
+		matches = packageStoreRegex.FindStringSubmatch(pkgs)
 	}
 
 	if len(matches) == 0 {
-		return nil, nil
+		return inventory.Inventory{}, nil
 	}
 
 	pkgHash := matches[1]
@@ -123,10 +124,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	pkgVersion := matches[3]
 	if pkgHash == "" || pkgName == "" || pkgVersion == "" {
 		log.Warnf("NIX package name/version/hash is empty (name: %v, version: %v, hash: %v)", pkgName, pkgVersion, pkgHash)
-		return nil, nil
+		return inventory.Inventory{}, nil
 	}
 
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:    pkgName,
 		Version: pkgVersion,
 		Metadata: &Metadata{
@@ -142,15 +143,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	if len(matches) > 4 {
 		pkgOutput := matches[4]
-		i.Metadata.(*Metadata).PackageOutput = pkgOutput
+		p.Metadata.(*Metadata).PackageOutput = pkgOutput
 	}
 
-	return []*extractor.Inventory{i}, nil
+	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	m := p.Metadata.(*Metadata)
 	q := map[string]string{}
 	distro := toDistro(m)
 
@@ -160,14 +161,14 @@ func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
 
 	return &purl.PackageURL{
 		Type:       purl.TypeNix,
-		Name:       i.Name,
-		Version:    i.Version,
+		Name:       p.Name,
+		Version:    p.Version,
 		Qualifiers: purl.QualifiersFromMap(q),
 	}
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
 
 func toDistro(m *Metadata) string {
 	if m.OSVersionCodename != "" {

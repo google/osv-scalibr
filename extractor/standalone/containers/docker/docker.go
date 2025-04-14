@@ -23,6 +23,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -59,24 +60,24 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extractor extracts containers from the docker API.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error
 		e.client, err = client.NewClientWithOpts(client.WithAPIVersionNegotiation())
 		if err != nil {
-			return nil, fmt.Errorf("cannot connect with docker %w", err)
+			return inventory.Inventory{}, fmt.Errorf("cannot connect with docker %w", err)
 		}
 	}
 
 	// extract running containers
 	containers, err := e.client.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching containers: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("Error fetching containers: %w", err)
 	}
 
-	ivs := make([]*extractor.Inventory, 0, len(containers))
+	pkgs := make([]*extractor.Package, 0, len(containers))
 	for _, ctr := range containers {
-		ivs = append(ivs, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:    ctr.Image,
 			Version: ctr.ImageID,
 			Metadata: &Metadata{
@@ -87,13 +88,13 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 			},
 		})
 	}
-	return ivs, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 // ToPURL returns nil since there is no PURL defined for docker containers
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
 	return nil
 }
 
 // Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
+func (e Extractor) Ecosystem(i *extractor.Package) string { return "" }

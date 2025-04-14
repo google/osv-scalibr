@@ -21,8 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/exp/maps"
-
 	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	mavenresolve "deps.dev/util/resolve/maven"
@@ -32,8 +30,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -103,14 +103,14 @@ func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from pom.xml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 	// Empty JDK and ActivationOS indicates merging the default profiles.
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
-		return nil, fmt.Errorf("failed to merge profiles: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 	// Clear the registries that may be from other extraction.
 	e.mavenClient = e.mavenClient.WithoutRegistries()
@@ -121,7 +121,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
 			SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
 		}); err != nil {
-			return nil, fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+			return inventory.Inventory{}, fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
 		}
 	}
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
@@ -131,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
-		return nil, fmt.Errorf("failed to merge parents: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("failed to merge parents: %w", err)
 	}
 	// Process the dependencies:
 	//  - dedupe dependencies and dependency management
@@ -148,7 +148,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		}
 		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
 			if err := cl.AddRegistries(clientRegs); err != nil {
-				return nil, err
+				return inventory.Inventory{}, err
 			}
 		}
 	}
@@ -197,16 +197,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed resolving %v: %w", root, err)
+		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
 	copy(g.Edges, g.Edges)
 
-	details := map[string]*extractor.Inventory{}
+	details := map[string]*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		depGroups := []string{}
-		inventory := extractor.Inventory{
+		pkg := extractor.Package{
 			Name:    node.Version.Name,
 			Version: node.Version.Version,
 			// TODO(#408): Add merged paths in here as well
@@ -217,7 +217,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		// not have the scope information.
 		isDirect := false
 		for _, dep := range project.Dependencies {
-			if dep.Name() != inventory.Name {
+			if dep.Name() != pkg.Name {
 				continue
 			}
 			isDirect = true
@@ -226,30 +226,30 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			}
 			break
 		}
-		inventory.Metadata = javalockfile.Metadata{
+		pkg.Metadata = javalockfile.Metadata{
 			DepGroupVals: depGroups,
 			IsTransitive: !isDirect,
 		}
-		details[inventory.Name] = &inventory
+		details[pkg.Name] = &pkg
 	}
 
-	return maps.Values(details), nil
+	return inventory.Inventory{Packages: maps.Values(details)}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	g, a, _ := strings.Cut(i.Name, ":")
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	g, a, _ := strings.Cut(p.Name, ":")
 	return &purl.PackageURL{
 		Type:      purl.TypeMaven,
 		Namespace: g,
 		Name:      a,
-		Version:   i.Version,
+		Version:   p.Version,
 		// TODO(#426): add Maven classifier and type to PURL.
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
+func (e Extractor) Ecosystem(_ *extractor.Package) string {
 	return "Maven"
 }
 

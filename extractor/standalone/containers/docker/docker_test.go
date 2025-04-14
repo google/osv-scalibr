@@ -33,12 +33,12 @@ func TestExtract(t *testing.T) {
 		// ctrs values are extracted using `docker inspect <containerID>`
 		// some fields of `types.Container` are omitted
 		ctrs          []types.Container
-		wantInventory []*extractor.Inventory
+		wantInventory []*extractor.Package
 	}{
 		{
 			name:          "valid with no container",
 			ctrs:          []types.Container{},
-			wantInventory: []*extractor.Inventory{},
+			wantInventory: []*extractor.Package{},
 		},
 		{
 			name: "valid with one container",
@@ -58,7 +58,7 @@ func TestExtract(t *testing.T) {
 					Status:     "Up 4 days",
 				},
 			},
-			wantInventory: []*extractor.Inventory{
+			wantInventory: []*extractor.Package{
 				{
 					Name:    "redis",
 					Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -99,7 +99,7 @@ func TestExtract(t *testing.T) {
 					Status:  "Exited (1) 2 minutes ago",
 				},
 			},
-			wantInventory: []*extractor.Inventory{
+			wantInventory: []*extractor.Package{
 				{
 					Name:    "redis",
 					Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -140,7 +140,7 @@ func TestExtract(t *testing.T) {
 					Status:  "Up 8 minutes",
 				},
 			},
-			wantInventory: []*extractor.Inventory{
+			wantInventory: []*extractor.Package{
 				{
 					Name:    "redis",
 					Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -174,10 +174,10 @@ func TestExtract(t *testing.T) {
 
 			got, _ := e.Extract(context.Background(), input)
 
-			ignoreOrder := cmpopts.SortSlices(func(a, b *extractor.Inventory) bool {
+			ignoreOrder := cmpopts.SortSlices(func(a, b *extractor.Package) bool {
 				return a.Name < b.Name
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			if diff := cmp.Diff(tt.wantInventory, got.Packages, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.name, diff)
 			}
 		})

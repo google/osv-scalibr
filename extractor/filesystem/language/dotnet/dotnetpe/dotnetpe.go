@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -115,7 +116,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract parses the PE files to extract .NET package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
 	if e.cfg.Stats != nil {
 		var fileSizeBytes int64
@@ -131,16 +132,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 	return inventory, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// check if the file has the needed magic bytes before doing the heavy parsing
 	if ok, err := hasPEMagicBytes(input); !ok {
-		return nil, fmt.Errorf("the file header does not contain magic bytes %w", err)
+		return inventory.Inventory{}, fmt.Errorf("the file header does not contain magic bytes %w", err)
 	}
 
 	// Retrieve the real path of the file
 	absPath, err := input.GetRealPath()
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	if input.Root == "" {
@@ -156,64 +157,64 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	// Open the PE file
 	f, err := pe.New(absPath, &pe.Options{})
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	// Initialize inventory slice to store the dependencies
-	var ivs []*extractor.Inventory
+	var pkgs []*extractor.Package
 
 	// Iterate over the CLR Metadata Tables to extract assembly information
 	for _, table := range f.CLR.MetadataTables {
-		ivs = append(ivs, tableContentToInventories(f, table.Content)...)
+		pkgs = append(pkgs, tableContentToPackages(f, table.Content)...)
 	}
 
 	// if at least an inventory was found inside the CLR.MetadataTables there is no need to check the VersionResources
-	if len(ivs) > 0 {
-		return ivs, nil
+	if len(pkgs) > 0 {
+		return inventory.Inventory{Packages: pkgs}, nil
 	}
 
 	// If no inventory entries were found in CLR.MetadataTables check the VersionResources as a fallback
 	// this is mostly required on .exe files
 	versionResources, err := f.ParseVersionResources()
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	name, version := versionResources["InternalName"], versionResources["Assembly Version"]
 	if name != "" && version != "" {
-		ivs = append(ivs, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:    name,
 			Version: version,
 		})
 	}
 
-	return ivs, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func tableContentToInventories(f *pe.File, content any) []*extractor.Inventory {
-	var ivs []*extractor.Inventory
+func tableContentToPackages(f *pe.File, content any) []*extractor.Package {
+	var pkgs []*extractor.Package
 
 	switch content := content.(type) {
 	case []pe.AssemblyTableRow:
 		for _, row := range content {
 			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-			ivs = append(ivs, &extractor.Inventory{Name: name, Version: version})
+			pkgs = append(pkgs, &extractor.Package{Name: name, Version: version})
 		}
 	case []pe.AssemblyRefTableRow:
 		for _, row := range content {
 			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-			ivs = append(ivs, &extractor.Inventory{Name: name, Version: version})
+			pkgs = append(pkgs, &extractor.Package{Name: name, Version: version})
 		}
 	}
 
-	return ivs
+	return pkgs
 }
 
 // hasPEMagicBytes checks if a given file has the PE magic bytes in the header
@@ -244,16 +245,16 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeNuget,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem implements filesystem.Extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "NuGet"
 }
 

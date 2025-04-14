@@ -28,7 +28,7 @@ func TestParse(t *testing.T) {
 		t.Fatalf("Failed to read testdata: %v", err)
 	}
 
-	pkgs, imgVersion, err := Parse(string(content))
+	packages, imgVersion, err := Parse(string(content))
 	if err != nil {
 		t.Errorf("Error while parsing the output: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestParse(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(want, pkgs); diff != "" {
+	if diff := cmp.Diff(want, packages); diff != "" {
 		t.Errorf("Parse: Diff = %v", diff)
 	}
 }

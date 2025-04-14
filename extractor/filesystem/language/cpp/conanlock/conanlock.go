@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -45,7 +46,7 @@ type conanReference struct {
 	TimeStamp       string
 }
 
-// conanGraphNode contains a subset of a graph entry that includes inventory information
+// conanGraphNode contains a subset of a graph entry that includes package information
 type conanGraphNode struct {
 	Pref string `json:"pref"`
 	Ref  string `json:"ref"`
@@ -117,9 +118,9 @@ func parseConanReference(ref string) conanReference {
 	return reference
 }
 
-func parseConanV1Lock(lockfile conanLockFile) []*extractor.Inventory {
+func parseConanV1Lock(lockfile conanLockFile) []*extractor.Package {
 	var reference conanReference
-	packages := make([]*extractor.Inventory, 0, len(lockfile.GraphLock.Nodes))
+	packages := make([]*extractor.Package, 0, len(lockfile.GraphLock.Nodes))
 
 	for _, node := range lockfile.GraphLock.Nodes {
 		if node.Path != "" {
@@ -141,7 +142,7 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Inventory {
 			continue
 		}
 
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:    reference.Name,
 			Version: reference.Version,
 			Metadata: osv.DepGroupMetadata{
@@ -153,7 +154,7 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Inventory {
 	return packages
 }
 
-func parseConanRequires(packages *[]*extractor.Inventory, requires []string, group string) {
+func parseConanRequires(packages *[]*extractor.Package, requires []string, group string) {
 	for _, ref := range requires {
 		reference := parseConanReference(ref)
 		// skip entries with no name, they are most likely consumer's conanfiles
@@ -162,7 +163,7 @@ func parseConanRequires(packages *[]*extractor.Inventory, requires []string, gro
 			continue
 		}
 
-		*packages = append(*packages, &extractor.Inventory{
+		*packages = append(*packages, &extractor.Package{
 			Name:    reference.Name,
 			Version: reference.Version,
 			Metadata: osv.DepGroupMetadata{
@@ -172,9 +173,9 @@ func parseConanRequires(packages *[]*extractor.Inventory, requires []string, gro
 	}
 }
 
-func parseConanV2Lock(lockfile conanLockFile) []*extractor.Inventory {
+func parseConanV2Lock(lockfile conanLockFile) []*extractor.Package {
 	packages := make(
-		[]*extractor.Inventory,
+		[]*extractor.Package,
 		0,
 		uint64(len(lockfile.Requires))+uint64(len(lockfile.BuildRequires))+uint64(len(lockfile.PythonRequires)),
 	)
@@ -186,7 +187,7 @@ func parseConanV2Lock(lockfile conanLockFile) []*extractor.Inventory {
 	return packages
 }
 
-func parseConanLock(lockfile conanLockFile) []*extractor.Inventory {
+func parseConanLock(lockfile conanLockFile) []*extractor.Package {
 	if lockfile.GraphLock.Nodes != nil {
 		return parseConanV1Lock(lockfile)
 	}
@@ -217,34 +218,34 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from conan.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *conanLockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	inv := parseConanLock(*parsedLockfile)
+	pkgs := parseConanLock(*parsedLockfile)
 
-	for i := range inv {
-		inv[i].Locations = []string{input.Path}
+	for i := range pkgs {
+		pkgs[i].Locations = []string{input.Path}
 	}
 
-	return inv, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
+// ToPURL converts a package created by this extractor into a PURL.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 	return &purl.PackageURL{
 		Type:    purl.TypeConan,
-		Name:    i.Name,
-		Version: i.Version,
+		Name:    p.Name,
+		Version: p.Version,
 	}
 }
 
 // Ecosystem returns the OSV ecosystem ('ConanCenter') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
+func (e Extractor) Ecosystem(p *extractor.Package) string {
 	return "ConanCenter"
 }
 
