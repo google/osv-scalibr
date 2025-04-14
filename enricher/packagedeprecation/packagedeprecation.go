@@ -22,7 +22,7 @@ import (
 	"maps"
 	"slices"
 
-	grpcpb "deps.dev/api/v3alpha"
+	agrpc "deps.dev/api/v3alpha"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/depsdev/depsdevalpha"
 	"github.com/google/osv-scalibr/enricher"
@@ -78,7 +78,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to establish gRPC connection for %s: %w", Name, err)
 	}
-	grpcclient := grpcpb.NewInsightsClient(conn)
+	grpcclient := agrpc.NewInsightsClient(conn)
 	c := NewClient(grpcclient)
 	return &Enricher{client: c}, nil
 }

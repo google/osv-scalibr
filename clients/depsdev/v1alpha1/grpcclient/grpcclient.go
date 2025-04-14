@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"log"
 
-	pb "deps.dev/api/v3alpha"
+	agrpc "deps.dev/api/v3alpha"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -48,7 +48,7 @@ func DefaultConfig() *Config {
 }
 
 // New returns a new deps.dev client.
-func New(cfg *Config) (pb.InsightsClient, error) {
+func New(cfg *Config) (agrpc.InsightsClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is nil: %w", ErrMalformedConfig)
 	}
@@ -67,6 +67,6 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 		return nil, err
 	}
 
-	client := pb.NewInsightsClient(conn)
+	client := agrpc.NewInsightsClient(conn)
 	return client, nil
 }
