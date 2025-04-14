@@ -97,6 +97,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 
 // Update updates the dependencies to the latest version based on the UpdateOptions provided.
 // Update overwrites the manifest on disk with the updated dependencies.
+// Test comment
 func Update(opts options.UpdateOptions) (result.Result, error) {
 	var (
 		hasManifest bool = (opts.Manifest != "")
