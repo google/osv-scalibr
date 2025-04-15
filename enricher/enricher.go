@@ -17,10 +17,18 @@ package enricher
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+)
+
+var (
+	// ErrNoDirectFS is returned when an enricher requires direct filesystem access but the scan root is nil.
+	ErrNoDirectFS = errors.New("enrichment requires direct filesystem access but scan root is nil")
 )
 
 // Enricher is the interface for an enrichment plugin, used to enrich scan results with additional
@@ -45,4 +53,41 @@ type ScanInput struct {
 	FS scalibrfs.FS
 	// The root directory of the artifact being scanned.
 	Root string
+}
+
+// Run runs the specified enrichers and returns their statuses.
+func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([]*plugin.Status, error) {
+	var statuses []*plugin.Status
+	if len(config.Enrichers) == 0 {
+		return statuses, nil
+	}
+
+	for _, e := range config.Enrichers {
+		capabilities := e.Requirements()
+		if capabilities != nil && capabilities.DirectFS && config.ScanRoot == nil {
+			return nil, fmt.Errorf("%w: for enricher %v", ErrNoDirectFS, e.Name())
+		}
+	}
+
+	input := &ScanInput{}
+	if config.ScanRoot != nil {
+		if !config.ScanRoot.IsVirtual() {
+			p, err := filepath.Abs(config.ScanRoot.Path)
+			if err != nil {
+				return nil, err
+			}
+			config.ScanRoot.Path = p
+		}
+		input = &ScanInput{
+			FS:   config.ScanRoot.FS,
+			Root: config.ScanRoot.Path,
+		}
+	}
+
+	for _, e := range config.Enrichers {
+		err := e.Enrich(ctx, input, inventory)
+		// TODO - b/410630503: Support partial success.
+		statuses = append(statuses, plugin.StatusFromErr(e, false, err))
+	}
+	return statuses, nil
 }
