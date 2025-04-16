@@ -19,6 +19,7 @@ import (
 	"context"
 
 	scalibr "github.com/google/osv-scalibr"
+	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -41,11 +42,28 @@ func RunScan(flags *cli.Flags) int {
 		"Running scan with %d extractors and %d detectors",
 		len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors), len(cfg.Detectors),
 	)
-	log.Infof("Scan roots: %s", cfg.ScanRoots)
 	if len(cfg.PathsToExtract) > 0 {
 		log.Infof("Paths to extract: %s", cfg.PathsToExtract)
 	}
-	result := scalibr.New().Scan(context.Background(), cfg)
+
+	var result *scalibr.ScanResult
+	if flags.ImageTarball != "" {
+		layerCfg := scalibrlayerimage.DefaultConfig()
+		log.Infof("Scanning image tarball: %s", flags.ImageTarball)
+		img, err := scalibrlayerimage.FromTarball(flags.ImageTarball, layerCfg)
+		if err != nil {
+			log.Errorf("Failed to create image from tarball: %v", err)
+			return 1
+		}
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+		if err != nil {
+			log.Errorf("Failed to scan container: %v", err)
+			return 1
+		}
+	} else {
+		log.Infof("Scan roots: %s", cfg.ScanRoots)
+		result = scalibr.New().Scan(context.Background(), cfg)
+	}
 
 	log.Infof("Scan status: %v", result.Status)
 	log.Infof("Found %d software packages, %d security findings", len(result.Inventory.Packages), len(result.Inventory.Findings))
