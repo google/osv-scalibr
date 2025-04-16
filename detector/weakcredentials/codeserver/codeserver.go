@@ -56,7 +56,7 @@ const (
 
 	// The number of requests that this detector sends. Used to compute an upper-bound for certain
 	// timeouts.
-	numRequests = 1
+	numRequests = 2
 
 	// defaultClientTimeout is the default timeout for the HTTP client. This means that this timeout
 	// get applied to *every request*. So, to get the timeout of the detector it has to be multiplied
@@ -153,6 +153,32 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 		return nil, nil
 	}
 
+	// Check again for the local ip of the system to see if the vuln is also exposed to no localhost
+	// interfaces.
+	localIP, err := LocalIP()
+	var vulnExt bool
+	// if the local IP is not found, we will not report the vuln as being exposed externally and skip
+	// the check.
+	if err == nil {
+		vulnExt, err = checkAuth(ctx, client, "http://"+net.JoinHostPort(localIP, strconv.Itoa(defaultPort)))
+	}
+
+	var vulnTitle string
+	var vulnSev detector.Severity
+	if err == nil && vulnExt {
+		// This means the vuln as found on the internal localhost and is also exposed externally.
+		vulnTitle = "Code-Server instance without authentication"
+		vulnSev = detector.Severity{
+			Severity: detector.SeverityCritical,
+		}
+	} else {
+		// This means the vuln is only exposed internally.
+		vulnTitle = "Code-Server instance without authentication on localhost"
+		vulnSev = detector.Severity{
+			Severity: detector.SeverityHigh,
+		}
+	}
+
 	return []*detector.Finding{
 		&detector.Finding{
 			Adv: &detector.Advisory{
@@ -161,12 +187,10 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 					Reference: "CODESERVER_WEAK_CREDENTIALS",
 				},
 				Type:           detector.TypeVulnerability,
-				Title:          "Code-Server instance without authentication",
+				Title:          vulnTitle,
 				Description:    "Your Code-Server instance has no authentication enabled. This means that the instance is vulnerable to remote code execution.",
 				Recommendation: "Enforce an authentication in the config.yaml file. See https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-does-the-config-file-work for more details.",
-				Sev: &detector.Severity{
-					Severity: detector.SeverityCritical,
-				},
+				Sev:            &vulnSev,
 			},
 		},
 	}, nil
@@ -209,4 +233,21 @@ func checkAuth(ctx context.Context, client *http.Client, target string) (bool, e
 	}
 
 	return false, nil
+}
+
+// LocalIP returns the first non loopback local IP of the host.
+func LocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", errors.New("No non loopback local IP found")
 }
