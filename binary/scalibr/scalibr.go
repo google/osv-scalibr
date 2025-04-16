@@ -63,11 +63,12 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag([]string{"default"})
 	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
-	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files only the files in the top-level directory and skip sub-directories")
+	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
 	skipDirGlob := fs.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
+	maxFileSize := fs.Int("max-file-size", 0, "Files larger than this size in bytes are skipped. If 0, no limit is applied.")
 	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
 	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
@@ -101,6 +102,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		DirsToSkip:                 dirsToSkip.GetSlice(),
 		SkipDirRegex:               *skipDirRegex,
 		SkipDirGlob:                *skipDirGlob,
+		MaxFileSize:                *maxFileSize,
 		UseGitignore:               *useGitignore,
 		RemoteImage:                *remoteImage,
 		ImagePlatform:              *imagePlatform,

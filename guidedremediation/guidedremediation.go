@@ -29,10 +29,13 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
 	"github.com/google/osv-scalibr/guidedremediation/internal/suggest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
+	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
@@ -87,12 +90,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 		stgy = strats[0]
 	}
 
-	switch stgy {
-	case strategy.StrategyOverride:
-		return doOverride(context.Background(), manifestRW, opts)
-	}
-
-	return result.Result{}, fmt.Errorf("unsupported strategy: %q", stgy)
+	return doStrategy(context.Background(), stgy, manifestRW, opts)
 }
 
 // Update updates the dependencies to the latest version based on the UpdateOptions provided.
@@ -117,7 +115,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	suggester, err := suggest.GetSuggester(manifestRW.System())
+	suggester, err := suggest.NewSuggester(manifestRW.System())
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -135,7 +133,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 	}, err
 }
 
-func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
+func doStrategy(ctx context.Context, s strategy.Strategy, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
 	m, err := parseManifest(opts.Manifest, rw)
 	if err != nil {
 		return result.Result{}, err
@@ -143,7 +141,7 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 
 	res := result.Result{
 		Path:      opts.Manifest,
-		Strategy:  strategy.StrategyOverride,
+		Strategy:  s,
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
@@ -153,7 +151,16 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 	}
 
 	res.Errors = computeResolveErrors(resolved.Graph)
-	allPatches, err := override.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) ([]result.Patch, error)
+	switch s {
+	case strategy.StrategyOverride:
+		computePatches = override.ComputePatches
+	case strategy.StrategyRelax:
+		computePatches = relax.ComputePatches
+	default:
+		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
+	}
+	allPatches, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
@@ -272,7 +279,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
 		return maven.GetReadWriter(registry)
-		// TODO(#454): package.json when relax strategy is migrated.
+	case "package.json":
+		return npm.GetReadWriter(registry)
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }

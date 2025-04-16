@@ -144,8 +144,8 @@ func TestRunFS(t *testing.T) {
 		".":                  nil,
 		"dir1":               nil,
 		"dir2":               nil,
-		"dir1/file1.txt":     []byte("Content 1"),
-		"dir2/sub/file2.txt": []byte("Content 2"),
+		"dir1/file1.txt":     []byte("Content"),
+		"dir2/sub/file2.txt": []byte("More content"),
 	})
 	name1 := "software1"
 	name2 := "software2"
@@ -161,19 +161,20 @@ func TestRunFS(t *testing.T) {
 	}
 
 	testCases := []struct {
-		desc           string
-		ex             []filesystem.Extractor
-		pathsToExtract []string
-		ignoreSubDirs  bool
-		dirsToSkip     []string
-		skipDirGlob    string
-		skipDirRegex   string
-		storeAbsPath   bool
-		maxInodes      int
-		wantErr        error
-		wantPkg        inventory.Inventory
-		wantStatus     []*plugin.Status
-		wantInodeCount int
+		desc             string
+		ex               []filesystem.Extractor
+		pathsToExtract   []string
+		ignoreSubDirs    bool
+		dirsToSkip       []string
+		skipDirGlob      string
+		skipDirRegex     string
+		storeAbsPath     bool
+		maxInodes        int
+		maxFileSizeBytes int
+		wantErr          error
+		wantPkg          inventory.Inventory
+		wantStatus       []*plugin.Status
+		wantInodeCount   int
 	}{
 		{
 			desc: "Extractors successful",
@@ -555,6 +556,24 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
+			desc:             "Large files skipped",
+			ex:               []filesystem.Extractor{fakeEx1, fakeEx2},
+			maxInodes:        6,
+			maxFileSizeBytes: 10,
+			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
+				{
+					Name:      name1,
+					Locations: []string{path1},
+					Extractor: fakeEx1,
+				},
+			}},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex2", Version: 2, Status: success},
+			},
+			wantInodeCount: 6,
+		},
+		{
 			desc: "Extractors successful store absolute path when requested",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
@@ -597,6 +616,7 @@ func TestRunFS(t *testing.T) {
 				SkipDirRegex:   skipDirRegex,
 				SkipDirGlob:    skipDirGlob,
 				MaxInodes:      tc.maxInodes,
+				MaxFileSize:    tc.maxFileSizeBytes,
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},

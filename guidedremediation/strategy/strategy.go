@@ -20,6 +20,6 @@ type Strategy string
 
 const (
 	// StrategyInPlace  Strategy = "in-place"
-	// StrategyRelax    Strategy = "relax"
+	StrategyRelax    Strategy = "relax"
 	StrategyOverride Strategy = "override"
 )

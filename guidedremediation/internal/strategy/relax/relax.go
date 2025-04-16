@@ -51,10 +51,8 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 // returns ErrPatchImpossible if all cannot be patched.
 func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
 	resolved = &remediation.ResolvedManifest{
-		Manifest:        resolved.Manifest.Clone(),
-		Graph:           resolved.Graph,
-		Vulns:           resolved.Vulns,
-		UnfilteredVulns: resolved.UnfilteredVulns,
+		Manifest:      resolved.Manifest.Clone(),
+		ResolvedGraph: resolved.ResolvedGraph,
 	}
 
 	reqRelaxer, err := relaxer.ForEcosystem(resolved.Manifest.System())
@@ -82,7 +80,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 		if err != nil {
 			return nil, err
 		}
-		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, vm, resolved.Manifest, resolved.Graph)
+		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, vm, resolved.Manifest.Groups(), resolved.Graph)
 		if err != nil {
 			return nil, err
 		}

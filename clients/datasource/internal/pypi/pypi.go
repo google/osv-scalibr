@@ -15,6 +15,11 @@
 // Package pypi defines the structures to parse PyPI JSON API response.
 package pypi
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // JSONResponse defines the response of JSON API.
 // https://docs.pypi.org/api/json/
 type JSONResponse struct {
@@ -38,8 +43,43 @@ type Digests struct {
 	SHA256 string `json:"sha256"`
 }
 
-// IndexReponse defines the response of Index API.
+// IndexResponse defines the response of Index API.
 // https://docs.pypi.org/api/index-api/
-type IndexReponse struct {
+type IndexResponse struct {
+	Name     string   `json:"name"`
+	Files    []File   `json:"files"`
 	Versions []string `json:"versions"`
+}
+
+// File holds the information of a file in index response.
+type File struct {
+	Name   string `json:"filename"`
+	Yanked Yanked `json:"yanked"`
+}
+
+// Yanked represents the yanked field in the index response.
+// This can either be false or a string representing the yanked reason.
+type Yanked struct {
+	Value bool
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for BoolOrString
+func (y *Yanked) UnmarshalJSON(data []byte) error {
+	// Try unmarshalling as a boolean
+	var b bool
+	if err := json.Unmarshal(data, &b); err == nil {
+		y.Value = b
+		return nil
+	}
+
+	// If unmarshalling as a boolean fails, try unmarshalling as a string
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		// We don't really need the yanked reason, just need to know it's yanked.
+		y.Value = true
+		return nil
+	}
+
+	// If both fail, return an error
+	return fmt.Errorf("could not unmarshal %s as yanked", string(data))
 }
