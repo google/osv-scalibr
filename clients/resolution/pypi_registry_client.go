@@ -57,7 +57,6 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 }
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
-// TODO(#663): decide if a version is yanked based on the index API response.
 func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
 	resp, err := c.api.GetIndex(ctx, pk.Name)
 	if err != nil {
