@@ -40,6 +40,7 @@ const (
 
 // Config is the configuration for the Extractor.
 type Config struct {
+	// This should be an extractor to extract inventories from requirements.txt offline.
 	filesystem.Extractor
 	resolve.Client
 }
@@ -54,20 +55,23 @@ func DefaultConfig() Config {
 
 // Extractor extracts python packages from requirements.txt files.
 type Extractor struct {
-	filesystem.Extractor
+	BaseExtractor filesystem.Extractor // The base extractor that we use to extract direct dependencies.
 	resolve.Client
 }
 
-// New returns a requirements.txt extractor.
+// New returns a requirements.txt transitive extractor.
 //
 // For most use cases, initialize with:
 // ```
 // e := New(DefaultConfig())
 // ```
 func New(cfg Config) *Extractor {
+	if cfg.Extractor.Name() != requirements.Name {
+		cfg.Extractor = requirements.NewDefault()
+	}
 	return &Extractor{
-		Extractor: cfg.Extractor,
-		Client:    cfg.Client,
+		BaseExtractor: cfg.Extractor,
+		Client:        cfg.Client,
 	}
 }
 
@@ -90,13 +94,17 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return e.Extractor.FileRequired(api)
+	return e.BaseExtractor.FileRequired(api)
 }
 
 // Extract extracts packages from requirements files passed through the scan input.
 // TODO(#663): do not perform dependency resolution if the requirements file acts as a lockfile,
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	inv, err := e.Extractor.Extract(ctx, input)
+	if e.BaseExtractor.Name() != requirements.Name {
+		return inventory.Inventory{}, fmt.Errorf("wrong base extractor: %s", e.BaseExtractor.Name())
+	}
+
+	inv, err := e.BaseExtractor.Extract(ctx, input)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
@@ -161,13 +169,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Locations: []string{input.Path},
 		})
 	}
+	inv.Packages = pkgs
 
-	return inventory.Inventory{Packages: pkgs}, nil
+	return inv, nil
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
 func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
-	return e.Extractor.ToPURL(i)
+	return e.BaseExtractor.ToPURL(i)
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
