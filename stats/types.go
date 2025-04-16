@@ -14,6 +14,20 @@
 
 package stats
 
+import (
+	"github.com/google/osv-scalibr/inventory"
+	"time"
+)
+
+// AfterExtractorStats is a struct containing stats about results of the a file extraction run
+type AfterExtractorStats struct {
+	Path    string
+	Runtime time.Duration
+
+	Inventory *inventory.Inventory
+	Error     error
+}
+
 // FileRequiredStats is a struct containing stats about a file that was
 // required or skipped by a plugin.
 type FileRequiredStats struct {

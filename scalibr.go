@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	detectorrunner "github.com/google/osv-scalibr/detector/detector"
 	"regexp"
 	"slices"
 	"sort"
@@ -248,7 +249,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 
-	findings, detectorStatus, err := detector.Run(
+	findings, detectorStatus, err := detectorrunner.Run(
 		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
 	sro.Inventory.Findings = append(sro.Inventory.Findings, findings...)

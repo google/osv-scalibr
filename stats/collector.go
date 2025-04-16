@@ -26,7 +26,7 @@ import (
 // different metric backends to enable monitoring of Scalibr.
 type Collector interface {
 	AfterInodeVisited(path string)
-	AfterExtractorRun(name string, runtime time.Duration, err error)
+	AfterExtractorRun(pluginName string, extractorstats AfterExtractorStats)
 	AfterDetectorRun(name string, runtime time.Duration, err error)
 	AfterScan(runtime time.Duration, status *plugin.ScanStatus)
 
@@ -60,7 +60,7 @@ type NoopCollector struct{}
 func (c NoopCollector) AfterInodeVisited(path string) {}
 
 // AfterExtractorRun implements Collector by doing nothing.
-func (c NoopCollector) AfterExtractorRun(name string, runtime time.Duration, err error) {}
+func (c NoopCollector) AfterExtractorRun(pluginName string, extractorstats AfterExtractorStats) {}
 
 // AfterDetectorRun implements Collector by doing nothing.
 func (c NoopCollector) AfterDetectorRun(name string, runtime time.Duration, err error) {}

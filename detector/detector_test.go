@@ -17,6 +17,7 @@ package detector_test
 import (
 	"context"
 	"errors"
+	detectorrunner "github.com/google/osv-scalibr/detector/detector"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -152,17 +153,17 @@ func TestRun(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			px, _ := packageindex.New([]*extractor.Package{})
 			tmp := t.TempDir()
-			gotFindings, gotStatus, err := detector.Run(
+			gotFindings, gotStatus, err := detectorrunner.Run(
 				context.Background(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantFindings, gotFindings); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantStatus, gotStatus); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected status (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected status (-want +got):\n%s", tc.det, diff)
 			}
 		})
 	}
