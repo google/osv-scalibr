@@ -15,8 +15,9 @@
 package stats
 
 import (
-	"github.com/google/osv-scalibr/inventory"
 	"time"
+
+	"github.com/google/osv-scalibr/inventory"
 )
 
 // AfterExtractorStats is a struct containing stats about results of the a file extraction run

@@ -17,6 +17,7 @@ package detector
 
 import (
 	"context"
+
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/packageindex"

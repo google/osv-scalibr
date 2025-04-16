@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	detectorrunner "github.com/google/osv-scalibr/detector/detector"
 	"regexp"
 	"slices"
 	"sort"
@@ -31,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -284,7 +284,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 	// Overwrite the scan roots with the chain layer filesystem.
 	config.ScanRoots = []*scalibrfs.ScanRoot{
-		&scalibrfs.ScanRoot{
+		{
 			FS: chainfs,
 		},
 	}

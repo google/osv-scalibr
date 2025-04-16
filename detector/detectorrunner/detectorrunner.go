@@ -18,10 +18,10 @@ package detectorrunner
 import (
 	"context"
 	"fmt"
-	"github.com/google/osv-scalibr/detector"
 	"reflect"
 	"time"
 
+	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"

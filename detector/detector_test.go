@@ -17,12 +17,12 @@ package detector_test
 import (
 	"context"
 	"errors"
-	detectorrunner "github.com/google/osv-scalibr/detector/detector"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/packageindex"
