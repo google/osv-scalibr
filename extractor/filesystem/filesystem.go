@@ -479,7 +479,12 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 		Info:   info,
 		Reader: rc,
 	})
-	wc.stats.AfterExtractorRun(ex.Name(), time.Since(start), err)
+	wc.stats.AfterExtractorRun(ex.Name(), stats.AfterExtractorStats{
+		Path:      path,
+		Runtime:   time.Since(start),
+		Inventory: &results,
+		Error:     err,
+	})
 
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
