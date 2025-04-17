@@ -67,7 +67,7 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	if cfg.Extractor.Name() != requirements.Name {
-		// Use the defualt offline extractor if the provided extractor is not for requirements.txt.
+		// Use the default offline extractor if the provided extractor is not for requirements.txt.
 		cfg.Extractor = requirements.NewDefault().(*requirements.Extractor)
 	}
 	return &Extractor{
