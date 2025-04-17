@@ -51,9 +51,6 @@ const (
 	// DefaultMaxFileBytes is the default maximum size of files that will be unpacked. Larger files are ignored.
 	// The max is large because some files, like kube-apiserver, are ~115MB.
 	DefaultMaxFileBytes = 1024 * 1024 * 1024 // 1GB
-
-	// name of sub directory where the squashed image files will be stored for layer-based extraction.
-	squashedImageDirectory = "SQUASHED"
 )
 
 // SymlinkResolution specifies how to resolve symlinks.
@@ -220,74 +217,6 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 	}
 
 	return nil
-}
-
-// UnpackLayers unpacks the contents of the layers of image into dir.
-// Each layer is unpacked into a subdirectory of dir where the sub-directory name is the layer digest.
-// The returned list contains the digests of the image layers from in order oldest/base layer first, and most-recent/top layer last.
-func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
-	if u.SymlinkResolution == SymlinkIgnore {
-		return nil, fmt.Errorf("symlink resolution strategy %q is not supported", u.SymlinkResolution)
-	}
-
-	if dir == "" {
-		return nil, fmt.Errorf("dir cannot be root %q", dir)
-	}
-	if image == nil {
-		return nil, errors.New("image cannot be nil")
-	}
-
-	// Adds the squashed image files into a sub directory in dir. The sub directory is named by
-	// the constant, squashedImageDirectory.
-	if err := u.addSquashedImageDirectory(dir, image); err != nil {
-		return nil, fmt.Errorf("failed to add squashed image directory: %w", err)
-	}
-
-	layers, err := image.Layers()
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get layers from image: %w", err)
-	}
-
-	layerDigests := []string{}
-	for _, layer := range layers {
-		digest, err := layer.Digest()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get digest of layer: %w", err)
-		}
-		layerDigests = append(layerDigests, digest.String())
-
-		layerPath := filepath.Join(dir, strings.ReplaceAll(digest.String(), ":", "-"))
-		_ = os.Mkdir(layerPath, fs.ModePerm)
-
-		// requiredTargets stores targets that symlinks point to.
-		// This is needed because the symlink may be required by u.requirer, but the target may not be.
-		requiredTargets := make(map[string]bool)
-		for pass := range u.MaxPass {
-			finalPass := false
-			// Resolve symlinks on the last pass once all potential target files have been unpacked.
-			if pass == u.MaxPass-1 {
-				finalPass = true
-			}
-
-			reader, err := layer.Uncompressed()
-			if err != nil {
-				return nil, fmt.Errorf("failed to uncompress layer: %w", err)
-			}
-
-			if requiredTargets, err = unpack(layerPath, reader, u.SymlinkResolution, u.SymlinkErrStrategy, u.Requirer, requiredTargets, finalPass, u.MaxSizeBytes); err != nil {
-				return nil, fmt.Errorf("failed to unpack layer %q: %w", digest.String(), err)
-			}
-		}
-
-		// If inter-layer symlinks can be resolved by looking into the SQUASHED file system, then they
-		// will, otherwise they will be deleted.
-		if err := symlink.ResolveInterLayerSymlinks(dir, digest.String(), squashedImageDirectory); err != nil {
-			return nil, fmt.Errorf("failed to resolve symlinks in layer: %w", err)
-		}
-	}
-
-	return layerDigests, nil
 }
 
 // pathOutsideBaseDirectory checks that the fullPath is within the base directory even after
@@ -472,18 +401,4 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 	}
 
 	return currRequiredTargets, nil
-}
-
-// addSquashedImageDirectory adds a sub directory with name denoted by squashedImageDirectory that
-// holds all files present in the squashed image. The squashed sub directory is used to resolve
-// inter-layer symlinks.
-func (u *Unpacker) addSquashedImageDirectory(root string, image v1.Image) error {
-	squashedImagePath := filepath.Join(root, squashedImageDirectory)
-
-	_ = os.Mkdir(squashedImagePath, fs.ModePerm)
-
-	if err := u.UnpackSquashed(squashedImagePath, image); err != nil {
-		return fmt.Errorf("failed to unpack all squashed image: %w", err)
-	}
-	return nil
 }
