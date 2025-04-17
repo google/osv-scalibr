@@ -256,6 +256,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
 		Input:              &filesystem.ScanInput{FS: fsys, Path: path},
 		Client:             r.MavenRegistryAPIClient,
+		AddRegistry:        true,
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
