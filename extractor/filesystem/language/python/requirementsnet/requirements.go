@@ -41,21 +41,21 @@ const (
 // Config is the configuration for the Extractor.
 type Config struct {
 	// This should be an extractor to extract inventories from requirements.txt offline.
-	filesystem.Extractor
+	*requirements.Extractor // Extractor to extract inventories from requirements.txt offline.
 	resolve.Client
 }
 
 // DefaultConfig returns the default configuration for the extractor.
 func DefaultConfig() Config {
 	return Config{
-		Extractor: requirements.NewDefault(),
+		Extractor: requirements.NewDefault().(*requirements.Extractor),
 		Client:    resolution.NewPyPIRegistryClient(""),
 	}
 }
 
 // Extractor extracts python packages from requirements.txt files.
 type Extractor struct {
-	BaseExtractor filesystem.Extractor // The base extractor that we use to extract direct dependencies.
+	BaseExtractor *requirements.Extractor // The base extractor that we use to extract direct dependencies.
 	resolve.Client
 }
 
@@ -67,7 +67,8 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	if cfg.Extractor.Name() != requirements.Name {
-		cfg.Extractor = requirements.NewDefault()
+		// Use the defualt offline extractor if the provided extractor is not for requirements.txt.
+		cfg.Extractor = requirements.NewDefault().(*requirements.Extractor)
 	}
 	return &Extractor{
 		BaseExtractor: cfg.Extractor,
@@ -100,10 +101,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract extracts packages from requirements files passed through the scan input.
 // TODO(#663): do not perform dependency resolution if the requirements file acts as a lockfile,
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	if e.BaseExtractor.Name() != requirements.Name {
-		return inventory.Inventory{}, fmt.Errorf("wrong base extractor: %s", e.BaseExtractor.Name())
-	}
-
 	inv, err := e.BaseExtractor.Extract(ctx, input)
 	if err != nil {
 		return inventory.Inventory{}, err

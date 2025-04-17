@@ -74,7 +74,7 @@ func TestExtract(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/basic-universe.yaml")
 			extr := requirementsnet.New(requirementsnet.Config{
-				Extractor: requirements.NewDefault(),
+				Extractor: requirements.NewDefault().(*requirements.Extractor),
 				Client:    resolutionClient,
 			})
 
