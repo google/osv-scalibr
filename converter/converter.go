@@ -39,7 +39,7 @@ const (
 	// SPDXRefPrefix is the prefix used in reference IDs in the SPDX document.
 	SPDXRefPrefix = "SPDXRef-"
 	// SPDXDocumentID is the string identifier used to refer to the SPDX document.
-	SPDXDocumentID = "SPDXRef-Document"
+	SPDXDocumentID = "SPDXRef-DOCUMENT"
 )
 
 // spdx_id must only contain letters, numbers, "." and "-"
