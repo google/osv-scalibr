@@ -50,6 +50,7 @@ type Options struct {
 	Input  *filesystem.ScanInput
 	Client *datasource.MavenRegistryAPIClient
 
+	AddRegistry        bool
 	AllowLocal         bool
 	InitialParentIndex int
 }
@@ -104,7 +105,7 @@ func MergeParents(ctx context.Context, current maven.Parent, result *maven.Proje
 		if err := result.MergeProfiles("", maven.ActivationOS{}); err != nil {
 			return fmt.Errorf("failed to merge default profiles: %w", err)
 		}
-		if opts.Client != nil && len(proj.Repositories) > 0 {
+		if opts.Client != nil && opts.AddRegistry && len(proj.Repositories) > 0 {
 			for _, repo := range proj.Repositories {
 				if err := opts.Client.AddRegistry(datasource.MavenRegistry{
 					URL:              string(repo.URL),
@@ -215,7 +216,8 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 	// project with parents merged, so we call MergeParents by passing
 	// an empty project.
 	if err := MergeParents(ctx, root, &result, Options{
-		Client:             client.WithoutRegistries(),
+		Client:             client,
+		AddRegistry:        false,
 		AllowLocal:         false,
 		InitialParentIndex: 0,
 	}); err != nil {

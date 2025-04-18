@@ -128,6 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
 		Input:              input,
 		Client:             e.mavenClient,
+		AddRegistry:        true,
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
