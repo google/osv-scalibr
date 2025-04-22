@@ -226,7 +226,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	}
 
 	srv := clienttest.NewMockHTTPServer(t)
-	if err := client.AddRegistry(datasource.MavenRegistry{URL: srv.URL, ID: "central", ReleasesEnabled: true}); err != nil {
+	if err := client.AddRegistry(datasource.MavenRegistry{URL: srv.URL, ID: "default", ReleasesEnabled: true}); err != nil {
 		t.Fatalf("failed to add registry %s: %v", srv.URL, err)
 	}
 	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
