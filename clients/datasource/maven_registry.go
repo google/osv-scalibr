@@ -70,6 +70,8 @@ type MavenRegistry struct {
 func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
+	}
+	if registry.ID == "" {
 		registry.ID = "central"
 	}
 	u, err := url.Parse(registry.URL)
@@ -103,6 +105,10 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
 func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
+	if registry.ID == m.defaultRegistry.ID {
+		return m.updateDefaultRegistry(registry)
+	}
+
 	for _, reg := range m.registries {
 		if reg.ID == registry.ID {
 			return nil
@@ -117,6 +123,16 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 
+	return nil
+}
+
+func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) error {
+	u, err := url.Parse(registry.URL)
+	if err != nil {
+		return err
+	}
+	registry.Parsed = u
+	m.defaultRegistry = registry
 	return nil
 }
 
