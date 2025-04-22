@@ -315,29 +315,146 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		cfg     *unpack.UnpackerConfig
-		dir     string
-		tarPath string
-		want    map[string]contentAndMode
-		wantErr error
-	}{{
-		name: "writing files outside base directory is skipped",
-		cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
-			"/usr/share/doc/a/copyright",
-			"/usr/share/doc/b/copyright",
-			"/usr/share/doc/c/copyright",
-		})),
-		dir:     t.TempDir(),
-		tarPath: filepath.Join("testdata", "escape.tar"),
-		// No files should be extracted since the tar attempts to write files from outside the unpack
-		// directory.
-		want: map[string]contentAndMode{},
-	}}
+		name       string
+		cfg        *unpack.UnpackerConfig
+		dir        string
+		tarEntries []tarEntry
+		want       map[string]contentAndMode
+		wantErr    error
+	}{
+		{
+			name: "os.Root fails when writing files outside base directory due to long symlink target",
+			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
+				"/usr/share/doc/a/copyright",
+				"/usr/share/doc/b/copyright",
+				"/usr/share/doc/c/copyright",
+			})),
+			dir: t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "/escape/poc.txt",
+						Mode: 0777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/../../../../../../../../../../../tmp",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/poc.txt",
+						Mode:     0777,
+					},
+				},
+			},
+			// No files should be extracted since the tar attempts to write files from outside the unpack
+			// directory.
+			want: map[string]contentAndMode{},
+		},
+		{
+			name: "os.Root detects writing files outside base directory",
+			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
+				"/usr/share/doc/a/copyright",
+				"/usr/share/doc/b/copyright",
+				"/usr/share/doc/c/copyright",
+			})),
+			dir: t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "/escape/poc.txt",
+						Mode: 0777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/trampoline/trampoline/trampoline/trampoline/../../../../tmp",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/poc.txt",
+						Mode:     0777,
+					},
+				},
+			},
+			// No files should be extracted since the tar attempts to write files from outside the unpack
+			// directory.
+			want: map[string]contentAndMode{},
+		},
+	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			defer os.RemoveAll(tc.dir)
+			tarDir := t.TempDir()
+			tarPath := filepath.Join(tarDir, "tarball.tar")
+			if err := createTarball(t, tarPath, tc.tarEntries); err != nil {
+				t.Fatalf("Failed to create tarball: %v", err)
+			}
 
 			unpackDir := filepath.Join(tc.dir, "unpack")
 			if err := os.MkdirAll(unpackDir, 0777); err != nil {
@@ -347,9 +464,9 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			tmpFilesWant := filesInTmp(t, os.TempDir())
 
 			u := mustNewUnpacker(t, tc.cfg)
-			gotErr := u.UnpackSquashedFromTarball(unpackDir, tc.tarPath)
+			gotErr := u.UnpackSquashedFromTarball(unpackDir, tarPath)
 			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
-				t.Fatalf("Unpacker{%+v}.UnpackSquashedFromTarball(%q, %q) error: got %v, want %v\n", tc.cfg, unpackDir, tc.tarPath, gotErr, tc.wantErr)
+				t.Fatalf("Unpacker{%+v}.UnpackSquashedFromTarball(%q, %q) error: got %v, want %v\n", tc.cfg, unpackDir, tarPath, gotErr, tc.wantErr)
 			}
 
 			if tc.wantErr != nil {
@@ -358,7 +475,7 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 
 			got := mustReadDir(t, tc.dir)
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(contentAndMode{})); diff != "" {
-				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tc.tarPath, diff)
+				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tarPath, diff)
 			}
 
 			tmpFilesGot := filesInTmp(t, os.TempDir())
@@ -506,7 +623,7 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 func filesInTmp(t *testing.T, tmpDir string) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(tmpDir)
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", tmpDir, err)
@@ -516,4 +633,38 @@ func filesInTmp(t *testing.T, tmpDir string) []string {
 		filenames = append(filenames, f.Name())
 	}
 	return filenames
+}
+
+// tarEntry represents a single entry in a tarball. It contains the header and data for the entry.
+// If the data is nil, the entry will be written without any content.
+type tarEntry struct {
+	Header *tar.Header
+	Data   io.Reader
+}
+
+// createTarball creates a tarball at tarballPath with the given tar entries. If the tar entry's
+// data is nil, the entry will be written without any content.
+func createTarball(t *testing.T, tarballPath string, entries []tarEntry) error {
+	t.Helper()
+
+	file, err := os.Create(tarballPath)
+	if err != nil {
+		return fmt.Errorf("Failed to create tarball: %w", err)
+	}
+	defer file.Close()
+
+	tarWriter := tar.NewWriter(file)
+	defer tarWriter.Close()
+
+	for _, entry := range entries {
+		if err := tarWriter.WriteHeader(entry.Header); err != nil {
+			return fmt.Errorf("writing header for %s: %w", entry.Header.Name, err)
+		}
+		if entry.Data != nil {
+			if _, err := io.Copy(tarWriter, entry.Data); err != nil {
+				return fmt.Errorf("writing content for %s: %w", entry.Header.Name, err)
+			}
+		}
+	}
+	return nil
 }
