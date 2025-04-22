@@ -69,8 +69,8 @@ type MavenRegistry struct {
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
 func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
-		registry.ID = "central"
 		registry.URL = mavenCentral
+		registry.ID = "central"
 	}
 	if registry.ID == "" {
 		// Gives the default registry an ID so it is not overwritten by registry without an ID in pom.xml.
