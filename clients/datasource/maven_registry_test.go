@@ -209,13 +209,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	  </versioning>
 	</metadata>
 	`))
-	dft.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
-	<project>
-	  <groupId>org.example</groupId>
-	  <artifactId>x.y.z</artifactId>
-	  <version>1.0.0</version>
-	</project>
-	`))
+	
 	gotVersions, err := client.GetVersions(context.Background(), "org.example", "x.y.z")
 	if err != nil {
 		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
@@ -241,13 +235,6 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	    </versions>
 	  </versioning>
 	</metadata>
-	`))
-	srv.SetResponse(t, "org/example/x.y.z/2.0.0/x.y.z-2.0.0.pom", []byte(`
-	<project>
-	  <groupId>org.example</groupId>
-	  <artifactId>x.y.z</artifactId>
-	  <version>2.0.0</version>
-	</project>
 	`))
 
 	gotVersions, err = client.GetVersions(context.Background(), "org.example", "x.y.z")
