@@ -15,12 +15,14 @@
 package groupid
 
 var artifactIDToGroupID = map[string]string{
-	"spring-web":            "org.springframework",
-	"spring-webflux":        "org.springframework",
-	"spring-webmvc":         "org.springframework",
-	"spring-webmvc-portlet": "org.springframework",
-	"spring-webmvc-struts":  "org.springframework",
-	"spring-websocket":      "org.springframework",
-	"org/apache/axis":       "org.apache.axis",
-	"axis":                  "org.apache.axis",
+	"spring-web":                    "org.springframework",
+	"spring-webflux":                "org.springframework",
+	"spring-webmvc":                 "org.springframework",
+	"spring-webmvc-portlet":         "org.springframework",
+	"spring-webmvc-struts":          "org.springframework",
+	"spring-websocket":              "org.springframework",
+	"org/apache/axis":               "org.apache.axis",
+	"axis":                          "org.apache.axis",
+	"org.apache.tomcat-catalina":    "org.apache.tomcat",
+	"org.apache.tomcat-catalina-ha": "org.apache.tomcat",
 }
