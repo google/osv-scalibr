@@ -209,7 +209,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	  </versioning>
 	</metadata>
 	`))
-	
+
 	gotVersions, err := client.GetVersions(context.Background(), "org.example", "x.y.z")
 	if err != nil {
 		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
