@@ -95,6 +95,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      ext.Identifier.ID,
 			Version:   ext.Version,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{ext.Location.Path, input.Path},
 			Metadata:  &ext.Metadata,
 		})
@@ -104,12 +105,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGeneric,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem is not defined.

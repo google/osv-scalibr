@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -101,8 +102,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:    "ms-vscode.cpptools",
-					Version: "1.23.6",
+					Name:     "ms-vscode.cpptools",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/one-extension.json",
@@ -126,6 +128,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "golang.go",
 					Version:   "0.46.1",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{"/home/username/.vscode/extensions/golang.go-0.46.1", "testdata/extensions.json"},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "d6f6cfea-4b6f-41f4-b571-6ad2ab7918da",
@@ -136,8 +139,9 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:    "google.geminicodeassist",
-					Version: "2.28.0",
+					Name:     "google.geminicodeassist",
+					Version:  "2.28.0",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/home/username/.vscode/extensions/google.geminicodeassist-2.28.0",
 						"testdata/extensions.json",
@@ -151,8 +155,9 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:    "googlecloudtools.cloudcode",
-					Version: "2.27.0",
+					Name:     "googlecloudtools.cloudcode",
+					Version:  "2.27.0",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/home/username/.vscode/extensions/googlecloudtools.cloudcode-2.27.0",
 						"testdata/extensions.json",
@@ -166,8 +171,9 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:    "ms-vscode.cpptools",
-					Version: "1.23.6",
+					Name:     "ms-vscode.cpptools",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
 						"testdata/extensions.json",
@@ -189,8 +195,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:    "ms-python.debugpy",
-					Version: "2025.4.0",
+					Name:     "ms-python.debugpy",
+					Version:  "2025.4.0",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/c:/Users/username/.vscode/extensions/ms-python.debugpy-2025.4.0-win32-arm64",
 						"testdata/extensions-windows.json",
@@ -204,8 +211,9 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:    "ms-python.python",
-					Version: "2025.2.0",
+					Name:     "ms-python.python",
+					Version:  "2025.2.0",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/c:/Users/username/.vscode/extensions/ms-python.python-2025.2.0-win32-arm64",
 						"testdata/extensions-windows.json",
@@ -219,8 +227,9 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:    "ms-vscode.cpptools",
-					Version: "1.23.6",
+					Name:     "ms-vscode.cpptools",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGeneric,
 					Locations: []string{
 						"/c:/Users/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-win32-arm64",
 						"testdata/extensions-windows.json",
