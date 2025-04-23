@@ -5,6 +5,8 @@
         "name": "adding",
         "versionFrom": "^1.0.0",
         "versionTo": "^4.0.0",
+        "purlFrom": "pkg:npm/adding@%5E1.0.0",
+        "purlTo": "pkg:npm/adding@%5E4.0.0",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "@bad/one",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/one@1.0.0"
           }
         ]
       }
@@ -25,7 +28,8 @@
         "packages": [
           {
             "name": "@bad/three",
-            "version": "0.0.1"
+            "version": "0.0.1",
+            "purl": "pkg:npm/%40bad/three@0.0.1"
           }
         ]
       }
@@ -37,6 +41,8 @@
         "name": "adding",
         "versionFrom": "^1.0.0",
         "versionTo": "^2.0.0",
+        "purlFrom": "pkg:npm/adding@%5E1.0.0",
+        "purlTo": "pkg:npm/adding@%5E2.0.0",
         "transitive": false
       }
     ],
@@ -46,7 +52,8 @@
         "packages": [
           {
             "name": "@bad/one",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/one@1.0.0"
           }
         ]
       }
@@ -57,7 +64,8 @@
         "packages": [
           {
             "name": "@bad/two",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/two@1.0.0"
           }
         ]
       },
@@ -66,7 +74,8 @@
         "packages": [
           {
             "name": "@bad/three",
-            "version": "0.0.1"
+            "version": "0.0.1",
+            "purl": "pkg:npm/%40bad/three@0.0.1"
           }
         ]
       }

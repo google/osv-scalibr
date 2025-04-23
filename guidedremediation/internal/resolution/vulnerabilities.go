@@ -21,7 +21,7 @@ import (
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
-	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -85,7 +85,7 @@ func graphToPackage(g *resolve.Graph) []*extractor.Package {
 	// g.Nodes[0] is the root node of the graph that should be excluded.
 	pkg := make([]*extractor.Package, len(g.Nodes)-1)
 	for i, n := range g.Nodes[1:] {
-		pkg[i] = vulns.VKToPackage(n.Version)
+		pkg[i] = util.VKToPackage(n.Version)
 	}
 
 	return pkg
