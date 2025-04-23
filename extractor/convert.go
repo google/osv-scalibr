@@ -36,6 +36,6 @@ func toPURL(p *Package) *purl.PackageURL {
 }
 
 func typeSpecificPURL(p *Package) *purl.PackageURL {
-	// TODO(b/400910349): Add type-specific conversion logic.
+	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil
 }
