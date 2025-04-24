@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package detector_test
+package detectorrunner_test
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/packageindex"
@@ -152,17 +153,17 @@ func TestRun(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			px, _ := packageindex.New([]*extractor.Package{})
 			tmp := t.TempDir()
-			gotFindings, gotStatus, err := detector.Run(
+			gotFindings, gotStatus, err := detectorrunner.Run(
 				context.Background(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantFindings, gotFindings); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantStatus, gotStatus); diff != "" {
-				t.Errorf("detector.Run(%v): unexpected status (-want +got):\n%s", tc.det, diff)
+				t.Errorf("detectorrunner.Run(%v): unexpected status (-want +got):\n%s", tc.det, diff)
 			}
 		})
 	}
