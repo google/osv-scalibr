@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -57,6 +58,8 @@ var (
 	ErrSymlinkPointsOutsideRoot = errors.New("symlink points outside the root")
 	// ErrInvalidConfig is returned when the image config is invalid.
 	ErrInvalidConfig = errors.New("invalid image config")
+	// ErrNoLayersFound is returned when no layers are found in the image.
+	ErrNoLayersFound = errors.New("no layers found in image")
 )
 
 // ========================================================
@@ -110,9 +113,21 @@ type Image struct {
 	BaseImageIndex int
 }
 
+// TopFS returns the filesystem of the top-most chainlayer of the image. All available files should
+// be present in the filesystem returned.
+func (img *Image) TopFS() (scalibrfs.FS, error) {
+	if len(img.chainLayers) == 0 {
+		return nil, ErrNoLayersFound
+	}
+	return img.chainLayers[len(img.chainLayers)-1].FS(), nil
+}
+
 // ChainLayers returns the chain layers of the image.
 func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
-	scalibrChainLayers := make([]scalibrImage.ChainLayer, 0, len(img.chainLayers))
+	if len(img.chainLayers) == 0 {
+		return nil, ErrNoLayersFound
+	}
+	var scalibrChainLayers []scalibrImage.ChainLayer
 	for _, chainLayer := range img.chainLayers {
 		scalibrChainLayers = append(scalibrChainLayers, chainLayer)
 	}
@@ -199,17 +214,11 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// afterward.
 	defer root.Close()
 
-	baseImageIndex, err := findBaseImageIndex(history)
-	if err != nil {
-		baseImageIndex = -1
-	}
-
 	outputImage := &Image{
-		chainLayers:    chainLayers,
-		config:         config,
-		root:           root,
-		ExtractDir:     imageExtractionPath,
-		BaseImageIndex: baseImageIndex,
+		chainLayers: chainLayers,
+		config:      config,
+		root:        root,
+		ExtractDir:  imageExtractionPath,
 	}
 
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
@@ -282,7 +291,7 @@ func layerDirectory(layerIndex int) string {
 	return fmt.Sprintf("layer-%d", layerIndex)
 }
 
-// addRootDirectoryToChainLayers adds the root ("\"") directory to each chain layer.
+// addRootDirectoryToChainLayers adds the root ("/") directory to each chain layer.
 func addRootDirectoryToChainLayers(chainLayers []*chainLayer, extractDir string) error {
 	for i, chainLayer := range chainLayers {
 		err := chainLayer.fileNodeTree.Insert("/", &fileNode{
