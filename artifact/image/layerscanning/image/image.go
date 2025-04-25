@@ -43,7 +43,9 @@ const (
 	// DefaultMaxFileBytes is the default maximum size of files that will be unpacked. Larger files are ignored.
 	// The max is large because some files are hundreds of megabytes.
 	DefaultMaxFileBytes = 1024 * 1024 * 1024 // 1GB
-	// DefaultMaxSymlinkDepth is the default maximum symlink depth.
+	// DefaultMaxSymlinkDepth is the default maximum symlink depth. This should be no more than 8,
+	// since that is the maximum number of symlinks the os.Root API will handle. From the os.Root API,
+	// "8 is __POSIX_SYMLOOP_MAX (the minimum allowed value for SYMLOOP_MAX), and a common limit".
 	DefaultMaxSymlinkDepth = 6
 )
 
@@ -103,6 +105,7 @@ type Image struct {
 	chainLayers    []*chainLayer
 	config         *Config
 	size           int64
+	root           *os.Root
 	ExtractDir     string
 	BaseImageIndex int
 }
@@ -186,6 +189,16 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
+	// OpenRoot assumes that the provided directory is trusted. In this case, we created the
+	// imageExtractionPath directory, so it is indeed trusted.
+	root, err := os.OpenRoot(imageExtractionPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open root directory: %w", err)
+	}
+	// Close the root directory at the end of the function, since no more files will be unpacked
+	// afterward.
+	defer root.Close()
+
 	baseImageIndex, err := findBaseImageIndex(history)
 	if err != nil {
 		baseImageIndex = -1
@@ -194,6 +207,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	outputImage := &Image{
 		chainLayers:    chainLayers,
 		config:         config,
+		root:           root,
 		ExtractDir:     imageExtractionPath,
 		BaseImageIndex: baseImageIndex,
 	}
@@ -201,7 +215,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
 	// be rooted, and traversal in the virtual filesystem will be broken.
 	if err := addRootDirectoryToChainLayers(outputImage.chainLayers, imageExtractionPath); err != nil {
-		return handleImageError(outputImage, fmt.Errorf("failed to add root directory to chain layers: %w", err))
+		return nil, handleImageError(outputImage, fmt.Errorf("failed to add root directory to chain layers: %w", err))
 	}
 
 	// Since the layers are in reverse order, the v1LayerIndex starts at the last layer and works
@@ -221,14 +235,12 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		layerDir := layerDirectory(i)
 
 		// Create the chain layer directory if it doesn't exist.
-		// Use filepath here as it is a path that will be written to disk.
-		dirPath := filepath.Join(imageExtractionPath, layerDir)
-		if err := os.Mkdir(dirPath, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
-			return handleImageError(outputImage, fmt.Errorf("failed to create chain layer directory: %w", err))
+		if err := root.Mkdir(layerDir, dirPermission); err != nil && !errors.Is(err, fs.ErrExist) {
+			return nil, handleImageError(outputImage, fmt.Errorf("failed to create chain layer directory: %w", err))
 		}
 
 		if v1LayerIndex < 0 {
-			return handleImageError(outputImage, fmt.Errorf("mismatch between v1 layers and chain layers, on v1 layer index %d, but only %d v1 layers", v1LayerIndex, len(v1Layers)))
+			return nil, handleImageError(outputImage, fmt.Errorf("mismatch between v1 layers and chain layers, on v1 layer index %d, but only %d v1 layers", v1LayerIndex, len(v1Layers)))
 		}
 
 		chainLayersToFill := chainLayers[i:]
@@ -236,7 +248,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		v1Layer := v1Layers[v1LayerIndex]
 		layerReader, err := v1Layer.Uncompressed()
 		if err != nil {
-			return handleImageError(outputImage, err)
+			return nil, handleImageError(outputImage, err)
 		}
 		v1LayerIndex--
 
@@ -245,7 +257,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 			defer layerReader.Close()
 
 			tarReader := tar.NewReader(layerReader)
-			layerSize, err := fillChainLayersWithFilesFromTar(outputImage, tarReader, layerDir, dirPath, chainLayersToFill)
+			layerSize, err := fillChainLayersWithFilesFromTar(outputImage, tarReader, layerDir, chainLayersToFill)
 			if err != nil {
 				return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
 			}
@@ -255,7 +267,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		}()
 
 		if err != nil {
-			return handleImageError(outputImage, err)
+			return nil, handleImageError(outputImage, err)
 		}
 	}
 
@@ -378,11 +390,11 @@ func addRootDirectoryToChainLayers(chainLayers []*chainLayer, extractDir string)
 
 // handleImageError cleans up the image and returns the provided error. The image is cleaned up
 // regardless of the error, as the image is in an invalid state if an error is returned.
-func handleImageError(image *Image, err error) (*Image, error) {
+func handleImageError(image *Image, err error) error {
 	if image != nil {
 		_ = image.CleanUp()
 	}
-	return nil, err
+	return err
 }
 
 // validateHistory makes sure that the number of v1 layers matches the number of non-empty history
@@ -483,7 +495,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 // fillChainLayersWithFilåesFromTar fills the chain layers with the files found in the tar. The
 // chainLayersToFill are the chain layers that will be filled with the files via the virtual
 // filesystem.
-func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir string, dirPath string, chainLayersToFill []*chainLayer) (int64, error) {
+func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir string, chainLayersToFill []*chainLayer) (int64, error) {
 	if len(chainLayersToFill) == 0 {
 		return 0, errors.New("no chain layers provided, this should not happen")
 	}
@@ -551,10 +563,6 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
-		// realFilePath is where the file will be written to disk. filepath.Join will convert
-		// any forward slashes to the appropriate OS specific path separator.
-		realFilePath := filepath.Join(dirPath, filepath.FromSlash(cleanedFilePath))
-
 		// If the file already exists in the current chain layer, then skip it. This is done because
 		// the tar file could be read multiple times to handle required symlinks.
 		if currentChainLayer.fileNodeTree.Get(virtualPath) != nil {
@@ -564,9 +572,9 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 		var newNode *fileNode
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(realFilePath, virtualPath, layerDir, header, isWhiteout)
+			newNode, err = img.handleDir(virtualPath, layerDir, header, isWhiteout)
 		case tar.TypeReg:
-			newNode, err = img.handleFile(realFilePath, virtualPath, layerDir, tarReader, header, isWhiteout)
+			newNode, err = img.handleFile(virtualPath, layerDir, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
 			newNode, err = img.handleSymlink(virtualPath, layerDir, header, isWhiteout)
 		default:
@@ -588,7 +596,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 
 		// If the virtual path has any directories and those directories have not been populated, then
 		// populate them with file nodes.
-		populateEmptyDirectoryNodes(virtualPath, layerDir, dirPath, chainLayersToFill)
+		populateEmptyDirectoryNodes(virtualPath, layerDir, img.ExtractDir, chainLayersToFill)
 
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
@@ -659,8 +667,9 @@ func (img *Image) handleSymlink(virtualPath, layerDir string, header *tar.Header
 }
 
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(realFilePath, virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
-	if _, err := os.Stat(realFilePath); err != nil {
+func (img *Image) handleDir(virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+	realFilePath := filepath.Join(img.ExtractDir, layerDir, filepath.FromSlash(virtualPath))
+	if _, err := img.root.Stat(filepath.Join(layerDir, filepath.FromSlash(virtualPath))); err != nil {
 		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
 			return nil, fmt.Errorf("failed to create directory with realFilePath %s: %w", realFilePath, err)
 		}
@@ -681,15 +690,16 @@ func (img *Image) handleDir(realFilePath, virtualPath, layerDir string, header *
 
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
 // the file.
-func (img *Image) handleFile(realFilePath, virtualPath, layerDir string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+func (img *Image) handleFile(virtualPath, layerDir string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+	realFilePath := filepath.Join(img.ExtractDir, layerDir, filepath.FromSlash(virtualPath))
 	parentDirectory := filepath.Dir(realFilePath)
 	if err := os.MkdirAll(parentDirectory, dirPermission); err != nil {
 		return nil, fmt.Errorf("failed to create parent directory %s: %w", parentDirectory, err)
 	}
-	// Write all files as read/writable by the current user, inaccessible by anyone else
-	// Actual permission bits are stored in FileNode
-	f, err := os.OpenFile(realFilePath, os.O_CREATE|os.O_RDWR, filePermission)
 
+	// Write all files as read/writable by the current user, inaccessible by anyone else. Actual
+	// permission bits are stored in FileNode.
+	f, err := img.root.OpenFile(filepath.Join(layerDir, filepath.FromSlash(virtualPath)), os.O_CREATE|os.O_RDWR, filePermission)
 	if err != nil {
 		return nil, err
 	}

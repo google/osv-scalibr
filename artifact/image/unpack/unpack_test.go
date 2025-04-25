@@ -619,7 +619,7 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 	return image
 }
 
-// filesInTmp returns the list of filenames in /tmp.
+// filesInTmp returns the list of filenames in tmpDir.
 func filesInTmp(t *testing.T, tmpDir string) []string {
 	t.Helper()
 
@@ -630,6 +630,10 @@ func filesInTmp(t *testing.T, tmpDir string) []string {
 	}
 
 	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
 		filenames = append(filenames, f.Name())
 	}
 	return filenames
