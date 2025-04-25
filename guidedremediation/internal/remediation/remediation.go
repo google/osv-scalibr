@@ -30,12 +30,17 @@ import (
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 
-// ResolvedManifest is a manifest, its resolved dependency graph, and the vulnerabilities found in it.
-type ResolvedManifest struct {
-	Manifest        manifest.Manifest
+// ResolvedGraph is a dependency graph and the vulnerabilities found in it.
+type ResolvedGraph struct {
 	Graph           *resolve.Graph
 	Vulns           []resolution.Vulnerability
 	UnfilteredVulns []resolution.Vulnerability
+}
+
+// ResolvedManifest is a manifest, its resolved dependency graph, and the vulnerabilities found in it.
+type ResolvedManifest struct {
+	Manifest manifest.Manifest
+	ResolvedGraph
 }
 
 // ResolveManifest resolves and find vulnerabilities in a manifest.
@@ -45,9 +50,22 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 		return nil, err
 	}
 
-	allVulns, err := resolution.FindVulnerabilities(ctx, vm, m, g)
+	resGraph, err := ResolveGraphVulns(ctx, cl, vm, g, m.Groups(), opts)
 	if err != nil {
 		return nil, err
+	}
+
+	return &ResolvedManifest{
+		Manifest:      m,
+		ResolvedGraph: resGraph,
+	}, nil
+}
+
+// ResolveGraphVulns finds the vulnerabilities in a graph.
+func ResolveGraphVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, g *resolve.Graph, depGroups map[manifest.RequirementKey][]string, opts *options.RemediationOptions) (ResolvedGraph, error) {
+	allVulns, err := resolution.FindVulnerabilities(ctx, vm, depGroups, g)
+	if err != nil {
+		return ResolvedGraph{}, err
 	}
 
 	// If explicit vulns are set, add the others to ignored vulns.
@@ -61,9 +79,7 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 
 	filteredVulns := slices.Clone(allVulns)
 	filteredVulns = slices.DeleteFunc(filteredVulns, func(v resolution.Vulnerability) bool { return !MatchVuln(*opts, v) })
-
-	return &ResolvedManifest{
-		Manifest:        m,
+	return ResolvedGraph{
 		Graph:           g,
 		Vulns:           filteredVulns,
 		UnfilteredVulns: allVulns,

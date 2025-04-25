@@ -64,6 +64,13 @@ Add the `--remote-image` flag to scan a remote container image. Example:
 scalibr --result=result.textproto --remote-image=alpine@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5
 ```
 
+Or the `--image-tarball` flag to scan a locally saved image tarball like ones
+produced with `docker save my-image > my-image.tar`. Example:
+
+```
+scalibr --result=result.textproto --image-tarball=my-image.tar
+```
+
 ### SPDX generation
 
 OSV-SCALIBR supports generating the result of inventory extraction as an SPDX

@@ -144,8 +144,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	return inventory.Inventory{Packages: []*extractor.Package{
 		{
-			Name:    id,
-			Version: m.Version,
+			Name:     id,
+			Version:  m.Version,
+			PURLType: purl.TypeGeneric,
 			Metadata: &Metadata{
 				AuthorEmail:          m.Author.Email,
 				Description:          m.Description,
@@ -233,12 +234,9 @@ func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGeneric,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem is not defined.

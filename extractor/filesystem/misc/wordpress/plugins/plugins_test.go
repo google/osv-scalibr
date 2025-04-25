@@ -170,6 +170,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "Akismet Anti-spam: Spam Protection",
 					Version:   "5.3",
+					PURLType:  purl.TypeWordpress,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -219,6 +220,7 @@ func TestToPURL(t *testing.T) {
 	i := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeWordpress,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

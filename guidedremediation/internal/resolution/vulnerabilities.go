@@ -38,7 +38,7 @@ type Vulnerability struct {
 
 // FindVulnerabilities scans for vulnerabilities in a resolved graph.
 // One Vulnerability is created per unique ID, which may affect multiple graph nodes.
-func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m manifest.Manifest, graph *resolve.Graph) ([]Vulnerability, error) {
+func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, depGroups map[manifest.RequirementKey][]string, graph *resolve.Graph) ([]Vulnerability, error) {
 	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToPackage(graph))
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m
 	for id, vuln := range uniqueVulns {
 		vuln := Vulnerability{OSV: vuln, DevOnly: true}
 		vuln.Subgraphs = vulnSubgraphs[id]
-		vuln.DevOnly = !slices.ContainsFunc(vuln.Subgraphs, func(ds *DependencySubgraph) bool { return !ds.IsDevOnly(m.Groups()) })
+		vuln.DevOnly = !slices.ContainsFunc(vuln.Subgraphs, func(ds *DependencySubgraph) bool { return !ds.IsDevOnly(depGroups) })
 		vulns = append(vulns, vuln)
 	}
 

@@ -127,8 +127,10 @@ type Flags struct {
 	DirsToSkip                 []string
 	SkipDirRegex               string
 	SkipDirGlob                string
+	MaxFileSize                int
 	UseGitignore               bool
 	RemoteImage                string
+	ImageTarball               string
 	ImagePlatform              string
 	GoBinaryVersionFromContent bool
 	GovulncheckDBPath          string
@@ -160,6 +162,12 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if flags.ImagePlatform != "" && len(flags.RemoteImage) == 0 {
 		return errors.New("--image-platform cannot be used without --remote-image")
+	}
+	if flags.ImageTarball != "" && flags.RemoteImage != "" {
+		return errors.New("--image-tarball cannot be used with --remote-image")
+	}
+	if flags.ImageTarball != "" && flags.ImagePlatform != "" {
+		return errors.New("--image-tarball cannot be used with --image-platform")
 	}
 	if err := validateResultPath(flags.ResultFile); err != nil {
 		return fmt.Errorf("--result %w", err)
@@ -335,6 +343,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,
+		MaxFileSize:          f.MaxFileSize,
 		UseGitignore:         f.UseGitignore,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
@@ -485,6 +494,12 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 
 	if len(f.Root) != 0 {
 		return scalibrfs.RealFSScanRoots(f.Root), nil
+	}
+
+	// If ImageTarball is set, do not set the root.
+	// It is computed later on by ScanContainer(...) when the tarball is read.
+	if f.ImageTarball != "" {
+		return nil, nil
 	}
 
 	// Compute the default scan roots.

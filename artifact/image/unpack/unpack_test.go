@@ -42,11 +42,6 @@ type contentAndMode struct {
 	mode    fs.FileMode
 }
 
-type digestAndContent struct {
-	digest  string
-	content map[string]contentAndMode
-}
-
 func TestNewUnpacker(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -320,29 +315,146 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		cfg     *unpack.UnpackerConfig
-		dir     string
-		tarPath string
-		want    map[string]contentAndMode
-		wantErr error
-	}{{
-		name: "writing files outside base directory is skipped",
-		cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
-			"/usr/share/doc/a/copyright",
-			"/usr/share/doc/b/copyright",
-			"/usr/share/doc/c/copyright",
-		})),
-		dir:     t.TempDir(),
-		tarPath: filepath.Join("testdata", "escape.tar"),
-		// No files should be extracted since the tar attempts to write files from outside the unpack
-		// directory.
-		want: map[string]contentAndMode{},
-	}}
+		name       string
+		cfg        *unpack.UnpackerConfig
+		dir        string
+		tarEntries []tarEntry
+		want       map[string]contentAndMode
+		wantErr    error
+	}{
+		{
+			name: "os.Root fails when writing files outside base directory due to long symlink target",
+			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
+				"/usr/share/doc/a/copyright",
+				"/usr/share/doc/b/copyright",
+				"/usr/share/doc/c/copyright",
+			})),
+			dir: t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "/escape/poc.txt",
+						Mode: 0777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/trampoline/../../../../../../../../../../../tmp",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/poc.txt",
+						Mode:     0777,
+					},
+				},
+			},
+			// No files should be extracted since the tar attempts to write files from outside the unpack
+			// directory.
+			want: map[string]contentAndMode{},
+		},
+		{
+			name: "os.Root detects writing files outside base directory",
+			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
+				"/usr/share/doc/a/copyright",
+				"/usr/share/doc/b/copyright",
+				"/usr/share/doc/c/copyright",
+			})),
+			dir: t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "/escape/poc.txt",
+						Mode: 0777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/trampoline/trampoline/trampoline/trampoline/../../../../tmp",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/poc.txt",
+						Mode:     0777,
+					},
+				},
+			},
+			// No files should be extracted since the tar attempts to write files from outside the unpack
+			// directory.
+			want: map[string]contentAndMode{},
+		},
+	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			defer os.RemoveAll(tc.dir)
+			tarDir := t.TempDir()
+			tarPath := filepath.Join(tarDir, "tarball.tar")
+			if err := createTarball(t, tarPath, tc.tarEntries); err != nil {
+				t.Fatalf("Failed to create tarball: %v", err)
+			}
 
 			unpackDir := filepath.Join(tc.dir, "unpack")
 			if err := os.MkdirAll(unpackDir, 0777); err != nil {
@@ -352,9 +464,9 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			tmpFilesWant := filesInTmp(t, os.TempDir())
 
 			u := mustNewUnpacker(t, tc.cfg)
-			gotErr := u.UnpackSquashedFromTarball(unpackDir, tc.tarPath)
+			gotErr := u.UnpackSquashedFromTarball(unpackDir, tarPath)
 			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
-				t.Fatalf("Unpacker{%+v}.UnpackSquashedFromTarball(%q, %q) error: got %v, want %v\n", tc.cfg, unpackDir, tc.tarPath, gotErr, tc.wantErr)
+				t.Fatalf("Unpacker{%+v}.UnpackSquashedFromTarball(%q, %q) error: got %v, want %v\n", tc.cfg, unpackDir, tarPath, gotErr, tc.wantErr)
 			}
 
 			if tc.wantErr != nil {
@@ -363,7 +475,7 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 
 			got := mustReadDir(t, tc.dir)
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(contentAndMode{})); diff != "" {
-				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tc.tarPath, diff)
+				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tarPath, diff)
 			}
 
 			tmpFilesGot := filesInTmp(t, os.TempDir())
@@ -372,174 +484,6 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			less := func(a, b string) bool { return a < b }
 			if diff := cmp.Diff(tmpFilesWant, tmpFilesGot, cmpopts.SortSlices(less)); diff != "" {
 				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestUnpackLayers(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		// TODO(b/366163334): Make tests work on Mac and Windows.
-		return
-	}
-
-	tests := []struct {
-		name    string
-		cfg     *unpack.UnpackerConfig
-		dir     string
-		image   v1.Image
-		want    []digestAndContent
-		wantErr error
-	}{{
-		name:    "missing directory",
-		cfg:     unpack.DefaultUnpackerConfig(),
-		dir:     "",
-		image:   empty.Image,
-		wantErr: cmpopts.AnyError,
-	}, {
-		name:    "nil image",
-		cfg:     unpack.DefaultUnpackerConfig(),
-		dir:     t.TempDir(),
-		image:   nil,
-		wantErr: cmpopts.AnyError,
-	}, {
-		name:  "empty image",
-		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   t.TempDir(),
-		image: empty.Image,
-		want:  []digestAndContent{{digest: "SQUASHED", content: map[string]contentAndMode{}}},
-	}, {
-		name:  "image with restricted file permissions",
-		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   t.TempDir(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "permissions.tar")),
-		want: []digestAndContent{{
-			digest: "SQUASHED",
-			content: map[string]contentAndMode{
-				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
-			},
-		}, {
-			digest: "sha256:854d994f7942ac6711ff410417b58270562d322a251be74df7829c15ec31e369",
-			content: map[string]contentAndMode{
-				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
-			},
-		}},
-	}, {
-		name:  "basic",
-		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   t.TempDir(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "basic.tar")),
-		want: []digestAndContent{{
-			digest: "SQUASHED",
-			content: map[string]contentAndMode{
-				"sample.txt":        {content: "sample text file\n", mode: fs.FileMode(0644)},
-				"larger-sample.txt": {content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
-			},
-		}, {
-			digest: "sha256:abfb541589db284238458b23f1607a184905159aa161c7325b725b4e2eaa1c2c",
-			content: map[string]contentAndMode{
-				"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0644)},
-			},
-		}, {
-			digest: "sha256:c2df653a81c5c96005972035fa076987c9e450e54a03de57aabdadc00e4939c4",
-			content: map[string]contentAndMode{
-				"larger-sample.txt": {content: strings.Repeat("sample text file\n", 400), mode: fs.FileMode(0644)},
-			},
-		}},
-	}, {
-		name:  "symlink",
-		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   t.TempDir(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
-		want: []digestAndContent{{
-			digest: "SQUASHED",
-			content: map[string]contentAndMode{
-				filepath.FromSlash("dir1/absolute-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/chain-symlink.txt"):                     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-dot-symlink.txt"):              {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-symlink.txt"):                  {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/sample.txt"):                            {content: "sample text\n", mode: fs.FileMode(0644)},
-				"dir2/dir3/absolute-chain-symlink.txt":                           {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-symlink-inside-root.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			},
-		}, {
-			digest: "sha256:db9f8289eaba906083fe31e9a2ba276097a6ba1d2e9482ddf06398644393ac12",
-			content: map[string]contentAndMode{
-				filepath.FromSlash("dir1/absolute-symlink.txt"):     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/chain-symlink.txt"):        {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-dot-symlink.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/relative-symlink.txt"):     {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir1/sample.txt"):               {content: "sample text\n", mode: fs.FileMode(0644)},
-			},
-		}, {
-			digest: "sha256:1c7d64a26513bdb1e2d899938b14150e4ed3bc74afc23e9cb23442a282b7af4c",
-			content: map[string]contentAndMode{
-				filepath.FromSlash("dir2/dir3/absolute-chain-symlink.txt"):       {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/absolute-symlink-inside-root.txt"): {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-				filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
-			},
-		}},
-	}, {
-		name:  "dangling symlinks are removed",
-		cfg:   unpack.DefaultUnpackerConfig(),
-		dir:   t.TempDir(),
-		image: mustImageFromPath(t, filepath.Join("testdata", "dangling-symlinks.tar")),
-		want: []digestAndContent{{
-			digest:  "SQUASHED",
-			content: map[string]contentAndMode{},
-		}, {
-			digest:  "sha256:f81cbf79992d9653b341a956ebf6b1e55897ab30b9a192a3b2dfca05d656b00c",
-			content: map[string]contentAndMode{},
-		}, {
-			digest:  "sha256:4328c0fa137aec815fe39f3051df99a16e2e9ce622a7d22462e2fe04fbf720e8",
-			content: map[string]contentAndMode{},
-		}},
-	},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			u := mustNewUnpacker(t, test.cfg)
-
-			defer os.RemoveAll(test.dir)
-
-			layerDigests, err := u.UnpackLayers(test.dir, test.image)
-			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
-				t.Fatalf("Unpacker{%+v}.UnpackLayers(%q, %q) error: got %v, want %v\n", test.cfg, test.dir, test.image, err, test.wantErr)
-			}
-
-			var wantDigests []string
-			if test.want != nil {
-				wantDigests = []string{}
-				for _, dc := range test.want {
-					if dc.digest == "SQUASHED" {
-						continue
-					}
-					wantDigests = append(wantDigests, dc.digest)
-				}
-			}
-
-			if diff := cmp.Diff(wantDigests, layerDigests); diff != "" {
-				t.Fatalf("Unpacker{%+v}.UnpackLayers(%q, %q) returned unexpected layer digest diff (-want +got):\n%s", test.cfg, test.dir, test.image, diff)
-			}
-
-			if test.wantErr != nil {
-				return
-			}
-
-			opts := []cmp.Option{
-				cmpopts.SortSlices(func(a, b digestAndContent) bool {
-					return a.digest < b.digest
-				}),
-				cmp.AllowUnexported(contentAndMode{}),
-				cmp.AllowUnexported(digestAndContent{}),
-			}
-			got := mustReadSubDirs(t, test.dir)
-			if diff := cmp.Diff(test.want, got, opts...); diff != "" {
-				t.Fatalf("Unpacker{%+v}.UnpackLayers(%q, %q) returned unexpected layer content diff (-want +got):\n%s", test.cfg, test.dir, test.image, diff)
 			}
 		})
 	}
@@ -621,30 +565,6 @@ func mustReadDir(t *testing.T, dir string) map[string]contentAndMode {
 	return pathToContent
 }
 
-// mustReadSubDirs reads all sub-directories of the given directory and returns a slice of digest
-// (sub directory name) and content for each directory.
-func mustReadSubDirs(t *testing.T, dir string) []digestAndContent {
-	t.Helper()
-	infos, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatalf("os.ReadDir(%q) failed: %v", dir, err)
-	}
-
-	dc := []digestAndContent{}
-	for _, info := range infos {
-		if !info.IsDir() {
-			t.Fatalf("os.ReadDir(%q) failed: %v", dir, err)
-		}
-		content := mustReadDir(t, filepath.Join(dir, info.Name()))
-		dc = append(dc, digestAndContent{
-			strings.ReplaceAll(info.Name(), "-", ":"),
-			content,
-		})
-	}
-
-	return dc
-}
-
 // mustNewSquashedImage returns a single layer
 // This image may not contain parent directories because it is constructed from an intermediate tarball.
 // This is useful for testing the parent directory creation logic of unpack.
@@ -703,7 +623,7 @@ func mustImageFromPath(t *testing.T, path string) v1.Image {
 func filesInTmp(t *testing.T, tmpDir string) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(tmpDir)
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", tmpDir, err)
@@ -713,4 +633,38 @@ func filesInTmp(t *testing.T, tmpDir string) []string {
 		filenames = append(filenames, f.Name())
 	}
 	return filenames
+}
+
+// tarEntry represents a single entry in a tarball. It contains the header and data for the entry.
+// If the data is nil, the entry will be written without any content.
+type tarEntry struct {
+	Header *tar.Header
+	Data   io.Reader
+}
+
+// createTarball creates a tarball at tarballPath with the given tar entries. If the tar entry's
+// data is nil, the entry will be written without any content.
+func createTarball(t *testing.T, tarballPath string, entries []tarEntry) error {
+	t.Helper()
+
+	file, err := os.Create(tarballPath)
+	if err != nil {
+		return fmt.Errorf("Failed to create tarball: %w", err)
+	}
+	defer file.Close()
+
+	tarWriter := tar.NewWriter(file)
+	defer tarWriter.Close()
+
+	for _, entry := range entries {
+		if err := tarWriter.WriteHeader(entry.Header); err != nil {
+			return fmt.Errorf("writing header for %s: %w", entry.Header.Name, err)
+		}
+		if entry.Data != nil {
+			if _, err := io.Copy(tarWriter, entry.Data); err != nil {
+				return fmt.Errorf("writing content for %s: %w", entry.Header.Name, err)
+			}
+		}
+	}
+	return nil
 }

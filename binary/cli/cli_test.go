@@ -194,6 +194,15 @@ func TestValidateFlags(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			desc: "Remoe Image with Image Tarball",
+			flags: &cli.Flags{
+				RemoteImage:  "docker",
+				ImageTarball: "image.tar",
+				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := cli.ValidateFlags(tc.flags)
@@ -236,6 +245,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"windows": {"C:\\myroot"},
 			},
 		},
+		{
+			desc: "Scan root is null if image tarball is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageTarball: "image.tar"},
+				"linux":   {ImageTarball: "image.tar"},
+				"windows": {ImageTarball: "image.tar"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
@@ -252,7 +274,7 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", flags, err)
 			}
-			gotScanRoots := []string{}
+			var gotScanRoots []string
 			for _, r := range cfg.ScanRoots {
 				gotScanRoots = append(gotScanRoots, r.Path)
 			}
@@ -513,6 +535,39 @@ func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
 			}
 			if gobinaryExt.VersionFromContent != tc.wantVersionFromContent {
 				t.Errorf("%+v.GetScanConfig() want go binary extractor with version from content %v got %v", tc.flags, tc.wantVersionFromContent, gobinaryExt.VersionFromContent)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_MaxFileSize(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantMaxFileSize int
+	}{
+		{
+			desc: "max file size unset",
+			flags: &cli.Flags{
+				MaxFileSize: 0,
+			},
+			wantMaxFileSize: 0,
+		},
+		{
+			desc: "max file size set",
+			flags: &cli.Flags{
+				MaxFileSize: 100,
+			},
+			wantMaxFileSize: 100,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if cfg.MaxFileSize != tc.wantMaxFileSize {
+				t.Errorf("%+v.GetScanConfig() got max file size %d, want %d", tc.flags, cfg.MaxFileSize, tc.wantMaxFileSize)
 			}
 		})
 	}

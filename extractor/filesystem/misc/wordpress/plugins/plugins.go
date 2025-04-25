@@ -140,6 +140,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
 		Name:      pkg.Name,
 		Version:   pkg.Version,
+		PURLType:  purl.TypeWordpress,
 		Locations: []string{input.Path},
 	}}}, nil
 }
@@ -181,12 +182,9 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeWordpress,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

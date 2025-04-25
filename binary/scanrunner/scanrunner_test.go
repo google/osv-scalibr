@@ -15,13 +15,21 @@
 package scanrunner_test
 
 import (
+	"bytes"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"testing"
 
+	"archive/tar"
+
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/binary/scanrunner"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -75,11 +83,72 @@ func createFailingDetectorTestFiles(t *testing.T) string {
 	return dir
 }
 
+func createImageTarball(t *testing.T) string {
+	t.Helper()
+
+	var buf bytes.Buffer
+	w := tar.NewWriter(&buf)
+	requirements := `
+nltk==3.2.2
+tabulate==0.7.7
+	`
+	files := []struct {
+		name, contents string
+	}{
+		{"requirements.txt", requirements},
+	}
+	for _, file := range files {
+		hdr := &tar.Header{
+			Name:     file.name,
+			Mode:     0600,
+			Size:     int64(len(file.contents)),
+			Typeflag: tar.TypeReg,
+		}
+		if err := w.WriteHeader(hdr); err != nil {
+			t.Fatalf("couldn't write header for %s: %v", file.name, err)
+		}
+		if _, err := w.Write([]byte(file.contents)); err != nil {
+			t.Fatalf("couldn't write %s: %v", file.name, err)
+		}
+	}
+	w.Close()
+	layer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
+	})
+	if err != nil {
+		t.Fatalf("unable to create layer: %v", err)
+	}
+	image, err := mutate.AppendLayers(empty.Image, layer)
+	if err != nil {
+		t.Fatalf("unable to create image: %v", err)
+	}
+
+	dir := t.TempDir()
+	tarPath := filepath.Join(dir, "image.tar")
+	if err := tarball.WriteToFile(tarPath, nil, image); err != nil {
+		t.Fatalf("unable to write tarball: %v", err)
+	}
+
+	return dir
+}
+
+func createBadImageTarball(t *testing.T) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	tarPath := filepath.Join(dir, "image.tar")
+	if err := os.WriteFile(tarPath, []byte("bad tarball"), 0600); err != nil {
+		t.Fatalf("unable to write tarball: %v", err)
+	}
+	return dir
+}
+
 func TestRunScan(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupFunc         func(t *testing.T) string
 		flags             *cli.Flags
+		wantExit          int
 		wantPluginStatus  []spb.ScanStatus_ScanStatusEnum
 		wantPackagesCount int
 		wantFindingCount  int
@@ -104,6 +173,29 @@ func TestRunScan(t *testing.T) {
 			wantFindingCount:  0,
 		},
 		{
+			desc:      "Successful image extractor run",
+			setupFunc: createImageTarball,
+			flags: &cli.Flags{
+				ImageTarball:    "image.tar",
+				ExtractorsToRun: []string{"python/requirements"},
+			},
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 2,
+			wantFindingCount:  0,
+		},
+		{
+			desc:      "Failure to read image tarball",
+			setupFunc: createBadImageTarball,
+			flags: &cli.Flags{
+				ImageTarball:    "image.tar",
+				ExtractorsToRun: []string{"python/requirements"},
+			},
+			wantExit:          1,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
+			wantPackagesCount: 0,
+			wantFindingCount:  0,
+		},
+		{
 			desc:              "Unsuccessful plugin run",
 			setupFunc:         createFailingDetectorTestFiles,
 			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
@@ -123,11 +215,25 @@ func TestRunScan(t *testing.T) {
 
 			dir := tc.setupFunc(t)
 			resultFile := filepath.Join(dir, "result.textproto")
-			tc.flags.Root = dir
 			tc.flags.ResultFile = resultFile
 
-			if gotExit := scanrunner.RunScan(tc.flags); gotExit != 0 {
-				t.Errorf("result.RunScan(%v) returned unexpected exit code, want 0 got %d", tc.flags, gotExit)
+			if tc.flags.ImageTarball != "" {
+				tc.flags.ImageTarball = filepath.Join(dir, tc.flags.ImageTarball)
+			} else {
+				tc.flags.Root = dir
+			}
+
+			gotExit := scanrunner.RunScan(tc.flags)
+			if gotExit != tc.wantExit {
+				t.Fatalf("result.RunScan(%v) = %d, want %d", tc.flags, gotExit, tc.wantExit)
+			}
+			_, err := os.Stat(resultFile)
+			if gotExit == 0 && errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Scan returned successful exit code 0 but no result file was created")
+			}
+			if gotExit != 0 && errors.Is(err, os.ErrNotExist) {
+				// It is expected that no results are created if the scan fails. Nothing else to check.
+				return
 			}
 
 			output, err := os.ReadFile(resultFile)

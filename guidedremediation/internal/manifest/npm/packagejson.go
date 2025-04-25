@@ -149,7 +149,7 @@ func (r readWriter) System() resolve.System {
 
 // SupportedStrategies returns the remediation strategies supported for this manifest.
 func (r readWriter) SupportedStrategies() []strategy.Strategy {
-	return []strategy.Strategy{}
+	return []strategy.Strategy{strategy.StrategyRelax}
 }
 
 // PackageJSON is the structure for the contents of a package.json file.
