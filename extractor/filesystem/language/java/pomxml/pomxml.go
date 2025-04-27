@@ -142,6 +142,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		details[dep.Name()] = pkgDetails
 	}
 
+	if len(details) == 0 {
+		return inventory.Inventory{Packages: []*extractor.Package{}}, nil
+	}
+
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
