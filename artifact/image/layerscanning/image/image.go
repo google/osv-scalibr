@@ -121,7 +121,7 @@ func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
 	if len(img.chainLayers) == 0 {
 		return nil, ErrNoLayersFound
 	}
-	scalibrChainLayers := make([]scalibrImage.ChainLayer, 0, len(img.chainLayers))
+	var scalibrChainLayers []scalibrImage.ChainLayer
 	for _, chainLayer := range img.chainLayers {
 		scalibrChainLayers = append(scalibrChainLayers, chainLayer)
 	}
@@ -208,17 +208,11 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// afterward.
 	defer root.Close()
 
-	baseImageIndex, err := findBaseImageIndex(history)
-	if err != nil {
-		baseImageIndex = -1
-	}
-
 	outputImage := &Image{
-		chainLayers:    chainLayers,
-		config:         config,
-		root:           root,
-		ExtractDir:     imageExtractionPath,
-		BaseImageIndex: baseImageIndex,
+		chainLayers: chainLayers,
+		config:      config,
+		root:        root,
+		ExtractDir:  imageExtractionPath,
 	}
 
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
@@ -675,8 +669,9 @@ func fillChainLayersWithFileNode(chainLayersToFill []*chainLayer, newNode *fileN
 		}
 
 		// Add the file to the chain layer. If there is an error, then we fail open.
-		// TODO: b/379154069 - Add logging for fail open errors.
-		_ = chainLayer.fileNodeTree.Insert(virtualPath, newNode)
+		if err := chainLayer.fileNodeTree.Insert(virtualPath, newNode); err != nil {
+			log.Warnf("failed to insert file node %s: %v", virtualPath, err)
+		}
 	}
 }
 
