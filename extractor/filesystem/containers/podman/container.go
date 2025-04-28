@@ -19,38 +19,38 @@ import (
 	"time"
 )
 
-// Container struct contains the podman container metadata
-type Container struct {
-	config *ContainerConfig
-	state  *ContainerState
+// container struct contains the podman container metadata
+type container struct {
+	config *containerConfig
+	state  *containerState
 }
 
-// ContainerConfig is a subset of the Podman's actual ContainerConfig
-type ContainerConfig struct {
+// containerConfig is a subset of the Podman's actual containerConfig
+type containerConfig struct {
 	ID           string `json:"id"`
 	Pod          string `json:"pod,omitempty"`
 	Namespace    string `json:"namespace,omitempty"`
 	RawImageName string `json:"RawImageName,omitempty"`
 
 	// embedded sub-configs
-	ContainerRootFSConfig
-	ContainerNetworkConfig
+	containerRootFSConfig
+	containerNetworkConfig
 }
 
-// ContainerRootFSConfig contains the info about podman's Rootfs
-type ContainerRootFSConfig struct {
+// containerRootFSConfig contains the info about podman's Rootfs
+type containerRootFSConfig struct {
 	RootfsImageID string `json:"rootfsImageID,omitempty"`
 }
 
-// ContainerNetworkConfig contains info about podman's ContainerNetworkConfig
-type ContainerNetworkConfig struct {
+// containerNetworkConfig contains info about podman's containerNetworkConfig
+type containerNetworkConfig struct {
 	StaticIP     net.IP              `json:"staticIP,omitempty"`
 	ExposedPorts map[uint16][]string `json:"exposedPorts,omitempty"`
 }
 
-// ContainerState contains info about podman's containers state
-type ContainerState struct {
-	State        ContainerStatus `json:"state"`
+// containerState contains info about podman's containers state
+type containerState struct {
+	State        containerStatus `json:"state"`
 	StartedTime  time.Time       `json:"startedTime,omitempty"`
 	FinishedTime time.Time       `json:"finishedTime,omitempty"`
 	ExitCode     int32           `json:"exitCode,omitempty"`
@@ -58,65 +58,63 @@ type ContainerState struct {
 	PID          int             `json:"pid,omitempty"`
 }
 
-// ContainerStatus represents the current state of a container
-type ContainerStatus int
+// containerStatus represents the current state of a container
+type containerStatus int
 
 const (
-	// ContainerStateUnknown indicates that the container is in an error
+	// containerStateUnknown indicates that the container is in an error
 	// state where information about it cannot be retrieved
-	ContainerStateUnknown ContainerStatus = iota
-	// ContainerStateConfigured indicates that the container has had its
+	containerStateUnknown containerStatus = iota
+	// containerStateConfigured indicates that the container has had its
 	// storage configured but it has not been created in the OCI runtime
-	ContainerStateConfigured ContainerStatus = iota
-	// ContainerStateCreated indicates the container has been created in
+	containerStateConfigured containerStatus = iota
+	// containerStateCreated indicates the container has been created in
 	// the OCI runtime but not started
-	ContainerStateCreated ContainerStatus = iota
-	// ContainerStateRunning indicates the container is currently executing
-	ContainerStateRunning ContainerStatus = iota
-	// ContainerStateStopped indicates that the container was running but has
+	containerStateCreated containerStatus = iota
+	// containerStateRunning indicates the container is currently executing
+	containerStateRunning containerStatus = iota
+	// containerStateStopped indicates that the container was running but has
 	// exited
-	ContainerStateStopped ContainerStatus = iota
-	// ContainerStatePaused indicates that the container has been paused
-	ContainerStatePaused ContainerStatus = iota
-	// ContainerStateExited indicates the container has stopped and been
+	containerStateStopped containerStatus = iota
+	// containerStatePaused indicates that the container has been paused
+	containerStatePaused containerStatus = iota
+	// containerStateExited indicates the container has stopped and been
 	// cleaned up
-	ContainerStateExited ContainerStatus = iota
-	// ContainerStateRemoving indicates the container is in the process of
+	containerStateExited containerStatus = iota
+	// containerStateRemoving indicates the container is in the process of
 	// being removed.
-	ContainerStateRemoving ContainerStatus = iota
-	// ContainerStateStopping indicates the container is in the process of
+	containerStateRemoving containerStatus = iota
+	// containerStateStopping indicates the container is in the process of
 	// being stopped.
-	ContainerStateStopping ContainerStatus = iota
+	containerStateStopping containerStatus = iota
 )
 
-// ContainerStatus returns a string representation for users of a container
-// state. All results should match Docker's versions (from `docker ps`) as
-// closely as possible, given the different set of states we support.
-func (t ContainerStatus) String() string {
+// String returns a string representation for users of a container state.
+func (t containerStatus) String() string {
 	switch t {
-	case ContainerStateUnknown:
+	case containerStateUnknown:
 		return "unknown"
-	case ContainerStateConfigured:
+	case containerStateConfigured:
 		// The naming here is confusing, but it's necessary for Docker
 		// compatibility - their Created state is our Configured state.
 		return "created"
-	case ContainerStateCreated:
+	case containerStateCreated:
 		// Docker does not have an equivalent to this state, so give it
 		// a clear name. Most of the time this is a purely transitory
 		// state between Configured and Running so we don't expect to
 		// see it much anyways.
 		return "initialized"
-	case ContainerStateRunning:
+	case containerStateRunning:
 		return "running"
-	case ContainerStateStopped:
+	case containerStateStopped:
 		return "stopped"
-	case ContainerStatePaused:
+	case containerStatePaused:
 		return "paused"
-	case ContainerStateExited:
+	case containerStateExited:
 		return "exited"
-	case ContainerStateRemoving:
+	case containerStateRemoving:
 		return "removing"
-	case ContainerStateStopping:
+	case containerStateStopping:
 		return "stopping"
 	}
 	return "bad state"

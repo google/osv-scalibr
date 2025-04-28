@@ -30,7 +30,7 @@ import (
 // state interface must be implemented by each repository returning podman containers info
 type state interface {
 	Close() error
-	AllContainers() ([]*Container, error)
+	AllContainers() ([]*container, error)
 }
 
 var _ state = &boltState{}
@@ -48,8 +48,8 @@ func newBoltState(path string) (state, error) {
 }
 
 // AllContainers return all the pods
-func (s *boltState) AllContainers() ([]*Container, error) {
-	ctrs := []*Container{}
+func (s *boltState) AllContainers() ([]*container, error) {
+	ctrs := []*container{}
 
 	err := s.conn.View(func(tx *bolt.Tx) error {
 		allCtrsBucket := tx.Bucket([]byte("all-ctrs"))
@@ -68,9 +68,9 @@ func (s *boltState) AllContainers() ([]*Container, error) {
 				return fmt.Errorf("state is inconsistent - container ID %s in all containers, but container not found", string(id))
 			}
 
-			ctr := new(Container)
-			ctr.config = new(ContainerConfig)
-			ctr.state = new(ContainerState)
+			ctr := new(container)
+			ctr.config = new(containerConfig)
+			ctr.state = new(containerState)
 
 			configBytes := ctrBucket.Get([]byte("config"))
 			if err := json.Unmarshal(configBytes, ctr.config); err != nil {
@@ -113,23 +113,23 @@ func newSqliteState(path string) (state, error) {
 }
 
 // AllContainers return all the pods
-func (s *sqliteState) AllContainers() ([]*Container, error) {
+func (s *sqliteState) AllContainers() ([]*container, error) {
 	rows, err := s.conn.Query("SELECT ContainerConfig.JSON, ContainerState.JSON AS StateJSON FROM ContainerConfig INNER JOIN ContainerState ON ContainerConfig.ID = ContainerState.ID;")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var ctrs []*Container
+	var ctrs []*container
 	for rows.Next() {
 		var configJSON, stateJSON string
 		if err := rows.Scan(&configJSON, &stateJSON); err != nil {
 			return nil, fmt.Errorf("scanning container from database: %w", err)
 		}
 
-		ctr := new(Container)
-		ctr.config = new(ContainerConfig)
-		ctr.state = new(ContainerState)
+		ctr := new(container)
+		ctr.config = new(containerConfig)
+		ctr.state = new(containerState)
 
 		if err := json.Unmarshal([]byte(configJSON), ctr.config); err != nil {
 			return nil, fmt.Errorf("unmarshalling container config: %w", err)
