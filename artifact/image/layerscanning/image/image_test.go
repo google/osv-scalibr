@@ -1175,6 +1175,138 @@ func TestInitializeChainLayers(t *testing.T) {
 	}
 }
 
+func TestTopFS(t *testing.T) {
+	tests := []struct {
+		name            string
+		image           *Image
+		wantFilesFromFS []string
+		wantErr         bool
+	}{
+		{
+			name: "no chain layers",
+			image: &Image{
+				chainLayers: []*chainLayer{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "single chain layer",
+			image: &Image{
+				chainLayers: []*chainLayer{
+					{
+						fileNodeTree: func() *pathtree.Node[fileNode] {
+							root := pathtree.NewNode[fileNode]()
+							_ = root.Insert("/", &fileNode{
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &fileNode{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							diffID:       "sha256:123",
+							isEmpty:      false,
+						},
+					},
+				},
+			},
+			wantFilesFromFS: []string{"/foo.txt"},
+		},
+		{
+			name: "multiple chain layers",
+			image: &Image{
+				chainLayers: []*chainLayer{
+					{
+						fileNodeTree: func() *pathtree.Node[fileNode] {
+							root := pathtree.NewNode[fileNode]()
+							_ = root.Insert("/", &fileNode{
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &fileNode{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							diffID:       "sha256:123",
+							isEmpty:      false,
+						},
+					},
+					{
+						fileNodeTree: func() *pathtree.Node[fileNode] {
+							root := pathtree.NewNode[fileNode]()
+							_ = root.Insert("/", &fileNode{
+								extractDir:  "",
+								layerDir:    "",
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &fileNode{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							_ = root.Insert("/bar.txt", &fileNode{
+								virtualPath: "/bar.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							diffID:       "sha256:123",
+							isEmpty:      false,
+						},
+					},
+				},
+			},
+			wantFilesFromFS: []string{"/foo.txt", "/bar.txt"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotFS, err := tc.image.TopFS()
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("TopFS() returned nil error, but want non-nil error")
+				}
+				return
+			}
+
+			var gotPaths []string
+			err = fs.WalkDir(gotFS, "/", func(path string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return err
+				}
+
+				gotPaths = append(gotPaths, path)
+				return nil
+			})
+
+			if err != nil {
+				t.Fatalf("WalkDir() returned error: %v", err)
+			}
+
+			if diff := cmp.Diff(tc.wantFilesFromFS, gotPaths, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+				t.Errorf("TopFS() returned incorrect files: got %v, want %v", gotPaths, tc.wantFilesFromFS)
+			}
+		})
+	}
+}
+
 // tarEntry represents a single entry in a tarball. It contains the header and data for the entry.
 // If the data is nil, the entry will be written without any content.
 type tarEntry struct {
