@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 // Package annotator add Annotation to inventories
+// TODO(b/400910349): Migrate into a separate plugin type
 package annotator
 
 import (

@@ -22,22 +22,29 @@ import (
 
 type matcher func(string) bool
 
+var (
+	linuxTrashPattern = regexp.MustCompile(`home/[^/]+/\.local/share/Trash/`)
+	linuxCachePattern = regexp.MustCompile(`home/[^/]+/\.cache/`)
+	macosCachePattern = regexp.MustCompile(`Users/[^/]+/Library/Caches/`)
+	windowsTmpPattern = regexp.MustCompile(`Users/[^/]+/AppData/Local/Temp/`)
+)
+
 // patterns to match cache directories
 var cacheDirMatchers = []matcher{
 	// Linux/Unix-like systems
-	func(s string) bool { return strings.HasPrefix(s, "/tmp") },
-	func(s string) bool { return strings.HasPrefix(s, "/var/cache") },
-	regexp.MustCompile(`^/home/[^/]+/\.local/share/Trash`).MatchString,
-	regexp.MustCompile(`^/home/[^/]+/\.cache`).MatchString,
+	func(s string) bool { return strings.Contains(s, "tmp/") },
+	func(s string) bool { return strings.Contains(s, "var/cache/") },
+	linuxTrashPattern.MatchString,
+	linuxCachePattern.MatchString,
 
 	// macOS
-	regexp.MustCompile(`^/Users/[^/]+/Library/Caches`).MatchString,
-	func(s string) bool { return strings.HasPrefix(s, "/private/tmp") },
-	func(s string) bool { return strings.HasPrefix(s, "/System/Volumes/Data/var/tmp") },
+	macosCachePattern.MatchString,
+	func(s string) bool { return strings.Contains(s, "private/tmp/") },
+	func(s string) bool { return strings.Contains(s, "System/Volumes/Data/var/tmp/") },
 
 	// Windows
-	regexp.MustCompile(`^C\:/Users/[^/]+/AppData/Local/Temp`).MatchString,
-	func(s string) bool { return strings.HasPrefix(s, "C:/Windows/Temp") },
+	windowsTmpPattern.MatchString,
+	func(s string) bool { return strings.Contains(s, "Windows/Temp/") },
 }
 
 // IsInsideCacheDir checks if the given path is inside a cache directory.

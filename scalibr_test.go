@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -405,5 +406,40 @@ func TestErrorOnFSErrors(t *testing.T) {
 				t.Errorf("Scan() status: %v, want %v", got.Status.Status, tc.wantstatus)
 			}
 		})
+	}
+}
+
+func TestAnnotator(t *testing.T) {
+	tmp := t.TempDir()
+	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
+	log.Warn(filepath.Join(tmp, "file.txt"))
+
+	cacheDir := filepath.Join(tmp, "tmp")
+	_ = os.Mkdir(cacheDir, fs.ModePerm)
+	_ = os.WriteFile(filepath.Join(cacheDir, "file.txt"), []byte("Content"), 0644)
+
+	pkgName := "cached"
+	fakeExtractor := fe.New(
+		"python/wheelegg", 1, []string{"tmp/file.txt"},
+		map[string]fe.NamesErr{"tmp/file.txt": {Names: []string{pkgName}, Err: nil}},
+	)
+
+	cfg := &scalibr.ScanConfig{
+		FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+		ScanRoots:            tmpRoot,
+	}
+
+	wantPkgs := []*extractor.Package{{
+		Name:        pkgName,
+		Locations:   []string{"tmp/file.txt"},
+		Extractor:   fakeExtractor,
+		Annotations: []extractor.Annotation{extractor.InsideCacheDir},
+	}}
+
+	got := scalibr.New().Scan(context.Background(), cfg)
+
+	// We can't mock the time from here so we skip it in the comparison.
+	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
+		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)
 	}
 }
