@@ -165,8 +165,8 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 
 	var history []v1.History
-	configFile, err := v1Image.ConfigFile()
 
+	configFile, err := v1Image.ConfigFile()
 	// If the config file is not found, then layers will not have history information.
 	if err != nil {
 		log.Warnf("failed to load config file: %v", err)
@@ -271,10 +271,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		}
 	}
 
-	// Remove any unnecessary file nodes from the chain layers based on the configured requirer.
-	bytesRemoved := removeUnnecessaryFileNodes(chainLayers, config.Requirer, config.MaxSymlinkDepth)
-	outputImage.size -= bytesRemoved
-
 	return outputImage, nil
 }
 
@@ -284,90 +280,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 func layerDirectory(layerIndex int) string {
 	return fmt.Sprintf("layer-%d", layerIndex)
-}
-
-// isNodeRequired checks if a file node is required by the file requirer.
-func isNodeRequired(node *fileNode, requirer require.FileRequirer) bool {
-	fileInfo, err := node.Stat()
-	if err != nil {
-		return false
-	}
-
-	virtualPath := node.virtualPath
-	normalizedPath := strings.TrimPrefix(virtualPath, "/")
-
-	var required bool
-	for _, p := range []string{virtualPath, normalizedPath} {
-		if requirer.FileRequired(p, fileInfo) {
-			required = true
-			break
-		}
-	}
-	return required
-}
-
-// removeUnnecessaryFileNodes removes any file nodes from the chain layers that are not required by
-// the requirer. Symlink nodes are accounted for by preserving target nodes if the symlink node is
-// required.
-func removeUnnecessaryFileNodes(chainLayers []*chainLayer, requirer require.FileRequirer, symlinkDepth int) int64 {
-	// If there are no chain layers, then there are no nodes to remove.
-	if len(chainLayers) == 0 {
-		return 0
-	}
-
-	// Prune only the final chain layer since SCALIBR scans the last layer.
-	finalChainLayer := chainLayers[len(chainLayers)-1]
-	filesRequired := map[string]bool{}
-	_ = finalChainLayer.fileNodeTree.Walk(func(virtualPath string, node *fileNode) error {
-		if filesRequired[virtualPath] {
-			return nil
-		}
-
-		// If the node represents a directory, then do not mark it as unnecessary.
-		if node.IsDir() {
-			return nil
-		}
-
-		// If the node is not required, then mark it as unnecessary and move onto next node.
-		if required := isNodeRequired(node, requirer); !required {
-			filesRequired[virtualPath] = false
-			return nil
-		}
-
-		// If the file is a symlink and is required, then mark all target paths as required, even if
-		// there is a chain of symlinks.
-		if node.targetPath != "" {
-			linkedNode := node
-			for range symlinkDepth {
-				linkedNode = finalChainLayer.fileNodeTree.Get(linkedNode.targetPath)
-				if linkedNode == nil {
-					break
-				}
-
-				filesRequired[linkedNode.virtualPath] = true
-
-				// If the target path is empty, then there are no more symlinks to follow.
-				if linkedNode.targetPath == "" {
-					break
-				}
-			}
-		}
-		return nil
-	})
-
-	var bytesRemoved int64
-	// Remove the files that are not required from the chain layer.
-	for path, isRequired := range filesRequired {
-		if !isRequired {
-			node := finalChainLayer.fileNodeTree.Remove(path)
-			if node == nil {
-				continue
-			}
-			_ = os.Remove(node.RealFilePath())
-			bytesRemoved += node.Size()
-		}
-	}
-	return bytesRemoved
 }
 
 // addRootDirectoryToChainLayers adds the root ("\"") directory to each chain layer.
@@ -561,12 +473,6 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 			virtualPath = "/" + cleanedFilePath
 		} else {
 			virtualPath = "/" + path.Join(dirname, basename)
-		}
-
-		// If the file already exists in the current chain layer, then skip it. This is done because
-		// the tar file could be read multiple times to handle required symlinks.
-		if currentChainLayer.fileNodeTree.Get(virtualPath) != nil {
-			continue
 		}
 
 		var newNode *fileNode
