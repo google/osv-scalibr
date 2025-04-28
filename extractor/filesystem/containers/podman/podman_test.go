@@ -73,7 +73,7 @@ func TestExtractor_Extract(t *testing.T) {
 		{
 			// The SQLite driver doesn't fail when opening an improperly formatted file,
 			// so the error appears during the container listing phase.
-			Name: "invalid sqlite db",
+			Name: "invalid_sqlite_db",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/notdb.sql",
 			},
@@ -91,7 +91,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/db.sql",
 			},
-			Config: podman.Config{All: true},
+			Config: podman.Config{IncludeStopped: true},
 			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",
@@ -157,7 +157,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/bolt_state.db",
 			},
-			Config: podman.Config{All: true},
+			Config: podman.Config{IncludeStopped: true},
 			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",

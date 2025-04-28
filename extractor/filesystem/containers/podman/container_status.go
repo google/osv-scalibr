@@ -15,7 +15,6 @@
 package podman
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -81,31 +80,6 @@ func (t ContainerStatus) String() string {
 		return "stopping"
 	}
 	return "bad state"
-}
-
-// StringToContainerStatus converts a string representation of a container's
-// status into an actual container status type
-func StringToContainerStatus(status string) (ContainerStatus, error) {
-	switch status {
-	case ContainerStateUnknown.String():
-		return ContainerStateUnknown, nil
-	case ContainerStateConfigured.String():
-		return ContainerStateConfigured, nil
-	case ContainerStateCreated.String():
-		return ContainerStateCreated, nil
-	case ContainerStateRunning.String():
-		return ContainerStateRunning, nil
-	case ContainerStateStopped.String():
-		return ContainerStateStopped, nil
-	case ContainerStatePaused.String():
-		return ContainerStatePaused, nil
-	case ContainerStateExited.String():
-		return ContainerStateExited, nil
-	case ContainerStateRemoving.String():
-		return ContainerStateRemoving, nil
-	default:
-		return ContainerStateUnknown, fmt.Errorf("unknown container state: %s", status)
-	}
 }
 
 // ContainerExecStatus is the status of an exec session within a container.

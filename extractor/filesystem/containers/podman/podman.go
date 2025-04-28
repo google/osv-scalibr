@@ -35,8 +35,8 @@ const (
 
 // Config defines the configuration options for the Extractor.
 type Config struct {
-	// All specifies whether to list all containers, including those that are not currently running.
-	All bool
+	// IncludeStopped specifies whether to list all containers, including those that are not currently running.
+	IncludeStopped bool
 }
 
 // DefaultConfig returns the default configuration for the podman extractor.
@@ -109,7 +109,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	pkgs := make([]*extractor.Package, 0, len(ctrs))
 	for _, ctr := range ctrs {
-		if !e.cfg.All && ctr.state.Exited {
+		if !e.cfg.IncludeStopped && ctr.state.Exited {
 			continue
 		}
 
