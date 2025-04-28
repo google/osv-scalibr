@@ -27,19 +27,19 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-// State interface must be implemented by each repository returning podman containers info
-type State interface {
+// state interface must be implemented by each repository returning podman containers info
+type state interface {
 	Close() error
 	AllContainers() ([]*Container, error)
 }
 
-var _ State = &boltState{}
+var _ state = &boltState{}
 
 type boltState struct {
 	conn *bolt.DB
 }
 
-func newBoltState(path string) (State, error) {
+func newBoltState(path string) (state, error) {
 	db, err := bolt.Open(path, 0444, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
@@ -98,13 +98,13 @@ func (s *boltState) Close() error {
 	return s.conn.Close()
 }
 
-var _ State = &sqliteState{}
+var _ state = &sqliteState{}
 
 type sqliteState struct {
 	conn *sql.DB
 }
 
-func newSqliteState(path string) (State, error) {
+func newSqliteState(path string) (state, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (s *sqliteState) Close() error {
 	return s.conn.Close()
 }
 
-func getDBState(path string) (State, error) {
+func getDBState(path string) (state, error) {
 	switch {
 	case strings.HasSuffix(path, "bolt_state.db"):
 		return newBoltState(path)
