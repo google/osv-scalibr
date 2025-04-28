@@ -220,7 +220,7 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return nil, err
 	}
 
-	dirEntries := []fs.DirEntry{}
+	var dirEntries []fs.DirEntry
 	for _, child := range children {
 		if child.isWhiteout {
 			continue
