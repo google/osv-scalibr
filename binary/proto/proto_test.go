@@ -235,8 +235,9 @@ func TestScanResultToProto(t *testing.T) {
 	}
 
 	purlDotnetDepsJSONPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeNuget,
 		Metadata: &depsjson.Metadata{
 			PackageName:    "software",
 			PackageVersion: "1.0.0",

@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/packageindex"
+	"github.com/google/osv-scalibr/purl"
 )
 
 const binaryName = "semaphore-demo-go"
@@ -120,6 +121,7 @@ func setupPackageIndex(names []string) *packageindex.PackageIndex {
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      n,
 			Version:   "1.2.3",
+			PURLType:  purl.TypeGolang,
 			Locations: []string{filepath.Join("testdata", n)},
 			Extractor: &gobinary.Extractor{},
 		})

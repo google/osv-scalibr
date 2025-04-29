@@ -168,6 +168,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypeHaskell,
 				Locations: []string{input.Path},
 			}
 
@@ -183,12 +184,9 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeHaskell,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

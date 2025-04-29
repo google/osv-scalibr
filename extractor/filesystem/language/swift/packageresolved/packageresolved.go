@@ -143,8 +143,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	var result []*extractor.Package
 	for _, pkg := range packages {
 		result = append(result, &extractor.Package{
-			Name:    pkg.Name,
-			Version: pkg.Version,
+			Name:     pkg.Name,
+			Version:  pkg.Version,
+			PURLType: purl.TypeCocoapods,
 			Locations: []string{
 				input.Path,
 			},
@@ -187,12 +188,9 @@ func parse(r io.Reader) ([]pkg, error) {
 }
 
 // ToPURL converts a package item into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCocoapods,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem for Swift.

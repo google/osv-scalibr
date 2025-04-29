@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -103,6 +104,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/no-dependency.toml"},
 				},
 			},
@@ -116,11 +118,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/only-version-dependency.toml"},
 				},
 				{
 					Name:      "regex",
 					Version:   "0.0.1",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/only-version-dependency.toml"},
 				},
 			},
@@ -135,6 +139,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/git-dependency-tagged.toml"},
 				},
 			},
@@ -148,10 +153,12 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/git-dependency-with-commit.toml"},
 				},
 				{
-					Name: "regex",
+					Name:     "regex",
+					PURLType: purl.TypeCargo,
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/rust-lang/regex.git",
 						Commit: "0c0990399270277832fbb5b91a1fa118e6f63dba",
@@ -169,6 +176,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/git-dependency-with-pr.toml"},
 				},
 			},
@@ -182,11 +190,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hello_world",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-dependencies.toml"},
 				},
 				{
 					Name:      "futures",
 					Version:   "0.3",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-dependencies.toml"},
 				},
 			},

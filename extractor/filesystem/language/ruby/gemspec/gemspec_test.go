@@ -138,6 +138,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "yaml",
 					Version:   "0.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/yaml-0.2.1.gemspec"},
 				},
 			},
@@ -150,6 +151,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "rss",
 					Version:   "0.2.9",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rss-0.2.9.gemspec"},
 				},
 			},
@@ -228,6 +230,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeGem,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

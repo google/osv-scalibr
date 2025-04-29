@@ -126,6 +126,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
 			Name:      name,
 			Version:   version,
+			PURLType:  purl.TypeGolang,
 			Locations: []string{input.Path},
 		}
 	}
@@ -157,6 +158,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 			packages[replacement] = &extractor.Package{
 				Name:      replace.New.Path,
 				Version:   strings.TrimPrefix(replace.New.Version, "v"),
+				PURLType:  purl.TypeGolang,
 				Locations: []string{input.Path},
 			}
 		}
@@ -178,6 +180,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 		packages[pkgKey{name: "stdlib"}] = &extractor.Package{
 			Name:      "stdlib",
 			Version:   goVersion,
+			PURLType:  purl.TypeGolang,
 			Locations: []string{input.Path},
 		}
 	}
@@ -193,12 +196,9 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGolang,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

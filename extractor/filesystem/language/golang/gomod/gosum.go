@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/purl"
 )
 
 // extractFromSum extracts dependencies from the go.sum file.
@@ -63,6 +64,7 @@ func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package,
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
 			Name:      name,
 			Version:   version,
+			PURLType:  purl.TypeGolang,
 			Locations: []string{goSumPath},
 		}
 	}

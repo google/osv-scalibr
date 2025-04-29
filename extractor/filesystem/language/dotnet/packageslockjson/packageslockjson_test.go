@@ -144,41 +144,49 @@ func TestExtractor(t *testing.T) {
 				{
 					Name:      "Core.Dep",
 					Version:   "1.24.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.One",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Two",
 					Version:   "4.6.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Three",
 					Version:   "1.0.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Four",
 					Version:   "4.5.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Longer.Name.Dep",
 					Version:   "4.7.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Five",
 					Version:   "4.7.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Another.Longer.Name.Dep",
 					Version:   "4.5.4",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 			},
@@ -247,6 +255,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeNuget,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

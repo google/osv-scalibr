@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -102,6 +103,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "back_button_interceptor",
 					Version:   "6.0.1",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/one-package.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -119,6 +121,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "build_runner",
 					Version:   "2.2.1",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/one-package-dev.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -138,6 +141,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "shelf",
 					Version:   "1.3.2",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/two-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -147,6 +151,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "shelf_web_socket",
 					Version:   "1.0.2",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/two-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -164,6 +169,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "back_button_interceptor",
 					Version:   "6.0.1",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/mixed-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -173,6 +179,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "build_runner",
 					Version:   "2.2.1",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/mixed-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -184,6 +191,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "shelf",
 					Version:   "1.3.2",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/mixed-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -193,6 +201,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "shelf_web_socket",
 					Version:   "1.0.2",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/mixed-packages.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -210,6 +219,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "flutter_rust_bridge",
 					Version:   "1.32.0",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e5adce55eea0b74d3680e66a2c5252edf17b07e1",
@@ -219,6 +229,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "screen_retriever",
 					Version:   "0.1.2",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "406b9b038b2c1d779f1e7bf609c8c248be247372",
@@ -228,6 +239,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "tray_manager",
 					Version:   "0.1.8",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3aa37c86e47ea748e7b5507cbe59f2c54ebdb23a",
@@ -237,6 +249,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "window_manager",
 					Version:   "0.2.7",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "88487257cbafc501599ab4f82ec343b46acec020",
@@ -246,6 +259,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "toggle_switch",
 					Version:   "1.4.0",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -263,6 +277,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "flutter_web_plugins",
 					Version:   "0.0.0",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-sdk.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -280,6 +295,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "maa_core",
 					Version:   "0.0.1",
+					PURLType:  purl.TypePub,
 					Locations: []string{"testdata/source-path.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",

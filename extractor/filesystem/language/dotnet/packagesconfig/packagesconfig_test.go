@@ -184,11 +184,13 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "Microsoft.Net.Compilers",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -209,6 +211,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/noversion"},
 				},
 			},
@@ -222,6 +225,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/nopackage"},
 				},
 			},
@@ -267,6 +271,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeNuget,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -149,13 +150,13 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/HelloWorldApp.dll",
 			},
 			WantPackages: []*extractor.Package{
-				{Name: "Flurl.Http.dll", Version: "4.0.2.0"},
-				{Name: "HelloWorldApp.dll", Version: "1.0.0.0"},
-				{Name: "Newtonsoft.Json.dll", Version: "13.0.0.0"},
-				{Name: "System.Collections.dll", Version: "9.0.0.0"},
-				{Name: "System.Console.dll", Version: "9.0.0.0"},
-				{Name: "System.Net.Http.dll", Version: "9.0.0.0"},
-				{Name: "System.Runtime.dll", Version: "9.0.0.0"},
+				{Name: "Flurl.Http.dll", Version: "4.0.2.0", PURLType: purl.TypeNuget},
+				{Name: "HelloWorldApp.dll", Version: "1.0.0.0", PURLType: purl.TypeNuget},
+				{Name: "Newtonsoft.Json.dll", Version: "13.0.0.0", PURLType: purl.TypeNuget},
+				{Name: "System.Collections.dll", Version: "9.0.0.0", PURLType: purl.TypeNuget},
+				{Name: "System.Console.dll", Version: "9.0.0.0", PURLType: purl.TypeNuget},
+				{Name: "System.Net.Http.dll", Version: "9.0.0.0", PURLType: purl.TypeNuget},
+				{Name: "System.Runtime.dll", Version: "9.0.0.0", PURLType: purl.TypeNuget},
 			},
 		},
 		{
@@ -164,7 +165,7 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/HelloWorldApp.exe",
 			},
 			WantPackages: []*extractor.Package{
-				{Name: "HelloWorldApp.dll", Version: "1.0.0.0"},
+				{Name: "HelloWorldApp.dll", Version: "1.0.0.0", PURLType: purl.TypeNuget},
 			},
 		},
 		{

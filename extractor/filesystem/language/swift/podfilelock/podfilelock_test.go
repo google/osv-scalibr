@@ -170,11 +170,13 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "GlossButtonNode",
 					Version:   "3.1.2",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "PINCache",
 					Version:   "3.0.3",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -188,21 +190,25 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "GlossButtonNode",
 					Version:   "3.1.2",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid2"},
 				},
 				{
 					Name:      "PINCache",
 					Version:   "3.0.3",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid2"},
 				},
 				{
 					Name:      "Reveal-SDK",
 					Version:   "1.5.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid2"},
 				},
 				{
 					Name:      "SwiftGen",
 					Version:   "6.0.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid2"},
 				},
 			},
@@ -254,6 +260,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeCocoapods,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{
