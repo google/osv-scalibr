@@ -222,7 +222,11 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 // safeWriteFile is a helper function that uses os.Root to write to a file with the specified
 // permissions.
 func safeWriteFile(root *os.Root, path string, content []byte, perm os.FileMode) error {
-	file, err := root.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
+	// os.Root.OpenFile only supports the 9 least significant bits (0o777),
+	// so ensure we strip any other bits (like setuid, sticky bit, etc.)
+	normalizedPerm := perm & 0o777
+
+	file, err := root.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, normalizedPerm)
 	if err != nil {
 		log.Errorf("failed to open file %q: %v", path, err)
 		return fmt.Errorf("failed to open file %q: %w", path, err)
