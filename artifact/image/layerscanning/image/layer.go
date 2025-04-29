@@ -220,7 +220,9 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return nil, err
 	}
 
-	var dirEntries []fs.DirEntry
+	// dirEntries should be initialized to an empty slice to avoid nil pointer dereference for callers
+	// to ReadDir.
+	dirEntries := []fs.DirEntry{}
 	for _, child := range children {
 		if child.isWhiteout {
 			continue
