@@ -26,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -180,6 +179,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypePyPi,
 				Locations: []string{input.Path},
 				Metadata:  &Metadata{VersionComparator: comp},
 			}
@@ -203,6 +203,7 @@ func containsTemplate(s string) bool {
 func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return pypipurl.MakePackageURL(p)
+	return p.PURL()
 }

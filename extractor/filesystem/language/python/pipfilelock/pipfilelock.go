@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -115,8 +114,9 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 			}
 
 			pkg := &extractor.Package{
-				Name:    name,
-				Version: version,
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypePyPi,
 				Metadata: osv.DepGroupMetadata{
 					DepGroupVals: groupSlice,
 				},
@@ -128,8 +128,9 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return pypipurl.MakePackageURL(p)
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.

@@ -19,22 +19,19 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestMakePackageURL(t *testing.T) {
 	tests := []struct {
-		name string
-		arg  extractor.Package
-		want *purl.PackageURL
+		name    string
+		version string
+		want    *purl.PackageURL
 	}{
 		{
-			arg: extractor.Package{
-				Name:    "test",
-				Version: "1.0.0",
-			},
+			name:    "test",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test",
@@ -42,10 +39,8 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Package{
-				Name:    "test-with-dashes",
-				Version: "1.0.0",
-			},
+			name:    "test-with-dashes",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test-with-dashes",
@@ -53,10 +48,8 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Package{
-				Name:    "test_with_underscore",
-				Version: "1.0.0",
-			},
+			name:    "test_with_underscore",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test-with-underscore",
@@ -64,10 +57,8 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Package{
-				Name:    "test___with_long__underscore",
-				Version: "1.0.0",
-			},
+			name:    "test___with_long__underscore",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test-with-long-underscore",
@@ -75,10 +66,8 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Package{
-				Name:    "test.with-mixed_symbols",
-				Version: "1.0.0",
-			},
+			name:    "test.with-mixed_symbols",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test-with-mixed-symbols",
@@ -86,10 +75,8 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			arg: extractor.Package{
-				Name:    "test.__-with_mixed_.--run",
-				Version: "1.0.0",
-			},
+			name:    "test.__-with_mixed_.--run",
+			version: "1.0.0",
 			want: &purl.PackageURL{
 				Type:    "pypi",
 				Name:    "test-with-mixed-run",
@@ -100,7 +87,7 @@ func TestMakePackageURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := pypipurl.MakePackageURL(&tt.arg)
+			got := pypipurl.MakePackageURL(tt.name, tt.version)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("MakePackageURL() returned unexpected diff (-want +got):\n%s", diff)
 			}

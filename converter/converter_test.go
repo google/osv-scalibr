@@ -48,7 +48,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "software", Version: "1.2.3", Extractor: pipEx,
+						Name:      "software",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Extractor: pipEx,
 					}},
 				},
 			},
@@ -134,7 +137,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "software", Version: "1.2.3", Extractor: pipEx,
+						Name:      "software",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Extractor: pipEx,
 					}},
 				},
 			},
@@ -238,11 +244,11 @@ func TestToSPDX23(t *testing.T) {
 						{Extractor: pipEx},
 						// No name
 						{
-							Version: "1.2.3", Extractor: pipEx,
+							Version: "1.2.3", PURLType: purl.TypePyPi, Extractor: pipEx,
 						},
 						// No version
 						{
-							Name: "software", Extractor: pipEx,
+							Name: "software", PURLType: purl.TypePyPi, Extractor: pipEx,
 						},
 					},
 				},
@@ -290,7 +296,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "softw@re&", Version: "1.2.3", Extractor: pipEx,
+						Name:      "softw@re&",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Extractor: pipEx,
 					}},
 				},
 			},
@@ -376,7 +385,11 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1"},
+						Name:      "software",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Extractor: pipEx,
+						Locations: []string{"/file1"},
 					}},
 				},
 			},
@@ -462,7 +475,11 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1", "/file2", "/file3"},
+						Name:      "software",
+						Version:   "1.2.3",
+						Extractor: pipEx,
+						PURLType:  purl.TypePyPi,
+						Locations: []string{"/file1", "/file2", "/file3"},
 					}},
 				},
 			},
@@ -579,7 +596,10 @@ func TestToCDX(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name: "software", Version: "1.2.3", Extractor: pipEx,
+						Name:      "software",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Extractor: pipEx,
 					}},
 				},
 			},
@@ -653,6 +673,7 @@ func TestToPURL(t *testing.T) {
 			pkg: &extractor.Package{
 				Name:      "software",
 				Version:   "1.0.0",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"/file1"},
 				Extractor: pipEx,
 			},

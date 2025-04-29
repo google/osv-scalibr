@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -34,6 +35,7 @@ func pkg(t *testing.T, name string, version string, location string) *extractor.
 	return &extractor.Package{
 		Name:      name,
 		Version:   version,
+		PURLType:  purl.TypePyPi,
 		Locations: []string{location},
 		Metadata: osv.DepGroupMetadata{
 			DepGroupVals: []string{},
@@ -148,6 +150,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "ruff",
 					Version:   "0.8.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "84748be16341b76e073d117329f7f5f4ee2941ad",
@@ -168,6 +171,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "click",
 					Version:   "8.1.7",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/grouped-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"cli"},
@@ -177,6 +181,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "black",
 					Version:   "24.10.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/grouped-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -185,6 +190,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "flake8",
 					Version:   "7.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/grouped-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"test"},

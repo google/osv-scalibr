@@ -196,6 +196,7 @@ func TestScanResultToProto(t *testing.T) {
 	purlPythonPackage := &extractor.Package{
 		Name:      "software",
 		Version:   "1.0.0",
+		PURLType:  purl.TypePyPi,
 		Locations: []string{"/file1"},
 		Extractor: wheelegg.New(wheelegg.DefaultConfig()),
 		Metadata: &wheelegg.PythonPackageMetadata{
@@ -206,6 +207,7 @@ func TestScanResultToProto(t *testing.T) {
 	pythonRequirementsPackage := &extractor.Package{
 		Name:      "foo",
 		Version:   "1.0",
+		PURLType:  purl.TypePyPi,
 		Locations: []string{"/file1"},
 		Extractor: requirements.Extractor{},
 		Metadata: &requirements.Metadata{
@@ -713,6 +715,7 @@ func TestScanResultToProto(t *testing.T) {
 	purlPythonPackageWithLayerDetails := &extractor.Package{
 		Name:      "software",
 		Version:   "1.0.0",
+		PURLType:  purl.TypePyPi,
 		Locations: []string{"/file1"},
 		Extractor: wheelegg.New(wheelegg.DefaultConfig()),
 		Metadata: &wheelegg.PythonPackageMetadata{

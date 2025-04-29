@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -251,8 +250,9 @@ func parse(r io.Reader) (*extractor.Package, error) {
 	}
 
 	return &extractor.Package{
-		Name:    name,
-		Version: version,
+		Name:     name,
+		Version:  version,
+		PURLType: purl.TypePyPi,
 		Metadata: &PythonPackageMetadata{
 			Author:      h.Get("Author"),
 			AuthorEmail: h.Get("Author-email"),
@@ -261,8 +261,9 @@ func parse(r io.Reader) (*extractor.Package, error) {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return pypipurl.MakePackageURL(p)
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

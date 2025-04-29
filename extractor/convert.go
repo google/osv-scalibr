@@ -15,6 +15,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -36,6 +37,10 @@ func toPURL(p *Package) *purl.PackageURL {
 }
 
 func typeSpecificPURL(p *Package) *purl.PackageURL {
+	switch p.PURLType {
+	case purl.TypePyPi:
+		return pypipurl.MakePackageURL(p.Name, p.Version)
+	}
 	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil
 }

@@ -49,6 +49,20 @@ func TestToPURL(t *testing.T) {
 				Version: "version",
 			},
 		},
+		{
+			name: "python_purl",
+			pkg: &extractor.Package{
+				Name:      "Name",
+				Version:   "1.2.3",
+				PURLType:  purl.TypePyPi,
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypePyPi,
+				Name:    "name",
+				Version: "1.2.3",
+			},
+		},
 	}
 
 	for _, tt := range tests {

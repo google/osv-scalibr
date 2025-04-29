@@ -13,14 +13,12 @@
 // limitations under the License.
 
 // Package pypipurl converts a package to a PyPI type PackageURL.
-// TODO(#173, b/365452344): Replace with purl.New() which will contain mapping of all ecosystems
 package pypipurl
 
 import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -35,11 +33,11 @@ var specialCharRunFinder = regexp.MustCompile("[-_.]+")
 //
 // This function does *not* handle package names with invalid characters, and will
 // return them as is.
-func MakePackageURL(p *extractor.Package) *purl.PackageURL {
-	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(p.Name), "-")
+func MakePackageURL(name string, version string) *purl.PackageURL {
+	normalizedName := specialCharRunFinder.ReplaceAllLiteralString(strings.ToLower(name), "-")
 	return &purl.PackageURL{
 		Type:    purl.TypePyPi,
 		Name:    normalizedName,
-		Version: p.Version,
+		Version: version,
 	}
 }
