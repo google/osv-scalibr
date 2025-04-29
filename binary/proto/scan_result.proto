@@ -117,6 +117,7 @@ message Package {
     HomebrewPackageMetadata homebrew_metadata = 42;
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
+    DockerContainersMetadata docker_containers_metadata = 48;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -234,7 +235,7 @@ message CVSS {
 
 message TargetDetails {
   // The software affected by the finding.
-  Package package = 1;
+ Package package = 1;
   // Location of vulnerable files not related to the package,
   // e.g. config files with misconfigurations.
   repeated string location = 3;
@@ -505,4 +506,19 @@ message VSCodeExtensionsMetadata {
   bool updated = 5;
   bool is_pre_release_version = 6;
   int64 installed_timestamp = 7;
+}
+
+// The additional data found in Docker container.
+message DockerContainersMetadata {
+  string image_name = 1;
+  string image_digest = 2;
+  string id = 3;
+  repeated DockerPort ports = 4;
+}
+
+message DockerPort {
+  string ip = 1;
+  uint32 private_port = 2;
+  uint32 public_port = 3;
+  string type = 4;
 }
