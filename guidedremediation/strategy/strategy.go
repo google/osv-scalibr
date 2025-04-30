@@ -18,8 +18,9 @@ package strategy
 // Strategy is a remediation strategy.
 type Strategy string
 
+// The implemented remediation strategies.
 const (
-	// StrategyInPlace  Strategy = "in-place"
+	StrategyInPlace  Strategy = "in-place"
 	StrategyRelax    Strategy = "relax"
 	StrategyOverride Strategy = "override"
 )
