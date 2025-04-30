@@ -235,7 +235,7 @@ message CVSS {
 
 message TargetDetails {
   // The software affected by the finding.
- Package package = 1;
+  Package package = 1;
   // Location of vulnerable files not related to the package,
   // e.g. config files with misconfigurations.
   repeated string location = 3;

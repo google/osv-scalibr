@@ -191,7 +191,10 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		// once integrators no longer read them.
 		InventoriesDeprecated: packages,
 		FindingsDeprecated:    findings,
-		Inventory:             &spb.Inventory{Packages: packages, Findings: findings},
+		Inventory: &spb.Inventory{
+			Packages: packages,
+			Findings: findings,
+		},
 	}, nil
 }
 
