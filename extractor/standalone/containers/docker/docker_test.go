@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -51,7 +50,7 @@ func TestExtract(t *testing.T) {
 					ImageID:    "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 					Command:    "docker-entrypoint.sh redis-server",
 					Created:    1742382918,
-					Ports:      []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+					Ports:      []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					SizeRw:     0,
 					SizeRootFs: 0,
 					Labels:     map[string]string{},
@@ -67,7 +66,7 @@ func TestExtract(t *testing.T) {
 						ImageName:   "redis",
 						ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 						ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-						Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+						Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					},
 				},
 			},
@@ -82,7 +81,7 @@ func TestExtract(t *testing.T) {
 					ImageID: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 					Command: "docker-entrypoint.sh redis-server",
 					Created: 1742382918,
-					Ports:   []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+					Ports:   []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					Labels:  map[string]string{},
 					State:   "running",
 					Status:  "Up 4 days",
@@ -94,7 +93,7 @@ func TestExtract(t *testing.T) {
 					ImageID: "sha256:e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
 					Command: "docker-entrypoint.sh postgres",
 					Created: 1742814002,
-					Ports:   []types.Port{},
+					Ports:   []container.Port{},
 					Labels:  map[string]string{},
 					State:   "exited",
 					Status:  "Exited (1) 2 minutes ago",
@@ -108,7 +107,7 @@ func TestExtract(t *testing.T) {
 						ImageName:   "redis",
 						ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 						ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-						Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+						Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					},
 				},
 			},
@@ -123,7 +122,7 @@ func TestExtract(t *testing.T) {
 					ImageID: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 					Command: "docker-entrypoint.sh redis-server",
 					Created: 1742382918,
-					Ports:   []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+					Ports:   []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					Labels:  map[string]string{},
 					State:   "running",
 					Status:  "Up 4 days",
@@ -135,7 +134,7 @@ func TestExtract(t *testing.T) {
 					ImageID: "sha256:e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
 					Command: "docker-entrypoint.sh postgres",
 					Created: 1742814376,
-					Ports:   []types.Port{{IP: "", PrivatePort: 5432, PublicPort: 0, Type: "tcp"}},
+					Ports:   []container.Port{{IP: "", PrivatePort: 5432, PublicPort: 0, Type: "tcp"}},
 					Labels:  map[string]string{},
 					State:   "running",
 					Status:  "Up 8 minutes",
@@ -149,7 +148,7 @@ func TestExtract(t *testing.T) {
 						ImageName:   "redis",
 						ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 						ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-						Ports:       []types.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+						Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 					},
 				},
 				{
@@ -159,7 +158,7 @@ func TestExtract(t *testing.T) {
 						ImageName:   "postgres",
 						ImageDigest: "sha256:e92968df83750a723114bf998e3e323dda53e4c5c3ea42b22dd6ad6e3df80ca5",
 						ID:          "57eaa9ded450bde6c214dfdced8897d6bb67f1611fa6befffc7a768b5d1cbc5a",
-						Ports:       []types.Port{{IP: "", PrivatePort: 5432, PublicPort: 0, Type: "tcp"}},
+						Ports:       []container.Port{{IP: "", PrivatePort: 5432, PublicPort: 0, Type: "tcp"}},
 					},
 				},
 			},
