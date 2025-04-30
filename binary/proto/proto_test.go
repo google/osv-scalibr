@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
