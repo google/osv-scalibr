@@ -92,6 +92,7 @@ const (
 	// InsideCacheDir is set for packages that are found inside a cache directory.
 	// TODO(b/364539671): Annotation for packages inside cache directories.
 	InsideCacheDir
+	Unreachable
 )
 
 // PURL returns the Package URL of this package.
