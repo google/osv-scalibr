@@ -29,7 +29,7 @@ import (
 var doc = &v2_3.Document{
 	SPDXVersion:    "SPDX-2.3",
 	DataLicense:    "CC0-1.0",
-	SPDXIdentifier: "Document",
+	SPDXIdentifier: "DOCUMENT",
 	DocumentName:   "Document name",
 	CreationInfo: &v2_3.CreationInfo{
 		Created: "2006-01-02T15:04:05Z",
