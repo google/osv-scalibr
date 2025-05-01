@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -33,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -72,9 +72,15 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+	jars := make(map[string]struct{})
+	for i := range inv.Packages {
+		if inv.Packages[i].Extractor.Name() == archive.Name {
+			jars[inv.Packages[i].Locations[0]] = struct{}{}
+		}
+	}
 
-	if strings.HasSuffix(input.Root, ".jar") {
-		enumerateReachabilityForJar(input.Root, inv)
+	for jar := range jars {
+		enumerateReachabilityForJar(jar, input, inv)
 	}
 
 	return nil
@@ -84,22 +90,30 @@ func fmtJavaInventory(i *extractor.Package) string {
 	return fmt.Sprintf("%s:%s", i.Metadata.(*archive.Metadata).GroupID, i.Name)
 }
 
-func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error {
-	jarfile, err := os.Open(jarPath)
-	if err != nil {
-		return err
-	}
+func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv *inventory.Inventory) error {
+	// jarfile, err := input.FS.Open(jarPath)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Extract dependencies from the .jar (from META-INF/maven/**/pom.properties)
-	allDeps, err := ExtractDependencies(jarfile)
-	if err != nil {
-		return err
+	// allDeps, err := ExtractDependencies(jarfile)
+
+	var allDeps []*extractor.Package
+
+	for i := range inv.Packages {
+		if inv.Packages[i].Locations[0] == jarPath {
+			allDeps = append(allDeps, inv.Packages[i])
+		}
 	}
+	// if err != nil {
+	// 	return err
+	// }
 	slices.SortFunc(allDeps, func(i1 *extractor.Package, i2 *extractor.Package) int {
 		return strings.Compare(fmtJavaInventory(i1), fmtJavaInventory(i2))
 	})
 	for _, dep := range allDeps {
-		slog.Debug("extracted dep",
+		log.Debug("extracted dep",
 			"group id", dep.Metadata.(*archive.Metadata).GroupID, "artifact id", dep.Name, "version", dep.Version)
 	}
 
@@ -110,8 +124,8 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	}
 	defer os.RemoveAll(tmpDir)
 
-	slog.Info("Unzipping", "jar", jarPath, "to", tmpDir)
-	nestedJARs, err := unzipJAR(jarPath, tmpDir)
+	log.Debug("Unzipping", "jar", jarPath, "to", tmpDir)
+	nestedJARs, err := unzipJAR(jarPath, input, tmpDir)
 	if err != nil {
 		return err
 	}
@@ -120,7 +134,7 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	// Check for the existence of the Maven metadata directory.
 	_, err = os.Stat(filepath.Join(tmpDir, MavenDepDirPath))
 	if err != nil {
-		slog.Error("reachability analysis is only supported for JARs built with Maven.")
+		log.Error("reachability analysis is only supported for JARs built with Maven.")
 		return ErrMavenDependencyNotFound
 	}
 
@@ -141,7 +155,7 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	if err != nil {
 		return err
 	}
-	slog.Info("Found", "main classes", mainClasses)
+	log.Debug("Found", "main classes", mainClasses)
 
 	classPaths := []string{tmpDir}
 	classPaths = append(classPaths, nestedJARs...)
@@ -197,7 +211,7 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 					continue
 				}
 
-				slog.Debug("adding META-INF/services provider", "provider", provider, "from", entry)
+				log.Debug("adding META-INF/services provider", "provider", provider, "from", entry)
 				optionalRootClasses = append(optionalRootClasses, strings.ReplaceAll(provider, ".", "/"))
 			}
 			if err := scanner.Err(); err != nil {
@@ -219,7 +233,7 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	for _, class := range result.Classes {
 		deps, err := classFinder.Find(class)
 		if err != nil {
-			slog.Debug("Failed to find dep mapping", "class", class, "error", err)
+			log.Debug("Failed to find dep mapping", "class", class, "error", err)
 			continue
 		}
 
@@ -233,10 +247,10 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	injectionDeps := map[string]struct{}{}
 	slices.Sort(result.UsesDynamicCodeLoading)
 	for _, class := range result.UsesDynamicCodeLoading {
-		slog.Info("Found use of dynamic code loading", "class", class)
+		log.Debug("Found use of dynamic code loading", "class", class)
 		deps, err := classFinder.Find(class)
 		if err != nil {
-			slog.Debug("Failed to find dep mapping", "class", class, "error", err)
+			log.Debug("Failed to find dep mapping", "class", class, "error", err)
 			continue
 		}
 		for _, dep := range deps {
@@ -244,10 +258,10 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 		}
 	}
 	for _, class := range result.UsesDependencyInjection {
-		slog.Info("Found use of dependency injection", "class", class)
+		log.Debug("Found use of dependency injection", "class", class)
 		deps, err := classFinder.Find(class)
 		if err != nil {
-			slog.Debug("Failed to find dep mapping", "class", class, "error", err)
+			log.Debug("Failed to find dep mapping", "class", class, "error", err)
 			continue
 		}
 		for _, dep := range deps {
@@ -259,22 +273,27 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 	for _, dep := range slices.Sorted(maps.Keys(reachableDeps)) {
 		_, dynamicLoading := dynamicLoadingDeps[dep]
 		_, injection := injectionDeps[dep]
-		slog.Info("Reachable", "dep", dep, "dynamic code", dynamicLoading, "dep injection", injection)
+		log.Debug("Reachable", "dep", dep, "dynamic code", dynamicLoading, "dep injection", injection)
 	}
 
 	for _, dep := range allDeps {
 		name := fmtJavaInventory(dep)
 		if _, ok := reachableDeps[name]; !ok {
-			slog.Info("Not reachable", "dep", name)
+			log.Debug("Not reachable", "dep", name)
 		}
 	}
 
-	slog.Info("finished analysis", "reachable", len(reachableDeps), "unreachable", len(allDeps)-len(reachableDeps), "all", len(allDeps))
+	log.Debug("finished analysis", "reachable", len(reachableDeps), "unreachable", len(allDeps)-len(reachableDeps), "all", len(allDeps))
 
 	for i := range inv.Packages {
-		if _, exists := reachableDeps[inv.Packages[i].Name]; !exists {
+		if inv.Packages[i].Locations[0] != jarPath {
+			continue
+		}
+		metadata := inv.Packages[i].Metadata.(*archive.Metadata)
+		artifactName := fmt.Sprintf("%s:%s", metadata.GroupID, metadata.ArtifactID)
+		if _, exists := reachableDeps[artifactName]; !exists {
 			inv.Packages[i].Annotations = append(inv.Packages[i].Annotations, extractor.Unreachable)
-			slog.Info("updated", "pkg", inv.Packages[i].Name, "annotations", inv.Packages[i].Annotations)
+			log.Debugf("updated pkg: %s, annotations: %v", artifactName, inv.Packages[i].Annotations)
 		}
 	}
 
@@ -283,8 +302,18 @@ func enumerateReachabilityForJar(jarPath string, inv *inventory.Inventory) error
 
 // unzipJAR unzips a JAR to a target directory. It also returns a list of paths
 // to all the nested JARs found while unzipping.
-func unzipJAR(jarPath string, tmpDir string) (nestedJARs []string, err error) {
-	r, err := zip.OpenReader(jarPath)
+func unzipJAR(jarPath string, input *enricher.ScanInput, tmpDir string) (nestedJARs []string, err error) {
+	file, _ := input.FS.Open(jarPath)
+	fileReaderAt, _ := file.(io.ReaderAt)
+
+	defer file.Close()
+
+	info, _ := file.Stat()
+	l := info.Size()
+
+	r, err := zip.NewReader(fileReaderAt, l)
+
+	// r, err := zip.OpenReader(jarPath)
 	if err != nil {
 		return nil, err
 	}

@@ -18,12 +18,10 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,8 +29,8 @@ import (
 	"sync"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	"github.com/google/osv-scalibr/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -66,20 +64,20 @@ type DefaultPackageFinder struct {
 }
 
 // ExtractDependencies extracts Maven dependencies from a .jar.
-func ExtractDependencies(jar *os.File) ([]*extractor.Package, error) {
-	info, err := jar.Stat()
-	if err != nil {
-		return nil, err
-	}
-	input := filesystem.ScanInput{Path: jar.Name(), Info: info, Reader: jar}
-	cfg := archive.DefaultConfig()
-	extractor := archive.New(cfg)
-	inventory, err := extractor.Extract(context.Background(), &input)
-	if err != nil {
-		return nil, err
-	}
-	return inventory.Packages, nil
-}
+// func ExtractDependencies(jar fs.File) ([]*extractor.Package, error) {
+// 	info, err := jar.Stat()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	input := filesystem.ScanInput{Path: jar.Name(), Info: info, Reader: jar}
+// 	cfg := archive.DefaultConfig()
+// 	extractor := archive.New(cfg)
+// 	inventory, err := extractor.Extract(context.Background(), &input)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return inventory.Packages, nil
+// }
 
 // loadJARMappings loads class mappings from a JAR archive.
 func loadJARMappings(metadata *archive.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
@@ -106,7 +104,7 @@ func addClassMapping(artifactName, class string, classMap map[string][]string, a
 
 	classMap[name] = append(classMap[name], artifactName)
 	artifactMap[artifactName] = append(artifactMap[artifactName], name)
-	slog.Debug("mapping", "name", name, "to", classMap[name])
+	log.Debug("mapping", "name", name, "to", classMap[name])
 }
 
 // openNestedJAR opens a nested JAR given by `jarPaths` containing progressively
@@ -173,7 +171,7 @@ func checkNestedJARContains(inv *extractor.Package) ([]string, bool) {
 
 		// Check if the artifact ID is in the jar name to make sure the jar is for the artifact.
 		if strings.Contains(jarPaths[len(jarPaths)-1], metadata.ArtifactID) {
-			slog.Debug("nested jar", "paths", jarPaths, "groupId", metadata.GroupID, "artifactId", metadata.ArtifactID)
+			log.Debug("nested jar", "paths", jarPaths, "groupId", metadata.GroupID, "artifactId", metadata.ArtifactID)
 			return jarPaths, true
 		}
 		break
@@ -210,7 +208,7 @@ func extractClassMappings(inv *extractor.Package, classMap map[string][]string, 
 		defer os.Remove(file.Name())
 		defer file.Close()
 
-		slog.Debug("downloading", "jar", jarURL)
+		log.Debug("downloading", "jar", jarURL)
 		resp, err := http.Get(jarURL)
 		if err != nil {
 			return err
@@ -255,7 +253,7 @@ func NewDefaultPackageFinder(inv []*extractor.Package, jarDir string) (*DefaultP
 
 	if err := group.Wait(); err != nil {
 		// Tolerate some errors.
-		slog.Error("failed to download package", "err", err)
+		log.Error("failed to download package", "err", err)
 	}
 
 	if err := mapRootClasses(jarDir, classMap, artifactMap); err != nil {
@@ -282,7 +280,7 @@ func mapRootClasses(jarDir string, classMap map[string][]string, artifactMap map
 		return err
 	}
 
-	slog.Debug("Found Spring Boot classes", "classes", bootInfClasses)
+	log.Debug("Found Spring Boot classes", "classes", bootInfClasses)
 	return filepath.Walk(bootInfClasses, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err

@@ -18,13 +18,14 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/google/osv-scalibr/log"
 )
 
 type ReachabilityResult struct {
@@ -171,7 +172,7 @@ func (r *ReachabilityEnumerator) findClass(classPaths []string, className string
 			}
 
 			if cf != nil {
-				slog.Debug("found class in nested .jar", "class", className, "path", classPath)
+				log.Debug("found class in nested .jar", "class", className, "path", classPath)
 				return cf, nil
 			}
 			continue
@@ -201,7 +202,7 @@ func (r *ReachabilityEnumerator) findClass(classPaths []string, className string
 			return nil, err
 
 		}
-		slog.Debug("found class in directory", "class", className, "path", classPath)
+		log.Debug("found class in directory", "class", className, "path", classPath)
 		return cf, nil
 	}
 
@@ -271,10 +272,10 @@ func (r *ReachabilityEnumerator) handleDynamicCode(q *UniqueQueue[string, *Class
 				}
 				cf, err := r.findClass(r.ClassPaths, class)
 				if err == nil {
-					slog.Debug("assuming all package classes are reachable", "class", class, "pkg", pkg)
+					log.Debug("assuming all package classes are reachable", "class", class, "pkg", pkg)
 					q.Push(class, cf)
 				} else {
-					slog.Error("failed to find class", "class", class, "from", pkg, "err", err)
+					log.Error("failed to find class", "class", class, "from", pkg, "err", err)
 				}
 			}
 		}
@@ -304,7 +305,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 
 	for !q.Empty() {
 		thisClass, cf := q.Pop()
-		slog.Debug("Analyzing", "class", thisClass)
+		log.Debug("Analyzing", "class", thisClass)
 
 		// Find uses of dynamic code loading.
 		for i, cp := range cf.ConstantPool {
@@ -315,12 +316,12 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 				}
 
 				if isDynamicCodeLoading(method, descriptor) {
-					slog.Debug("found dynamic class loading", "thisClass", thisClass, "method", method, "descriptor", descriptor)
+					log.Debug("found dynamic class loading", "thisClass", thisClass, "method", method, "descriptor", descriptor)
 					if _, ok := codeLoading[thisClass]; !ok {
 						codeLoading[thisClass] = struct{}{}
 						err := r.handleDynamicCode(q, thisClass, r.CodeLoadingStrategy)
 						if err != nil {
-							slog.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
+							log.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
 						}
 					}
 				}
@@ -331,12 +332,12 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 				}
 
 				if isDependencyInjection(class) {
-					slog.Debug("found dependency injection", "thisClass", thisClass, "injector", class)
+					log.Debug("found dependency injection", "thisClass", thisClass, "injector", class)
 					if _, ok := depInjection[thisClass]; !ok {
 						depInjection[thisClass] = struct{}{}
 						err := r.handleDynamicCode(q, thisClass, r.DependencyInjectionStrategy)
 						if err != nil {
-							slog.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
+							log.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
 						}
 					}
 				}
@@ -395,7 +396,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 				continue
 			}
 
-			slog.Debug("found", "dependency", class)
+			log.Debug("found", "dependency", class)
 			if q.Seen(class) {
 				continue
 			}
@@ -403,7 +404,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 			depcf, err := r.findClass(r.ClassPaths, class)
 			if err != nil {
 				// Dependencies can be optional, so this is not a fatal error.
-				slog.Error("failed to find class", "class", class, "from", thisClass, "cp idx", i, "error", err)
+				log.Error("failed to find class", "class", class, "from", thisClass, "cp idx", i, "error", err)
 				continue
 			}
 
