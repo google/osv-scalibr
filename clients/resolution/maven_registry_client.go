@@ -33,8 +33,8 @@ type MavenRegistryClient struct {
 }
 
 // NewMavenRegistryClient makes a new MavenRegistryClient.
-func NewMavenRegistryClient(registry string) (*MavenRegistryClient, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: registry, ReleasesEnabled: true})
+func NewMavenRegistryClient(remote, local string) (*MavenRegistryClient, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
 	if err != nil {
 		return nil, err
 	}

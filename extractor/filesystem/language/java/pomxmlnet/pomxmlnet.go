@@ -54,13 +54,13 @@ type Config struct {
 }
 
 // NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
-func NewConfig(registry string) Config {
+func NewConfig(remote, local string) Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	depClient, _ := resolution.NewMavenRegistryClient(registry)
+	depClient, _ := resolution.NewMavenRegistryClient(remote, local)
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
-		URL:             registry,
+		URL:             remote,
 		ReleasesEnabled: true,
-	})
+	}, local)
 	return Config{
 		DependencyClient:       depClient,
 		MavenRegistryAPIClient: mavenClient,
@@ -69,7 +69,7 @@ func NewConfig(registry string) Config {
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
-	return NewConfig("")
+	return NewConfig("", "")
 }
 
 // New makes a new pom.xml transitive extractor with the given config.

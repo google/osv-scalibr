@@ -390,7 +390,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
-		return maven.GetReadWriter(registry)
+		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
 	}
