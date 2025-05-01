@@ -51,6 +51,8 @@ func NewMockResolutionClient(t *testing.T, universeYAML string) resolve.Client {
 		sys = resolve.NPM
 	case "maven":
 		sys = resolve.Maven
+	case "pypi":
+		sys = resolve.PyPI
 	default:
 		t.Fatalf("unknown ecosystem in universe: %s", universe.System)
 	}
