@@ -49,7 +49,7 @@ func (r readWriter) System() resolve.System {
 
 // SupportedStrategies returns the remediation strategies supported for this lockfile.
 func (r readWriter) SupportedStrategies() []strategy.Strategy {
-	return []strategy.Strategy{}
+	return []strategy.Strategy{strategy.StrategyInPlace}
 }
 
 type dependencyVersionSpec struct {
@@ -133,10 +133,13 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 			depNode := findDependencyNode(node, depName)
 			if depNode == -1 {
 				// The dependency is apparently not in the package-lock.json.
-				// This probably means the lockfile is malformed, and npm would usually error installing this.
+				// Either this is an uninstalled optional dependency (which is fine),
+				// or lockfile is (probably) malformed, and npm would usually error installing this.
 				// But there are some cases (with workspaces) that npm doesn't error,
 				// so just always ignore the error to make it work.
-				log.Warnf("package-lock.json is missing dependency %s for %s", depName, node.ActualName)
+				if !depSpec.DepType.HasAttr(dep.Opt) {
+					log.Warnf("package-lock.json is missing dependency %s for %s", depName, g.Nodes[node.NodeID].Version.Name)
+				}
 				continue
 			}
 			if err := g.AddEdge(node.NodeID, depNode, depSpec.Version, depSpec.DepType); err != nil {

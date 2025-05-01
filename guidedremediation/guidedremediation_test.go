@@ -145,6 +145,112 @@ func TestFixOverride(t *testing.T) {
 	}
 }
 
+func TestFixInPlace(t *testing.T) {
+	// Set up a test registry, since the lockfile writer needs to talk to the registry to get the package metadata.
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "/baz/1.0.1", []byte(`{
+	"name": "baz",
+	"version": "1.0.1",
+	"dist": {
+		"integrity": "sha512-aaaaaaaaaaaa",
+		"tarball": "https://registry.npmjs.org/baz/-/baz-1.0.1.tgz"
+	}
+}
+`))
+	srv.SetResponse(t, "/baz/2.0.1", []byte(`{
+	"name": "baz",
+	"version": "2.0.1",
+	"dist": {
+		"integrity": "sha512-bbbbbbbbbbbb",
+		"tarball": "https://registry.npmjs.org/baz/-/baz-2.0.1.tgz"
+	}
+}
+`))
+	for _, tt := range []struct {
+		name             string
+		universeDir      string
+		lockfile         string
+		wantLockfilePath string
+		wantResultPath   string
+		remOpts          options.RemediationOptions
+		maxUpgrades      int
+		noIntroduce      bool
+	}{
+		{
+			name:             "basic",
+			universeDir:      "testdata/npm",
+			lockfile:         "testdata/npm/basic/package-lock.json",
+			wantLockfilePath: "testdata/npm/basic/want.package-lock.json",
+			wantResultPath:   "testdata/npm/basic/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
+			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+
+			tmpDir := t.TempDir()
+			lockfilePath := filepath.Join(tmpDir, "package-lock.json")
+			data, err := os.ReadFile(tt.lockfile)
+			if err != nil {
+				t.Fatalf("failed reading lockfile for copy: %v", err)
+			}
+			if err := os.WriteFile(lockfilePath, data, 0644); err != nil {
+				t.Fatalf("failed copying lockfile: %v", err)
+			}
+
+			// make a npmrc to talk to test registry
+			if err := os.WriteFile(filepath.Join(tmpDir, ".npmrc"), []byte("registry="+srv.URL+"\n"), 0644); err != nil {
+				t.Fatalf("failed creating npmrc: %v", err)
+			}
+
+			opts := options.FixVulnsOptions{
+				Lockfile:           lockfilePath,
+				Strategy:           strategy.StrategyInPlace,
+				MatcherClient:      matcher,
+				ResolveClient:      client,
+				RemediationOptions: tt.remOpts,
+				MaxUpgrades:        tt.maxUpgrades,
+				NoIntroduce:        tt.noIntroduce,
+			}
+
+			gotRes, err := guidedremediation.FixVulns(opts)
+			if err != nil {
+				t.Fatalf("error fixing vulns: %v", err)
+			}
+			var wantRes result.Result
+			f, err := os.Open(tt.wantResultPath)
+			if err != nil {
+				t.Fatalf("failed opening result file: %v", err)
+			}
+			defer f.Close()
+			if err := json.NewDecoder(f).Decode(&wantRes); err != nil {
+				t.Fatalf("failed decoding result file: %v", err)
+			}
+			diffOpts := []cmp.Option{
+				cmpopts.IgnoreFields(result.Result{}, "Path"),
+				cmpopts.IgnoreFields(result.PackageUpdate{}, "Type"),
+			}
+			if diff := cmp.Diff(wantRes, gotRes, diffOpts...); diff != "" {
+				t.Errorf("FixVulns() result mismatch (-want +got):\n%s", diff)
+			}
+
+			wantLockfile, err := os.ReadFile(tt.wantLockfilePath)
+			if err != nil {
+				t.Fatalf("failed reading want lockfile for comparison: %v", err)
+			}
+			gotLockfile, err := os.ReadFile(lockfilePath)
+			if err != nil {
+				t.Fatalf("failed reading got lockfile for comparison: %v", err)
+			}
+
+			if diff := cmp.Diff(wantLockfile, gotLockfile); diff != "" {
+				t.Errorf("FixVulns() lockfile mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name             string
