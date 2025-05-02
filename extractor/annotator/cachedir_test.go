@@ -22,7 +22,8 @@ func TestIsInsideCacheDir(t *testing.T) {
 		// macOS
 		{inputPath: "/Users/username/Library/Caches/com.apple.Safari", want: true},
 		{inputPath: "/private/tmp/mytmpfile", want: true},
-		{inputPath: "/System/Volumes/Data/var/tmp/file", want: true},
+		{inputPath: "/System/Volumes/Data/private/var/tmp/file", want: true},
+		{inputPath: "/System/Volumes/Data/private/tmp/file", want: true},
 		{inputPath: "/Users/username/Documents", want: false},
 
 		// Windows

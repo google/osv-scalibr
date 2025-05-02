@@ -17,34 +17,25 @@ package annotator
 import (
 	"path/filepath"
 	"regexp"
-	"strings"
-)
-
-type matcher func(string) bool
-
-var (
-	linuxTrashPattern = regexp.MustCompile(`home/[^/]+/\.local/share/Trash/`)
-	linuxCachePattern = regexp.MustCompile(`home/[^/]+/\.cache/`)
-	macosCachePattern = regexp.MustCompile(`Users/[^/]+/Library/Caches/`)
-	windowsTmpPattern = regexp.MustCompile(`Users/[^/]+/AppData/Local/Temp/`)
 )
 
 // patterns to match cache directories
-var cacheDirMatchers = []matcher{
+var cacheDirPatterns = []*regexp.Regexp{
 	// Linux/Unix-like systems
-	func(s string) bool { return strings.Contains(s, "tmp/") },
-	func(s string) bool { return strings.Contains(s, "var/cache/") },
-	linuxTrashPattern.MatchString,
-	linuxCachePattern.MatchString,
+	regexp.MustCompile(`^/?tmp/`),
+	regexp.MustCompile(`^/?home/[^/]+/\.local/share/Trash/`),
+	regexp.MustCompile(`^/?home/[^/]+/\.cache/`),
+	regexp.MustCompile(`^/?var/cache/`),
 
 	// macOS
-	macosCachePattern.MatchString,
-	func(s string) bool { return strings.Contains(s, "private/tmp/") },
-	func(s string) bool { return strings.Contains(s, "System/Volumes/Data/var/tmp/") },
+	regexp.MustCompile(`^/?private/tmp/`),
+	regexp.MustCompile(`^/?System/Volumes/Data/private/var/tmp/`),
+	regexp.MustCompile(`^/?System/Volumes/Data/private/tmp/`),
+	regexp.MustCompile(`^/?Users/[^/]+/Library/Caches/`),
 
 	// Windows
-	windowsTmpPattern.MatchString,
-	func(s string) bool { return strings.Contains(s, "Windows/Temp/") },
+	regexp.MustCompile(`(C:/)?Users/[^/]+/AppData/Local/Temp/`),
+	regexp.MustCompile(`(C:/)?Windows/Temp/`),
 }
 
 // IsInsideCacheDir checks if the given path is inside a cache directory.
@@ -57,8 +48,8 @@ func IsInsideCacheDir(path string) bool {
 	absPath = filepath.ToSlash(absPath)
 
 	// Check if the absolute path matches any of the known cache directory patterns
-	for _, match := range cacheDirMatchers {
-		if match(absPath) {
+	for _, r := range cacheDirPatterns {
+		if r.MatchString(absPath) {
 			return true
 		}
 	}
