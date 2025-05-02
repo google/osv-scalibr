@@ -61,32 +61,33 @@ type containerState struct {
 // containerStatus represents the current state of a container
 type containerStatus int
 
+// The numbers in the enums correspond to the integer values from the sqliteDB/boltDB
 const (
 	// containerStateUnknown indicates that the container is in an error
 	// state where information about it cannot be retrieved
-	containerStateUnknown containerStatus = iota
+	containerStateUnknown containerStatus = 0
 	// containerStateConfigured indicates that the container has had its
 	// storage configured but it has not been created in the OCI runtime
-	containerStateConfigured containerStatus = iota
+	containerStateConfigured containerStatus = 1
 	// containerStateCreated indicates the container has been created in
 	// the OCI runtime but not started
-	containerStateCreated containerStatus = iota
+	containerStateCreated containerStatus = 2
 	// containerStateRunning indicates the container is currently executing
-	containerStateRunning containerStatus = iota
+	containerStateRunning containerStatus = 3
 	// containerStateStopped indicates that the container was running but has
 	// exited
-	containerStateStopped containerStatus = iota
+	containerStateStopped containerStatus = 4
 	// containerStatePaused indicates that the container has been paused
-	containerStatePaused containerStatus = iota
+	containerStatePaused containerStatus = 5
 	// containerStateExited indicates the container has stopped and been
 	// cleaned up
-	containerStateExited containerStatus = iota
+	containerStateExited containerStatus = 6
 	// containerStateRemoving indicates the container is in the process of
 	// being removed.
-	containerStateRemoving containerStatus = iota
+	containerStateRemoving containerStatus = 7
 	// containerStateStopping indicates the container is in the process of
 	// being stopped.
-	containerStateStopping containerStatus = iota
+	containerStateStopping containerStatus = 8
 )
 
 // String returns a string representation for users of a container state.
