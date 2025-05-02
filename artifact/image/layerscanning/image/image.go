@@ -33,7 +33,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
-	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -70,7 +69,6 @@ var (
 type Config struct {
 	MaxFileBytes    int64
 	MaxSymlinkDepth int
-	Requirer        require.FileRequirer
 }
 
 // DefaultConfig returns the default configuration to load an Image.
@@ -78,8 +76,6 @@ func DefaultConfig() *Config {
 	return &Config{
 		MaxFileBytes:    DefaultMaxFileBytes,
 		MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-		// All files are required by default.
-		Requirer: &require.FileRequirerAll{},
 	}
 }
 
@@ -92,9 +88,6 @@ func DefaultConfig() *Config {
 func validateConfig(config *Config) error {
 	if config.MaxFileBytes <= 0 {
 		return fmt.Errorf("%w: max file bytes must be positive: %d", ErrInvalidConfig, config.MaxFileBytes)
-	}
-	if config.Requirer == nil {
-		return fmt.Errorf("%w: requirer must be specified", ErrInvalidConfig)
 	}
 	if config.MaxSymlinkDepth < 0 {
 		return fmt.Errorf("%w: max symlink depth must be non-negative: %d", ErrInvalidConfig, config.MaxSymlinkDepth)

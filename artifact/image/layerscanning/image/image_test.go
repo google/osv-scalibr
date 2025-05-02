@@ -36,7 +36,6 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
-	"github.com/google/osv-scalibr/artifact/image/require"
 )
 
 const (
@@ -159,16 +158,7 @@ func TestFromTarball(t *testing.T) {
 			name:    "invalid config - non positive maxFileBytes",
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
 			config: &Config{
-				Requirer:     &require.FileRequirerAll{},
 				MaxFileBytes: 0,
-			},
-			wantErrDuringImageCreation: ErrInvalidConfig,
-		},
-		{
-			name:    "invalid config - missing requirer",
-			tarPath: filepath.Join(testdataDir, "single-file.tar"),
-			config: &Config{
-				MaxFileBytes: DefaultMaxFileBytes,
 			},
 			wantErrDuringImageCreation: ErrInvalidConfig,
 		},
@@ -340,7 +330,6 @@ func TestFromTarball(t *testing.T) {
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
 			config: &Config{
 				MaxFileBytes: 1,
-				Requirer:     &require.FileRequirerAll{},
 			},
 			wantChainLayerEntries: []chainLayerEntries{
 				{
@@ -394,11 +383,6 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes:    DefaultMaxFileBytes,
 				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-				// dir1/sample.txt is not explicitly required, but should be unpacked because it is the
-				// target of a required symlink.
-				Requirer: require.NewFileRequirerPaths([]string{
-					"/dir1/absolute-symlink.txt",
-				}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -422,9 +406,6 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes:    DefaultMaxFileBytes,
 				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-				Requirer: require.NewFileRequirerPaths([]string{
-					"/dir1/chain-symlink.txt",
-				}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -551,8 +532,6 @@ func TestFromTarball(t *testing.T) {
 			tarPath: filepath.Join(testdataDir, "multiple-files.tar"),
 			config: &Config{
 				MaxFileBytes: DefaultMaxFileBytes,
-				// Only require foo.txt.
-				Requirer: require.NewFileRequirerPaths([]string{"/foo.txt"}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -782,11 +761,6 @@ func TestFromV1Image(t *testing.T) {
 			config: &Config{
 				MaxFileBytes:    DefaultMaxFileBytes,
 				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-				Requirer: require.NewFileRequirerPaths([]string{
-					"/usr/share/doc/a/copyright",
-					"/usr/share/doc/b/copyright",
-					"/usr/share/doc/c/copyright",
-				}),
 			},
 			wantChainLayerEntries: []chainLayerEntries{
 				{
