@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// fakelayerbuilder uses a yaml file with custom syntax to build up fake layers for testing
+// Package fakelayerbuilder uses a yaml file with custom syntax to build up fake layers for testing
 //
 // Example:
 //
@@ -71,6 +71,7 @@ func parseFakeLayerFileFromPath(path string) (FakeTestLayers, error) {
 	return layers, nil
 }
 
+// BuildFakeChainLayersFromPath builds a slice of fake chain layers from a yaml file as defined at the top of this file.
 func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath string) []*fakechainlayer.FakeChainLayer {
 	t.Helper()
 
@@ -112,7 +113,17 @@ func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath st
 		for k, v := range chainLayerContents {
 			chainLayerContentsClone[k] = v
 		}
-		chainLayer, err := fakechainlayer.New(filepath.Join(testDir, fmt.Sprintf("chainlayer-%d", index)), index, diffID, command, fakeLayer, chainLayerContentsClone, false)
+		cfg := &fakechainlayer.Config{
+			TestDir:           filepath.Join(testDir, fmt.Sprintf("chainlayer-%d", index)),
+			Index:             index,
+			DiffID:            diffID,
+			Command:           command,
+			Layer:             fakeLayer,
+			Files:             chainLayerContentsClone,
+			FilesAlreadyExist: false,
+		}
+
+		chainLayer, err := fakechainlayer.New(cfg)
 		if err != nil {
 			t.Fatalf("fakechainlayer.New(%d, %q, %q, %v, %v) failed: %v", index, diffID, command, layer, chainLayerContentsClone, err)
 		}

@@ -728,6 +728,7 @@ func TestScanResultToProto(t *testing.T) {
 		LayerDetails: &extractor.LayerDetails{
 			Index:       0,
 			DiffID:      "hash1",
+			ChainID:     "chainid1",
 			Command:     "command1",
 			InBaseImage: true,
 		},
@@ -753,6 +754,7 @@ func TestScanResultToProto(t *testing.T) {
 		LayerDetails: &spb.LayerDetails{
 			Index:       0,
 			DiffId:      "hash1",
+			ChainId:     "chainid1",
 			Command:     "command1",
 			InBaseImage: true,
 		},

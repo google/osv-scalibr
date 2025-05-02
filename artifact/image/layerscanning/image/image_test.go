@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
 	"github.com/google/osv-scalibr/artifact/image/pathtree"
+	"github.com/opencontainers/go-digest"
 )
 
 const (
@@ -50,6 +51,14 @@ const (
 		SUPPORT_URL="http://www.debian.org/support/"
 		BUG_REPORT_URL="http://bugs.debian.org/"
 	`
+
+	diffID1 = digest.Digest("sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b") // sha256("1")
+	diffID2 = digest.Digest("sha256:d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35") // sha256("2")
+	diffID3 = digest.Digest("sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce") // sha256("3")
+
+	chainID1 = digest.Digest("sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b") // sha256("1")
+	chainID2 = digest.Digest("sha256:53e60bc18399d11a8953c224619cd6147f2f8ef1233acf2818575ba1a17f7ca2") // sha256(chainID1 + " " + diffID2)
+	chainID3 = digest.Digest("sha256:2c39000a5bc99e4311f3dc333b5a0173692f6a77d9de0847a087ad7e09edf5f8") // sha256(chainID2 + " " + diffID3)
 )
 
 type filepathContentPair struct {
@@ -625,7 +634,7 @@ func TestFromV1Image(t *testing.T) {
 			name: "image with no config file",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
-					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
+					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
 				},
 				errorOnConfigFile: true,
 			},
@@ -693,7 +702,7 @@ func TestFromV1Image(t *testing.T) {
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
 					// Layer will fail on Uncompressed() call.
-					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
+					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
 				},
 				config: &v1.ConfigFile{
 					History: []v1.History{
@@ -896,9 +905,9 @@ func scalibrFilesInTmp(t *testing.T) []string {
 }
 
 func TestInitializeChainLayers(t *testing.T) {
-	fakeV1Layer1 := fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
-	fakeV1Layer2 := fakev1layer.New(t, "456", "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
-	fakeV1Layer3 := fakev1layer.New(t, "789", "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
+	fakeV1Layer1 := fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
+	fakeV1Layer2 := fakev1layer.New(t, diffID2.Encoded(), "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
+	fakeV1Layer3 := fakev1layer.New(t, diffID3.Encoded(), "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
 
 	tests := []struct {
 		name            string
@@ -919,9 +928,10 @@ func TestInitializeChainLayers(t *testing.T) {
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
 					latestLayer: &Layer{
-						diffID:  "sha256:123",
+						diffID:  diffID1,
 						isEmpty: false,
 					},
+					chainID: chainID1,
 				},
 			},
 		},
@@ -941,9 +951,10 @@ func TestInitializeChainLayers(t *testing.T) {
 					index:        0,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
+					chainID: chainID1,
 				},
 			},
 		},
@@ -969,27 +980,30 @@ func TestInitializeChainLayers(t *testing.T) {
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        1,
+					chainID:      chainID2,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
-						diffID:       "sha256:456",
+						diffID:       diffID2,
 						isEmpty:      false,
 					},
 				},
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        2,
+					chainID:      chainID3,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
-						diffID:       "sha256:789",
+						diffID:       diffID3,
 						isEmpty:      false,
 					},
 				},
@@ -1032,9 +1046,10 @@ func TestInitializeChainLayers(t *testing.T) {
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
@@ -1049,9 +1064,10 @@ func TestInitializeChainLayers(t *testing.T) {
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        2,
+					chainID:      chainID2,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
-						diffID:       "sha256:456",
+						diffID:       diffID2,
 						isEmpty:      false,
 					},
 				},
@@ -1066,9 +1082,10 @@ func TestInitializeChainLayers(t *testing.T) {
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        4,
+					chainID:      chainID3,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
-						diffID:       "sha256:789",
+						diffID:       diffID3,
 						isEmpty:      false,
 					},
 				},
@@ -1102,25 +1119,28 @@ func TestInitializeChainLayers(t *testing.T) {
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        1,
+					chainID:      chainID2,
 					latestLayer: &Layer{
-						diffID:  "sha256:456",
+						diffID:  diffID2,
 						isEmpty: false,
 					},
 				},
 				{
 					fileNodeTree: pathtree.NewNode[fileNode](),
 					index:        2,
+					chainID:      chainID3,
 					latestLayer: &Layer{
-						diffID:  "sha256:789",
+						diffID:  diffID3,
 						isEmpty: false,
 					},
 				},
@@ -1184,7 +1204,6 @@ func TestTopFS(t *testing.T) {
 						index: 0,
 						latestLayer: &Layer{
 							buildCommand: "",
-							diffID:       "sha256:123",
 							isEmpty:      false,
 						},
 					},
@@ -1213,7 +1232,6 @@ func TestTopFS(t *testing.T) {
 						index: 0,
 						latestLayer: &Layer{
 							buildCommand: "",
-							diffID:       "sha256:123",
 							isEmpty:      false,
 						},
 					},
@@ -1240,7 +1258,6 @@ func TestTopFS(t *testing.T) {
 						index: 0,
 						latestLayer: &Layer{
 							buildCommand: "",
-							diffID:       "sha256:123",
 							isEmpty:      false,
 						},
 					},

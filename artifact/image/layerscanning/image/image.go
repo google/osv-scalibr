@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
+	"github.com/opencontainers/go-digest"
 )
 
 const (
@@ -339,6 +340,18 @@ func validateHistory(v1Layers []v1.Layer, history []v1.History) error {
 func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlinkDepth int) ([]*chainLayer, error) {
 	var chainLayers []*chainLayer
 
+	chainIDs, err := chainIDsForV1Layers(v1Layers)
+	if err != nil {
+		log.Warnf("Failed to get chainIDs for v1 layers: %v", err)
+	}
+	// Defensively extend the length of the chainIDs slice to the length of the v1Layers slice.
+	if len(chainIDs) < len(v1Layers) {
+		log.Warnf("initializeChainLayers: ChainIDs slice is shorter than v1Layers slice, this should not happen")
+		for i := len(chainIDs); i < len(v1Layers); i++ {
+			chainIDs = append(chainIDs, digest.Digest(""))
+		}
+	}
+
 	// If history is invalid, then just create the chain layers based on the v1 layers.
 	if err := validateHistory(v1Layers, history); err != nil {
 		log.Warnf("Invalid history entries found in image, layer metadata may not be populated: %v")
@@ -347,6 +360,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 			chainLayers = append(chainLayers, &chainLayer{
 				fileNodeTree:    pathtree.NewNode[fileNode](),
 				index:           i,
+				chainID:         chainIDs[i],
 				latestLayer:     convertV1Layer(v1Layer, "", false),
 				maxSymlinkDepth: maxSymlinkDepth,
 			})
@@ -387,6 +401,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 		chainLayer := &chainLayer{
 			fileNodeTree:    pathtree.NewNode[fileNode](),
 			index:           historyIndex,
+			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false),
 			maxSymlinkDepth: maxSymlinkDepth,
 		}
@@ -402,6 +417,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 		chainLayers = append(chainLayers, &chainLayer{
 			fileNodeTree:    pathtree.NewNode[fileNode](),
 			index:           historyIndex,
+			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(v1Layers[v1LayerIndex], "", false),
 			maxSymlinkDepth: maxSymlinkDepth,
 		})

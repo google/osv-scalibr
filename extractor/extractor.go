@@ -40,8 +40,11 @@ type SourceCodeIdentifier struct {
 
 // LayerDetails stores details about the layer a package was found in.
 type LayerDetails struct {
-	Index       int
-	DiffID      string
+	Index  int
+	DiffID string
+	// The layer chain ID (sha256 hash) of the layer in the container image.
+	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+	ChainID     string
 	Command     string
 	InBaseImage bool
 }

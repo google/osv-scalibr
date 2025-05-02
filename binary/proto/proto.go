@@ -616,6 +616,7 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 	return &spb.LayerDetails{
 		Index:       int32(ld.Index),
 		DiffId:      ld.DiffID,
+		ChainId:     ld.ChainID,
 		Command:     ld.Command,
 		InBaseImage: ld.InBaseImage,
 	}

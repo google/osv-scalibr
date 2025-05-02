@@ -79,6 +79,7 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
 			Index:       i,
 			DiffID:      diffID,
+			ChainID:     chainLayer.ChainID().String(),
 			Command:     chainLayer.Layer().Command(),
 			InBaseImage: false,
 		})

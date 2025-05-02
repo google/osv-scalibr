@@ -27,6 +27,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/opencontainers/go-digest"
+	"github.com/opencontainers/image-spec/identity"
 )
 
 var (
@@ -96,6 +97,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 // chainLayer represents all the files on up to a layer (files from a chain of layers).
 type chainLayer struct {
 	index           int
+	chainID         digest.Digest
 	fileNodeTree    *pathtree.Node[fileNode]
 	latestLayer     image.Layer
 	maxSymlinkDepth int
@@ -112,6 +114,10 @@ func (chainLayer *chainLayer) FS() scalibrfs.FS {
 // Index returns the index of the latest layer in the layer chain.
 func (chainLayer *chainLayer) Index() int {
 	return chainLayer.index
+}
+
+func (chainLayer *chainLayer) ChainID() digest.Digest {
+	return chainLayer.chainID
 }
 
 // Layer returns the latest layer in the layer chain.
@@ -277,4 +283,38 @@ func normalizePath(path string) string {
 		path = "/" + path
 	}
 	return path
+}
+
+// diffIDForV1Layer returns the diffID of a v1.Layer.
+func diffIDForV1Layer(layer v1.Layer) (digest.Digest, error) {
+	d, err := layer.DiffID()
+	if err != nil {
+		return "", fmt.Errorf("failed to get diffID from v1 layer %+v: %w", layer, err)
+	}
+	diffID, err := digest.Parse(d.String())
+	if err != nil {
+		return "", fmt.Errorf("failed to parse diffID %q from v1 layer %+v: %w", d.String(), layer, err)
+	}
+	return diffID, nil
+}
+
+// chainIDsForV1Layers returns the chainIDs of a slice of v1.Layers. The chainIDs are computed
+// recursively using the identity.ChainIDs function. If an error is encountered when getting the
+// diffID of a v1.Layer, the chainIDs computed so far are returned with the error.
+// len(v1Layers) == len(chainIDs) is guaranteed even if an error is returned.
+func chainIDsForV1Layers(v1Layers []v1.Layer) ([]digest.Digest, error) {
+	var diffIDs []digest.Digest
+	var err error
+	for _, v1Layer := range v1Layers {
+		var diffID digest.Digest
+		diffID, err = diffIDForV1Layer(v1Layer)
+		if err != nil {
+			break
+		}
+		diffIDs = append(diffIDs, diffID)
+	}
+	chainIDs := make([]digest.Digest, len(v1Layers))
+	computedChainIDs := identity.ChainIDs(diffIDs)
+	copy(chainIDs, computedChainIDs)
+	return chainIDs, err
 }
