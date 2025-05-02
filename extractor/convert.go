@@ -15,6 +15,8 @@
 package extractor
 
 import (
+	hexpurl "github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/purl"
+	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -40,6 +42,10 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	switch p.PURLType {
 	case purl.TypePyPi:
 		return pypipurl.MakePackageURL(p.Name, p.Version)
+	case purl.TypeNPM:
+		return npmpurl.MakePackageURL(p.Name, p.Version)
+	case purl.TypeHex:
+		return hexpurl.MakePackageURL(p.Name, p.Version)
 	}
 	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil

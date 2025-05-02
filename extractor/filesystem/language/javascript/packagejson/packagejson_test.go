@@ -150,6 +150,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "testdata",
 					Version:   "10.46.8",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Author: &packagejson.Person{
@@ -168,6 +169,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "accepts",
 					Version:   "1.3.8",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/accepts/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
@@ -192,6 +194,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "accepts",
 					Version:   "1.3.8",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/no-person-name/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Contributors: []*packagejson.Person{
@@ -212,6 +215,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "acorn",
 					Version:   "1.2.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Maintainers: []*packagejson.Person{
@@ -263,8 +267,9 @@ func TestExtract(t *testing.T) {
 			path: "testdata/undici-package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "undici",
-					Version: "5.28.3",
+					Name:     "undici",
+					Version:  "5.28.3",
+					PURLType: purl.TypeNPM,
 					Locations: []string{
 						"testdata/undici-package.json",
 					},
@@ -293,6 +298,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "jsonparse",
 					Version:   "1.3.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/not-vscode.json"},
 					Metadata: &packagejson.JavascriptPackageJSONMetadata{
 						Author: &packagejson.Person{
@@ -388,6 +394,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeNPM,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

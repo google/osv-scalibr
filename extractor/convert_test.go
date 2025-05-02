@@ -63,6 +63,34 @@ func TestToPURL(t *testing.T) {
 				Version: "1.2.3",
 			},
 		},
+		{
+			name: "npm_purl",
+			pkg: &extractor.Package{
+				Name:      "Name",
+				Version:   "1.2.3",
+				PURLType:  purl.TypeNPM,
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "name",
+				Version: "1.2.3",
+			},
+		},
+		{
+			name: "hex_purl",
+			pkg: &extractor.Package{
+				Name:      "Name",
+				Version:   "1.2.3",
+				PURLType:  purl.TypeHex,
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeHex,
+				Name:    "name",
+				Version: "1.2.3",
+			},
+		},
 	}
 
 	for _, tt := range tests {

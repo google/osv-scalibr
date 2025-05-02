@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -44,6 +45,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "balanced-match",
 					Version:   "1.0.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/one-package.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -60,6 +62,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "balanced-match",
 					Version:   "1.0.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/no-version.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -76,6 +79,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "concat-stream",
 					Version:   "1.6.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/two-packages.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -84,6 +88,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "concat-map",
 					Version:   "0.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/two-packages.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -100,6 +105,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "concat-stream",
 					Version:   "1.6.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-quotes.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -108,6 +114,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "concat-map",
 					Version:   "0.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-quotes.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -124,6 +131,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "define-properties",
 					Version:   "1.1.3",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-versions.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -132,6 +140,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "define-property",
 					Version:   "0.2.5",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-versions.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -140,6 +149,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "define-property",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-versions.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -148,6 +158,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "define-property",
 					Version:   "2.0.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-versions.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -164,6 +175,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@babel/code-frame",
 					Version:   "7.12.13",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-constraints.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -172,6 +184,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "domelementtype",
 					Version:   "1.3.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/multiple-constraints.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -188,6 +201,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@babel/code-frame",
 					Version:   "7.12.11",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/scoped-packages.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -196,6 +210,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@babel/compat-data",
 					Version:   "7.14.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/scoped-packages.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -212,6 +227,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "css-tree",
 					Version:   "1.0.0-alpha.37",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-prerelease.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -220,6 +236,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "gensync",
 					Version:   "1.0.0-beta.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-prerelease.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -228,6 +245,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "node-fetch",
 					Version:   "3.0.0-beta.9",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-prerelease.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -236,6 +254,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "resolve",
 					Version:   "1.20.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-prerelease.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -244,6 +263,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "resolve",
 					Version:   "2.0.0-next.3",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-prerelease.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -260,6 +280,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "domino",
 					Version:   "2.1.6+git",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-build-string.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -268,6 +289,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "tslib",
 					Version:   "2.6.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-build-string.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -284,6 +306,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "mine1",
 					Version:   "1.0.0-alpha.37",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0a2d2506c1fe299691fc5db53a2097db3bd615bc",
@@ -292,6 +315,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "mine2",
 					Version:   "0.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0a2d2506c1fe299691fc5db53a2097db3bd615bc",
@@ -300,6 +324,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "mine3",
 					Version:   "1.2.3",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "094e581aaf927d010e4b61d706ba584551dac502",
@@ -308,6 +333,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "mine4",
 					Version:   "0.0.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "aa3bdfcb1d845c79f14abb66f60d35b8a3ee5998",
@@ -316,6 +342,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "mine4",
 					Version:   "0.0.4",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "aa3bdfcb1d845c79f14abb66f60d35b8a3ee5998",
@@ -324,6 +351,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "my-package",
 					Version:   "1.8.3",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b3bd3f1b3dad036e671251f5258beaae398f983a",
@@ -332,6 +360,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@bower_components/angular-animate",
 					Version:   "1.4.14",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e7f778fc054a086ba3326d898a00fa1bc78650a8",
@@ -340,6 +369,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@bower_components/alertify",
 					Version:   "0.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e7b6c46d76604d297c389d830817b611c9a8f17c",
@@ -348,6 +378,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "minimist",
 					Version:   "0.0.8",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3754568bfd43a841d2d72d7fb54598635aea8fa4",
@@ -356,6 +387,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "bats-assert",
 					Version:   "2.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4bdd58d3fbcdce3209033d44d884e87add1d8405",
@@ -364,6 +396,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "bats-support",
 					Version:   "0.3.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d140a65044b2d6810381935ae7f0c94c7023c8c3",
@@ -372,6 +405,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "bats",
 					Version:   "1.5.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "172580d2ce19ee33780b5f1df817bbddced43789",
@@ -380,6 +414,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "vue",
 					Version:   "2.6.12",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "bb253db0b3e17124b6d1fe93fbf2db35470a1347",
@@ -388,6 +423,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "kit",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5b6830c0252eb73c6024d40a8ff5106d3023a2a6",
@@ -396,6 +432,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "casadistance",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "f0308391f0c50104182bfb2332a53e4e523a4603",
@@ -404,6 +441,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "babel-preset-php",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
@@ -412,6 +450,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "2.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
@@ -420,6 +459,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "5.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
@@ -436,6 +476,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "etag",
 					Version:   "1.8.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -444,6 +485,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "filedep",
 					Version:   "1.2.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -452,6 +494,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "lodash",
 					Version:   "1.3.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -460,6 +503,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "other_package",
 					Version:   "0.0.2",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -468,6 +512,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "sprintf-js",
 					Version:   "0.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -476,6 +521,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "etag",
 					Version:   "1.8.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/files.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -492,6 +538,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "@babel/helper-validator-identifier",
 					Version:   "7.22.20",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-aliases.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -500,6 +547,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "ansi-regex",
 					Version:   "6.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-aliases.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -508,6 +556,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				{
 					Name:      "ansi-regex",
 					Version:   "5.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-aliases.v1.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",

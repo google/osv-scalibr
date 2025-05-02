@@ -314,7 +314,8 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
 			},
-			Version: pkg.Version,
+			Version:  pkg.Version,
+			PURLType: purl.TypeNPM,
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},
@@ -326,12 +327,9 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(p.Name),
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.

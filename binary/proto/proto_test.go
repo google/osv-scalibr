@@ -219,8 +219,9 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 	purlJavascriptPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeNPM,
 		Metadata: &packagejson.JavascriptPackageJSONMetadata{
 			Maintainers: []*packagejson.Person{
 				{
