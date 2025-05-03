@@ -37,6 +37,8 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
+	"github.com/google/osv-scalibr/enricher"
+	enl "github.com/google/osv-scalibr/enricher/enricherlist"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
@@ -122,6 +124,7 @@ type Flags struct {
 	Output                     Array
 	ExtractorsToRun            []string
 	DetectorsToRun             []string
+	EnrichersToRun             []string
 	PathsToExtract             []string
 	IgnoreSubDirs              bool
 	DirsToSkip                 []string
@@ -186,6 +189,9 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateMultiStringArg(flags.DetectorsToRun); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
+	if err := validateMultiStringArg(flags.EnrichersToRun); err != nil {
+		return fmt.Errorf("--enrichers: %w", err)
+	}
 	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
 	}
@@ -195,7 +201,7 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateGlob(flags.SkipDirGlob); err != nil {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(flags.DetectorsToRun, flags.EnrichersToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return err
 	}
 	return nil
@@ -266,16 +272,21 @@ func validateGlob(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
+func validateDependency(detectors []string, enrichers []string, extractors []string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
+		EnrichersToRun:  enrichers,
 	}
 	ex, stdex, err := f.extractorsToRun()
 	if err != nil {
 		return err
 	}
 	det, err := f.detectorsToRun()
+	if err != nil {
+		return err
+	}
+	en, err := f.enrichersToRun()
 	if err != nil {
 		return err
 	}
@@ -294,6 +305,13 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 				}
 			}
 		}
+		for _, e := range en {
+			for _, req := range e.RequiredPlugins() {
+				if !exMap[req] {
+					return fmt.Errorf("extractor %s must be turned on for Enricher %s to run", req, e.Name())
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -308,9 +326,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	enrichers, err := f.enrichersToRun()
+	if err != nil {
+		return nil, err
+	}
 	capab := f.capabilities()
 	if f.FilterByCapabilities {
-		extractors, standaloneExtractors, detectors = filterByCapabilities(extractors, standaloneExtractors, detectors, capab)
+		extractors, standaloneExtractors, detectors, enrichers = filterByCapabilities(extractors, standaloneExtractors, detectors, enrichers, capab)
 	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
@@ -337,6 +359,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
+		Enrichers:            enrichers,
 		Capabilities:         capab,
 		PathsToExtract:       f.PathsToExtract,
 		IgnoreSubDirs:        f.IgnoreSubDirs,
@@ -370,7 +393,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 	}
 }
 
-// GetCDXConfig creates an CDXConfig struct based on the CLI flags.
+// GetCDXConfig creates a CDXConfig struct based on the CLI flags.
 func (f *Flags) GetCDXConfig() converter.CDXConfig {
 	return converter.CDXConfig{
 		ComponentName:    f.CDXComponentName,
@@ -473,6 +496,17 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
+func (f *Flags) enrichersToRun() ([]enricher.Enricher, error) {
+	if len(f.EnrichersToRun) == 0 {
+		return []enricher.Enricher{}, nil
+	}
+	enrichers, err := enl.FromNames(multiStringToList(f.EnrichersToRun))
+	if err != nil {
+		return []enricher.Enricher{}, err
+	}
+	return enrichers, nil
+}
+
 func multiStringToList(arg []string) []string {
 	var result []string
 	for _, item := range arg {
@@ -558,11 +592,12 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 // by removing all plugins that don't satisfy the specified capabilities.
 func filterByCapabilities(
 	f []filesystem.Extractor, s []standalone.Extractor,
-	d []detector.Detector, capab *plugin.Capabilities) (
-	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector) {
+	d []detector.Detector, e []enricher.Enricher, capab *plugin.Capabilities) (
+	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []enricher.Enricher) {
 	ff := make([]filesystem.Extractor, 0, len(f))
 	sf := make([]standalone.Extractor, 0, len(s))
 	df := make([]detector.Detector, 0, len(d))
+	ef := make([]enricher.Enricher, 0, len(e))
 	for _, ex := range f {
 		if err := plugin.ValidateRequirements(ex, capab); err == nil {
 			ff = append(ff, ex)
@@ -578,7 +613,12 @@ func filterByCapabilities(
 			df = append(df, det)
 		}
 	}
-	return ff, sf, df
+	for _, e := range e {
+		if err := plugin.ValidateRequirements(e, capab); err == nil {
+			ef = append(ef, e)
+		}
+	}
+	return ff, sf, df, ef
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {

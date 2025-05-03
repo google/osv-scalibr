@@ -63,6 +63,8 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag([]string{"default"})
 	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
+	enrichersToRun := cli.NewStringListFlag([]string{"default"})
+	fs.Var(&enrichersToRun, "enrichers", "Comma-separated list of enrichers plugins to run")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -98,6 +100,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		Output:                     output,
 		ExtractorsToRun:            extractorsToRun.GetSlice(),
 		DetectorsToRun:             detectorsToRun.GetSlice(),
+		EnrichersToRun:             enrichersToRun.GetSlice(),
 		PathsToExtract:             pathsToExtract,
 		IgnoreSubDirs:              *ignoreSubDirs,
 		DirsToSkip:                 dirsToSkip.GetSlice(),

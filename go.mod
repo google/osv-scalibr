@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	deps.dev/api/v3 v3.0.0-20250307021655-d811e36f9cad
+	deps.dev/api/v3alpha v0.0.0-20250429014815-ac0aa6a085fa
 	deps.dev/util/maven v0.0.0-20250307021655-d811e36f9cad
 	deps.dev/util/pypi v0.0.0-20250307021655-d811e36f9cad
 	deps.dev/util/resolve v0.0.0-20250310223405-f4cf91c9e684
@@ -26,6 +27,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/michaelkedar/xml v0.0.0-20250310223042-5d14c9302b17
 	github.com/mitchellh/hashstructure/v2 v2.0.2
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/opencontainers/runtime-spec v1.1.0
@@ -47,8 +49,8 @@ require (
 	golang.org/x/sys v0.31.0
 	golang.org/x/text v0.23.0
 	golang.org/x/vuln v1.0.4
-	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/grpc v1.72.0
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 	www.velocidex.com/golang/regparser v0.0.0-20240404115756-2169ac0e3c09
@@ -106,16 +108,17 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
-	go.opentelemetry.io/otel v1.32.0 // indirect
-	go.opentelemetry.io/otel/metric v1.32.0 // indirect
-	go.opentelemetry.io/otel/trace v1.32.0 // indirect
+	go.opentelemetry.io/otel v1.34.0 // indirect
+	go.opentelemetry.io/otel/metric v1.34.0 // indirect
+	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241202173237-19429a94021a // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )

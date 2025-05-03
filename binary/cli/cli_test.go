@@ -44,6 +44,7 @@ func TestValidateFlags(t *testing.T) {
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
 				DetectorsToRun:  []string{"weakcreds,cis"},
+				EnrichersToRun:  []string{"enricher/baseimage"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
@@ -132,6 +133,24 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
+			desc: "Invalid enrichers",
+			flags: &cli.Flags{
+				Root:           "/",
+				ResultFile:     "result.textproto",
+				EnrichersToRun: []string{"cve,"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Nonexistent enrichers",
+			flags: &cli.Flags{
+				Root:           "/",
+				ResultFile:     "result.textproto",
+				EnrichersToRun: []string{"asdf"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
 			desc: "Detector with missing extractor dependency when ExplicitExtractors",
 			flags: &cli.Flags{
 				Root:               "/",
@@ -195,7 +214,7 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "Remoe Image with Image Tarball",
+			desc: "Remote Image with Image Tarball",
 			flags: &cli.Flags{
 				RemoteImage:  "docker",
 				ImageTarball: "image.tar",
@@ -444,6 +463,7 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 		flags              *cli.Flags
 		wantExtractorCount int
 		wantDetectorCount  int
+		wantEnricherCount  int
 	}{
 		{
 			desc: "Create an extractor",
@@ -459,6 +479,13 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			},
 			wantDetectorCount: 1,
 		},
+		{
+			desc: "Create an enricher",
+			flags: &cli.Flags{
+				EnrichersToRun: []string{"enricher/baseimage"},
+			},
+			wantEnricherCount: 1,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg, err := tc.flags.GetScanConfig()
@@ -469,7 +496,10 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
 			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
-				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
+				t.Errorf("%v.GetScanConfig() want extractor count %d got %d", tc.flags, tc.wantExtractorCount, len(cfg.FilesystemExtractors))
+			}
+			if len(cfg.Enrichers) != tc.wantEnricherCount {
+				t.Errorf("%v.GetScanConfig() want enricher count %d got %d", tc.flags, tc.wantEnricherCount, len(cfg.Enrichers))
 			}
 		})
 	}
