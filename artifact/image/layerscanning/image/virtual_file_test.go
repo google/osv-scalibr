@@ -28,28 +28,28 @@ import (
 )
 
 var (
-	rootDirectory = &fileNode{
+	rootDirectory = &virtualFile{
 		extractDir:  "/tmp/extract",
 		layerDir:    "layer1",
 		virtualPath: "/",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	rootFile = &fileNode{
+	rootFile = &virtualFile{
 		extractDir:  "/tmp/extract",
 		layerDir:    "layer1",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	nonRootDirectory = &fileNode{
+	nonRootDirectory = &virtualFile{
 		extractDir:  "/tmp/extract",
 		layerDir:    "layer1",
 		virtualPath: "/dir1/dir2",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	nonRootFile = &fileNode{
+	nonRootFile = &virtualFile{
 		extractDir:  "/tmp/extract",
 		layerDir:    "layer1",
 		virtualPath: "/dir1/foo",
@@ -58,10 +58,10 @@ var (
 	}
 )
 
-// TODO: b/377551664 - Add tests for the Stat method for the fileNode type.
+// TODO: b/377551664 - Add tests for the Stat method for the virtualFile type.
 func TestStat(t *testing.T) {
 	baseTime := time.Now()
-	regularFileNode := &fileNode{
+	regularVirtualFile := &virtualFile{
 		extractDir:  "tempDir",
 		layerDir:    "",
 		virtualPath: "/bar",
@@ -70,7 +70,7 @@ func TestStat(t *testing.T) {
 		size:        1,
 		modTime:     baseTime,
 	}
-	symlinkFileNode := &fileNode{
+	symlinkVirtualFile := &virtualFile{
 		extractDir:  "tempDir",
 		layerDir:    "",
 		virtualPath: "/symlink-to-bar",
@@ -80,7 +80,7 @@ func TestStat(t *testing.T) {
 		size:        1,
 		modTime:     baseTime,
 	}
-	whiteoutFileNode := &fileNode{
+	whiteoutVirtualFile := &virtualFile{
 		extractDir:  "tempDir",
 		layerDir:    "",
 		virtualPath: "/bar",
@@ -97,13 +97,13 @@ func TestStat(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		node     *fileNode
+		node     *virtualFile
 		wantInfo info
 		wantErr  error
 	}{
 		{
 			name: "regular file",
-			node: regularFileNode,
+			node: regularVirtualFile,
 			wantInfo: info{
 				name:    "bar",
 				size:    1,
@@ -113,7 +113,7 @@ func TestStat(t *testing.T) {
 		},
 		{
 			name: "symlink",
-			node: symlinkFileNode,
+			node: symlinkVirtualFile,
 			wantInfo: info{
 				name:    "symlink-to-bar",
 				size:    1,
@@ -123,13 +123,13 @@ func TestStat(t *testing.T) {
 		},
 		{
 			name:    "whiteout file",
-			node:    whiteoutFileNode,
+			node:    whiteoutVirtualFile,
 			wantErr: fs.ErrNotExist,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotFileNode, gotErr := tc.node.Stat()
+			gotVirtualFile, gotErr := tc.node.Stat()
 			if tc.wantErr != nil {
 				if diff := cmp.Diff(tc.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("Stat(%v) returned unexpected error (-want +got): %v", tc.node, diff)
@@ -138,13 +138,13 @@ func TestStat(t *testing.T) {
 			}
 
 			gotInfo := info{
-				name:    gotFileNode.Name(),
-				size:    gotFileNode.Size(),
-				mode:    gotFileNode.Mode(),
-				modTime: gotFileNode.ModTime(),
+				name:    gotVirtualFile.Name(),
+				size:    gotVirtualFile.Size(),
+				mode:    gotVirtualFile.Mode(),
+				modTime: gotVirtualFile.ModTime(),
 			}
 			if diff := cmp.Diff(tc.wantInfo, gotInfo, cmp.AllowUnexported(info{})); diff != "" {
-				t.Errorf("Stat(%v) returned unexpected fileNode (-want +got): %v", tc.node, diff)
+				t.Errorf("Stat(%v) returned unexpected virtualFile (-want +got): %v", tc.node, diff)
 			}
 		})
 	}
@@ -161,22 +161,22 @@ func TestRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
-	// Close the file after the test. The file should be closed via the fileNode.Close method,
-	// however, this test explicitly closes the file since the fileNode.Close method is tested in a
+	// Close the file after the test. The file should be closed via the virtualFile.Close method,
+	// however, this test explicitly closes the file since the virtualFile.Close method is tested in a
 	// separate test.
 	defer openedRootFile.Close()
 
 	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
 	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
-	fileNodeWithUnopenedFile := &fileNode{
+	unopenedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeWithOpenedFile := &fileNode{
+	openedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/baz",
@@ -184,21 +184,21 @@ func TestRead(t *testing.T) {
 		mode:        filePermission,
 		file:        openedRootFile,
 	}
-	fileNodeNonRootFile := &fileNode{
+	nonRootVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeNonexistentFile := &fileNode{
+	nonexistentVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/xyz",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeWhiteoutFile := &fileNode{
+	whiteoutVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/abc",
@@ -207,33 +207,33 @@ func TestRead(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		node    *fileNode
+		node    *virtualFile
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "unopened root file",
-			node: fileNodeWithUnopenedFile,
+			node: unopenedVirtualFile,
 			want: "bar",
 		},
 		{
 			name: "opened root file",
-			node: fileNodeWithOpenedFile,
+			node: openedVirtualFile,
 			want: "baz",
 		},
 		{
 			name: "non-root file",
-			node: fileNodeNonRootFile,
+			node: nonRootVirtualFile,
 			want: "foo",
 		},
 		{
 			name:    "nonexistent file",
-			node:    fileNodeNonexistentFile,
+			node:    nonexistentVirtualFile,
 			wantErr: true,
 		},
 		{
 			name:    "whiteout file",
-			node:    fileNodeWhiteoutFile,
+			node:    whiteoutVirtualFile,
 			wantErr: true,
 		},
 	}
@@ -271,22 +271,22 @@ func TestReadAt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
-	// Close the file after the test. The file should be closed via the fileNode.Close method,
-	// however, this test explicitly closes the file since the fileNode.Close method is tested in a
+	// Close the file after the test. The file should be closed via the virtualFile.Close method,
+	// however, this test explicitly closes the file since the virtualFile.Close method is tested in a
 	// separate test.
 	defer openedRootFile.Close()
 
 	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
 	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
 
-	fileNodeWithUnopenedFile := &fileNode{
+	unopenedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeWithOpenedFile := &fileNode{
+	openedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/baz",
@@ -294,21 +294,21 @@ func TestReadAt(t *testing.T) {
 		mode:        filePermission,
 		file:        openedRootFile,
 	}
-	fileNodeNonRootFile := &fileNode{
+	nonRootVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeNonexistentFile := &fileNode{
+	nonexistentVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/xyz",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeWhiteoutFile := &fileNode{
+	whiteoutVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/abc",
@@ -317,66 +317,66 @@ func TestReadAt(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		node    *fileNode
+		node    *virtualFile
 		offset  int64
 		want    string
 		wantErr error
 	}{
 		{
 			name: "unopened root file",
-			node: fileNodeWithUnopenedFile,
+			node: unopenedVirtualFile,
 			want: "bar",
 			// All successful reads should return EOF
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file",
-			node:    fileNodeWithOpenedFile,
+			node:    openedVirtualFile,
 			want:    "baz",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset",
-			node:    fileNodeWithUnopenedFile,
+			node:    unopenedVirtualFile,
 			offset:  2,
 			want:    "r",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset at the end of file",
-			node:    fileNodeWithUnopenedFile,
+			node:    unopenedVirtualFile,
 			offset:  3,
 			want:    "",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset beyond the end of file",
-			node:    fileNodeWithUnopenedFile,
+			node:    unopenedVirtualFile,
 			offset:  4,
 			want:    "",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "non-root file",
-			node:    fileNodeNonRootFile,
+			node:    nonRootVirtualFile,
 			want:    "foo",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "non-root file at offset",
-			node:    fileNodeNonRootFile,
+			node:    nonRootVirtualFile,
 			offset:  1,
 			want:    "oo",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "nonexistent file",
-			node:    fileNodeNonexistentFile,
+			node:    nonexistentVirtualFile,
 			wantErr: os.ErrNotExist,
 		},
 		{
 			name:    "whiteout file",
-			node:    fileNodeWhiteoutFile,
+			node:    whiteoutVirtualFile,
 			wantErr: os.ErrNotExist,
 		},
 	}
@@ -452,16 +452,16 @@ func TestSeek(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a fileNode for the opened file
-			fileNode := &fileNode{
+			// Create a virtualFile for the opened file
+			virtualFile := &virtualFile{
 				extractDir:  tempDir,
 				layerDir:    "",
 				virtualPath: "/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
 			}
-			gotPos, err := fileNode.Seek(tc.offset, tc.whence)
-			_ = fileNode.Close()
+			gotPos, err := virtualFile.Seek(tc.offset, tc.whence)
+			_ = virtualFile.Close()
 			if err != nil {
 				t.Fatalf("Seek failed: %v", err)
 			}
@@ -476,14 +476,14 @@ func TestClose(t *testing.T) {
 	tempDir := t.TempDir()
 	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
 
-	fileNodeWithUnopenedFile := &fileNode{
+	unopenedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeNonexistentFile := &fileNode{
+	nonexistentVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/dir1/xyz",
@@ -493,15 +493,15 @@ func TestClose(t *testing.T) {
 
 	tests := []struct {
 		name string
-		node *fileNode
+		node *virtualFile
 	}{
 		{
 			name: "unopened root file",
-			node: fileNodeWithUnopenedFile,
+			node: unopenedVirtualFile,
 		},
 		{
 			name: "nonexistent file",
-			node: fileNodeNonexistentFile,
+			node: nonexistentVirtualFile,
 		},
 	}
 	for _, tc := range tests {
@@ -527,14 +527,14 @@ func TestReadingAfterClose(t *testing.T) {
 		t.Fatalf("Failed to open file: %v", err)
 	}
 
-	fileNodeWithUnopenedFile := &fileNode{
+	unopenedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	fileNodeWithOpenedFile := &fileNode{
+	openedVirtualFile := &virtualFile{
 		extractDir:  tempDir,
 		layerDir:    "",
 		virtualPath: "/baz",
@@ -545,18 +545,18 @@ func TestReadingAfterClose(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		node    *fileNode
+		node    *virtualFile
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "unopened root file",
-			node: fileNodeWithUnopenedFile,
+			node: unopenedVirtualFile,
 			want: "bar",
 		},
 		{
 			name: "opened root file",
-			node: fileNodeWithOpenedFile,
+			node: openedVirtualFile,
 			want: "baz",
 		},
 	}
@@ -590,7 +590,7 @@ func TestReadingAfterClose(t *testing.T) {
 func TestRealFilePath(t *testing.T) {
 	tests := []struct {
 		name string
-		node *fileNode
+		node *virtualFile
 		want string
 	}{
 		{
@@ -628,7 +628,7 @@ func TestRealFilePath(t *testing.T) {
 func TestName(t *testing.T) {
 	tests := []struct {
 		name string
-		node *fileNode
+		node *virtualFile
 		want string
 	}{
 		{
@@ -666,7 +666,7 @@ func TestName(t *testing.T) {
 func TestIsDir(t *testing.T) {
 	tests := []struct {
 		name string
-		node *fileNode
+		node *virtualFile
 		want bool
 	}{
 		{
@@ -703,7 +703,7 @@ func TestIsDir(t *testing.T) {
 func TestType(t *testing.T) {
 	tests := []struct {
 		name string
-		node *fileNode
+		node *virtualFile
 		want fs.FileMode
 	}{
 		{

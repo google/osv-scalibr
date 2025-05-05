@@ -31,16 +31,16 @@ const (
 	dirPermission = 0700
 )
 
-// fileNode represents a file in a virtual filesystem.
-type fileNode struct {
-	// extractDir and layerDir are used to construct the real file path of the fileNode.
+// virtualFile represents a file in a virtual filesystem.
+type virtualFile struct {
+	// extractDir and layerDir are used to construct the real file path of the virtualFile.
 	extractDir string
 	layerDir   string
 
-	// isWhiteout is true if the fileNode represents a whiteout file
+	// isWhiteout is true if the virtualFile represents a whiteout file
 	isWhiteout bool
 
-	// virtualPath is the path of the fileNode in the virtual filesystem.
+	// virtualPath is the path of the virtualFile in the virtual filesystem.
 	virtualPath string
 	// targetPath is reserved for symlinks. It is the path that the symlink points to.
 	targetPath string
@@ -50,7 +50,7 @@ type fileNode struct {
 	mode    fs.FileMode
 	modTime time.Time
 
-	// file is the file object for the real file referred to by the fileNode.
+	// file is the file object for the real file referred to by the virtualFile.
 	file *os.File
 }
 
@@ -58,16 +58,16 @@ type fileNode struct {
 // fs.File METHODS
 // ========================================================
 
-// Stat returns the file info of real file referred by the fileNode.
-func (f *fileNode) Stat() (fs.FileInfo, error) {
+// Stat returns the file info of real file referred by the virtualFile.
+func (f *virtualFile) Stat() (fs.FileInfo, error) {
 	if f.isWhiteout {
 		return nil, fs.ErrNotExist
 	}
 	return f, nil
 }
 
-// Read reads the real file referred to by the fileNode.
-func (f *fileNode) Read(b []byte) (n int, err error) {
+// Read reads the real file referred to by the virtualFile.
+func (f *virtualFile) Read(b []byte) (n int, err error) {
 	if f.isWhiteout {
 		return 0, fs.ErrNotExist
 	}
@@ -80,8 +80,8 @@ func (f *fileNode) Read(b []byte) (n int, err error) {
 	return f.file.Read(b)
 }
 
-// ReadAt reads the real file referred to by the fileNode at a specific offset.
-func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
+// ReadAt reads the real file referred to by the virtualFile at a specific offset.
+func (f *virtualFile) ReadAt(b []byte, off int64) (n int, err error) {
 	if f.isWhiteout {
 		return 0, fs.ErrNotExist
 	}
@@ -94,7 +94,7 @@ func (f *fileNode) ReadAt(b []byte, off int64) (n int, err error) {
 	return f.file.ReadAt(b, off)
 }
 
-func (f *fileNode) Seek(offset int64, whence int) (n int64, err error) {
+func (f *virtualFile) Seek(offset int64, whence int) (n int64, err error) {
 	if f.isWhiteout {
 		return 0, fs.ErrNotExist
 	}
@@ -107,8 +107,8 @@ func (f *fileNode) Seek(offset int64, whence int) (n int64, err error) {
 	return f.file.Seek(offset, whence)
 }
 
-// Close closes the real file referred to by the fileNode and resets the file field.
-func (f *fileNode) Close() error {
+// Close closes the real file referred to by the virtualFile and resets the file field.
+func (f *virtualFile) Close() error {
 	if f.file != nil {
 		err := f.file.Close()
 		f.file = nil
@@ -117,9 +117,9 @@ func (f *fileNode) Close() error {
 	return nil
 }
 
-// RealFilePath returns the real file path of the fileNode. This is the concatenation of the
+// RealFilePath returns the real file path of the virtualFile. This is the concatenation of the
 // root image extract directory, origin layer ID, and the virtual path.
-func (f *fileNode) RealFilePath() string {
+func (f *virtualFile) RealFilePath() string {
 	return filepath.Join(f.extractDir, f.layerDir, filepath.FromSlash(f.virtualPath))
 }
 
@@ -127,43 +127,43 @@ func (f *fileNode) RealFilePath() string {
 // fs.DirEntry METHODS
 // ========================================================
 
-// Name returns the name of the fileNode. Name is also used to implement the fs.FileInfo interface.
-func (f *fileNode) Name() string {
+// Name returns the name of the virtualFile. Name is also used to implement the fs.FileInfo interface.
+func (f *virtualFile) Name() string {
 	_, filename := path.Split(f.virtualPath)
 	return filename
 }
 
-// IsDir returns whether the fileNode represents a directory. IsDir is also used to implement the
+// IsDir returns whether the virtualFile represents a directory. IsDir is also used to implement the
 // fs.FileInfo interface.
-func (f *fileNode) IsDir() bool {
+func (f *virtualFile) IsDir() bool {
 	return f.Type().IsDir()
 }
 
-// Type returns the file type of file represented by the fileNode.
-func (f *fileNode) Type() fs.FileMode {
+// Type returns the file type of file represented by the virtualFile.
+func (f *virtualFile) Type() fs.FileMode {
 	return f.mode
 }
 
-// Info returns the FileInfo of the file represented by the fileNode.
-func (f *fileNode) Info() (fs.FileInfo, error) {
+// Info returns the FileInfo of the file represented by the virtualFile.
+func (f *virtualFile) Info() (fs.FileInfo, error) {
 	return f.Stat()
 }
 
 // ========================================================
 // fs.FileInfo METHODS
 // ========================================================
-func (f *fileNode) Size() int64 {
+func (f *virtualFile) Size() int64 {
 	return f.size
 }
 
-func (f *fileNode) Mode() fs.FileMode {
+func (f *virtualFile) Mode() fs.FileMode {
 	return f.mode
 }
 
-func (f *fileNode) ModTime() time.Time {
+func (f *virtualFile) ModTime() time.Time {
 	return f.modTime
 }
 
-func (f *fileNode) Sys() any {
+func (f *virtualFile) Sys() any {
 	return nil
 }

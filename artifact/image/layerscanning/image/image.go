@@ -294,7 +294,7 @@ func layerDirectory(layerIndex int) string {
 // addRootDirectoryToChainLayers adds the root ("/") directory to each chain layer.
 func addRootDirectoryToChainLayers(chainLayers []*chainLayer, extractDir string) error {
 	for i, chainLayer := range chainLayers {
-		err := chainLayer.fileNodeTree.Insert("/", &fileNode{
+		err := chainLayer.fileNodeTree.Insert("/", &virtualFile{
 			extractDir:  extractDir,
 			layerDir:    layerDirectory(i),
 			virtualPath: "/",
@@ -358,7 +358,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		for i, v1Layer := range v1Layers {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree:    pathtree.NewNode[fileNode](),
+				fileNodeTree:    pathtree.NewNode[virtualFile](),
 				index:           i,
 				chainID:         chainIDs[i],
 				latestLayer:     convertV1Layer(v1Layer, "", false),
@@ -380,12 +380,12 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	for _, entry := range history {
 		if entry.EmptyLayer {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree: pathtree.NewNode[fileNode](),
+				fileNodeTree: pathtree.NewNode[virtualFile](),
 				index:        historyIndex,
 				latestLayer: &Layer{
 					buildCommand: entry.CreatedBy,
 					isEmpty:      true,
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 				},
 				maxSymlinkDepth: maxSymlinkDepth,
 			})
@@ -399,7 +399,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		nextNonEmptyLayer := v1Layers[v1LayerIndex]
 		chainLayer := &chainLayer{
-			fileNodeTree:    pathtree.NewNode[fileNode](),
+			fileNodeTree:    pathtree.NewNode[virtualFile](),
 			index:           historyIndex,
 			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false),
@@ -415,7 +415,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	// This can happen depending on the build process used to create an image.
 	for v1LayerIndex < len(v1Layers) {
 		chainLayers = append(chainLayers, &chainLayer{
-			fileNodeTree:    pathtree.NewNode[fileNode](),
+			fileNodeTree:    pathtree.NewNode[virtualFile](),
 			index:           historyIndex,
 			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(v1Layers[v1LayerIndex], "", false),
@@ -499,14 +499,14 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
-		var newNode *fileNode
+		var newVirtualFile *virtualFile
 		switch header.Typeflag {
 		case tar.TypeDir:
-			newNode, err = img.handleDir(virtualPath, layerDir, header, isWhiteout)
+			newVirtualFile, err = img.handleDir(virtualPath, layerDir, header, isWhiteout)
 		case tar.TypeReg:
-			newNode, err = img.handleFile(virtualPath, layerDir, tarReader, header, isWhiteout)
+			newVirtualFile, err = img.handleFile(virtualPath, layerDir, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
-			newNode, err = img.handleSymlink(virtualPath, layerDir, header, isWhiteout)
+			newVirtualFile, err = img.handleSymlink(virtualPath, layerDir, header, isWhiteout)
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
@@ -531,11 +531,11 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, layerDir
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
-		fillChainLayersWithFileNode(chainLayersToFill, newNode)
+		fillChainLayersWithVirtualFile(chainLayersToFill, newVirtualFile)
 
 		// Add the fileNode to the node tree of the underlying layer.
 		layer := currentChainLayer.latestLayer.(*Layer)
-		_ = layer.fileNodeTree.Insert(virtualPath, newNode)
+		_ = layer.fileNodeTree.Insert(virtualPath, newVirtualFile)
 	}
 	return layerSize, nil
 }
@@ -557,20 +557,20 @@ func populateEmptyDirectoryNodes(virtualPath, layerDir, extractDir string, chain
 			continue
 		}
 
-		node := &fileNode{
+		node := &virtualFile{
 			extractDir:  extractDir,
 			layerDir:    layerDir,
 			virtualPath: runningDir,
 			isWhiteout:  false,
 			mode:        fs.ModeDir,
 		}
-		fillChainLayersWithFileNode(chainLayersToFill, node)
+		fillChainLayersWithVirtualFile(chainLayersToFill, node)
 	}
 }
 
-// handleSymlink returns the symlink header mode. Symlinks are handled by creating a fileNode with
-// the symlink mode with additional metadata.
-func (img *Image) handleSymlink(virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+// handleSymlink returns the symlink header mode. Symlinks are handled by creating a virtual file
+// with the symlink mode with additional metadata.
+func (img *Image) handleSymlink(virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
 		return nil, errors.New("symlink header has no target path")
@@ -586,7 +586,7 @@ func (img *Image) handleSymlink(virtualPath, layerDir string, header *tar.Header
 		targetPath = path.Clean(path.Join(path.Dir(virtualPath), targetPath))
 	}
 
-	return &fileNode{
+	return &virtualFile{
 		extractDir:  img.ExtractDir,
 		layerDir:    layerDir,
 		virtualPath: virtualPath,
@@ -597,7 +597,7 @@ func (img *Image) handleSymlink(virtualPath, layerDir string, header *tar.Header
 }
 
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+func (img *Image) handleDir(virtualPath, layerDir string, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
 	realFilePath := filepath.Join(img.ExtractDir, layerDir, filepath.FromSlash(virtualPath))
 	if _, err := img.root.Stat(filepath.Join(layerDir, filepath.FromSlash(virtualPath))); err != nil {
 		if err := os.MkdirAll(realFilePath, dirPermission); err != nil {
@@ -607,7 +607,7 @@ func (img *Image) handleDir(virtualPath, layerDir string, header *tar.Header, is
 
 	fileInfo := header.FileInfo()
 
-	return &fileNode{
+	return &virtualFile{
 		extractDir:  img.ExtractDir,
 		layerDir:    layerDir,
 		virtualPath: virtualPath,
@@ -619,8 +619,9 @@ func (img *Image) handleDir(virtualPath, layerDir string, header *tar.Header, is
 }
 
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
-// the file.
-func (img *Image) handleFile(virtualPath, layerDir string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*fileNode, error) {
+// the file. The function returns a virtual file, which is meant to represent the file in a virtual
+// filesystem.
+func (img *Image) handleFile(virtualPath, layerDir string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
 	realFilePath := filepath.Join(img.ExtractDir, layerDir, filepath.FromSlash(virtualPath))
 	parentDirectory := filepath.Dir(realFilePath)
 	if err := os.MkdirAll(parentDirectory, dirPermission); err != nil {
@@ -646,7 +647,7 @@ func (img *Image) handleFile(virtualPath, layerDir string, tarReader *tar.Reader
 
 	fileInfo := header.FileInfo()
 
-	return &fileNode{
+	return &virtualFile{
 		extractDir:  img.ExtractDir,
 		layerDir:    layerDir,
 		virtualPath: virtualPath,
@@ -657,8 +658,8 @@ func (img *Image) handleFile(virtualPath, layerDir string, tarReader *tar.Reader
 	}, nil
 }
 
-// fillChainLayersWithFileNode fills the chain layers with a new fileNode.
-func fillChainLayersWithFileNode(chainLayersToFill []*chainLayer, newNode *fileNode) {
+// fillChainLayersWithVirtualFile fills the chain layers with a new fileNode.
+func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *virtualFile) {
 	virtualPath := newNode.virtualPath
 	for _, chainLayer := range chainLayersToFill {
 		if node := chainLayer.fileNodeTree.Get(virtualPath); node != nil {

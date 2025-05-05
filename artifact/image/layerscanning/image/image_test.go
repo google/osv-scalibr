@@ -925,7 +925,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			history: []v1.History{},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        0,
 					latestLayer: &Layer{
 						diffID:  diffID1,
@@ -947,7 +947,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        0,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
@@ -978,7 +978,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -988,7 +988,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -998,7 +998,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1044,7 +1044,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1054,7 +1054,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        1,
 					latestLayer: &Layer{
 						buildCommand: "ENTRYPOINT [\"/bin/sh\"]",
@@ -1062,7 +1062,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        2,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1072,7 +1072,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        3,
 					latestLayer: &Layer{
 						buildCommand: "RANDOM DOCKER COMMAND",
@@ -1080,7 +1080,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        4,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1090,7 +1090,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        5,
 					latestLayer: &Layer{
 						buildCommand: "RUN [\"/bin/sh\"]",
@@ -1117,7 +1117,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1127,7 +1127,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1136,7 +1136,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: pathtree.NewNode[virtualFile](),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1188,14 +1188,14 @@ func TestTopFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *pathtree.Node[fileNode] {
-							root := pathtree.NewNode[fileNode]()
-							_ = root.Insert("/", &fileNode{
+						fileNodeTree: func() *pathtree.Node[virtualFile] {
+							root := pathtree.NewNode[virtualFile]()
+							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &fileNode{
+							_ = root.Insert("/foo.txt", &virtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
@@ -1216,14 +1216,14 @@ func TestTopFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *pathtree.Node[fileNode] {
-							root := pathtree.NewNode[fileNode]()
-							_ = root.Insert("/", &fileNode{
+						fileNodeTree: func() *pathtree.Node[virtualFile] {
+							root := pathtree.NewNode[virtualFile]()
+							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &fileNode{
+							_ = root.Insert("/foo.txt", &virtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
@@ -1236,20 +1236,20 @@ func TestTopFS(t *testing.T) {
 						},
 					},
 					{
-						fileNodeTree: func() *pathtree.Node[fileNode] {
-							root := pathtree.NewNode[fileNode]()
-							_ = root.Insert("/", &fileNode{
+						fileNodeTree: func() *pathtree.Node[virtualFile] {
+							root := pathtree.NewNode[virtualFile]()
+							_ = root.Insert("/", &virtualFile{
 								extractDir:  "",
 								layerDir:    "",
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &fileNode{
+							_ = root.Insert("/foo.txt", &virtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
-							_ = root.Insert("/bar.txt", &fileNode{
+							_ = root.Insert("/bar.txt", &virtualFile{
 								virtualPath: "/bar.txt",
 								mode:        filePermission,
 							})
