@@ -32,7 +32,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -358,7 +357,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		for i, v1Layer := range v1Layers {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree:    pathtree.NewNode[virtualFile](),
+				fileNodeTree:    NewNode(),
 				index:           i,
 				chainID:         chainIDs[i],
 				latestLayer:     convertV1Layer(v1Layer, "", false),
@@ -380,12 +379,12 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	for _, entry := range history {
 		if entry.EmptyLayer {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree: pathtree.NewNode[virtualFile](),
+				fileNodeTree: NewNode(),
 				index:        historyIndex,
 				latestLayer: &Layer{
 					buildCommand: entry.CreatedBy,
 					isEmpty:      true,
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 				},
 				maxSymlinkDepth: maxSymlinkDepth,
 			})
@@ -399,7 +398,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		nextNonEmptyLayer := v1Layers[v1LayerIndex]
 		chainLayer := &chainLayer{
-			fileNodeTree:    pathtree.NewNode[virtualFile](),
+			fileNodeTree:    NewNode(),
 			index:           historyIndex,
 			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false),
@@ -415,7 +414,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	// This can happen depending on the build process used to create an image.
 	for v1LayerIndex < len(v1Layers) {
 		chainLayers = append(chainLayers, &chainLayer{
-			fileNodeTree:    pathtree.NewNode[virtualFile](),
+			fileNodeTree:    NewNode(),
 			index:           historyIndex,
 			chainID:         chainIDs[v1LayerIndex],
 			latestLayer:     convertV1Layer(v1Layers[v1LayerIndex], "", false),

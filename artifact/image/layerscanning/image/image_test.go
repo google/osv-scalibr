@@ -35,7 +35,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -925,7 +924,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			history: []v1.History{},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					latestLayer: &Layer{
 						diffID:  diffID1,
@@ -947,7 +946,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
@@ -978,7 +977,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -988,7 +987,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -998,7 +997,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1044,7 +1043,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1054,7 +1053,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        1,
 					latestLayer: &Layer{
 						buildCommand: "ENTRYPOINT [\"/bin/sh\"]",
@@ -1062,7 +1061,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        2,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1072,7 +1071,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        3,
 					latestLayer: &Layer{
 						buildCommand: "RANDOM DOCKER COMMAND",
@@ -1080,7 +1079,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        4,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1090,7 +1089,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        5,
 					latestLayer: &Layer{
 						buildCommand: "RUN [\"/bin/sh\"]",
@@ -1117,7 +1116,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1127,7 +1126,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1136,7 +1135,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[virtualFile](),
+					fileNodeTree: NewNode(),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1188,8 +1187,8 @@ func TestTopFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *pathtree.Node[virtualFile] {
-							root := pathtree.NewNode[virtualFile]()
+						fileNodeTree: func() *Node {
+							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
@@ -1216,8 +1215,8 @@ func TestTopFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *pathtree.Node[virtualFile] {
-							root := pathtree.NewNode[virtualFile]()
+						fileNodeTree: func() *Node {
+							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
@@ -1236,8 +1235,8 @@ func TestTopFS(t *testing.T) {
 						},
 					},
 					{
-						fileNodeTree: func() *pathtree.Node[virtualFile] {
-							root := pathtree.NewNode[virtualFile]()
+						fileNodeTree: func() *Node {
+							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								extractDir:  "",
 								layerDir:    "",

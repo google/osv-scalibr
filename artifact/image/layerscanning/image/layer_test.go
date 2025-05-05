@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -48,7 +47,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: pathtree.NewNode[virtualFile](),
+				fileNodeTree: NewNode(),
 			},
 		},
 		{
@@ -60,7 +59,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: pathtree.NewNode[virtualFile](),
+				fileNodeTree: NewNode(),
 			},
 		},
 	}
@@ -69,7 +68,7 @@ func TestConvertV1Layer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
 
-			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, pathtree.Node[virtualFile]{})); tc.wantLayer != nil && diff != "" {
+			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
 			}
 		})
@@ -98,13 +97,13 @@ func TestChainLayerFS(t *testing.T) {
 		mode:        filePermission,
 	}
 
-	emptyTree := func() *pathtree.Node[virtualFile] {
-		tree := pathtree.NewNode[virtualFile]()
+	emptyTree := func() *Node {
+		tree := NewNode()
 		_ = tree.Insert("/", root)
 		return tree
 	}()
-	nonEmptyTree := func() *pathtree.Node[virtualFile] {
-		tree := pathtree.NewNode[virtualFile]()
+	nonEmptyTree := func() *Node {
+		tree := NewNode()
 		_ = tree.Insert("/", root)
 		_ = tree.Insert("/file1", file1)
 		return tree
@@ -580,7 +579,7 @@ func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
 	return FS{
-		tree:            pathtree.NewNode[virtualFile](),
+		tree:            NewNode(),
 		maxSymlinkDepth: DefaultMaxSymlinkDepth,
 	}
 }
@@ -592,7 +591,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 	tempDir := t.TempDir()
 
 	chainfs := FS{
-		tree:            pathtree.NewNode[virtualFile](),
+		tree:            NewNode(),
 		maxSymlinkDepth: maxSymlinkDepth,
 	}
 
@@ -722,16 +721,16 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 		},
 	}
 
-	for path, node := range vfsMap {
-		_ = chainfs.tree.Insert(path, node)
+	for path, vf := range vfsMap {
+		_ = chainfs.tree.Insert(path, vf)
 
-		if node.IsDir() {
-			_ = os.MkdirAll(node.RealFilePath(), dirPermission)
+		if vf.IsDir() {
+			_ = os.MkdirAll(vf.RealFilePath(), dirPermission)
 		} else {
-			if node.mode == fs.ModeSymlink {
+			if vf.mode == fs.ModeSymlink {
 				continue
 			}
-			_ = os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
+			_ = os.WriteFile(vf.RealFilePath(), []byte(path), filePermission)
 		}
 	}
 	return chainfs, tempDir

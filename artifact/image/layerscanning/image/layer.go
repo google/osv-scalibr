@@ -23,7 +23,6 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/opencontainers/go-digest"
@@ -46,7 +45,7 @@ type Layer struct {
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
-	fileNodeTree *pathtree.Node[virtualFile]
+	fileNodeTree *Node
 }
 
 // FS returns a scalibr compliant file system.
@@ -86,7 +85,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
-		fileNodeTree: pathtree.NewNode[virtualFile](),
+		fileNodeTree: NewNode(),
 	}
 }
 
@@ -98,7 +97,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 type chainLayer struct {
 	index           int
 	chainID         digest.Digest
-	fileNodeTree    *pathtree.Node[virtualFile]
+	fileNodeTree    *Node
 	latestLayer     image.Layer
 	maxSymlinkDepth int
 }
@@ -131,7 +130,7 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree            *pathtree.Node[virtualFile]
+	tree            *Node
 	maxSymlinkDepth int
 }
 
