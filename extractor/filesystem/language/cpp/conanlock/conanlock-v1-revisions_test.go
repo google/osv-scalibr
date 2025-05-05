@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -45,6 +46,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/one-package.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -61,6 +63,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/no-name.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -77,6 +80,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/two-packages.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -85,6 +89,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "bzip2",
 					Version:   "1.0.8",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/two-packages.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -101,6 +106,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "zlib",
 					Version:   "1.2.13",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -109,6 +115,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "bzip2",
 					Version:   "1.0.8",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -117,6 +124,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "freetype",
 					Version:   "2.12.1",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -125,6 +133,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "libpng",
 					Version:   "1.6.39",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -133,6 +142,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "brotli",
 					Version:   "1.0.9",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -149,6 +159,7 @@ func TestExtractor_Extract_v1_revisions(t *testing.T) {
 				{
 					Name:      "ninja",
 					Version:   "1.11.1",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/one-package-dev.v1.revisions.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},

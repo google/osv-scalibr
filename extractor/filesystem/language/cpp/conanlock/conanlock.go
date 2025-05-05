@@ -143,8 +143,9 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Package {
 		}
 
 		packages = append(packages, &extractor.Package{
-			Name:    reference.Name,
-			Version: reference.Version,
+			Name:     reference.Name,
+			Version:  reference.Version,
+			PURLType: purl.TypeConan,
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: []string{},
 			},
@@ -164,8 +165,9 @@ func parseConanRequires(packages *[]*extractor.Package, requires []string, group
 		}
 
 		*packages = append(*packages, &extractor.Package{
-			Name:    reference.Name,
-			Version: reference.Version,
+			Name:     reference.Name,
+			Version:  reference.Version,
+			PURLType: purl.TypeConan,
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: []string{group},
 			},
@@ -236,12 +238,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeConan,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('ConanCenter') of the software extracted by this extractor.

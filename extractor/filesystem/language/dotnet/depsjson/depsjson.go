@@ -171,8 +171,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		}
 		// If the library type is "project", this is the root/main package.
 		p := &extractor.Package{
-			Name:    name,
-			Version: version,
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeNuget,
 			Metadata: &Metadata{
 				PackageName:    name,
 				PackageVersion: version,
@@ -196,12 +197,9 @@ func splitNameAndVersion(nameVersion string) (string, string) {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNuget,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

@@ -156,8 +156,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	for _, packages := range p.Dependencies {
 		for pkgName, info := range packages {
 			pkg := &extractor.Package{
-				Name:    pkgName,
-				Version: info.Resolved,
+				Name:     pkgName,
+				Version:  info.Resolved,
+				PURLType: purl.TypeNuget,
 				Locations: []string{
 					input.Path,
 				},
@@ -182,12 +183,9 @@ func Parse(r io.Reader) (PackagesLockJSON, error) {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNuget,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

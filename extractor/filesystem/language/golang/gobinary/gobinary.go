@@ -198,6 +198,7 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		res = append(res, &extractor.Package{
 			Name:      "go",
 			Version:   validatedGoVers,
+			PURLType:  purl.TypeGolang,
 			Locations: []string{filename},
 		})
 	}
@@ -213,6 +214,7 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		pkg := &extractor.Package{
 			Name:      pkgName,
 			Version:   pkgVers,
+			PURLType:  purl.TypeGolang,
 			Locations: []string{filename},
 		}
 		res = append(res, pkg)
@@ -255,6 +257,7 @@ func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Package 
 	return &extractor.Package{
 		Name:      binfo.Main.Path,
 		Version:   version,
+		PURLType:  purl.TypeGolang,
 		Locations: []string{filename},
 	}
 }
@@ -282,12 +285,9 @@ func extractVersionFromConent(reader io.Reader) string {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGolang,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

@@ -1,0 +1,13 @@
+vulns:
+  - id: OSV-000-000
+    affected:
+      - package:
+          ecosystem: npm
+          name: baz
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '1.0.1'
+              - introduced: '2.0.0'
+              - fixed: '2.0.1'

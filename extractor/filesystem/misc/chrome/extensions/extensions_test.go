@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -92,8 +93,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:    "caaadbdomjkkjkaonfhkkikfgjllcleb",
-					Version: "1.2.85",
+					Name:     "caaadbdomjkkjkaonfhkkikfgjllcleb",
+					Version:  "1.2.85",
+					PURLType: purl.TypeGeneric,
 					Metadata: &extensions.Metadata{
 						Description:     "A decentralized wallet for blockchain transactions.",
 						HostPermissions: []string{"file://*/*", "http://*/*", "https://*/*"},
@@ -119,8 +121,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:    "ghbmnnjooekpmoecnnnilnnbdlolhkhi",
-					Version: "1.89.1",
+					Name:     "ghbmnnjooekpmoecnnnilnnbdlolhkhi",
+					Version:  "1.89.1",
+					PURLType: purl.TypeGeneric,
 					Metadata: &extensions.Metadata{
 						AuthorEmail:          "docs-hosted-app-own@google.com",
 						Description:          "Edit, create, and view your documents, spreadsheets, and presentations — all without internet access.",

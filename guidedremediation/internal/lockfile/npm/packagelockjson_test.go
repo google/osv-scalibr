@@ -15,13 +15,17 @@
 package npm_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/schema"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/clients/clienttest"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
+	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 func TestReadV1(t *testing.T) {
@@ -184,6 +188,60 @@ root 1.0.0
 
 	if err := want.Canon(); err != nil {
 		t.Fatalf("failed canonicalizing want graph: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("npm lockfile mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWrite(t *testing.T) {
+	// Set up mock npm registry
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponseFromFile(t, "/@fake-registry%2fa/1.2.4", "testdata/fake_registry/a-1.2.4.json")
+	srv.SetResponseFromFile(t, "/@fake-registry%2fa/2.3.5", "testdata/fake_registry/a-2.3.5.json")
+
+	// Create output directory with npmrc pointing to the registry
+	outDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outDir, ".npmrc"), []byte("registry="+srv.URL+"\n"), 0644); err != nil {
+		t.Fatalf("error writing npmrc: %v", err)
+	}
+
+	// Create patches to write
+	patches := []result.Patch{
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "@fake-registry/a",
+					VersionFrom: "1.2.3",
+					VersionTo:   "1.2.4",
+				},
+				{
+					Name:        "@fake-registry/a",
+					VersionFrom: "2.3.4",
+					VersionTo:   "2.3.5",
+				},
+			},
+		},
+	}
+
+	want, err := os.ReadFile("testdata/write/want.package-lock.json")
+	if err != nil {
+		t.Fatalf("error reading want lockfile: %v", err)
+	}
+
+	// Write the patched lockfile
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+	gotPath := filepath.Join(outDir, "package-lock.json")
+	if err := rw.Write("write/package-lock.json", scalibrfs.DirFS("testdata"), patches, gotPath); err != nil {
+		t.Fatalf("error writing lockfile: %v", err)
+	}
+	got, err := os.ReadFile(gotPath)
+	if err != nil {
+		t.Fatalf("error reading got lockfile: %v", err)
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {

@@ -169,26 +169,31 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "AC-Angle",
 					Version:   "1.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "ALUT",
 					Version:   "2.4.0.3",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "ANum",
 					Version:   "0.2.0.2",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "Agda",
 					Version:   "2.6.4.3",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "Allure",
 					Version:   "0.11.0.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -202,21 +207,25 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "AC-Angle",
 					Version:   "1.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid_2"},
 				},
 				{
 					Name:      "ANum",
 					Version:   "0.2.0.2",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid_2"},
 				},
 				{
 					Name:      "Agda",
 					Version:   "2.6.4.3",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid_2"},
 				},
 				{
 					Name:      "Allure",
 					Version:   "0.11.0.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid_2"},
 				},
 			},
@@ -262,6 +271,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeHaskell,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

@@ -169,21 +169,25 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "fuzzyset",
 					Version:   "0.2.4",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "hasql-pool",
 					Version:   "1.0.1",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "jose-jwt",
 					Version:   "0.10.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "postgresql-libpq",
 					Version:   "0.10.1.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -229,6 +233,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeHaskell,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

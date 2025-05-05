@@ -118,6 +118,7 @@ message Package {
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
+    DockerContainersMetadata docker_containers_metadata = 48;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -145,6 +146,9 @@ message LayerDetails {
   int32 index = 1;
   // The diff ID (typically a sha256 hash) of the layer in the container image.
   string diff_id = 2;
+  // The layer chain ID (sha256 hash) of the layer in the container image.
+  // https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+  string chain_id = 5;
   // The layer build command that was used to build the layer. This may not be
   // found in all layers depending on how the container image is built.
   string command = 3;
@@ -521,5 +525,19 @@ message PodmanMetadata {
 }
 
 message Protocol{
-  repeated string names=1;
+  repeated string names = 1;
+}
+
+message DockerContainersMetadata {
+  string image_name = 1;
+  string image_digest = 2;
+  string id = 3;
+  repeated DockerPort ports = 4;
+}
+
+message DockerPort {
+  string ip = 1;
+  uint32 private_port = 2;
+  uint32 public_port = 3;
+  string type = 4;
 }

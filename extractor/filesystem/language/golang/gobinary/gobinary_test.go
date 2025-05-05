@@ -311,6 +311,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeGolang,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{
@@ -449,7 +450,7 @@ var (
 )
 
 func goPackage(name, version string) *extractor.Package {
-	return &extractor.Package{Name: name, Version: version}
+	return &extractor.Package{Name: name, Version: version, PURLType: purl.TypeGolang}
 }
 
 func createPackagesWithMain(pkgs []*extractor.Package, location string) []*extractor.Package {
@@ -458,6 +459,7 @@ func createPackagesWithMain(pkgs []*extractor.Package, location string) []*extra
 	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
 	res = append(res, &extractor.Package{
 		Name: mainName, Version: "(devel)", Locations: []string{location},
+		PURLType: purl.TypeGolang,
 	})
 	return res
 }
@@ -466,7 +468,10 @@ func createPackages(pkgs []*extractor.Package, location string) []*extractor.Pac
 	res := []*extractor.Package{}
 	for _, p := range pkgs {
 		res = append(res, &extractor.Package{
-			Name: p.Name, Version: p.Version, Locations: []string{location},
+			Name:      p.Name,
+			Version:   p.Version,
+			Locations: []string{location},
+			PURLType:  purl.TypeGolang,
 		})
 	}
 	return res

@@ -40,8 +40,11 @@ type SourceCodeIdentifier struct {
 
 // LayerDetails stores details about the layer a package was found in.
 type LayerDetails struct {
-	Index       int
-	DiffID      string
+	Index  int
+	DiffID string
+	// The layer chain ID (sha256 hash) of the layer in the container image.
+	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+	ChainID     string
 	Command     string
 	InBaseImage bool
 }
@@ -64,6 +67,9 @@ type Package struct {
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
 	Locations []string
+	// The PURL type of this package, e.g. "pypi". Used for purl generation.
+	// TODO(b/400910349): Set in all package extractors.
+	PURLType string
 	// The Extractor that found this software instance. Set by the core library.
 	Extractor Extractor
 	// Annotations are additional information about the package that is useful for matching.
@@ -90,6 +96,12 @@ const (
 	// TODO(b/364539671): Annotation for packages inside cache directories.
 	InsideCacheDir
 )
+
+// PURL returns the Package URL of this package.
+// TODO(b/400910349): Implement for all package types.
+func (p *Package) PURL() *purl.PackageURL {
+	return toPURL(p)
+}
 
 // Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.

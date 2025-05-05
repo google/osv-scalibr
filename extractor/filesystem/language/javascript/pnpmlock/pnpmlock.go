@@ -210,8 +210,9 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 		}
 
 		packages = append(packages, &extractor.Package{
-			Name:    name,
-			Version: version,
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeNPM,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
@@ -276,12 +277,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(p.Name),
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

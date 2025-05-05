@@ -81,6 +81,7 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 		packages = append(packages, &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
+			PURLType:  purl.TypeCargo,
 			Locations: []string{input.Path},
 		})
 	}
@@ -89,12 +90,9 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCargo,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.

@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -48,7 +47,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: pathtree.NewNode[fileNode](),
+				fileNodeTree: NewNode(),
 			},
 		},
 		{
@@ -60,7 +59,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: pathtree.NewNode[fileNode](),
+				fileNodeTree: NewNode(),
 			},
 		},
 	}
@@ -69,7 +68,7 @@ func TestConvertV1Layer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
 
-			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, pathtree.Node[fileNode]{})); tc.wantLayer != nil && diff != "" {
+			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
 			}
 		})
@@ -83,14 +82,14 @@ func TestChainLayerFS(t *testing.T) {
 		return dir
 	}()
 
-	root := &fileNode{
+	root := &virtualFile{
 		extractDir:  testDir,
 		layerDir:    "",
 		virtualPath: "/",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	file1 := &fileNode{
+	file1 := &virtualFile{
 		extractDir:  testDir,
 		layerDir:    "",
 		virtualPath: "/file1",
@@ -98,13 +97,13 @@ func TestChainLayerFS(t *testing.T) {
 		mode:        filePermission,
 	}
 
-	emptyTree := func() *pathtree.Node[fileNode] {
-		tree := pathtree.NewNode[fileNode]()
+	emptyTree := func() *Node {
+		tree := NewNode()
 		_ = tree.Insert("/", root)
 		return tree
 	}()
-	nonEmptyTree := func() *pathtree.Node[fileNode] {
-		tree := pathtree.NewNode[fileNode]()
+	nonEmptyTree := func() *Node {
+		tree := NewNode()
 		_ = tree.Insert("/", root)
 		_ = tree.Insert("/file1", file1)
 		return tree
@@ -141,7 +140,7 @@ func TestChainLayerFS(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			chainfs := tc.chainLayer.FS()
 
-			gotPaths := []string{}
+			var gotPaths []string
 			_ = fs.WalkDir(chainfs, "/", func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					t.Errorf("WalkDir(%v) returned error: %v", path, err)
@@ -161,11 +160,11 @@ func TestChainFSOpen(t *testing.T) {
 	populatedChainFS, extractDir := setUpChainFS(t, 3)
 
 	tests := []struct {
-		name     string
-		chainfs  FS
-		path     string
-		wantNode *fileNode
-		wantErr  error
+		name            string
+		chainfs         FS
+		path            string
+		wantVirtualFile *virtualFile
+		wantErr         error
 	}{
 		{
 			name: "nonexistent tree",
@@ -185,7 +184,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open root from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/",
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer1",
 				virtualPath: "/",
@@ -197,7 +196,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open directory from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1",
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer1",
 				virtualPath: "/dir1",
@@ -209,7 +208,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open file from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/baz",
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer1",
 				virtualPath: "/baz",
@@ -221,7 +220,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open non-root file from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1/foo",
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer2",
 				virtualPath: "/dir1/foo",
@@ -234,7 +233,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink1",
 			// The node the symlink points to is expected.
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer2",
 				virtualPath: "/dir2/bar",
@@ -247,7 +246,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink2",
 			// The node the symlink points to is expected.
-			wantNode: &fileNode{
+			wantVirtualFile: &virtualFile{
 				extractDir:  extractDir,
 				layerDir:    "layer2",
 				virtualPath: "/dir2/bar",
@@ -291,8 +290,8 @@ func TestChainFSOpen(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(gotFile, tc.wantNode, cmp.AllowUnexported(fileNode{})); tc.wantNode != nil && diff != "" {
-				t.Errorf("Open(%v) returned file: %v, want file: %v", tc.path, gotFile, tc.wantNode)
+			if diff := cmp.Diff(gotFile, tc.wantVirtualFile, cmp.AllowUnexported(virtualFile{})); tc.wantVirtualFile != nil && diff != "" {
+				t.Errorf("Open(%v) returned file: %v, want file: %v", tc.path, gotFile, tc.wantVirtualFile)
 			}
 		})
 	}
@@ -359,11 +358,11 @@ func TestChainFSReadDir(t *testing.T) {
 	populatedChainFS, extractDir := setUpChainFS(t, DefaultMaxSymlinkDepth)
 
 	tests := []struct {
-		name      string
-		chainfs   FS
-		path      string
-		wantNodes []*fileNode
-		wantErr   error
+		name             string
+		chainfs          FS
+		path             string
+		wantVirtualFiles []*virtualFile
+		wantErr          error
 	}{
 		{
 			name: "read directory from nonexistent tree",
@@ -390,7 +389,7 @@ func TestChainFSReadDir(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/",
 			// wh.foobar is a whiteout file and should not be returned.
-			wantNodes: []*fileNode{
+			wantVirtualFiles: []*virtualFile{
 				{
 					extractDir:  extractDir,
 					layerDir:    "layer1",
@@ -490,7 +489,7 @@ func TestChainFSReadDir(t *testing.T) {
 			name:    "read non-root directory from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1",
-			wantNodes: []*fileNode{
+			wantVirtualFiles: []*virtualFile{
 				{
 					extractDir:  extractDir,
 					layerDir:    "layer2",
@@ -501,16 +500,16 @@ func TestChainFSReadDir(t *testing.T) {
 			},
 		},
 		{
-			name:      "read file node leaf from filled tree",
-			chainfs:   populatedChainFS,
-			path:      "/dir1/foo",
-			wantNodes: []*fileNode{},
+			name:             "read file node leaf from filled tree",
+			chainfs:          populatedChainFS,
+			path:             "/dir1/foo",
+			wantVirtualFiles: []*virtualFile{},
 		},
 		{
 			name:    "read symlink from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-dir",
-			wantNodes: []*fileNode{
+			wantVirtualFiles: []*virtualFile{
 				{
 					extractDir:  extractDir,
 					layerDir:    "layer2",
@@ -539,8 +538,8 @@ func TestChainFSReadDir(t *testing.T) {
 			}
 
 			// Convert fileNodes to DirEntries for comparison.
-			wantDirEntries := make([]fs.DirEntry, 0, len(tc.wantNodes))
-			for _, node := range tc.wantNodes {
+			wantDirEntries := make([]fs.DirEntry, 0, len(tc.wantVirtualFiles))
+			for _, node := range tc.wantVirtualFiles {
 				wantDirEntries = append(wantDirEntries, node)
 			}
 
@@ -580,7 +579,7 @@ func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
 	return FS{
-		tree:            pathtree.NewNode[fileNode](),
+		tree:            NewNode(),
 		maxSymlinkDepth: DefaultMaxSymlinkDepth,
 	}
 }
@@ -592,27 +591,27 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 	tempDir := t.TempDir()
 
 	chainfs := FS{
-		tree:            pathtree.NewNode[fileNode](),
+		tree:            NewNode(),
 		maxSymlinkDepth: maxSymlinkDepth,
 	}
 
-	vfsMap := map[string]*fileNode{
+	vfsMap := map[string]*virtualFile{
 		// Layer 1 files / directories
-		"/": &fileNode{
+		"/": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer1",
 			virtualPath: "/",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/dir1": &fileNode{
+		"/dir1": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer1",
 			virtualPath: "/dir1",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/baz": &fileNode{
+		"/baz": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer1",
 			virtualPath: "/baz",
@@ -620,35 +619,35 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        filePermission,
 		},
 		// Layer 2 files / directories
-		"/dir1/foo": &fileNode{
+		"/dir1/foo": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "/dir1/foo",
 			isWhiteout:  false,
 			mode:        filePermission,
 		},
-		"/dir2": &fileNode{
+		"/dir2": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "/dir2",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/dir2/bar": &fileNode{
+		"/dir2/bar": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "/dir2/bar",
 			isWhiteout:  false,
 			mode:        filePermission,
 		},
-		"/wh.foobar": &fileNode{
+		"/wh.foobar": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "/wh.foobar",
 			isWhiteout:  true,
 			mode:        filePermission,
 		},
-		"/symlink1": &fileNode{
+		"/symlink1": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "/symlink1",
@@ -656,7 +655,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2/bar",
 		},
-		"/symlink2": &fileNode{
+		"/symlink2": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink2",
@@ -664,7 +663,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink1",
 		},
-		"/symlink3": &fileNode{
+		"/symlink3": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink3",
@@ -672,7 +671,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink2",
 		},
-		"/symlink4": &fileNode{
+		"/symlink4": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink4",
@@ -680,7 +679,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink3",
 		},
-		"/symlink-to-dir": &fileNode{
+		"/symlink-to-dir": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink-to-dir",
@@ -688,7 +687,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2",
 		},
-		"/symlink-to-nonexistent-file": &fileNode{
+		"/symlink-to-nonexistent-file": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink-to-nonexistent-file",
@@ -696,7 +695,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/nonexistent-file",
 		},
-		"/symlink-cycle1": &fileNode{
+		"/symlink-cycle1": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink-cycle1",
@@ -704,7 +703,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle2",
 		},
-		"/symlink-cycle2": &fileNode{
+		"/symlink-cycle2": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink-cycle2",
@@ -712,7 +711,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle3",
 		},
-		"/symlink-cycle3": &fileNode{
+		"/symlink-cycle3": &virtualFile{
 			extractDir:  tempDir,
 			layerDir:    "layer2",
 			virtualPath: "symlink-cycle3",
@@ -722,16 +721,16 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) (FS, string) {
 		},
 	}
 
-	for path, node := range vfsMap {
-		_ = chainfs.tree.Insert(path, node)
+	for path, vf := range vfsMap {
+		_ = chainfs.tree.Insert(path, vf)
 
-		if node.IsDir() {
-			_ = os.MkdirAll(node.RealFilePath(), dirPermission)
+		if vf.IsDir() {
+			_ = os.MkdirAll(vf.RealFilePath(), dirPermission)
 		} else {
-			if node.mode == fs.ModeSymlink {
+			if vf.mode == fs.ModeSymlink {
 				continue
 			}
-			_ = os.WriteFile(node.RealFilePath(), []byte(path), filePermission)
+			_ = os.WriteFile(vf.RealFilePath(), []byte(path), filePermission)
 		}
 	}
 	return chainfs, tempDir

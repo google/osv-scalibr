@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -52,6 +53,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "morning",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCran,
 					Locations: []string{"testdata/one-package.lock"},
 				},
 			},
@@ -65,11 +67,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markdown",
 					Version:   "1.0",
+					PURLType:  purl.TypeCran,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 				{
 					Name:      "mime",
 					Version:   "0.7",
+					PURLType:  purl.TypeCran,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 			},
@@ -83,6 +87,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markdown",
 					Version:   "1.0",
+					PURLType:  purl.TypeCran,
 					Locations: []string{"testdata/with-mixed-sources.lock"},
 				},
 			},
@@ -96,6 +101,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "BH",
 					Version:   "1.75.0-0",
+					PURLType:  purl.TypeCran,
 					Locations: []string{"testdata/with-bioconductor.lock"},
 				},
 			},

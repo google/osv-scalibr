@@ -23,10 +23,10 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/opencontainers/go-digest"
+	"github.com/opencontainers/image-spec/identity"
 )
 
 var (
@@ -45,7 +45,7 @@ type Layer struct {
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
-	fileNodeTree *pathtree.Node[fileNode]
+	fileNodeTree *Node
 }
 
 // FS returns a scalibr compliant file system.
@@ -85,7 +85,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
-		fileNodeTree: pathtree.NewNode[fileNode](),
+		fileNodeTree: NewNode(),
 	}
 }
 
@@ -96,7 +96,8 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 // chainLayer represents all the files on up to a layer (files from a chain of layers).
 type chainLayer struct {
 	index           int
-	fileNodeTree    *pathtree.Node[fileNode]
+	chainID         digest.Digest
+	fileNodeTree    *Node
 	latestLayer     image.Layer
 	maxSymlinkDepth int
 }
@@ -114,6 +115,10 @@ func (chainLayer *chainLayer) Index() int {
 	return chainLayer.index
 }
 
+func (chainLayer *chainLayer) ChainID() digest.Digest {
+	return chainLayer.chainID
+}
+
 // Layer returns the latest layer in the layer chain.
 func (chainLayer *chainLayer) Layer() image.Layer {
 	return chainLayer.latestLayer
@@ -125,16 +130,16 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree            *pathtree.Node[fileNode]
+	tree            *Node
 	maxSymlinkDepth int
 }
 
-// resolveSymlink resolves a symlink by following the target path. It returns the resolved file
-// node or an error if the symlink depth is exceeded or a cycle is found. An ErrSymlinkDepthExceeded
+// resolveSymlink resolves a symlink by following the target path. It returns the resolved virtual
+// file or an error if the symlink depth is exceeded or a cycle is found. An ErrSymlinkDepthExceeded
 // error if the symlink depth is exceeded or an ErrSymlinkCycle error if a cycle is
 // found. Whichever error is encountered first is returned. The cycle detection leverages Floyd's
 // tortoise and hare algorithm, which utilizes a slow and fast pointer.
-func (chainfs FS) resolveSymlink(node *fileNode, depth int) (*fileNode, error) {
+func (chainfs FS) resolveSymlink(node *virtualFile, depth int) (*virtualFile, error) {
 	// slowNode is used to keep track of the slow moving node.
 	slowNode := node
 	advanceSlowNode := false
@@ -152,7 +157,7 @@ func (chainfs FS) resolveSymlink(node *fileNode, depth int) (*fileNode, error) {
 		}
 
 		// Move on to the next fileNode.
-		node, err = chainfs.getFileNode(node.targetPath)
+		node, err = chainfs.getVirtualFile(node.targetPath)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +169,7 @@ func (chainfs FS) resolveSymlink(node *fileNode, depth int) (*fileNode, error) {
 		}
 
 		if advanceSlowNode {
-			slowNode, err = chainfs.getFileNode(slowNode.targetPath)
+			slowNode, err = chainfs.getVirtualFile(slowNode.targetPath)
 			if err != nil {
 				return nil, err
 			}
@@ -177,49 +182,51 @@ func (chainfs FS) resolveSymlink(node *fileNode, depth int) (*fileNode, error) {
 
 // Open opens a file from the virtual filesystem.
 func (chainfs FS) Open(name string) (fs.File, error) {
-	fileNode, err := chainfs.getFileNode(name)
+	vf, err := chainfs.getVirtualFile(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file node to open %s: %w", name, err)
+		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
 	}
 
-	resolvedNode, err := chainfs.resolveSymlink(fileNode, chainfs.maxSymlinkDepth)
+	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", fileNode.virtualPath, err)
+		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
 	}
-	return resolvedNode, nil
+	return resolvedFile, nil
 }
 
 // Stat returns a FileInfo object describing the file found at name.
 func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
-	node, err := chainfs.getFileNode(name)
+	vf, err := chainfs.getVirtualFile(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file node to stat %s: %w", name, err)
+		return nil, fmt.Errorf("failed to get virtual file to stat %s: %w", name, err)
 	}
 
-	resolvedNode, err := chainfs.resolveSymlink(node, chainfs.maxSymlinkDepth)
+	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", node.virtualPath, err)
+		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
 	}
-	return resolvedNode.Stat()
+	return resolvedFile.Stat()
 }
 
 // ReadDir returns the directory entries found at path name.
 func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
-	node, err := chainfs.getFileNode(name)
+	vf, err := chainfs.getVirtualFile(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file node to read directory %s: %w", name, err)
+		return nil, fmt.Errorf("failed to get virtual file to read directory %s: %w", name, err)
 	}
 
-	resolvedNode, err := chainfs.resolveSymlink(node, chainfs.maxSymlinkDepth)
+	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for file node %s: %w", node.virtualPath, err)
+		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
 	}
 
-	children, err := chainfs.getFileNodeChildren(resolvedNode.virtualPath)
+	children, err := chainfs.getVirtualFileChildren(resolvedFile.virtualPath)
 	if err != nil {
 		return nil, err
 	}
 
+	// dirEntries should be initialized to an empty slice to avoid nil pointer dereference for callers
+	// to ReadDir.
 	dirEntries := []fs.DirEntry{}
 	for _, child := range children {
 		if child.isWhiteout {
@@ -235,21 +242,23 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return dirEntries, nil
 }
 
-// getFileNode returns the fileNode object for the given path. The filenode stores metadata on the
-// virtual file and where it is located on the real filesystem.
-func (chainfs *FS) getFileNode(path string) (*fileNode, error) {
+// getVirtualFile returns the virtualFile object for the given path. The virtualFile object stores
+// metadata on the virtual file and where it is located on the real filesystem.
+func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 	if chainfs.tree == nil {
 		return nil, fs.ErrNotExist
 	}
 
-	node := chainfs.tree.Get(normalizePath(path))
-	if node == nil {
+	vf := chainfs.tree.Get(normalizePath(path))
+	if vf == nil {
 		return nil, fs.ErrNotExist
 	}
-	return node, nil
+	return vf, nil
 }
 
-func (chainfs *FS) getFileNodeChildren(path string) ([]*fileNode, error) {
+// getVirtualFileChildren returns the direct virtual file children of the given path. This helper
+// function is used to implement the fs.ReadDirFS interface.
+func (chainfs *FS) getVirtualFileChildren(path string) ([]*virtualFile, error) {
 	if chainfs.tree == nil {
 		return nil, fs.ErrNotExist
 	}
@@ -275,4 +284,38 @@ func normalizePath(path string) string {
 		path = "/" + path
 	}
 	return path
+}
+
+// diffIDForV1Layer returns the diffID of a v1.Layer.
+func diffIDForV1Layer(layer v1.Layer) (digest.Digest, error) {
+	d, err := layer.DiffID()
+	if err != nil {
+		return "", fmt.Errorf("failed to get diffID from v1 layer %+v: %w", layer, err)
+	}
+	diffID, err := digest.Parse(d.String())
+	if err != nil {
+		return "", fmt.Errorf("failed to parse diffID %q from v1 layer %+v: %w", d.String(), layer, err)
+	}
+	return diffID, nil
+}
+
+// chainIDsForV1Layers returns the chainIDs of a slice of v1.Layers. The chainIDs are computed
+// recursively using the identity.ChainIDs function. If an error is encountered when getting the
+// diffID of a v1.Layer, the chainIDs computed so far are returned with the error.
+// len(v1Layers) == len(chainIDs) is guaranteed even if an error is returned.
+func chainIDsForV1Layers(v1Layers []v1.Layer) ([]digest.Digest, error) {
+	var diffIDs []digest.Digest
+	var err error
+	for _, v1Layer := range v1Layers {
+		var diffID digest.Digest
+		diffID, err = diffIDForV1Layer(v1Layer)
+		if err != nil {
+			break
+		}
+		diffIDs = append(diffIDs, diffID)
+	}
+	chainIDs := make([]digest.Digest, len(v1Layers))
+	computedChainIDs := identity.ChainIDs(diffIDs)
+	copy(chainIDs, computedChainIDs)
+	return chainIDs, err
 }

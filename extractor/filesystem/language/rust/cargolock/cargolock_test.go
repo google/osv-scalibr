@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -103,6 +104,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/one-package.lock"},
 				},
 			},
@@ -116,11 +118,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 				{
 					Name:      "syn",
 					Version:   "1.0.73",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 			},
@@ -134,11 +138,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages-with-local.lock"},
 				},
 				{
 					Name:      "local-rust-pkg",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages-with-local.lock"},
 				},
 			},
@@ -152,6 +158,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "wasi",
 					Version:   "0.10.2+wasi-snapshot-preview1",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/package-with-build-string.lock"},
 				},
 			},

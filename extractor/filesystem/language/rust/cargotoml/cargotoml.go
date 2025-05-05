@@ -46,6 +46,7 @@ import (
 )
 
 const (
+	// Name is the name of the Extractor.
 	Name = "rust/cargotoml"
 )
 
@@ -152,6 +153,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	packages = append(packages, &extractor.Package{
 		Name:      parsedTomlFile.Package.Name,
 		Version:   parsedTomlFile.Package.Version,
+		PURLType:  purl.TypeCargo,
 		Locations: []string{input.Path},
 	})
 
@@ -176,6 +178,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
+			PURLType:   purl.TypeCargo,
 			Locations:  []string{input.Path},
 			SourceCode: srcCode,
 		})
@@ -185,12 +188,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCargo,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.

@@ -16,15 +16,20 @@ package npm
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // nodesFromPackages extracts graph from new-style (npm >= 7 / lockfileVersion 2+) structure
@@ -200,4 +205,126 @@ func packageNamesByNodeModuleDepth(packages map[string]packagelockjson.Package) 
 	})
 
 	return keys
+}
+
+// writePackages writes the patches to the "packages" section (v2+) of the lockfile (if it exists).
+func writePackages(lockf []byte, patchMap map[string]map[string]string, api *datasource.NPMRegistryAPIClient) ([]byte, error) {
+	// Check if the lockfile is using CRLF or LF by checking the first newline.
+	i := slices.Index(lockf, byte('\n'))
+	crlf := i > 0 && lockf[i-1] == '\r'
+	packages := gjson.GetBytes(lockf, "packages")
+	if !packages.Exists() {
+		return lockf, nil
+	}
+
+	for key, value := range packages.Map() {
+		parts := strings.Split(key, "node_modules/")
+		if len(parts) == 0 {
+			continue
+		}
+		pkg := parts[len(parts)-1]
+		if n := value.Get("name"); n.Exists() { // if this is an alias, use the real package as the name
+			pkg = n.String()
+		}
+		if upgrades, ok := patchMap[pkg]; ok {
+			if newVer, ok := upgrades[value.Get("version").String()]; ok {
+				fullPath := "packages." + gjson.Escape(key)
+				var err error
+				if lockf, err = updatePackage(lockf, fullPath, pkg, newVer, api, crlf); err != nil {
+					return lockf, err
+				}
+			}
+		}
+	}
+
+	return lockf, nil
+}
+
+func updatePackage(lockf []byte, fullPath string, pkg string, newVer string, api *datasource.NPMRegistryAPIClient, crlf bool) ([]byte, error) {
+	npmData, err := api.FullJSON(context.Background(), pkg, newVer)
+	if err != nil {
+		return lockf, err
+	}
+
+	// The "dependencies" returned from the registry may include both optional and regular dependencies,
+	// but the "optionalDependencies" are removed from "dependencies" in package-lock.json.
+	for _, opt := range npmData.Get("optionalDependencies|@keys").Array() {
+		depName := gjson.Escape(opt.String())
+		s, _ := sjson.Delete(npmData.Raw, "dependencies."+depName)
+		npmData = gjson.Parse(s)
+	}
+
+	if len(npmData.Get("dependencies").Map()) == 0 {
+		s, _ := sjson.Delete(npmData.Raw, "dependencies")
+		npmData = gjson.Parse(s)
+	}
+
+	pkgData := gjson.GetBytes(lockf, fullPath)
+	pkgText := pkgData.Raw
+
+	// There doesn't appear to be a consistent list of what fields should be included in package-lock.json packages.
+	// https://docs.npmjs.com/cli/v9/configuring-npm/package-lock-json#packages seems list some,
+	// but it's not exhaustive and some listed fields may be missing in package-lock files in the wild.
+	// It may depend on the npm version.
+	// Just modify the fields that are already present to avoid too much churn.
+	keyArray := pkgData.Get("@keys").Array()
+	// If dependency types were not previously present, we want to add them.
+	necessaryKeys := []string{"dependencies", "optionalDependencies", "peerDependencies"}
+	keys := make([]string, len(keyArray), len(keyArray)+len(necessaryKeys))
+	for i, key := range keyArray {
+		keys[i] = gjson.Escape(key.String())
+	}
+	for _, key := range necessaryKeys {
+		if npmData.Get(key).Exists() && !pkgData.Get(key).Exists() {
+			keys = append(keys, key)
+		}
+	}
+
+	// Write all the updated fields
+	for _, key := range keys {
+		// some keys require special handling.
+		switch key {
+		case "resolved":
+			pkgText, _ = sjson.Set(pkgText, "resolved", npmData.Get("dist.tarball").String())
+		case "integrity":
+			pkgText, _ = sjson.Set(pkgText, "integrity", npmData.Get("dist.integrity").String())
+		case "bin":
+			// the api formats the paths as "./path/to", while package-lock.json seem to use "path/to"
+			newVal := npmData.Get("bin")
+			if newVal.Exists() {
+				text := newVal.Raw
+				for k, v := range newVal.Map() {
+					text, _ = sjson.Set(text, k, filepath.Clean(v.String()))
+				}
+				pkgText, _ = sjson.SetRaw(pkgText, "bin", text)
+			} else {
+				// explicitly remove it if it's no longer present.
+				pkgText, _ = sjson.Delete(pkgText, "bin")
+			}
+		case "dependencies", "devDependencies", "peerDependencies", "optionalDependencies":
+			// If all dependencies of a type have been removed, explicitly remove the field.
+			// NB: devDependencies shouldn't be in the lockfile anyway.
+			if !npmData.Get(key).Exists() {
+				pkgText, _ = sjson.Delete(pkgText, key)
+				continue
+			}
+			fallthrough
+		default:
+			newVal := npmData.Get(key)
+			if newVal.Exists() {
+				pkgText, _ = sjson.SetRaw(pkgText, key, newVal.Raw)
+			}
+		}
+	}
+
+	// Pretty-print the JSON because setting nested fields break the formatting.
+	// setting prefix to match indentation at the level.
+	pkgText = gjson.Get(pkgText, "@this|@pretty:{\"prefix\": \"    \", \"intent\": \"  \"}").Raw
+	// Trim trailing newline that @pretty creates.
+	pkgText = strings.TrimSuffix(pkgText, "\n")
+	if crlf {
+		pkgText = strings.ReplaceAll(pkgText, "\n", "\r\n")
+	}
+
+	return sjson.SetRawBytes(lockf, fullPath, []byte(pkgText))
 }

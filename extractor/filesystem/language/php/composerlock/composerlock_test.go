@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -102,6 +103,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "sentry/sdk",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/one-package.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
@@ -121,6 +123,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "sentry/sdk",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/one-package-dev.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
@@ -140,6 +143,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "sentry/sdk",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/two-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
@@ -151,6 +155,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "theseer/tokenizer",
 					Version:   "1.1.3",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/two-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
@@ -170,6 +175,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "sentry/sdk",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
@@ -181,6 +187,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "theseer/tokenizer",
 					Version:   "1.1.3",
+					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",

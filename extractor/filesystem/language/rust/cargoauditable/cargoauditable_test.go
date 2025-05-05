@@ -119,6 +119,7 @@ func TestToPURL(t *testing.T) {
 	pkg := &extractor.Package{
 		Name:      "name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeCargo,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{
@@ -147,56 +148,67 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "itoa",
 					Version:   "1.0.14",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "memchr",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "proc-macro2",
 					Version:   "1.0.92",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "quote",
 					Version:   "1.0.38",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "ryu",
 					Version:   "1.0.18",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde",
 					Version:   "1.0.217",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde_derive",
 					Version:   "1.0.217",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde_json",
 					Version:   "1.0.135",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "syn",
 					Version:   "2.0.95",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "unicode-ident",
 					Version:   "1.0.14",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "uses_json",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 			},
@@ -208,6 +220,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "no_deps",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/no_deps/no_deps"},
 				},
 			},

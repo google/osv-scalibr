@@ -58,6 +58,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -191,7 +192,10 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		// once integrators no longer read them.
 		InventoriesDeprecated: packages,
 		FindingsDeprecated:    findings,
-		Inventory:             &spb.Inventory{Packages: packages, Findings: findings},
+		Inventory: &spb.Inventory{
+			Packages: packages,
+			Findings: findings,
+		},
 	}, nil
 }
 
@@ -553,6 +557,24 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Exited:       m.Exited,
 			},
 		}
+	case *docker.Metadata:
+		ports := make([]*spb.DockerPort, 0, len(m.Ports))
+		for _, p := range m.Ports {
+			ports = append(ports, &spb.DockerPort{
+				Ip:          p.IP,
+				PrivatePort: uint32(p.PrivatePort),
+				PublicPort:  uint32(p.PublicPort),
+				Type:        p.Type,
+			})
+		}
+		p.Metadata = &spb.Package_DockerContainersMetadata{
+			DockerContainersMetadata: &spb.DockerContainersMetadata{
+				ImageName:   m.ImageName,
+				ImageDigest: m.ImageDigest,
+				Id:          m.ID,
+				Ports:       ports,
+			},
+		}
 	}
 }
 
@@ -612,6 +634,7 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 	return &spb.LayerDetails{
 		Index:       int32(ld.Index),
 		DiffId:      ld.DiffID,
+		ChainId:     ld.ChainID,
 		Command:     ld.Command,
 		InBaseImage: ld.InBaseImage,
 	}

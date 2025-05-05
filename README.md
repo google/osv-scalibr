@@ -32,7 +32,7 @@ If your use case is known vulnerability scanning and extraction in a CLI
 context, check out the
 [OSV-Scanner usage guide](https://google.github.io/osv-scanner/usage/).
 
-**Note:** Note all OSV-SCALIBR functionality is available via OSV-Scanner yet.
+**Note:** Not all OSV-SCALIBR functionality is available via OSV-Scanner yet.
 Check out [this issue](https://github.com/google/osv-scanner/issues/1701) for
 the current status.
 
@@ -62,6 +62,13 @@ Add the `--remote-image` flag to scan a remote container image. Example:
 
 ```
 scalibr --result=result.textproto --remote-image=alpine@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5
+```
+
+Or the `--image-tarball` flag to scan a locally saved image tarball like ones
+produced with `docker save my-image > my-image.tar`. Example:
+
+```
+scalibr --result=result.textproto --image-tarball=my-image.tar
 ```
 
 ### SPDX generation
@@ -163,7 +170,7 @@ results := scalibr.New().Scan(context.Background(), cfg)
 OSV-SCALIBR is compatible with Linux and has experimental support for Windows
 and Mac. When a new plugin is implemented for OSV-SCALIBR, we need to ensure
 that it will not break other platforms. Our runners will generally catch
-compatibility issue, but to ensure everything is easy when implementing a
+compatibility issues, but to ensure everything is easy when implementing a
 plugin, here are a few recommendations to keep in mind:
 
 *   Ensure you work with file paths using the `filepath` library. For example,
@@ -208,7 +215,7 @@ To build and test your local changes, run `make` and `make test`. A local
 
 Some of your code contributions might require regenerating protos. This can
 happen when, say, you want to contribute a new inventory type. For such cases,
-you'll need install a few dependencies
+you'll need to install a few dependencies:
 
 *   `protoc`: Install the appropriate
     [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).

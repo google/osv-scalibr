@@ -19,13 +19,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/clients/datasource"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/log"
@@ -45,7 +49,7 @@ func (r readWriter) System() resolve.System {
 
 // SupportedStrategies returns the remediation strategies supported for this lockfile.
 func (r readWriter) SupportedStrategies() []strategy.Strategy {
-	return []strategy.Strategy{}
+	return []strategy.Strategy{strategy.StrategyInPlace}
 }
 
 type dependencyVersionSpec struct {
@@ -129,10 +133,13 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 			depNode := findDependencyNode(node, depName)
 			if depNode == -1 {
 				// The dependency is apparently not in the package-lock.json.
-				// This probably means the lockfile is malformed, and npm would usually error installing this.
+				// Either this is an uninstalled optional dependency (which is fine),
+				// or lockfile is (probably) malformed, and npm would usually error installing this.
 				// But there are some cases (with workspaces) that npm doesn't error,
 				// so just always ignore the error to make it work.
-				log.Warnf("package-lock.json is missing dependency %s for %s", depName, node.ActualName)
+				if !depSpec.DepType.HasAttr(dep.Opt) {
+					log.Warnf("package-lock.json is missing dependency %s for %s", depName, g.Nodes[node.NodeID].Version.Name)
+				}
 				continue
 			}
 			if err := g.AddEdge(node.NodeID, depNode, depSpec.Version, depSpec.DepType); err != nil {
@@ -155,6 +162,50 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 	}
 
 	return g, nil
+}
+
+// Write writes the lockfile after applying the patches to outputPath.
+func (r readWriter) Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+	// Read the whole package-lock.json into memory so we can use sjson to write in-place.
+	f, err := fsys.Open(path)
+	if err != nil {
+		return err
+	}
+	lockf, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return err
+	}
+
+	// Map of package name to original version to new version, for easier lookup of patches.
+	patchMap := make(map[string]map[string]string)
+	for _, p := range patches {
+		for _, pu := range p.PackageUpdates {
+			if _, ok := patchMap[pu.Name]; !ok {
+				patchMap[pu.Name] = make(map[string]string)
+			}
+			patchMap[pu.Name][pu.VersionFrom] = pu.VersionTo
+		}
+	}
+
+	// We need access to the npm registry to get information about the new versions. (e.g. hashes)
+	api, err := datasource.NewNPMRegistryAPIClient(filepath.Dir(outputPath))
+	if err != nil {
+		return fmt.Errorf("failed to connect to npm registry: %w", err)
+	}
+
+	if lockf, err = writeDependencies(lockf, patchMap, api); err != nil {
+		return err
+	}
+	if lockf, err = writePackages(lockf, patchMap, api); err != nil {
+		return err
+	}
+
+	// Write the patched lockfile to the output path.
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(outputPath, lockf, 0644)
 }
 
 func findDependencyNode(node *nodeModule, depName string) resolve.NodeID {

@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -94,6 +95,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/one-package.mod"},
 				},
 			},
@@ -107,16 +109,19 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 				{
 					Name:      "gopkg.in/yaml.v2",
 					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 			},
@@ -130,11 +135,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.23.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain.mod"},
 				},
 			},
@@ -148,11 +155,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain-with-suffix.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.23.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain-with-suffix.mod"},
 				},
 			},
@@ -166,31 +175,37 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "gopkg.in/yaml.v2",
 					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "github.com/mattn/go-colorable",
 					Version:   "0.1.9",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "github.com/mattn/go-isatty",
 					Version:   "0.0.14",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "golang.org/x/sys",
 					Version:   "0.0.0-20210630005230-0f9fa26af87c",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 			},
@@ -204,6 +219,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-one.mod"},
 				},
 			},
@@ -217,11 +233,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-mixed.mod"},
 				},
 				{
 					Name:      "golang.org/x/net",
 					Version:   "0.5.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-mixed.mod"},
 				},
 			},
@@ -235,11 +253,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "./fork/net",
 					Version:   "",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-local.mod"},
 				},
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-local.mod"},
 				},
 			},
@@ -253,11 +273,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "example.com/fork/foe",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-different.mod"},
 				},
 				{
 					Name:      "example.com/fork/foe",
 					Version:   "1.4.2",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-different.mod"},
 				},
 			},
@@ -271,11 +293,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "golang.org/x/net",
 					Version:   "0.5.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-not-required.mod"},
 				},
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-not-required.mod"},
 				},
 			},
@@ -289,6 +313,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-no-version.mod"},
 				},
 			},
@@ -302,16 +327,19 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/sirupsen/logrus",
 					Version:   "1.9.3",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.23.mod"},
 				},
 				{
 					Name:      "golang.org/x/sys",
 					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.23.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.23",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.23.mod"},
 				},
 			},
@@ -325,16 +353,19 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/davecgh/go-spew",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
 					Name:      "github.com/pmezard/go-difflib",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
-					Name:    "github.com/sirupsen/logrus",
-					Version: "1.9.3",
+					Name:     "github.com/sirupsen/logrus",
+					Version:  "1.9.3",
+					PURLType: purl.TypeGolang,
 					Locations: []string{
 						"testdata/indirect-1.16.mod", "testdata/indirect-1.16.sum",
 					},
@@ -342,21 +373,25 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "github.com/stretchr/testify",
 					Version:   "1.7.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
 					Name:      "golang.org/x/sys",
 					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
 					Name:      "gopkg.in/yaml.v3",
 					Version:   "3.0.0-20200313102051-9f266ea9e77c",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.sum"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.16",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-1.16.mod"},
 				},
 			},

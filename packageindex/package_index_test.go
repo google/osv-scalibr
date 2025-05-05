@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/packageindex"
+	"github.com/google/osv-scalibr/purl"
 )
 
 var (
@@ -37,9 +38,9 @@ func TestGetAll(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	pkgs := []*extractor.Package{
-		{Name: "software1", Extractor: npmEx},
-		{Name: "software2", Extractor: pipEx},
-		{Name: "software3", Extractor: pipEx},
+		{Name: "software1", Extractor: npmEx, PURLType: purl.TypeNPM},
+		{Name: "software2", Extractor: pipEx, PURLType: purl.TypePyPi},
+		{Name: "software3", Extractor: pipEx, PURLType: purl.TypePyPi},
 	}
 	want := pkgs
 
@@ -58,13 +59,13 @@ func TestGetAllOfType(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	pkgs := []*extractor.Package{
-		{Name: "software1", Extractor: npmEx},
-		{Name: "software2", Extractor: pipEx},
-		{Name: "software3", Extractor: pipEx},
+		{Name: "software1", Extractor: npmEx, PURLType: purl.TypeNPM},
+		{Name: "software2", Extractor: pipEx, PURLType: purl.TypePyPi},
+		{Name: "software3", Extractor: pipEx, PURLType: purl.TypePyPi},
 	}
 	want := []*extractor.Package{
-		{Name: "software2", Extractor: pipEx},
-		{Name: "software3", Extractor: pipEx},
+		{Name: "software2", Extractor: pipEx, PURLType: purl.TypePyPi},
+		{Name: "software3", Extractor: pipEx, PURLType: purl.TypePyPi},
 	}
 
 	px, err := packageindex.New(pkgs)
@@ -81,11 +82,11 @@ func TestGetAllOfType(t *testing.T) {
 func TestGetSpecific(t *testing.T) {
 	npmEx := packagejson.New(packagejson.DefaultConfig())
 	pipEx := wheelegg.New(wheelegg.DefaultConfig())
-	pkg1 := &extractor.Package{Name: "software1", Version: "1.2.3", Extractor: npmEx}
-	pkg2 := &extractor.Package{Name: "software2", Version: "1.2.3", Extractor: pipEx}
-	pkg3 := &extractor.Package{Name: "software3", Extractor: pipEx}
-	pkg4v123 := &extractor.Package{Name: "software4", Version: "1.2.3", Extractor: npmEx}
-	pkg4v456 := &extractor.Package{Name: "software4", Version: "4.5.6", Extractor: npmEx}
+	pkg1 := &extractor.Package{Name: "software1", Version: "1.2.3", Extractor: npmEx, PURLType: purl.TypeNPM}
+	pkg2 := &extractor.Package{Name: "software2", Version: "1.2.3", Extractor: pipEx, PURLType: purl.TypePyPi}
+	pkg3 := &extractor.Package{Name: "software3", Extractor: pipEx, PURLType: purl.TypePyPi}
+	pkg4v123 := &extractor.Package{Name: "software4", Version: "1.2.3", Extractor: npmEx, PURLType: purl.TypeNPM}
+	pkg4v456 := &extractor.Package{Name: "software4", Version: "4.5.6", Extractor: npmEx, PURLType: purl.TypeNPM}
 	pkgs := []*extractor.Package{pkg1, pkg2, pkg3, pkg4v123, pkg4v456}
 
 	testCases := []struct {

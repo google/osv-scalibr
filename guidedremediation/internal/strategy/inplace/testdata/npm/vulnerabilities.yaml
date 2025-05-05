@@ -1,0 +1,52 @@
+vulns:
+  - id: OSV-000-000
+    affected:
+      - package:
+          ecosystem: npm
+          name: 'd'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '1.2.3'
+  - id: OSV-000-001
+    affected:
+      - package:
+          ecosystem: npm
+          name: 'd'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '1.3.0'
+  - id: OSV-000-002
+    affected:
+      - package:
+          ecosystem: npm
+          name: 'd'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '2.0.0'
+  - id: OSV-000-003
+    affected:
+      - package:
+          ecosystem: npm
+          name: 'd'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '1.2.0'
+              - introduced: '1.3.0'
+  - id: OSV-000-004
+    affected:
+      - package:
+          ecosystem: npm
+          name: 'g'
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '1.0.1'

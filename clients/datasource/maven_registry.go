@@ -72,6 +72,10 @@ func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient,
 		registry.URL = mavenCentral
 		registry.ID = "central"
 	}
+	if registry.ID == "" {
+		// Gives the default registry an ID so it is not overwritten by registry without an ID in pom.xml.
+		registry.ID = "default"
+	}
 	u, err := url.Parse(registry.URL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Maven registry %s: %w", registry.URL, err)
@@ -103,6 +107,10 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
 func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
+	if registry.ID == m.defaultRegistry.ID {
+		return m.updateDefaultRegistry(registry)
+	}
+
 	for _, reg := range m.registries {
 		if reg.ID == registry.ID {
 			return nil
@@ -117,6 +125,16 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 
+	return nil
+}
+
+func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) error {
+	u, err := url.Parse(registry.URL)
+	if err != nil {
+		return err
+	}
+	registry.Parsed = u
+	m.defaultRegistry = registry
 	return nil
 }
 

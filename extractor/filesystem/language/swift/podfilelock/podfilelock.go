@@ -140,6 +140,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		result = append(result, &extractor.Package{
 			Name:      pkg.Name,
 			Version:   pkg.Version,
+			PURLType:  purl.TypeCocoapods,
 			Locations: []string{input.Path},
 		})
 	}
@@ -148,12 +149,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 }
 
 // ToPURL converts a package item into a Package URL (PURL).
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCocoapods,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem name for CocoaPods.

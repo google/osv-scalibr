@@ -170,16 +170,19 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "swift-algorithms",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "swift-async-algorithms",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "swift-atomics",
 					Version:   "1.1.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -231,6 +234,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeCocoapods,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

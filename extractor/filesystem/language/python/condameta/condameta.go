@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -165,8 +164,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	}
 
 	return []*extractor.Package{&extractor.Package{
-		Name:    pkg.Name,
-		Version: pkg.Version,
+		Name:     pkg.Name,
+		Version:  pkg.Version,
+		PURLType: purl.TypePyPi,
 		Locations: []string{
 			input.Path,
 		},
@@ -188,8 +188,9 @@ type condaPackage struct {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return pypipurl.MakePackageURL(p)
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem for Conda packages.

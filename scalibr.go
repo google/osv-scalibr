@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -87,6 +88,8 @@ type ScanConfig struct {
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
 	SkipDirGlob glob.Glob
+	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
+	MaxFileSize int
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
@@ -206,6 +209,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
+		MaxFileSize:           config.MaxFileSize,
 		SkipDirGlob:           config.SkipDirGlob,
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
@@ -245,7 +249,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 
-	findings, detectorStatus, err := detector.Run(
+	findings, detectorStatus, err := detectorrunner.Run(
 		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
 	sro.Inventory.Findings = append(sro.Inventory.Findings, findings...)
@@ -280,7 +284,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 	// Overwrite the scan roots with the chain layer filesystem.
 	config.ScanRoots = []*scalibrfs.ScanRoot{
-		&scalibrfs.ScanRoot{
+		{
 			FS: chainfs,
 		},
 	}
@@ -294,6 +298,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
 		SkipDirRegex:          config.SkipDirRegex,
+		MaxFileSize:           config.MaxFileSize,
 		SkipDirGlob:           config.SkipDirGlob,
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,

@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -102,6 +103,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -118,6 +120,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-dev.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -134,6 +137,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -142,6 +146,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -158,6 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -166,6 +172,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -182,6 +189,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -190,6 +198,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pluggy",
 					Version:   "1.0.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -198,6 +207,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pluggy",
 					Version:   "1.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -206,6 +216,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},

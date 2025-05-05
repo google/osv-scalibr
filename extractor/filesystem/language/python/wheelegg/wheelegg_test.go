@@ -160,6 +160,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "pip",
 				Version:   "22.2.2",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/distinfo_meta"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "The pip developers",
@@ -173,6 +174,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "setuptools",
 				Version:   "57.4.0",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/egginfo_pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Python Packaging Authority",
@@ -186,6 +188,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "pycups",
 				Version:   "2.0.1",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/egginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Zdenek Dohnal",
@@ -199,6 +202,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "httplib2",
 				Version:   "0.20.4",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Joe Gregorio",
@@ -213,6 +217,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "passlib",
 				Version:   "1.7.4",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/malformed_pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Eli Collins",
@@ -226,6 +231,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{{
 				Name:      "monotonic",
 				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
@@ -319,6 +325,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			wantPackages: &extractor.Package{
 				Name:      "monotonic",
 				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
@@ -464,6 +471,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypePyPi,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

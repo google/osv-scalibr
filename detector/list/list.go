@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20236019"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20242912"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
@@ -67,6 +68,7 @@ var Untested = InitMap{
 
 // Weakcreds detectors for weak credentials.
 var Weakcreds = InitMap{
+	codeserver.Name:  {codeserver.NewDefault},
 	etcshadow.Name:   {etcshadow.New},
 	filebrowser.Name: {filebrowser.New},
 	winlocal.Name:    {winlocal.New},

@@ -179,6 +179,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "jupyterlab",
 					Version:   "3.1.12",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -244,6 +245,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypePyPi,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

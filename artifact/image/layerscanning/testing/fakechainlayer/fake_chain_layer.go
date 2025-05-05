@@ -35,15 +35,32 @@ type FakeChainLayer struct {
 	command string
 	testDir string
 	diffID  digest.Digest
+	chainID digest.Digest
 	layer   image.Layer
 	files   map[string]string
 }
 
+// Config is the configuration for creating a FakeChainLayer.
+type Config struct {
+	TestDir           string
+	Index             int
+	DiffID            digest.Digest
+	ChainID           digest.Digest
+	Command           string
+	Layer             image.Layer
+	Files             map[string]string
+	FilesAlreadyExist bool
+}
+
 // New creates a new FakeChainLayer.
-func New(testDir string, index int, diffID digest.Digest, command string, layer image.Layer, files map[string]string, filesAlreadyExist bool) (*FakeChainLayer, error) {
-	if !filesAlreadyExist {
-		for name, contents := range files {
-			filename := filepath.Join(testDir, name)
+func New(cfg *Config) (*FakeChainLayer, error) {
+	if cfg == nil {
+		return nil, errors.New("config is nil")
+	}
+
+	if !cfg.FilesAlreadyExist {
+		for name, contents := range cfg.Files {
+			filename := filepath.Join(cfg.TestDir, name)
 			if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
 				return nil, err
 			}
@@ -54,12 +71,13 @@ func New(testDir string, index int, diffID digest.Digest, command string, layer 
 		}
 	}
 	return &FakeChainLayer{
-		index:   index,
-		diffID:  diffID,
-		command: command,
-		layer:   layer,
-		testDir: testDir,
-		files:   files,
+		index:   cfg.Index,
+		diffID:  cfg.DiffID,
+		chainID: cfg.ChainID,
+		command: cfg.Command,
+		layer:   cfg.Layer,
+		testDir: cfg.TestDir,
+		files:   cfg.Files,
 	}, nil
 }
 
@@ -70,6 +88,11 @@ func New(testDir string, index int, diffID digest.Digest, command string, layer 
 // Index returns the index of the chain layer.
 func (fakeChainLayer *FakeChainLayer) Index() int {
 	return fakeChainLayer.index
+}
+
+// ChainID returns the chain ID of the chain layer.
+func (fakeChainLayer *FakeChainLayer) ChainID() digest.Digest {
+	return fakeChainLayer.chainID
 }
 
 // Layer returns the underlying layer of the chain layer.

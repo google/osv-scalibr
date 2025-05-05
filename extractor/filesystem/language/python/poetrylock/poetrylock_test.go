@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -102,6 +103,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -118,6 +120,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "proto-plus",
 					Version:   "1.22.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -126,6 +129,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "protobuf",
 					Version:   "4.21.5",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -142,6 +146,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "emoji",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-with-metadata.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -158,6 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "ike",
 					Version:   "0.2.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "cd66602cd29f61a2d2e7fb995fef1e61708c034d",
@@ -177,6 +183,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "appdirs",
 					Version:   "1.4.4",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-legacy.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -193,6 +200,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-package.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -209,6 +217,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "async-timeout",
 					Version:   "5.0.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -217,6 +226,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "factory-boy",
 					Version:   "3.3.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -225,6 +235,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "faker",
 					Version:   "33.3.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -233,6 +244,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "proto-plus",
 					Version:   "1.22.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -241,6 +253,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "proto-plus",
 					Version:   "1.23.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -249,6 +262,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "protobuf",
 					Version:   "4.25.5",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -257,6 +271,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "python-dateutil",
 					Version:   "2.9.0.post0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -265,6 +280,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "six",
 					Version:   "1.17.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -273,6 +289,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "typing-extensions",
 					Version:   "4.12.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -281,6 +298,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "urllib3",
 					Version:   "2.3.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -289,6 +307,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "redis",
 					Version:   "5.2.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},

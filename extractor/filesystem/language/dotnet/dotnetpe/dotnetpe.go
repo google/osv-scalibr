@@ -188,8 +188,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 	name, version := versionResources["InternalName"], versionResources["Assembly Version"]
 	if name != "" && version != "" {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:    name,
-			Version: version,
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeNuget,
 		})
 	}
 
@@ -204,13 +205,21 @@ func tableContentToPackages(f *pe.File, content any) []*extractor.Package {
 		for _, row := range content {
 			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-			pkgs = append(pkgs, &extractor.Package{Name: name, Version: version})
+			pkgs = append(pkgs, &extractor.Package{
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypeNuget,
+			})
 		}
 	case []pe.AssemblyRefTableRow:
 		for _, row := range content {
 			name := string(f.GetStringFromData(row.Name, f.CLR.MetadataStreams["#Strings"])) + ".dll"
 			version := fmt.Sprintf("%d.%d.%d.%d", row.MajorVersion, row.MinorVersion, row.BuildNumber, row.RevisionNumber)
-			pkgs = append(pkgs, &extractor.Package{Name: name, Version: version})
+			pkgs = append(pkgs, &extractor.Package{
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypeNuget,
+			})
 		}
 	}
 
@@ -245,12 +254,9 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNuget,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem implements filesystem.Extractor.

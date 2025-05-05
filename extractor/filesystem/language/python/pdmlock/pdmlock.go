@@ -23,7 +23,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -83,6 +82,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		pkg := &extractor.Package{
 			Name:      parsedPKG.Name,
 			Version:   parsedPKG.Version,
+			PURLType:  purl.TypePyPi,
 			Locations: []string{input.Path},
 		}
 
@@ -129,8 +129,9 @@ func parseGroupsToDepGroups(groups []string) []string {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return pypipurl.MakePackageURL(p)
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.

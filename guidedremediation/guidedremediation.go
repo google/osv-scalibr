@@ -17,6 +17,7 @@
 package guidedremediation
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -27,12 +28,17 @@ import (
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
+	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/inplace"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
 	"github.com/google/osv-scalibr/guidedremediation/internal/suggest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
+	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
@@ -68,31 +74,36 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 		}
 	}
 
-	stgy := opts.Strategy
-	// If strategy is unset, choose a supported strategy from the manifest/lockfile
-	// Preferring to operate on the manifest rather than the lockfile.
-	if stgy == "" {
-		var strats []strategy.Strategy
-		if hasManifest {
-			strats = manifestRW.SupportedStrategies()
+	// If a strategy is specified, try to use it (if it's supported).
+	if opts.Strategy != "" {
+		// Prefer modifying the manifest over the lockfile, if both are provided.
+		// (Though, there are no strategies that work on both)
+		if hasManifest && slices.Contains(manifestRW.SupportedStrategies(), opts.Strategy) {
+			return doManifestStrategy(context.Background(), opts.Strategy, manifestRW, opts)
 		}
-		if hasLockfile {
-			strats = append(strats, lockfileRW.SupportedStrategies()...)
+		if hasLockfile && slices.Contains(lockfileRW.SupportedStrategies(), opts.Strategy) {
+			return doLockfileStrategy(context.Background(), opts.Strategy, lockfileRW, opts)
 		}
-		if len(strats) == 0 {
-			// This should be unreachable.
-			// Supported manifests/lockfiles should have at least one strategy.
-			return result.Result{}, errors.New("no supported strategies")
-		}
-		stgy = strats[0]
+		return result.Result{}, fmt.Errorf("unsupported strategy: %q", opts.Strategy)
 	}
 
-	switch stgy {
-	case strategy.StrategyOverride:
-		return doOverride(context.Background(), manifestRW, opts)
+	// No strategy specified, so use the first supported strategy.
+	// With manifest strategies taking precedence over lockfile.
+	if hasManifest {
+		strats := manifestRW.SupportedStrategies()
+		if len(strats) > 0 {
+			return doManifestStrategy(context.Background(), strats[0], manifestRW, opts)
+		}
+	} else if hasLockfile {
+		strats := lockfileRW.SupportedStrategies()
+		if len(strats) > 0 {
+			return doLockfileStrategy(context.Background(), strats[0], lockfileRW, opts)
+		}
 	}
 
-	return result.Result{}, fmt.Errorf("unsupported strategy: %q", stgy)
+	// This should be unreachable.
+	// Supported manifests/lockfiles should have at least one strategy.
+	return result.Result{}, errors.New("no supported strategies found")
 }
 
 // Update updates the dependencies to the latest version based on the UpdateOptions provided.
@@ -117,7 +128,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	suggester, err := suggest.GetSuggester(manifestRW.System())
+	suggester, err := suggest.NewSuggester(manifestRW.System())
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -135,7 +146,16 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 	}, err
 }
 
-func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
+func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
+	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) ([]result.Patch, error)
+	switch s {
+	case strategy.StrategyOverride:
+		computePatches = override.ComputePatches
+	case strategy.StrategyRelax:
+		computePatches = relax.ComputePatches
+	default:
+		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
+	}
 	m, err := parseManifest(opts.Manifest, rw)
 	if err != nil {
 		return result.Result{}, err
@@ -143,7 +163,7 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 
 	res := result.Result{
 		Path:      opts.Manifest,
-		Strategy:  strategy.StrategyOverride,
+		Strategy:  s,
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
@@ -153,18 +173,50 @@ func doOverride(ctx context.Context, rw manifest.ReadWriter, opts options.FixVul
 	}
 
 	res.Errors = computeResolveErrors(resolved.Graph)
-	allPatches, err := override.ComputePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	allPatches, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
 
 	res.Vulnerabilities = computeVulnsResult(resolved, allPatches)
-	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce)
+	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, false)
 	err = writeManifestPatches(opts.Manifest, m, res.Patches, rw)
 
 	return res, err
 }
 
+func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
+	if s != strategy.StrategyInPlace {
+		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
+	}
+	g, err := parseLockfile(opts.Lockfile, rw)
+	if err != nil {
+		return result.Result{}, err
+	}
+
+	res := result.Result{
+		Path:      opts.Lockfile,
+		Strategy:  s,
+		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
+	}
+
+	resolved, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	if err != nil {
+		return result.Result{}, fmt.Errorf("failed resolving lockfile vulnerabilities: %w", err)
+	}
+	res.Errors = computeResolveErrors(resolved.Graph)
+	allPatches, err := inplace.ComputePatches(ctx, opts.ResolveClient, resolved, &opts.RemediationOptions)
+	if err != nil {
+		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
+	}
+	res.Vulnerabilities = computeVulnsResultsLockfile(resolved, allPatches)
+	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, true)
+	err = writeLockfilePatches(opts.Lockfile, res.Patches, rw)
+	return res, err
+}
+
+// computeVulnsResult computes the vulnerabilities that were found in the resolved manifest,
+// where vulnerabilities are unique by ID only, and are actionable only if it can be fixed in all affected packages.
 func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []result.Patch) []result.Vuln {
 	fixableVulns := make(map[string]struct{})
 	for _, p := range allPatches {
@@ -199,12 +251,69 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 	return vulns
 }
 
+// computeVulnsResultsLockfile computes the vulnerabilities that were found in the resolved lockfile,
+// where vulnerabilities are unique by ID AND affected package + version.
+// e.g. CVE-123-456 affecting foo@1.0.0 is different from CVE-123-456 affecting foo@2.0.0.
+// Vulnerabilities are actionable if it can be fixed in all instances of the affected package version.
+// (in the case of npm, where a version of a package can be installed in multiple places in the project)
+func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches []result.Patch) []result.Vuln {
+	type vuln struct {
+		id         string
+		pkgName    string
+		pkgVersion string
+	}
+	fixableVulns := make(map[vuln]struct{})
+	for _, p := range allPatches {
+		for _, v := range p.Fixed {
+			for _, pkg := range v.Packages {
+				fixableVulns[vuln{v.ID, pkg.Name, pkg.Version}] = struct{}{}
+			}
+		}
+	}
+
+	var vulns []result.Vuln
+	for _, v := range resolved.Vulns {
+		vks := make(map[resolve.VersionKey]struct{})
+		for _, sg := range v.Subgraphs {
+			vks[sg.Nodes[sg.Dependency].Version] = struct{}{}
+		}
+		for vk := range vks {
+			_, fixable := fixableVulns[vuln{v.OSV.ID, vk.Name, vk.Version}]
+			vulns = append(vulns, result.Vuln{
+				ID:           v.OSV.ID,
+				Unactionable: !fixable,
+				Packages: []result.Package{{
+					Name:    vk.Name,
+					Version: vk.Version,
+				}},
+			})
+		}
+	}
+	slices.SortFunc(vulns, func(a, b result.Vuln) int {
+		return cmp.Or(
+			strings.Compare(a.ID, b.ID),
+			strings.Compare(a.Packages[0].Name, b.Packages[0].Name),
+			strings.Compare(a.Packages[0].Version, b.Packages[0].Version),
+		)
+	})
+	return vulns
+}
+
 // choosePatches chooses up to maxUpgrades compatible patches to apply.
 // If maxUpgrades <= 0, chooses as many as possible.
-func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool) []result.Patch {
+// If lockfileVulns is true, vulns are considered unique by ID AND affected package + version,
+// so a patch may be chosen that fixes one occurrence of a vulnerability, but not all.
+// If lockfileVulns is false, vulns are considered unique by ID only,
+// so patches must fix all occurrences of a vulnerability to be chosen.
+func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool, lockfileVulns bool) []result.Patch {
 	var patches []result.Patch
 	pkgChanges := make(map[result.Package]struct{}) // dependencies we've already applied a patch to
-	fixedVulns := make(map[string]struct{})         // vulns that have already been fixed by a patch
+	type vulnIdentifier struct {
+		id         string
+		pkgName    string
+		pkgVersion string
+	}
+	fixedVulns := make(map[vulnIdentifier]struct{}) // vulns that have already been fixed by a patch
 	for _, patch := range allPatches {
 		// If this patch is incompatible with existing patches, skip adding it to the patch list.
 
@@ -221,7 +330,12 @@ func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool)
 		// Patching foo@3 makes {foo@3 -> bar@3}, which also fixes the vulnerability in bar.
 		// Applying both patches would force {foo@3 -> bar@2}, which is less desirable.
 		if slices.ContainsFunc(patch.Fixed, func(v result.Vuln) bool {
-			_, ok := fixedVulns[v.ID]
+			identifier := vulnIdentifier{id: v.ID}
+			if lockfileVulns {
+				identifier.pkgName = patch.PackageUpdates[0].Name
+				identifier.pkgVersion = patch.PackageUpdates[0].VersionFrom
+			}
+			_, ok := fixedVulns[identifier]
 			return ok
 		}) {
 			continue
@@ -236,7 +350,12 @@ func choosePatches(allPatches []result.Patch, maxUpgrades int, noIntroduce bool)
 			pkgChanges[result.Package{Name: pkg.Name, Version: pkg.VersionFrom}] = struct{}{}
 		}
 		for _, v := range patch.Fixed {
-			fixedVulns[v.ID] = struct{}{}
+			identifier := vulnIdentifier{id: v.ID}
+			if lockfileVulns {
+				identifier.pkgName = patch.PackageUpdates[0].Name
+				identifier.pkgVersion = patch.PackageUpdates[0].VersionFrom
+			}
+			fixedVulns[identifier] = struct{}{}
 		}
 		maxUpgrades--
 		if maxUpgrades == 0 {
@@ -272,17 +391,18 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
 		return maven.GetReadWriter(registry)
-		// TODO(#454): package.json when relax strategy is migrated.
+	case "package.json":
+		return npm.GetReadWriter(registry)
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
 
-//nolint:unparam // TODO(#454): implement pending
 func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
-	// TODO(#454): package-lock.json when in-place strategy is migrated.
-	// switch strings.ToLower(baseName) {
-	// }
+	switch strings.ToLower(baseName) {
+	case "package-lock.json":
+		return npmlock.GetReadWriter()
+	}
 	return nil, fmt.Errorf("unsupported lockfile: %q", baseName)
 }
 
@@ -299,6 +419,19 @@ func parseManifest(path string, rw manifest.ReadWriter) (manifest.Manifest, erro
 	return m, nil
 }
 
+func parseLockfile(path string, rw lockfile.ReadWriter) (*resolve.Graph, error) {
+	fsys, path, err := fsAndPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	g, err := rw.Read(path, fsys)
+	if err != nil {
+		return nil, fmt.Errorf("error reading lockfile: %w", err)
+	}
+	return g, nil
+}
+
 func writeManifestPatches(path string, m manifest.Manifest, patches []result.Patch, rw manifest.ReadWriter) error {
 	fsys, _, err := fsAndPath(path)
 	if err != nil {
@@ -306,6 +439,15 @@ func writeManifestPatches(path string, m manifest.Manifest, patches []result.Pat
 	}
 
 	return rw.Write(m, fsys, patches, path)
+}
+
+func writeLockfilePatches(path string, patches []result.Patch, rw lockfile.ReadWriter) error {
+	fsys, relPath, err := fsAndPath(path)
+	if err != nil {
+		return err
+	}
+
+	return rw.Write(relPath, fsys, patches, path)
 }
 
 func fsAndPath(path string) (scalibrfs.FS, string, error) {
