@@ -131,6 +131,7 @@ type Flags struct {
 	MaxFileSize                int
 	UseGitignore               bool
 	RemoteImage                string
+	ImageLocal                 string
 	ImageTarball               string
 	ImagePlatform              string
 	GoBinaryVersionFromContent bool
@@ -181,6 +182,12 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if flags.ImageTarball != "" && flags.ImagePlatform != "" {
 		return errors.New("--image-tarball cannot be used with --image-platform")
+	}
+	if flags.ImageLocal != "" && flags.RemoteImage != "" {
+		return errors.New("--image-local cannot be used with --remote-image")
+	}
+	if flags.ImageLocal != "" && flags.ImagePlatform != "" {
+		return errors.New("--image-local cannot be used with --image-platform")
 	}
 	if err := validateResultPath(flags.ResultFile); err != nil {
 		return fmt.Errorf("--result %w", err)
@@ -519,6 +526,11 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	// If ImageTarball is set, do not set the root.
 	// It is computed later on by ScanContainer(...) when the tarball is read.
 	if f.ImageTarball != "" {
+		return nil, nil
+	}
+	// If ImageLocal is set, do not set the root.
+	// It is computed later on by ScanContainer(...) when the tarball is read.
+	if f.ImageLocal != "" {
 		return nil, nil
 	}
 
