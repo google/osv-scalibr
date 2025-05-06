@@ -17,6 +17,7 @@
 package image
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ import (
 
 	"archive/tar"
 
+	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -46,7 +48,9 @@ const (
 	// DefaultMaxSymlinkDepth is the default maximum symlink depth. This should be no more than 8,
 	// since that is the maximum number of symlinks the os.Root API will handle. From the os.Root API,
 	// "8 is __POSIX_SYMLOOP_MAX (the minimum allowed value for SYMLOOP_MAX), and a common limit".
-	DefaultMaxSymlinkDepth = 6
+	DefaultMaxSymlinkDepth   = 6
+	DockerImageNameSeparator = ":"
+	TarFileNameSeparator     = "_"
 )
 
 var (
@@ -104,6 +108,7 @@ type Image struct {
 	root           *os.Root
 	ExtractDir     string
 	BaseImageIndex int
+	TarBallName    string
 }
 
 // TopFS returns the filesystem of the top-most chainlayer of the image. All available files should
@@ -132,6 +137,11 @@ func (img *Image) CleanUp() error {
 	return os.RemoveAll(img.ExtractDir)
 }
 
+// CleanTarBall removes the tarball file
+func (img *Image) CleanTarBall() error {
+	return os.Remove(img.TarBallName)
+}
+
 // Size returns the size of the underlying directory of the image in bytes.
 func (img *Image) Size() int64 {
 	return img.size
@@ -144,6 +154,81 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
 	return FromV1Image(v1Image, config)
+}
+
+// CreateTarBallFromImage creates a tarball from a local docker image. This is the API version of 'docker save image' command
+func createTarBallFromImage(imageName string) (string, error) {
+
+	tarFileName := strings.ReplaceAll(imageName, DockerImageNameSeparator, TarFileNameSeparator) + ".tar"
+	tarBallFileName := filepath.Join(os.TempDir(), tarFileName)
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return "", fmt.Errorf("Unable to generate SBOM for image %s: %w", imageName, err)
+	}
+	defer dockerClient.Close()
+	inputStream, err := dockerClient.ImageSave(context.Background(), []string{imageName})
+	if err != nil {
+		return "", fmt.Errorf("Unable to generate SBOM for image %s: %w", imageName, err)
+	}
+	defer inputStream.Close()
+	fileFd, err := os.Create(tarBallFileName)
+	if err != nil {
+		return "", fmt.Errorf("Unable to generate SBOM for image %s: %w", imageName, err)
+	}
+	_, err = io.Copy(fileFd, inputStream)
+	if err != nil {
+		fileFd.Close()
+		os.Remove(tarBallFileName)
+		return "", fmt.Errorf("Unable to generate SBOM for image %s: %w", imageName, err)
+	}
+	fileFd.Close()
+	return tarBallFileName, nil
+}
+
+// Check if the imageName is of the form imageName:imageTag
+func validateImageNameAndTag(imageName string) (bool, error) {
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return false, err
+	}
+	defer dockerClient.Close()
+	_, _, err = dockerClient.ImageInspectWithRaw(context.Background(), imageName)
+	if err != nil {
+		if client.IsErrNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// FromLocal creates SBOM from a docker image on local hard disk
+// We convert the image to a tarball, and then pass it to the FromTarball function which does all that is necessary
+func FromLocal(imageName string, config *Config) (*Image, error) {
+
+	var tarBallName string
+	var img *Image
+	// First, the image name *MUST* always be of the form imageName:imageTag
+	if !strings.Contains(imageName, DockerImageNameSeparator) {
+		return nil, fmt.Errorf("Image name MUST be specified with a tag and be of the form <image_name>:<tag>")
+	}
+	// Now, check if the image actually exists on the local hard disk
+	imageExists, err := validateImageNameAndTag(imageName)
+	if err != nil {
+		return nil, fmt.Errorf("Image %s error while trying to access it: %w", imageName, err)
+	}
+	if !imageExists {
+		return nil, fmt.Errorf("Image %s does not exist", imageName)
+	}
+	// Now, create a tarball out of the image by using the API equivalent of 'docker save image:tag'
+	tarBallName, err = createTarBallFromImage(imageName)
+	if err != nil {
+		os.Remove(tarBallName)
+		return nil, fmt.Errorf("Unable to use image %s: %w", imageName, err)
+	}
+	img, err = FromTarball(tarBallName, config)
+	img.TarBallName = tarBallName
+	return img, err
 }
 
 // FromTarball creates an Image from a tarball file that stores a container image.

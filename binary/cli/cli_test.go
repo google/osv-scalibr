@@ -195,11 +195,20 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "Remoe Image with Image Tarball",
+			desc: "Remote Image with Image Tarball",
 			flags: &cli.Flags{
 				RemoteImage:  "docker",
 				ImageTarball: "image.tar",
 				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Local Image",
+			flags: &cli.Flags{
+				RemoteImage: "docker",
+				ImageLocal:  "nginx:latest",
+				ResultFile:  "result.textproto",
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -251,6 +260,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"darwin":  {ImageTarball: "image.tar"},
 				"linux":   {ImageTarball: "image.tar"},
 				"windows": {ImageTarball: "image.tar"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
+		{
+			desc: "Scan root is null if local image is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageLocal: "nginx:latest"},
+				"linux":   {ImageLocal: "nginx:latest"},
+				"windows": {ImageLocal: "nginx:latest"},
 			},
 			wantScanRoots: map[string][]string{
 				"darwin":  nil,
