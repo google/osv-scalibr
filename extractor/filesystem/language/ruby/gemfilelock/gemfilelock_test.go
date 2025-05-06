@@ -42,7 +42,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      true,
 		},
 		{
+			inputPath: "gems.locked",
+			want:      true,
+		},
+		{
 			inputPath: "path/to/my/Gemfile.lock",
+			want:      true,
+		},
+		{
+			inputPath: "path/to/my/gems.locked",
 			want:      true,
 		},
 		{
