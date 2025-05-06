@@ -74,7 +74,7 @@ func New(cfg *Config) (*Enricher, error) {
 
 // NewDefault returns a new base image enricher with the default configuration.
 // It will log.Fatal if the enricher cannot be created.
-func NewDefault() *Enricher {
+func NewDefault() enricher.Enricher {
 	e, err := New(DefaultConfig())
 	if err != nil {
 		log.Fatalf("Failed to create base image enricher: %v", err)

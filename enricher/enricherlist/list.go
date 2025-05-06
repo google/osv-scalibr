@@ -35,7 +35,7 @@ var (
 
 	// LayerDetails enrichers.
 	LayerDetails = InitMap{
-		baseimage.Name: []InitFn{func() enricher.Enricher { return baseimage.NewDefault() }},
+		baseimage.Name: {baseimage.NewDefault},
 	}
 
 	// Default enrichers.
