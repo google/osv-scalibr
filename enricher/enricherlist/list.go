@@ -16,10 +16,13 @@
 package enricherlist
 
 import (
-	"errors"
+	"fmt"
+	"slices"
 
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/plugin"
+	"golang.org/x/exp/maps"
 )
 
 // InitFn is the enricher initializer function.
@@ -29,16 +32,78 @@ type InitFn func() enricher.Enricher
 type InitMap map[string][]InitFn
 
 var (
+
+	// LayerDetails enrichers.
+	LayerDetails = InitMap{
+		baseimage.Name: []InitFn{func() enricher.Enricher { return baseimage.NewDefault() }},
+	}
+
+	// Default enrichers.
+	Default = concat()
+
 	// All enrichers.
-	All = InitMap{}
+	All = concat(
+		LayerDetails,
+	)
+
+	enricherNames = concat(All, InitMap{
+		"layerdetails": vals(LayerDetails),
+		"default":      vals(Default),
+		"all":          vals(All),
+	})
 )
+
+func concat(initMaps ...InitMap) InitMap {
+	result := InitMap{}
+	for _, m := range initMaps {
+		maps.Copy(result, m)
+	}
+	return result
+}
+
+func vals(initMap InitMap) []InitFn {
+	return slices.Concat(maps.Values(initMap)...)
+}
+
+// FromName returns a single extractor based on its exact name.
+func FromName(name string) (enricher.Enricher, error) {
+	initers, ok := enricherNames[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown enricher %q", name)
+	}
+	if len(initers) != 1 {
+		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
+	}
+	e := initers[0]()
+	if e.Name() != name {
+		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
+	}
+	return e, nil
+}
 
 // FromNames returns a list of enrichers from a list of names.
 func FromNames(names []string) ([]enricher.Enricher, error) {
-	if len(names) == 0 {
+	resultMap := make(map[string]enricher.Enricher)
+	for _, n := range names {
+		if initers, ok := enricherNames[n]; ok {
+			for _, initer := range initers {
+				e := initer()
+				if _, ok := resultMap[e.Name()]; !ok {
+					resultMap[e.Name()] = e
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("unknown enricher %q", n)
+		}
+	}
+	if len(resultMap) == 0 {
 		return nil, nil
 	}
-	return nil, errors.New("not implemented")
+	result := make([]enricher.Enricher, 0, len(resultMap))
+	for _, e := range resultMap {
+		result = append(result, e)
+	}
+	return result, nil
 }
 
 // FromCapabilities returns all enrichers that can run under the specified
@@ -58,6 +123,10 @@ func FromCapabilities(capabilities *plugin.Capabilities) []enricher.Enricher {
 // under the specified capabilities (OS, direct filesystem access, network
 // access, etc.) of the scanning environment.
 func FilterByCapabilities(es []enricher.Enricher, capabilities *plugin.Capabilities) []enricher.Enricher {
+	if capabilities == nil {
+		capabilities = &plugin.Capabilities{}
+	}
+
 	var result []enricher.Enricher
 	for _, e := range es {
 		if err := plugin.ValidateRequirements(e, capabilities); err == nil {
