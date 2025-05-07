@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -35,7 +36,9 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
+	fen "github.com/google/osv-scalibr/testing/fakeenricher"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/mohae/deepcopy"
 )
 
 func TestScan(t *testing.T) {
@@ -49,9 +52,14 @@ func TestScan(t *testing.T) {
 		Status:        plugin.ScanStatusFailed,
 		FailureReason: pluginFailure,
 	}
+	enrFailure := &plugin.ScanStatus{
+		Status:        plugin.ScanStatusFailed,
+		FailureReason: "API: " + pluginFailure,
+	}
 
 	tmp := t.TempDir()
-	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
+	fs := scalibrfs.DirFS(tmp)
+	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 
 	pkgName := "software"
@@ -64,7 +72,61 @@ func TestScan(t *testing.T) {
 		Locations: []string{"file.txt"},
 		Extractor: fakeExtractor,
 	}
+	withLayerDetails := func(pkg *extractor.Package, ld *extractor.LayerDetails) *extractor.Package {
+		pkg = deepcopy.Copy(pkg).(*extractor.Package)
+		pkg.LayerDetails = ld
+		return pkg
+	}
+	pkgWithLayerDetails := withLayerDetails(pkg, &extractor.LayerDetails{InBaseImage: true})
+	pkgWithLayerDetails.Extractor = fakeExtractor
 	finding := &detector.Finding{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Reference: "CVE-1234"}}}
+
+	fakeEnricherCfg := &fen.Config{
+		Name:         "enricher",
+		Version:      1,
+		Capabilities: &plugin.Capabilities{Network: plugin.NetworkOnline},
+		WantEnrich: map[uint64]fen.InventoryAndErr{
+			fen.MustHash(
+				t,
+				&enricher.ScanInput{
+					FS:   fs,
+					Root: tmp,
+				},
+				&inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+				},
+			): fen.InventoryAndErr{
+				Inventory: &inventory.Inventory{
+					Packages: []*extractor.Package{pkgWithLayerDetails},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+				},
+			},
+		},
+	}
+	fakeEnricher := fen.MustNew(t, fakeEnricherCfg)
+
+	fakeEnricherCfgErr := &fen.Config{
+		Name:         "enricher",
+		Version:      1,
+		Capabilities: &plugin.Capabilities{Network: plugin.NetworkOnline},
+		WantEnrich: map[uint64]fen.InventoryAndErr{
+			fen.MustHash(
+				t, &enricher.ScanInput{FS: fs, Root: tmp},
+				&inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
+				},
+			): fen.InventoryAndErr{
+				Inventory: &inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
+				},
+				Err: errors.New(enrFailure.FailureReason),
+			},
+		},
+	}
+	fakeEnricherErr := fen.MustNew(t, fakeEnricherCfgErr)
 
 	testCases := []struct {
 		desc string
@@ -78,16 +140,18 @@ func TestScan(t *testing.T) {
 				Detectors: []detector.Detector{
 					fd.New("detector", 2, finding, nil),
 				},
+				Enrichers: []enricher.Enricher{fakeEnricher},
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
 				Status: success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
+					{Name: "enricher", Version: 1, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
 				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{pkg},
+					Packages: []*extractor.Package{pkgWithLayerDetails},
 					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
 				},
 			},
@@ -153,6 +217,29 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
+				},
+			},
+		},
+		{
+			desc: "Enricher plugin failed",
+			cfg: &scalibr.ScanConfig{
+				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+				Detectors: []detector.Detector{
+					fd.New("detector2", 2, finding, nil),
+				},
+				Enrichers: []enricher.Enricher{fakeEnricherErr},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Status: success,
+				PluginStatus: []*plugin.Status{
+					{Name: "detector2", Version: 2, Status: success},
+					{Name: "enricher", Version: 1, Status: enrFailure},
+					{Name: "python/wheelegg", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{pkg},
+					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
 				},
 			},
 		},
@@ -232,6 +319,15 @@ func TestEnableRequiredExtractors(t *testing.T) {
 			wantExtractors: []string{"python/wheelegg"},
 		},
 		{
+			name: "auto-loaded required extractor by enricher",
+			cfg: scalibr.ScanConfig{
+				Enrichers: []enricher.Enricher{
+					fen.MustNew(t, &fen.Config{RequiredPlugins: []string{"python/wheelegg"}}),
+				},
+			},
+			wantExtractors: []string{"python/wheelegg"},
+		},
+		{
 			name: "required extractor doesn't exist",
 			cfg: scalibr.ScanConfig{
 				Detectors: []detector.Detector{
@@ -268,8 +364,7 @@ func TestEnableRequiredExtractors(t *testing.T) {
 	}
 }
 
-type fakeExNeedsNetwork struct {
-}
+type fakeExNeedsNetwork struct{}
 
 func (fakeExNeedsNetwork) Name() string                           { return "fake-extractor" }
 func (fakeExNeedsNetwork) Version() int                           { return 0 }
@@ -312,6 +407,16 @@ func TestValidatePluginRequirements(t *testing.T) {
 				Detectors: []detector.Detector{
 					&fakeDetNeedsFS{},
 				},
+				Enrichers: []enricher.Enricher{
+					fen.MustNew(t, &fen.Config{
+						Name:    "enricher",
+						Version: 1,
+						Capabilities: &plugin.Capabilities{
+							Network:  plugin.NetworkOnline,
+							DirectFS: true,
+						},
+					}),
+				},
 				Capabilities: &plugin.Capabilities{
 					Network:  plugin.NetworkOnline,
 					DirectFS: true,
@@ -320,13 +425,36 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "one plugin's requirements unsatisfied",
+			desc: "one detector's requirements unsatisfied",
 			cfg: scalibr.ScanConfig{
 				FilesystemExtractors: []filesystem.Extractor{
 					&fakeExNeedsNetwork{},
 				},
 				Detectors: []detector.Detector{
 					&fakeDetNeedsFS{},
+				},
+				Capabilities: &plugin.Capabilities{
+					Network:  plugin.NetworkOffline,
+					DirectFS: true,
+				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "one enrichers's requirements unsatisfied",
+			cfg: scalibr.ScanConfig{
+				FilesystemExtractors: []filesystem.Extractor{
+					&fakeExNeedsNetwork{},
+				},
+				Enrichers: []enricher.Enricher{
+					fen.MustNew(t, &fen.Config{
+						Name:    "enricher",
+						Version: 1,
+						Capabilities: &plugin.Capabilities{
+							Network:  plugin.NetworkOnline,
+							DirectFS: true,
+						},
+					}),
 				},
 				Capabilities: &plugin.Capabilities{
 					Network:  plugin.NetworkOffline,

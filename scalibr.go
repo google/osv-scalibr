@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/annotator"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -40,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+	"go.uber.org/multierr"
 
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
@@ -63,6 +65,7 @@ type ScanConfig struct {
 	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
+	Enrichers            []enricher.Enricher
 	// Capabilities that the scanning environment satisfies, e.g. whether there's
 	// network access. Some plugins can only run if certain requirements are met.
 	Capabilities *plugin.Capabilities
@@ -118,23 +121,36 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 	for _, e := range cfg.StandaloneExtractors {
 		enabledExtractors[e.Name()] = struct{}{}
 	}
+
+	requiredExtractors := map[string]struct{}{}
 	for _, d := range cfg.Detectors {
 		for _, e := range d.RequiredExtractors() {
-			if _, enabled := enabledExtractors[e]; enabled {
-				continue
-			}
-			ex, err := el.ExtractorFromName(e)
-			stex, sterr := sl.ExtractorFromName(e)
-			if err != nil && sterr != nil {
-				return fmt.Errorf("required extractor %q not present in list.go: %w, %w", e, err, sterr)
-			}
-			enabledExtractors[e] = struct{}{}
-			if err == nil {
-				cfg.FilesystemExtractors = append(cfg.FilesystemExtractors, ex)
-			}
-			if sterr == nil {
-				cfg.StandaloneExtractors = append(cfg.StandaloneExtractors, stex)
-			}
+			requiredExtractors[e] = struct{}{}
+		}
+	}
+	for _, e := range cfg.Enrichers {
+		for _, p := range e.RequiredPlugins() {
+			requiredExtractors[p] = struct{}{}
+		}
+	}
+
+	for e := range requiredExtractors {
+		if _, enabled := enabledExtractors[e]; enabled {
+			continue
+		}
+		ex, err := el.ExtractorFromName(e)
+		// TODO: b/416094527 - Implement required detectors for enrichers.
+		// TODO: b/416106602 - Implement required enrichers for enrichers.
+		stex, sterr := sl.ExtractorFromName(e)
+		if err != nil && sterr != nil {
+			return fmt.Errorf("required extractor %q not present in list.go: %w, %w", e, err, sterr)
+		}
+		enabledExtractors[e] = struct{}{}
+		if err == nil {
+			cfg.FilesystemExtractors = append(cfg.FilesystemExtractors, ex)
+		}
+		if sterr == nil {
+			cfg.StandaloneExtractors = append(cfg.StandaloneExtractors, stex)
 		}
 	}
 	return nil
@@ -143,7 +159,7 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 // ValidatePluginRequirements checks that the scanning environment's capabilities satisfy
 // the requirements of all enabled plugin.
 func (cfg *ScanConfig) ValidatePluginRequirements() error {
-	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors))
+	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Enrichers))
 	for _, p := range cfg.FilesystemExtractors {
 		plugins = append(plugins, p)
 	}
@@ -151,6 +167,9 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 		plugins = append(plugins, p)
 	}
 	for _, p := range cfg.Detectors {
+		plugins = append(plugins, p)
+	}
+	for _, p := range cfg.Enrichers {
 		plugins = append(plugins, p)
 	}
 	errs := []error{}
@@ -262,6 +281,19 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = err
 	}
 
+	enricherCfg := &enricher.Config{
+		Enrichers: config.Enrichers,
+		ScanRoot: &scalibrfs.ScanRoot{
+			FS:   sysroot.FS,
+			Path: sysroot.Path,
+		},
+	}
+	enricherStatus, err := enricher.Run(ctx, enricherCfg, &sro.Inventory)
+	sro.EnricherStatus = enricherStatus
+	if err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
+	}
+
 	sro.EndTime = time.Now()
 	return newScanResult(sro)
 }
@@ -293,6 +325,10 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		},
 	}
 
+	// Suppress running enrichers until after layer details are populated.
+	enrichers := config.Enrichers
+	config.Enrichers = nil
+
 	scanResult := s.Scan(ctx, config)
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
@@ -313,6 +349,21 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, extractorConfig)
+
+	// Run enrichers with the updated inventory.
+	enricherCfg := &enricher.Config{
+		Enrichers: enrichers,
+		ScanRoot: &scalibrfs.ScanRoot{
+			FS: chainfs,
+		},
+	}
+	enricherStatus, err := enricher.Run(ctx, enricherCfg, &scanResult.Inventory)
+	scanResult.PluginStatus = append(scanResult.PluginStatus, enricherStatus...)
+	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
+	}
+
 	return scanResult, nil
 }
 
@@ -321,6 +372,7 @@ type newScanResultOptions struct {
 	EndTime         time.Time
 	ExtractorStatus []*plugin.Status
 	DetectorStatus  []*plugin.Status
+	EnricherStatus  []*plugin.Status
 	Inventory       inventory.Inventory
 	Err             error
 }
@@ -337,7 +389,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		StartTime:    o.StartTime,
 		EndTime:      o.EndTime,
 		Status:       status,
-		PluginStatus: append(o.ExtractorStatus, o.DetectorStatus...),
+		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.EnricherStatus),
 		Inventory:    o.Inventory,
 	}
 

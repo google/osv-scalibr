@@ -108,6 +108,9 @@ const (
 // ValidateRequirements checks that the specified  scanning capabilities satisfy
 // the requirements of a given plugin.
 func ValidateRequirements(p Plugin, capabs *Capabilities) error {
+	if capabs == nil {
+		return nil
+	}
 	errs := []string{}
 	if p.Requirements().OS == OSUnix {
 		if capabs.OS != OSLinux && capabs.OS != OSMac {
