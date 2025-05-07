@@ -303,17 +303,17 @@ func writeResponse(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	// Create the directory if it doesn't exist.
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %v", dir, err)
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	outFile, err := os.Create(path)
-	defer outFile.Close()
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %v", path, err)
+		return fmt.Errorf("failed to create file %s: %w", path, err)
 	}
+	defer outFile.Close()
 
 	if _, err := outFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write file %s: %v", path, err)
+		return fmt.Errorf("failed to write file %s: %w", path, err)
 	}
 
 	return nil
