@@ -253,9 +253,8 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	if m.localRegistry != "" {
 		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
 		file, err := os.Open(filePath)
-		defer file.Close()
-
 		if err == nil {
+			defer file.Close()
 			// We can still fetch the file from upstream if error is not nil.
 			return NewMavenDecoder(file).Decode(dst)
 		}
@@ -280,7 +279,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		}
 
 		if filePath != "" {
-			if err := writeResponse(filePath, b); err != nil {
+			if err := writeFile(filePath, b); err != nil {
 				log.Infof("failed to write response to %s: %v", u, err)
 			}
 		}
@@ -298,8 +297,8 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	return NewMavenDecoder(bytes.NewReader(resp.Body)).Decode(dst)
 }
 
-// writeResponse writes the response bytes to the file specified by the given path.
-func writeResponse(path string, data []byte) error {
+// writeFile writes the bytes to the file specified by the given path.
+func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	// Create the directory if it doesn't exist.
 	if err := os.MkdirAll(dir, 0755); err != nil {
