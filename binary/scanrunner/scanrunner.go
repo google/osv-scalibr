@@ -55,9 +55,25 @@ func RunScan(flags *cli.Flags) int {
 			log.Errorf("Failed to create image from tarball: %v", err)
 			return 1
 		}
+		defer img.CleanUp()
 		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
 		if err != nil {
-			log.Errorf("Failed to scan container: %v", err)
+			log.Errorf("Failed to scan tarball: %v", err)
+			return 1
+		}
+	} else if flags.ImageLocal != "" { // We will scan an image in the local hard disk
+		layerCfg := scalibrlayerimage.DefaultConfig()
+		log.Infof("Scanning local image: %s", flags.ImageLocal)
+		img, err := scalibrlayerimage.FromLocal(flags.ImageLocal, layerCfg)
+		if err != nil {
+			log.Errorf("Failed to scan local image: %v", err)
+			return 1
+		}
+		defer img.CleanTarBall()
+		defer img.CleanUp()
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+		if err != nil {
+			log.Errorf("Failed to scan local image: %v", err)
 			return 1
 		}
 	} else {
