@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package archive
+// Package metadata defines a Metadata struct for Java archives.
+package metadata
 
 // Metadata holds parsing information for a Java archive package.
 type Metadata struct {

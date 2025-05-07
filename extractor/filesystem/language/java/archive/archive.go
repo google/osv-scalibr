@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -273,9 +274,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 			if pp.valid() {
 				packagePom = append(packagePom, &extractor.Package{
-					Name:    pp.ArtifactID,
-					Version: pp.Version,
-					Metadata: &Metadata{
+					Name:     pp.ArtifactID,
+					Version:  pp.Version,
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{
 						ArtifactID: pp.ArtifactID,
 						GroupID:    pp.GroupID,
 						SHA1:       sha1,
@@ -293,9 +295,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 			if mf.valid() {
 				packageManifest = append(packageManifest, &extractor.Package{
-					Name:    mf.ArtifactID,
-					Version: mf.Version,
-					Metadata: &Metadata{
+					Name:     mf.ArtifactID,
+					Version:  mf.Version,
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{
 						ArtifactID: mf.ArtifactID,
 						GroupID:    mf.GroupID,
 						SHA1:       sha1,
@@ -356,16 +359,17 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			// If manifest.mf was found, use GroupID from manifest instead, if
 			// present. Then remove manifest from the Package.
 			if len(packageManifest) == 1 {
-				metadata := packageManifest[0].Metadata.(*Metadata)
+				metadata := packageManifest[0].Metadata.(*archivemeta.Metadata)
 				if metadata.GroupID != "" {
 					groupID = metadata.GroupID
 					packageManifest = nil
 				}
 			}
 			packageFilename = append(packageFilename, &extractor.Package{
-				Name:    p.ArtifactID,
-				Version: p.Version,
-				Metadata: &Metadata{
+				Name:     p.ArtifactID,
+				Version:  p.Version,
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: p.ArtifactID,
 					GroupID:    groupID,
 					SHA1:       sha1,
@@ -383,9 +387,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	// If nothing worked, return the hash.
 	if len(pkgs) == 0 && sha1 != "" {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:    "unknown",
-			Version: "unknown",
-			Metadata: &Metadata{
+			Name:     "unknown",
+			Version:  "unknown",
+			PURLType: purl.TypeMaven,
+			Metadata: &archivemeta.Metadata{
 				ArtifactID: "unknown",
 				GroupID:    "unknown",
 				SHA1:       sha1,
@@ -433,14 +438,9 @@ func isManifest(path string) bool {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	return &purl.PackageURL{
-		Type:      purl.TypeMaven,
-		Namespace: strings.ToLower(m.GroupID),
-		Name:      strings.ToLower(m.ArtifactID),
-		Version:   p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

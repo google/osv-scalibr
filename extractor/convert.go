@@ -16,6 +16,7 @@ package extractor
 
 import (
 	hexpurl "github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/purl"
+	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	"github.com/google/osv-scalibr/purl"
@@ -42,6 +43,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	switch p.PURLType {
 	case purl.TypePyPi:
 		return pypipurl.MakePackageURL(p.Name, p.Version)
+	case purl.TypeMaven:
+		return mavenpurl.MakePackageURL(p.Version, p.Metadata)
 	case purl.TypeNPM:
 		return npmpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:

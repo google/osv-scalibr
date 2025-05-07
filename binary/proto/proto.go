@@ -32,7 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -468,7 +468,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Cpes: m.CPEs,
 			},
 		}
-	case *archive.Metadata:
+	case *archivemeta.Metadata:
 		p.Metadata = &spb.Package_JavaArchiveMetadata{
 			JavaArchiveMetadata: &spb.JavaArchiveMetadata{
 				ArtifactId: m.ArtifactID,

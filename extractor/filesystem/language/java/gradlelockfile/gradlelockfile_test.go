@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -114,6 +115,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.security:spring-security-crypto",
 					Version:   "5.7.3",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/one-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-security-crypto",
@@ -131,6 +133,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-autoconfigure",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-autoconfigure",
@@ -140,6 +143,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-configuration-processor",
 					Version:   "2.7.5",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-configuration-processor",
@@ -149,6 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-devtools",
 					Version:   "2.7.6",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-devtools",
@@ -158,6 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-starter-aop",
 					Version:   "2.7.7",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-starter-aop",
@@ -167,6 +173,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-starter-data-jpa",
 					Version:   "2.7.8",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-starter-data-jpa",
@@ -184,6 +191,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-autoconfigure",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-bad-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-autoconfigure",
@@ -193,6 +201,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-configuration-processor",
 					Version:   "2.7.5",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-bad-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-configuration-processor",

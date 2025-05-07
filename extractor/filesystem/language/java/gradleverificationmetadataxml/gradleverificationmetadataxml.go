@@ -20,7 +20,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -80,8 +79,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for _, component := range parsedLockfile.Components {
 		packages = append(packages, &extractor.Package{
-			Name:    component.Group + ":" + component.Name,
-			Version: component.Version,
+			Name:     component.Group + ":" + component.Name,
+			Version:  component.Version,
+			PURLType: purl.TypeMaven,
 			Metadata: &javalockfile.Metadata{
 				ArtifactID: component.Name,
 				GroupID:    component.Group,
@@ -94,14 +94,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*javalockfile.Metadata)
-	return &purl.PackageURL{
-		Type:      purl.TypeMaven,
-		Namespace: strings.ToLower(m.GroupID),
-		Name:      strings.ToLower(m.ArtifactID),
-		Version:   p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.

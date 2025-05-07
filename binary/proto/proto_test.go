@@ -762,6 +762,7 @@ func TestScanResultToProto(t *testing.T) {
 	mavenPackage := &extractor.Package{
 		Name:      "abc:xyz",
 		Version:   "1.0.0",
+		PURLType:  purl.TypeMaven,
 		Locations: []string{"/pom.xml"},
 		Extractor: pomxmlnet.New(pomxmlnet.DefaultConfig()),
 		Metadata: &javalockfile.Metadata{
