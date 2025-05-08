@@ -114,8 +114,9 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	winproduct := winproducts.WindowsProductFromVersion(flavor, fullVersion)
 	return inventory.Inventory{Packages: []*extractor.Package{
 		{
-			Name:    winproduct,
-			Version: fullVersion,
+			Name:     winproduct,
+			Version:  fullVersion,
+			PURLType: "windows",
 			Metadata: &metadata.OSVersion{
 				Product:     winproduct,
 				FullVersion: fullVersion,
@@ -160,24 +161,9 @@ func (e Extractor) windowsRevision(key registry.Key) (string, error) {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	var qualifiers purl.Qualifiers
-
-	switch p.Metadata.(type) {
-	case *metadata.OSVersion:
-		qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: p.Metadata.(*metadata.OSVersion).FullVersion,
-		})
-	default:
-		return nil
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeGeneric,
-		Namespace:  "microsoft",
-		Name:       p.Name,
-		Qualifiers: qualifiers,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regosversion yet.
