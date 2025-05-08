@@ -59,8 +59,9 @@ func parseToGradlePackageDetail(line string) (*extractor.Package, error) {
 	version = strings.SplitN(version, "=", 2)[0]
 
 	return &extractor.Package{
-		Name:    fmt.Sprintf("%s:%s", group, artifact),
-		Version: version,
+		Name:     fmt.Sprintf("%s:%s", group, artifact),
+		Version:  version,
+		PURLType: purl.TypeMaven,
 		Metadata: &javalockfile.Metadata{
 			ArtifactID: artifact,
 			GroupID:    group,
@@ -121,14 +122,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*javalockfile.Metadata)
-	return &purl.PackageURL{
-		Type:      purl.TypeMaven,
-		Namespace: strings.ToLower(m.GroupID),
-		Name:      strings.ToLower(m.ArtifactID),
-		Version:   p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('Maven') of the software extracted by this extractor.

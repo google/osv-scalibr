@@ -151,6 +151,7 @@ func TestToPURL(t *testing.T) {
 	p := &extractor.Package{
 		Name:      "Name",
 		Version:   "1.2.3",
+		PURLType:  purl.TypeNPM,
 		Locations: []string{"location"},
 	}
 	want := &purl.PackageURL{

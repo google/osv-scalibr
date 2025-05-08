@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -83,6 +82,7 @@ func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) 
 		packages = append(packages, &extractor.Package{
 			Name:      name,
 			Version:   version,
+			PURLType:  purl.TypeHex,
 			Locations: []string{input.Path},
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
@@ -95,13 +95,4 @@ func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) 
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
-}
-
-// ToPURL converts a package into a PURL.
-func ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeHex,
-		Name:    strings.ToLower(p.Name),
-		Version: p.Version,
-	}
 }

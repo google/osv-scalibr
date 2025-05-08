@@ -12,11 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package archive
+// Package annotator add Annotation to inventories
+// TODO(b/400910349): Migrate into a separate plugin type
+package annotator
 
-// Metadata holds parsing information for a Java archive package.
-type Metadata struct {
-	ArtifactID string
-	GroupID    string
-	SHA1       string
+import (
+	"github.com/google/osv-scalibr/extractor"
+)
+
+// Annotate adds annotations to the packages
+func Annotate(pkgs []*extractor.Package) {
+	for _, pkg := range pkgs {
+		for _, loc := range pkg.Locations {
+			if IsInsideCacheDir(loc) {
+				pkg.Annotations = append(pkg.Annotations, extractor.InsideCacheDir)
+			}
+		}
+	}
 }

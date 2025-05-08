@@ -207,18 +207,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		depGroups := []string{}
-		pkg := extractor.Package{
-			Name:    node.Version.Name,
-			Version: node.Version.Version,
-			// TODO(#408): Add merged paths in here as well
-			Locations: []string{input.Path},
-		}
+		groupID, artifactID, _ := strings.Cut(node.Version.Name, ":")
 		// We are only able to know dependency groups of direct dependencies but
 		// not transitive dependencies because the nodes in the resolve graph does
 		// not have the scope information.
 		isDirect := false
 		for _, dep := range project.Dependencies {
-			if dep.Name() != pkg.Name {
+			if dep.Name() != node.Version.Name {
 				continue
 			}
 			isDirect = true
@@ -227,9 +222,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			}
 			break
 		}
-		pkg.Metadata = javalockfile.Metadata{
-			DepGroupVals: depGroups,
-			IsTransitive: !isDirect,
+		pkg := extractor.Package{
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypeMaven,
+			Metadata: &javalockfile.Metadata{
+				ArtifactID:   artifactID,
+				GroupID:      groupID,
+				DepGroupVals: depGroups,
+				IsTransitive: !isDirect,
+			},
+			// TODO(#408): Add merged paths in here as well
+			Locations: []string{input.Path},
 		}
 		details[pkg.Name] = &pkg
 	}
@@ -238,15 +242,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	g, a, _ := strings.Cut(p.Name, ":")
-	return &purl.PackageURL{
-		Type:      purl.TypeMaven,
-		Namespace: g,
-		Name:      a,
-		Version:   p.Version,
-		// TODO(#426): add Maven classifier and type to PURL.
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
