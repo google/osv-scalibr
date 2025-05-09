@@ -38,7 +38,7 @@ type CombinedNativeClient struct {
 type CombinedNativeClientOptions struct {
 	ProjectDir         string // The project directory to use, currently only used for NPM to find .npmrc files.
 	MavenRegistry      string // The default Maven registry to use.
-	LocalMavenRegistry string // The local directory to use for Maven registry.
+	MavenLocalRegistry string // The local directory to use for Maven registry.
 	PyPIRegistry       string // The default PyPI registry to use.
 }
 
@@ -108,7 +108,7 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, c.opts.LocalMavenRegistry)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, c.opts.MavenLocalRegistry)
 			if err != nil {
 				return nil, err
 			}
