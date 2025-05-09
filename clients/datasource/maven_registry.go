@@ -100,6 +100,11 @@ func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*M
 	}, nil
 }
 
+// SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
+func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
+	m.localRegistry = localRegistry
+}
+
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{

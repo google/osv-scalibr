@@ -44,7 +44,7 @@ const (
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
 	depClient   resolve.Client
-	mavenClient *datasource.MavenRegistryAPIClient
+	MavenClient *datasource.MavenRegistryAPIClient
 }
 
 // Config is the configuration for the pomxmlnet Extractor.
@@ -56,11 +56,11 @@ type Config struct {
 // NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
 func NewConfig(remote, local string) Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	depClient, _ := resolution.NewMavenRegistryClient(remote, local)
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
 		URL:             remote,
 		ReleasesEnabled: true,
 	}, local)
+	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
 	return Config{
 		DependencyClient:       depClient,
 		MavenRegistryAPIClient: mavenClient,
@@ -76,7 +76,7 @@ func DefaultConfig() Config {
 func New(c Config) *Extractor {
 	return &Extractor{
 		depClient:   c.DependencyClient,
-		mavenClient: c.MavenRegistryAPIClient,
+		MavenClient: c.MavenRegistryAPIClient,
 	}
 }
 
@@ -113,9 +113,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 	// Clear the registries that may be from other extraction.
-	e.mavenClient = e.mavenClient.WithoutRegistries()
+	e.MavenClient = e.MavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
-		if err := e.mavenClient.AddRegistry(datasource.MavenRegistry{
+		if err := e.MavenClient.AddRegistry(datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -127,7 +127,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
 	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
 		Input:              input,
-		Client:             e.mavenClient,
+		Client:             e.MavenClient,
 		AddRegistry:        true,
 		AllowLocal:         true,
 		InitialParentIndex: 1,
@@ -139,10 +139,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
 	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, e.mavenClient, groupID, artifactID, version)
+		return mavenutil.GetDependencyManagement(ctx, e.MavenClient, groupID, artifactID, version)
 	})
 
-	if registries := e.mavenClient.GetRegistries(); len(registries) > 0 {
+	if registries := e.MavenClient.GetRegistries(); len(registries) > 0 {
 		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
 			clientRegs[i] = reg

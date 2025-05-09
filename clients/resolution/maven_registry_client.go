@@ -38,8 +38,12 @@ func NewMavenRegistryClient(remote, local string) (*MavenRegistryClient, error) 
 	if err != nil {
 		return nil, err
 	}
-
 	return &MavenRegistryClient{api: client}, nil
+}
+
+// NewMavenRegistryClientWithAPI makes a new MavenRegistryClient with the given Maven registry client.
+func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient) *MavenRegistryClient {
+	return &MavenRegistryClient{api: api}
 }
 
 // Version returns metadata of a version specified by the VersionKey.
