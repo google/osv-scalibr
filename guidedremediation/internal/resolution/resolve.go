@@ -43,7 +43,7 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts op
 	}
 
 	var r resolve.Resolver
-	var sys resolve.System = m.System()
+	var sys = m.System()
 	switch sys {
 	case resolve.NPM:
 		r = npmresolve.NewResolver(cl)
