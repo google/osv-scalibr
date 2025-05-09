@@ -1,7 +1,7 @@
 # OSV-SCALIBR style guide
 
-SCALIBR, like most of Google's Go projects, follows the [Google Go style guide](https://google.github.io/styleguide/go).
-Apart from this, we have some specific SCALIBR specific best practices:
+OSV-SCALIBR, like most of Google's Go projects, follows the [Google Go style guide](https://google.github.io/styleguide/go).
+Apart from this, we have some specific OSV-SCALIBR specific best practices:
 
 ## Code structure
 
@@ -54,7 +54,7 @@ avoiding it in production code. In tests you can use `TestMain()` instead.
 
 ### Context propagation
 
-SCALIBR library users can pass in a `context.Context` to control timeouts and
+OSV-SCALIBR library users can pass in a `context.Context` to control timeouts and
 context cancellation. Make sure this top-level context is passed down to lower
 functions (don't initialize a new context with `context.Background()`) and check
 for context cancellation whenever something long-running is performed such as
@@ -64,7 +64,7 @@ looping ([example](https://github.com/google/osv-scalibr/blob/8b03d0859edf445152
 
 ### Avoid panics
 
-If a plugin encounters an error the rest of SCALIBR and the callers' code
+If a plugin encounters an error the rest of OSV-SCALIBR and the callers' code
 shouldn't crash. Avoid calling panics and prefer propagating errors instead.
 
 ### Init regexes at startup time
@@ -87,7 +87,7 @@ propagate it but consider logging a warning instead.
 
 While `t.Parallel()` allows tests to run faster, they cause test logs in our
 internal systems to be mixed together for various test cases, making them harder
-to read. SCALIBR unit tests also only take a couple of seconds to run so there's
+to read. OSV-SCALIBR unit tests also only take a couple of seconds to run so there's
 not much benefit in adding `t.Parallel()` at the moment.
 
 ### Avoid assertion libraries
@@ -111,7 +111,7 @@ makes the failing tests from the logs harder to find in the code ([example](/bin
 
 ### Test for multi-platform support
 
-SCALIBR runs on Linux, Windows, and Mac. When adding new code, make sure your
+OSV-SCALIBR runs on Linux, Windows, and Mac. When adding new code, make sure your
 code is compatible with all 3 OSes or that you're adding a component that's only
 meant to run on a given OS. Check that the SCALIBR Github Actions for all 3 OSes
 pass.
@@ -128,7 +128,7 @@ Windows.  In these cases you can sanitize your paths with `filepath.ToSlash`
 
 ## Performance
 
-SCALIBR is meant to also run on systems with constrained resources and new code
+OSV-SCALIBR is meant to also run on systems with constrained resources and new code
 should thus try to keep its runtime and resource usage low. Plugins that have a
 high resource consumption will be able to run in less contexts and will thus be
 less useful.
@@ -155,7 +155,7 @@ instead of slicing out the relevant sections in memory.
 
 ### Use the Unit lib for large numbers
 
-SCALIBR has a [unit lib](https://github.com/google/osv-scalibr/blob/main/extractor/filesystem/internal/units/units.go)
+OSV-SCALIBR has a [unit lib](https://github.com/google/osv-scalibr/blob/main/extractor/filesystem/internal/units/units.go)
 for commonly used data size units. Use the values from these lib instead code
 like `"2 * 1024 * 1024"`.
 
@@ -164,3 +164,7 @@ like `"2 * 1024 * 1024"`.
 When formatting strings, `%q` adds escapes and quotation marks and makes it
 easier to see where a string variable in the log message starts. It also makes
 it easier to see empty strings in logs ([example](https://github.com/google/osv-scalibr/blob/daa1498e42aafe6a9258df854cb3bfee17b6808b/scalibr.go#L118)).
+
+### Add docstrings to public functions and types
+
+All public functions and type should have [doc comments](https://tip.golang.org/doc/comment).
