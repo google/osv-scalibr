@@ -38,7 +38,7 @@ type CombinedNativeClient struct {
 // CombinedNativeClientOptions contains the options each client in the CombinedNativeClient.
 type CombinedNativeClientOptions struct {
 	ProjectDir    string // The project directory to use, currently only used for NPM to find .npmrc files.
-	LocalRegistry string // The local directory to store the cached manifests.
+	LocalRegistry string // The local directory to store the downloaded manifests during resolution.
 	MavenRegistry string // The default Maven registry to use.
 	PyPIRegistry  string // The default PyPI registry to use.
 }
