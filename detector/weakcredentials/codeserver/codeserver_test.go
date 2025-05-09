@@ -34,12 +34,17 @@ func TestScan(t *testing.T) {
 
 		{
 			name:      "auth_disabled_returns_vuln",
-			handler:   validHandler(t, false),
+			handler:   validHandler(t, false, true),
+			wantVulns: true,
+		},
+		{
+			name:      "auth_disabled_returns_internal_only_vuln",
+			handler:   validHandler(t, false, true),
 			wantVulns: true,
 		},
 		{
 			name:      "auth_enabled_returns_nothing",
-			handler:   validHandler(t, true),
+			handler:   validHandler(t, true, true),
 			wantVulns: false,
 		},
 		{
@@ -120,10 +125,15 @@ func TestScanWithTimeouts(t *testing.T) {
 
 // validHandler returns a valid handler that will emulate the Code-Server instance. Does not emulate
 // the redirection.
-func validHandler(t *testing.T, authEnabled bool) http.HandlerFunc {
+func validHandler(t *testing.T, authEnabled bool, externalExposed bool) http.HandlerFunc {
 	t.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !externalExposed && r.URL.Host != "localhost" {
+			fmt.Fprintln(w, "Nothing here")
+			return
+		}
+
 		if authEnabled {
 			fmt.Fprintln(w, loadTestFile(t, "testdata/auth_enabled.html"))
 			return
