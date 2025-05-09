@@ -144,9 +144,14 @@ func (e *Extractor) softwareInfo(reg registry.Registry, hive string, path string
 		return nil, err
 	}
 
+	purlType := "windows"
+	if strings.HasPrefix(displayName, googetPrefix) {
+		purlType = purl.TypeGooget
+	}
 	return &extractor.Package{
-		Name:    displayName,
-		Version: displayVersion,
+		Name:     displayName,
+		Version:  displayVersion,
+		PURLType: purlType,
 	}, nil
 }
 
@@ -207,21 +212,9 @@ func (e *Extractor) enumerateSubkeys(reg registry.Registry, hive string, path st
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	if strings.HasPrefix(p.Name, googetPrefix) {
-		return &purl.PackageURL{
-			Type:    purl.TypeGooget,
-			Name:    p.Name,
-			Version: p.Version,
-		}
-	}
-
-	return &purl.PackageURL{
-		Type:      purl.TypeGeneric,
-		Namespace: "microsoft",
-		Name:      p.Name,
-		Version:   p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows ospackages yet.

@@ -36,8 +36,9 @@ func inventoryFromOutput(flavor, output string) (inventory.Inventory, error) {
 	windowsProduct := winproducts.WindowsProductFromVersion(flavor, imgVersion)
 	result := []*extractor.Package{
 		{
-			Name:    windowsProduct,
-			Version: imgVersion,
+			Name:     windowsProduct,
+			Version:  imgVersion,
+			PURLType: "windows",
 			Metadata: &metadata.OSVersion{
 				Product:     windowsProduct,
 				FullVersion: imgVersion,
@@ -48,8 +49,9 @@ func inventoryFromOutput(flavor, output string) (inventory.Inventory, error) {
 	// extract KB informations
 	for _, pkg := range packages {
 		result = append(result, &extractor.Package{
-			Name:    pkg.PackageIdentity,
-			Version: pkg.PackageVersion,
+			Name:     pkg.PackageIdentity,
+			Version:  pkg.PackageVersion,
+			PURLType: "windows",
 		})
 	}
 
@@ -60,21 +62,7 @@ func inventoryFromOutput(flavor, output string) (inventory.Inventory, error) {
 func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
 
 // ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(pkg *extractor.Package) *purl.PackageURL {
-	p := &purl.PackageURL{
-		Type:      purl.TypeGeneric,
-		Namespace: "microsoft",
-		Name:      pkg.Name,
-	}
-
-	switch meta := pkg.Metadata.(type) {
-	case *metadata.OSVersion:
-		p.Qualifiers = purl.QualifiersFromMap(map[string]string{
-			purl.BuildNumber: meta.FullVersion,
-		})
-	default:
-		p.Version = pkg.Version
-	}
-
-	return p
+// TODO(b/400910349): Remove and use Package.PURL() directly.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return p.PURL()
 }

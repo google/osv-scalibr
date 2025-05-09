@@ -104,8 +104,8 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			want: []*extractor.Package{
-				{Name: "Some software install", Version: "1.0.0"},
-				{Name: "Some software install wow64", Version: "1.4.0"},
+				{Name: "Some software install", Version: "1.0.0", PURLType: "windows"},
+				{Name: "Some software install wow64", Version: "1.4.0", PURLType: "windows"},
 			},
 		},
 		{
@@ -156,7 +156,7 @@ func TestExtract(t *testing.T) {
 						KValues: []registry.Value{
 							&mockregistry.MockValue{
 								VName:       "DisplayName",
-								VDataString: "Some software install for user01",
+								VDataString: "GooGet - Some software install for user01",
 							},
 							&mockregistry.MockValue{
 								VName:       "DisplayVersion",
@@ -176,8 +176,8 @@ func TestExtract(t *testing.T) {
 				},
 			},
 			want: []*extractor.Package{
-				{Name: "Some software install for user00", Version: "1.00.1"},
-				{Name: "Some software install for user01", Version: "1.01.1"},
+				{Name: "Some software install for user00", Version: "1.00.1", PURLType: "windows"},
+				{Name: "GooGet - Some software install for user01", Version: "1.01.1", PURLType: purl.TypeGooget},
 			},
 		},
 		{
@@ -216,12 +216,12 @@ func TestToPURL(t *testing.T) {
 	}{
 		{
 			name: "googet_package",
-			pkg:  &extractor.Package{Name: "GooGet - some package", Version: "1.0.0"},
+			pkg:  &extractor.Package{Name: "GooGet - some package", Version: "1.0.0", PURLType: purl.TypeGooget},
 			want: &purl.PackageURL{Type: purl.TypeGooget, Name: "GooGet - some package", Version: "1.0.0"},
 		},
 		{
 			name: "normal_windows_package",
-			pkg:  &extractor.Package{Name: "Some software", Version: "1.0.0"},
+			pkg:  &extractor.Package{Name: "Some software", Version: "1.0.0", PURLType: "windows"},
 			want: &purl.PackageURL{Type: purl.TypeGeneric, Namespace: "microsoft", Name: "Some software", Version: "1.0.0"},
 		},
 	}
