@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -147,7 +148,7 @@ type Flags struct {
 	StoreAbsolutePath          bool
 	WindowsAllDrives           bool
 	Offline                    bool
-	MavenLocal                 string
+	LocalRegistry              string
 }
 
 var supportedOutputFormats = []string{
@@ -455,7 +456,7 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
 		}
 		if e.Name() == pomxmlnet.Name {
-			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(f.MavenLocal)
+			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
 		}
 	}
 

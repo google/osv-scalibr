@@ -17,6 +17,7 @@ package resolution
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"deps.dev/util/resolve"
@@ -36,10 +37,10 @@ type CombinedNativeClient struct {
 
 // CombinedNativeClientOptions contains the options each client in the CombinedNativeClient.
 type CombinedNativeClientOptions struct {
-	ProjectDir         string // The project directory to use, currently only used for NPM to find .npmrc files.
-	MavenRegistry      string // The default Maven registry to use.
-	MavenLocalRegistry string // The local directory to use for Maven registry.
-	PyPIRegistry       string // The default PyPI registry to use.
+	ProjectDir    string // The project directory to use, currently only used for NPM to find .npmrc files.
+	LocalRegistry string // The local directory to store the cached manifests.
+	MavenRegistry string // The default Maven registry to use.
+	PyPIRegistry  string // The default PyPI registry to use.
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.
@@ -108,7 +109,7 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, c.opts.MavenLocalRegistry)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, filepath.Join(c.opts.LocalRegistry, "maven"))
 			if err != nil {
 				return nil, err
 			}
