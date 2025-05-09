@@ -60,7 +60,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file is a Gemfile.lock file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "Gemfile.lock"
+	return slices.Contains([]string{"Gemfile.lock", "gems.locked"}, filepath.Base(api.Path()))
 }
 
 type gemlockSection struct {
