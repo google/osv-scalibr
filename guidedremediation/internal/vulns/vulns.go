@@ -17,65 +17,12 @@ package vulns
 
 import (
 	"slices"
-	"strings"
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
-	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
-
-// VKToPackage converts a resolve.VersionKey to an *extractor.Package
-func VKToPackage(vk resolve.VersionKey) *extractor.Package {
-	return &extractor.Package{
-		Name:      vk.Name,
-		Version:   vk.Version,
-		Extractor: mockExtractor{},
-		Metadata:  vk.System,
-	}
-}
-
-// mockExtractor is for VKToPackage to get the ecosystem.
-type mockExtractor struct{}
-
-// Ecosystem returns the ecosystem of the package.
-func (e mockExtractor) Ecosystem(p *extractor.Package) string {
-	return string(util.DepsDevToOSVEcosystem(p.Metadata.(resolve.System)))
-}
-
-// Unnecessary methods stubbed out.
-func (e mockExtractor) Name() string                       { return "" }
-func (e mockExtractor) Requirements() *plugin.Capabilities { return nil }
-func (e mockExtractor) Version() int                       { return 0 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e mockExtractor) ToPURL(pkg *extractor.Package) *purl.PackageURL {
-	switch e.Ecosystem(pkg) {
-	case string(osvschema.EcosystemNPM):
-		return &purl.PackageURL{
-			Type:    purl.TypeNPM,
-			Name:    pkg.Name,
-			Version: pkg.Version,
-		}
-	case string(osvschema.EcosystemMaven):
-		group, artifact, _ := strings.Cut(pkg.Name, ":")
-		return &purl.PackageURL{
-			Type:      purl.TypeMaven,
-			Namespace: group,
-			Name:      artifact,
-			Version:   pkg.Version,
-		}
-	case string(osvschema.EcosystemPyPI):
-		return &purl.PackageURL{
-			Type:    purl.TypePyPi,
-			Name:    pkg.Name,
-			Version: pkg.Version,
-		}
-	}
-	return nil
-}
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Package.
 func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {

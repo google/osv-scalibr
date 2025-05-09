@@ -7,7 +7,8 @@
       "packages": [
         {
           "name": "pkg:a",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/a@1.0.0"
         }
       ]
     },
@@ -16,7 +17,8 @@
       "packages": [
         {
           "name": "pkg:b",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/b@1.0.0"
         }
       ]
     },
@@ -25,7 +27,8 @@
       "packages": [
         {
           "name": "pkg:b",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/b@1.0.0"
         }
       ]
     },
@@ -34,7 +37,8 @@
       "packages": [
         {
           "name": "pkg:c",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/c@1.0.0"
         }
       ]
     },
@@ -43,7 +47,8 @@
       "packages": [
         {
           "name": "pkg:d",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/d@1.0.0"
         }
       ]
     },
@@ -52,7 +57,8 @@
       "packages": [
         {
           "name": "pkg:d",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/d@1.0.0"
         }
       ]
     }
@@ -64,6 +70,8 @@
           "name": "pkg:b",
           "versionFrom": "1.0.0",
           "versionTo": "3.0.0",
+          "purlFrom": "pkg:maven/pkg/b@1.0.0",
+          "purlTo": "pkg:maven/pkg/b@3.0.0",
           "transitive": false
         }
       ],
@@ -73,7 +81,8 @@
           "packages": [
             {
               "name": "pkg:b",
-              "version": "1.0.0"
+              "version": "1.0.0",
+              "purl": "pkg:maven/pkg/b@1.0.0"
             }
           ]
         },
@@ -82,7 +91,8 @@
           "packages": [
             {
               "name": "pkg:b",
-              "version": "1.0.0"
+              "version": "1.0.0",
+              "purl": "pkg:maven/pkg/b@1.0.0"
             }
           ]
         },
@@ -91,7 +101,8 @@
           "packages": [
             {
               "name": "pkg:c",
-              "version": "1.0.0"
+              "version": "1.0.0",
+              "purl": "pkg:maven/pkg/c@1.0.0"
             }
           ]
         }
@@ -103,6 +114,8 @@
           "name": "pkg:a",
           "versionFrom": "",
           "versionTo": "1.1.0",
+          "purlFrom": "",
+          "purlTo": "pkg:maven/pkg/a@1.1.0",
           "transitive": true
         }
       ],
@@ -112,7 +125,8 @@
           "packages": [
             {
               "name": "pkg:a",
-              "version": "1.0.0"
+              "version": "1.0.0",
+              "purl": "pkg:maven/pkg/a@1.0.0"
             }
           ]
         }

@@ -16,7 +16,12 @@
 package util
 
 import (
+	"strings"
+
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -50,4 +55,68 @@ func OSVToDepsDevEcosystem(sys osvschema.Ecosystem) resolve.System {
 	default:
 		return resolve.UnknownSystem
 	}
+}
+
+// VKToPackage converts a resolve.VersionKey to an *extractor.Package
+func VKToPackage(vk resolve.VersionKey) *extractor.Package {
+	return &extractor.Package{
+		Name:      vk.Name,
+		Version:   vk.Version,
+		Extractor: mockExtractor{},
+		Metadata:  vk.System,
+	}
+}
+
+// VKToPURL converts a resolve.VersionKey to a *purl.PackageURL
+func VKToPURL(vk resolve.VersionKey) *purl.PackageURL {
+	// This double-conversion is a bit hacky, but it prevents us from having to duplicate the logic in mockExtractor.ToPURL.
+	pkg := VKToPackage(vk)
+	return pkg.Extractor.ToPURL(pkg)
+}
+
+// mockExtractor is for VKToPackage to get the ecosystem.
+type mockExtractor struct{}
+
+// Ecosystem returns the ecosystem of the package.
+func (e mockExtractor) Ecosystem(p *extractor.Package) string {
+	return string(DepsDevToOSVEcosystem(p.Metadata.(resolve.System)))
+}
+
+// Unnecessary methods stubbed out.
+func (e mockExtractor) Name() string                       { return "" }
+func (e mockExtractor) Requirements() *plugin.Capabilities { return nil }
+func (e mockExtractor) Version() int                       { return 0 }
+
+// ToPURL converts a package created by this extractor into a PURL.
+func (e mockExtractor) ToPURL(pkg *extractor.Package) *purl.PackageURL {
+	switch e.Ecosystem(pkg) {
+	case string(osvschema.EcosystemNPM):
+		// The namespace is used for scoped packages, e.g. "@foo/bar"
+		scope := ""
+		name := pkg.Name
+		if strings.HasPrefix(name, "@") {
+			scope, name, _ = strings.Cut(name, "/")
+		}
+		return &purl.PackageURL{
+			Type:      purl.TypeNPM,
+			Namespace: scope,
+			Name:      name,
+			Version:   pkg.Version,
+		}
+	case string(osvschema.EcosystemMaven):
+		group, artifact, _ := strings.Cut(pkg.Name, ":")
+		return &purl.PackageURL{
+			Type:      purl.TypeMaven,
+			Namespace: group,
+			Name:      artifact,
+			Version:   pkg.Version,
+		}
+	case string(osvschema.EcosystemPyPI):
+		return &purl.PackageURL{
+			Type:    purl.TypePyPi,
+			Name:    pkg.Name,
+			Version: pkg.Version,
+		}
+	}
+	return nil
 }

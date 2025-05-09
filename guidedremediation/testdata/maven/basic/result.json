@@ -7,7 +7,8 @@
       "packages": [
         {
           "name": "pkg:a",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "purl": "pkg:maven/pkg/a@1.0.0"
         }
       ]
     }
@@ -19,6 +20,8 @@
           "name": "pkg:a",
           "versionFrom": "1.0.0",
           "versionTo": "1.1.0",
+          "purlFrom": "pkg:maven/pkg/a@1.0.0",
+          "purlTo": "pkg:maven/pkg/a@1.1.0",
           "transitive": false
         }
       ],
@@ -28,7 +31,8 @@
           "packages": [
             {
               "name": "pkg:a",
-              "version": "1.0.0"
+              "version": "1.0.0",
+              "purl": "pkg:maven/pkg/a@1.0.0"
             }
           ]
         }
