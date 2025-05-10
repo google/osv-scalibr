@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -39,6 +40,7 @@ import (
 	dl "github.com/google/osv-scalibr/detector/list"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
@@ -146,6 +148,7 @@ type Flags struct {
 	StoreAbsolutePath          bool
 	WindowsAllDrives           bool
 	Offline                    bool
+	LocalRegistry              string
 }
 
 var supportedOutputFormats = []string{
@@ -451,6 +454,9 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 	for _, e := range fsExtractors {
 		if e.Name() == gobinary.Name {
 			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
+		}
+		if e.Name() == pomxmlnet.Name {
+			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
 		}
 	}
 

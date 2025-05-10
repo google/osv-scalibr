@@ -479,7 +479,7 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 	</project>
 	`))
 
-	apiClient, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true})
+	apiClient, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

@@ -168,7 +168,7 @@ func TestReadWrite(t *testing.T) {
 `))
 
 	fsys := scalibrfs.DirFS("./testdata")
-	mavenRW, err := GetReadWriter(srv.URL)
+	mavenRW, err := GetReadWriter(srv.URL, "")
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
