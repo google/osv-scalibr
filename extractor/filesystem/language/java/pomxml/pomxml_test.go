@@ -93,7 +93,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.xml",
 			},
-			WantPackages: []*extractor.Package{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
