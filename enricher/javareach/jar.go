@@ -18,6 +18,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -64,7 +65,7 @@ type DefaultPackageFinder struct {
 }
 
 // loadJARMappings loads class mappings from a JAR archive.
-func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
+func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) {
 	// TODO: Validate that we can rely on the directory structure to mirror the
 	// class package path.
 	lock.Lock()
@@ -75,7 +76,6 @@ func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMa
 		}
 	}
 	lock.Unlock()
-	return nil
 }
 
 func addClassMapping(artifactName, class string, classMap map[string][]string, artifactMap map[string][]string) {
@@ -166,7 +166,7 @@ func checkNestedJARContains(inv *extractor.Package) ([]string, bool) {
 
 // extractClassMappings extracts class mappings from a .jar dependency by
 // downloading and unpacking the .jar from the relevant registry.
-func extractClassMappings(inv *extractor.Package, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
+func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
 	var reader *zip.Reader
 
 	metadata := inv.Metadata.(*archivemeta.Metadata)
@@ -193,11 +193,13 @@ func extractClassMappings(inv *extractor.Package, classMap map[string][]string, 
 		defer file.Close()
 
 		log.Debug("downloading", "jar", jarURL)
-		resp, err := http.Get(jarURL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, jarURL, nil)
 		if err != nil {
 			return err
 		}
 
+		client := &http.Client{}
+		resp, _ := client.Do(req)
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("jar not found: %s", jarURL)
 		}
@@ -209,19 +211,25 @@ func extractClassMappings(inv *extractor.Package, classMap map[string][]string, 
 		}
 		resp.Body.Close()
 
-		file.Seek(0, io.SeekStart)
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			return err
+		}
+
 		reader, err = zip.NewReader(file, nbytes)
 		if err != nil {
 			return err
 		}
 	}
 
-	return loadJARMappings(metadata, reader, classMap, artifactMap, lock)
+	loadJARMappings(metadata, reader, classMap, artifactMap, lock)
+
+	return nil
 }
 
 // NewDefaultPackageFinder creates a new DefaultPackageFinder based on a set of
 // inventory.
-func NewDefaultPackageFinder(inv []*extractor.Package, jarDir string) (*DefaultPackageFinder, error) {
+func NewDefaultPackageFinder(ctx context.Context, inv []*extractor.Package, jarDir string) (*DefaultPackageFinder, error) {
 	// Download pkg, unpack, and store class mappings for each detected dependency.
 	classMap := map[string][]string{}
 	artifactMap := map[string][]string{}
@@ -231,7 +239,7 @@ func NewDefaultPackageFinder(inv []*extractor.Package, jarDir string) (*DefaultP
 
 	for _, i := range inv {
 		group.Go(func() error {
-			return extractClassMappings(i, classMap, artifactMap, lock)
+			return extractClassMappings(ctx, i, classMap, artifactMap, lock)
 		})
 	}
 
@@ -255,7 +263,7 @@ func mapRootClasses(jarDir string, classMap map[string][]string, artifactMap map
 	// Spring Boot.
 	// TODO: Handle non-Spring Boot applications. We could add heuristic for
 	// detecting root application classes when the class structure is flat based
-	// on the class hierachy.
+	// on the class hierarchy.
 	bootInfClasses := filepath.Join(jarDir, BootInfClasses)
 	if _, err := os.Stat(bootInfClasses); err != nil {
 		if os.IsNotExist(err) {
@@ -321,7 +329,7 @@ func GetMainClasses(manifest io.Reader) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := strings.TrimSpace(lines[i])
 		for _, marker := range markers {
 			if strings.HasPrefix(line, marker) {

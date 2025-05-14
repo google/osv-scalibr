@@ -81,7 +81,10 @@ func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inve
 	}
 
 	for jar := range jars {
-		enumerateReachabilityForJar(jar, input, inv)
+		err := enumerateReachabilityForJar(ctx, jar, input, inv)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -91,7 +94,7 @@ func fmtJavaInventory(i *extractor.Package) string {
 	return fmt.Sprintf("%s:%s", i.Metadata.(*archivemeta.Metadata).GroupID, i.Name)
 }
 
-func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv *inventory.Inventory) error {
+func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	var allDeps []*extractor.Package
 
 	for i := range inv.Packages {
@@ -131,7 +134,7 @@ func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv 
 
 	// Build .class -> Maven group ID:artifact ID mappings.
 	// TODO: Handle BOOT-INF and loading .jar dependencies from there.
-	classFinder, err := NewDefaultPackageFinder(allDeps, tmpDir)
+	classFinder, err := NewDefaultPackageFinder(ctx, allDeps, tmpDir)
 	if err != nil {
 		return err
 	}
@@ -345,7 +348,7 @@ func unzipJAR(jarPath string, input *enricher.ScanInput, tmpDir string) (nestedJ
 			}
 			f.Close()
 		}
-
 	}
+
 	return nestedJARs, nil
 }

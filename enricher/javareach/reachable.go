@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package javareach provides Java reachability function
 package javareach
 
 import (
@@ -64,7 +65,6 @@ type ReachabilityEnumerator struct {
 func NewReachabilityEnumerator(
 	classPaths []string, packageFinder MavenPackageFinder,
 	codeLoadingStrategy DynamicCodeStrategy, dependencyInjectionStrategy DynamicCodeStrategy) *ReachabilityEnumerator {
-
 	return &ReachabilityEnumerator{
 		ClassPaths:                  classPaths,
 		PackageFinder:               packageFinder,
@@ -79,7 +79,7 @@ func (r *ReachabilityEnumerator) EnumerateReachabilityFromClasses(mainClasses []
 	for _, mainClass := range mainClasses {
 		cf, err := r.findClass(r.ClassPaths, mainClass)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find main class %s: %v", mainClass, err)
+			return nil, fmt.Errorf("failed to find main class %s: %w", mainClass, err)
 		}
 		roots = append(roots, cf)
 	}
@@ -200,9 +200,9 @@ func (r *ReachabilityEnumerator) findClass(classPaths []string, className string
 		cf, err := ParseClass(classFile)
 		if err != nil {
 			return nil, err
-
 		}
 		log.Debug("found class in directory", "class", className, "path", classPath)
+
 		return cf, nil
 	}
 
@@ -280,13 +280,11 @@ func (r *ReachabilityEnumerator) handleDynamicCode(q *UniqueQueue[string, *Class
 			}
 		}
 	}
-
 	// Assume all classes that belong to the direct dependencies of the package
 	// are reachable.
-	if strategy&AssumeAllDirectDepsReachable > 0 {
-		// TODO: implement this.
-	}
-
+	// TODO: implement this.
+	// if strategy&AssumeAllDirectDepsReachable > 0 {
+	// }
 	return nil
 }
 
@@ -294,7 +292,6 @@ func (r *ReachabilityEnumerator) handleDynamicCode(q *UniqueQueue[string, *Class
 // loading in the path leading up to a dependency.
 func (r *ReachabilityEnumerator) enumerateReachability(
 	cf *ClassFile, seen map[string]struct{}, codeLoading map[string]struct{}, depInjection map[string]struct{}) error {
-
 	thisClass, err := cf.ConstantPoolClass(int(cf.ThisClass))
 	if err != nil {
 		return err

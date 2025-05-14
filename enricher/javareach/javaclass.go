@@ -70,22 +70,22 @@ type ConstantKind uint8
 
 const (
 	ConstantKindUtf8               ConstantKind = 1
-	ConstantKindInteger                         = 3
-	ConstantKindFloat                           = 4
-	ConstantKindLong                            = 5
-	ConstantKindDouble                          = 6
-	ConstantKindClass                           = 7
-	ConstantKindString                          = 8
-	ConstantKindFieldref                        = 9
-	ConstantKindMethodref                       = 10
-	ConstantKindInterfaceMethodref              = 11
-	ConstantKindNameAndType                     = 12
-	ConstantKindMethodHandle                    = 15
-	ConstantKindMethodType                      = 16
-	ConstantKindDynamic                         = 17
-	ConstantKindInvokeDynamic                   = 18
-	ConstantKindModule                          = 19
-	ConstantKindPackage                         = 20
+	ConstantKindInteger            ConstantKind = 3
+	ConstantKindFloat              ConstantKind = 4
+	ConstantKindLong               ConstantKind = 5
+	ConstantKindDouble             ConstantKind = 6
+	ConstantKindClass              ConstantKind = 7
+	ConstantKindString             ConstantKind = 8
+	ConstantKindFieldref           ConstantKind = 9
+	ConstantKindMethodref          ConstantKind = 10
+	ConstantKindInterfaceMethodref ConstantKind = 11
+	ConstantKindNameAndType        ConstantKind = 12
+	ConstantKindMethodHandle       ConstantKind = 15
+	ConstantKindMethodType         ConstantKind = 16
+	ConstantKindDynamic            ConstantKind = 17
+	ConstantKindInvokeDynamic      ConstantKind = 18
+	ConstantKindModule             ConstantKind = 19
+	ConstantKindPackage            ConstantKind = 20
 
 	// This is not a real Java class constant kind.
 	// We use this to implement long and double constants taking up two entries
@@ -97,7 +97,7 @@ const (
 	// is the entry at index n in the constant_pool table, then the next usable
 	// entry in the table is located at index n+2. The constant_pool index n+1
 	// must be valid but is considered unusable.
-	ConstantKindPlaceholder = 255
+	ConstantKindPlaceholder ConstantKind = 255
 )
 
 // ConstantPool entries
@@ -418,36 +418,36 @@ func (cf *ClassFile) checkIndex(idx int) error {
 func (cf *ClassFile) ConstantPoolMethodref(idx int) (class string, method string, descriptor string, err error) {
 	err = cf.checkIndex(idx)
 	if err != nil {
-		return
+		return class, method, descriptor, err
 	}
 
 	if cf.ConstantPool[idx].Type() != ConstantKindMethodref {
 		err = errors.New("constant pool idx does not point to a method ref")
-		return
+		return class, method, descriptor, err
 	}
 
 	methodRef := cf.ConstantPool[idx].(*ConstantMethodref)
 	class, err = cf.ConstantPoolClass(int(methodRef.ClassIndex))
 	if err != nil {
-		return
+		return class, method, descriptor, err
 	}
 
 	err = cf.checkIndex(int(methodRef.NameAndTypeIndex))
 	if err != nil {
-		return
+		return class, method, descriptor, err
 	}
 
 	nameAndType, ok := cf.ConstantPool[methodRef.NameAndTypeIndex].(*ConstantNameAndType)
 	if !ok {
 		err = errors.New("invalid constant name and type")
-		return
+		return class, method, descriptor, err
 	}
 	method, err = cf.ConstantPoolUtf8(int(nameAndType.NameIndex))
 	if err != nil {
-		return
+		return class, method, descriptor, err
 	}
 	descriptor, err = cf.ConstantPoolUtf8(int(nameAndType.DescriptorIndex))
-	return
+	return class, method, descriptor, err
 }
 
 func (cf *ClassFile) ConstantPoolClass(idx int) (string, error) {
