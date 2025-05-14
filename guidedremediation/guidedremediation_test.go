@@ -145,6 +145,102 @@ func TestFixOverride(t *testing.T) {
 	}
 }
 
+func TestFixRelax(t *testing.T) {
+	for _, tt := range []struct {
+		name             string
+		universeDir      string
+		manifest         string
+		lockfile         string
+		wantManifestPath string
+		wantResultPath   string
+		remOpts          options.RemediationOptions
+		maxUpgrades      int
+		noIntroduce      bool
+	}{
+		{
+			name:             "basic",
+			universeDir:      "testdata/npm",
+			manifest:         "testdata/npm/basicrelax/package.json",
+			lockfile:         "testdata/npm/basicrelax/package-lock.json",
+			wantManifestPath: "testdata/npm/basicrelax/want.package.json",
+			wantResultPath:   "testdata/npm/basicrelax/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
+			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+
+			tmpDir := t.TempDir()
+			manifestPath := filepath.Join(tmpDir, "package.json")
+			data, err := os.ReadFile(tt.manifest)
+			if err != nil {
+				t.Fatalf("failed reading manifest for copy: %v", err)
+			}
+			if err := os.WriteFile(manifestPath, data, 0644); err != nil {
+				t.Fatalf("failed copying manifest: %v", err)
+			}
+
+			var lockfilePath string
+			if tt.lockfile != "" {
+				lockfilePath = filepath.Join(tmpDir, "package-lock.json")
+				data, err := os.ReadFile(tt.lockfile)
+				if err != nil {
+					t.Fatalf("failed reading lockfile for copy: %v", err)
+				}
+				if err := os.WriteFile(lockfilePath, data, 0644); err != nil {
+					t.Fatalf("failed copying lockfile: %v", err)
+				}
+			}
+
+			opts := options.FixVulnsOptions{
+				Manifest:           manifestPath,
+				Lockfile:           lockfilePath,
+				Strategy:           strategy.StrategyRelax,
+				MatcherClient:      matcher,
+				ResolveClient:      client,
+				RemediationOptions: tt.remOpts,
+				MaxUpgrades:        tt.maxUpgrades,
+				NoIntroduce:        tt.noIntroduce,
+			}
+
+			gotRes, err := guidedremediation.FixVulns(opts)
+			if err != nil {
+				t.Fatalf("error fixing vulns: %v", err)
+			}
+			var wantRes result.Result
+			f, err := os.Open(tt.wantResultPath)
+			if err != nil {
+				t.Fatalf("failed opening result file: %v", err)
+			}
+			defer f.Close()
+			if err := json.NewDecoder(f).Decode(&wantRes); err != nil {
+				t.Fatalf("failed decoding result file: %v", err)
+			}
+			diffOpts := []cmp.Option{
+				cmpopts.IgnoreFields(result.Result{}, "Path"),
+				cmpopts.IgnoreFields(result.PackageUpdate{}, "Type"),
+			}
+			if diff := cmp.Diff(wantRes, gotRes, diffOpts...); diff != "" {
+				t.Errorf("FixVulns() result mismatch (-want +got):\n%s", diff)
+			}
+
+			wantManifest, err := os.ReadFile(tt.wantManifestPath)
+			if err != nil {
+				t.Fatalf("failed reading want manifest for comparison: %v", err)
+			}
+			gotManifest, err := os.ReadFile(manifestPath)
+			if err != nil {
+				t.Fatalf("failed reading got manifest for comparison: %v", err)
+			}
+
+			if diff := cmp.Diff(wantManifest, gotManifest); diff != "" {
+				t.Errorf("FixVulns() manifest mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFixInPlace(t *testing.T) {
 	// Set up a test registry, since the lockfile writer needs to talk to the registry to get the package metadata.
 	srv := clienttest.NewMockHTTPServer(t)

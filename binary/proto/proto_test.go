@@ -219,8 +219,9 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 	purlJavascriptPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeNPM,
 		Metadata: &packagejson.JavascriptPackageJSONMetadata{
 			Maintainers: []*packagejson.Person{
 				{
@@ -727,6 +728,7 @@ func TestScanResultToProto(t *testing.T) {
 		LayerDetails: &extractor.LayerDetails{
 			Index:       0,
 			DiffID:      "hash1",
+			ChainID:     "chainid1",
 			Command:     "command1",
 			InBaseImage: true,
 		},
@@ -752,6 +754,7 @@ func TestScanResultToProto(t *testing.T) {
 		LayerDetails: &spb.LayerDetails{
 			Index:       0,
 			DiffId:      "hash1",
+			ChainId:     "chainid1",
 			Command:     "command1",
 			InBaseImage: true,
 		},
@@ -759,6 +762,7 @@ func TestScanResultToProto(t *testing.T) {
 	mavenPackage := &extractor.Package{
 		Name:      "abc:xyz",
 		Version:   "1.0.0",
+		PURLType:  purl.TypeMaven,
 		Locations: []string{"/pom.xml"},
 		Extractor: pomxmlnet.New(pomxmlnet.DefaultConfig()),
 		Metadata: &javalockfile.Metadata{

@@ -58,6 +58,9 @@ type ChainLayer interface {
 	FS() scalibrfs.FS
 	// Index is the index of the latest layer in the layer chain.
 	Index() int
+	// ChainID is the layer chain ID (sha256 hash) of the layer in the container image.
+	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+	ChainID() digest.Digest
 	// Layer is the latest layer in the layer chain.
 	Layer() Layer
 }

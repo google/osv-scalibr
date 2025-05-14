@@ -95,11 +95,17 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from requirements files passed through the scan input.
-// TODO(#663): do not perform dependency resolution if the requirements file acts as a lockfile,
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inv, err := e.BaseExtractor.Extract(ctx, input)
 	if err != nil {
 		return inventory.Inventory{}, err
+	}
+	if len(inv.Packages) == 0 || len(inv.Packages[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {
+		// Do not perform transitive extraction with hash-checking mode.
+		// Hash-checking is an all-or-nothing proposition so we can assume the
+		// requirements is in hash-checking mode if the first package has hashes.
+		// https://pip.pypa.io/en/stable/topics/secure-installs/#hash-checking-mode
+		return inv, nil
 	}
 
 	overrideClient := resolution.NewOverrideClient(e.Client)

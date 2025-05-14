@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -196,8 +195,9 @@ func parse(path string, r io.Reader) (*extractor.Package, error) {
 	}
 
 	return &extractor.Package{
-		Name:    p.Name,
-		Version: p.Version,
+		Name:     p.Name,
+		Version:  p.Version,
+		PURLType: purl.TypeNPM,
 		Metadata: &JavascriptPackageJSONMetadata{
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
@@ -249,12 +249,9 @@ func removeEmptyPersons(persons []*Person) []*Person {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(p.Name),
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.

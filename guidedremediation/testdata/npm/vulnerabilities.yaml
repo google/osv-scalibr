@@ -11,3 +11,13 @@ vulns:
               - fixed: '1.0.1'
               - introduced: '2.0.0'
               - fixed: '2.0.1'
+  - id: OSV-000-001
+    affected:
+      - package:
+          ecosystem: npm
+          name: vuln
+        ranges:
+          - type: SEMVER
+            events:
+              - introduced: '0'
+              - fixed: '2.0.0'

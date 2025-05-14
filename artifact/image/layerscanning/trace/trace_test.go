@@ -370,7 +370,16 @@ func TestPopulateLayerDetails(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed creating fake layer: %v", err)
 					}
-					cl, err := fakechainlayer.New(tmp, 0, digest.Digest(""), "command-0", layer, map[string]string{fooFile: fooPackage}, false)
+					cfg := &fakechainlayer.Config{
+						TestDir:           tmp,
+						Index:             0,
+						DiffID:            digest.Digest(""),
+						Command:           "command-0",
+						Layer:             layer,
+						Files:             map[string]string{fooFile: fooPackage},
+						FilesAlreadyExist: false,
+					}
+					cl, err := fakechainlayer.New(cfg)
 					if err != nil {
 						t.Fatalf("failed creating fake chain layer: %v", err)
 					}

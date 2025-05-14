@@ -21,6 +21,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -42,6 +45,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
+	"github.com/google/osv-scalibr/log"
 )
 
 // FixVulns remediates vulnerabilities in the manifest/lockfile using a remediation strategy,
@@ -173,16 +177,40 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	}
 
 	res.Errors = computeResolveErrors(resolved.Graph)
+
+	writeLockfile := false
+	if opts.Lockfile != "" {
+		if isLockfileForManifest(opts.Manifest, opts.Lockfile) {
+			writeLockfile = true
+			err := computeRelockPatches(ctx, &res, resolved, opts)
+			if err != nil {
+				log.Errorf("failed computing vulnerabilies fixed by relock: %v", err)
+				// just ignore the lockfile and continue.
+			}
+		} else {
+			log.Warnf("ignoring lockfile %q because it is not for manifest %q", opts.Lockfile, opts.Manifest)
+		}
+	}
+
 	allPatches, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
 
-	res.Vulnerabilities = computeVulnsResult(resolved, allPatches)
-	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, false)
-	err = writeManifestPatches(opts.Manifest, m, res.Patches, rw)
+	res.Vulnerabilities = append(res.Vulnerabilities, computeVulnsResult(resolved, allPatches)...)
+	res.Patches = append(res.Patches, choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, false)...)
+	if err := writeManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
+		return res, err
+	}
 
-	return res, err
+	if writeLockfile {
+		err := writeLockfileFromManifest(ctx, opts.Manifest)
+		if err != nil {
+			log.Errorf("failed writing lockfile from manifest: %v", err)
+		}
+	}
+
+	return res, nil
 }
 
 func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
@@ -386,6 +414,95 @@ func computeResolveErrors(g *resolve.Graph) []result.ResolveError {
 	return errs
 }
 
+// computeRelockPatches computes the vulnerabilities that were fixed by just relocking the manifest.
+// Vulns present in the lockfile only are added to the result's vulns,
+// and a patch upgraded packages is added to the result's patches.
+func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif *remediation.ResolvedManifest, opts options.FixVulnsOptions) error {
+	lockfileRW, err := readWriterForLockfile(opts.Lockfile)
+	if err != nil {
+		return err
+	}
+
+	g, err := parseLockfile(opts.Lockfile, lockfileRW)
+	if err != nil {
+		return err
+	}
+	resolvedLockf, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	if err != nil {
+		return err
+	}
+
+	manifestVulns := make(map[string]struct{})
+	for _, v := range resolvedManif.Vulns {
+		manifestVulns[v.OSV.ID] = struct{}{}
+	}
+
+	var vulns []result.Vuln
+	for _, v := range resolvedLockf.Vulns {
+		if _, ok := manifestVulns[v.OSV.ID]; !ok {
+			vuln := result.Vuln{ID: v.OSV.ID, Unactionable: false}
+			for _, sg := range v.Subgraphs {
+				n := resolvedLockf.Graph.Nodes[sg.Dependency]
+				vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
+			}
+			vulns = append(vulns, vuln)
+		}
+	}
+
+	slices.SortFunc(vulns, func(a, b result.Vuln) int { return strings.Compare(a.ID, b.ID) })
+	res.Vulnerabilities = append(res.Vulnerabilities, vulns...)
+	res.Patches = append(res.Patches, result.Patch{Fixed: vulns})
+
+	return nil
+}
+
+func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
+	base := filepath.Base(manifestPath)
+	if base != "package.json" {
+		return fmt.Errorf("unsupported manifest: %q", base)
+	}
+
+	// shell out to npm to write the package-lock.json file.
+	dir := filepath.Dir(manifestPath)
+	npmPath, err := exec.LookPath("npm")
+	if err != nil {
+		return fmt.Errorf("cannot find npm executable: %w", err)
+	}
+
+	// Must remove preexisting package-lock.json and node_modules directory for a clean install.
+	// Use RemoveAll to avoid errors if the files doesn't exist.
+	if err := os.RemoveAll(filepath.Join(dir, "package-lock.json")); err != nil {
+		return fmt.Errorf("failed removing old package-lock.json/: %w", err)
+	}
+	if err := os.RemoveAll(filepath.Join(dir, "node_modules")); err != nil {
+		return fmt.Errorf("failed removing old node_modules/: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only")
+	cmd.Dir = dir
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	if err := cmd.Run(); err == nil {
+		// succeeded on first try
+		return nil
+	}
+
+	// Guided remediation does not currently support peer dependencies.
+	// Try with `--legacy-peer-deps` in case the previous install errored from peer dependencies.
+	log.Warnf("npm install failed. Trying again with `--legacy-peer-deps`")
+	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+	cmd.Dir = dir
+	cmdOut := &strings.Builder{}
+	cmd.Stdout = cmdOut
+	cmd.Stderr = cmdOut
+	if err := cmd.Run(); err != nil {
+		log.Infof("npm install output:\n%s", cmdOut.String())
+		return fmt.Errorf("npm install failed: %w", err)
+	}
+
+	return nil
+}
+
 func readWriterForManifest(manifestPath string, registry string) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
@@ -404,6 +521,18 @@ func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 		return npmlock.GetReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported lockfile: %q", baseName)
+}
+
+// isLockfileForManifest returns true if the lockfile is for the manifest.
+// This is a heuristic that works for npm, but not for other ecosystems.
+func isLockfileForManifest(manifestPath, lockfilePath string) bool {
+	manifestDir := filepath.Dir(manifestPath)
+	manifestBaseName := filepath.Base(manifestPath)
+	lockfileDir := filepath.Dir(lockfilePath)
+	lockfileBaseName := filepath.Base(lockfilePath)
+
+	// currently only npm has a lockfile and manifest.
+	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json" && manifestDir == lockfileDir
 }
 
 func parseManifest(path string, rw manifest.ReadWriter) (manifest.Manifest, error) {
