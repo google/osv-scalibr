@@ -103,6 +103,7 @@ var (
 		".dist-info/METADATA",
 		// zip file with Metadata files inside.
 		".egg",
+		".whl",
 	}
 )
 
@@ -150,7 +151,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var err error
 	var pkgs []*extractor.Package
-	if strings.HasSuffix(input.Path, ".egg") {
+	if strings.HasSuffix(input.Path, ".egg") || strings.HasSuffix(input.Path, ".whl") {
 		// TODO(b/280417821): In case extractZip returns no packages, we could parse the filename.
 		pkgs, err = e.extractZip(ctx, input)
 	} else {
