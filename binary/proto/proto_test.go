@@ -274,8 +274,9 @@ func TestScanResultToProto(t *testing.T) {
 	}
 
 	windowsPackage := &extractor.Package{
-		Name:    "windows_server_2019",
-		Version: "10.0.17763.3406",
+		Name:     "windows_server_2019",
+		Version:  "10.0.17763.3406",
+		PURLType: "windows",
 		Metadata: &winmetadata.OSVersion{
 			Product:     "windows_server_2019",
 			FullVersion: "10.0.17763.3406",
@@ -702,10 +703,11 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Purl: &spb.Purl{
-			Purl:      "pkg:generic/microsoft/windows_server_2019?buildnumber=10.0.17763.3406",
+			Purl:      "pkg:generic/microsoft/windows_server_2019@10.0.17763.3406?buildnumber=10.0.17763.3406",
 			Type:      purl.TypeGeneric,
 			Namespace: "microsoft",
 			Name:      "windows_server_2019",
+			Version:   "10.0.17763.3406",
 			Qualifiers: []*spb.Qualifier{
 				{
 					Key:   "buildnumber",

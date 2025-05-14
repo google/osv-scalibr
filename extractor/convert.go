@@ -20,6 +20,7 @@ import (
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
+	winpurl "github.com/google/osv-scalibr/extractor/standalone/windows/common/purl"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -52,6 +53,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
+	case "windows":
+		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	}
 	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil

@@ -63,8 +63,9 @@ func TestExtract(t *testing.T) {
 			},
 			want: []*extractor.Package{
 				{
-					Name:    "Package_for_KB5020683~31bf3856ad364e35~amd64~~19041.2304.1.3",
-					Version: "19041.2304.1.3",
+					Name:     "Package_for_KB5020683~31bf3856ad364e35~amd64~~19041.2304.1.3",
+					Version:  "19041.2304.1.3",
+					PURLType: "windows",
 				},
 			},
 		},
