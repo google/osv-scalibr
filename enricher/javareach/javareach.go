@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -63,12 +64,12 @@ func (Enricher) Version() int {
 func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:  plugin.NetworkOnline,
-		DirectFS: true,
+		DirectFS: false,
 	}
 }
 
 func (Enricher) RequiredPlugins() []string {
-	return nil
+	return []string{}
 }
 
 func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
@@ -87,18 +88,10 @@ func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inve
 }
 
 func fmtJavaInventory(i *extractor.Package) string {
-	return fmt.Sprintf("%s:%s", i.Metadata.(*archive.Metadata).GroupID, i.Name)
+	return fmt.Sprintf("%s:%s", i.Metadata.(*archivemeta.Metadata).GroupID, i.Name)
 }
 
 func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	// jarfile, err := input.FS.Open(jarPath)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// Extract dependencies from the .jar (from META-INF/maven/**/pom.properties)
-	// allDeps, err := ExtractDependencies(jarfile)
-
 	var allDeps []*extractor.Package
 
 	for i := range inv.Packages {
@@ -106,15 +99,13 @@ func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv 
 			allDeps = append(allDeps, inv.Packages[i])
 		}
 	}
-	// if err != nil {
-	// 	return err
-	// }
+
 	slices.SortFunc(allDeps, func(i1 *extractor.Package, i2 *extractor.Package) int {
 		return strings.Compare(fmtJavaInventory(i1), fmtJavaInventory(i2))
 	})
 	for _, dep := range allDeps {
 		log.Debug("extracted dep",
-			"group id", dep.Metadata.(*archive.Metadata).GroupID, "artifact id", dep.Name, "version", dep.Version)
+			"group id", dep.Metadata.(*archivemeta.Metadata).GroupID, "artifact id", dep.Name, "version", dep.Version)
 	}
 
 	// Unpack .jar
@@ -289,11 +280,11 @@ func enumerateReachabilityForJar(jarPath string, input *enricher.ScanInput, inv 
 		if inv.Packages[i].Locations[0] != jarPath {
 			continue
 		}
-		metadata := inv.Packages[i].Metadata.(*archive.Metadata)
+		metadata := inv.Packages[i].Metadata.(*archivemeta.Metadata)
 		artifactName := fmt.Sprintf("%s:%s", metadata.GroupID, metadata.ArtifactID)
 		if _, exists := reachableDeps[artifactName]; !exists {
 			inv.Packages[i].Annotations = append(inv.Packages[i].Annotations, extractor.Unreachable)
-			log.Debugf("updated pkg: %s, annotations: %v", artifactName, inv.Packages[i].Annotations)
+			log.Infof("Annotated unreachable package '%s' with: %v", artifactName, inv.Packages[i].Annotations)
 		}
 	}
 

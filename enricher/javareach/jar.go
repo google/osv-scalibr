@@ -29,7 +29,7 @@ import (
 	"sync"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -63,24 +63,8 @@ type DefaultPackageFinder struct {
 	artifactMap map[string][]string
 }
 
-// ExtractDependencies extracts Maven dependencies from a .jar.
-// func ExtractDependencies(jar fs.File) ([]*extractor.Package, error) {
-// 	info, err := jar.Stat()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	input := filesystem.ScanInput{Path: jar.Name(), Info: info, Reader: jar}
-// 	cfg := archive.DefaultConfig()
-// 	extractor := archive.New(cfg)
-// 	inventory, err := extractor.Extract(context.Background(), &input)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return inventory.Packages, nil
-// }
-
 // loadJARMappings loads class mappings from a JAR archive.
-func loadJARMappings(metadata *archive.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
+func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
 	// TODO: Validate that we can rely on the directory structure to mirror the
 	// class package path.
 	lock.Lock()
@@ -149,7 +133,7 @@ func openNestedJAR(jarPaths []string) (*zip.Reader, error) {
 }
 
 func checkNestedJARContains(inv *extractor.Package) ([]string, bool) {
-	metadata := inv.Metadata.(*archive.Metadata)
+	metadata := inv.Metadata.(*archivemeta.Metadata)
 	for i := len(inv.Locations) - 1; i >= 0; i-- {
 		// Find /path/root.jar/path/to/nested.jar
 		const jarBoundary = ".jar/"
@@ -185,7 +169,7 @@ func checkNestedJARContains(inv *extractor.Package) ([]string, bool) {
 func extractClassMappings(inv *extractor.Package, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) error {
 	var reader *zip.Reader
 
-	metadata := inv.Metadata.(*archive.Metadata)
+	metadata := inv.Metadata.(*archivemeta.Metadata)
 	if jarPaths, ok := checkNestedJARContains(inv); ok {
 		var err error
 		reader, err = openNestedJAR(jarPaths)

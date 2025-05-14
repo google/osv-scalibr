@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/javareach"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -34,17 +35,18 @@ const unreachablePkgName = "org.eclipse.jetty:jetty-continuation"
 
 func TestScan(t *testing.T) {
 	enr := javareach.Enricher{}
-	px := setupPackageIndex([]string{testJar})
+	pkgs := setupPackages([]string{testJar})
 	scalibrfs.RealFSScanRoot(filepath.Join("testdata", testJar))
 	input := enricher.ScanInput{
 		Root: filepath.Join("testdata", testJar),
+		FS:   scalibrfs.DirFS("."),
 	}
 	inv := inventory.Inventory{
-		Packages: px,
+		Packages: pkgs,
 	}
 	err := enr.Enrich(context.Background(), &input, &inv)
 	if err != nil {
-		t.Fatalf("enricher.Enrich(%v): Expected an error, got none", px)
+		t.Fatalf("enricher.Enrich(%v): Expected an error, got none", pkgs)
 	}
 
 	for _, pkg := range inv.Packages {
@@ -69,27 +71,29 @@ func TestScan(t *testing.T) {
 	}
 }
 
-func setupPackageIndex(names []string) []*extractor.Package {
+func setupPackages(names []string) []*extractor.Package {
 	pkgs := []*extractor.Package{}
 
 	for _, n := range names {
-		unreachablePkg := &extractor.Package{
-			Name:      unreachablePkgName,
-			Version:   "1.2.3",
-			PURLType:  purl.TypeMaven,
-			Locations: []string{filepath.Join("testdata", n)},
-			Extractor: &archive.Extractor{},
-		}
-
 		reachablePkg := &extractor.Package{
 			Name:      reachablePkgName,
-			Version:   "1.2.3",
+			Version:   "2.0.0",
 			PURLType:  purl.TypeMaven,
+			Metadata:  &archivemeta.Metadata{ArtifactID: "jackson-annotations", GroupID: "com.fasterxml.jackson.core"},
 			Locations: []string{filepath.Join("testdata", n)},
 			Extractor: &archive.Extractor{},
 		}
 
-		pkgs = append(pkgs, unreachablePkg, reachablePkg)
+		unreachablePkg := &extractor.Package{
+			Name:      unreachablePkgName,
+			Version:   "9.4.7.RC0",
+			PURLType:  purl.TypeMaven,
+			Metadata:  &archivemeta.Metadata{ArtifactID: "jetty-continuation", GroupID: "org.eclipse.jetty"},
+			Locations: []string{filepath.Join("testdata", n)},
+			Extractor: &archive.Extractor{},
+		}
+
+		pkgs = append(pkgs, reachablePkg, unreachablePkg)
 	}
 
 	return pkgs
