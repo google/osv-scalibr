@@ -237,7 +237,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // FileRequired returns true if the specified file matches npm lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if filepath.Base(path) != "package-lock.json" {
+	if !slices.Contains([]string{"package-lock.json", "npm-shrinkwrap.json"}, filepath.Base(api.Path())) {
 		return false
 	}
 	// Skip lockfiles inside node_modules directories since the packages they list aren't

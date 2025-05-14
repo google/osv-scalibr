@@ -111,6 +111,33 @@ func TestExtractor_FileRequired(t *testing.T) {
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
+		{
+			name:             "npm-shrinkwrap.json",
+			path:             filepath.FromSlash("npm-shrinkwrap.json"),
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "npm-shrinkwrap.json at the end of a path",
+			path:             filepath.FromSlash("path/to/my/npm-shrinkwrap.json"),
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "npm-shrinkwrap.json as path segment",
+			path:         filepath.FromSlash("path/to/my/npm-shrinkwrap.json/file"),
+			wantRequired: false,
+		},
+		{
+			name:         "npm-shrinkwrap.json.file (wrong extension)",
+			path:         filepath.FromSlash("path/to/my/npm-shrinkwrap.json.file"),
+			wantRequired: false,
+		},
+		{
+			name:         "path.to.my.npm-shrinkwrap.json",
+			path:         filepath.FromSlash("path.to.my.npm-shrinkwrap.json"),
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
