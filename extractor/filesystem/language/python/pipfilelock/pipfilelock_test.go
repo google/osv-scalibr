@@ -92,7 +92,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json",
 			},
-			WantPackages: []*extractor.Package{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
@@ -229,7 +229,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-version.json",
 			},
-			WantPackages: []*extractor.Package{},
+			WantPackages: nil,
 		},
 	}
 

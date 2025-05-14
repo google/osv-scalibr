@@ -18,7 +18,9 @@ package pomxmlnet
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"deps.dev/util/maven"
@@ -33,7 +35,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -238,7 +239,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		details[pkg.Name] = &pkg
 	}
 
-	return inventory.Inventory{Packages: maps.Values(details)}, nil
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
