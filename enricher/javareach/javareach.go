@@ -69,7 +69,7 @@ func (Enricher) Requirements() *plugin.Capabilities {
 }
 
 func (Enricher) RequiredPlugins() []string {
-	return []string{}
+	return []string{archive.Name}
 }
 
 func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
@@ -297,7 +297,11 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 // unzipJAR unzips a JAR to a target directory. It also returns a list of paths
 // to all the nested JARs found while unzipping.
 func unzipJAR(jarPath string, input *enricher.ScanInput, tmpDir string) (nestedJARs []string, err error) {
-	file, _ := input.FS.Open(jarPath)
+	file, err := input.FS.Open(filepath.ToSlash(jarPath))
+	if err != nil {
+		return nil, err
+	}
+
 	fileReaderAt, _ := file.(io.ReaderAt)
 
 	defer file.Close()

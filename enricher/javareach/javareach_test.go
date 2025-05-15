@@ -36,7 +36,6 @@ const unreachablePkgName = "org.eclipse.jetty:jetty-continuation"
 func TestScan(t *testing.T) {
 	enr := javareach.Enricher{}
 	pkgs := setupPackages([]string{testJar})
-	scalibrfs.RealFSScanRoot(filepath.Join("testdata", testJar))
 	input := enricher.ScanInput{
 		Root: filepath.Join("testdata", testJar),
 		FS:   scalibrfs.DirFS("."),
