@@ -36,7 +36,7 @@ import (
 )
 
 func TestComputePatches(t *testing.T) {
-	mavenRW, err := maven.GetReadWriter("")
+	mavenRW, err := maven.GetReadWriter("", "")
 	if err != nil {
 		t.Fatalf("failed getting ReadWriter: %v", err)
 	}
