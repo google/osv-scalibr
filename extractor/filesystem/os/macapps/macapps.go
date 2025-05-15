@@ -192,6 +192,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 	p := &extractor.Package{
 		Name:      metadata.CFBundleName,
 		Version:   metadata.CFBundleShortVersionString,
+		PURLType:  purl.TypeMacApps,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
@@ -200,12 +201,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeMacApps,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // ToCPEs is not applicable as this extractor does not infer CPEs from the Package.

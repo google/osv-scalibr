@@ -162,8 +162,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		pkgs = append(pkgs, &extractor.Package{
-			Name:    node.Version.Name,
-			Version: node.Version.Version,
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypePyPi,
 			// TODO(#663): record the path if it's from another requirements file.
 			Locations: []string{input.Path},
 		})
@@ -174,8 +175,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
-	return e.BaseExtractor.ToPURL(i)
+// TODO(b/400910349): Remove and use Package.PURL() directly.
+func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
