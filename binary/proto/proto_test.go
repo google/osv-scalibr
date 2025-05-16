@@ -606,6 +606,7 @@ func TestScanResultToProto(t *testing.T) {
 	purlHomebrewPackage := &extractor.Package{
 		Name:      "rclone",
 		Version:   "1.67.0",
+		PURLType:  purl.TypeBrew,
 		Metadata:  &homebrew.Metadata{},
 		Locations: []string{"/file1"},
 		Extractor: homebrew.Extractor{},

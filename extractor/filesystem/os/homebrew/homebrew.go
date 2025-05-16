@@ -103,6 +103,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		{
 			Name:      p.AppName,
 			Version:   p.AppVersion,
+			PURLType:  purl.TypeBrew,
 			Locations: []string{input.Path},
 			Metadata:  &Metadata{},
 		},
@@ -128,12 +129,9 @@ func SplitPath(path string) *BrewPath {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeBrew,
-		Name:    p.Name,
-		Version: p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
