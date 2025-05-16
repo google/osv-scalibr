@@ -15,31 +15,21 @@
 package image
 
 import (
+	"errors"
+	"io"
 	"io/fs"
-	"os"
 	"path"
-	"path/filepath"
 	"time"
-)
-
-const (
-	// filePermission represents the permission bits for a file, which are minimal since files in the
-	// layer scanning use case are read-only.
-	filePermission = 0600
-	// dirPermission represents the permission bits for a directory, which are minimal since
-	// directories in the layer scanning use case are read-only.
-	dirPermission = 0700
 )
 
 // virtualFile represents a file in a virtual filesystem.
 type virtualFile struct {
-	// extractDir and layerDir are used to construct the real file path of the virtualFile.
-	extractDir string
-	layerDir   string
+	// The reference to the content blob that the file contents are stored in. The content blob must
+	// be opened before the virtual file is used.
+	contentBlob *io.SectionReader
 
 	// isWhiteout is true if the virtualFile represents a whiteout file
 	isWhiteout bool
-
 	// virtualPath is the path of the virtualFile in the virtual filesystem.
 	virtualPath string
 	// targetPath is reserved for symlinks. It is the path that the symlink points to.
@@ -49,14 +39,22 @@ type virtualFile struct {
 	size    int64
 	mode    fs.FileMode
 	modTime time.Time
-
-	// file is the file object for the real file referred to by the virtualFile.
-	file *os.File
 }
 
 // ========================================================
 // fs.File METHODS
 // ========================================================
+
+func validateVirtualFile(f *virtualFile) error {
+	if f.isWhiteout {
+		return fs.ErrNotExist
+	}
+	if f.contentBlob == nil {
+		return errors.New("virtual file does not reference any content")
+	}
+
+	return nil
+}
 
 // Stat returns the file info of real file referred by the virtualFile.
 func (f *virtualFile) Stat() (fs.FileInfo, error) {
@@ -68,59 +66,47 @@ func (f *virtualFile) Stat() (fs.FileInfo, error) {
 
 // Read reads the real file referred to by the virtualFile.
 func (f *virtualFile) Read(b []byte) (n int, err error) {
-	if f.isWhiteout {
-		return 0, fs.ErrNotExist
+	if f.IsDir() {
+		return 0, nil
 	}
-	if f.file == nil {
-		f.file, err = os.Open(f.RealFilePath())
-	}
-	if err != nil {
+	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
-	return f.file.Read(b)
+	return f.contentBlob.Read(b)
 }
 
-// ReadAt reads the real file referred to by the virtualFile at a specific offset.
+// ReadAt reads the real file contents referred to by the virtualFile at a specific offset.
 func (f *virtualFile) ReadAt(b []byte, off int64) (n int, err error) {
-	if f.isWhiteout {
-		return 0, fs.ErrNotExist
+	if f.IsDir() {
+		return 0, nil
 	}
-	if f.file == nil {
-		f.file, err = os.Open(f.RealFilePath())
-	}
-	if err != nil {
+	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
-	return f.file.ReadAt(b, off)
+	return f.contentBlob.ReadAt(b, off)
 }
 
+// Seek sets the read cursor of the file contents represented by the virtualFile.
 func (f *virtualFile) Seek(offset int64, whence int) (n int64, err error) {
-	if f.isWhiteout {
-		return 0, fs.ErrNotExist
+	if f.IsDir() {
+		return 0, nil
 	}
-	if f.file == nil {
-		f.file, err = os.Open(f.RealFilePath())
-	}
-	if err != nil {
+	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
-	return f.file.Seek(offset, whence)
+	return f.contentBlob.Seek(offset, whence)
 }
 
-// Close closes the real file referred to by the virtualFile and resets the file field.
+// Close resets the read cursor of the file contents represented by the virtualFile.
 func (f *virtualFile) Close() error {
-	if f.file != nil {
-		err := f.file.Close()
-		f.file = nil
+	if f.IsDir() {
+		return nil
+	}
+	if err := validateVirtualFile(f); err != nil {
 		return err
 	}
-	return nil
-}
-
-// RealFilePath returns the real file path of the virtualFile. This is the concatenation of the
-// root image extract directory, origin layer ID, and the virtual path.
-func (f *virtualFile) RealFilePath() string {
-	return filepath.Join(f.extractDir, f.layerDir, filepath.FromSlash(f.virtualPath))
+	_, err := f.contentBlob.Seek(0, io.SeekStart)
+	return err
 }
 
 // ========================================================
