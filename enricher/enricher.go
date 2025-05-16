@@ -49,10 +49,8 @@ type Config struct {
 
 // ScanInput provides information for the enricher about the scan.
 type ScanInput struct {
-	// FS for file access. This is rooted at Root.
-	FS scalibrfs.FS
-	// The root directory of the artifact being scanned.
-	Root string
+	// The root of the artifact being scanned.
+	ScanRoot *scalibrfs.ScanRoot
 }
 
 // Run runs the specified enrichers and returns their statuses.
@@ -79,8 +77,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 			config.ScanRoot.Path = p
 		}
 		input = &ScanInput{
-			FS:   config.ScanRoot.FS,
-			Root: config.ScanRoot.Path,
+			ScanRoot: config.ScanRoot,
 		}
 	}
 

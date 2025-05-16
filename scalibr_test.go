@@ -89,8 +89,10 @@ func TestScan(t *testing.T) {
 			fen.MustHash(
 				t,
 				&enricher.ScanInput{
-					FS:   fs,
-					Root: tmp,
+					ScanRoot: &scalibrfs.ScanRoot{
+						FS:   fs,
+						Path: tmp,
+					},
 				},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
@@ -112,7 +114,7 @@ func TestScan(t *testing.T) {
 		Capabilities: &plugin.Capabilities{Network: plugin.NetworkOnline},
 		WantEnrich: map[uint64]fen.InventoryAndErr{
 			fen.MustHash(
-				t, &enricher.ScanInput{FS: fs, Root: tmp},
+				t, &enricher.ScanInput{ScanRoot: &scalibrfs.ScanRoot{FS: fs, Path: tmp}},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
 					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},

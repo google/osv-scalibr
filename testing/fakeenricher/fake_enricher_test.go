@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/testing/fakeenricher"
@@ -141,11 +142,13 @@ func TestRequiredPlugins(t *testing.T) {
 
 func TestEnrich(t *testing.T) {
 	input1 := &enricher.ScanInput{
-		FS: fstest.MapFS{
-			"/some/file.text":  {Mode: fs.ModePerm},
-			"/another/file.md": {Mode: fs.ModePerm},
+		ScanRoot: &scalibrfs.ScanRoot{
+			FS: fstest.MapFS{
+				"/some/file.text":  {Mode: fs.ModePerm},
+				"/another/file.md": {Mode: fs.ModePerm},
+			},
+			Path: "root",
 		},
-		Root: "root",
 	}
 	inventory1 := &inventory.Inventory{
 		Packages: []*extractor.Package{{

@@ -73,7 +73,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // Extract extracts open ports on the system.
 func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	// First, extract a mapping that provides the PID for each open socket inode number.
-	inodeToPID, err := proc.MapSocketInodesToPID(ctx, input.Root, input.FS)
+	inodeToPID, err := proc.MapSocketInodesToPID(ctx, input.ScanRoot.Path, input.ScanRoot.FS)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
@@ -104,7 +104,7 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 				continue
 			}
 
-			cmdline, err := proc.ReadProcessCmdline(ctx, pid, input.Root, input.FS)
+			cmdline, err := proc.ReadProcessCmdline(ctx, pid, input.ScanRoot.Path, input.ScanRoot.FS)
 			if err != nil {
 				return inventory.Inventory{}, err
 			}
