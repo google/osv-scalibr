@@ -20,6 +20,10 @@ import (
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	cdxpurl "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/purl"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
+	spdxpurl "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/purl"
 	winpurl "github.com/google/osv-scalibr/extractor/standalone/windows/common/purl"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -42,6 +46,15 @@ func toPURL(p *Package) *purl.PackageURL {
 }
 
 func typeSpecificPURL(p *Package) *purl.PackageURL {
+	// SPDX and CDX packages can have any PURL type so we first look at the
+	// metadata type to identify them.
+	switch m := p.Metadata.(type) {
+	case *spdxmeta.Metadata:
+		return spdxpurl.MakePackageURL(m)
+	case *cdxmeta.Metadata:
+		return cdxpurl.MakePackageURL(m)
+	}
+
 	switch p.PURLType {
 	case purl.TypePyPi:
 		return pypipurl.MakePackageURL(p.Name, p.Version)

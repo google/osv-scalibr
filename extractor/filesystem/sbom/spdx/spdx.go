@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -110,9 +111,9 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 	for _, spdxPkg := range spdxDoc.Packages {
 		pkg := &extractor.Package{
 			Locations: []string{path},
-			Metadata:  &Metadata{},
+			Metadata:  &spdxmeta.Metadata{},
 		}
-		m := pkg.Metadata.(*Metadata)
+		m := pkg.Metadata.(*spdxmeta.Metadata)
 		for _, extRef := range spdxPkg.PackageExternalReferences {
 			// TODO(b/280991231): Support all RefTypes
 			if extRef.RefType == "cpe23Type" || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
@@ -130,6 +131,7 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
 					m.PURL = &packageURL
+					pkg.PURLType = packageURL.Type
 				}
 			}
 		}
@@ -149,13 +151,14 @@ func hasFileExtension(path string, extension string) bool {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.Metadata.(*Metadata).PURL
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	purl := p.Metadata.(*Metadata).PURL
+	purl := p.Metadata.(*spdxmeta.Metadata).PURL
 	if purl == nil {
 		return ""
 	}

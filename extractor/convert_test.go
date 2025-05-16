@@ -19,6 +19,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -89,6 +91,52 @@ func TestToPURL(t *testing.T) {
 				Type:    purl.TypeHex,
 				Name:    "name",
 				Version: "1.2.3",
+			},
+		},
+		{
+			name: "spdx_purl",
+			pkg: &extractor.Package{
+				Name:     "name",
+				PURLType: purl.TypePyPi,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:      purl.TypePyPi,
+						Name:      "name",
+						Namespace: "namespace",
+						Version:   "1.2.3",
+					},
+					CPEs: []string{},
+				},
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypePyPi,
+				Name:      "name",
+				Namespace: "namespace",
+				Version:   "1.2.3",
+			},
+		},
+		{
+			name: "cdx_purl",
+			pkg: &extractor.Package{
+				Name:     "name",
+				PURLType: purl.TypeCargo,
+				Metadata: &cdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:      purl.TypeCargo,
+						Name:      "name",
+						Namespace: "namespace",
+						Version:   "1.2.3",
+					},
+					CPEs: []string{},
+				},
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeCargo,
+				Name:      "name",
+				Namespace: "namespace",
+				Version:   "1.2.3",
 			},
 		},
 	}

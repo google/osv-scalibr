@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cdx
+// Package purl extracts the PURL from a CDX package.
+package purl
 
 import (
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Metadata holds parsing information for packages extracted from CDX files.
-type Metadata struct {
-	PURL *purl.PackageURL
-	CPEs []string
+// MakePackageURL returns the package URL from a CDX package.
+func MakePackageURL(metadata any) *purl.PackageURL {
+	if m, ok := metadata.(*cdxmeta.Metadata); ok {
+		return m.PURL
+	}
+	return nil
 }

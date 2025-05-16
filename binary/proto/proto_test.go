@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
@@ -402,9 +403,10 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 	cdxPackage := &extractor.Package{
-		Name:    "openssl",
-		Version: "1.1.1",
-		Metadata: &cdx.Metadata{
+		Name:     "openssl",
+		Version:  "1.1.1",
+		PURLType: purl.TypeGeneric,
+		Metadata: &cdxmeta.Metadata{
 			PURL: &purl.PackageURL{
 				Type:    purl.TypeGeneric,
 				Name:    "openssl",

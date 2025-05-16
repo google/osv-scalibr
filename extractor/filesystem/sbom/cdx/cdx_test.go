@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -120,15 +121,16 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.cdx.json"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.json"},
@@ -142,23 +144,25 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
 				},
 				{
-					Name:    "rustls",
-					Version: "0.23.13",
-					Metadata: &cdx.Metadata{
+					Name:     "rustls",
+					Version:  "0.23.13",
+					PURLType: purl.TypeCargo,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:cargo/rustls@0.23.13"),
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
@@ -172,15 +176,16 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.cdx.xml"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.xml"},
@@ -235,8 +240,9 @@ func TestToPURL(t *testing.T) {
 		Version:   "1.2.3",
 	}
 	p := &extractor.Package{
-		Name: "name",
-		Metadata: &cdx.Metadata{
+		Name:     "name",
+		PURLType: purl.TypePyPi,
+		Metadata: &cdxmeta.Metadata{
 			PURL: want,
 			CPEs: []string{},
 		},

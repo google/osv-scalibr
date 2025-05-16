@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spdx
+// Package metadata defines a Metadata struct for SPDX packages.
+package metadata
 
 import (
 	"github.com/google/osv-scalibr/purl"

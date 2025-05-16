@@ -54,8 +54,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
@@ -454,14 +454,14 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				RootfsPath:    m.RootFS,
 			},
 		}
-	case *spdx.Metadata:
+	case *spdxmeta.Metadata:
 		p.Metadata = &spb.Package_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
-	case *cdx.Metadata:
+	case *cdxmeta.Metadata:
 		p.Metadata = &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
