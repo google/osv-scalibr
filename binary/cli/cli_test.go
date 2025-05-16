@@ -44,6 +44,7 @@ func TestValidateFlags(t *testing.T) {
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
 				DetectorsToRun:  []string{"weakcreds,cis"},
+				AnnotatorsToRun: []string{"vex"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
@@ -151,6 +152,15 @@ func TestValidateFlags(t *testing.T) {
 				DetectorsToRun:  []string{"govulncheck"}, // Needs the Go binary extractor.
 			},
 			wantErr: nil,
+		},
+		{
+			desc: "Invalid annotators",
+			flags: &cli.Flags{
+				Root:            "/",
+				ResultFile:      "result.textproto",
+				AnnotatorsToRun: []string{"vex,"},
+			},
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			desc: "Invalid paths to skip",
@@ -444,6 +454,7 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 		flags              *cli.Flags
 		wantExtractorCount int
 		wantDetectorCount  int
+		wantAnnotatorCount int
 	}{
 		{
 			desc: "Create an extractor",
@@ -459,6 +470,13 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			},
 			wantDetectorCount: 1,
 		},
+		{
+			desc: "Create an annotator",
+			flags: &cli.Flags{
+				AnnotatorsToRun: []string{"vex/cachedir"},
+			},
+			wantAnnotatorCount: 1,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg, err := tc.flags.GetScanConfig()
@@ -470,6 +488,9 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			}
 			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
+			}
+			if len(cfg.Annotators) != tc.wantAnnotatorCount {
+				t.Errorf("%v.GetScanConfig() want annotator count %d got %d", tc.flags, tc.wantAnnotatorCount, len(cfg.Annotators))
 			}
 		})
 	}

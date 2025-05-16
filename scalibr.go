@@ -27,13 +27,13 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/annotator"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
@@ -65,6 +65,7 @@ type ScanConfig struct {
 	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
+	Annotators           []annotator.Annotator
 	Enrichers            []enricher.Enricher
 	// Capabilities that the scanning environment satisfies, e.g. whether there's
 	// network access. Some plugins can only run if certain requirements are met.
@@ -159,7 +160,7 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 // ValidatePluginRequirements checks that the scanning environment's capabilities satisfy
 // the requirements of all enabled plugin.
 func (cfg *ScanConfig) ValidatePluginRequirements() error {
-	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Enrichers))
+	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Annotators)+len(cfg.Enrichers))
 	for _, p := range cfg.FilesystemExtractors {
 		plugins = append(plugins, p)
 	}
@@ -167,6 +168,9 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 		plugins = append(plugins, p)
 	}
 	for _, p := range cfg.Detectors {
+		plugins = append(plugins, p)
+	}
+	for _, p := range cfg.Annotators {
 		plugins = append(plugins, p)
 	}
 	for _, p := range cfg.Enrichers {
@@ -262,9 +266,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro.Inventory.Append(standaloneInv)
 	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
 
-	// add annotations to the pkgs
-	annotator.Annotate(sro.Inventory.Packages)
-
 	px, err := packageindex.New(sro.Inventory.Packages)
 	if err != nil {
 		sro.Err = err
@@ -279,6 +280,16 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro.DetectorStatus = detectorStatus
 	if err != nil {
 		sro.Err = err
+	}
+
+	annotatorCfg := &annotator.Config{
+		Annotators: config.Annotators,
+		ScanRoot:   sysroot,
+	}
+	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &sro.Inventory)
+	sro.AnnotatorStatus = annotatorStatus
+	if err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
 	}
 
 	enricherCfg := &enricher.Config{
@@ -372,6 +383,7 @@ type newScanResultOptions struct {
 	EndTime         time.Time
 	ExtractorStatus []*plugin.Status
 	DetectorStatus  []*plugin.Status
+	AnnotatorStatus []*plugin.Status
 	EnricherStatus  []*plugin.Status
 	Inventory       inventory.Inventory
 	Err             error
@@ -389,7 +401,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		StartTime:    o.StartTime,
 		EndTime:      o.EndTime,
 		Status:       status,
-		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.EnricherStatus),
+		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.AnnotatorStatus, o.EnricherStatus),
 		Inventory:    o.Inventory,
 	}
 
