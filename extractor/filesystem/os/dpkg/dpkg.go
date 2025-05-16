@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -239,10 +240,16 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			annotations = append(annotations, extractor.Transitional)
 		}
 
+		purlType := purl.TypeDebian
+		if input.Path == "usr/lib/opkg/status" {
+			purlType = purl.TypeOpkg
+		}
+
 		p := &extractor.Package{
-			Name:    pkgName,
-			Version: pkgVersion,
-			Metadata: &Metadata{
+			Name:     pkgName,
+			Version:  pkgVersion,
+			PURLType: purlType,
+			Metadata: &dpkgmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
 				Status:            h.Get("Status"),
@@ -260,8 +267,8 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			return pkgs, fmt.Errorf("parseSourceNameVersion(%q): %w", h.Get("Source"), err)
 		}
 		if sourceName != "" {
-			p.Metadata.(*Metadata).SourceName = sourceName
-			p.Metadata.(*Metadata).SourceVersion = sourceVersion
+			p.Metadata.(*dpkgmeta.Metadata).SourceName = sourceName
+			p.Metadata.(*dpkgmeta.Metadata).SourceVersion = sourceVersion
 		}
 
 		pkgs = append(pkgs, p)
@@ -296,75 +303,16 @@ func parseSourceNameVersion(source string) (string, string, error) {
 	return source, "", nil
 }
 
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	// TODO(b/298152210): Implement metric
-	return "linux"
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. jammy
-	if m.OSVersionCodename != "" {
-		return m.OSVersionCodename
-	}
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
-	return ""
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.SourceName != "" {
-		q[purl.Source] = m.SourceName
-	}
-	if m.SourceVersion != "" {
-		q[purl.SourceVersion] = m.SourceVersion
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-
-	// Determine the package type (opkg or dpkg) based on file location
-	typePurl := ""
-
-	for _, location := range p.Locations {
-		if location == "usr/lib/opkg/status" {
-			typePurl = purl.TypeOpkg
-			break
-		}
-	}
-
-	// Default to dpkg if no specific file path matches
-	if typePurl == "" {
-		typePurl = purl.TypeDebian
-	}
-
-	return &purl.PackageURL{
-		Type:       typePurl,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
+	m := p.Metadata.(*dpkgmeta.Metadata)
+	osID := cases.Title(language.English).String(m.ToNamespace())
 	if m.OSVersionID == "" {
 		return osID
 	}

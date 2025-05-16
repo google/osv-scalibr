@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/purl"
@@ -137,6 +138,50 @@ func TestToPURL(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 				Version:   "1.2.3",
+			},
+		},
+		{
+			name: "dpkg_purl",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDebian,
+				Metadata: &dpkgmeta.Metadata{
+					PackageName:       "pkg-name",
+					OSVersionCodename: "jammy",
+				},
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeDebian,
+				Namespace: "linux",
+				Name:      "pkg-name",
+				Version:   "1.2.3",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: "jammy",
+				}),
+			},
+		},
+		{
+			name: "opkg_purl",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeOpkg,
+				Metadata: &dpkgmeta.Metadata{
+					PackageName:       "pkg-name",
+					OSVersionCodename: "jammy",
+				},
+				Locations: []string{"location"},
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeOpkg,
+				Namespace: "linux",
+				Name:      "pkg-name",
+				Version:   "1.2.3",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Distro: "jammy",
+				}),
 			},
 		},
 	}
