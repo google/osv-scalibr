@@ -5,6 +5,8 @@
         "name": "org.apache.commons:commons-configuration2",
         "versionFrom": "2.8.0",
         "versionTo": "2.10.1",
+        "purlFrom": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0",
+        "purlTo": "pkg:maven/org.apache.commons/commons-configuration2@2.10.1",
         "transitive": true
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-configuration2",
-            "version": "2.8.0"
+            "version": "2.8.0",
+            "purl": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0"
           }
         ]
       },
@@ -23,7 +26,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-configuration2",
-            "version": "2.8.0"
+            "version": "2.8.0",
+            "purl": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0"
           }
         ]
       }
@@ -35,6 +39,8 @@
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
         "versionTo": "1.13.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-web@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-web@1.13.0",
         "transitive": true
       }
     ],
@@ -44,7 +50,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       },
@@ -53,7 +60,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       }
@@ -65,6 +73,8 @@
         "name": "org.apache.shiro:shiro-core",
         "versionFrom": "1.10.0",
         "versionTo": "1.13.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-core@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-core@1.13.0",
         "transitive": true
       }
     ],
@@ -74,7 +84,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-core",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-core@1.10.0"
           }
         ]
       }
@@ -86,6 +97,8 @@
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
         "versionTo": "1.12.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-web@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-web@1.12.0",
         "transitive": true
       }
     ],
@@ -95,7 +108,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       }
@@ -107,6 +121,8 @@
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
         "versionTo": "0.14.0",
+        "purlFrom": "pkg:maven/org.apache.thrift/libthrift@0.13.0",
+        "purlTo": "pkg:maven/org.apache.thrift/libthrift@0.14.0",
         "transitive": true
       }
     ],
@@ -116,7 +132,8 @@
         "packages": [
           {
             "name": "org.apache.thrift:libthrift",
-            "version": "0.13.0"
+            "version": "0.13.0",
+            "purl": "pkg:maven/org.apache.thrift/libthrift@0.13.0"
           }
         ]
       }

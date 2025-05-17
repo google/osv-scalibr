@@ -5,6 +5,8 @@
         "name": "com.google.guava:guava",
         "versionFrom": "23.1-jre",
         "versionTo": "24.0-jre",
+        "purlFrom": "pkg:maven/com.google.guava/guava@23.1-jre",
+        "purlTo": "pkg:maven/com.google.guava/guava@24.0-jre",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "23.1-jre"
+            "version": "23.1-jre",
+            "purl": "pkg:maven/com.google.guava/guava@23.1-jre"
           }
         ]
       }

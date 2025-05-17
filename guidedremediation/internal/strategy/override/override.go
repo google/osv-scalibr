@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/common"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
@@ -117,7 +118,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 				// Count the remaining known vulns that affect this version.
 				count := 0 // remaining vulns
 				for _, rv := range vulnerabilities {
-					if vulns.IsAffected(rv.OSV, vulns.VKToPackage(ver.VersionKey)) {
+					if vulns.IsAffected(rv.OSV, util.VKToPackage(ver.VersionKey)) {
 						count++
 					}
 				}

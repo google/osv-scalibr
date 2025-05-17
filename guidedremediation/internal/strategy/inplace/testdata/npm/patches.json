@@ -5,6 +5,8 @@
         "name": "d",
         "versionFrom": "1.0.0",
         "versionTo": "1.2.3",
+        "purlFrom": "pkg:npm/d@1.0.0",
+        "purlTo": "pkg:npm/d@1.2.3",
         "transitive": true
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "d",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/d@1.0.0"
           }
         ]
       },
@@ -23,7 +26,8 @@
         "packages": [
           {
             "name": "d",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/d@1.0.0"
           }
         ]
       }
@@ -35,6 +39,8 @@
         "name": "d",
         "versionFrom": "1.0.0",
         "versionTo": "1.4.0",
+        "purlFrom": "pkg:npm/d@1.0.0",
+        "purlTo": "pkg:npm/d@1.4.0",
         "transitive": true
       }
     ],
@@ -44,7 +50,8 @@
         "packages": [
           {
             "name": "d",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/d@1.0.0"
           }
         ]
       },
@@ -53,7 +60,8 @@
         "packages": [
           {
             "name": "d",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/d@1.0.0"
           }
         ]
       }
@@ -65,6 +73,8 @@
         "name": "d",
         "versionFrom": "1.2.3",
         "versionTo": "1.4.0",
+        "purlFrom": "pkg:npm/d@1.2.3",
+        "purlTo": "pkg:npm/d@1.4.0",
         "transitive": true
       }
     ],
@@ -74,7 +84,8 @@
         "packages": [
           {
             "name": "d",
-            "version": "1.2.3"
+            "version": "1.2.3",
+            "purl": "pkg:npm/d@1.2.3"
           }
         ]
       }
@@ -86,6 +97,8 @@
         "name": "g",
         "versionFrom": "1.0.0",
         "versionTo": "1.0.1",
+        "purlFrom": "pkg:npm/g@1.0.0",
+        "purlTo": "pkg:npm/g@1.0.1",
         "transitive": true
       }
     ],
@@ -95,7 +108,8 @@
         "packages": [
           {
             "name": "g",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/g@1.0.0"
           }
         ]
       }
