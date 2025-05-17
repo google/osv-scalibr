@@ -237,7 +237,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // FileRequired returns true if the specified file matches npm lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !slices.Contains([]string{"package-lock.json", "npm-shrinkwrap.json"}, filepath.Base(api.Path())) {
+	if !slices.Contains([]string{"package-lock.json", "npm-shrinkwrap.json"}, filepath.Base(path)) {
 		return false
 	}
 	// Skip lockfiles inside node_modules directories since the packages they list aren't
@@ -274,6 +274,16 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from package-lock.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	// If both package-lock.json and npm-shrinkwrap.json are present in the root of a project,
+	// npm-shrinkwrap.json will take precedence and package-lock.json will be ignored.
+	if filepath.Base(input.Path) == "package-lock.json" {
+		npmShrinkwrapPath := strings.TrimSuffix(input.Path, "package-lock.json") + "npm-shrinkwrap.json"
+		_, err := input.FS.Open(npmShrinkwrapPath)
+		if err == nil {
+			return inventory.Inventory{}, nil
+		}
+	}
+
 	packages, err := e.extractPkgLock(ctx, input)
 
 	if e.stats != nil {
