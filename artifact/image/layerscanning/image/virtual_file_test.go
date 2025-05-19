@@ -18,8 +18,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,29 +28,21 @@ import (
 
 var (
 	rootDirectory = &virtualFile{
-		extractDir:  "/tmp/extract",
-		layerDir:    "layer1",
 		virtualPath: "/",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
 	rootFile = &virtualFile{
-		extractDir:  "/tmp/extract",
-		layerDir:    "layer1",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
 	nonRootDirectory = &virtualFile{
-		extractDir:  "/tmp/extract",
-		layerDir:    "layer1",
 		virtualPath: "/dir1/dir2",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
 	nonRootFile = &virtualFile{
-		extractDir:  "/tmp/extract",
-		layerDir:    "layer1",
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -62,8 +53,6 @@ var (
 func TestStat(t *testing.T) {
 	baseTime := time.Now()
 	regularVirtualFile := &virtualFile{
-		extractDir:  "tempDir",
-		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -71,8 +60,6 @@ func TestStat(t *testing.T) {
 		modTime:     baseTime,
 	}
 	symlinkVirtualFile := &virtualFile{
-		extractDir:  "tempDir",
-		layerDir:    "",
 		virtualPath: "/symlink-to-bar",
 		targetPath:  "/bar",
 		isWhiteout:  false,
@@ -81,8 +68,6 @@ func TestStat(t *testing.T) {
 		modTime:     baseTime,
 	}
 	whiteoutVirtualFile := &virtualFile{
-		extractDir:  "tempDir",
-		layerDir:    "",
 		virtualPath: "/bar",
 		isWhiteout:  true,
 		mode:        filePermission,
@@ -151,250 +136,225 @@ func TestStat(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	const bufferSize = 20
+	contentBlob := setupContentBlob(t, []string{"bar", "fuzz", "foo"})
+	defer contentBlob.Close()
+	defer os.Remove(contentBlob.Name())
 
-	tempDir := t.TempDir()
-	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	barSize := int64(len([]byte("bar")))
+	fuzzSize := int64(len([]byte("fuzz")))
+	fooSize := int64(len([]byte("foo")))
 
-	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
-	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
-	if err != nil {
-		t.Fatalf("Failed to open file: %v", err)
-	}
-	// Close the file after the test. The file should be closed via the virtualFile.Close method,
-	// however, this test explicitly closes the file since the virtualFile.Close method is tested in a
-	// separate test.
-	defer openedRootFile.Close()
-
-	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
-
-	unopenedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
+	barVirtualFile := &virtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
+		size:        barSize,
+		reader:      io.NewSectionReader(contentBlob, 0, barSize),
 	}
-	openedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/baz",
+	fuzzVirtualFile := &virtualFile{
+		virtualPath: "/fuzz",
 		isWhiteout:  false,
 		mode:        filePermission,
-		file:        openedRootFile,
+		size:        fuzzSize,
+		reader:      io.NewSectionReader(contentBlob, barSize, fuzzSize),
 	}
-	nonRootVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
+	nonRootFooVirtualFile := &virtualFile{
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
-	}
-	nonexistentVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/dir1/xyz",
-		isWhiteout:  false,
-		mode:        filePermission,
+		size:        fooSize,
+		reader:      io.NewSectionReader(contentBlob, barSize+fuzzSize, fooSize),
 	}
 	whiteoutVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
 		virtualPath: "/dir1/abc",
 		isWhiteout:  true,
 		mode:        filePermission,
 	}
+	dirVirtualFile := &virtualFile{
+		virtualPath: "/dir1",
+		isWhiteout:  false,
+		mode:        fs.ModeDir | dirPermission,
+	}
 	tests := []struct {
-		name    string
-		node    *virtualFile
-		want    string
-		wantErr bool
+		name     string
+		vf       *virtualFile
+		want     string
+		wantSize int64
+		wantErr  bool
 	}{
 		{
-			name: "unopened root file",
-			node: unopenedVirtualFile,
-			want: "bar",
+			name:     "unopened root file",
+			vf:       barVirtualFile,
+			want:     "bar",
+			wantSize: 3,
 		},
 		{
-			name: "opened root file",
-			node: openedVirtualFile,
-			want: "baz",
+			name:     "opened root file",
+			vf:       fuzzVirtualFile,
+			want:     "fuzz",
+			wantSize: 4,
 		},
 		{
-			name: "non-root file",
-			node: nonRootVirtualFile,
-			want: "foo",
-		},
-		{
-			name:    "nonexistent file",
-			node:    nonexistentVirtualFile,
-			wantErr: true,
+			name:     "non-root file",
+			vf:       nonRootFooVirtualFile,
+			want:     "foo",
+			wantSize: 3,
 		},
 		{
 			name:    "whiteout file",
-			node:    whiteoutVirtualFile,
+			vf:      whiteoutVirtualFile,
 			wantErr: true,
+		},
+		{
+			name: "dir file",
+			vf:   dirVirtualFile,
+			want: "",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotBytes := make([]byte, bufferSize)
-			gotNumBytesRead, gotErr := tc.node.Read(gotBytes)
+			gotBytes := make([]byte, tc.wantSize)
+			gotNumBytesRead, gotErr := tc.vf.Read(gotBytes)
 
 			if gotErr != nil {
 				if tc.wantErr {
 					return
 				}
-				t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+				t.Fatalf("Read(%v) returned error: %v", tc.vf, gotErr)
 			}
 
 			gotContent := string(gotBytes[:gotNumBytesRead])
 			if gotContent != tc.want {
-				t.Errorf("Read(%v) = %v, want: %v", tc.node, gotContent, tc.want)
+				t.Errorf("Read(%v) = %v, want: %v", tc.vf, gotContent, tc.want)
 			}
 
 			// Close the file. The Close method is tested in a separate test.
-			_ = tc.node.Close()
+			_ = tc.vf.Close()
 		})
 	}
 }
 
 func TestReadAt(t *testing.T) {
-	const bufferSize = 20
+	bufferSize := 20
+	contentBlob := setupContentBlob(t, []string{"bar", "fuzz", "foo"})
+	defer contentBlob.Close()
+	defer os.Remove(contentBlob.Name())
 
-	tempDir := t.TempDir()
-	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	barSize := int64(len([]byte("bar")))
+	fuzzSize := int64(len([]byte("fuzz")))
+	fooSize := int64(len([]byte("foo")))
 
-	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
-	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
-	if err != nil {
-		t.Fatalf("Failed to open file: %v", err)
-	}
-	// Close the file after the test. The file should be closed via the virtualFile.Close method,
-	// however, this test explicitly closes the file since the virtualFile.Close method is tested in a
-	// separate test.
-	defer openedRootFile.Close()
-
-	_ = os.MkdirAll(path.Join(tempDir, "dir1"), 0700)
-	_ = os.WriteFile(path.Join(tempDir, "dir1/foo"), []byte("foo"), 0600)
-
-	unopenedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
+	barVirtualFile := &virtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
+		size:        barSize,
+		reader:      io.NewSectionReader(contentBlob, 0, barSize),
 	}
-	openedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/baz",
+	fuzzVirtualFile := &virtualFile{
+		virtualPath: "/fuzz",
 		isWhiteout:  false,
 		mode:        filePermission,
-		file:        openedRootFile,
+		size:        fuzzSize,
+		reader:      io.NewSectionReader(contentBlob, barSize, fuzzSize),
 	}
-	nonRootVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
+	nonRootFooVirtualFile := &virtualFile{
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
-	}
-	nonexistentVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/dir1/xyz",
-		isWhiteout:  false,
-		mode:        filePermission,
+		size:        fooSize,
+		reader:      io.NewSectionReader(contentBlob, barSize+fuzzSize, fooSize),
 	}
 	whiteoutVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
 		virtualPath: "/dir1/abc",
 		isWhiteout:  true,
 		mode:        filePermission,
 	}
+	dirVirtualFile := &virtualFile{
+		virtualPath: "/dir1",
+		isWhiteout:  false,
+		mode:        fs.ModeDir | dirPermission,
+	}
 	tests := []struct {
 		name    string
-		node    *virtualFile
+		vf      *virtualFile
 		offset  int64
 		want    string
 		wantErr error
 	}{
 		{
 			name: "unopened root file",
-			node: unopenedVirtualFile,
+			vf:   barVirtualFile,
 			want: "bar",
 			// All successful reads should return EOF
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file",
-			node:    openedVirtualFile,
-			want:    "baz",
+			vf:      fuzzVirtualFile,
+			want:    "fuzz",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset",
-			node:    unopenedVirtualFile,
+			vf:      barVirtualFile,
 			offset:  2,
 			want:    "r",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset at the end of file",
-			node:    unopenedVirtualFile,
+			vf:      barVirtualFile,
 			offset:  3,
 			want:    "",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "opened root file at offset beyond the end of file",
-			node:    unopenedVirtualFile,
+			vf:      barVirtualFile,
 			offset:  4,
 			want:    "",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "non-root file",
-			node:    nonRootVirtualFile,
+			vf:      nonRootFooVirtualFile,
 			want:    "foo",
 			wantErr: io.EOF,
 		},
 		{
 			name:    "non-root file at offset",
-			node:    nonRootVirtualFile,
+			vf:      nonRootFooVirtualFile,
 			offset:  1,
 			want:    "oo",
 			wantErr: io.EOF,
 		},
 		{
-			name:    "nonexistent file",
-			node:    nonexistentVirtualFile,
+			name:    "whiteout file",
+			vf:      whiteoutVirtualFile,
 			wantErr: os.ErrNotExist,
 		},
 		{
-			name:    "whiteout file",
-			node:    whiteoutVirtualFile,
-			wantErr: os.ErrNotExist,
+			name: "dir file",
+			vf:   dirVirtualFile,
+			want: "",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			gotBytes := make([]byte, bufferSize)
-			gotNumBytesRead, gotErr := tc.node.ReadAt(gotBytes, tc.offset)
+			gotNumBytesRead, gotErr := tc.vf.ReadAt(gotBytes, tc.offset)
 			// Close the file. The Close method is tested in a separate test.
-			defer tc.node.Close()
+			defer tc.vf.Close()
 
 			if diff := cmp.Diff(tc.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("ReadAt(%v) returned unexpected error (-want +got): %v", tc.node, diff)
+				t.Errorf("ReadAt(%v) returned unexpected error (-want +got): %v", tc.vf, diff)
 				return
 			}
 
 			gotContent := string(gotBytes[:gotNumBytesRead])
 			if gotContent != tc.want {
-				t.Errorf("ReadAt(%v) = %v, want: %v", tc.node, gotContent, tc.want)
+				t.Errorf("ReadAt(%v) = %v, want: %v", tc.vf, gotContent, tc.want)
 			}
 		})
 	}
@@ -402,8 +362,18 @@ func TestReadAt(t *testing.T) {
 
 // Test for the Seek method
 func TestSeek(t *testing.T) {
-	tempDir := t.TempDir()
-	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	contentBlob := setupContentBlob(t, []string{"foo"})
+	defer contentBlob.Close()
+	defer os.Remove(contentBlob.Name())
+
+	fooSize := int64(len([]byte("foo")))
+	virtualFile := &virtualFile{
+		virtualPath: "/foo",
+		isWhiteout:  false,
+		mode:        filePermission,
+		size:        fooSize,
+		reader:      io.NewSectionReader(contentBlob, 0, fooSize),
+	}
 
 	// Test seeking to different positions
 	tests := []struct {
@@ -452,14 +422,6 @@ func TestSeek(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a virtualFile for the opened file
-			virtualFile := &virtualFile{
-				extractDir:  tempDir,
-				layerDir:    "",
-				virtualPath: "/bar",
-				isWhiteout:  false,
-				mode:        filePermission,
-			}
 			gotPos, err := virtualFile.Seek(tc.offset, tc.whence)
 			_ = virtualFile.Close()
 			if err != nil {
@@ -473,43 +435,35 @@ func TestSeek(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	tempDir := t.TempDir()
-	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
+	contentBlob := setupContentBlob(t, []string{"foo"})
+	defer contentBlob.Close()
+	defer os.Remove(contentBlob.Name())
 
-	unopenedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/bar",
+	fooSize := int64(len([]byte("foo")))
+
+	vf := &virtualFile{
+		virtualPath: "/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
-	}
-	nonexistentVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/dir1/xyz",
-		isWhiteout:  false,
-		mode:        filePermission,
+		size:        int64(len([]byte("foo"))),
+		reader:      io.NewSectionReader(contentBlob, 0, fooSize),
 	}
 
 	tests := []struct {
 		name string
-		node *virtualFile
+		vf   *virtualFile
 	}{
 		{
-			name: "unopened root file",
-			node: unopenedVirtualFile,
-		},
-		{
-			name: "nonexistent file",
-			node: nonexistentVirtualFile,
+			name: "close root file",
+			vf:   vf,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotErr := tc.node.Close()
+			gotErr := tc.vf.Close()
 
 			if gotErr != nil {
-				t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+				t.Fatalf("Read(%v) returned error: %v", tc.vf, gotErr)
 			}
 		})
 	}
@@ -519,107 +473,67 @@ func TestReadingAfterClose(t *testing.T) {
 	const bufferSize = 20
 	const readAndCloseEvents = 2
 
-	tempDir := t.TempDir()
-	_ = os.WriteFile(path.Join(tempDir, "bar"), []byte("bar"), 0600)
-	_ = os.WriteFile(path.Join(tempDir, "baz"), []byte("baz"), 0600)
-	openedRootFile, err := os.OpenFile(path.Join(tempDir, "baz"), os.O_RDONLY, filePermission)
-	if err != nil {
-		t.Fatalf("Failed to open file: %v", err)
-	}
+	contentBlob := setupContentBlob(t, []string{"foo", "bar"})
+	defer contentBlob.Close()
+	defer os.Remove(contentBlob.Name())
 
-	unopenedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
+	fooSize := int64(len([]byte("foo")))
+	barSize := int64(len([]byte("bar")))
+
+	fooVirtualFile := &virtualFile{
+		virtualPath: "/foo",
+		isWhiteout:  false,
+		mode:        filePermission,
+		size:        fooSize,
+		reader:      io.NewSectionReader(contentBlob, 0, fooSize),
+	}
+	barVirtualFile := &virtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
-	}
-	openedVirtualFile := &virtualFile{
-		extractDir:  tempDir,
-		layerDir:    "",
-		virtualPath: "/baz",
-		isWhiteout:  false,
-		mode:        filePermission,
-		file:        openedRootFile,
+		size:        barSize,
+		reader:      io.NewSectionReader(contentBlob, fooSize, barSize),
 	}
 
 	tests := []struct {
 		name    string
-		node    *virtualFile
+		vf      *virtualFile
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "unopened root file",
-			node: unopenedVirtualFile,
-			want: "bar",
+			vf:   fooVirtualFile,
+			want: "foo",
 		},
 		{
 			name: "opened root file",
-			node: openedVirtualFile,
-			want: "baz",
+			vf:   barVirtualFile,
+			want: "bar",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			for range readAndCloseEvents {
 				gotBytes := make([]byte, bufferSize)
-				gotNumBytesRead, gotErr := tc.node.Read(gotBytes)
+				gotNumBytesRead, gotErr := tc.vf.Read(gotBytes)
 
 				if gotErr != nil {
 					if tc.wantErr {
 						return
 					}
-					t.Fatalf("Read(%v) returned error: %v", tc.node, gotErr)
+					t.Fatalf("Read(%v) returned error: %v", tc.vf, gotErr)
 				}
 
 				gotContent := string(gotBytes[:gotNumBytesRead])
 				if gotContent != tc.want {
-					t.Errorf("Read(%v) = %v, want: %v", tc.node, gotContent, tc.want)
+					t.Errorf("Read(%v) = %v, want: %v", tc.vf, gotContent, tc.want)
 				}
 
-				err = tc.node.Close()
+				err := tc.vf.Close()
 				if err != nil {
-					t.Fatalf("Close(%v) returned error: %v", tc.node, err)
+					t.Fatalf("Close(%v) returned error: %v", tc.vf, err)
 				}
-			}
-		})
-	}
-}
-
-func TestRealFilePath(t *testing.T) {
-	tests := []struct {
-		name string
-		node *virtualFile
-		want string
-	}{
-		{
-			name: "root directory",
-			node: rootDirectory,
-			want: filepath.FromSlash("/tmp/extract/layer1"),
-		},
-		{
-			name: "root file",
-			node: rootFile,
-			want: filepath.FromSlash("/tmp/extract/layer1/bar"),
-		},
-		{
-			name: "non-root file",
-			node: nonRootFile,
-			want: filepath.FromSlash("/tmp/extract/layer1/dir1/foo"),
-		},
-		{
-			name: "non-root directory",
-			node: nonRootDirectory,
-			want: filepath.FromSlash("/tmp/extract/layer1/dir1/dir2"),
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.node.RealFilePath()
-			if got != tc.want {
-				t.Errorf("RealFilePath(%v) = %v, want: %v", tc.node, got, tc.want)
 			}
 		})
 	}
@@ -736,4 +650,20 @@ func TestType(t *testing.T) {
 			}
 		})
 	}
+}
+
+// setupContentBlob creates a new file with a temporary content blob containing the given files.
+func setupContentBlob(t *testing.T, files []string) *os.File {
+	t.Helper()
+
+	contentBlob, err := os.CreateTemp(t.TempDir(), "content-blob-*")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
+	}
+	for _, content := range files {
+		if _, err := contentBlob.ReadFrom(strings.NewReader(content)); err != nil {
+			t.Fatalf("Failed to write to temporary file: %v", err)
+		}
+	}
+	return contentBlob
 }
