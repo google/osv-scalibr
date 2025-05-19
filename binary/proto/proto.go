@@ -42,7 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
@@ -278,7 +278,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				License:      m.License,
 			},
 		}
-	case *dpkg.Metadata:
+	case *dpkgmeta.Metadata:
 		p.Metadata = &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       m.PackageName,

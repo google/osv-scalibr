@@ -20,6 +20,7 @@ import (
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
+	ospurl "github.com/google/osv-scalibr/extractor/filesystem/os/purl"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	cdxpurl "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/purl"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
@@ -66,6 +67,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
+	case purl.TypeDebian, purl.TypeOpkg:
+		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	}

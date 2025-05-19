@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
@@ -168,9 +169,10 @@ func TestScanResultToProto(t *testing.T) {
 	failure := &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"}
 	failureProto := &spb.ScanStatus{Status: spb.ScanStatus_FAILED, FailureReason: "failure"}
 	purlDPKGPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Metadata: &dpkg.Metadata{
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
 			PackageName:       "software",
 			PackageVersion:    "1.0.0",
 			OSID:              "debian",
@@ -182,9 +184,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: dpkg.New(dpkg.DefaultConfig()),
 	}
 	purlDPKGAnnotationPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Metadata: &dpkg.Metadata{
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
 			PackageName:       "software",
 			PackageVersion:    "1.0.0",
 			OSID:              "debian",

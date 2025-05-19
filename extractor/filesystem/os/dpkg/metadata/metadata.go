@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dpkg
+// Package metadata defined a Metadata struct for DPKG packages.
+package metadata
+
+import (
+	"github.com/google/osv-scalibr/log"
+)
 
 // Metadata holds parsing information for a dpkg package.
 type Metadata struct {
@@ -26,4 +31,29 @@ type Metadata struct {
 	OSVersionID       string
 	Maintainer        string
 	Architecture      string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to 'linux'")
+	// TODO(b/298152210): Implement metric
+	return "linux"
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	// e.g. jammy
+	if m.OSVersionCodename != "" {
+		return m.OSVersionCodename
+	}
+	// fallback: e.g. 22.04
+	if m.OSVersionID != "" {
+		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+	return ""
 }
