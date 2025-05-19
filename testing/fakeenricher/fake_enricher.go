@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gohugoio/hashstructure"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/mitchellh/hashstructure/v2"
 )
 
 // Enricher is a fake enricher implementation to be used in tests.
@@ -143,7 +143,7 @@ func Hash(input *enricher.ScanInput, inventory *inventory.Inventory) (uint64, er
 		Input:     input,
 		Inventory: inventory,
 	}
-	return hashstructure.Hash(ii, nil)
+	return hashstructure.Hash(ii, hashstructure.FormatV2, nil)
 }
 
 // MustHash returns a hash of the input and inventory. This is used to match the input and inventory
