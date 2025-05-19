@@ -29,6 +29,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/annotator"
+	al "github.com/google/osv-scalibr/annotator/list"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
@@ -124,6 +126,7 @@ type Flags struct {
 	Output                     Array
 	ExtractorsToRun            []string
 	DetectorsToRun             []string
+	AnnotatorsToRun            []string
 	PathsToExtract             []string
 	IgnoreSubDirs              bool
 	DirsToSkip                 []string
@@ -188,6 +191,9 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if err := validateMultiStringArg(flags.DetectorsToRun); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
+	}
+	if err := validateMultiStringArg(flags.AnnotatorsToRun); err != nil {
+		return fmt.Errorf("--annotators: %w", err)
 	}
 	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
@@ -311,9 +317,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	annotators, err := f.annotatorsToRun()
+	if err != nil {
+		return nil, err
+	}
 	capab := f.capabilities()
 	if f.FilterByCapabilities {
-		extractors, standaloneExtractors, detectors = filterByCapabilities(extractors, standaloneExtractors, detectors, capab)
+		extractors, standaloneExtractors, detectors, annotators = filterByCapabilities(extractors, standaloneExtractors, detectors, annotators, capab)
 	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
@@ -340,6 +350,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
+		Annotators:           annotators,
 		Capabilities:         capab,
 		PathsToExtract:       f.PathsToExtract,
 		IgnoreSubDirs:        f.IgnoreSubDirs,
@@ -479,6 +490,17 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 	return dets, nil
 }
 
+func (f *Flags) annotatorsToRun() ([]annotator.Annotator, error) {
+	if len(f.AnnotatorsToRun) == 0 {
+		return []annotator.Annotator{}, nil
+	}
+	annotators, err := al.AnnotatorsFromNames(multiStringToList(f.AnnotatorsToRun))
+	if err != nil {
+		return []annotator.Annotator{}, err
+	}
+	return annotators, nil
+}
+
 func multiStringToList(arg []string) []string {
 	var result []string
 	for _, item := range arg {
@@ -564,11 +586,12 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 // by removing all plugins that don't satisfy the specified capabilities.
 func filterByCapabilities(
 	f []filesystem.Extractor, s []standalone.Extractor,
-	d []detector.Detector, capab *plugin.Capabilities) (
-	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector) {
+	d []detector.Detector, a []annotator.Annotator, capab *plugin.Capabilities) (
+	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []annotator.Annotator) {
 	ff := make([]filesystem.Extractor, 0, len(f))
 	sf := make([]standalone.Extractor, 0, len(s))
 	df := make([]detector.Detector, 0, len(d))
+	af := make([]annotator.Annotator, 0, len(d))
 	for _, ex := range f {
 		if err := plugin.ValidateRequirements(ex, capab); err == nil {
 			ff = append(ff, ex)
@@ -584,7 +607,12 @@ func filterByCapabilities(
 			df = append(df, det)
 		}
 	}
-	return ff, sf, df
+	for _, an := range a {
+		if err := plugin.ValidateRequirements(an, capab); err == nil {
+			af = append(af, an)
+		}
+	}
+	return ff, sf, df, af
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {

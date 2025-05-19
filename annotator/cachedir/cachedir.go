@@ -12,11 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package annotator
+// Package cachedir implements an annotator for packages that are in cache directories.
+package cachedir
 
 import (
+	"context"
 	"path/filepath"
 	"regexp"
+
+	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin"
+)
+
+const (
+	// Name of the Annotator.
+	Name = "vex/cachedir"
 )
 
 // patterns to match cache directories
@@ -38,12 +50,41 @@ var cacheDirPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(C:/)?Windows/Temp/`),
 }
 
-// IsInsideCacheDir checks if the given path is inside a cache directory.
-func IsInsideCacheDir(path string) bool {
+// Annotator adds annotations to packages that are in cache directories.
+type Annotator struct{}
+
+// New returns a new Annotator.
+func New() annotator.Annotator { return &Annotator{} }
+
+// Name of the annotator.
+func (Annotator) Name() string { return Name }
+
+// Version of the annotator.
+func (Annotator) Version() int { return 0 }
+
+// Requirements of the annotator.
+func (Annotator) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
+// Annotate adds annotations to packages that are in cache directories.
+func (Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+	for _, pkg := range results.Packages {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		for _, loc := range pkg.Locations {
+			if isInsideCacheDir(loc) {
+				pkg.Annotations = append(pkg.Annotations, extractor.InsideCacheDir)
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func isInsideCacheDir(path string) bool {
 	path = filepath.ToSlash(path)
 
 	// Check if the absolute path matches any of the known cache directory patterns
-
 	for _, r := range cacheDirPatterns {
 		if r.MatchString(path) {
 			return true

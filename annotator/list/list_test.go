@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package annotator add Annotation to inventories
-// TODO(b/400910349): Migrate into a separate plugin type
-package annotator
+package list_test
 
 import (
-	"github.com/google/osv-scalibr/extractor"
+	"regexp"
+	"testing"
+
+	al "github.com/google/osv-scalibr/annotator/list"
 )
 
-// Annotate adds annotations to the packages
-func Annotate(pkgs []*extractor.Package) {
-	for _, pkg := range pkgs {
-		for _, loc := range pkg.Locations {
-			if IsInsideCacheDir(loc) {
-				pkg.Annotations = append(pkg.Annotations, extractor.InsideCacheDir)
+var (
+	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+)
+
+func TestPluginNamesValid(t *testing.T) {
+	for _, initers := range al.All {
+		for _, initer := range initers {
+			name := initer().Name()
+			if !reValidName.MatchString(name) {
+				t.Errorf("Invalid plugin name %q", name)
 			}
 		}
 	}

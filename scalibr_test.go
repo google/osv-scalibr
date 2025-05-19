@@ -25,6 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
@@ -556,6 +558,7 @@ func TestAnnotator(t *testing.T) {
 
 	cfg := &scalibr.ScanConfig{
 		FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+		Annotators:           []annotator.Annotator{cachedir.New()},
 		ScanRoots:            tmpRoot,
 	}
 
@@ -568,7 +571,6 @@ func TestAnnotator(t *testing.T) {
 
 	got := scalibr.New().Scan(context.Background(), cfg)
 
-	// We can't mock the time from here so we skip it in the comparison.
 	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
 		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)
 	}
