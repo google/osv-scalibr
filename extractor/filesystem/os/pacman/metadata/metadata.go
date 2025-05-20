@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pacman
+// Package metadata defines a metadata struct for arch packages.
+package metadata
+
+import "github.com/google/osv-scalibr/log"
 
 // Metadata holds parsing information for an arch package.
 type Metadata struct {
@@ -21,4 +24,23 @@ type Metadata struct {
 	OSID                string
 	OSVersionID         string
 	PackageDependencies string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-id not set, fallback to 'linux'")
+	return "linux"
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	// fallback: e.g. 22.04
+	if m.OSVersionID != "" {
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_ID not set in os-release")
+	return ""
 }

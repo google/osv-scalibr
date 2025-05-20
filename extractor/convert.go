@@ -67,7 +67,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
-	case purl.TypeDebian, purl.TypeOpkg:
+	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix, purl.TypeKernelModule:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)

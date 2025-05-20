@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -194,9 +195,10 @@ func TestExtract(t *testing.T) {
 			osrelease: ArchRolling,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -214,9 +216,10 @@ func TestExtract(t *testing.T) {
 			osrelease: ArchRolling,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "filesystem",
-					Version: "2024.11.21-1",
-					Metadata: &pacman.Metadata{
+					Name:     "filesystem",
+					Version:  "2024.11.21-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "filesystem",
 						PackageVersion:      "2024.11.21-1",
 						OSID:                "arch",
@@ -234,9 +237,10 @@ func TestExtract(t *testing.T) {
 			osrelease: ArchRolling,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "libxml2",
-					Version: "2.13.5-1",
-					Metadata: &pacman.Metadata{
+					Name:     "libxml2",
+					Version:  "2.13.5-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:    "libxml2",
 						PackageVersion: "2.13.5-1",
 						OSID:           "arch",
@@ -253,9 +257,10 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=arch`,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -271,9 +276,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						PackageDependencies: "sh, glibc, mpfr",
@@ -295,9 +301,10 @@ func TestExtract(t *testing.T) {
 			osrelease: ArchRolling,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -360,12 +367,12 @@ func TestToPURL(t *testing.T) {
 	e := pacman.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *pacman.Metadata
+		metadata *pacmanmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &pacman.Metadata{
+			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
 				OSID:                "arch",
@@ -385,7 +392,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &pacman.Metadata{
+			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
 				OSID:                "arch",
@@ -405,7 +412,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS ID not set, fallback to Linux",
-			metadata: &pacman.Metadata{
+			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
 				OSVersionID:         "20241201.0.284684",
@@ -428,6 +435,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypePacman,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -443,24 +451,24 @@ func TestEcosystem(t *testing.T) {
 	e := pacman.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *pacman.Metadata
+		metadata *pacmanmeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS ID present",
-			metadata: &pacman.Metadata{
+			metadata: &pacmanmeta.Metadata{
 				OSID: "arch",
 			},
 			want: "Arch",
 		},
 		{
 			name:     "OS ID not present",
-			metadata: &pacman.Metadata{},
+			metadata: &pacmanmeta.Metadata{},
 			want:     "Linux",
 		},
 		{
 			name: "OS version present",
-			metadata: &pacman.Metadata{
+			metadata: &pacmanmeta.Metadata{
 				OSID:        "arch",
 				OSVersionID: "20241201.0.284684",
 			},
@@ -470,6 +478,7 @@ func TestEcosystem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &extractor.Package{
+				PURLType: purl.TypePacman,
 				Metadata: tt.metadata,
 			}
 			got := e.Ecosystem(p)

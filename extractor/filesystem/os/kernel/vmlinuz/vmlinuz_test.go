@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -209,9 +210,10 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "Linux Kernel",
-					Version: "6.8.0-49-generic",
-					Metadata: &vmlinuz.Metadata{
+					Name:     "Linux Kernel",
+					Version:  "6.8.0-49-generic",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &vmlinuzmeta.Metadata{
 						Name:              "Linux Kernel",
 						Version:           "6.8.0-49-generic",
 						Architecture:      "x86",
@@ -291,12 +293,12 @@ func TestToPURL(t *testing.T) {
 	e := vmlinuz.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *vmlinuz.Metadata
+		metadata *vmlinuzmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &vmlinuz.Metadata{
+			metadata: &vmlinuzmeta.Metadata{
 				Name:              name,
 				Version:           version,
 				Architecture:      architecture,
@@ -322,7 +324,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &vmlinuz.Metadata{
+			metadata: &vmlinuzmeta.Metadata{
 				Name:            name,
 				Version:         version,
 				Architecture:    architecture,
@@ -347,7 +349,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS ID not set, fallback to linux",
-			metadata: &vmlinuz.Metadata{
+			metadata: &vmlinuzmeta.Metadata{
 				Name:            name,
 				Version:         version,
 				Architecture:    architecture,
@@ -375,6 +377,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      name,
 				Version:   version,
+				PURLType:  purl.TypeKernelModule,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -390,24 +393,24 @@ func TestEcosystem(t *testing.T) {
 	e := vmlinuz.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *vmlinuz.Metadata
+		metadata *vmlinuzmeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS ID present",
-			metadata: &vmlinuz.Metadata{
+			metadata: &vmlinuzmeta.Metadata{
 				OSID: "ubuntu",
 			},
 			want: "Ubuntu",
 		},
 		{
 			name:     "OS ID not present",
-			metadata: &vmlinuz.Metadata{},
+			metadata: &vmlinuzmeta.Metadata{},
 			want:     "Linux",
 		},
 		{
 			name: "OS version present",
-			metadata: &vmlinuz.Metadata{
+			metadata: &vmlinuzmeta.Metadata{
 				OSID:        "ubuntu",
 				OSVersionID: "22.04",
 			},
@@ -417,6 +420,7 @@ func TestEcosystem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &extractor.Package{
+				PURLType: purl.TypeKernelModule,
 				Metadata: tt.metadata,
 			}
 			got := e.Ecosystem(p)

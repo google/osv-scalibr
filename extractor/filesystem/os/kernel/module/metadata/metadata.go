@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package module
+// Package metadata defines a metadata struct for kernel modules.
+package metadata
 
-// Metadata holds parsing information for an module package.
+import "github.com/google/osv-scalibr/log"
+
+// Metadata holds parsing information for a kernel module.
 type Metadata struct {
 	PackageName                    string
 	PackageVersion                 string
@@ -24,4 +27,23 @@ type Metadata struct {
 	OSVersionCodename              string
 	OSVersionID                    string
 	PackageAuthor                  string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to 'linux'")
+	return "linux"
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	// fallback: e.g. 22.04
+	if m.OSVersionID != "" {
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_ID not set in os-release")
+	return ""
 }

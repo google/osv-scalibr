@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -185,7 +186,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		return nil, fmt.Errorf("failed to read .modinfo section: %w", err)
 	}
 
-	var metadata Metadata
+	var metadata modulemeta.Metadata
 
 	// Sections are delimited by null bytes (\x00)
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
@@ -222,6 +223,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	p := &extractor.Package{
 		Name:      metadata.PackageName,
 		Version:   metadata.PackageVersion,
+		PURLType:  purl.TypeKernelModule,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
@@ -233,45 +235,16 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
+	m := p.Metadata.(*modulemeta.Metadata)
+	osID := cases.Title(language.English).String(m.ToNamespace())
 	if m.OSVersionID == "" {
 		return osID
 	}
 	return osID + ":" + m.OSVersionID
 }
 
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	return "linux"
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeKernelModule,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func toDistro(m *Metadata) string {
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
+	return p.PURL()
 }

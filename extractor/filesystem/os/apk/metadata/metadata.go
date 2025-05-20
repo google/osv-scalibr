@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apk
+// Package metadata defines a Metadata struct for apk packages.
+package metadata
+
+import "github.com/google/osv-scalibr/log"
 
 // Metadata holds parsing information for an apk package.
 type Metadata struct {
@@ -23,4 +26,23 @@ type Metadata struct {
 	Maintainer   string
 	Architecture string
 	License      string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to 'alpine'")
+	return "alpine"
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	// e.g. 3.18.0
+	if m.OSVersionID != "" {
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_ID not set in os-release")
+	return ""
 }

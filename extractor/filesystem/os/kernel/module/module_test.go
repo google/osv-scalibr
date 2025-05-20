@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -184,9 +185,10 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -207,8 +209,9 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name: "intel_mrfld_pwrbtn",
-					Metadata: &module.Metadata{
+					Name:     "intel_mrfld_pwrbtn",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_mrfld_pwrbtn",
 						PackageVermagic:                "6.8.0-49-generic SMP preempt mod_unload modversions",
 						PackageSourceVersionIdentifier: "F64DA2CCFC87C17684B7B8B",
@@ -235,9 +238,10 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=ubuntu`,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -255,9 +259,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -326,12 +331,12 @@ func TestToPURL(t *testing.T) {
 	e := module.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *module.Metadata
+		metadata *modulemeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &module.Metadata{
+			metadata: &modulemeta.Metadata{
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
@@ -353,7 +358,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &module.Metadata{
+			metadata: &modulemeta.Metadata{
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
@@ -374,7 +379,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS ID not set, fallback to linux",
-			metadata: &module.Metadata{
+			metadata: &modulemeta.Metadata{
 				PackageName:                    pkgName,
 				PackageVersion:                 pkgVersion,
 				PackageVermagic:                pkgVermagic,
@@ -398,6 +403,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypeKernelModule,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -413,24 +419,24 @@ func TestEcosystem(t *testing.T) {
 	e := module.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *module.Metadata
+		metadata *modulemeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS ID present",
-			metadata: &module.Metadata{
+			metadata: &modulemeta.Metadata{
 				OSID: "ubuntu",
 			},
 			want: "Ubuntu",
 		},
 		{
 			name:     "OS ID not present",
-			metadata: &module.Metadata{},
+			metadata: &modulemeta.Metadata{},
 			want:     "Linux",
 		},
 		{
 			name: "OS version present",
-			metadata: &module.Metadata{
+			metadata: &modulemeta.Metadata{
 				OSID:        "ubuntu",
 				OSVersionID: "22.04",
 			},
@@ -440,6 +446,7 @@ func TestEcosystem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &extractor.Package{
+				PURLType: purl.TypeKernelModule,
 				Metadata: tt.metadata,
 			}
 			got := e.Ecosystem(p)

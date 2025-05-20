@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -160,8 +161,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/single.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
 						Category:      "dev-lang",
@@ -181,8 +183,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/multiple.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
 						Category:      "dev-lang",
@@ -194,8 +197,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "zlib",
 					Version:   "17162.336.17",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/multiple.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "zlib",
 						Version:       "17162.336.17",
 						Category:      "sys-libs",
@@ -207,8 +211,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "baselayout",
 					Version:   "17162.336.18",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/multiple.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "baselayout",
 						Version:       "17162.336.18",
 						Category:      "sys-apps",
@@ -220,8 +225,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "ncurses",
 					Version:   "17162.336.19",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/multiple.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "ncurses",
 						Version:       "17162.336.19",
 						Category:      "sys-libs",
@@ -241,8 +247,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/single.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
 						Category:      "dev-lang",
@@ -260,8 +267,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "python-exec",
 					Version:   "17162.336.16",
+					PURLType:  purl.TypeCOS,
 					Locations: []string{"testdata/single.json"},
-					Metadata: &cos.Metadata{
+					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
 						Category:      "dev-lang",
@@ -336,12 +344,12 @@ func TestToPURL(t *testing.T) {
 	e := cos.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *cos.Metadata
+		metadata *cosmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "both versions present",
-			metadata: &cos.Metadata{
+			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 				OSVersion:   "97",
 			},
@@ -354,7 +362,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION set",
-			metadata: &cos.Metadata{
+			metadata: &cosmeta.Metadata{
 				OSVersion: "97",
 			},
 			want: &purl.PackageURL{
@@ -366,7 +374,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &cos.Metadata{
+			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 			},
 			want: &purl.PackageURL{
@@ -378,7 +386,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name:     "no versions set",
-			metadata: &cos.Metadata{},
+			metadata: &cosmeta.Metadata{},
 			want: &purl.PackageURL{
 				Type:       purl.TypeCOS,
 				Name:       "name",
@@ -392,6 +400,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      "name",
 				Version:   "1.2.3",
+				PURLType:  purl.TypeCOS,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}

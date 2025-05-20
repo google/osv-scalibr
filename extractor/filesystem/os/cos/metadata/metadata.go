@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cos
+// Package metadata defines a metadata struct for COS packages.
+package metadata
+
+import "github.com/google/osv-scalibr/log"
 
 // Metadata holds parsing information for a COS package.
 type Metadata struct {
@@ -22,4 +25,18 @@ type Metadata struct {
 	OSVersion     string
 	OSVersionID   string
 	EbuildVersion string
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	if m.OSVersionID != "" {
+		return "cos-" + m.OSVersionID
+	}
+
+	if m.OSVersion != "" {
+		log.Warnf("VERSION_ID not set in os-release, fallback to VERSION")
+		return "cos-" + m.OSVersion
+	}
+	log.Errorf("VERSION and VERSION_ID not set in os-release")
+	return ""
 }

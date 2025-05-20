@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -182,9 +183,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	}
 
 	p := &extractor.Package{
-		Name:    pkgName,
-		Version: pkgVersion,
-		Metadata: &Metadata{
+		Name:     pkgName,
+		Version:  pkgVersion,
+		PURLType: purl.TypePortage,
+		Metadata: &portagemeta.Metadata{
 			PackageName:    pkgName,
 			PackageVersion: pkgVersion,
 			OSID:           osRelease["ID"],
@@ -217,43 +219,16 @@ func splitPackageAndVersion(path string) (string, string) {
 	return packageName, packageVersion
 }
 
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	return "linux"
-}
-
-func toDistro(m *Metadata) string {
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypePortage,
-		Name:       m.PackageName,
-		Version:    m.PackageVersion,
-		Namespace:  toNamespace(m),
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
+	m := p.Metadata.(*portagemeta.Metadata)
+	osID := cases.Title(language.English).String(m.ToNamespace())
 	if m.OSVersionID == "" {
 		return osID
 	}

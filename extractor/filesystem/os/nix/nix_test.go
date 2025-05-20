@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -125,9 +126,10 @@ func TestExtract(t *testing.T) {
 			osrelease: NixVicuna,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "perl5.38.2-FCGI-ProcManager",
-					Version: "0.28",
-					Metadata: &nix.Metadata{
+					Name:     "perl5.38.2-FCGI-ProcManager",
+					Version:  "0.28",
+					PURLType: purl.TypeNix,
+					Metadata: &nixmeta.Metadata{
 						PackageName:       "perl5.38.2-FCGI-ProcManager",
 						PackageVersion:    "0.28",
 						PackageHash:       "xakcaxsqdzjszym0vji2r8n0wdy2inqc",
@@ -147,9 +149,10 @@ func TestExtract(t *testing.T) {
 			osrelease: NixVicuna,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "webdav-server-rs",
-					Version: "unstable-2021-08-16",
-					Metadata: &nix.Metadata{
+					Name:     "webdav-server-rs",
+					Version:  "unstable-2021-08-16",
+					PURLType: purl.TypeNix,
+					Metadata: &nixmeta.Metadata{
 						PackageName:       "webdav-server-rs",
 						PackageVersion:    "unstable-2021-08-16",
 						PackageHash:       "q5dhwzcn82by5ndc7g0q83wsnn13qkqw",
@@ -233,12 +236,12 @@ func TestToPURL(t *testing.T) {
 	e := nix.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *nix.Metadata
+		metadata *nixmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &nix.Metadata{
+			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
 				PackageHash:       pkgHash,
@@ -258,7 +261,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &nix.Metadata{
+			metadata: &nixmeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				PackageHash:    pkgHash,
@@ -277,7 +280,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS ID not set, fallback to Nixos",
-			metadata: &nix.Metadata{
+			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
 				PackageHash:       pkgHash,
@@ -300,6 +303,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypeNix,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}

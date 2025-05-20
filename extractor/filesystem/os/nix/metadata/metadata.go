@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nix
+// Package metadata defines a metadata struct for nix packages.
+package metadata
+
+import "github.com/google/osv-scalibr/log"
 
 // Metadata holds parsing information for a nix package.
 type Metadata struct {
@@ -23,4 +26,19 @@ type Metadata struct {
 	OSID              string
 	OSVersionCodename string
 	OSVersionID       string
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	if m.OSVersionCodename != "" {
+		return m.OSVersionCodename
+	}
+
+	if m.OSVersionID != "" {
+		return m.OSVersionID
+	}
+
+	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+
+	return ""
 }

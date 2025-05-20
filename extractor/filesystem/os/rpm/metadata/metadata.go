@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rpm
+// Package metadata defines a metadata struct for rpm packages.
+package metadata
+
+import (
+	"fmt"
+
+	"github.com/google/osv-scalibr/log"
+)
 
 // Metadata holds parsing information for an rpm package.
 type Metadata struct {
@@ -26,4 +33,33 @@ type Metadata struct {
 	Vendor       string
 	Architecture string
 	License      string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to ''")
+	return ""
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	v := m.OSVersionID
+	if v == "" {
+		v = m.OSBuildID
+		if v == "" {
+			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
+			return ""
+		}
+		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
+	}
+
+	id := m.OSID
+	if id == "" {
+		log.Errorf("os-release[ID] not set, fallback to ''")
+		return v
+	}
+	return fmt.Sprintf("%s-%s", id, v)
 }

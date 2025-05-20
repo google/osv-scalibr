@@ -16,23 +16,52 @@
 package purl
 
 import (
+	"strconv"
+	"strings"
+
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
 // MakePackageURL returns a package URL that follows the specific OS's spec
 // and includes OS version info.
-func MakePackageURL(_name string, version string, purlType string, metadata any) *purl.PackageURL {
+func MakePackageURL(name string, version string, purlType string, metadata any) *purl.PackageURL {
 	q := map[string]string{}
-	var name string
 	var namespace string
 	switch m := metadata.(type) {
-	case *dpkgmeta.Metadata:
-		name = m.PackageName
+	case *apkmeta.Metadata:
 		namespace = m.ToNamespace()
+		name = strings.ToLower(name)
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+		if m.OriginName != "" {
+			q[purl.Origin] = m.OriginName
+		}
+		if m.Architecture != "" {
+			q[purl.Arch] = m.Architecture
+		}
 
-		distro := m.ToDistro()
-		if distro != "" {
+	case *cosmeta.Metadata:
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *dpkgmeta.Metadata:
+		namespace = m.ToNamespace()
+		name = m.PackageName
+
+		if distro := m.ToDistro(); distro != "" {
 			q[purl.Distro] = distro
 		}
 		if m.SourceName != "" {
@@ -44,6 +73,69 @@ func MakePackageURL(_name string, version string, purlType string, metadata any)
 		if m.Architecture != "" {
 			q[purl.Arch] = m.Architecture
 		}
+
+	case *flatpakmeta.Metadata:
+		namespace = m.ToNamespace()
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *rpmmeta.Metadata:
+		namespace = m.ToNamespace()
+		if m.Epoch > 0 {
+			q[purl.Epoch] = strconv.Itoa(m.Epoch)
+		}
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+		if m.SourceRPM != "" {
+			q[purl.SourceRPM] = m.SourceRPM
+		}
+		if m.Architecture != "" {
+			q[purl.Arch] = m.Architecture
+		}
+
+	case *snapmeta.Metadata:
+		namespace = m.ToNamespace()
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *pacmanmeta.Metadata:
+		namespace = m.ToNamespace()
+		name = m.PackageName
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+		if m.PackageDependencies != "" {
+			q[purl.PackageDependencies] = m.PackageDependencies
+		}
+
+	case *portagemeta.Metadata:
+		namespace = m.ToNamespace()
+		name = m.PackageName
+		version = m.PackageVersion
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *nixmeta.Metadata:
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *vmlinuzmeta.Metadata:
+		namespace = m.ToNamespace()
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
+	case *modulemeta.Metadata:
+		namespace = m.ToNamespace()
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+
 	default:
 		return nil
 	}

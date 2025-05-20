@@ -42,9 +42,13 @@ import (
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -444,9 +448,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "sbom/cdx",
 	}
 	purlRPMPackage := &extractor.Package{
-		Name:    "openssh-clients",
-		Version: "5.3p1",
-		Metadata: &rpm.Metadata{
+		Name:     "openssh-clients",
+		Version:  "5.3p1",
+		PURLType: purl.TypeRPM,
+		Metadata: &rpmmeta.Metadata{
 			PackageName:  "openssh-clients",
 			SourceRPM:    "openssh-5.3p1-124.el6_10.src.rpm",
 			Epoch:        2,
@@ -496,9 +501,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/rpm",
 	}
 	purlPACMANPackage := &extractor.Package{
-		Name:    "zstd",
-		Version: "1.5.6-1",
-		Metadata: &pacman.Metadata{
+		Name:     "zstd",
+		Version:  "1.5.6-1",
+		PURLType: purl.TypePacman,
+		Metadata: &pacmanmeta.Metadata{
 			PackageName:    "zstd",
 			PackageVersion: "1.5.6-1",
 			OSID:           "arch",
@@ -533,9 +539,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/pacman",
 	}
 	purlPORTAGEPackage := &extractor.Package{
-		Name:    "Capture-Tiny",
-		Version: "0.480.0-r1",
-		Metadata: &portage.Metadata{
+		Name:     "Capture-Tiny",
+		Version:  "0.480.0-r1",
+		PURLType: purl.TypePortage,
+		Metadata: &portagemeta.Metadata{
 			PackageName:    "Capture-Tiny",
 			PackageVersion: "0.480.0-r1",
 			OSID:           "gentoo",
@@ -570,9 +577,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/portage",
 	}
 	purlNixPackage := &extractor.Package{
-		Name:    "attr",
-		Version: "2.5.2",
-		Metadata: &nix.Metadata{
+		Name:     "attr",
+		Version:  "2.5.2",
+		PURLType: purl.TypeNix,
+		Metadata: &nixmeta.Metadata{
 			PackageName:       "attr",
 			PackageVersion:    "2.5.2",
 			OSID:              "nixos",

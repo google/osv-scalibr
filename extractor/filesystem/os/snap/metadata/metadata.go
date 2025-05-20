@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snap
+// Package metadata defines a metadata struct for SNAP packages.
+package metadata
+
+import "github.com/google/osv-scalibr/log"
 
 // Metadata holds parsing information for a SNAP package.
 type Metadata struct {
@@ -24,4 +27,28 @@ type Metadata struct {
 	OSID              string
 	OSVersionCodename string
 	OSVersionID       string
+}
+
+// ToNamespace extracts the PURL namespace from the metadata.
+func (m *Metadata) ToNamespace() string {
+	if m.OSID != "" {
+		return m.OSID
+	}
+	log.Errorf("os-release[ID] not set, fallback to ''")
+	return ""
+}
+
+// ToDistro extracts the OS distro from the metadata.
+func (m *Metadata) ToDistro() string {
+	// e.g. jammy
+	if m.OSVersionCodename != "" {
+		return m.OSVersionCodename
+	}
+	// fallback: e.g. 22.04
+	if m.OSVersionID != "" {
+		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
+		return m.OSVersionID
+	}
+	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
+	return ""
 }

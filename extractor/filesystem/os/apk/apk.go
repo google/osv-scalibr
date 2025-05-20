@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -197,9 +198,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		var pkg = &extractor.Package{
-			Name:    record["P"],
-			Version: record["V"],
-			Metadata: &Metadata{
+			Name:     record["P"],
+			Version:  record["V"],
+			PURLType: purl.TypeApk,
+			Metadata: &apkmeta.Metadata{
 				OSID:         m["ID"],
 				OSVersionID:  m["VERSION_ID"],
 				PackageName:  record["P"],
@@ -223,49 +225,15 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	return packages, nil
 }
 
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'alpine'")
-	return "alpine"
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. 3.18.0
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.OriginName != "" {
-		q[purl.Origin] = m.OriginName
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeApk,
-		Name:       strings.ToLower(p.Name),
-		Namespace:  toNamespace(m),
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	version := toDistro(p.Metadata.(*Metadata))
+	version := p.Metadata.(*apkmeta.Metadata).ToDistro()
 	if version == "" {
 		return "Alpine"
 	}
