@@ -12,6 +12,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/CycloneDX/cyclonedx-go v0.9.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
+	github.com/canonical/chisel v1.1.1-0.20250423141040-e4a81ab3205c
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/containerd/api v1.8.0
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
@@ -25,6 +26,7 @@ require (
 	github.com/google/go-cpy v0.0.0-20211218193943-a9c933c06932
 	github.com/google/uuid v1.6.0
 	github.com/groob/plist v0.1.1
+	github.com/klauspost/compress v1.18.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/michaelkedar/xml v0.0.0-20250310223042-5d14c9302b17
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
@@ -88,7 +90,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect

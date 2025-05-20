@@ -118,6 +118,7 @@ message Package {
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     DockerContainersMetadata docker_containers_metadata = 48;
+    ChiselPackageMetadata chisel_metadata = 49;
   }
 
   repeated AnnotationEnum annotations = 28;
@@ -524,4 +525,14 @@ message DockerPort {
   uint32 private_port = 2;
   uint32 public_port = 3;
   string type = 4;
+}
+
+message ChiselPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string os_id = 3;
+  string os_version_codename = 4;
+  string os_version_id = 5;
+  string maintainer = 6;
+  string architecture = 7;
 }
