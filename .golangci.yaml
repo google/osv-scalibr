@@ -28,6 +28,7 @@ linters:
     - maintidx         #
     - mnd              # Not every number is magic
     - nestif           #
+    - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
     - nonamedreturns   #
