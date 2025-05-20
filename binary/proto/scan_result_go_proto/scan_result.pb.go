@@ -4137,7 +4137,7 @@ type PodmanMetadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ExposedPorts  map[uint32]*Protocol   `protobuf:"bytes,1,rep,name=exposed_ports,json=exposedPorts,proto3" json:"exposed_ports,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Pid           int32                  `protobuf:"varint,2,opt,name=pid,proto3" json:"pid,omitempty"`
-	Namespace     string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	NamespaceName string                 `protobuf:"bytes,3,opt,name=namespace_name,json=namespaceName,proto3" json:"namespace_name,omitempty"`
 	StartedTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=started_time,json=startedTime,proto3" json:"started_time,omitempty"`
 	FinishedTime  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=finished_time,json=finishedTime,proto3" json:"finished_time,omitempty"`
 	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
@@ -4191,9 +4191,9 @@ func (x *PodmanMetadata) GetPid() int32 {
 	return 0
 }
 
-func (x *PodmanMetadata) GetNamespace() string {
+func (x *PodmanMetadata) GetNamespaceName() string {
 	if x != nil {
-		return x.Namespace
+		return x.NamespaceName
 	}
 	return ""
 }
@@ -4772,11 +4772,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0ftarget_platform\x18\x04 \x01(\tR\x0etargetPlatform\x12\x18\n" +
 	"\aupdated\x18\x05 \x01(\bR\aupdated\x123\n" +
 	"\x16is_pre_release_version\x18\x06 \x01(\bR\x13isPreReleaseVersion\x12/\n" +
-	"\x13installed_timestamp\x18\a \x01(\x03R\x12installedTimestamp\"\xb1\x03\n" +
+	"\x13installed_timestamp\x18\a \x01(\x03R\x12installedTimestamp\"\xba\x03\n" +
 	"\x0ePodmanMetadata\x12N\n" +
 	"\rexposed_ports\x18\x01 \x03(\v2).scalibr.PodmanMetadata.ExposedPortsEntryR\fexposedPorts\x12\x10\n" +
-	"\x03pid\x18\x02 \x01(\x05R\x03pid\x12\x1c\n" +
-	"\tnamespace\x18\x03 \x01(\tR\tnamespace\x12=\n" +
+	"\x03pid\x18\x02 \x01(\x05R\x03pid\x12%\n" +
+	"\x0enamespace_name\x18\x03 \x01(\tR\rnamespaceName\x12=\n" +
 	"\fstarted_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vstartedTime\x12?\n" +
 	"\rfinished_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\ffinishedTime\x12\x16\n" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12\x1b\n" +

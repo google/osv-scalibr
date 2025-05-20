@@ -18,7 +18,7 @@ package podman_test
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -202,13 +202,13 @@ func TestExtractor_Extract(t *testing.T) {
 			// (needed for bolt files which are opened using ).
 			d := t.TempDir()
 			dst := filepath.Join(d, filepath.Base(tt.Path))
-			data, err := ioutil.ReadFile(tt.Path)
+			data, err := os.ReadFile(tt.Path)
 			if err != nil {
-				t.Fatalf("ioutil.ReadFile(%q): %v", tt.Path, err)
+				t.Fatalf("os.ReadFile(%q): %v", tt.Path, err)
 			}
-			err = ioutil.WriteFile(dst, data, 0644)
+			err = os.WriteFile(dst, data, 0644)
 			if err != nil {
-				t.Fatalf("ioutil.WriteFile(%q): %v", dst, err)
+				t.Fatalf("os.WriteFile(%q): %v", dst, err)
 			}
 
 			scanInput := &filesystem.ScanInput{
