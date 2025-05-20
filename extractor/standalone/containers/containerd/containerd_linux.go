@@ -126,7 +126,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// Extractor extracts containers from the containerd API.
+// Extract extracts containers from the containerd API.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	var result = []*extractor.Package{}
 	if e.checkIfSocketExists {
