@@ -31,6 +31,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -537,6 +538,23 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Updated:              m.Updated,
 				IsPreReleaseVersion:  m.IsPreReleaseVersion,
 				InstalledTimestamp:   m.InstalledTimestamp,
+			},
+		}
+	case *podman.Metadata:
+		exposedPorts := map[uint32]*spb.Protocol{}
+		for p, protocols := range m.ExposedPorts {
+			exposedPorts[uint32(p)] = &spb.Protocol{Names: protocols}
+		}
+		p.Metadata = &spb.Package_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts:  exposedPorts,
+				Pid:           int32(m.PID),
+				NamespaceName: m.NameSpace,
+				StartedTime:   timestamppb.New(m.StartedTime),
+				FinishedTime:  timestamppb.New(m.FinishedTime),
+				Status:        m.Status,
+				ExitCode:      m.ExitCode,
+				Exited:        m.Exited,
 			},
 		}
 	case *docker.Metadata:

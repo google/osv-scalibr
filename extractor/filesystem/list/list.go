@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -187,8 +188,11 @@ var (
 		podfilelock.Name:     {podfilelock.NewDefault},
 	}
 
-	// Container extractors.
-	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
+	// Containers extractors.
+	Containers = InitMap{
+		containerd.Name: {containerd.NewDefault},
+		podman.Name:     {podman.NewDefault},
+	}
 
 	// OS extractors.
 	OS = InitMap{

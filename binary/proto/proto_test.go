@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
@@ -801,6 +802,39 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 
+	podmanPackage := &extractor.Package{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &podman.Metadata{
+			ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+			PID:          4232,
+			Status:       "running",
+			NameSpace:    "",
+			StartedTime:  endTime.Add(-10 * time.Minute),
+			FinishedTime: endTime.Add(-5 * time.Minute),
+			ExitCode:     0,
+			Exited:       false,
+		},
+		Extractor: &podman.Extractor{},
+	}
+	podmanPackageProto := &spb.Package{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &spb.Package_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts:  map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
+				Pid:           4232,
+				NamespaceName: "",
+				StartedTime:   timestamppb.New(endTime.Add(-10 * time.Minute)),
+				FinishedTime:  timestamppb.New(endTime.Add(-5 * time.Minute)),
+				Status:        "running",
+				ExitCode:      0,
+				Exited:        false,
+			},
+		},
+		Extractor: "containers/podman",
+	}
+
 	dockerPackage := &extractor.Package{
 		Name:    "redis",
 		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -1249,6 +1283,43 @@ func TestScanResultToProto(t *testing.T) {
 					Findings: []*spb.Finding{},
 				},
 			},
+		},
+		{
+			desc: "Successful podman runtime scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{podmanPackage},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{podmanPackageProto},
+					Findings: []*spb.Finding{},
+				},
+			},
+			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
 			desc: "no package target, still works",
