@@ -54,6 +54,7 @@ func NewNPMRegistryAPIClient(projectDir string) (*NPMRegistryAPIClient, error) {
 	}, nil
 }
 
+// Versions does something
 func (c *NPMRegistryAPIClient) Versions(ctx context.Context, pkg string) (NPMRegistryVersions, error) {
 	pkgDetails, err := c.getPackageDetails(ctx, pkg)
 	if err != nil {
@@ -66,6 +67,7 @@ func (c *NPMRegistryAPIClient) Versions(ctx context.Context, pkg string) (NPMReg
 	}, nil
 }
 
+// Dependencies does something
 func (c *NPMRegistryAPIClient) Dependencies(ctx context.Context, pkg, version string) (NPMRegistryDependencies, error) {
 	pkgDetails, err := c.getPackageDetails(ctx, pkg)
 	if err != nil {
@@ -79,6 +81,7 @@ func (c *NPMRegistryAPIClient) Dependencies(ctx context.Context, pkg, version st
 	return NPMRegistryDependencies{}, fmt.Errorf("no version %s for package %s", version, pkg)
 }
 
+// FullJSON does something
 func (c *NPMRegistryAPIClient) FullJSON(ctx context.Context, pkg, version string) (gjson.Result, error) {
 	return c.get(ctx, pkg, version)
 }

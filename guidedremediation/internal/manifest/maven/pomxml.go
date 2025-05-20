@@ -537,11 +537,13 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 	return nil
 }
 
+// Patches represents something
 type Patches struct {
 	DependencyPatches DependencyPatches
 	PropertyPatches   PropertyPatches
 }
 
+// Patch represents something
 type Patch struct {
 	maven.DependencyKey
 	NewRequire string
