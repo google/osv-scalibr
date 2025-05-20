@@ -110,6 +110,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	return sections, nil
 }
 
+// Extract extracts packages from the Gemfile.lock file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	sections, err := parseLockfileSections(input)
 	if err != nil {
