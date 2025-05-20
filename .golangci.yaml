@@ -13,6 +13,7 @@ linters:
     - exhaustive       # TODO(#274): work on enabling this
     - exhaustruct      #
     - forcetypeassert  #
+    - funcorder        #
     - funlen           #
     - gochecknoglobals #
     - gocognit         #
