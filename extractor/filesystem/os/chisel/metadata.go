@@ -16,9 +16,7 @@ package chisel
 
 // Metadata holds parsing information for a dpkg package.
 type Metadata struct {
-	PackageName string
-	// SourceName        string
-	// SourceVersion     string
+	PackageName       string
 	PackageVersion    string
 	OSID              string
 	OSVersionCodename string

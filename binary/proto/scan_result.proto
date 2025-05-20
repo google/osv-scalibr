@@ -529,12 +529,10 @@ message DockerPort {
 
 message ChiselPackageMetadata {
   string package_name = 1;
-  string source_name = 2;
-  string source_version = 3;
-  string package_version = 4;
-  string os_id = 5;
-  string os_version_codename = 6;
-  string os_version_id = 7;
-  string maintainer = 8;
-  string architecture = 9;
+  string package_version = 2;
+  string os_id = 3;
+  string os_version_codename = 4;
+  string os_version_id = 5;
+  string maintainer = 6;
+  string architecture = 7;
 }
