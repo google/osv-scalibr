@@ -22,6 +22,10 @@
     {
       "matchFileNames": [".github/**"],
       "groupName": "workflows"
+    },
+    {
+      "matchDepTypes": ["golang"],
+      "enabled": false
     }
   ],
   "ignorePaths": ["**/testdata/**", "**/testfixtures/**"]
