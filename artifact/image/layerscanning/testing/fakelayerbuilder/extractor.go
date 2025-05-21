@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Extractor extracts FakeTestLayers built from the FakeLayerBuilder
+// FakeTestLayersExtractor extracts FakeTestLayers built from the FakeLayerBuilder
 type FakeTestLayersExtractor struct {
 }
 
