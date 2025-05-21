@@ -400,6 +400,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 	r := &ScanResult{
 		StartTime:    o.StartTime,
 		EndTime:      o.EndTime,
+		Version:      ScannerVersion,
 		Status:       status,
 		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.AnnotatorStatus, o.EnricherStatus),
 		Inventory:    o.Inventory,
