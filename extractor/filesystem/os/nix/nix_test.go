@@ -71,7 +71,7 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	var e filesystem.Extractor = nix.New()
+	var e = nix.New()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -200,7 +200,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nix.New()
+			var e = nix.New()
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
