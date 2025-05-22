@@ -51,6 +51,11 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			desc:    "Only --version set",
+			flags:   &cli.Flags{PrintVersion: true},
+			wantErr: nil,
+		},
+		{
 			desc:    "Either output flag missing",
 			flags:   &cli.Flags{Root: "/"},
 			wantErr: cmpopts.AnyError,
