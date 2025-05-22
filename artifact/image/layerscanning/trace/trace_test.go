@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/opencontainers/go-digest"
 )
@@ -66,6 +67,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -74,6 +76,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -84,6 +87,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
@@ -93,6 +97,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
@@ -102,11 +107,13 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -118,6 +125,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -129,6 +137,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -145,6 +154,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -157,6 +167,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -173,11 +184,13 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      "baz",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -191,6 +204,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -202,6 +216,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -218,16 +233,19 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -242,6 +260,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -253,6 +272,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -264,6 +284,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -280,21 +301,25 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -310,6 +335,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -321,6 +347,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -332,6 +359,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -343,6 +371,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{
@@ -359,6 +388,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 				},
@@ -389,6 +419,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 					Extractor: fakeLayerExtractor,
 					LayerDetails: &extractor.LayerDetails{

@@ -59,6 +59,7 @@ func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.Sc
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      pkg,
 			Version:   version,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 		})
 	}
