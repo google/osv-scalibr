@@ -14,6 +14,7 @@
 
 package fakelayerbuilder
 
+// FakeTestLayers represents something
 type FakeTestLayers struct {
 	Layers []struct {
 		Files map[string][]string `yaml:"files"`

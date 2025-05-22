@@ -13,6 +13,7 @@
 // limitations under the License.
 
 //nolint:dupl
+//nolint:revive
 package datasource
 
 import (
