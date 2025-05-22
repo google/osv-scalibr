@@ -194,4 +194,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem for Swift.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "Cocoapods" }
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
+}

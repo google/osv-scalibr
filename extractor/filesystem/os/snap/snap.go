@@ -202,11 +202,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*snapmeta.Metadata)
-	if m.OSID == "ubuntu" {
-		return "Ubuntu"
-	}
-	log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
-	return ""
+	return p.Ecosystem()
 }
