@@ -108,8 +108,9 @@ func (a Patch) Compare(b Patch, sys semver.System) int {
 
 // Package represents a package that was found in a project.
 type Package struct {
-	Name    string `json:"name"`    // name of the dependency.
-	Version string `json:"version"` // version of the dependency in the graph.
+	Name    string `json:"name"`           // name of the dependency.
+	Version string `json:"version"`        // version of the dependency in the graph.
+	PURL    string `json:"purl,omitempty"` // PURL of the package & version.
 }
 
 // PackageUpdate represents a package that was updated by a patch.
@@ -117,6 +118,8 @@ type PackageUpdate struct {
 	Name        string `json:"name"`        // name of dependency being updated.
 	VersionFrom string `json:"versionFrom"` // version of the dependency before the patch.
 	VersionTo   string `json:"versionTo"`   // version of the dependency after the patch.
+	PURLFrom    string `json:"purlFrom"`    // PURL of the dependency before the patch.
+	PURLTo      string `json:"purlTo"`      // PURL of the dependency after the patch.
 	Transitive  bool   `json:"transitive"`  // false if this package is a direct dependency, true if indirect.
 
 	Type dep.Type `json:"-"`

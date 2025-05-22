@@ -5,6 +5,8 @@
         "name": "io.atomix:atomix",
         "versionFrom": "",
         "versionTo": "3.1.6",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.atomix/atomix@3.1.6",
         "transitive": true
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -23,7 +26,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -32,7 +36,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -41,7 +46,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -50,7 +56,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -59,7 +66,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -68,7 +76,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       }
@@ -79,7 +88,8 @@
         "packages": [
           {
             "name": "io.github.classgraph:classgraph",
-            "version": "4.2.3"
+            "version": "4.2.3",
+            "purl": "pkg:maven/io.github.classgraph/classgraph@4.2.3"
           }
         ]
       }
@@ -91,6 +101,8 @@
         "name": "org.apache.pdfbox:pdfbox",
         "versionFrom": "",
         "versionTo": "2.0.24",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.24",
         "transitive": true
       }
     ],
@@ -100,7 +112,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       },
@@ -109,7 +122,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       },
@@ -118,7 +132,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       },
@@ -127,7 +142,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       }
@@ -139,6 +155,8 @@
         "name": "xerces:xercesImpl",
         "versionFrom": "",
         "versionTo": "2.12.2",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/xerces/xercesImpl@2.12.2",
         "transitive": true
       }
     ],
@@ -148,7 +166,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -157,7 +176,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -166,7 +186,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -175,7 +196,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       }
@@ -187,12 +209,16 @@
         "name": "io.atomix:atomix",
         "versionFrom": "",
         "versionTo": "3.1.6",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.atomix/atomix@3.1.6",
         "transitive": true
       },
       {
         "name": "io.github.classgraph:classgraph",
         "versionFrom": "",
         "versionTo": "4.8.112",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.github.classgraph/classgraph@4.8.112",
         "transitive": true
       }
     ],
@@ -202,7 +228,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -211,7 +238,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -220,7 +248,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -229,7 +258,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -238,7 +268,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -247,7 +278,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       },
@@ -256,7 +288,8 @@
         "packages": [
           {
             "name": "io.atomix:atomix",
-            "version": "3.0.0-rc5"
+            "version": "3.0.0-rc5",
+            "purl": "pkg:maven/io.atomix/atomix@3.0.0-rc5"
           }
         ]
       }
@@ -268,6 +301,8 @@
         "name": "com.google.guava:guava",
         "versionFrom": "",
         "versionTo": "32.0.0-jre",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/com.google.guava/guava@32.0.0-jre",
         "transitive": true
       }
     ],
@@ -277,7 +312,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "22.0"
+            "version": "22.0",
+            "purl": "pkg:maven/com.google.guava/guava@22.0"
           }
         ]
       },
@@ -286,7 +322,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "22.0"
+            "version": "22.0",
+            "purl": "pkg:maven/com.google.guava/guava@22.0"
           }
         ]
       },
@@ -295,7 +332,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "22.0"
+            "version": "22.0",
+            "purl": "pkg:maven/com.google.guava/guava@22.0"
           }
         ]
       }
@@ -307,6 +345,8 @@
         "name": "xerces:xercesImpl",
         "versionFrom": "",
         "versionTo": "2.12.1",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/xerces/xercesImpl@2.12.1",
         "transitive": true
       }
     ],
@@ -316,7 +356,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -325,7 +366,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -334,7 +376,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       }
@@ -346,6 +389,8 @@
         "name": "com.fasterxml.jackson.core:jackson-databind",
         "versionFrom": "2.12.6.1",
         "versionTo": "2.12.7.1",
+        "purlFrom": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.12.6.1",
+        "purlTo": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.12.7.1",
         "transitive": false
       }
     ],
@@ -355,7 +400,8 @@
         "packages": [
           {
             "name": "com.fasterxml.jackson.core:jackson-databind",
-            "version": "2.12.6.1"
+            "version": "2.12.6.1",
+            "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.12.6.1"
           }
         ]
       },
@@ -364,7 +410,8 @@
         "packages": [
           {
             "name": "com.fasterxml.jackson.core:jackson-databind",
-            "version": "2.12.6.1"
+            "version": "2.12.6.1",
+            "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.12.6.1"
           }
         ]
       }
@@ -376,6 +423,8 @@
         "name": "io.netty:netty-handler",
         "versionFrom": "",
         "versionTo": "4.1.94.Final",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.netty/netty-handler@4.1.94.Final",
         "transitive": true
       }
     ],
@@ -385,7 +434,8 @@
         "packages": [
           {
             "name": "io.netty:netty-handler",
-            "version": "4.1.27.Final"
+            "version": "4.1.27.Final",
+            "purl": "pkg:maven/io.netty/netty-handler@4.1.27.Final"
           }
         ]
       },
@@ -394,7 +444,8 @@
         "packages": [
           {
             "name": "io.netty:netty-handler",
-            "version": "4.1.27.Final"
+            "version": "4.1.27.Final",
+            "purl": "pkg:maven/io.netty/netty-handler@4.1.27.Final"
           }
         ]
       }
@@ -406,6 +457,8 @@
         "name": "org.apache.commons:commons-compress",
         "versionFrom": "",
         "versionTo": "1.26.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.commons/commons-compress@1.26.0",
         "transitive": true
       }
     ],
@@ -415,7 +468,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-compress",
-            "version": "1.21"
+            "version": "1.21",
+            "purl": "pkg:maven/org.apache.commons/commons-compress@1.21"
           }
         ]
       },
@@ -424,7 +478,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-compress",
-            "version": "1.21"
+            "version": "1.21",
+            "purl": "pkg:maven/org.apache.commons/commons-compress@1.21"
           }
         ]
       }
@@ -436,6 +491,8 @@
         "name": "org.apache.commons:commons-configuration2",
         "versionFrom": "2.8.0",
         "versionTo": "2.10.1",
+        "purlFrom": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0",
+        "purlTo": "pkg:maven/org.apache.commons/commons-configuration2@2.10.1",
         "transitive": true
       }
     ],
@@ -445,7 +502,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-configuration2",
-            "version": "2.8.0"
+            "version": "2.8.0",
+            "purl": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0"
           }
         ]
       },
@@ -454,7 +512,8 @@
         "packages": [
           {
             "name": "org.apache.commons:commons-configuration2",
-            "version": "2.8.0"
+            "version": "2.8.0",
+            "purl": "pkg:maven/org.apache.commons/commons-configuration2@2.8.0"
           }
         ]
       }
@@ -466,6 +525,8 @@
         "name": "org.apache.mina:mina-core",
         "versionFrom": "",
         "versionTo": "2.0.22",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.mina/mina-core@2.0.22",
         "transitive": true
       }
     ],
@@ -475,7 +536,8 @@
         "packages": [
           {
             "name": "org.apache.mina:mina-core",
-            "version": "2.0.7"
+            "version": "2.0.7",
+            "purl": "pkg:maven/org.apache.mina/mina-core@2.0.7"
           }
         ]
       },
@@ -484,7 +546,8 @@
         "packages": [
           {
             "name": "org.apache.mina:mina-core",
-            "version": "2.0.7"
+            "version": "2.0.7",
+            "purl": "pkg:maven/org.apache.mina/mina-core@2.0.7"
           }
         ]
       }
@@ -496,6 +559,8 @@
         "name": "org.apache.pdfbox:pdfbox",
         "versionFrom": "",
         "versionTo": "2.0.23",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.23",
         "transitive": true
       }
     ],
@@ -505,7 +570,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       },
@@ -514,7 +580,8 @@
         "packages": [
           {
             "name": "org.apache.pdfbox:pdfbox",
-            "version": "2.0.16"
+            "version": "2.0.16",
+            "purl": "pkg:maven/org.apache.pdfbox/pdfbox@2.0.16"
           }
         ]
       }
@@ -526,6 +593,8 @@
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
         "versionTo": "1.13.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-web@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-web@1.13.0",
         "transitive": false
       }
     ],
@@ -535,7 +604,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       },
@@ -544,7 +614,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       }
@@ -556,6 +627,8 @@
         "name": "org.eclipse.jgit:org.eclipse.jgit",
         "versionFrom": "",
         "versionTo": "5.13.3.202401111512-r",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.eclipse.jgit/org.eclipse.jgit@5.13.3.202401111512-r",
         "transitive": true
       }
     ],
@@ -565,7 +638,8 @@
         "packages": [
           {
             "name": "org.eclipse.jgit:org.eclipse.jgit",
-            "version": "4.5.4.201711221230-r"
+            "version": "4.5.4.201711221230-r",
+            "purl": "pkg:maven/org.eclipse.jgit/org.eclipse.jgit@4.5.4.201711221230-r"
           }
         ]
       },
@@ -574,7 +648,8 @@
         "packages": [
           {
             "name": "com.jcraft:jsch",
-            "version": "0.1.53"
+            "version": "0.1.53",
+            "purl": "pkg:maven/com.jcraft/jsch@0.1.53"
           }
         ]
       }
@@ -586,6 +661,8 @@
         "name": "xerces:xercesImpl",
         "versionFrom": "",
         "versionTo": "2.12.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/xerces/xercesImpl@2.12.0",
         "transitive": true
       }
     ],
@@ -595,7 +672,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -604,7 +682,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       }
@@ -616,18 +695,24 @@
         "name": "commons-net:commons-net",
         "versionFrom": "",
         "versionTo": "3.9.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/commons-net/commons-net@3.9.0",
         "transitive": true
       },
       {
         "name": "net.sourceforge.htmlunit:htmlunit",
         "versionFrom": "",
         "versionTo": "2.37.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/net.sourceforge.htmlunit/htmlunit@2.37.0",
         "transitive": true
       },
       {
         "name": "net.sourceforge.htmlunit:neko-htmlunit",
         "versionFrom": "",
         "versionTo": "2.61.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/net.sourceforge.htmlunit/neko-htmlunit@2.61.0",
         "transitive": true
       }
     ],
@@ -637,7 +722,8 @@
         "packages": [
           {
             "name": "net.sourceforge.htmlunit:htmlunit",
-            "version": "2.18"
+            "version": "2.18",
+            "purl": "pkg:maven/net.sourceforge.htmlunit/htmlunit@2.18"
           }
         ]
       },
@@ -646,7 +732,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -655,7 +742,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -664,7 +752,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -673,7 +762,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       }
@@ -685,6 +775,8 @@
         "name": "net.sourceforge.htmlunit:htmlunit",
         "versionFrom": "",
         "versionTo": "2.37.0",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/net.sourceforge.htmlunit/htmlunit@2.37.0",
         "transitive": true
       }
     ],
@@ -694,7 +786,8 @@
         "packages": [
           {
             "name": "net.sourceforge.htmlunit:htmlunit",
-            "version": "2.18"
+            "version": "2.18",
+            "purl": "pkg:maven/net.sourceforge.htmlunit/htmlunit@2.18"
           }
         ]
       },
@@ -703,7 +796,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       },
@@ -712,7 +806,8 @@
         "packages": [
           {
             "name": "xerces:xercesImpl",
-            "version": "2.11.0"
+            "version": "2.11.0",
+            "purl": "pkg:maven/xerces/xercesImpl@2.11.0"
           }
         ]
       }
@@ -723,7 +818,8 @@
         "packages": [
           {
             "name": "net.sourceforge.htmlunit:neko-htmlunit",
-            "version": "2.37.0"
+            "version": "2.37.0",
+            "purl": "pkg:maven/net.sourceforge.htmlunit/neko-htmlunit@2.37.0"
           }
         ]
       },
@@ -732,7 +828,8 @@
         "packages": [
           {
             "name": "commons-net:commons-net",
-            "version": "3.6"
+            "version": "3.6",
+            "purl": "pkg:maven/commons-net/commons-net@3.6"
           }
         ]
       }
@@ -744,6 +841,8 @@
         "name": "com.google.guava:guava",
         "versionFrom": "",
         "versionTo": "24.1.1-jre",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/com.google.guava/guava@24.1.1-jre",
         "transitive": true
       }
     ],
@@ -753,7 +852,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "22.0"
+            "version": "22.0",
+            "purl": "pkg:maven/com.google.guava/guava@22.0"
           }
         ]
       }
@@ -765,6 +865,8 @@
         "name": "com.jcraft:jsch",
         "versionFrom": "",
         "versionTo": "0.1.54",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/com.jcraft/jsch@0.1.54",
         "transitive": true
       }
     ],
@@ -774,7 +876,8 @@
         "packages": [
           {
             "name": "com.jcraft:jsch",
-            "version": "0.1.53"
+            "version": "0.1.53",
+            "purl": "pkg:maven/com.jcraft/jsch@0.1.53"
           }
         ]
       }
@@ -786,6 +889,8 @@
         "name": "com.nimbusds:nimbus-jose-jwt",
         "versionFrom": "9.13",
         "versionTo": "9.37.2",
+        "purlFrom": "pkg:maven/com.nimbusds/nimbus-jose-jwt@9.13",
+        "purlTo": "pkg:maven/com.nimbusds/nimbus-jose-jwt@9.37.2",
         "transitive": false
       }
     ],
@@ -795,7 +900,8 @@
         "packages": [
           {
             "name": "com.nimbusds:nimbus-jose-jwt",
-            "version": "9.13"
+            "version": "9.13",
+            "purl": "pkg:maven/com.nimbusds/nimbus-jose-jwt@9.13"
           }
         ]
       }
@@ -807,6 +913,8 @@
         "name": "io.netty:netty",
         "versionFrom": "",
         "versionTo": "3.9.8.Final",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.netty/netty@3.9.8.Final",
         "transitive": true
       }
     ],
@@ -816,7 +924,8 @@
         "packages": [
           {
             "name": "io.netty:netty",
-            "version": "3.5.2.Final"
+            "version": "3.5.2.Final",
+            "purl": "pkg:maven/io.netty/netty@3.5.2.Final"
           }
         ]
       }
@@ -828,6 +937,8 @@
         "name": "io.netty:netty-handler",
         "versionFrom": "",
         "versionTo": "4.1.46.Final",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.netty/netty-handler@4.1.46.Final",
         "transitive": true
       }
     ],
@@ -837,7 +948,8 @@
         "packages": [
           {
             "name": "io.netty:netty-handler",
-            "version": "4.1.27.Final"
+            "version": "4.1.27.Final",
+            "purl": "pkg:maven/io.netty/netty-handler@4.1.27.Final"
           }
         ]
       }
@@ -849,6 +961,8 @@
         "name": "org.apache.directory.api:api-ldap-model",
         "versionFrom": "",
         "versionTo": "1.0.0-M31",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.directory.api/api-ldap-model@1.0.0-M31",
         "transitive": true
       }
     ],
@@ -858,7 +972,8 @@
         "packages": [
           {
             "name": "org.apache.directory.api:api-ldap-model",
-            "version": "1.0.0-M20"
+            "version": "1.0.0-M20",
+            "purl": "pkg:maven/org.apache.directory.api/api-ldap-model@1.0.0-M20"
           }
         ]
       }
@@ -870,6 +985,8 @@
         "name": "org.apache.mina:mina-core",
         "versionFrom": "",
         "versionTo": "2.0.21",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.mina/mina-core@2.0.21",
         "transitive": true
       }
     ],
@@ -879,7 +996,8 @@
         "packages": [
           {
             "name": "org.apache.mina:mina-core",
-            "version": "2.0.7"
+            "version": "2.0.7",
+            "purl": "pkg:maven/org.apache.mina/mina-core@2.0.7"
           }
         ]
       }
@@ -891,6 +1009,8 @@
         "name": "org.apache.shiro:shiro-core",
         "versionFrom": "1.10.0",
         "versionTo": "1.13.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-core@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-core@1.13.0",
         "transitive": false
       }
     ],
@@ -900,7 +1020,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-core",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-core@1.10.0"
           }
         ]
       }
@@ -912,6 +1033,8 @@
         "name": "org.apache.shiro:shiro-web",
         "versionFrom": "1.10.0",
         "versionTo": "1.12.0",
+        "purlFrom": "pkg:maven/org.apache.shiro/shiro-web@1.10.0",
+        "purlTo": "pkg:maven/org.apache.shiro/shiro-web@1.12.0",
         "transitive": false
       }
     ],
@@ -921,7 +1044,8 @@
         "packages": [
           {
             "name": "org.apache.shiro:shiro-web",
-            "version": "1.10.0"
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.shiro/shiro-web@1.10.0"
           }
         ]
       }
@@ -933,6 +1057,8 @@
         "name": "org.glassfish.jersey.core:jersey-common",
         "versionFrom": "",
         "versionTo": "2.34",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.glassfish.jersey.core/jersey-common@2.34",
         "transitive": true
       }
     ],
@@ -942,7 +1068,8 @@
         "packages": [
           {
             "name": "org.glassfish.jersey.core:jersey-common",
-            "version": "2.30"
+            "version": "2.30",
+            "purl": "pkg:maven/org.glassfish.jersey.core/jersey-common@2.30"
           }
         ]
       }
@@ -954,6 +1081,8 @@
         "name": "xalan:xalan",
         "versionFrom": "",
         "versionTo": "2.7.3",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/xalan/xalan@2.7.3",
         "transitive": true
       }
     ],
@@ -963,7 +1092,8 @@
         "packages": [
           {
             "name": "xalan:xalan",
-            "version": "2.7.2"
+            "version": "2.7.2",
+            "purl": "pkg:maven/xalan/xalan@2.7.2"
           }
         ]
       }
@@ -975,12 +1105,16 @@
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
         "versionTo": "0.14.0",
+        "purlFrom": "pkg:maven/org.apache.thrift/libthrift@0.13.0",
+        "purlTo": "pkg:maven/org.apache.thrift/libthrift@0.14.0",
         "transitive": true
       },
       {
         "name": "org.apache.tomcat.embed:tomcat-embed-core",
         "versionFrom": "",
         "versionTo": "8.5.99",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.99",
         "transitive": true
       }
     ],
@@ -990,7 +1124,8 @@
         "packages": [
           {
             "name": "org.apache.thrift:libthrift",
-            "version": "0.13.0"
+            "version": "0.13.0",
+            "purl": "pkg:maven/org.apache.thrift/libthrift@0.13.0"
           }
         ]
       }
@@ -1002,6 +1137,8 @@
         "name": "io.netty:netty-codec",
         "versionFrom": "",
         "versionTo": "4.1.68.Final",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.netty/netty-codec@4.1.68.Final",
         "transitive": true
       }
     ],
@@ -1013,6 +1150,8 @@
         "name": "io.netty:netty-handler",
         "versionFrom": "",
         "versionTo": "4.1.45.Final",
+        "purlFrom": "",
+        "purlTo": "pkg:maven/io.netty/netty-handler@4.1.45.Final",
         "transitive": true
       }
     ],
@@ -1024,6 +1163,8 @@
         "name": "org.apache.thrift:libthrift",
         "versionFrom": "0.13.0",
         "versionTo": "0.14.0",
+        "purlFrom": "pkg:maven/org.apache.thrift/libthrift@0.13.0",
+        "purlTo": "pkg:maven/org.apache.thrift/libthrift@0.14.0",
         "transitive": true
       }
     ],
@@ -1033,7 +1174,8 @@
         "packages": [
           {
             "name": "org.apache.thrift:libthrift",
-            "version": "0.13.0"
+            "version": "0.13.0",
+            "purl": "pkg:maven/org.apache.thrift/libthrift@0.13.0"
           }
         ]
       }
@@ -1044,7 +1186,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1053,7 +1196,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1062,7 +1206,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1071,7 +1216,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1080,7 +1226,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1089,7 +1236,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1098,7 +1246,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1107,7 +1256,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1116,7 +1266,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1125,7 +1276,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1134,7 +1286,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1143,7 +1296,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1152,7 +1306,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1161,7 +1316,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       },
@@ -1170,7 +1326,8 @@
         "packages": [
           {
             "name": "org.apache.tomcat.embed:tomcat-embed-core",
-            "version": "8.5.46"
+            "version": "8.5.46",
+            "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@8.5.46"
           }
         ]
       }

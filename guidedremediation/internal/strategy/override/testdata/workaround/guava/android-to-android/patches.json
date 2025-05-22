@@ -5,6 +5,8 @@
         "name": "com.google.guava:guava",
         "versionFrom": "22.0-android",
         "versionTo": "24.0-android",
+        "purlFrom": "pkg:maven/com.google.guava/guava@22.0-android",
+        "purlTo": "pkg:maven/com.google.guava/guava@24.0-android",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "com.google.guava:guava",
-            "version": "22.0-android"
+            "version": "22.0-android",
+            "purl": "pkg:maven/com.google.guava/guava@22.0-android"
           }
         ]
       }

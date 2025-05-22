@@ -5,6 +5,8 @@
         "name": "removed",
         "versionFrom": "1.0.1",
         "versionTo": "~1.0.3",
+        "purlFrom": "pkg:npm/removed@1.0.1",
+        "purlTo": "pkg:npm/removed@~1.0.3",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "@bad/one",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/one@1.0.0"
           }
         ]
       }
