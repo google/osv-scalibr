@@ -177,7 +177,8 @@ func TestRunScan(t *testing.T) {
 			setupFunc: createImageTarball,
 			flags: &cli.Flags{
 				ImageTarball:    "image.tar",
-				ExtractorsToRun: []string{"python/requirementsnet"},
+				ExtractorsToRun: []string{"python/requirements"},
+				Offline:         true,
 			},
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 2,
@@ -188,7 +189,8 @@ func TestRunScan(t *testing.T) {
 			setupFunc: createBadImageTarball,
 			flags: &cli.Flags{
 				ImageTarball:    "image.tar",
-				ExtractorsToRun: []string{"python/requirementsnet"},
+				ExtractorsToRun: []string{"python/requirements"},
+				Offline:         true,
 			},
 			wantExit:          1,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
