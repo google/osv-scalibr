@@ -37,7 +37,7 @@ import (
 	"github.com/google/osv-scalibr/stats"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // Name is the name for the RPM extractor
