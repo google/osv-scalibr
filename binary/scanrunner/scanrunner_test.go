@@ -88,14 +88,18 @@ func createImageTarball(t *testing.T) string {
 
 	var buf bytes.Buffer
 	w := tar.NewWriter(&buf)
-	requirements := `
-nltk==3.2.2
-tabulate==0.7.7
+	gomod := `
+module my-library
+
+require (
+	github.com/BurntSushi/toml v1.0.0
+	gopkg.in/yaml.v2 v2.4.0
+)
 	`
 	files := []struct {
 		name, contents string
 	}{
-		{"requirements.txt", requirements},
+		{"go.mod", gomod},
 	}
 	for _, file := range files {
 		hdr := &tar.Header{
@@ -177,7 +181,7 @@ func TestRunScan(t *testing.T) {
 			setupFunc: createImageTarball,
 			flags: &cli.Flags{
 				ImageTarball:    "image.tar",
-				ExtractorsToRun: []string{"python/requirements"},
+				ExtractorsToRun: []string{"go/gomod"},
 			},
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 2,
@@ -188,7 +192,7 @@ func TestRunScan(t *testing.T) {
 			setupFunc: createBadImageTarball,
 			flags: &cli.Flags{
 				ImageTarball:    "image.tar",
-				ExtractorsToRun: []string{"python/requirements"},
+				ExtractorsToRun: []string{"go/gomod"},
 			},
 			wantExit:          1,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
