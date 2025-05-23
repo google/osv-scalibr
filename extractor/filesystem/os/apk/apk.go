@@ -232,21 +232,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	version := p.Metadata.(*apkmeta.Metadata).ToDistro()
-	if version == "" {
-		return "Alpine"
-	}
-	return "Alpine:" + trimDistroVersion(version)
-}
-
-// The Alpine OS info might include minor versions such as 3.12.1 while advisories are
-// only published against the minor and major versions, i.e. v3.12. Therefore we trim
-// any minor versions before putting the value into the Ecosystem.
-func trimDistroVersion(distro string) string {
-	parts := strings.Split(distro, ".")
-	if len(parts) < 2 {
-		return "v" + distro
-	}
-	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
+	return p.Ecosystem()
 }

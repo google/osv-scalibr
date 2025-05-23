@@ -103,7 +103,7 @@ func (p *Package) PURL() *purl.PackageURL {
 // Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
 func (p *Package) Ecosystem() string {
-	return p.Extractor.Ecosystem(p)
+	return toEcosystem(p)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

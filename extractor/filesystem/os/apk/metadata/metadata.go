@@ -15,7 +15,12 @@
 // Package metadata defines a Metadata struct for apk packages.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/google/osv-scalibr/log"
+)
 
 // Metadata holds parsing information for an apk package.
 type Metadata struct {
@@ -45,4 +50,16 @@ func (m *Metadata) ToDistro() string {
 	}
 	log.Errorf("VERSION_ID not set in os-release")
 	return ""
+}
+
+// TrimDistroVersion trims minor versions from the distro string.
+// The Alpine OS info might include minor versions such as 3.12.1 while advisories are
+// only published against the minor and major versions, i.e. v3.12. Therefore we trim
+// any minor versions before putting the value into the Ecosystem.
+func (Metadata) TrimDistroVersion(distro string) string {
+	parts := strings.Split(distro, ".")
+	if len(parts) < 2 {
+		return "v" + distro
+	}
+	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
 }

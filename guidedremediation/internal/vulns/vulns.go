@@ -29,12 +29,17 @@ import (
 
 // VKToPackage converts a resolve.VersionKey to an *extractor.Package
 func VKToPackage(vk resolve.VersionKey) *extractor.Package {
-	return &extractor.Package{
+	p := &extractor.Package{
 		Name:      vk.Name,
 		Version:   vk.Version,
 		Extractor: mockExtractor{},
 		Metadata:  vk.System,
 	}
+	purl := mockExtractor{}.ToPURL(p)
+	if purl != nil {
+		p.PURLType = purl.Type
+	}
+	return p
 }
 
 // mockExtractor is for VKToPackage to get the ecosystem.

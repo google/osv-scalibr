@@ -200,7 +200,10 @@ func containsTemplate(s string) bool {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (e Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
+}
 
 // ToPURL converts a package created by this extractor into a PURL.
 // TODO(b/400910349): Remove and use Package.PURL() directly.
