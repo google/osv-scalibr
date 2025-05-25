@@ -262,7 +262,11 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 		}
 		for _, sg := range v.Subgraphs {
 			vk := sg.Nodes[sg.Dependency].Version
-			vuln.Packages = append(vuln.Packages, result.Package{Name: vk.Name, Version: vk.Version})
+			vuln.Packages = append(vuln.Packages, result.Package{
+				Name:    vk.Name,
+				Version: vk.Version,
+				PURL:    util.VKToPURL(vk).String(),
+			})
 		}
 		// Sort and remove any possible duplicate packages.
 		cmpFn := func(a, b result.Package) int {
@@ -401,6 +405,7 @@ func computeResolveErrors(g *resolve.Graph) []result.ResolveError {
 				Package: result.Package{
 					Name:    n.Version.Name,
 					Version: n.Version.Version,
+					PURL:    util.VKToPURL(n.Version).String(),
 				},
 				Requirement: result.Package{
 					Name:    e.Req.Name,

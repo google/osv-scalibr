@@ -25,6 +25,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -59,7 +60,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			}
 			foundFix := false
 			for i, p := range vkPatches[vk] {
-				if !vulns.IsAffected(v.OSV, vulns.VKToPackage(p.vk)) {
+				if !vulns.IsAffected(v.OSV, util.VKToPackage(p.vk)) {
 					p.vulns = append(p.vulns, v.OSV)
 					foundFix = true
 					vkPatches[vk][i] = p
@@ -85,7 +86,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 				for _, vuln := range p.vulns {
 					if _, ok := seenVulns[vuln.ID]; !ok {
 						seenVulns[vuln.ID] = struct{}{}
-						if !vulns.IsAffected(vuln, vulns.VKToPackage(ver)) {
+						if !vulns.IsAffected(vuln, util.VKToPackage(ver)) {
 							newPatch.vulns = append(newPatch.vulns, vuln)
 						}
 					}
@@ -105,6 +106,8 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 						Name:        vk.Name,
 						VersionFrom: vk.Version,
 						VersionTo:   p.vk.Version,
+						PURLFrom:    util.VKToPURL(vk).String(),
+						PURLTo:      util.VKToPURL(p.vk).String(),
 						Transitive:  true,
 					},
 				},
@@ -116,6 +119,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 						result.Package{
 							Name:    vk.Name,
 							Version: vk.Version,
+							PURL:    util.VKToPURL(vk).String(),
 						},
 					},
 				})
@@ -251,7 +255,7 @@ func findLatestMatching(ctx context.Context, cl resolve.Client, graph remediatio
 		}
 
 		// Check that this version is not vulnerable.
-		if vulns.IsAffected(v, vulns.VKToPackage(ver.VersionKey)) {
+		if vulns.IsAffected(v, util.VKToPackage(ver.VersionKey)) {
 			continue
 		}
 

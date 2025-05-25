@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	mavenmanifest "github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
@@ -71,6 +72,8 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 			Name:        req.Name,
 			VersionFrom: req.Version,
 			VersionTo:   latest.Version,
+			PURLFrom:    util.VKToPURL(req.VersionKey).String(),
+			PURLTo:      util.VKToPURL(latest.VersionKey).String(),
 			Type:        req.Type,
 		}
 		origDep := mavenmanifest.OriginalDependency(pu, specific.OriginalRequirements)

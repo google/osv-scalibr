@@ -21,6 +21,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -185,7 +186,7 @@ func (ds *DependencySubgraph) ConstrainingSubgraph(ctx context.Context, cl resol
 		}
 		bestVK := vers[len(vers)-1] // This should be the highest version for npm
 
-		if vulns.IsAffected(vuln, vulns.VKToPackage(bestVK.VersionKey)) {
+		if vulns.IsAffected(vuln, util.VKToPackage(bestVK.VersionKey)) {
 			newParents = append(newParents, pEdge)
 		}
 	}

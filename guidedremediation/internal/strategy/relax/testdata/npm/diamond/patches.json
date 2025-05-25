@@ -5,12 +5,16 @@
         "name": "simpledep",
         "versionFrom": "^1.0.0",
         "versionTo": "^3.0.1",
+        "purlFrom": "pkg:npm/simpledep@%5E1.0.0",
+        "purlTo": "pkg:npm/simpledep@%5E3.0.1",
         "transitive": false
       },
       {
         "name": "simpledep2",
         "versionFrom": "1.0.0",
         "versionTo": "^2.0.0",
+        "purlFrom": "pkg:npm/simpledep2@1.0.0",
+        "purlTo": "pkg:npm/simpledep2@%5E2.0.0",
         "transitive": false
       }
     ],
@@ -20,7 +24,8 @@
         "packages": [
           {
             "name": "@bad/one",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/one@1.0.0"
           }
         ]
       }

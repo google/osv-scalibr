@@ -24,6 +24,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -107,7 +108,11 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 		vuln := result.Vuln{ID: v.OSV.ID}
 		for _, sg := range v.Subgraphs {
 			n := oldRes.Graph.Nodes[sg.Dependency]
-			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
+			vuln.Packages = append(vuln.Packages, result.Package{
+				Name:    n.Version.Name,
+				Version: n.Version.Version,
+				PURL:    util.VKToPURL(n.Version).String(),
+			})
 		}
 		output.Fixed = append(output.Fixed, vuln)
 	}
@@ -120,7 +125,11 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 		vuln := result.Vuln{ID: v.OSV.ID}
 		for _, sg := range v.Subgraphs {
 			n := newRes.Graph.Nodes[sg.Dependency]
-			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
+			vuln.Packages = append(vuln.Packages, result.Package{
+				Name:    n.Version.Name,
+				Version: n.Version.Version,
+				PURL:    util.VKToPURL(n.Version).String(),
+			})
 		}
 		output.Introduced = append(output.Introduced, vuln)
 	}
@@ -139,6 +148,8 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 				Name:        req.Name,
 				VersionFrom: "",
 				VersionTo:   req.Version,
+				PURLFrom:    "",
+				PURLTo:      util.VKToPURL(req.VersionKey).String(),
 				Type:        typ,
 				Transitive:  true,
 			})
@@ -162,8 +173,14 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 			Name:        req.Name,
 			VersionFrom: oldReq.Version,
 			VersionTo:   req.Version,
-			Type:        oldReq.Type.Clone(),
-			Transitive:  !direct,
+			// NB: These PURLs may technically be invalid for containing version ranges.
+			// e.g. with npm/relax "foo@^1.2.3", we'd have "pkg:npm/foo@%5E1.2.3", using the version range "^1.2.3",
+			// instead of a concrete version "1.2.3".
+			// This is probably fine for now, as we don't currently have any way to represent PURLs for version ranges.
+			PURLFrom:   util.VKToPURL(oldReq.VersionKey).String(),
+			PURLTo:     util.VKToPURL(req.VersionKey).String(),
+			Type:       oldReq.Type.Clone(),
+			Transitive: !direct,
 		})
 	}
 	cmpFn := func(a, b result.PackageUpdate) int {

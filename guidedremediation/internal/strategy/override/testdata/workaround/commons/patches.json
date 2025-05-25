@@ -5,6 +5,8 @@
         "name": "commons-beanutils:commons-beanutils",
         "versionFrom": "20020520",
         "versionTo": "1.9.4",
+        "purlFrom": "pkg:maven/commons-beanutils/commons-beanutils@20020520",
+        "purlTo": "pkg:maven/commons-beanutils/commons-beanutils@1.9.4",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "commons-beanutils:commons-beanutils",
-            "version": "20020520"
+            "version": "20020520",
+            "purl": "pkg:maven/commons-beanutils/commons-beanutils@20020520"
           }
         ]
       }

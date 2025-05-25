@@ -5,6 +5,8 @@
         "name": "indirect",
         "versionFrom": "^2.0.0",
         "versionTo": "^3.0.0",
+        "purlFrom": "pkg:npm/indirect@%5E2.0.0",
+        "purlTo": "pkg:npm/indirect@%5E3.0.0",
         "transitive": false
       }
     ],
@@ -14,7 +16,8 @@
         "packages": [
           {
             "name": "@bad/one",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "purl": "pkg:npm/%40bad/one@1.0.0"
           }
         ]
       }

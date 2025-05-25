@@ -6,12 +6,16 @@
         {
           "name": "pkg:d",
           "versionFrom": "1.0.0",
-          "versionTo": "3.0.0"
+          "versionTo": "3.0.0",
+          "purlFrom": "pkg:maven/pkg/d@1.0.0",
+          "purlTo": "pkg:maven/pkg/d@3.0.0"
         },
         {
           "name": "pkg:e",
           "versionFrom": "1.0.0",
-          "versionTo": "2.0.0"
+          "versionTo": "2.0.0",
+          "purlFrom": "pkg:maven/pkg/e@1.0.0",
+          "purlTo": "pkg:maven/pkg/e@2.0.0"
         }
       ]
     }
