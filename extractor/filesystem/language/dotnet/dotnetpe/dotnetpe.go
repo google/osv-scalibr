@@ -260,8 +260,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem implements filesystem.Extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "NuGet"
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

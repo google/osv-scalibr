@@ -413,10 +413,10 @@ func TestScanResultToProto(t *testing.T) {
 	cdxPackage := &extractor.Package{
 		Name:     "openssl",
 		Version:  "1.1.1",
-		PURLType: purl.TypeGeneric,
+		PURLType: purl.TypeNPM,
 		Metadata: &cdxmeta.Metadata{
 			PURL: &purl.PackageURL{
-				Type:    purl.TypeGeneric,
+				Type:    purl.TypeNPM,
 				Name:    "openssl",
 				Version: "1.1.1",
 			},
@@ -427,18 +427,18 @@ func TestScanResultToProto(t *testing.T) {
 	cdxPackageProto := &spb.Package{
 		Name:      "openssl",
 		Version:   "1.1.1",
-		Ecosystem: "generic",
+		Ecosystem: "npm",
 		Purl: &spb.Purl{
-			Purl:    "pkg:generic/openssl@1.1.1",
-			Type:    purl.TypeGeneric,
+			Purl:    "pkg:npm/openssl@1.1.1",
+			Type:    purl.TypeNPM,
 			Name:    "openssl",
 			Version: "1.1.1",
 		},
 		Metadata: &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: &spb.Purl{
-					Purl:    "pkg:generic/openssl@1.1.1",
-					Type:    purl.TypeGeneric,
+					Purl:    "pkg:npm/openssl@1.1.1",
+					Type:    purl.TypeNPM,
 					Name:    "openssl",
 					Version: "1.1.1",
 				},

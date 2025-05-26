@@ -35,8 +35,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -310,11 +308,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*dpkgmeta.Metadata)
-	osID := cases.Title(language.English).String(m.ToNamespace())
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
+	return p.Ecosystem()
 }

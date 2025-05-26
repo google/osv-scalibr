@@ -135,8 +135,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "PyPI"
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}
