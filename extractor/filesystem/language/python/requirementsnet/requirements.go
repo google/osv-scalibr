@@ -154,7 +154,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
+		return inventory.Inventory{}, fmt.Errorf("failed resolving: %w", err)
+	}
+	if g.Error != "" {
+		return inventory.Inventory{}, fmt.Errorf("failed resolving: %s", g.Error)
 	}
 
 	pkgs := []*extractor.Package{}
