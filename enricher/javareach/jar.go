@@ -66,7 +66,7 @@ type DefaultPackageFinder struct {
 
 // loadJARMappings loads class mappings from a JAR archive.
 func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) {
-	// TODO: Validate that we can rely on the directory structure to mirror the
+	// TODO(#787): Validate that we can rely on the directory structure to mirror the
 	// class package path.
 	lock.Lock()
 	for _, f := range reader.File {
@@ -181,7 +181,7 @@ func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap 
 	if reader == nil {
 		// Didn't found a nested JAR containing the artifact.
 		// Try downloading the same package from Maven.
-		// TODO: Handle Non-Maven central repositories.
+		// TODO(#787): Handle Non-Maven central repositories.
 		jarURL := fmt.Sprintf("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
 			strings.ReplaceAll(metadata.GroupID, ".", "/"), metadata.ArtifactID, inv.Version, metadata.ArtifactID, inv.Version)
 
@@ -261,7 +261,7 @@ func NewDefaultPackageFinder(ctx context.Context, inv []*extractor.Package, jarD
 // mapRootClasses maps class files to the root application where we can determine that association.
 func mapRootClasses(jarDir string, classMap map[string][]string, artifactMap map[string][]string) error {
 	// Spring Boot.
-	// TODO: Handle non-Spring Boot applications. We could add heuristic for
+	// TODO(#787): Handle non-Spring Boot applications. We could add heuristic for
 	// detecting root application classes when the class structure is flat based
 	// on the class hierarchy.
 	bootInfClasses := filepath.Join(jarDir, BootInfClasses)

@@ -134,7 +134,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 
 	// Build .class -> Maven group ID:artifact ID mappings.
-	// TODO: Handle BOOT-INF and loading .jar dependencies from there.
+	// TODO(#787): Handle BOOT-INF and loading .jar dependencies from there.
 	classFinder, err := NewDefaultPackageFinder(ctx, allDeps, jarDir)
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 
 	// Enumerate reachable classes.
-	// TODO: Look inside more static files (e.g. XML beans configurations).
+	// TODO(#787): Look inside more static files (e.g. XML beans configurations).
 	enumerator := NewReachabilityEnumerator(classPaths, classFinder, AssumeAllClassesReachable, AssumeAllClassesReachable)
 	result, err := enumerator.EnumerateReachabilityFromClasses(mainClasses, optionalRootClasses)
 	if err != nil {
