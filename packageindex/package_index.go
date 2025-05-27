@@ -18,7 +18,6 @@ package packageindex
 
 import (
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // PackageIndex allows you to query the package result.
@@ -31,7 +30,7 @@ type PackageIndex struct {
 func New(pkgs []*extractor.Package) (*PackageIndex, error) {
 	pkgMap := make(map[string]map[string][]*extractor.Package)
 	for _, pkg := range pkgs {
-		p := toPURL(pkg)
+		p := pkg.PURL()
 		if p == nil {
 			continue
 		}
@@ -80,8 +79,4 @@ func (px *PackageIndex) GetSpecific(name string, pkgType string) []*extractor.Pa
 		return result
 	}
 	return p
-}
-
-func toPURL(p *extractor.Package) *purl.PackageURL {
-	return p.Extractor.ToPURL(p)
 }

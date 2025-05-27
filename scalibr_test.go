@@ -148,7 +148,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "enricher", Version: 1, Status: success},
@@ -173,6 +174,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "multiple non-identical advisories with ID &{ CVE-1234}",
@@ -193,7 +195,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: extFailure},
@@ -214,7 +217,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: detFailure},
 					{Name: "python/wheelegg", Version: 1, Status: success},
@@ -235,7 +239,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector2", Version: 2, Status: success},
 					{Name: "enricher", Version: 1, Status: enrFailure},
@@ -254,6 +259,7 @@ func TestScan(t *testing.T) {
 				ScanRoots:            []*scalibrfs.ScanRoot{},
 			},
 			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "no scan root specified",

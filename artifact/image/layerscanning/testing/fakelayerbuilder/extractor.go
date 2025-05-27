@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Extractor extracts FakeTestLayers built from the FakeLayerBuilder
+// FakeTestLayersExtractor extracts FakeTestLayers built from the FakeLayerBuilder
 type FakeTestLayersExtractor struct {
 }
 
@@ -59,6 +59,7 @@ func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.Sc
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      pkg,
 			Version:   version,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 		})
 	}

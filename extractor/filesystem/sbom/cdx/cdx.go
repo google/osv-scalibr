@@ -185,11 +185,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	purl := p.Metadata.(*cdxmeta.Metadata).PURL
-	if purl == nil {
-		return ""
-	}
-	// This is a heuristic. In most cases, the ecosystem _not_ the same as the PURL type.
-	return purl.Type
+	return p.Ecosystem()
 }

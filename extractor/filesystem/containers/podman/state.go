@@ -24,9 +24,10 @@ import (
 	"strings"
 	"time"
 
-	// SQLite driver needed for parsing db.sql files.
-	_ "github.com/mattn/go-sqlite3"
 	bolt "go.etcd.io/bbolt"
+
+	// SQLite driver needed for parsing db.sql files.
+	_ "modernc.org/sqlite"
 )
 
 // state interface must be implemented by each repository returning podman containers info
@@ -107,7 +108,7 @@ type sqliteState struct {
 }
 
 func newSqliteState(path string) (state, error) {
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
 	}

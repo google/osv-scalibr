@@ -55,6 +55,7 @@ func run(args []string) int {
 
 func parseFlags(args []string) (*cli.Flags, error) {
 	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
+	printVersion := fs.Bool("version", false, `Prints the version of the scanner`)
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
@@ -96,6 +97,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
+		PrintVersion:               *printVersion,
 		Root:                       *root,
 		ResultFile:                 *resultFile,
 		Output:                     output,

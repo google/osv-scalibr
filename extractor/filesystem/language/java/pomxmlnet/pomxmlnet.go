@@ -201,6 +201,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
+	if g.Error != "" {
+		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
+	}
+
 	copy(g.Edges, g.Edges)
 
 	details := map[string]*extractor.Package{}
@@ -249,8 +253,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Package) string {
-	return "Maven"
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (e Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

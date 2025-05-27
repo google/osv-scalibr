@@ -35,8 +35,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -255,13 +253,9 @@ func parseVmlinuzMetadata(magicType []string) vmlinuzmeta.Metadata {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*vmlinuzmeta.Metadata)
-	osID := cases.Title(language.English).String(m.ToNamespace())
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
+	return p.Ecosystem()
 }
 
 // ToPURL converts a package created by this extractor into a PURL.

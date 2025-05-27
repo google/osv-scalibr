@@ -195,3 +195,51 @@ func TestToPURL(t *testing.T) {
 		})
 	}
 }
+
+func TestToEcosystem(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *extractor.Package
+		want string
+	}{
+		{
+			name: "no_purl_type",
+			pkg: &extractor.Package{
+				Name:    "name",
+				Version: "version",
+			},
+			want: "",
+		},
+		{
+			name: "simple_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeGolang,
+			},
+			want: "Go",
+		},
+		{
+			name: "os_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDebian,
+				Metadata: &dpkgmeta.Metadata{
+					PackageName:       "pkg-name",
+					OSVersionCodename: "jammy",
+				},
+			},
+			want: "Linux",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.pkg.Ecosystem()
+			if got != tt.want {
+				t.Errorf("%v.Ecosystem(): got %q, want %q", tt.pkg, got, tt.want)
+			}
+		})
+	}
+}

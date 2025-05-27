@@ -121,6 +121,7 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
+	PrintVersion               bool
 	Root                       string
 	ResultFile                 string
 	Output                     Array
@@ -160,6 +161,10 @@ var supportedOutputFormats = []string{
 
 // ValidateFlags validates the passed command line flags.
 func ValidateFlags(flags *Flags) error {
+	if flags.PrintVersion {
+		// SCALIBR prints the version and exits so other flags don't need to be present.
+		return nil
+	}
 	if len(flags.ResultFile) == 0 && len(flags.Output) == 0 {
 		return errors.New("either --result or --o needs to be set")
 	}

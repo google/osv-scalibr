@@ -47,7 +47,7 @@ var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 
 // ToPURL converts a SCALIBR package structure into a package URL.
 func ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.Extractor.ToPURL(p)
+	return p.PURL()
 }
 
 // SPDXConfig describes custom settings that should be applied to the generated SPDX file.

@@ -37,7 +37,7 @@ import (
 	"github.com/google/osv-scalibr/stats"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // Name is the name for the RPM extractor
@@ -278,12 +278,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*rpmmeta.Metadata)
-	if m.OSID == "rhel" {
-		return "Red Hat"
-	} else if m.OSID == "rocky" {
-		return "Rocky Linux"
-	}
-	return ""
+	return p.Ecosystem()
 }

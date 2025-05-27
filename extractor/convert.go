@@ -20,6 +20,7 @@ import (
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
+	osecosystem "github.com/google/osv-scalibr/extractor/filesystem/os/ecosystem"
 	ospurl "github.com/google/osv-scalibr/extractor/filesystem/os/purl"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	cdxpurl "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/purl"
@@ -29,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// ToPURL converts a SCALIBR package structure into a package URL.
+// toPURL converts a SCALIBR package structure into a package URL.
 func toPURL(p *Package) *purl.PackageURL {
 	if p.PURLType == "" {
 		return nil
@@ -75,4 +76,45 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	}
 	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil
+}
+
+// toEcosystem converts a SCALIBR package structure into an OSV ecosystem value
+// defined in https://ossf.github.io/osv-schema/#defined-ecosystems
+func toEcosystem(p *Package) string {
+	switch p.PURLType {
+	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeKernelModule:
+		return osecosystem.MakeEcosystem(p.Metadata)
+	case purl.TypePyPi:
+		return "PyPI"
+	case purl.TypeMaven:
+		return "Maven"
+	case purl.TypeNPM:
+		return "npm"
+	case purl.TypeGolang:
+		return "Go"
+	case purl.TypeCocoapods:
+		return "CocoaPods"
+	case purl.TypeConan:
+		return "ConanCenter"
+	case purl.TypeCran:
+		return "CRAN"
+	case purl.TypeGem:
+		return "RubyGems"
+	case purl.TypeNuget:
+		return "NuGet"
+	case purl.TypeHaskell:
+		return "Hackage"
+	case purl.TypeHex:
+		return "Hex"
+	case purl.TypeComposer:
+		return "Packagist"
+	case purl.TypeCargo:
+		return "crates.io"
+	case purl.TypePub:
+		return "Pub"
+	}
+
+	// No Ecosystem defined for this package.
+	return ""
 }

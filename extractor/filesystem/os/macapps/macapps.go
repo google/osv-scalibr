@@ -29,7 +29,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"github.com/groob/plist"
+	"github.com/micromdm/plist"
 )
 
 const (
