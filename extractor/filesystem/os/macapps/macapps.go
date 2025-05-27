@@ -199,15 +199,3 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 
 	return p, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Package.
-func (e Extractor) ToCPEs(p *extractor.Package) []string { return nil }
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

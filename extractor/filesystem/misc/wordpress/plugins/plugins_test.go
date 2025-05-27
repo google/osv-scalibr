@@ -214,22 +214,3 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	e := plugins.Extractor{}
-	i := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeWordpress,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeWordpress,
-		Name:    "Name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-	}
-}

@@ -499,22 +499,3 @@ func TestExtractEggWithoutSize(t *testing.T) {
 		t.Fatalf("Extract(%s) got err: '%v', want err: '%v'", path, gotErr, wantErr)
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	e := wheelegg.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}

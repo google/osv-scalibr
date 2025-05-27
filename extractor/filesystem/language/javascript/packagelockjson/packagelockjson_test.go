@@ -20,13 +20,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -143,25 +140,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := packagelockjson.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeNPM,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }
 

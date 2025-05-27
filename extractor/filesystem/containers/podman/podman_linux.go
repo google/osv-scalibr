@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // FileRequired returns true if the specified file matches podman db file pattern.
@@ -82,9 +81,3 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 	return inventory.Inventory{Packages: pkgs}, nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL { return nil }
-
-// Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (Extractor) Ecosystem(i *extractor.Package) string { return "" }

@@ -32,7 +32,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -290,11 +289,3 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 
 	return md, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no ecosystem since the Package is not a software package.
-func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

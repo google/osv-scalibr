@@ -147,16 +147,4 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
-func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return p.Ecosystem()
-}
-
 var _ filesystem.Extractor = Extractor{}

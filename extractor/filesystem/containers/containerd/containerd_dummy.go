@@ -21,11 +21,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // Name is the name for the extractor
@@ -70,9 +68,3 @@ func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, errors.New("not supported")
 }
-
-// ToPURL not implemented.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL { return nil }
-
-// Ecosystem not defined.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

@@ -38,7 +38,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -492,9 +491,3 @@ func runhcsInitPid(scanRoot string, namespace string, id string) int {
 	}
 	return initPID
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL { return nil }
-
-// Ecosystem returns no ecosystem since the Package is not a software package.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

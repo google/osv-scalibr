@@ -28,7 +28,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -156,12 +155,3 @@ func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName strin
 		PURLType: "windows",
 	}, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

@@ -36,7 +36,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
 	fen "github.com/google/osv-scalibr/testing/fakeenricher"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
@@ -382,9 +381,6 @@ func (fakeExNeedsNetwork) FileRequired(_ filesystem.FileAPI) bool { return false
 func (fakeExNeedsNetwork) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, nil
 }
-func (e fakeExNeedsNetwork) ToPURL(p *extractor.Package) *purl.PackageURL { return nil }
-func (e fakeExNeedsNetwork) Ecosystem(p *extractor.Package) string        { return "" }
-
 func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }

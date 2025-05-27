@@ -74,7 +74,6 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	}
-	// TODO(b/400910349): Add remaining type-specific conversion logic.
 	return nil
 }
 

@@ -540,23 +540,3 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	e := requirements.Extractor{}
-	p := &extractor.Package{
-		PURLType:  purl.TypePyPi,
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-		Metadata:  &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123xyz"}},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}

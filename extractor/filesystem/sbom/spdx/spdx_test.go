@@ -256,29 +256,6 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	e := spdx.Extractor{}
-	want := &purl.PackageURL{
-		Type:      purl.TypePyPi,
-		Name:      "name",
-		Namespace: "namespace",
-		Version:   "1.2.3",
-	}
-	p := &extractor.Package{
-		Name:     "name",
-		PURLType: purl.TypePyPi,
-		Metadata: &spdxmeta.Metadata{
-			PURL: want,
-			CPEs: []string{},
-		},
-		Locations: []string{"location"},
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}
-
 func pkgLess(i1, i2 *extractor.Package) bool {
 	return i1.Name < i2.Name
 }

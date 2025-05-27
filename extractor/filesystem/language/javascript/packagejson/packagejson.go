@@ -247,17 +247,3 @@ func removeEmptyPersons(persons []*Person) []*Person {
 	}
 	return result
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-// OSV requires the name field to be a npm package. This is a javascript extractor, there is no
-// guarantee that the package is an npm package.
-// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
-func (Extractor) Ecosystem(p *extractor.Package) string {
-	return p.Ecosystem()
-}

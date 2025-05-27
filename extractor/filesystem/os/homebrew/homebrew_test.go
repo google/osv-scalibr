@@ -181,43 +181,6 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	tests := []struct {
-		name string
-		pkgs []*extractor.Package
-		want *purl.PackageURL
-	}{
-		{
-			name: "cask_firefox",
-			pkgs: []*extractor.Package{
-				{
-					Name:      "firefox",
-					Version:   "129.0",
-					PURLType:  purl.TypeBrew,
-					Locations: []string{"System/Volumes/Data/usr/local/Caskroom/firefox/129.0/firefox.wrapper.sh"},
-				},
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeBrew,
-				Name:    "firefox",
-				Version: "129.0",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := homebrew.Extractor{}
-			for _, p := range tt.pkgs {
-				got := e.ToPURL(p)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-				}
-			}
-		})
-	}
-}
-
 func TestSplitPath(t *testing.T) {
 	tests := []struct {
 		name string

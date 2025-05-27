@@ -20,10 +20,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // FileRequired dummy implementation for non-Linux
@@ -35,9 +33,3 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, errors.New("only supported on Linux")
 }
-
-// ToPURL dummy implementation for non-Linux
-func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL { return nil }
-
-// Ecosystem dummy implementation for non-Linux
-func (Extractor) Ecosystem(i *extractor.Package) string { return "" }

@@ -186,15 +186,3 @@ func parse(r io.Reader) ([]pkg, error) {
 
 	return packages, nil
 }
-
-// ToPURL converts a package item into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV Ecosystem for Swift.
-// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
-func (Extractor) Ecosystem(p *extractor.Package) string {
-	return p.Ecosystem()
-}

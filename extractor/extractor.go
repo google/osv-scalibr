@@ -23,9 +23,6 @@ import (
 // Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
-	// Ecosystem returns the Ecosystem of the given package created by this extractor.
-	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
-	Ecosystem(p *Package) string
 }
 
 // LINT.IfChange
@@ -66,7 +63,6 @@ type Package struct {
 	// Paths or source of files related to the package.
 	Locations []string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
-	// TODO(b/400910349): Set in all package extractors.
 	PURLType string
 	// The Extractor that found this software instance. Set by the core library.
 	Extractor Extractor

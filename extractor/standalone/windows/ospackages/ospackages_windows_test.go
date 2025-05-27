@@ -207,32 +207,3 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	tests := []struct {
-		name string
-		pkg  *extractor.Package
-		want *purl.PackageURL
-	}{
-		{
-			name: "googet_package",
-			pkg:  &extractor.Package{Name: "GooGet - some package", Version: "1.0.0", PURLType: purl.TypeGooget},
-			want: &purl.PackageURL{Type: purl.TypeGooget, Name: "GooGet - some package", Version: "1.0.0"},
-		},
-		{
-			name: "normal_windows_package",
-			pkg:  &extractor.Package{Name: "Some software", Version: "1.0.0", PURLType: "windows"},
-			want: &purl.PackageURL{Type: purl.TypeGeneric, Namespace: "microsoft", Name: "Some software", Version: "1.0.0"},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			e := Extractor{}
-			got := e.ToPURL(tc.pkg)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) returned an unexpected diff (-want +got): %v", tc.pkg, diff)
-			}
-		})
-	}
-}

@@ -19,12 +19,10 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/mixlockutils"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -58,18 +56,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Parse the Mix.lock file using mixlockutils
 	return mixlockutils.ParseMixLockFile(input)
-}
-
-// ToPURL converts a package created by this extractor into a PURL using mixlockutils.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
-func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

@@ -22,11 +22,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // Name of the extractor
@@ -57,11 +55,3 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, errors.New("only supported on Linux")
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e *Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no ecosystem.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

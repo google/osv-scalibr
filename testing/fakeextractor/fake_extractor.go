@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 // NamesErr is a list of Package names and an error.
@@ -109,18 +108,4 @@ func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput
 	}
 
 	return inventory.Inventory{Packages: pkgs}, namesErr.Err
-}
-
-// ToPURL returns a fake PURL based on the package name+version.
-func (e *fakeExtractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    p.Name,
-		Version: p.Version,
-	}
-}
-
-// Ecosystem returns a fake ecosystem.
-func (e *fakeExtractor) Ecosystem(p *extractor.Package) string {
-	return "FakeEcosystem"
 }

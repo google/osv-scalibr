@@ -224,22 +224,3 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	e := gemspec.Extractor{}
-	p := &extractor.Package{
-		Name:      "name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeGem,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeGem,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}
