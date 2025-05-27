@@ -55,6 +55,7 @@ func run(args []string) int {
 
 func parseFlags(args []string) (*cli.Flags, error) {
 	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
+	printVersion := fs.Bool("version", false, `Prints the version of the scanner`)
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
@@ -63,6 +64,8 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag([]string{"default"})
 	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
+	annotatorsToRun := cli.NewStringListFlag([]string{"default"})
+	fs.Var(&annotatorsToRun, "annotators", "Comma-separated list of annotators plugins to run")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -86,6 +89,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	filterByCapabilities := fs.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
 	windowsAllDrives := fs.Bool("windows-all-drives", false, "Scan all drives on Windows")
 	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
+	localRegistry := fs.String("local-registry", "", "The local directory to store the downloaded manifests during dependency resolution.")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -93,11 +97,13 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
+		PrintVersion:               *printVersion,
 		Root:                       *root,
 		ResultFile:                 *resultFile,
 		Output:                     output,
 		ExtractorsToRun:            extractorsToRun.GetSlice(),
 		DetectorsToRun:             detectorsToRun.GetSlice(),
+		AnnotatorsToRun:            annotatorsToRun.GetSlice(),
 		PathsToExtract:             pathsToExtract,
 		IgnoreSubDirs:              *ignoreSubDirs,
 		DirsToSkip:                 dirsToSkip.GetSlice(),
@@ -121,6 +127,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		FilterByCapabilities:       *filterByCapabilities,
 		WindowsAllDrives:           *windowsAllDrives,
 		Offline:                    *offline,
+		LocalRegistry:              *localRegistry,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err

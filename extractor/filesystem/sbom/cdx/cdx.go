@@ -25,6 +25,7 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -141,9 +142,9 @@ func (e Extractor) convertCdxBomToPackage(cdxBom *cyclonedx.BOM, path string) []
 
 func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Package {
 	pkg := &extractor.Package{
-		Metadata: &Metadata{},
+		Metadata: &cdxmeta.Metadata{},
 	}
-	m := pkg.Metadata.(*Metadata)
+	m := pkg.Metadata.(*cdxmeta.Metadata)
 	pkg.Name = cdxPkg.Name
 	pkg.Version = cdxPkg.Version
 	if cdxPkg.CPE != "" {
@@ -155,6 +156,7 @@ func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Package 
 			log.Warnf("Invalid PURL %q for package ref: %q", cdxPkg.PackageURL, cdxPkg.BOMRef)
 		} else {
 			m.PURL = &packageURL
+			pkg.PURLType = packageURL.Type
 			if pkg.Name == "" {
 				pkg.Name = packageURL.Name
 			}
@@ -177,16 +179,13 @@ func hasFileExtension(path string, extension string) bool {
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.Metadata.(*Metadata).PURL
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	purl := p.Metadata.(*Metadata).PURL
-	if purl == nil {
-		return ""
-	}
-	// This is a heuristic. In most cases, the ecosystem _not_ the same as the PURL type.
-	return purl.Type
+	return p.Ecosystem()
 }

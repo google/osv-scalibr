@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -179,9 +180,10 @@ func TestExtract(t *testing.T) {
 			osrelease: Gentoo,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "Getopt-Long",
-					Version: "2.580.0",
-					Metadata: &portage.Metadata{
+					Name:     "Getopt-Long",
+					Version:  "2.580.0",
+					PURLType: purl.TypePortage,
+					Metadata: &portagemeta.Metadata{
 						PackageName:    "Getopt-Long",
 						PackageVersion: "2.580.0",
 						OSID:           "gentoo",
@@ -277,12 +279,12 @@ func TestToPURL(t *testing.T) {
 	e := portage.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *portage.Metadata
+		metadata *portagemeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &portage.Metadata{
+			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				OSID:           "Gentoo",
@@ -300,7 +302,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only VERSION_ID set",
-			metadata: &portage.Metadata{
+			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				OSID:           "linux",
@@ -318,7 +320,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "ID not set, fallback to linux",
-			metadata: &portage.Metadata{
+			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				OSVersionID:    "jammy",
@@ -339,6 +341,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      pkgName,
 				Version:   pkgVersion,
+				PURLType:  purl.TypePortage,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -354,24 +357,24 @@ func TestEcosystem(t *testing.T) {
 	e := portage.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *portage.Metadata
+		metadata *portagemeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS ID present",
-			metadata: &portage.Metadata{
+			metadata: &portagemeta.Metadata{
 				OSID: "gentoo",
 			},
 			want: "Gentoo",
 		},
 		{
 			name:     "OS ID not present",
-			metadata: &portage.Metadata{},
+			metadata: &portagemeta.Metadata{},
 			want:     "Linux",
 		},
 		{
 			name: "OS version present",
-			metadata: &portage.Metadata{
+			metadata: &portagemeta.Metadata{
 				OSID:        "gentoo",
 				OSVersionID: "2.17",
 			},
@@ -381,6 +384,7 @@ func TestEcosystem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &extractor.Package{
+				PURLType: purl.TypePortage,
 				Metadata: tt.metadata,
 			}
 			got := e.Ecosystem(p)

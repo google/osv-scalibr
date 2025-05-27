@@ -1238,8 +1238,6 @@ func TestTopFS(t *testing.T) {
 						fileNodeTree: func() *Node {
 							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
-								extractDir:  "",
-								layerDir:    "",
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,

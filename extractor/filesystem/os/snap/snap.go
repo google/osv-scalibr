@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -176,9 +177,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	}
 
 	pkg := &extractor.Package{
-		Name:    snap.Name,
-		Version: snap.Version,
-		Metadata: &Metadata{
+		Name:     snap.Name,
+		Version:  snap.Version,
+		PURLType: purl.TypeSnap,
+		Metadata: &snapmeta.Metadata{
 			Name:              snap.Name,
 			Version:           snap.Version,
 			Grade:             snap.Grade,
@@ -193,52 +195,14 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	return []*extractor.Package{pkg}, nil
 }
 
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to ''")
-	return ""
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. jammy
-	if m.OSVersionCodename != "" {
-		return m.OSVersionCodename
-	}
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
-	return ""
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeSnap,
-		Namespace:  toNamespace(m),
-		Name:       m.Name,
-		Version:    m.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	if m.OSID == "ubuntu" {
-		return "Ubuntu"
-	}
-	log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
-	return ""
+	return p.Ecosystem()
 }

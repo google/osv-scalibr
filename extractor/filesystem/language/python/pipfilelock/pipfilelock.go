@@ -19,7 +19,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -28,8 +30,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -87,7 +87,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		details[key].Locations = []string{input.Path}
 	}
 
-	return inventory.Inventory{Packages: maps.Values(details)}, nil
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
 func addPkgDetails(details map[string]*extractor.Package, packages map[string]pipenvPackage, group string) {
@@ -134,8 +134,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "PyPI"
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

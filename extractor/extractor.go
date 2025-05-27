@@ -23,8 +23,6 @@ import (
 // Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
-	// ToPURL converts a package created by this extractor into a PURL.
-	ToPURL(p *Package) *purl.PackageURL
 	// Ecosystem returns the Ecosystem of the given package created by this extractor.
 	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
 	Ecosystem(p *Package) string
@@ -99,7 +97,6 @@ const (
 )
 
 // PURL returns the Package URL of this package.
-// TODO(b/400910349): Implement for all package types.
 func (p *Package) PURL() *purl.PackageURL {
 	return toPURL(p)
 }
@@ -107,7 +104,7 @@ func (p *Package) PURL() *purl.PackageURL {
 // Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
 func (p *Package) Ecosystem() string {
-	return p.Extractor.Ecosystem(p)
+	return toEcosystem(p)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

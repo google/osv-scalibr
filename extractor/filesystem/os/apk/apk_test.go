@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -290,12 +291,12 @@ func TestToPURL(t *testing.T) {
 	e := apk.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *apk.Metadata
+		metadata *apkmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "all fields present",
-			metadata: &apk.Metadata{
+			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
 				OSID:        "id",
@@ -311,7 +312,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS ID missing",
-			metadata: &apk.Metadata{
+			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
 				OSVersionID: "4.5.6",
@@ -326,7 +327,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS version ID missing",
-			metadata: &apk.Metadata{
+			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
 				OSID:        "id",
@@ -345,6 +346,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      "Name",
 				Version:   "1.2.3",
+				PURLType:  purl.TypeApk,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -360,26 +362,26 @@ func TestEcosystem(t *testing.T) {
 	e := apk.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *apk.Metadata
+		metadata *apkmeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS version trimmed",
-			metadata: &apk.Metadata{
+			metadata: &apkmeta.Metadata{
 				OSVersionID: "4.5.6",
 			},
 			want: "Alpine:v4.5",
 		},
 		{
 			name: "short OS version not trimmed",
-			metadata: &apk.Metadata{
+			metadata: &apkmeta.Metadata{
 				OSVersionID: "4",
 			},
 			want: "Alpine:v4",
 		},
 		{
 			name:     "no OS version",
-			metadata: &apk.Metadata{},
+			metadata: &apkmeta.Metadata{},
 			want:     "Alpine",
 		},
 	}
@@ -388,6 +390,7 @@ func TestEcosystem(t *testing.T) {
 			p := &extractor.Package{
 				Name:      "Name",
 				Version:   "1.2.3",
+				PURLType:  purl.TypeApk,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -404,7 +407,8 @@ func getPackage(path, pkgName, origin, version, osID, osVersionID, maintainer, a
 		Locations: []string{path},
 		Name:      pkgName,
 		Version:   version,
-		Metadata: &apk.Metadata{
+		PURLType:  purl.TypeApk,
+		Metadata: &apkmeta.Metadata{
 			PackageName:  pkgName,
 			OriginName:   origin,
 			OSID:         osID,

@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"go/version"
 	"io"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -29,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/exp/maps"
 	"golang.org/x/mod/modfile"
 )
 
@@ -83,14 +84,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// At go 1.17 and above, the go command adds an indirect requirement for each module that provides any
 	// package imported (even indirectly) by a package or test in the main module or passed as an argument to go get.
 	if goVersion == "" || version.Compare("go"+goVersion, "go1.17") >= 0 {
-		return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
+		return inventory.Inventory{Packages: slices.Collect(maps.Values(pkgs))}, nil
 	}
 
 	// For versions below 1.17 extract indirect dependencies from the go.sum file
 	sumPkgs, err := extractFromSum(input)
 	if err != nil {
 		log.Warnf("could not extract from %s's sum file: %w", input.Path, err)
-		return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
+		return inventory.Inventory{Packages: slices.Collect(maps.Values(pkgs))}, nil
 	}
 
 	// merge go.sum packages with go.mod ones
@@ -104,7 +105,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 	}
 
-	return inventory.Inventory{Packages: maps.Values(pkgs)}, nil
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(pkgs))}, nil
 }
 
 func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package, goVersion, error) {
@@ -202,8 +203,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "Go"
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

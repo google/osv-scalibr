@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -157,9 +158,10 @@ func TestExtract(t *testing.T) {
 			osrelease: DebianBookworm,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "org.gimp.GIMP",
-					Version: "2.10.38",
-					Metadata: &flatpak.Metadata{
+					Name:     "org.gimp.GIMP",
+					Version:  "2.10.38",
+					PURLType: purl.TypeFlatpak,
+					Metadata: &flatpakmeta.Metadata{
 						PackageName:    "GNU Image Manipulation Program",
 						PackageID:      "org.gimp.GIMP",
 						PackageVersion: "2.10.38",
@@ -180,9 +182,10 @@ func TestExtract(t *testing.T) {
 			osrelease: DebianBookworm,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "org.gimp.GIMP",
-					Version: "2.10.38",
-					Metadata: &flatpak.Metadata{
+					Name:     "org.gimp.GIMP",
+					Version:  "2.10.38",
+					PURLType: purl.TypeFlatpak,
+					Metadata: &flatpakmeta.Metadata{
 						PackageName:    "",
 						PackageID:      "org.gimp.GIMP",
 						PackageVersion: "2.10.38",
@@ -279,12 +282,12 @@ func TestToPURL(t *testing.T) {
 	e := flatpak.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *flatpak.Metadata
+		metadata *flatpakmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "Both VERSION_ID and BUILD_ID is set",
-			metadata: &flatpak.Metadata{
+			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
 				PackageVersion: pkgversion,
@@ -307,7 +310,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "only BUILD_ID set",
-			metadata: &flatpak.Metadata{
+			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
 				PackageVersion: pkgversion,
@@ -329,7 +332,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OS_ID not set",
-			metadata: &flatpak.Metadata{
+			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
 				PackageVersion: pkgversion,
@@ -355,6 +358,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      pkgname,
 				Version:   pkgversion,
+				PURLType:  purl.TypeFlatpak,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}

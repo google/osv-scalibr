@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -114,14 +115,15 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
-					Metadata: &spdx.Metadata{
+					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.spdx.json"},
 				},
 				{
-					Name: "openssl",
-					Metadata: &spdx.Metadata{
+					Name:     "openssl",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Locations: []string{"testdata/sbom.spdx.json"},
@@ -133,16 +135,18 @@ func TestExtract(t *testing.T) {
 			path: "testdata/purl_and_cpe.spdx.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name: "nginx",
-					Metadata: &spdx.Metadata{
+					Name:     "nginx",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						PURL: getPURL("nginx", "1.21.1"),
 					},
 					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
 				},
 				{
-					Name: "openssl",
-					Metadata: &spdx.Metadata{
+					Name:     "openssl",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
@@ -155,14 +159,15 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
-					Metadata: &spdx.Metadata{
+					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.spdx"},
 				},
 				{
-					Name: "openssl",
-					Metadata: &spdx.Metadata{
+					Name:     "openssl",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Locations: []string{"testdata/sbom.spdx"},
@@ -175,14 +180,15 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
-					Metadata: &spdx.Metadata{
+					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.spdx.yml"},
 				},
 				{
-					Name: "openssl",
-					Metadata: &spdx.Metadata{
+					Name:     "openssl",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Locations: []string{"testdata/sbom.spdx.yml"},
@@ -195,14 +201,15 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
-					Metadata: &spdx.Metadata{
+					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.spdx.rdf"},
 				},
 				{
-					Name: "openssl",
-					Metadata: &spdx.Metadata{
+					Name:     "openssl",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Locations: []string{"testdata/sbom.spdx.rdf"},
@@ -258,8 +265,9 @@ func TestToPURL(t *testing.T) {
 		Version:   "1.2.3",
 	}
 	p := &extractor.Package{
-		Name: "name",
-		Metadata: &spdx.Metadata{
+		Name:     "name",
+		PURLType: purl.TypePyPi,
+		Metadata: &spdxmeta.Metadata{
 			PURL: want,
 			CPEs: []string{},
 		},

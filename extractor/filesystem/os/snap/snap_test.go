@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -172,8 +173,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
+					PURLType:  purl.TypeSnap,
 					Locations: []string{"testdata/single-arch.yaml"},
-					Metadata: &snap.Metadata{
+					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",
 						Grade:             "stable",
@@ -195,8 +197,9 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
+					PURLType:  purl.TypeSnap,
 					Locations: []string{"testdata/multi-arch.yaml"},
-					Metadata: &snap.Metadata{
+					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",
 						Grade:             "stable",
@@ -298,12 +301,12 @@ func TestToPURL(t *testing.T) {
 	e := snap.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *snap.Metadata
+		metadata *snapmeta.Metadata
 		want     *purl.PackageURL
 	}{
 		{
 			name: "Both VERSION_CODENAME and VERSION_ID are set",
-			metadata: &snap.Metadata{
+			metadata: &snapmeta.Metadata{
 				Name:              snapName,
 				Version:           snapVersion,
 				Grade:             snapGrade,
@@ -325,7 +328,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "Only VERSION_ID is set",
-			metadata: &snap.Metadata{
+			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
 				Grade:         snapGrade,
@@ -346,7 +349,7 @@ func TestToPURL(t *testing.T) {
 		},
 		{
 			name: "OSID, VERSION_CODENAME and VERSION_ID all are not set",
-			metadata: &snap.Metadata{
+			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
 				Grade:         snapGrade,
@@ -367,6 +370,7 @@ func TestToPURL(t *testing.T) {
 			p := &extractor.Package{
 				Name:      snapName,
 				Version:   snapVersion,
+				PURLType:  purl.TypeSnap,
 				Metadata:  tt.metadata,
 				Locations: []string{"location"},
 			}
@@ -382,25 +386,26 @@ func TestEcosystem(t *testing.T) {
 	e := snap.Extractor{}
 	tests := []struct {
 		name     string
-		metadata *snap.Metadata
+		metadata *snapmeta.Metadata
 		want     string
 	}{
 		{
 			name: "OS ID present",
-			metadata: &snap.Metadata{
+			metadata: &snapmeta.Metadata{
 				OSID: "ubuntu",
 			},
 			want: "Ubuntu",
 		},
 		{
 			name:     "OS ID not present",
-			metadata: &snap.Metadata{},
+			metadata: &snapmeta.Metadata{},
 			want:     "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &extractor.Package{
+				PURLType: purl.TypeSnap,
 				Metadata: tt.metadata,
 			}
 			got := e.Ecosystem(p)

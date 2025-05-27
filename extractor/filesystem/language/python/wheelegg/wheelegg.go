@@ -103,6 +103,7 @@ var (
 		".dist-info/METADATA",
 		// zip file with Metadata files inside.
 		".egg",
+		".whl",
 	}
 )
 
@@ -150,7 +151,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var err error
 	var pkgs []*extractor.Package
-	if strings.HasSuffix(input.Path, ".egg") {
+	if strings.HasSuffix(input.Path, ".egg") || strings.HasSuffix(input.Path, ".whl") {
 		// TODO(b/280417821): In case extractZip returns no packages, we could parse the filename.
 		pkgs, err = e.extractZip(ctx, input)
 	} else {
@@ -267,4 +268,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
+}

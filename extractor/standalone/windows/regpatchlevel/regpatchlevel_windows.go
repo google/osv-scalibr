@@ -82,7 +82,7 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{RunningSystem: true}
+	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
 }
 
 // Extract retrieves the patch level from the Windows registry.
@@ -151,19 +151,16 @@ func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName strin
 	}
 
 	return &extractor.Package{
-		Name:    keyName,
-		Version: submatch[1],
+		Name:     keyName,
+		Version:  submatch[1],
+		PURLType: "windows",
 	}, nil
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:      purl.TypeGeneric,
-		Namespace: "microsoft",
-		Name:      p.Name,
-		Version:   p.Version,
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns no ecosystem since OSV does not support windows regpatchlevel yet.

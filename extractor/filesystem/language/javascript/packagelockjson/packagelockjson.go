@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path"
 	"path/filepath"
 	"slices"
@@ -33,8 +34,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -301,7 +300,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	packages := maps.Values(parseNpmLock(*parsedLockfile))
+	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))
 	result := make([]*extractor.Package, len(packages))
 
 	for i, pkg := range packages {
@@ -333,4 +332,7 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Package) string { return "npm" }
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (e Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
+}

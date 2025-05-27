@@ -17,10 +17,12 @@ package list
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -79,7 +81,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // InitFn is the extractor initializer function.
@@ -187,8 +188,11 @@ var (
 		podfilelock.Name:     {podfilelock.NewDefault},
 	}
 
-	// Container extractors.
-	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
+	// Containers extractors.
+	Containers = InitMap{
+		containerd.Name: {containerd.NewDefault},
+		podman.Name:     {podman.NewDefault},
+	}
 
 	// OS extractors.
 	OS = InitMap{
@@ -305,7 +309,7 @@ func concat(initMaps ...InitMap) InitMap {
 }
 
 func vals(initMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(initMap)...)
+	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified

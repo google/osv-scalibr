@@ -255,6 +255,12 @@ func parseAlpineNumberComponents(v *alpineVersion, str string) (string, error) {
 	}
 
 	for i, d := range strings.Split(sub, ".") {
+		// while technically not allowed by the spec, currently apk does not
+		// consider it invalid to have a dot that isn't followed by a digit
+		if d == "" {
+			break
+		}
+
 		value, err := convertToBigInt(d)
 
 		if err != nil {

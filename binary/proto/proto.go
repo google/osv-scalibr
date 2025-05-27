@@ -31,6 +31,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -40,22 +41,22 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
@@ -266,7 +267,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Type:           m.Type,
 			},
 		}
-	case *apk.Metadata:
+	case *apkmeta.Metadata:
 		p.Metadata = &spb.Package_ApkMetadata{
 			ApkMetadata: &spb.APKPackageMetadata{
 				PackageName:  m.PackageName,
@@ -278,7 +279,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				License:      m.License,
 			},
 		}
-	case *dpkg.Metadata:
+	case *dpkgmeta.Metadata:
 		p.Metadata = &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       m.PackageName,
@@ -293,7 +294,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Architecture:      m.Architecture,
 			},
 		}
-	case *snap.Metadata:
+	case *snapmeta.Metadata:
 		p.Metadata = &spb.Package_SnapMetadata{
 			SnapMetadata: &spb.SNAPPackageMetadata{
 				Name:              m.Name,
@@ -306,7 +307,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionId:       m.OSVersionID,
 			},
 		}
-	case *rpm.Metadata:
+	case *rpmmeta.Metadata:
 		p.Metadata = &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  m.PackageName,
@@ -321,7 +322,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				License:      m.License,
 			},
 		}
-	case *cos.Metadata:
+	case *cosmeta.Metadata:
 		p.Metadata = &spb.Package_CosMetadata{
 			CosMetadata: &spb.COSPackageMetadata{
 				Name:        m.Name,
@@ -331,7 +332,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionId: m.OSVersionID,
 			},
 		}
-	case *pacman.Metadata:
+	case *pacmanmeta.Metadata:
 		p.Metadata = &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:         m.PackageName,
@@ -341,7 +342,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				PackageDependencies: m.PackageDependencies,
 			},
 		}
-	case *portage.Metadata:
+	case *portagemeta.Metadata:
 		p.Metadata = &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    m.PackageName,
@@ -350,7 +351,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionId:    m.OSVersionID,
 			},
 		}
-	case *flatpak.Metadata:
+	case *flatpakmeta.Metadata:
 		p.Metadata = &spb.Package_FlatpakMetadata{
 			FlatpakMetadata: &spb.FlatpakPackageMetadata{
 				PackageName:    m.PackageName,
@@ -364,7 +365,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Developer:      m.Developer,
 			},
 		}
-	case *nix.Metadata:
+	case *nixmeta.Metadata:
 		p.Metadata = &spb.Package_NixMetadata{
 			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       m.PackageName,
@@ -395,7 +396,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 		p.Metadata = &spb.Package_HomebrewMetadata{
 			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
 		}
-	case *module.Metadata:
+	case *modulemeta.Metadata:
 		p.Metadata = &spb.Package_KernelModuleMetadata{
 			KernelModuleMetadata: &spb.KernelModuleMetadata{
 				PackageName:                    m.PackageName,
@@ -407,7 +408,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionId:                    m.OSVersionID,
 				PackageAuthor:                  m.PackageAuthor},
 		}
-	case *vmlinuz.Metadata:
+	case *vmlinuzmeta.Metadata:
 		p.Metadata = &spb.Package_VmlinuzMetadata{
 			VmlinuzMetadata: &spb.VmlinuzMetadata{
 				Name:              m.Name,
@@ -454,14 +455,14 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				RootfsPath:    m.RootFS,
 			},
 		}
-	case *spdx.Metadata:
+	case *spdxmeta.Metadata:
 		p.Metadata = &spb.Package_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
-	case *cdx.Metadata:
+	case *cdxmeta.Metadata:
 		p.Metadata = &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
@@ -537,6 +538,23 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Updated:              m.Updated,
 				IsPreReleaseVersion:  m.IsPreReleaseVersion,
 				InstalledTimestamp:   m.InstalledTimestamp,
+			},
+		}
+	case *podman.Metadata:
+		exposedPorts := map[uint32]*spb.Protocol{}
+		for p, protocols := range m.ExposedPorts {
+			exposedPorts[uint32(p)] = &spb.Protocol{Names: protocols}
+		}
+		p.Metadata = &spb.Package_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts:  exposedPorts,
+				Pid:           int32(m.PID),
+				NamespaceName: m.NameSpace,
+				StartedTime:   timestamppb.New(m.StartedTime),
+				FinishedTime:  timestamppb.New(m.FinishedTime),
+				Status:        m.Status,
+				ExitCode:      m.ExitCode,
+				Exited:        m.Exited,
 			},
 		}
 	case *docker.Metadata:

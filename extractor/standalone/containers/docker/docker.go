@@ -59,7 +59,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{RunningSystem: true}
 }
 
-// Extractor extracts containers from the docker API.
+// Extract extracts containers from the docker API.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error

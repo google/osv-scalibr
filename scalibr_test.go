@@ -25,6 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
@@ -89,8 +91,10 @@ func TestScan(t *testing.T) {
 			fen.MustHash(
 				t,
 				&enricher.ScanInput{
-					FS:   fs,
-					Root: tmp,
+					ScanRoot: &scalibrfs.ScanRoot{
+						FS:   fs,
+						Path: tmp,
+					},
 				},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
@@ -112,7 +116,7 @@ func TestScan(t *testing.T) {
 		Capabilities: &plugin.Capabilities{Network: plugin.NetworkOnline},
 		WantEnrich: map[uint64]fen.InventoryAndErr{
 			fen.MustHash(
-				t, &enricher.ScanInput{FS: fs, Root: tmp},
+				t, &enricher.ScanInput{ScanRoot: &scalibrfs.ScanRoot{FS: fs, Path: tmp}},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
 					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
@@ -144,7 +148,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "enricher", Version: 1, Status: success},
@@ -169,6 +174,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "multiple non-identical advisories with ID &{ CVE-1234}",
@@ -189,7 +195,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: extFailure},
@@ -210,7 +217,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: detFailure},
 					{Name: "python/wheelegg", Version: 1, Status: success},
@@ -231,7 +239,8 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Status: success,
+				Version: scalibr.ScannerVersion,
+				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector2", Version: 2, Status: success},
 					{Name: "enricher", Version: 1, Status: enrFailure},
@@ -250,6 +259,7 @@ func TestScan(t *testing.T) {
 				ScanRoots:            []*scalibrfs.ScanRoot{},
 			},
 			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "no scan root specified",
@@ -554,6 +564,7 @@ func TestAnnotator(t *testing.T) {
 
 	cfg := &scalibr.ScanConfig{
 		FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
+		Annotators:           []annotator.Annotator{cachedir.New()},
 		ScanRoots:            tmpRoot,
 	}
 
@@ -566,7 +577,6 @@ func TestAnnotator(t *testing.T) {
 
 	got := scalibr.New().Scan(context.Background(), cfg)
 
-	// We can't mock the time from here so we skip it in the comparison.
 	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
 		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)
 	}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -166,9 +167,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	pkgs := []*extractor.Package{}
 	for _, pkg := range packages.InstalledPackages {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:    pkg.Name,
-			Version: pkg.Version,
-			Metadata: &Metadata{
+			Name:     pkg.Name,
+			Version:  pkg.Version,
+			PURLType: purl.TypeCOS,
+			Metadata: &cosmeta.Metadata{
 				Name:          pkg.Name,
 				Version:       pkg.Version,
 				Category:      pkg.Category,
@@ -183,33 +185,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	return pkgs, nil
 }
 
-func toDistro(m *Metadata) string {
-	if m.OSVersionID != "" {
-		return "cos-" + m.OSVersionID
-	}
-
-	if m.OSVersion != "" {
-		log.Warnf("VERSION_ID not set in os-release, fallback to VERSION")
-		return "cos-" + m.OSVersion
-	}
-	log.Errorf("VERSION and VERSION_ID not set in os-release")
-	return ""
-}
-
 // ToPURL converts a package created by this extractor into a PURL.
+// TODO(b/400910349): Remove and use Package.PURL() directly.
 func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeCOS,
-		Name:       p.Name,
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
+	return p.PURL()
 }
 
 // Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.

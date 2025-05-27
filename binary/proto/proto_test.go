@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
@@ -38,12 +39,18 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
@@ -167,9 +174,10 @@ func TestScanResultToProto(t *testing.T) {
 	failure := &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"}
 	failureProto := &spb.ScanStatus{Status: spb.ScanStatus_FAILED, FailureReason: "failure"}
 	purlDPKGPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Metadata: &dpkg.Metadata{
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
 			PackageName:       "software",
 			PackageVersion:    "1.0.0",
 			OSID:              "debian",
@@ -181,9 +189,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: dpkg.New(dpkg.DefaultConfig()),
 	}
 	purlDPKGAnnotationPackage := &extractor.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Metadata: &dpkg.Metadata{
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
 			PackageName:       "software",
 			PackageVersion:    "1.0.0",
 			OSID:              "debian",
@@ -274,8 +283,9 @@ func TestScanResultToProto(t *testing.T) {
 	}
 
 	windowsPackage := &extractor.Package{
-		Name:    "windows_server_2019",
-		Version: "10.0.17763.3406",
+		Name:     "windows_server_2019",
+		Version:  "10.0.17763.3406",
+		PURLType: "windows",
 		Metadata: &winmetadata.OSVersion{
 			Product:     "windows_server_2019",
 			FullVersion: "10.0.17763.3406",
@@ -401,11 +411,12 @@ func TestScanResultToProto(t *testing.T) {
 		},
 	}
 	cdxPackage := &extractor.Package{
-		Name:    "openssl",
-		Version: "1.1.1",
-		Metadata: &cdx.Metadata{
+		Name:     "openssl",
+		Version:  "1.1.1",
+		PURLType: purl.TypeNPM,
+		Metadata: &cdxmeta.Metadata{
 			PURL: &purl.PackageURL{
-				Type:    purl.TypeGeneric,
+				Type:    purl.TypeNPM,
 				Name:    "openssl",
 				Version: "1.1.1",
 			},
@@ -416,18 +427,18 @@ func TestScanResultToProto(t *testing.T) {
 	cdxPackageProto := &spb.Package{
 		Name:      "openssl",
 		Version:   "1.1.1",
-		Ecosystem: "generic",
+		Ecosystem: "npm",
 		Purl: &spb.Purl{
-			Purl:    "pkg:generic/openssl@1.1.1",
-			Type:    purl.TypeGeneric,
+			Purl:    "pkg:npm/openssl@1.1.1",
+			Type:    purl.TypeNPM,
 			Name:    "openssl",
 			Version: "1.1.1",
 		},
 		Metadata: &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: &spb.Purl{
-					Purl:    "pkg:generic/openssl@1.1.1",
-					Type:    purl.TypeGeneric,
+					Purl:    "pkg:npm/openssl@1.1.1",
+					Type:    purl.TypeNPM,
 					Name:    "openssl",
 					Version: "1.1.1",
 				},
@@ -437,9 +448,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "sbom/cdx",
 	}
 	purlRPMPackage := &extractor.Package{
-		Name:    "openssh-clients",
-		Version: "5.3p1",
-		Metadata: &rpm.Metadata{
+		Name:     "openssh-clients",
+		Version:  "5.3p1",
+		PURLType: purl.TypeRPM,
+		Metadata: &rpmmeta.Metadata{
 			PackageName:  "openssh-clients",
 			SourceRPM:    "openssh-5.3p1-124.el6_10.src.rpm",
 			Epoch:        2,
@@ -489,9 +501,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/rpm",
 	}
 	purlPACMANPackage := &extractor.Package{
-		Name:    "zstd",
-		Version: "1.5.6-1",
-		Metadata: &pacman.Metadata{
+		Name:     "zstd",
+		Version:  "1.5.6-1",
+		PURLType: purl.TypePacman,
+		Metadata: &pacmanmeta.Metadata{
 			PackageName:    "zstd",
 			PackageVersion: "1.5.6-1",
 			OSID:           "arch",
@@ -526,9 +539,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/pacman",
 	}
 	purlPORTAGEPackage := &extractor.Package{
-		Name:    "Capture-Tiny",
-		Version: "0.480.0-r1",
-		Metadata: &portage.Metadata{
+		Name:     "Capture-Tiny",
+		Version:  "0.480.0-r1",
+		PURLType: purl.TypePortage,
+		Metadata: &portagemeta.Metadata{
 			PackageName:    "Capture-Tiny",
 			PackageVersion: "0.480.0-r1",
 			OSID:           "gentoo",
@@ -563,9 +577,10 @@ func TestScanResultToProto(t *testing.T) {
 		Extractor: "os/portage",
 	}
 	purlNixPackage := &extractor.Package{
-		Name:    "attr",
-		Version: "2.5.2",
-		Metadata: &nix.Metadata{
+		Name:     "attr",
+		Version:  "2.5.2",
+		PURLType: purl.TypeNix,
+		Metadata: &nixmeta.Metadata{
 			PackageName:       "attr",
 			PackageVersion:    "2.5.2",
 			OSID:              "nixos",
@@ -603,6 +618,7 @@ func TestScanResultToProto(t *testing.T) {
 	purlHomebrewPackage := &extractor.Package{
 		Name:      "rclone",
 		Version:   "1.67.0",
+		PURLType:  purl.TypeBrew,
 		Metadata:  &homebrew.Metadata{},
 		Locations: []string{"/file1"},
 		Extractor: homebrew.Extractor{},
@@ -702,10 +718,11 @@ func TestScanResultToProto(t *testing.T) {
 			},
 		},
 		Purl: &spb.Purl{
-			Purl:      "pkg:generic/microsoft/windows_server_2019?buildnumber=10.0.17763.3406",
+			Purl:      "pkg:generic/microsoft/windows_server_2019@10.0.17763.3406?buildnumber=10.0.17763.3406",
 			Type:      purl.TypeGeneric,
 			Namespace: "microsoft",
 			Name:      "windows_server_2019",
+			Version:   "10.0.17763.3406",
 			Qualifiers: []*spb.Qualifier{
 				{
 					Key:   "buildnumber",
@@ -791,6 +808,39 @@ func TestScanResultToProto(t *testing.T) {
 				IsTransitive: true,
 			},
 		},
+	}
+
+	podmanPackage := &extractor.Package{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &podman.Metadata{
+			ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+			PID:          4232,
+			Status:       "running",
+			NameSpace:    "",
+			StartedTime:  endTime.Add(-10 * time.Minute),
+			FinishedTime: endTime.Add(-5 * time.Minute),
+			ExitCode:     0,
+			Exited:       false,
+		},
+		Extractor: &podman.Extractor{},
+	}
+	podmanPackageProto := &spb.Package{
+		Name:    "docker.io/redis",
+		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Metadata: &spb.Package_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts:  map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
+				Pid:           4232,
+				NamespaceName: "",
+				StartedTime:   timestamppb.New(endTime.Add(-10 * time.Minute)),
+				FinishedTime:  timestamppb.New(endTime.Add(-5 * time.Minute)),
+				Status:        "running",
+				ExitCode:      0,
+				Exited:        false,
+			},
+		},
+		Extractor: "containers/podman",
 	}
 
 	dockerPackage := &extractor.Package{
@@ -1241,6 +1291,43 @@ func TestScanResultToProto(t *testing.T) {
 					Findings: []*spb.Finding{},
 				},
 			},
+		},
+		{
+			desc: "Successful podman runtime scan linux-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{podmanPackage},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{podmanPackageProto},
+					Findings: []*spb.Finding{},
+				},
+			},
+			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
 			desc: "no package target, still works",

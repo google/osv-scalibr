@@ -113,8 +113,8 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		}
 
 		var pkgPURL string
-		if pkg.Extractor != nil {
-			pkgPURL = pkg.Extractor.ToPURL(pkg).String()
+		if pkg.PURL() != nil {
+			pkgPURL = pkg.PURL().String()
 		}
 
 		var foundOrigin bool
@@ -165,13 +165,9 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 
 			foundPackage := false
 			for _, oldPKG := range oldPackages {
-				if oldPKG.Extractor == nil {
-					continue
-				}
-
 				// PURLs are being used as a package key, so if they are different, skip this package.
-				oldPKGPURL := oldPKG.Extractor.ToPURL(oldPKG).String()
-				if oldPKGPURL != pkgPURL {
+				oldPKGPURL := oldPKG.PURL()
+				if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
 					continue
 				}
 

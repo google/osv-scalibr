@@ -17,12 +17,12 @@ package enricherlist
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // InitFn is the enricher initializer function.
@@ -62,7 +62,7 @@ func concat(initMaps ...InitMap) InitMap {
 }
 
 func vals(initMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(initMap)...)
+	return slices.Concat(slices.AppendSeq(make([][]InitFn, 0, len(initMap)), maps.Values(initMap))...)
 }
 
 // FromName returns a single extractor based on its exact name.

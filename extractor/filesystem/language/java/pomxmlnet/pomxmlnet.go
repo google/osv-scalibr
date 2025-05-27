@@ -18,7 +18,9 @@ package pomxmlnet
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"deps.dev/util/maven"
@@ -33,7 +35,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -44,7 +45,7 @@ const (
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
 	depClient   resolve.Client
-	mavenClient *datasource.MavenRegistryAPIClient
+	MavenClient *datasource.MavenRegistryAPIClient
 }
 
 // Config is the configuration for the pomxmlnet Extractor.
@@ -54,13 +55,13 @@ type Config struct {
 }
 
 // NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
-func NewConfig(registry string) Config {
+func NewConfig(remote, local string) Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	depClient, _ := resolution.NewMavenRegistryClient(registry)
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
-		URL:             registry,
+		URL:             remote,
 		ReleasesEnabled: true,
-	})
+	}, local)
+	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
 	return Config{
 		DependencyClient:       depClient,
 		MavenRegistryAPIClient: mavenClient,
@@ -69,14 +70,14 @@ func NewConfig(registry string) Config {
 
 // DefaultConfig returns the default configuration for the pomxmlnet extractor.
 func DefaultConfig() Config {
-	return NewConfig("")
+	return NewConfig("", "")
 }
 
 // New makes a new pom.xml transitive extractor with the given config.
 func New(c Config) *Extractor {
 	return &Extractor{
 		depClient:   c.DependencyClient,
-		mavenClient: c.MavenRegistryAPIClient,
+		MavenClient: c.MavenRegistryAPIClient,
 	}
 }
 
@@ -113,9 +114,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 	// Clear the registries that may be from other extraction.
-	e.mavenClient = e.mavenClient.WithoutRegistries()
+	e.MavenClient = e.MavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
-		if err := e.mavenClient.AddRegistry(datasource.MavenRegistry{
+		if err := e.MavenClient.AddRegistry(datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -127,7 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
 	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
 		Input:              input,
-		Client:             e.mavenClient,
+		Client:             e.MavenClient,
 		AddRegistry:        true,
 		AllowLocal:         true,
 		InitialParentIndex: 1,
@@ -139,10 +140,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
 	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, e.mavenClient, groupID, artifactID, version)
+		return mavenutil.GetDependencyManagement(ctx, e.MavenClient, groupID, artifactID, version)
 	})
 
-	if registries := e.mavenClient.GetRegistries(); len(registries) > 0 {
+	if registries := e.MavenClient.GetRegistries(); len(registries) > 0 {
 		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
 			clientRegs[i] = reg
@@ -238,7 +239,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		details[pkg.Name] = &pkg
 	}
 
-	return inventory.Inventory{Packages: maps.Values(details)}, nil
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
 // ToPURL converts a package created by this extractor into a PURL.
@@ -248,8 +249,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Package) string {
-	return "Maven"
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
+func (e Extractor) Ecosystem(p *extractor.Package) string {
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}

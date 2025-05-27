@@ -60,7 +60,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file is a Gemfile.lock file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "Gemfile.lock"
+	return slices.Contains([]string{"Gemfile.lock", "gems.locked"}, filepath.Base(api.Path()))
 }
 
 type gemlockSection struct {
@@ -110,6 +110,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	return sections, nil
 }
 
+// Extract extracts packages from the Gemfile.lock file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	sections, err := parseLockfileSections(input)
 	if err != nil {
@@ -153,8 +154,9 @@ func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
+// TODO(b/400910349): Remove and use Package.Ecosystem() directly.
 func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "RubyGems"
+	return p.Ecosystem()
 }
 
 var _ filesystem.Extractor = Extractor{}
