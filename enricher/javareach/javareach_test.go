@@ -37,8 +37,10 @@ func TestScan(t *testing.T) {
 	enr := javareach.Enricher{}
 	pkgs := setupPackages([]string{testJar})
 	input := enricher.ScanInput{
-		Root: filepath.Join("testdata", testJar),
-		FS:   scalibrfs.DirFS("."),
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: filepath.Join("testdata", testJar),
+			FS:   scalibrfs.DirFS("."),
+		},
 	}
 	inv := inventory.Inventory{
 		Packages: pkgs,

@@ -90,8 +90,9 @@ func (Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inve
 	return nil
 }
 
-func fmtJavaInventory(i *extractor.Package) string {
-	return fmt.Sprintf("%s:%s", i.Metadata.(*archivemeta.Metadata).GroupID, i.Name)
+func getFullPackageName(i *extractor.Package) string {
+	return fmt.Sprintf("%s:%s", i.Metadata.(*archivemeta.Metadata).GroupID,
+		i.Metadata.(*archivemeta.Metadata).ArtifactID)
 }
 
 func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enricher.ScanInput, inv *inventory.Inventory) error {
@@ -104,7 +105,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 
 	slices.SortFunc(allDeps, func(i1 *extractor.Package, i2 *extractor.Package) int {
-		return strings.Compare(fmtJavaInventory(i1), fmtJavaInventory(i2))
+		return strings.Compare(getFullPackageName(i1), getFullPackageName(i2))
 	})
 	for _, dep := range allDeps {
 		log.Debug("extracted dep",
@@ -112,21 +113,21 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 
 	// Unpack .jar
-	tmpDir, err := os.MkdirTemp("", "")
+	jarDir, err := os.MkdirTemp("", "osv-scalibr-javareach-")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(jarDir)
 
-	log.Debug("Unzipping", "jar", jarPath, "to", tmpDir)
-	nestedJARs, err := unzipJAR(jarPath, input, tmpDir)
+	log.Debug("Unzipping", "jar", jarPath, "to", jarDir)
+	nestedJARs, err := unzipJAR(jarPath, input, jarDir)
 	if err != nil {
 		return err
 	}
 
 	// Reachability analysis is limited to Maven-built JARs for now.
 	// Check for the existence of the Maven metadata directory.
-	_, err = os.Stat(filepath.Join(tmpDir, MavenDepDirPath))
+	_, err = os.Stat(filepath.Join(jarDir, MavenDepDirPath))
 	if err != nil {
 		log.Error("reachability analysis is only supported for JARs built with Maven.")
 		return ErrMavenDependencyNotFound
@@ -134,13 +135,13 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 
 	// Build .class -> Maven group ID:artifact ID mappings.
 	// TODO: Handle BOOT-INF and loading .jar dependencies from there.
-	classFinder, err := NewDefaultPackageFinder(ctx, allDeps, tmpDir)
+	classFinder, err := NewDefaultPackageFinder(ctx, allDeps, jarDir)
 	if err != nil {
 		return err
 	}
 
 	// Extract the main entrypoint.
-	manifest, err := os.Open(filepath.Join(tmpDir, ManifestFilePath))
+	manifest, err := os.Open(filepath.Join(jarDir, ManifestFilePath))
 	if err != nil {
 		return err
 	}
@@ -151,18 +152,18 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 	log.Debug("Found", "main classes", mainClasses)
 
-	classPaths := []string{tmpDir}
+	classPaths := []string{jarDir}
 	classPaths = append(classPaths, nestedJARs...)
 
 	// Spring Boot applications have classes in BOOT-INF/classes.
-	bootInfClasses := filepath.Join(tmpDir, BootInfClasses)
+	bootInfClasses := filepath.Join(jarDir, BootInfClasses)
 	if _, err := os.Stat(bootInfClasses); err == nil {
 		classPaths = append(classPaths, bootInfClasses)
 	}
 
 	// Look inside META-INF/services, which is used by
 	// https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html
-	servicesDir := filepath.Join(tmpDir, ServiceDirPath)
+	servicesDir := filepath.Join(jarDir, ServiceDirPath)
 	var optionalRootClasses []string
 	if _, err := os.Stat(servicesDir); err == nil {
 		var entries []string
@@ -271,7 +272,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 
 	for _, dep := range allDeps {
-		name := fmtJavaInventory(dep)
+		name := getFullPackageName(dep)
 		if _, ok := reachableDeps[name]; !ok {
 			log.Debug("Not reachable", "dep", name)
 		}
@@ -297,7 +298,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 // unzipJAR unzips a JAR to a target directory. It also returns a list of paths
 // to all the nested JARs found while unzipping.
 func unzipJAR(jarPath string, input *enricher.ScanInput, tmpDir string) (nestedJARs []string, err error) {
-	file, err := input.FS.Open(filepath.ToSlash(jarPath))
+	file, err := input.ScanRoot.FS.Open(filepath.ToSlash(jarPath))
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +312,6 @@ func unzipJAR(jarPath string, input *enricher.ScanInput, tmpDir string) (nestedJ
 
 	r, err := zip.NewReader(fileReaderAt, l)
 
-	// r, err := zip.OpenReader(jarPath)
 	if err != nil {
 		return nil, err
 	}
