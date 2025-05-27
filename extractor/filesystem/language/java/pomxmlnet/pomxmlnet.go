@@ -201,6 +201,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
+	if g.Error != "" {
+		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
+	}
+
 	copy(g.Edges, g.Edges)
 
 	details := map[string]*extractor.Package{}
