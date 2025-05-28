@@ -83,9 +83,11 @@ message Package {
   string ecosystem = 27;
   // Paths or source of files related to the package.
   repeated string locations = 2;
-  // The name of the Extractor that found this software. Set by the
+  // TODO(b/400910349): Remove once integrators stop using these fields.
+  string extractor_deprecated = 10 [deprecated = true];
+  // The names of the plugins that found this software. Set by the
   // core library.
-  string extractor = 10;
+  repeated string plugins = 49;
   // The additional data found in the package.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;

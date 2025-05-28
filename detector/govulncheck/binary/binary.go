@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
@@ -77,7 +78,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	var allErrs error = nil
 	for _, p := range px.GetAllOfType(purl.TypeGolang) {
 		// We only look at Go binaries (no source code).
-		if p.Extractor.Name() != gobinary.Name {
+		if !slices.Contains(p.Plugins, gobinary.Name) {
 			continue
 		}
 		for _, l := range p.Locations {
