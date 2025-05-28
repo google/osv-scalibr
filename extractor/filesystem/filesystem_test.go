@@ -136,8 +136,34 @@ func TestInitWalkContext(t *testing.T) {
 	}
 }
 
+// A fake extractor that only extracts directories.
+type fakeExtractorDirs struct {
+	dir  string
+	name string
+}
+
+func (fakeExtractorDirs) Name() string { return "ex-dirs" }
+func (fakeExtractorDirs) Version() int { return 1 }
+func (fakeExtractorDirs) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{ExtractFromDirs: true}
+}
+func (e fakeExtractorDirs) FileRequired(api filesystem.FileAPI) bool {
+	return api.Path() == e.dir
+}
+func (e fakeExtractorDirs) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := filepath.ToSlash(input.Path)
+	if path == e.dir {
+		return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
+			Name:      e.name,
+			Locations: []string{path},
+		}}}, nil
+	}
+	return inventory.Inventory{}, errors.New("unrecognized path")
+}
+
 func TestRunFS(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
+	dir1 := "dir1"
 	path1 := "dir1/file1.txt"
 	path2 := "dir2/sub/file2.txt"
 	fsys := setupMapFS(t, mapFS{
@@ -154,6 +180,8 @@ func TestRunFS(t *testing.T) {
 	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
 	fakeEx2WithPKG1 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name1}, Err: nil}})
 	fakeExWithPartialResult := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: errors.New("extraction failed")}})
+	fakeExDirs := &fakeExtractorDirs{dir: dir1, name: name2}
+	fakeExDirsRequiresFile := &fakeExtractorDirs{dir: path1, name: name2}
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -595,6 +623,36 @@ func TestRunFS(t *testing.T) {
 			},
 			wantInodeCount: 6,
 		},
+		{
+			desc: "Extractor runs on directory",
+			ex:   []filesystem.Extractor{fakeEx1, fakeExDirs},
+			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
+				{
+					Name:      name1,
+					Locations: []string{path1},
+					Extractor: fakeEx1,
+				},
+				{
+					Name:      name2,
+					Locations: []string{dir1},
+					Extractor: fakeExDirs,
+				},
+			}},
+			wantStatus: []*plugin.Status{
+				{Name: "ex1", Version: 1, Status: success},
+				{Name: "ex-dirs", Version: 1, Status: success},
+			},
+			wantInodeCount: 6,
+		},
+		{
+			desc:    "Directory Extractor ignores files",
+			ex:      []filesystem.Extractor{fakeExDirsRequiresFile},
+			wantPkg: inventory.Inventory{Packages: nil},
+			wantStatus: []*plugin.Status{
+				{Name: "ex-dirs", Version: 1, Status: success},
+			},
+			wantInodeCount: 6,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -648,7 +706,7 @@ func TestRunFS(t *testing.T) {
 				sort.Strings(p.Locations)
 			}
 
-			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(pkgLess), fe.AllowUnexported, cmpopts.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(pkgLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
