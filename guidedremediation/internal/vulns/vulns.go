@@ -21,7 +21,6 @@ import (
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
-	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -30,22 +29,13 @@ import (
 func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 	ecosystem := string(util.DepsDevToOSVEcosystem(vk.System))
 	p := &extractor.Package{
-		Name:      vk.Name,
-		Version:   vk.Version,
-		PURLType:  toPURLType(ecosystem),
-		Extractor: mockExtractor{},
-		Metadata:  vk.System,
+		Name:     vk.Name,
+		Version:  vk.Version,
+		PURLType: toPURLType(ecosystem),
+		Metadata: vk.System,
 	}
 	return p
 }
-
-// mockExtractor is for VKToPackage to get the ecosystem.
-type mockExtractor struct{}
-
-// Unnecessary methods stubbed out.
-func (e mockExtractor) Name() string                       { return "" }
-func (e mockExtractor) Requirements() *plugin.Capabilities { return nil }
-func (e mockExtractor) Version() int                       { return 0 }
 
 // toPURLType an OSV ecosystem into a PURL type.
 func toPURLType(ecosystem string) string {

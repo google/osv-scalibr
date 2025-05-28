@@ -17,6 +17,7 @@ package extracttest
 import (
 	"cmp"
 	"fmt"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 )
@@ -28,14 +29,6 @@ func PackageCmpLess(a, b *extractor.Package) bool {
 	aLoc := fmt.Sprintf("%v", a.Locations)
 	bLoc := fmt.Sprintf("%v", b.Locations)
 
-	var aExtr, bExtr string
-	if a.Extractor != nil {
-		aExtr = a.Extractor.Name()
-	}
-	if b.Extractor != nil {
-		bExtr = b.Extractor.Name()
-	}
-
 	aSourceCode := fmt.Sprintf("%v", a.SourceCode)
 	bSourceCode := fmt.Sprintf("%v", b.SourceCode)
 
@@ -44,6 +37,6 @@ func PackageCmpLess(a, b *extractor.Package) bool {
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.Version, b.Version),
 		cmp.Compare(aSourceCode, bSourceCode),
-		cmp.Compare(aExtr, bExtr),
+		cmp.Compare(strings.Join(a.Plugins, ","), strings.Join(b.Plugins, ",")),
 	) < 0
 }

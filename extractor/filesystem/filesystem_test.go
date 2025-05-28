@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
@@ -211,12 +212,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -234,7 +235,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -251,7 +252,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -268,7 +269,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -285,7 +286,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -302,12 +303,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -335,7 +336,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -363,12 +364,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -384,12 +385,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name1,
 					Locations: []string{path2},
-					Extractor: fakeEx2WithPKG1,
+					Plugins:   []string{fakeEx2WithPKG1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -407,7 +408,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -424,7 +425,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -441,7 +442,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -470,7 +471,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -510,7 +511,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeExWithPartialResult,
+					Plugins:   []string{fakeExWithPartialResult.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -569,12 +570,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{path2},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -592,7 +593,7 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -608,12 +609,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{filepath.Join(cwd, path1)},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{filepath.Join(cwd, path2)},
-					Extractor: fakeEx2,
+					Plugins:   []string{fakeEx2.Name()},
 				},
 			}},
 			storeAbsPath: true,
@@ -630,12 +631,12 @@ func TestRunFS(t *testing.T) {
 				{
 					Name:      name1,
 					Locations: []string{path1},
-					Extractor: fakeEx1,
+					Plugins:   []string{fakeEx1.Name()},
 				},
 				{
 					Name:      name2,
 					Locations: []string{dir1},
-					Extractor: fakeExDirs,
+					Plugins:   []string{fakeExDirs.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -706,7 +707,7 @@ func TestRunFS(t *testing.T) {
 				sort.Strings(p.Locations)
 			}
 
-			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(pkgLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
@@ -918,16 +919,6 @@ type fakeCollector struct {
 }
 
 func (c *fakeCollector) AfterInodeVisited(path string) { c.AfterInodeVisitedCount++ }
-
-func pkgLess(i1, i2 *extractor.Package) bool {
-	if i1.Name != i2.Name {
-		return i1.Name < i2.Name
-	}
-	if i1.Extractor.Name() != i2.Extractor.Name() {
-		return i1.Extractor.Name() < i2.Extractor.Name()
-	}
-	return false
-}
 
 // A fake implementation of fs.FS with a single file under root which errors when its opened.
 type fakeFS struct{}

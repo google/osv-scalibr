@@ -227,16 +227,23 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		return nil
 	}
 	p := converter.ToPURL(pkg)
+	firstPluginName := ""
+	if len(pkg.Plugins) > 0 {
+		firstPluginName = pkg.Plugins[0]
+	}
 	packageProto := &spb.Package{
-		Name:         pkg.Name,
-		Version:      pkg.Version,
-		SourceCode:   sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:         purlToProto(p),
-		Ecosystem:    pkg.Ecosystem(),
-		Locations:    pkg.Locations,
-		Extractor:    pkg.Extractor.Name(),
-		Annotations:  annotationsToProto(pkg.Annotations),
-		LayerDetails: layerDetailsToProto(pkg.LayerDetails),
+		Name:       pkg.Name,
+		Version:    pkg.Version,
+		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
+		Purl:       purlToProto(p),
+		Ecosystem:  pkg.Ecosystem(),
+		Locations:  pkg.Locations,
+		// TODO(b/400910349): Stop setting the deprecated fields
+		// once integrators no longer read them.
+		ExtractorDeprecated: firstPluginName,
+		Plugins:             pkg.Plugins,
+		Annotations:         annotationsToProto(pkg.Annotations),
+		LayerDetails:        layerDetailsToProto(pkg.LayerDetails),
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto

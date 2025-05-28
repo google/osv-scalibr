@@ -64,8 +64,8 @@ type Package struct {
 	Locations []string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
 	PURLType string
-	// The Extractor that found this software instance. Set by the core library.
-	Extractor Extractor
+	// The names of the Plugins that found this software instance. Set by the core library.
+	Plugins []string
 	// Annotations are additional information about the package that is useful for matching.
 	Annotations []Annotation
 	// Details about the layer that the package was attributed to.

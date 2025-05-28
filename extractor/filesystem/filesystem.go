@@ -507,7 +507,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	if !results.IsEmpty() {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results.Packages {
-			r.Extractor = ex
+			r.Plugins = append(r.Plugins, ex.Name())
 			if wc.storeAbsolutePath {
 				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
 			}

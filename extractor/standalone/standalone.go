@@ -73,7 +73,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 			continue
 		}
 		for _, p := range exInv.Packages {
-			p.Extractor = extractor
+			p.Plugins = append(p.Plugins, extractor.Name())
 		}
 
 		inv.Append(exInv)
