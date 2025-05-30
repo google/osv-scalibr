@@ -84,10 +84,8 @@ const (
 	// happens for example when packages are renamed.
 	Transitional
 	// InsideOSPackage is set for packages that are found inside an OS package.
-	// TODO(b/364536788): Annotation for language packages inside OS packages.
 	InsideOSPackage
 	// InsideCacheDir is set for packages that are found inside a cache directory.
-	// TODO(b/364539671): Annotation for packages inside cache directories.
 	InsideCacheDir
 )
 
