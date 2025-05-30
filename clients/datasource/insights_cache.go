@@ -17,7 +17,7 @@ package datasource
 import (
 	"time"
 
-	pb "deps.dev/api/v3"
+	pb "deps.dev/api/v3alpha"
 	"google.golang.org/protobuf/proto"
 )
 
