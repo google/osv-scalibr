@@ -78,6 +78,19 @@ func (p *Person) PersonString() string {
 	return result
 }
 
+// PersonFromString parses a string of the form "name <email> (url)" into a Person struct.
+func PersonFromString(s string) *Person {
+	if s == "" {
+		return nil
+	}
+	fields := internal.MatchNamedCaptureGroups(personPattern, s)
+	return &Person{
+		Name:  fields["name"],
+		Email: fields["email"],
+		URL:   fields["url"],
+	}
+}
+
 // JavascriptPackageJSONMetadata holds parsing information for a javascript package.json file.
 type JavascriptPackageJSONMetadata struct {
 	Author       *Person   `json:"author"`
