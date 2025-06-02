@@ -111,13 +111,16 @@ type Image struct {
 	contentBlob    *os.File
 }
 
-// TopFS returns the filesystem of the top-most chainlayer of the image. All available files should
+// FS returns the filesystem of the top-most chainlayer of the image. All available files should
 // be present in the filesystem returned.
-func (img *Image) TopFS() (scalibrfs.FS, error) {
+func (img *Image) FS() scalibrfs.FS {
 	if len(img.chainLayers) == 0 {
-		return nil, ErrNoLayersFound
+		emptyChainLayer := &chainLayer{
+			fileNodeTree: NewNode(),
+		}
+		return emptyChainLayer.FS()
 	}
-	return img.chainLayers[len(img.chainLayers)-1].FS(), nil
+	return img.chainLayers[len(img.chainLayers)-1].FS()
 }
 
 // ChainLayers returns the chain layers of the image.
