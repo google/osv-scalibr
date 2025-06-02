@@ -23,10 +23,10 @@ import (
 	"os"
 	"path/filepath"
 
-	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/namespaces"
+	"github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
@@ -49,7 +49,7 @@ const (
 // CtrdClient is an interface that provides an abstraction on top of the containerd client.
 // Needed for testing purposes.
 type CtrdClient interface {
-	LoadContainer(ctx context.Context, id string) (containerd.Container, error)
+	LoadContainer(ctx context.Context, id string) (client.Container, error)
 	NamespaceService() namespaces.Store
 	TaskService() tasks.TasksClient
 	Close() error
@@ -138,7 +138,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	if e.initNewCtrdClient {
 		// Create a new containerd API client using the provided socket address
 		// and reset it in the extractor.
-		cli, err := containerd.New(e.socketAddr)
+		cli, err := client.New(e.socketAddr)
 		if err != nil {
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
 			return inventory.Inventory{}, err

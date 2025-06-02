@@ -24,8 +24,8 @@ import (
 	"slices"
 	"testing"
 
-	containerd "github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types/task"
+	"github.com/containerd/containerd/v2/client"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
@@ -41,7 +41,7 @@ func TestExtract(t *testing.T) {
 		onGoos       []string
 		nssTaskIDs   map[string][]string
 		tsks         []*task.Process
-		ctrs         []containerd.Container
+		ctrs         []client.Container
 		wantPackages []*extractor.Package
 		wantErr      error
 	}{
@@ -50,7 +50,7 @@ func TestExtract(t *testing.T) {
 			onGoos:       []string{"linux"},
 			nssTaskIDs:   map[string][]string{"default": {}, "k8s.io": {}},
 			tsks:         []*task.Process{},
-			ctrs:         []containerd.Container{},
+			ctrs:         []client.Container{},
 			wantPackages: []*extractor.Package{},
 		},
 		{
@@ -58,7 +58,7 @@ func TestExtract(t *testing.T) {
 			onGoos:     []string{"linux"},
 			nssTaskIDs: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
 			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
-			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", "/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs")},
+			ctrs:       []client.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", "/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs")},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
@@ -95,7 +95,7 @@ func TestExtract(t *testing.T) {
 			onGoos:     []string{"linux"},
 			nssTaskIDs: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
 			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
-			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", ""), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "")},
+			ctrs:       []client.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", ""), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "")},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
@@ -132,7 +132,7 @@ func TestExtract(t *testing.T) {
 			onGoos:     []string{"linux"},
 			nssTaskIDs: map[string][]string{"default": {"123456788"}, "k8s.io": {"567890122"}},
 			tsks:       []*task.Process{{ID: "123456788", ContainerID: "", Pid: 12346}, {ID: "567890122", ContainerID: "", Pid: 5677}},
-			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
+			ctrs:       []client.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
