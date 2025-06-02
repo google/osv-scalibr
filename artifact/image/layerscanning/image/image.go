@@ -436,6 +436,12 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			return fmt.Errorf("could not read tar: %w", err)
 		}
 
+		// Preemptively skip files that are too large.
+		if header.Size > img.config.MaxFileBytes {
+			log.Infof("skipping file %q because its size (%d bytes) is larger than the max size (%d bytes)", header.Name, header.Size, img.config.MaxFileBytes)
+			continue
+		}
+
 		// Some tools prepend everything with "./", so if we don't path.Clean the name, we may have
 		// duplicate entries, which angers tar-split. Using path instead of filepath to keep `/` and
 		// deterministic behavior.
@@ -593,6 +599,7 @@ func (img *Image) handleDir(virtualPath string, header *tar.Header, isWhiteout b
 // the file. The function returns a virtual file, which is meant to represent the file in a virtual
 // filesystem.
 func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
+	// Use LimitReader in case the header.Size is incorrect.
 	numBytes, err := img.contentBlob.ReadFrom(io.LimitReader(tarReader, img.config.MaxFileBytes))
 	if numBytes >= img.config.MaxFileBytes || errors.Is(err, io.EOF) {
 		return nil, ErrFileReadLimitExceeded
