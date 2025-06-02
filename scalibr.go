@@ -40,12 +40,11 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
 	"go.uber.org/multierr"
 
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
-	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -63,11 +62,7 @@ func New() *Scanner { return &Scanner{} }
 // ScanConfig stores the config settings of a scan run such as the plugins to
 // use and the dir to consider the root of the scanned system.
 type ScanConfig struct {
-	FilesystemExtractors []filesystem.Extractor
-	StandaloneExtractors []standalone.Extractor
-	Detectors            []detector.Detector
-	Annotators           []annotator.Annotator
-	Enrichers            []enricher.Enricher
+	Plugins []plugin.Plugin
 	// Capabilities that the scanning environment satisfies, e.g. whether there's
 	// network access. Some plugins can only run if certain requirements are met.
 	Capabilities *plugin.Capabilities
@@ -113,47 +108,39 @@ type ScanConfig struct {
 	ErrorOnFSErrors bool
 }
 
-// EnableRequiredExtractors adds those extractors to the config that are required by enabled
-// detectors but have not been explicitly enabled.
-func (cfg *ScanConfig) EnableRequiredExtractors() error {
-	enabledExtractors := map[string]struct{}{}
-	for _, e := range cfg.FilesystemExtractors {
-		enabledExtractors[e.Name()] = struct{}{}
-	}
-	for _, e := range cfg.StandaloneExtractors {
-		enabledExtractors[e.Name()] = struct{}{}
+// EnableRequiredPlugins adds those plugins to the config that are required by enabled
+// plugins (such as Detectors or Enrichers) but have not been explicitly enabled.
+func (cfg *ScanConfig) EnableRequiredPlugins() error {
+	enabledPlugins := map[string]struct{}{}
+	for _, e := range cfg.Plugins {
+		enabledPlugins[e.Name()] = struct{}{}
 	}
 
-	requiredExtractors := map[string]struct{}{}
-	for _, d := range cfg.Detectors {
-		for _, e := range d.RequiredExtractors() {
-			requiredExtractors[e] = struct{}{}
+	requiredPlugins := map[string]struct{}{}
+	for _, p := range cfg.Plugins {
+		if d, ok := p.(detector.Detector); ok {
+			for _, req := range d.RequiredExtractors() {
+				requiredPlugins[req] = struct{}{}
+			}
 		}
-	}
-	for _, e := range cfg.Enrichers {
-		for _, p := range e.RequiredPlugins() {
-			requiredExtractors[p] = struct{}{}
+		if e, ok := p.(enricher.Enricher); ok {
+			for _, req := range e.RequiredPlugins() {
+				requiredPlugins[req] = struct{}{}
+			}
 		}
 	}
 
-	for e := range requiredExtractors {
-		if _, enabled := enabledExtractors[e]; enabled {
+	for p := range requiredPlugins {
+		if _, enabled := enabledPlugins[p]; enabled {
 			continue
 		}
-		ex, err := el.ExtractorFromName(e)
-		// TODO: b/416094527 - Implement required detectors for enrichers.
-		// TODO: b/416106602 - Implement required enrichers for enrichers.
-		stex, sterr := sl.ExtractorFromName(e)
-		if err != nil && sterr != nil {
-			return fmt.Errorf("required extractor %q not present in list.go: %w, %w", e, err, sterr)
+		requiredPlugin, err := pl.FromName(p)
+		// TODO: b/416106602 - Implement transitive enablement for required enrichers.
+		if err != nil {
+			return fmt.Errorf("required plugin %q not present in any list.go: %w", p, err)
 		}
-		enabledExtractors[e] = struct{}{}
-		if err == nil {
-			cfg.FilesystemExtractors = append(cfg.FilesystemExtractors, ex)
-		}
-		if sterr == nil {
-			cfg.StandaloneExtractors = append(cfg.StandaloneExtractors, stex)
-		}
+		enabledPlugins[p] = struct{}{}
+		cfg.Plugins = append(cfg.Plugins, requiredPlugin)
 	}
 	return nil
 }
@@ -161,24 +148,8 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 // ValidatePluginRequirements checks that the scanning environment's capabilities satisfy
 // the requirements of all enabled plugin.
 func (cfg *ScanConfig) ValidatePluginRequirements() error {
-	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Annotators)+len(cfg.Enrichers))
-	for _, p := range cfg.FilesystemExtractors {
-		plugins = append(plugins, p)
-	}
-	for _, p := range cfg.StandaloneExtractors {
-		plugins = append(plugins, p)
-	}
-	for _, p := range cfg.Detectors {
-		plugins = append(plugins, p)
-	}
-	for _, p := range cfg.Annotators {
-		plugins = append(plugins, p)
-	}
-	for _, p := range cfg.Enrichers {
-		plugins = append(plugins, p)
-	}
 	errs := []error{}
-	for _, p := range plugins {
+	for _, p := range cfg.Plugins {
 		if err := plugin.ValidateRequirements(p, cfg.Capabilities); err != nil {
 			errs = append(errs, err)
 		}
@@ -194,7 +165,7 @@ type ScanResult = result.ScanResult
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
 
-// Scan executes the extraction and detection using the provided scan config.
+// Scan executes the extraction/detection/annotation/etc. plugins using the provided scan config.
 func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	if config.Stats == nil {
 		config.Stats = stats.NoopCollector{}
@@ -205,7 +176,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro := &newScanResultOptions{
 		StartTime: time.Now(),
 	}
-	if err := config.EnableRequiredExtractors(); err != nil {
+	if err := config.EnableRequiredPlugins(); err != nil {
 		sro.Err = err
 	} else if err := config.ValidatePluginRequirements(); err != nil {
 		sro.Err = err
@@ -221,7 +192,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
-		Extractors:            config.FilesystemExtractors,
+		Extractors:            pl.FilesystemExtractors(config.Plugins),
 		PathsToExtract:        config.PathsToExtract,
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
@@ -243,10 +214,10 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	sro.Inventory = inv
-	sro.ExtractorStatus = extractorStatus
+	sro.PluginStatus = append(sro.PluginStatus, extractorStatus...)
 	sysroot := config.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
-		Extractors: config.StandaloneExtractors,
+		Extractors: pl.StandaloneExtractors(config.Plugins),
 		ScanRoot:   &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path},
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
@@ -257,7 +228,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	sro.Inventory.Append(standaloneInv)
-	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
+	sro.PluginStatus = append(sro.PluginStatus, standaloneStatus...)
 
 	px, err := packageindex.New(sro.Inventory.Packages)
 	if err != nil {
@@ -267,34 +238,34 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	findings, detectorStatus, err := detectorrunner.Run(
-		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
+		ctx, config.Stats, pl.Detectors(config.Plugins), &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
 	sro.Inventory.PackageVulns = findings.PackageVulns
 	sro.Inventory.GenericFindings = findings.GenericFindings
-	sro.DetectorStatus = detectorStatus
+	sro.PluginStatus = append(sro.PluginStatus, detectorStatus...)
 	if err != nil {
 		sro.Err = err
 	}
 
 	annotatorCfg := &annotator.Config{
-		Annotators: config.Annotators,
+		Annotators: pl.Annotators(config.Plugins),
 		ScanRoot:   sysroot,
 	}
 	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &sro.Inventory)
-	sro.AnnotatorStatus = annotatorStatus
+	sro.PluginStatus = append(sro.PluginStatus, annotatorStatus...)
 	if err != nil {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
 	enricherCfg := &enricher.Config{
-		Enrichers: config.Enrichers,
+		Enrichers: pl.Enrichers(config.Plugins),
 		ScanRoot: &scalibrfs.ScanRoot{
 			FS:   sysroot.FS,
 			Path: sysroot.Path,
 		},
 	}
 	enricherStatus, err := enricher.Run(ctx, enricherCfg, &sro.Inventory)
-	sro.EnricherStatus = enricherStatus
+	sro.PluginStatus = append(sro.PluginStatus, enricherStatus...)
 	if err != nil {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
@@ -321,8 +292,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	// Suppress running enrichers until after layer details are populated.
-	enrichers := config.Enrichers
-	config.Enrichers = nil
+	enrichers := pl.Enrichers(config.Plugins)
+	for i, p := range config.Plugins {
+		if _, ok := p.(enricher.Enricher); ok {
+			config.Plugins[i] = nil
+		}
+	}
 
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
@@ -333,7 +308,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
-		Extractors:            config.FilesystemExtractors,
+		Extractors:            pl.FilesystemExtractors(config.Plugins),
 		PathsToExtract:        config.PathsToExtract,
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
@@ -348,7 +323,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, config.FilesystemExtractors, extractorConfig)
+	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
 	// Run enrichers with the updated inventory.
 	enricherCfg := &enricher.Config{
@@ -368,14 +343,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 }
 
 type newScanResultOptions struct {
-	StartTime       time.Time
-	EndTime         time.Time
-	ExtractorStatus []*plugin.Status
-	DetectorStatus  []*plugin.Status
-	AnnotatorStatus []*plugin.Status
-	EnricherStatus  []*plugin.Status
-	Inventory       inventory.Inventory
-	Err             error
+	StartTime    time.Time
+	EndTime      time.Time
+	PluginStatus []*plugin.Status
+	Inventory    inventory.Inventory
+	Err          error
 }
 
 func newScanResult(o *newScanResultOptions) *ScanResult {
@@ -391,7 +363,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		EndTime:      o.EndTime,
 		Version:      ScannerVersion,
 		Status:       status,
-		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.AnnotatorStatus, o.EnricherStatus),
+		PluginStatus: o.PluginStatus,
 		Inventory:    o.Inventory,
 	}
 
