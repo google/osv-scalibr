@@ -427,11 +427,20 @@ func CmpPackages(a, b *extractor.Package) int {
 	res := cmp.Or(
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.Version, b.Version),
-		cmp.Compare(a.Extractor.Name(), b.Extractor.Name()),
+		cmp.Compare(len(a.Plugins), len(b.Plugins)),
 	)
 	if res != 0 {
 		return res
 	}
+
+	res = 0
+	for i := range a.Plugins {
+		res = cmp.Or(res, cmp.Compare(a.Plugins[i], b.Plugins[i]))
+	}
+	if res != 0 {
+		return res
+	}
+
 	aloc := fmt.Sprintf("%v", a.Locations)
 	bloc := fmt.Sprintf("%v", b.Locations)
 	return cmp.Compare(aloc, bloc)

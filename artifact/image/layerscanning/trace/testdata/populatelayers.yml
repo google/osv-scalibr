@@ -1,23 +1,23 @@
 layers:
   # Add foo.txt lockfile
   - files:
-      foo.txt:
+      foo/requirements.txt:
         # With the package foo
         - foo
-      bar.txt:
+      bar/requirements.txt:
         - bar
   # Delete the bar lockfile
   - files:
-      ~bar.txt:
+      ~bar/requirements.txt:
   - files:
-      baz.txt:
+      baz/requirements.txt:
         - baz
       # Readd bar
   - files:
-      bar.txt:
+      bar/requirements.txt:
         - bar
   # Edit the same file in place
   - files:
-      foo.txt:
+      foo/requirements.txt:
         - foo
         - foo2

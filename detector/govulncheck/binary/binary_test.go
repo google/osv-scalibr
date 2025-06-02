@@ -123,7 +123,7 @@ func setupPackageIndex(names []string) *packageindex.PackageIndex {
 			Version:   "1.2.3",
 			PURLType:  purl.TypeGolang,
 			Locations: []string{filepath.Join("testdata", n)},
-			Extractor: &gobinary.Extractor{},
+			Plugins:   []string{gobinary.Name},
 		})
 	}
 	px, _ := packageindex.New(pkgs)

@@ -71,7 +71,7 @@ func TestScan(t *testing.T) {
 	pkg := &extractor.Package{
 		Name:      pkgName,
 		Locations: []string{"file.txt"},
-		Extractor: fakeExtractor,
+		Plugins:   []string{fakeExtractor.Name()},
 	}
 	withLayerDetails := func(pkg *extractor.Package, ld *extractor.LayerDetails) *extractor.Package {
 		pkg = deepcopy.Copy(pkg).(*extractor.Package)
@@ -79,7 +79,7 @@ func TestScan(t *testing.T) {
 		return pkg
 	}
 	pkgWithLayerDetails := withLayerDetails(pkg, &extractor.LayerDetails{InBaseImage: true})
-	pkgWithLayerDetails.Extractor = fakeExtractor
+	pkgWithLayerDetails.Plugins = []string{fakeExtractor.Name()}
 	finding := &detector.Finding{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Reference: "CVE-1234"}}}
 
 	fakeEnricherCfg := &fen.Config{
@@ -567,7 +567,7 @@ func TestAnnotator(t *testing.T) {
 	wantPkgs := []*extractor.Package{{
 		Name:        pkgName,
 		Locations:   []string{"tmp/file.txt"},
-		Extractor:   fakeExtractor,
+		Plugins:     []string{fakeExtractor.Name()},
 		Annotations: []extractor.Annotation{extractor.InsideCacheDir},
 	}}
 
