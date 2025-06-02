@@ -58,6 +58,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/mohae/deepcopy"
+	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -166,7 +168,7 @@ func TestWriteWithFormat(t *testing.T) {
 	}
 }
 
-func TestScanResultToProto(t *testing.T) {
+func TestScanResultToProtoAndBack(t *testing.T) {
 	endTime := time.Now()
 	startTime := endTime.Add(time.Second * -10)
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
@@ -1581,7 +1583,23 @@ func TestScanResultToProto(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
-				t.Errorf("check.Exec() returned unexpected diff (-want +got):\n%s", diff)
+				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)
+			}
+
+			if err != nil {
+				return
+			}
+
+			// TODO - b/421456154: test conversion of remaining types.
+			invProto := protobuf.Clone(got.GetInventory()).(*spb.Inventory)
+			invProto.Findings = nil
+
+			wantInv := deepcopy.Copy(tc.res.Inventory).(inventory.Inventory)
+			wantInv.Findings = nil
+
+			gotInv := proto.InventoryToStruct(invProto)
+			if diff := cmp.Diff(wantInv, *gotInv); diff != "" {
+				t.Errorf("proto.InventoryToStruct(%v) returned unexpected diff (-want +got):\n%s", invProto, diff)
 			}
 		})
 	}
