@@ -29,8 +29,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	scalibr "github.com/google/osv-scalibr"
-	"github.com/google/osv-scalibr/annotator"
-	al "github.com/google/osv-scalibr/annotator/list"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
@@ -39,16 +37,12 @@ import (
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
-	dl "github.com/google/osv-scalibr/detector/list"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
-	"github.com/google/osv-scalibr/extractor/standalone"
-	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 )
 
@@ -127,7 +121,7 @@ type Flags struct {
 	Output                     Array
 	ExtractorsToRun            []string
 	DetectorsToRun             []string
-	AnnotatorsToRun            []string
+	PluginsToRun               []string
 	PathsToExtract             []string
 	IgnoreSubDirs              bool
 	DirsToSkip                 []string
@@ -196,17 +190,18 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateImagePlatform(flags.ImagePlatform); err != nil {
 		return fmt.Errorf("--image-platform %w", err)
 	}
-	// TODO(b/279413691): Use the Array struct to allow multiple occurrences of a list arg
-	// e.g. --extractors=ex1 --extractors=ex2.
+	if err := validateMultiStringArg(flags.PluginsToRun); err != nil {
+		return fmt.Errorf("--plugins: %w", err)
+	}
+
+	// Legacy args for setting plugins.
 	if err := validateMultiStringArg(flags.ExtractorsToRun); err != nil {
 		return fmt.Errorf("--extractors: %w", err)
 	}
 	if err := validateMultiStringArg(flags.DetectorsToRun); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
-	if err := validateMultiStringArg(flags.AnnotatorsToRun); err != nil {
-		return fmt.Errorf("--annotators: %w", err)
-	}
+
 	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
 	}
@@ -216,7 +211,8 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateGlob(flags.SkipDirGlob); err != nil {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun)
+	if err := validateDetectorDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -290,31 +286,23 @@ func validateGlob(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
-	f := &Flags{
-		ExtractorsToRun: extractors,
-		DetectorsToRun:  detectors,
-	}
-	ex, stdex, err := f.extractorsToRun()
+func validateDetectorDependency(pluginNames []string, requireExtractors bool) error {
+	f := &Flags{PluginsToRun: pluginNames}
+	plugins, err := f.pluginsToRun()
 	if err != nil {
 		return err
 	}
-	det, err := f.detectorsToRun()
-	if err != nil {
-		return err
-	}
-	exMap := make(map[string]bool)
-	for _, e := range ex {
-		exMap[e.Name()] = true
-	}
-	for _, e := range stdex {
-		exMap[e.Name()] = true
+	pMap := make(map[string]bool)
+	for _, p := range plugins {
+		pMap[p.Name()] = true
 	}
 	if requireExtractors {
-		for _, d := range det {
-			for _, req := range d.RequiredExtractors() {
-				if !exMap[req] {
-					return fmt.Errorf("extractor %s must be turned on for Detector %s to run", req, d.Name())
+		for _, p := range plugins {
+			if d, ok := p.(detector.Detector); ok {
+				for _, req := range d.RequiredExtractors() {
+					if !pMap[req] {
+						return fmt.Errorf("extractor %s must be turned on for Detector %s to run", req, d.Name())
+					}
 				}
 			}
 		}
@@ -332,21 +320,13 @@ func validateComponentType(componentType string) error {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	extractors, standaloneExtractors, err := f.extractorsToRun()
-	if err != nil {
-		return nil, err
-	}
-	detectors, err := f.detectorsToRun()
-	if err != nil {
-		return nil, err
-	}
-	annotators, err := f.annotatorsToRun()
+	plugins, err := f.pluginsToRun()
 	if err != nil {
 		return nil, err
 	}
 	capab := f.capabilities()
 	if f.FilterByCapabilities {
-		extractors, standaloneExtractors, detectors, annotators = filterByCapabilities(extractors, standaloneExtractors, detectors, annotators, capab)
+		plugins = filterByCapabilities(plugins, capab)
 	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
@@ -369,20 +349,17 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 
 	return &scalibr.ScanConfig{
-		ScanRoots:            scanRoots,
-		FilesystemExtractors: extractors,
-		StandaloneExtractors: standaloneExtractors,
-		Detectors:            detectors,
-		Annotators:           annotators,
-		Capabilities:         capab,
-		PathsToExtract:       f.PathsToExtract,
-		IgnoreSubDirs:        f.IgnoreSubDirs,
-		DirsToSkip:           f.dirsToSkip(scanRoots),
-		SkipDirRegex:         skipDirRegex,
-		SkipDirGlob:          skipDirGlob,
-		MaxFileSize:          f.MaxFileSize,
-		UseGitignore:         f.UseGitignore,
-		StoreAbsolutePath:    f.StoreAbsolutePath,
+		ScanRoots:         scanRoots,
+		Plugins:           plugins,
+		Capabilities:      capab,
+		PathsToExtract:    f.PathsToExtract,
+		IgnoreSubDirs:     f.IgnoreSubDirs,
+		DirsToSkip:        f.dirsToSkip(scanRoots),
+		SkipDirRegex:      skipDirRegex,
+		SkipDirGlob:       skipDirGlob,
+		MaxFileSize:       f.MaxFileSize,
+		UseGitignore:      f.UseGitignore,
+		StoreAbsolutePath: f.StoreAbsolutePath,
 	}, nil
 }
 
@@ -460,69 +437,49 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extractor, error) {
-	if len(f.ExtractorsToRun) == 0 {
-		return []filesystem.Extractor{}, []standalone.Extractor{}, nil
+func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
+	var result = make([]plugin.Plugin, 0, len(f.PluginsToRun))
+	pluginNames := multiStringToList(f.PluginsToRun)
+	extractorNames := addPluginPrefixToGroups("extractors/", multiStringToList(f.ExtractorsToRun))
+	detectorNames := addPluginPrefixToGroups("detectors/", multiStringToList(f.DetectorsToRun))
+
+	for _, name := range slices.Concat(pluginNames, extractorNames, detectorNames) {
+		plugins, err := pl.FromNames([]string{name})
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply plugin-specific config.
+		for _, p := range plugins {
+			if p.Name() == gobinary.Name {
+				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
+			}
+			if p.Name() == pomxmlnet.Name {
+				p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
+			}
+			if p.Name() == binary.Name {
+				p.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
+			}
+		}
+
+		result = append(result, plugins...)
 	}
 
-	var fsExtractors []filesystem.Extractor
-	var standaloneExtractors []standalone.Extractor
-
-	// We need to check extractors individually as they may be defined in one or both lists.
-	for _, name := range multiStringToList(f.ExtractorsToRun) {
-		ex, err := el.ExtractorsFromNames([]string{name})
-		stex, sterr := sl.ExtractorsFromNames([]string{name})
-
-		if err != nil && sterr != nil { // both fails.
-			return nil, nil, err
-		}
-
-		if err == nil {
-			fsExtractors = append(fsExtractors, ex...)
-		}
-
-		if sterr == nil {
-			standaloneExtractors = append(standaloneExtractors, stex...)
-		}
-	}
-
-	for _, e := range fsExtractors {
-		if e.Name() == gobinary.Name {
-			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
-		}
-		if e.Name() == pomxmlnet.Name {
-			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
-		}
-	}
-
-	return fsExtractors, standaloneExtractors, nil
+	return result, nil
 }
 
-func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
-	if len(f.DetectorsToRun) == 0 {
-		return []detector.Detector{}, nil
-	}
-	dets, err := dl.DetectorsFromNames(multiStringToList(f.DetectorsToRun))
-	if err != nil {
-		return []detector.Detector{}, err
-	}
-	for _, d := range dets {
-		if d.Name() == binary.Name {
-			d.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
+// addPluginPrefixToGroups adds the specified prefix to the "default" and "all"
+// plugin group names so that they're only applied for a specific plugin type
+// so that e.g. --extractors=all only enables all extractors and not other plugins.
+func addPluginPrefixToGroups(prefix string, pluginNames []string) []string {
+	result := make([]string, 0, len(pluginNames))
+	for _, p := range pluginNames {
+		if p == "all" || p == "default" {
+			p = prefix + p
 		}
+		result = append(result, p)
 	}
-	return dets, nil
-}
-
-func (f *Flags) annotatorsToRun() ([]annotator.Annotator, error) {
-	if len(f.AnnotatorsToRun) == 0 {
-		return []annotator.Annotator{}, nil
-	}
-	annotators, err := al.AnnotatorsFromNames(multiStringToList(f.AnnotatorsToRun))
-	if err != nil {
-		return []annotator.Annotator{}, err
-	}
-	return annotators, nil
+	return result
 }
 
 func multiStringToList(arg []string) []string {
@@ -608,35 +565,14 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 
 // Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors)
 // by removing all plugins that don't satisfy the specified capabilities.
-func filterByCapabilities(
-	f []filesystem.Extractor, s []standalone.Extractor,
-	d []detector.Detector, a []annotator.Annotator, capab *plugin.Capabilities) (
-	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []annotator.Annotator) {
-	ff := make([]filesystem.Extractor, 0, len(f))
-	sf := make([]standalone.Extractor, 0, len(s))
-	df := make([]detector.Detector, 0, len(d))
-	af := make([]annotator.Annotator, 0, len(d))
-	for _, ex := range f {
-		if err := plugin.ValidateRequirements(ex, capab); err == nil {
-			ff = append(ff, ex)
+func filterByCapabilities(plugins []plugin.Plugin, capab *plugin.Capabilities) []plugin.Plugin {
+	fp := make([]plugin.Plugin, 0, len(plugins))
+	for _, p := range plugins {
+		if err := plugin.ValidateRequirements(p, capab); err == nil {
+			fp = append(fp, p)
 		}
 	}
-	for _, ex := range s {
-		if err := plugin.ValidateRequirements(ex, capab); err == nil {
-			sf = append(sf, ex)
-		}
-	}
-	for _, det := range d {
-		if err := plugin.ValidateRequirements(det, capab); err == nil {
-			df = append(df, det)
-		}
-	}
-	for _, an := range a {
-		if err := plugin.ValidateRequirements(an, capab); err == nil {
-			af = append(af, an)
-		}
-	}
-	return ff, sf, df, af
+	return fp
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
