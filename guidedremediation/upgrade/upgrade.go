@@ -26,7 +26,7 @@ import (
 // if Level == Minor, only upgrades up to minor (1.0.0 - 1.*.*) are allowed.
 type Level int
 
-// these constants represent something
+// these constants represent the different allowable semver upgrade levels
 const (
 	Major Level = iota
 	Minor

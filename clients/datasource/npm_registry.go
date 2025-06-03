@@ -54,7 +54,7 @@ func NewNPMRegistryAPIClient(projectDir string) (*NPMRegistryAPIClient, error) {
 	}, nil
 }
 
-// Versions does something
+// Versions returns all the known versions and tags of a given npm package
 func (c *NPMRegistryAPIClient) Versions(ctx context.Context, pkg string) (NPMRegistryVersions, error) {
 	pkgDetails, err := c.getPackageDetails(ctx, pkg)
 	if err != nil {
@@ -67,7 +67,7 @@ func (c *NPMRegistryAPIClient) Versions(ctx context.Context, pkg string) (NPMReg
 	}, nil
 }
 
-// Dependencies does something
+// Dependencies returns all the defined dependencies of the given version of an npm package
 func (c *NPMRegistryAPIClient) Dependencies(ctx context.Context, pkg, version string) (NPMRegistryDependencies, error) {
 	pkgDetails, err := c.getPackageDetails(ctx, pkg)
 	if err != nil {

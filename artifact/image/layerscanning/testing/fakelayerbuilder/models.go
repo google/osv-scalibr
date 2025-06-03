@@ -14,7 +14,7 @@
 
 package fakelayerbuilder
 
-// FakeTestLayers represents something
+// FakeTestLayers structure is used to mock a fake image filesystem to test extraction against.
 type FakeTestLayers struct {
 	Layers []struct {
 		Files map[string][]string `yaml:"files"`
