@@ -167,7 +167,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		result = append(result, pkg)
 	}
 
-	defer e.containerd.Close()
+	defer e.client.Close()
 	return inventory.Inventory{Packages: result}, nil
 }
 
@@ -192,7 +192,7 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 }
 
 func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error) {
-	nsService := containerd.NamespaceService()
+	nsService := client.NamespaceService()
 	nss, err := nsService.List(ctx)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []Metadata {
 	var containersMetadata []Metadata
 
-	taskService := containerd.TaskService()
+	taskService := client.TaskService()
 	// List all running tasks, only running tasks have a container associated with them.
 	listTasksReq := &tasks.ListTasksRequest{Filter: "status=running"}
 	listTasksResp, err := taskService.List(ctx, listTasksReq)
@@ -228,7 +228,7 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {
 	var md Metadata
 
-	container, err := containerd.LoadContainer(ctx, task.ID)
+	container, err := client.LoadContainer(ctx, task.ID)
 	if err != nil {
 		log.Errorf("Failed to load container for task %v, error: %v", task.ID, err)
 		return md, err

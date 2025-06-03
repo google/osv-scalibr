@@ -24,7 +24,7 @@ import (
 
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/v2/client"
+	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/containers"
 	"github.com/containerd/containerd/v2/pkg/cio"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
@@ -42,17 +42,17 @@ type CtrdClient struct {
 	tasksService tasks.TasksClient
 	nsService    namespaces.Store
 	// A map of task IDs to containerd.Container objects.
-	ctrTasksIDs map[string]client.Container
+	ctrTasksIDs map[string]containerd.Container
 	// A map of namespace name to task IDs that are running in that namespace.
 	nssTaskIDs map[string][]string
 	// List of all active tasks that will be returned by the FakeTaskService.
 	tsks []*task.Process
 	// A map of container ID to containerd.Container object.
-	ctrs []client.Container
+	ctrs []containerd.Container
 }
 
 // NewFakeCtrdClient creates a new fake containerd client.
-func NewFakeCtrdClient(ctx context.Context, nssTaskIDs map[string][]string, tsks []*task.Process, ctrs []client.Container) (CtrdClient, error) {
+func NewFakeCtrdClient(ctx context.Context, nssTaskIDs map[string][]string, tsks []*task.Process, ctrs []containerd.Container) (CtrdClient, error) {
 	ctrTasks, err := initContainerTasks(tsks, ctrs)
 	if err != nil {
 		return CtrdClient{}, err
@@ -74,7 +74,7 @@ func NewFakeCtrdClient(ctx context.Context, nssTaskIDs map[string][]string, tsks
 }
 
 // LoadContainer returns the containerd.Container object for the given task ID from ctrTasksIDs.
-func (c *CtrdClient) LoadContainer(ctx context.Context, id string) (client.Container, error) {
+func (c *CtrdClient) LoadContainer(ctx context.Context, id string) (containerd.Container, error) {
 	if ctr, ok := c.ctrTasksIDs[id]; ok {
 		return ctr, nil
 	}
@@ -97,8 +97,8 @@ func (c *CtrdClient) Close() error {
 }
 
 // initContainerTasks initializes the ctrTasksIDs map.
-func initContainerTasks(tsks []*task.Process, ctrs []client.Container) (map[string]client.Container, error) {
-	ctrTasksIDs := make(map[string]client.Container)
+func initContainerTasks(tsks []*task.Process, ctrs []containerd.Container) (map[string]containerd.Container, error) {
+	ctrTasksIDs := make(map[string]containerd.Container)
 
 	for _, ctr := range ctrs {
 		for _, task := range tsks {
@@ -176,7 +176,7 @@ func (s *NamespacesService) List(ctx context.Context) ([]string, error) {
 
 // Container is a fake implementation of the containerd container object.
 type Container struct {
-	client.Container
+	containerd.Container
 	id     string
 	image  string
 	digest string
@@ -199,7 +199,7 @@ func (c *Container) ID() string {
 }
 
 // Info returns the underlying container record type.
-func (c *Container) Info(ctx context.Context, opts ...client.InfoOpts) (containers.Container, error) {
+func (c *Container) Info(ctx context.Context, opts ...containerd.InfoOpts) (containers.Container, error) {
 	return containers.Container{
 		ID:    c.id,
 		Image: c.image,
@@ -210,18 +210,18 @@ func (c *Container) Info(ctx context.Context, opts ...client.InfoOpts) (containe
 	}, nil
 }
 
-func (c *Container) Task(context.Context, cio.Attach) (client.Task, error) {
+func (c *Container) Task(context.Context, cio.Attach) (containerd.Task, error) {
 	return NewFakeTask(c.rootfs), nil
 }
 
 // Image returns the underlying container Image object with a given digest.
-func (c *Container) Image(ctx context.Context) (client.Image, error) {
+func (c *Container) Image(ctx context.Context) (containerd.Image, error) {
 	return NewFakeImage(c.digest), nil
 }
 
 // Image is a fake implementation of the containerd image object.
 type Image struct {
-	client.Image
+	containerd.Image
 	digest string
 }
 
@@ -242,7 +242,7 @@ func (i *Image) Target() imagespecs.Descriptor {
 
 // Task is a fake implementation of the containerd task object.
 type Task struct {
-	client.Task
+	containerd.Task
 	rootfs string
 }
 
