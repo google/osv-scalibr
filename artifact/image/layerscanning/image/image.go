@@ -212,6 +212,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image content file: %w", err)
 	}
+	log.Infof("Created image content file: %s", imageContentBlob.Name())
 
 	baseImageIndex, err := findBaseImageIndex(history)
 	if err != nil {
