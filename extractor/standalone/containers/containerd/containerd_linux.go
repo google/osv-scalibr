@@ -25,7 +25,7 @@ import (
 
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/v2/client"
+	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
@@ -49,7 +49,7 @@ const (
 // CtrdClient is an interface that provides an abstraction on top of the containerd client.
 // Needed for testing purposes.
 type CtrdClient interface {
-	LoadContainer(ctx context.Context, id string) (client.Container, error)
+	LoadContainer(ctx context.Context, id string) (containerd.Container, error)
 	NamespaceService() namespaces.Store
 	TaskService() tasks.TasksClient
 	Close() error
@@ -138,7 +138,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	if e.initNewCtrdClient {
 		// Create a new containerd API client using the provided socket address
 		// and reset it in the extractor.
-		cli, err := client.New(e.socketAddr)
+		cli, err := containerd.New(e.socketAddr)
 		if err != nil {
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
 			return inventory.Inventory{}, err
@@ -167,7 +167,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		result = append(result, pkg)
 	}
 
-	defer e.client.Close()
+	defer e.containerd.Close()
 	return inventory.Inventory{Packages: result}, nil
 }
 
@@ -192,7 +192,7 @@ func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, erro
 }
 
 func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error) {
-	nsService := client.NamespaceService()
+	nsService := containerd.NamespaceService()
 	nss, err := nsService.List(ctx)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []Metadata {
 	var containersMetadata []Metadata
 
-	taskService := client.TaskService()
+	taskService := containerd.TaskService()
 	// List all running tasks, only running tasks have a container associated with them.
 	listTasksReq := &tasks.ListTasksRequest{Filter: "status=running"}
 	listTasksResp, err := taskService.List(ctx, listTasksReq)
@@ -228,7 +228,7 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {
 	var md Metadata
 
-	container, err := client.LoadContainer(ctx, task.ID)
+	container, err := containerd.LoadContainer(ctx, task.ID)
 	if err != nil {
 		log.Errorf("Failed to load container for task %v, error: %v", task.ID, err)
 		return md, err
