@@ -81,7 +81,7 @@ func (c *NPMRegistryAPIClient) Dependencies(ctx context.Context, pkg, version st
 	return NPMRegistryDependencies{}, fmt.Errorf("no version %s for package %s", version, pkg)
 }
 
-// FullJSON does something
+// FullJSON returns the entire npm registry JSON data for a given package version
 func (c *NPMRegistryAPIClient) FullJSON(ctx context.Context, pkg, version string) (gjson.Result, error) {
 	return c.get(ctx, pkg, version)
 }
