@@ -1168,7 +1168,7 @@ func TestInitializeChainLayers(t *testing.T) {
 	}
 }
 
-func TestTopFS(t *testing.T) {
+func TestFS(t *testing.T) {
 	tests := []struct {
 		name            string
 		image           *Image
@@ -1176,10 +1176,8 @@ func TestTopFS(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name: "no chain layers",
-			image: &Image{
-				chainLayers: []*chainLayer{},
-			},
+			name:    "no chain layers",
+			image:   &Image{},
 			wantErr: true,
 		},
 		{
@@ -1266,16 +1264,10 @@ func TestTopFS(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotFS, err := tc.image.TopFS()
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("TopFS() returned nil error, but want non-nil error")
-				}
-				return
-			}
+			gotFS := tc.image.FS()
 
 			var gotPaths []string
-			err = fs.WalkDir(gotFS, "/", func(path string, d fs.DirEntry, err error) error {
+			err := fs.WalkDir(gotFS, "/", func(path string, d fs.DirEntry, err error) error {
 				if err != nil || d.IsDir() {
 					return err
 				}
@@ -1285,6 +1277,9 @@ func TestTopFS(t *testing.T) {
 			})
 
 			if err != nil {
+				if tc.wantErr {
+					return
+				}
 				t.Fatalf("WalkDir() returned error: %v", err)
 			}
 

@@ -540,9 +540,13 @@ type Package struct {
 	Ecosystem string `protobuf:"bytes,27,opt,name=ecosystem,proto3" json:"ecosystem,omitempty"`
 	// Paths or source of files related to the package.
 	Locations []string `protobuf:"bytes,2,rep,name=locations,proto3" json:"locations,omitempty"`
-	// The name of the Extractor that found this software. Set by the
+	// TODO(b/400910349): Remove once integrators stop using these fields.
+	//
+	// Deprecated: Marked as deprecated in proto/scan_result.proto.
+	ExtractorDeprecated string `protobuf:"bytes,10,opt,name=extractor_deprecated,json=extractorDeprecated,proto3" json:"extractor_deprecated,omitempty"`
+	// The names of the plugins that found this software. Set by the
 	// core library.
-	Extractor string `protobuf:"bytes,10,opt,name=extractor,proto3" json:"extractor,omitempty"`
+	Plugins []string `protobuf:"bytes,49,rep,name=plugins,proto3" json:"plugins,omitempty"`
 	// The additional data found in the package.
 	//
 	// Types that are valid to be assigned to Metadata:
@@ -658,11 +662,19 @@ func (x *Package) GetLocations() []string {
 	return nil
 }
 
-func (x *Package) GetExtractor() string {
+// Deprecated: Marked as deprecated in proto/scan_result.proto.
+func (x *Package) GetExtractorDeprecated() string {
 	if x != nil {
-		return x.Extractor
+		return x.ExtractorDeprecated
 	}
 	return ""
+}
+
+func (x *Package) GetPlugins() []string {
+	if x != nil {
+		return x.Plugins
+	}
+	return nil
 }
 
 func (x *Package) GetMetadata() isPackage_Metadata {
@@ -4445,7 +4457,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\fPluginStatus\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\x12+\n" +
-	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\xf6\x16\n" +
+	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\xa9\x17\n" +
 	"\aPackage\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\f \x01(\tR\aversion\x12>\n" +
@@ -4453,9 +4465,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"sourceCode\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x1c\n" +
 	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12\x1c\n" +
-	"\tlocations\x18\x02 \x03(\tR\tlocations\x12\x1c\n" +
-	"\textractor\x18\n" +
-	" \x01(\tR\textractor\x12I\n" +
+	"\tlocations\x18\x02 \x03(\tR\tlocations\x125\n" +
+	"\x14extractor_deprecated\x18\n" +
+	" \x01(\tB\x02\x18\x01R\x13extractorDeprecated\x12\x18\n" +
+	"\aplugins\x181 \x03(\tR\aplugins\x12I\n" +
 	"\x0fpython_metadata\x18\x05 \x01(\v2\x1e.scalibr.PythonPackageMetadataH\x00R\x0epythonMetadata\x12Y\n" +
 	"\x13javascript_metadata\x18\x06 \x01(\v2&.scalibr.JavascriptPackageJSONMetadataH\x00R\x12javascriptMetadata\x12@\n" +
 	"\fapk_metadata\x18\a \x01(\v2\x1b.scalibr.APKPackageMetadataH\x00R\vapkMetadata\x12C\n" +

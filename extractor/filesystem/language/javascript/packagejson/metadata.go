@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 )
@@ -76,6 +77,22 @@ func (p *Person) PersonString() string {
 		result += fmt.Sprintf(" (%s)", p.URL)
 	}
 	return result
+}
+
+// PersonFromString parses a string of the form "name <email> (url)" into a Person struct.
+func PersonFromString(s string) *Person {
+	if s == "" {
+		return nil
+	}
+	fields := internal.MatchNamedCaptureGroups(personPattern, s)
+	for name, field := range fields {
+		fields[name] = strings.TrimSpace(field)
+	}
+	return &Person{
+		Name:  fields["name"],
+		Email: fields["email"],
+		URL:   fields["url"],
+	}
 }
 
 // JavascriptPackageJSONMetadata holds parsing information for a javascript package.json file.

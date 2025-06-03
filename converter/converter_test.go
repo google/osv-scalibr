@@ -35,7 +35,6 @@ import (
 func TestToSPDX23(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 
 	testCases := []struct {
 		desc       string
@@ -48,10 +47,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name:      "software",
-						Version:   "1.2.3",
-						PURLType:  purl.TypePyPi,
-						Extractor: pipEx,
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
 					}},
 				},
 			},
@@ -137,10 +136,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name:      "software",
-						Version:   "1.2.3",
-						PURLType:  purl.TypePyPi,
-						Extractor: pipEx,
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
 					}},
 				},
 			},
@@ -241,14 +240,14 @@ func TestToSPDX23(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						// PURL field missing
-						{Extractor: pipEx},
+						{Plugins: []string{wheelegg.Name}},
 						// No name
 						{
-							Version: "1.2.3", PURLType: purl.TypePyPi, Extractor: pipEx,
+							Version: "1.2.3", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
 						},
 						// No version
 						{
-							Name: "software", PURLType: purl.TypePyPi, Extractor: pipEx,
+							Name: "software", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
 						},
 					},
 				},
@@ -296,10 +295,10 @@ func TestToSPDX23(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name:      "softw@re&",
-						Version:   "1.2.3",
-						PURLType:  purl.TypePyPi,
-						Extractor: pipEx,
+						Name:     "softw@re&",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
 					}},
 				},
 			},
@@ -388,7 +387,7 @@ func TestToSPDX23(t *testing.T) {
 						Name:      "software",
 						Version:   "1.2.3",
 						PURLType:  purl.TypePyPi,
-						Extractor: pipEx,
+						Plugins:   []string{wheelegg.Name},
 						Locations: []string{"/file1"},
 					}},
 				},
@@ -477,7 +476,7 @@ func TestToSPDX23(t *testing.T) {
 					Packages: []*extractor.Package{{
 						Name:      "software",
 						Version:   "1.2.3",
-						Extractor: pipEx,
+						Plugins:   []string{wheelegg.Name},
 						PURLType:  purl.TypePyPi,
 						Locations: []string{"/file1", "/file2", "/file3"},
 					}},
@@ -582,7 +581,6 @@ func ptr[T any](v T) *T {
 func TestToCDX(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	defaultBOM := cyclonedx.NewBOM()
 
 	testCases := []struct {
@@ -596,10 +594,10 @@ func TestToCDX(t *testing.T) {
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
-						Name:      "software",
-						Version:   "1.2.3",
-						PURLType:  purl.TypePyPi,
-						Extractor: pipEx,
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
 					}},
 				},
 			},
@@ -661,7 +659,6 @@ func TestToCDX(t *testing.T) {
 }
 
 func TestToPURL(t *testing.T) {
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	tests := []struct {
 		desc   string
 		pkg    *extractor.Package
@@ -675,7 +672,7 @@ func TestToPURL(t *testing.T) {
 				Version:   "1.0.0",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"/file1"},
-				Extractor: pipEx,
+				Plugins:   []string{wheelegg.Name},
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,

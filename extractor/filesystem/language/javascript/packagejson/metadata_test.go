@@ -175,3 +175,58 @@ func TestPersonString(t *testing.T) {
 		})
 	}
 }
+
+func TestPersonFromString(t *testing.T) {
+	testCases := []struct {
+		desc  string
+		input string
+		want  *packagejson.Person
+	}{
+		{
+			desc:  "empty input",
+			input: "",
+			want:  nil,
+		},
+		{
+			desc:  "name, email, and url",
+			input: "Developer <dev@corp.com> (http://dev.blog.com)",
+			want: &packagejson.Person{
+				Name:  "Developer",
+				Email: "dev@corp.com",
+				URL:   "http://dev.blog.com",
+			},
+		},
+		{
+			desc:  "name, and url",
+			input: "Developer (http://dev.blog.com)",
+			want: &packagejson.Person{
+				Name: "Developer",
+				URL:  "http://dev.blog.com",
+			},
+		},
+		{
+			desc:  "name, email",
+			input: "Developer <dev@corp.com>",
+			want: &packagejson.Person{
+				Name:  "Developer",
+				Email: "dev@corp.com",
+			},
+		},
+		{
+			desc:  "name only",
+			input: "Developer",
+			want: &packagejson.Person{
+				Name: "Developer",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := packagejson.PersonFromString(tc.input)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("packagejson.PersonFromString(%+v) diff (-want +got):\n%s", tc.input, diff)
+			}
+		})
+	}
+}

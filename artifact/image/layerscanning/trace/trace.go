@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
+	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -103,11 +104,16 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 
 	for _, pkg := range inventory.Packages {
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
-		pkgExtractor, isFilesystemExtractor := pkg.Extractor.(filesystem.Extractor)
+		var pkgExtractor filesystem.Extractor
+		for _, name := range pkg.Plugins {
+			if ex, err := el.ExtractorFromName(name); err == nil {
+				pkgExtractor = ex
+				break
+			}
+		}
 
-		// Only filesystem extractors are supported for layer scanning. Also, if the package has no
-		// locations, it cannot be traced.
-		isPackageTraceable := isFilesystemExtractor && len(pkg.Locations) > 0
+		// If the package has no locations or no filesystem Extractor, it cannot be traced.
+		isPackageTraceable := pkgExtractor != nil && len(pkg.Locations) > 0
 		if !isPackageTraceable {
 			continue
 		}
