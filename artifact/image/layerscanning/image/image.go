@@ -145,7 +145,11 @@ func (img *Image) CleanUp() error {
 		log.Warnf("failed to close content blob: %v", err)
 	}
 
-	return os.Remove(img.contentBlob.Name())
+	err := os.Remove(img.contentBlob.Name())
+	if err != nil {
+		log.Warnf("failed to remove content blob: %v", err)
+	}
+	return err
 }
 
 // Size returns the size of the underlying directory of the image in bytes.
@@ -212,6 +216,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image content file: %w", err)
 	}
+	log.Infof("Created image content file: %s", imageContentBlob.Name())
 
 	baseImageIndex, err := findBaseImageIndex(history)
 	if err != nil {
@@ -302,7 +307,9 @@ func addRootDirectoryToChainLayers(chainLayers []*chainLayer) error {
 // regardless of the error, as the image is in an invalid state if an error is returned.
 func handleImageError(image *Image, err error) error {
 	if image != nil {
-		_ = image.CleanUp()
+		if err := image.CleanUp(); err != nil {
+			log.Warnf("failed to clean up image: %v", err)
+		}
 	}
 	return err
 }
