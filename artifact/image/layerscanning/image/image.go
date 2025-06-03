@@ -105,11 +105,10 @@ func validateConfig(config *Config) error {
 // Image is a container image. It is composed of a set of layers that can be scanned for software
 // inventory. It contains the proper metadata to attribute inventory to layers.
 type Image struct {
-	chainLayers    []*chainLayer
-	config         *Config
-	size           int64
-	BaseImageIndex int
-	contentBlob    *os.File
+	chainLayers []*chainLayer
+	config      *Config
+	size        int64
+	contentBlob *os.File
 }
 
 // FS returns the filesystem of the top-most chainlayer of the image. All available files should
@@ -136,7 +135,7 @@ func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
 	return scalibrChainLayers, nil
 }
 
-// CleanUp removes the temporary directory used to store the image files.
+// CleanUp removes the temporary file used to store the extracted tarball contents.
 func (img *Image) CleanUp() error {
 	if img.contentBlob == nil {
 		return nil
@@ -158,7 +157,8 @@ func (img *Image) Size() int64 {
 	return img.size
 }
 
-// FromRemoteName creates an Image from a remote container image name.
+// FromRemoteName creates an Image from a remote container image name. Caller is responsible for
+// cleaning up the image once it is no longer needed.
 func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Option) (*Image, error) {
 	v1Image, err := scalibrImage.V1ImageFromRemoteName(imageName, imageOptions...)
 	if err != nil {
@@ -167,7 +167,8 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 	return FromV1Image(v1Image, config)
 }
 
-// FromTarball creates an Image from a tarball file that stores a container image.
+// FromTarball creates an Image from a tarball file that stores a container image. Caller is
+// responsible for cleaning up the image once it is no longer needed.
 func FromTarball(tarPath string, config *Config) (*Image, error) {
 	// TODO b/381251067: Look into supporting OCI images.
 	v1Image, err := tarball.ImageFromPath(tarPath, nil)
@@ -177,7 +178,7 @@ func FromTarball(tarPath string, config *Config) (*Image, error) {
 	return FromV1Image(v1Image, config)
 }
 
-// FromV1Image takes a v1.Image and produces a layer-scannable Image. The steps taken are as
+// FromV1Image takes a v1.Image and produces a SCALIBR-compatible Image. The steps taken are as
 // follows:
 //
 //		(1) Validates the user input image config object.
@@ -219,16 +220,10 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	}
 	log.Infof("Created image content file: %s", imageContentBlob.Name())
 
-	baseImageIndex, err := findBaseImageIndex(history)
-	if err != nil {
-		baseImageIndex = -1
-	}
-
 	outputImage := &Image{
-		chainLayers:    chainLayers,
-		config:         config,
-		BaseImageIndex: baseImageIndex,
-		contentBlob:    imageContentBlob,
+		chainLayers: chainLayers,
+		config:      config,
+		contentBlob: imageContentBlob,
 	}
 
 	// Attach a cleanup function to the outputImage.

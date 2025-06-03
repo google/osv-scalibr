@@ -330,6 +330,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	enrichers := config.Enrichers
 	config.Enrichers = nil
 
+	chainLayers, err := img.ChainLayers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain layers: %w", err)
+	}
+
 	scanResult := s.Scan(ctx, config)
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
@@ -346,11 +351,6 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
-	}
-
-	chainLayers, err := img.ChainLayers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chain layers: %w", err)
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
