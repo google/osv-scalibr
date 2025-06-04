@@ -30,8 +30,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerd/containerd/metadata"
-	"github.com/containerd/containerd/namespaces"
+	"github.com/containerd/containerd/v2/core/metadata"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
