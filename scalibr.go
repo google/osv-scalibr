@@ -314,25 +314,15 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
 func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
-	chainLayers, err := img.ChainLayers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chain layers: %w", err)
-	}
-
-	if len(chainLayers) == 0 {
-		return nil, errors.New("no chain layers found")
-	}
-
-	finalChainLayer := chainLayers[len(chainLayers)-1]
-	chainfs := finalChainLayer.FS()
-
 	if len(config.ScanRoots) > 0 {
 		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
 	}
+
+	imagefs := img.FS()
 	// Overwrite the scan roots with the chain layer filesystem.
 	config.ScanRoots = []*scalibrfs.ScanRoot{
 		{
-			FS: chainfs,
+			FS: imagefs,
 		},
 	}
 
@@ -358,6 +348,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 	}
 
+	chainLayers, err := img.ChainLayers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain layers: %w", err)
+	}
+
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, extractorConfig)
 
@@ -365,7 +360,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
-			FS: chainfs,
+			FS: imagefs,
 		},
 	}
 	enricherStatus, err := enricher.Run(ctx, enricherCfg, &scanResult.Inventory)
