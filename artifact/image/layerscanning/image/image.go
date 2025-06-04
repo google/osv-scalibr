@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"archive/tar"
@@ -229,6 +230,23 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		BaseImageIndex: baseImageIndex,
 		contentBlob:    imageContentBlob,
 	}
+
+	// Attach a cleanup function to the outputImage.
+	// This is done to ensure that the imageContentBlob file is removed even if the caller does not
+	// call CleanUp() or there is an error during creation of the image.
+	runtime.AddCleanup(outputImage, func(file *os.File) {
+		// Defensively close the file. Ignore the error because the file may already be closed.
+		file.Close()
+		err := os.Remove(file.Name())
+		if err == nil {
+			log.Warnf("%q was removed through cleanup function. This is unexpected as the user should have called CleanUp()", file.Name())
+			return
+		}
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		log.Warnf("%q failed to be removed through GC cleanup function: %v", file.Name(), err)
+	}, imageContentBlob)
 
 	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
 	// be rooted, and traversal in the virtual filesystem will be broken.

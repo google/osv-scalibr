@@ -21,8 +21,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"archive/tar"
 
@@ -845,6 +847,107 @@ func TestFromV1Image(t *testing.T) {
 	}
 }
 
+// TestFromV1Image_CleanUp tests that the image content blob is removed through garbage collection
+// even if image.CleanUp() is not called.
+func TestFromV1Image_CleanUp(t *testing.T) {
+	tests := []struct {
+		name                  string
+		v1Image               v1.Image
+		config                *Config
+		wantChainLayerEntries []chainLayerEntries
+	}{
+		{
+			name: "image with single package",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "etc/os-release",
+						Mode: 0777,
+						Size: int64(len(osContents)),
+					},
+					Data: bytes.NewBufferString(osContents),
+				},
+				{
+					Header: &tar.Header{
+						Name: "var/lib/dpkg/status",
+						Mode: 0777,
+						Size: int64(len("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed")),
+					},
+					Data: bytes.NewBufferString("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed"),
+				},
+			}),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "/etc/os-release",
+							content:  osContents,
+						},
+						{
+							filepath: "/var/lib/dpkg/status",
+							content:  "Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed",
+						},
+					},
+				},
+			},
+			config: DefaultConfig(),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Need to record scalibr files found in /tmp before the rpm extractor runs, as it may create
+			// some. This is needed to compare the files found after the extractor runs.
+			filesInTmpWant := scalibrFilesInTmp(t)
+
+			gotImage, gotErr := FromV1Image(tc.v1Image, tc.config)
+			if gotErr != nil {
+				t.Fatalf("FromV1Image() returned error: %v", gotErr)
+			}
+
+			// Make sure the expected files are in the chain layers.
+			chainLayers, err := gotImage.ChainLayers()
+			if err != nil {
+				t.Fatalf("ChainLayers() returned error: %v", err)
+			}
+
+			// If the number of chain layers does not match the number of expected chain layer entries,
+			// then there is no point in continuing the test.
+			if len(chainLayers) != len(tc.wantChainLayerEntries) {
+				t.Fatalf("ChainLayers() returned incorrect number of chain layers: got %d chain layers, want %d chain layers", len(chainLayers), len(tc.wantChainLayerEntries))
+			}
+
+			for i := range chainLayers {
+				chainLayer := chainLayers[i]
+				wantChainLayerEntries := tc.wantChainLayerEntries[i]
+
+				if wantChainLayerEntries.ignore {
+					continue
+				}
+
+				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries, nil)
+			}
+
+			// Wait for the image content blob to be removed.
+			// There's no guarantee that the GC will run before the next line, so we need to retry.
+			var diff string
+			for range 10 {
+				// Force a GC to make sure that the image content blob is removed.
+				runtime.GC()
+				filesInTmpGot := scalibrFilesInTmp(t)
+				less := func(a, b string) bool { return a < b }
+				diff = cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less))
+				if diff == "" {
+					break
+				}
+				time.Sleep(2 * time.Second)
+			}
+			if diff != "" {
+				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 // ========================================================
 // TESTING HELPER METHODS
 // ========================================================
@@ -884,19 +987,18 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 	}
 }
 
-// scalibrFilesInTmp returns the list of filenames in /tmp that start with "osv-scalibr-".
+// scalibrFilesInTmp returns the list of filenames in /tmp that start with "image-blob-".
 func scalibrFilesInTmp(t *testing.T) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)
 	}
 
 	for _, f := range files {
-		name := f.Name()
-		if strings.HasPrefix(name, "osv-scalibr-") {
+		if strings.HasPrefix(f.Name(), "image-blob-") {
 			filenames = append(filenames, f.Name())
 		}
 	}
