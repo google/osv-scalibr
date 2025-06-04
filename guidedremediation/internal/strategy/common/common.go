@@ -37,13 +37,19 @@ type StrategyResult struct {
 // ErrPatchImpossible is returned when no patch is possible for the vulns.
 var ErrPatchImpossible = errors.New("cannot find a patch for the vulns")
 
+// PatchResult is the result of computing patches.
+type PatchResult struct {
+	Patches  []result.Patch                  // the list of unique patches
+	Resolved []*remediation.ResolvedManifest // the resolved manifest after each patch is applied
+}
+
 // ComputePatches attempts to resolve each vulnerability found in the resolved manifest independently,
 // returning the list of unique possible patches.
 // Vulnerabilities are resolved by calling patchFunc for each vulnerability.
 // If a patch introduces new vulnerabilities, additional patches are attempted for the new vulnerabilities.
 // If groupIntroduced is true, introduced vulns are all attempted to be patched together.
 // Otherwise, they are patched one-by-one independently.
-func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest, groupIntroduced bool) ([]result.Patch, error) {
+func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest, groupIntroduced bool) (PatchResult, error) {
 	ch := make(chan StrategyResult)
 	doPatch := func(vulnIDs []string) {
 		ch <- patchFunc(vulnIDs)
@@ -55,7 +61,12 @@ func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest,
 		toProcess++
 	}
 
-	var allResults []result.Patch
+	type patchRes struct {
+		patch    result.Patch
+		resolved *remediation.ResolvedManifest
+	}
+
+	var allResults []patchRes
 	for toProcess > 0 {
 		r := <-ch
 		toProcess--
@@ -70,7 +81,7 @@ func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest,
 		if len(patch.PackageUpdates) == 0 {
 			continue
 		}
-		allResults = append(allResults, patch)
+		allResults = append(allResults, patchRes{patch: patch, resolved: r.Resolved})
 
 		// If there are any new vulns, try patching them as well
 		var newlyAdded []string
@@ -96,9 +107,17 @@ func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest,
 	}
 
 	// Sort and remove duplicate patches
-	cmpFn := func(a, b result.Patch) int { return a.Compare(b, resolved.Manifest.System().Semver()) }
+	cmpFn := func(a, b patchRes) int { return a.patch.Compare(b.patch, resolved.Manifest.System().Semver()) }
 	slices.SortFunc(allResults, cmpFn)
-	allResults = slices.CompactFunc(allResults, func(a, b result.Patch) bool { return cmpFn(a, b) == 0 })
+	allResults = slices.CompactFunc(allResults, func(a, b patchRes) bool { return cmpFn(a, b) == 0 })
 
-	return allResults, nil
+	var output PatchResult
+	output.Patches = make([]result.Patch, 0, len(allResults))
+	output.Resolved = make([]*remediation.ResolvedManifest, 0, len(allResults))
+	for _, r := range allResults {
+		output.Patches = append(output.Patches, r.patch)
+		output.Resolved = append(output.Resolved, r.resolved)
+	}
+
+	return output, nil
 }
