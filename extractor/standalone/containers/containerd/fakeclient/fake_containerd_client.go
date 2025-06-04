@@ -210,6 +210,7 @@ func (c *Container) Info(ctx context.Context, opts ...containerd.InfoOpts) (cont
 	}, nil
 }
 
+// Task mocks a containerd.Task with a fake task.
 func (c *Container) Task(context.Context, cio.Attach) (containerd.Task, error) {
 	return NewFakeTask(c.rootfs), nil
 }
