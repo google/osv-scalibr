@@ -188,22 +188,12 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 	pluginStatus := make([]*spb.PluginStatus, 0, len(r.PluginStatus))
 	for _, s := range r.PluginStatus {
-		pluginStatus = append(pluginStatus, pluginStatusToProto(s))
+		pluginStatus = append(pluginStatus, PluginStatusToProto(s))
 	}
 
-	packages := make([]*spb.Package, 0, len(r.Inventory.Packages))
-	for _, p := range r.Inventory.Packages {
-		p := packageToProto(p)
-		packages = append(packages, p)
-	}
-
-	findings := make([]*spb.Finding, 0, len(r.Inventory.Findings))
-	for _, f := range r.Inventory.Findings {
-		p, err := findingToProto(f)
-		if err != nil {
-			return nil, err
-		}
-		findings = append(findings, p)
+	inventory, err := InventoryToProto(&r.Inventory)
+	if err != nil {
+		return nil, err
 	}
 
 	return &spb.ScanResult{
@@ -214,12 +204,32 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		PluginStatus: pluginStatus,
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.
-		InventoriesDeprecated: packages,
-		FindingsDeprecated:    findings,
-		Inventory: &spb.Inventory{
-			Packages: packages,
-			Findings: findings,
-		},
+		InventoriesDeprecated: inventory.GetPackages(),
+		FindingsDeprecated:    inventory.GetFindings(),
+		Inventory:             inventory,
+	}, nil
+}
+
+// InventoryToProto converts a Inventory go struct into the equivalent proto.
+func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
+	packages := make([]*spb.Package, 0, len(inv.Packages))
+	for _, p := range inv.Packages {
+		p := packageToProto(p)
+		packages = append(packages, p)
+	}
+
+	findings := make([]*spb.Finding, 0, len(inv.Findings))
+	for _, f := range inv.Findings {
+		p, err := findingToProto(f)
+		if err != nil {
+			return nil, err
+		}
+		findings = append(findings, p)
+	}
+
+	return &spb.Inventory{
+		Packages: packages,
+		Findings: findings,
 	}, nil
 }
 
@@ -238,7 +248,8 @@ func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
 	return &spb.ScanStatus{Status: e, FailureReason: s.FailureReason}
 }
 
-func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
+// PluginStatusToProto converts a plugin.Status go struct into the equivalent proto.
+func PluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	return &spb.PluginStatus{
 		Name:    s.Name,
 		Version: int32(s.Version),
