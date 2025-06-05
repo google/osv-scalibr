@@ -1572,12 +1572,12 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				got.FindingsDeprecated = nil
 				for _, p := range got.Inventory.Packages {
 					//nolint:staticcheck
-					p.ExtractorDeprecated = ""
+					p.Extractor = ""
 				}
 				for _, f := range got.Inventory.Findings {
 					if f.Target != nil && f.Target.Package != nil {
 						//nolint:staticcheck
-						f.Target.Package.ExtractorDeprecated = ""
+						f.Target.Package.Extractor = ""
 					}
 				}
 			}
