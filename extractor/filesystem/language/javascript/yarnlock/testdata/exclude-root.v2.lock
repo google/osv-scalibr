@@ -5,6 +5,14 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@ws/ansi-regex@workspace:^, @ws/ansi-regex@workspace:ansi-regex":
+  version: 0.0.0-use.local
+  resolution: "@ws/ansi-regex@workspace:ansi-regex"
+  dependencies:
+    ansi-regex: "npm:^6.1.0"
+  languageName: unknown
+  linkType: soft
+
 "ansi-regex@npm:^6.1.0":
   version: 6.1.0
   resolution: "ansi-regex@npm:6.1.0"
@@ -16,6 +24,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ansi-regex@workspace:."
   dependencies:
+    "@ws/ansi-regex": "workspace:^"
     ansi-regex: "npm:^6.1.0"
   languageName: unknown
   linkType: soft

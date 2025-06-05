@@ -357,6 +357,15 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
+					Name:      "@ws/ansi-regex",
+					Version:   "0.0.0-use.local",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/exclude-root.v2.lock"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
 					Name:      "ansi-regex",
 					Version:   "6.1.0",
 					PURLType:  purl.TypeNPM,
