@@ -162,6 +162,9 @@ func doInitialRelockCmd(opts options.FixVulnsOptions, rw manifest.ReadWriter) te
 		if err != nil {
 			return doRelockMsg{err: err}
 		}
+		if opts.DepCachePopulator != nil {
+			opts.DepCachePopulator.PopulateCache(context.Background(), opts.ResolveClient, m.Requirements(), opts.Manifest)
+		}
 		resolved, err := remediation.ResolveManifest(context.Background(), opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
 		if err != nil {
 			return doRelockMsg{err: fmt.Errorf("failed resolving manifest vulnerabilities: %w", err)}

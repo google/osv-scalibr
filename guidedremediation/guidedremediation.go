@@ -232,6 +232,10 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
+	if opts.DepCachePopulator != nil {
+		opts.DepCachePopulator.PopulateCache(ctx, opts.ResolveClient, m.Requirements(), opts.Manifest)
+	}
+
 	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving manifest: %w", err)
