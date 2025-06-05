@@ -25,9 +25,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	pl "github.com/google/osv-scalibr/plugin/list"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -106,9 +106,11 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
 		var pkgExtractor filesystem.Extractor
 		for _, name := range pkg.Plugins {
-			if ex, err := el.ExtractorFromName(name); err == nil {
-				pkgExtractor = ex
-				break
+			if p, err := pl.FromName(name); err == nil {
+				if ex, ok := p.(filesystem.Extractor); ok {
+					pkgExtractor = ex
+					break
+				}
 			}
 		}
 
