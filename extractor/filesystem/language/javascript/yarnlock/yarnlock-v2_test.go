@@ -199,15 +199,6 @@ func TestExtractor_Extract_v2(t *testing.T) {
 						Commit: "",
 					},
 				},
-				{
-					Name:      "eslint-plugin-jest",
-					Version:   "0.0.0-use.local",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-prerelease.v2.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
-				},
 			},
 		},
 		{
@@ -228,15 +219,6 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "tslib",
 					Version:   "2.6.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-build-string.v2.lock"},
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
-				},
-				{
-					Name:      "zone.js",
-					Version:   "0.0.0-use.local",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/with-build-string.v2.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
@@ -366,11 +348,28 @@ func TestExtractor_Extract_v2(t *testing.T) {
 						Commit: "",
 					},
 				},
+			},
+		},
+		{
+			Name: "exclude root",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/exclude-root.v2.lock",
+			},
+			WantPackages: []*extractor.Package{
 				{
-					Name:      "mine",
+					Name:      "@ws/ansi-regex",
 					Version:   "0.0.0-use.local",
 					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-aliases.v2.lock"},
+					Locations: []string{"testdata/exclude-root.v2.lock"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:      "ansi-regex",
+					Version:   "6.1.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/exclude-root.v2.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},

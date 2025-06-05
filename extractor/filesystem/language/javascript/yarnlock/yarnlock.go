@@ -217,6 +217,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			// This group doesn't describe a package.
 			continue
 		}
+		if strings.HasSuffix(group.header, "@workspace:.\":") {
+			// This is the root package itself.
+			continue
+		}
 		pkg := parseYarnPackageGroup(group)
 		pkg.Locations = []string{input.Path}
 		packages = append(packages, pkg)
