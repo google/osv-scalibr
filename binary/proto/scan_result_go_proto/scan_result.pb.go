@@ -543,7 +543,7 @@ type Package struct {
 	// TODO(b/400910349): Remove once integrators stop using these fields.
 	//
 	// Deprecated: Marked as deprecated in proto/scan_result.proto.
-	ExtractorDeprecated string `protobuf:"bytes,10,opt,name=extractor_deprecated,json=extractorDeprecated,proto3" json:"extractor_deprecated,omitempty"`
+	Extractor string `protobuf:"bytes,10,opt,name=extractor,proto3" json:"extractor,omitempty"`
 	// The names of the plugins that found this software. Set by the
 	// core library.
 	Plugins []string `protobuf:"bytes,49,rep,name=plugins,proto3" json:"plugins,omitempty"`
@@ -663,9 +663,9 @@ func (x *Package) GetLocations() []string {
 }
 
 // Deprecated: Marked as deprecated in proto/scan_result.proto.
-func (x *Package) GetExtractorDeprecated() string {
+func (x *Package) GetExtractor() string {
 	if x != nil {
-		return x.ExtractorDeprecated
+		return x.Extractor
 	}
 	return ""
 }
@@ -4457,7 +4457,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\fPluginStatus\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\x12+\n" +
-	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\xa9\x17\n" +
+	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\x94\x17\n" +
 	"\aPackage\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\f \x01(\tR\aversion\x12>\n" +
@@ -4465,9 +4465,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"sourceCode\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x1c\n" +
 	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12\x1c\n" +
-	"\tlocations\x18\x02 \x03(\tR\tlocations\x125\n" +
-	"\x14extractor_deprecated\x18\n" +
-	" \x01(\tB\x02\x18\x01R\x13extractorDeprecated\x12\x18\n" +
+	"\tlocations\x18\x02 \x03(\tR\tlocations\x12 \n" +
+	"\textractor\x18\n" +
+	" \x01(\tB\x02\x18\x01R\textractor\x12\x18\n" +
 	"\aplugins\x181 \x03(\tR\aplugins\x12I\n" +
 	"\x0fpython_metadata\x18\x05 \x01(\v2\x1e.scalibr.PythonPackageMetadataH\x00R\x0epythonMetadata\x12Y\n" +
 	"\x13javascript_metadata\x18\x06 \x01(\v2&.scalibr.JavascriptPackageJSONMetadataH\x00R\x12javascriptMetadata\x12@\n" +
