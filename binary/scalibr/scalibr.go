@@ -82,6 +82,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
 	cdxComponentName := fs.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
+	cdxComponentType := fs.String("cdx-component-type", "", "The 'metadata.component.type' field for the output CDX document")
 	cdxComponentVersion := fs.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
 	cdxAuthors := fs.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
 	verbose := fs.Bool("verbose", false, "Enable this to print debug logs")
@@ -120,6 +121,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		SPDXDocumentNamespace:      *spdxDocumentNamespace,
 		SPDXCreators:               *spdxCreators,
 		CDXComponentName:           *cdxComponentName,
+		CDXComponentType:           *cdxComponentType,
 		CDXComponentVersion:        *cdxComponentVersion,
 		CDXAuthors:                 *cdxAuthors,
 		Verbose:                    *verbose,
