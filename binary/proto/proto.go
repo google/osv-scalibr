@@ -289,10 +289,10 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		Locations:  pkg.Locations,
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.
-		ExtractorDeprecated: firstPluginName,
-		Plugins:             pkg.Plugins,
-		Annotations:         annotationsToProto(pkg.Annotations),
-		LayerDetails:        layerDetailsToProto(pkg.LayerDetails),
+		Extractor:    firstPluginName,
+		Plugins:      pkg.Plugins,
+		Annotations:  annotationsToProto(pkg.Annotations),
+		LayerDetails: layerDetailsToProto(pkg.LayerDetails),
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto
