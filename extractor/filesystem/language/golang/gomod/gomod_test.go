@@ -419,3 +419,99 @@ func TestExtractor_Extract(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
+	tests := []struct {
+		name            string
+		config          gomod.Config
+		inputPath       string
+		wantPackages    []*extractor.Package
+		wantNotPackages []*extractor.Package
+		wantErr         error
+	}{
+		{
+			name:      "exclude indirect",
+			config:    gomod.Config{ExcludeIndirect: true},
+			inputPath: "testdata/indirect-packages.mod",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/BurntSushi/toml",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "gopkg.in/yaml.v2",
+					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+			},
+			wantNotPackages: []*extractor.Package{
+				{
+					Name:      "github.com/mattn/go-colorable",
+					Version:   "0.1.9",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "github.com/mattn/go-isatty",
+					Version:   "0.0.14",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20210630005230-0f9fa26af87c",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			extr := gomod.NewWithConfig(tt.config)
+
+			scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+				Path: tt.inputPath,
+			})
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(context.Background(), &scanInput)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("want error %v, got nil", tt.wantErr)
+				}
+
+				if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), scanInput.Path, diff)
+				}
+
+				return
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), scanInput.Path, diff)
+			}
+
+			// Verify that packages that should not be included are actually excluded
+			for _, shouldNotHave := range tt.wantNotPackages {
+				for _, gotPkg := range got.Packages {
+					if gotPkg.Name == shouldNotHave.Name && gotPkg.Version == shouldNotHave.Version {
+						t.Errorf("Package %s@%s should not be included but was found in results", shouldNotHave.Name, shouldNotHave.Version)
+					}
+				}
+			}
+		})
+	}
+}
