@@ -185,6 +185,7 @@ func toDocElementID(id string) common.DocElementID {
 type CDXConfig struct {
 	ComponentName    string
 	ComponentVersion string
+	ComponentType    string
 	Authors          []string
 }
 
@@ -196,6 +197,7 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		Component: &cyclonedx.Component{
 			Name:    c.ComponentName,
 			Version: c.ComponentVersion,
+			Type:    cyclonedx.ComponentType(c.ComponentType),
 			BOMRef:  uuid.New().String(),
 		},
 		Tools: &cyclonedx.ToolsChoice{

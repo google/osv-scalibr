@@ -144,6 +144,7 @@ type Flags struct {
 	SPDXDocumentNamespace      string
 	SPDXCreators               string
 	CDXComponentName           string
+	CDXComponentType           string
 	CDXComponentVersion        string
 	CDXAuthors                 string
 	Verbose                    bool
@@ -157,6 +158,12 @@ type Flags struct {
 
 var supportedOutputFormats = []string{
 	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml", "cdx-json", "cdx-xml",
+}
+
+var supportedComponentTypes = []string{
+	"application", "framework", "library", "container", "platform",
+	"operating-system", "device", "device-driver", "firmware", "file",
+	"machine-learning-model", "data", "cryptographic-asset",
 }
 
 // ValidateFlags validates the passed command line flags.
@@ -210,6 +217,9 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+		return err
+	}
+	if err := validateComponentType(flags.CDXComponentType); err != nil {
 		return err
 	}
 	return nil
@@ -312,6 +322,14 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 	return nil
 }
 
+func validateComponentType(componentType string) error {
+	if len(componentType) > 0 && !slices.Contains(supportedComponentTypes, componentType) {
+		return fmt.Errorf("unsupported cdx-component-type '%s'", componentType)
+	}
+
+	return nil
+}
+
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	extractors, standaloneExtractors, err := f.extractorsToRun()
@@ -393,6 +411,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 func (f *Flags) GetCDXConfig() converter.CDXConfig {
 	return converter.CDXConfig{
 		ComponentName:    f.CDXComponentName,
+		ComponentType:    f.CDXComponentType,
 		ComponentVersion: f.CDXComponentVersion,
 		Authors:          strings.Split(f.CDXAuthors, ","),
 	}
