@@ -201,7 +201,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
 	}
-	if g.Error != "" {
+	if len(g.Nodes) <= 1 && g.Error != "" {
+		// Multi-registry error may be appended to the resolved graph so only return error when the graph is empty.
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
