@@ -16,8 +16,11 @@ package datasource_test
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"reflect"
 	"testing"
+	"unsafe"
 
 	"deps.dev/util/maven"
 	"github.com/google/osv-scalibr/clients/clienttest"
@@ -245,4 +248,82 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	if !reflect.DeepEqual(gotVersions, wantVersions) {
 		t.Errorf("GetVersions(%s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", gotVersions, wantVersions)
 	}
+}
+
+func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
+	// Create mock server to test auth is maintained
+	srv := clienttest.NewMockHTTPServer(t)
+
+	// Create original client with multiple registries
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	testRegistry1 := datasource.MavenRegistry{
+		URL:             "https://test1.maven.org/maven2/",
+		ID:              "test1",
+		ReleasesEnabled: true,
+	}
+	testRegistry2 := datasource.MavenRegistry{
+		URL:              "https://test2.maven.org/maven2/",
+		ID:               "test2",
+		SnapshotsEnabled: true,
+	}
+	client.AddRegistry(testRegistry1)
+	client.AddRegistry(testRegistry2)
+
+	// Override the ParseMavenSettings function
+	testUsername := "testuser"
+	testPassword := "testpass"
+
+	// Directly modify registryAuths field in client via reflection
+	rv := reflect.ValueOf(client).Elem()
+	rf := rv.FieldByName("registryAuths")
+	mockAuths := map[string]*datasource.HTTPAuthentication{
+		"default": {
+			SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
+			AlwaysAuth:       true,
+			Username:         testUsername,
+			Password:         testPassword,
+		},
+	}
+	reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem().Set(reflect.ValueOf(mockAuths))
+
+	// Require test http client to always expect auth
+	credentials := fmt.Sprintf("%s:%s", testUsername, testPassword)
+	encodedCredentials := base64.StdEncoding.EncodeToString([]byte(credentials))
+	basicAuthToken := fmt.Sprintf("Basic %s", encodedCredentials)
+	srv.SetAuthorization(t, basicAuthToken)
+
+	// Set up response that requires authentication
+	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <versioning>
+	    <latest>2.0.0</latest>
+	    <release>2.0.0</release>
+	    <versions>
+	      <version>2.0.0</version>
+	    </versions>
+	  </versioning>
+	</metadata>
+	`))
+
+	// Create client without registries
+	clientWithoutReg := client.WithoutRegistries()
+
+	// Verify registries are empty
+	gotRegistries := clientWithoutReg.GetRegistries()
+	if len(gotRegistries) != 0 {
+		t.Errorf("WithoutRegistries() returned client with %d registries, want 0", len(gotRegistries))
+	}
+
+	// Test that authenticated calls still work with default registry
+	GetVersions, err := clientWithoutReg.GetVersions(context.Background(), "org.example", "x.y.z")
+	if err != nil {
+		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
+	}
+
+	if len(GetVersions) != 1 {
+		t.Errorf("WithoutRegistries() returned client with %d versions, want 1", len(GetVersions))
+	}
+
 }
