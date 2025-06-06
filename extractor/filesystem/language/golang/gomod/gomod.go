@@ -39,14 +39,29 @@ const (
 	Name = "go/gomod"
 )
 
+// Config is the configuration for the Extractor.
+type Config struct {
+	ExcludeIndirect bool
+}
+
 // Extractor extracts go packages from a go.mod file,
 // including the stdlib version by using the top level go version
 //
 // The output is not sorted and will not be in a consistent order
-type Extractor struct{}
+type Extractor struct {
+	config Config
+}
 
-// New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+// DefaultConfig returns a default configuration for the extractor.
+func DefaultConfig() Config {
+	return Config{}
+}
+
+// New returns a new instance of the extractor with the default configuration.
+func New() filesystem.Extractor { return NewWithConfig(DefaultConfig()) }
+
+// NewWithConfig returns a new instance of the extractor with the given configuration.
+func NewWithConfig(cfg Config) filesystem.Extractor { return &Extractor{config: cfg} }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -113,6 +128,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 	if err != nil {
 		return nil, "", err
 	}
+
 	parsedLockfile, err := modfile.Parse(input.Path, b, nil)
 	if err != nil {
 		return nil, "", err
@@ -122,6 +138,11 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 	packages := map[pkgKey]*extractor.Package{}
 
 	for _, require := range parsedLockfile.Require {
+		// Skip indirect dependencies based on the configuration.
+		if e.config.ExcludeIndirect && require.Indirect {
+			continue
+		}
+
 		name := require.Mod.Path
 		version := strings.TrimPrefix(require.Mod.Version, "v")
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
