@@ -354,7 +354,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, extractorConfig)
+	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, config.FilesystemExtractors, extractorConfig)
 
 	// Run enrichers with the updated inventory.
 	enricherCfg := &enricher.Config{
