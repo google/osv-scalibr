@@ -113,6 +113,7 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		mu:              m.mu,
 		cacheTimestamp:  m.cacheTimestamp,
 		responses:       m.responses,
+		registryAuths:   m.registryAuths,
 	}
 }
 
