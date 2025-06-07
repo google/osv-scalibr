@@ -35,14 +35,15 @@ import (
 
 func TestFixOverride(t *testing.T) {
 	for _, tt := range []struct {
-		name             string
-		universeDir      string
-		manifest         string
-		wantManifestPath string
-		wantResultPath   string
-		remOpts          options.RemediationOptions
-		maxUpgrades      int
-		noIntroduce      bool
+		name              string
+		universeDir       string
+		manifest          string
+		wantManifestPath  string
+		wantResultPath    string
+		remOpts           options.RemediationOptions
+		maxUpgrades       int
+		noIntroduce       bool
+		noMavenNewDepMgmt bool
 	}{
 		{
 			name:             "basic",
@@ -79,6 +80,15 @@ func TestFixOverride(t *testing.T) {
 			remOpts:          options.DefaultRemediationOptions(),
 			noIntroduce:      true,
 		},
+		{
+			name:              "no new dependency management",
+			universeDir:       "testdata/maven",
+			manifest:          "testdata/maven/patchchoice/pom.xml",
+			wantManifestPath:  "testdata/maven/nodepmgmt/want.pom.xml",
+			wantResultPath:    "testdata/maven/nodepmgmt/result.json",
+			remOpts:           options.DefaultRemediationOptions(),
+			noMavenNewDepMgmt: true,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
@@ -102,6 +112,7 @@ func TestFixOverride(t *testing.T) {
 				RemediationOptions: tt.remOpts,
 				MaxUpgrades:        tt.maxUpgrades,
 				NoIntroduce:        tt.noIntroduce,
+				NoMavenNewDepMgmt:  tt.noMavenNewDepMgmt,
 			}
 
 			gotRes, err := guidedremediation.FixVulns(opts)
