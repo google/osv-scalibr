@@ -266,8 +266,12 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 		ID:               "test2",
 		SnapshotsEnabled: true,
 	}
-	client.AddRegistry(testRegistry1)
-	client.AddRegistry(testRegistry2)
+	if err := client.AddRegistry(testRegistry1); err != nil {
+		t.Fatalf("failed to add registry %s: %v", testRegistry1.URL, err)
+	}
+	if err := client.AddRegistry(testRegistry2); err != nil {
+		t.Fatalf("failed to add registry %s: %v", testRegistry2.URL, err)
+	}
 
 	// Override the ParseMavenSettings function
 	testUsername := "testuser"
@@ -289,8 +293,7 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	// Require test http client to always expect auth
 	credentials := fmt.Sprintf("%s:%s", testUsername, testPassword)
 	encodedCredentials := base64.StdEncoding.EncodeToString([]byte(credentials))
-	basicAuthToken := fmt.Sprintf("Basic %s", encodedCredentials)
-	srv.SetAuthorization(t, basicAuthToken)
+	srv.SetAuthorization(t, "Basic "+encodedCredentials)
 
 	// Set up response that requires authentication
 	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
