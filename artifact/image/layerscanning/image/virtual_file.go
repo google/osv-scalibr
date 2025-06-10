@@ -22,6 +22,11 @@ import (
 	"time"
 )
 
+var (
+	errCannotReadVirutalDirectory = errors.New("cannot read directory")
+	errCannotReadVirtualFile      = errors.New("cannot read file")
+)
+
 // virtualFile represents a file in a virtual filesystem.
 type virtualFile struct {
 	// reader provides `Read()`, `Seek()`, `ReadAt()` and `Size()` operations on
@@ -52,8 +57,12 @@ func validateVirtualFile(f *virtualFile) error {
 	if f.isWhiteout {
 		return fs.ErrNotExist
 	}
+	if f.IsDir() {
+		return errCannotReadVirutalDirectory
+	}
+
 	if f.reader == nil {
-		return errors.New("virtual file does not reference any content")
+		return errCannotReadVirtualFile
 	}
 
 	return nil
@@ -69,9 +78,6 @@ func (f *virtualFile) Stat() (fs.FileInfo, error) {
 
 // Read reads the real file contents referred to by the virtualFile.
 func (f *virtualFile) Read(b []byte) (n int, err error) {
-	if f.IsDir() {
-		return 0, nil
-	}
 	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
@@ -80,9 +86,6 @@ func (f *virtualFile) Read(b []byte) (n int, err error) {
 
 // ReadAt reads the real file contents referred to by the virtualFile at a specific offset.
 func (f *virtualFile) ReadAt(b []byte, off int64) (n int, err error) {
-	if f.IsDir() {
-		return 0, nil
-	}
 	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
@@ -91,9 +94,6 @@ func (f *virtualFile) ReadAt(b []byte, off int64) (n int, err error) {
 
 // Seek sets the read cursor of the file contents represented by the virtualFile.
 func (f *virtualFile) Seek(offset int64, whence int) (n int64, err error) {
-	if f.IsDir() {
-		return 0, nil
-	}
 	if err := validateVirtualFile(f); err != nil {
 		return 0, err
 	}
@@ -102,9 +102,11 @@ func (f *virtualFile) Seek(offset int64, whence int) (n int64, err error) {
 
 // Close resets the read cursor of the file contents represented by the virtualFile.
 func (f *virtualFile) Close() error {
+	// Don't do anything for directories.
 	if f.IsDir() {
 		return nil
 	}
+
 	if err := validateVirtualFile(f); err != nil {
 		return err
 	}

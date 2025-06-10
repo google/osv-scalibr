@@ -206,9 +206,9 @@ func TestRead(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "dir file",
-			vf:   dirVirtualFile,
-			want: "",
+			name:    "dir file",
+			vf:      dirVirtualFile,
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
@@ -335,9 +335,9 @@ func TestReadAt(t *testing.T) {
 			wantErr: os.ErrNotExist,
 		},
 		{
-			name: "dir file",
-			vf:   dirVirtualFile,
-			want: "",
+			name:    "dir file",
+			vf:      dirVirtualFile,
+			wantErr: errCannotReadVirutalDirectory,
 		},
 	}
 	for _, tc := range tests {
