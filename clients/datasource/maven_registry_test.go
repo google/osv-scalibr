@@ -328,5 +328,4 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	if len(GetVersions) != 1 {
 		t.Errorf("WithoutRegistries() returned client with %d versions, want 1", len(GetVersions))
 	}
-
 }
