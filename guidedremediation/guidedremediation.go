@@ -265,6 +265,9 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 
 	res.Vulnerabilities = append(res.Vulnerabilities, computeVulnsResult(resolved, allPatches)...)
 	res.Patches = append(res.Patches, choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, false)...)
+	if m.System() == resolve.Maven && opts.NoMavenNewDepMgmt {
+		res.Patches = filterMavenPatches(res.Patches, m.EcosystemSpecific())
+	}
 	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
 		return res, err
 	}
@@ -399,6 +402,26 @@ func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches 
 		)
 	})
 	return vulns
+}
+
+// filterMavenPatches filters out Maven patches that are not allowed.
+func filterMavenPatches(allPatches []result.Patch, ecosystemSpecific any) []result.Patch {
+	specific, ok := ecosystemSpecific.(maven.ManifestSpecific)
+	if !ok {
+		return allPatches
+	}
+	for i := range allPatches {
+		allPatches[i].PackageUpdates = slices.DeleteFunc(allPatches[i].PackageUpdates, func(update result.PackageUpdate) bool {
+			origDep := maven.OriginalDependency(update, specific.OriginalRequirements)
+			// An empty name indicates the original dependency is not in the base project.
+			// If so, delete the patch if the new dependency management is not allowed.
+			return origDep.Name() == ":"
+		})
+	}
+	// Delete the patch if there are no package updates.
+	return slices.DeleteFunc(allPatches, func(patch result.Patch) bool {
+		return len(patch.PackageUpdates) == 0
+	})
 }
 
 // choosePatches chooses up to maxUpgrades compatible patches to apply.
