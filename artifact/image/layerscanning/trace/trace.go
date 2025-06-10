@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	scalibrImage "github.com/google/osv-scalibr/artifact/image"
-	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -55,7 +54,7 @@ type locationAndIndex struct {
 //
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
-func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
+func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrImage.ChainLayer, extractors []filesystem.Extractor, config *filesystem.Config) {
 	// If there are no chain layers, then there is nothing to trace. This should not happen, but we
 	// should handle it gracefully.
 	if len(chainLayers) == 0 {
@@ -102,11 +101,17 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 	locationIndexToPackages := map[locationAndIndex][]*extractor.Package{}
 	lastLayerIndex := len(chainLayers) - 1
 
+	// Build a map from the extractor list for faster access.
+	nameToExtractor := map[string]filesystem.Extractor{}
+	for _, e := range extractors {
+		nameToExtractor[e.Name()] = e
+	}
+
 	for _, pkg := range inventory.Packages {
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
 		var pkgExtractor filesystem.Extractor
 		for _, name := range pkg.Plugins {
-			if ex, err := el.ExtractorFromName(name); err == nil {
+			if ex, ok := nameToExtractor[name]; ok {
 				pkgExtractor = ex
 				break
 			}
