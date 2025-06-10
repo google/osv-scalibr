@@ -274,7 +274,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 			if pp.valid() {
 				packagePom = append(packagePom, &extractor.Package{
-					Name:     pp.ArtifactID,
+					Name:     fmt.Sprintf("%s:%s", pp.GroupID, pp.ArtifactID),
 					Version:  pp.Version,
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{
@@ -295,7 +295,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 			if mf.valid() {
 				packageManifest = append(packageManifest, &extractor.Package{
-					Name:     mf.ArtifactID,
+					Name:     fmt.Sprintf("%s:%s", mf.GroupID, mf.ArtifactID),
 					Version:  mf.Version,
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{
@@ -366,7 +366,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				}
 			}
 			packageFilename = append(packageFilename, &extractor.Package{
-				Name:     p.ArtifactID,
+				Name:     fmt.Sprintf("%s:%s", groupID, p.ArtifactID),
 				Version:  p.Version,
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{
