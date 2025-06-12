@@ -30,14 +30,16 @@ type PackageIndex struct {
 func New(pkgs []*extractor.Package) (*PackageIndex, error) {
 	pkgMap := make(map[string]map[string][]*extractor.Package)
 	for _, pkg := range pkgs {
-		p := pkg.PURL()
-		if p == nil {
-			continue
+		name := pkg.Name
+		purlType := pkg.PURLType
+		if p := pkg.PURL(); p != nil {
+			name = p.Name
+			purlType = p.Type
 		}
-		if _, ok := pkgMap[p.Type]; !ok {
-			pkgMap[p.Type] = make(map[string][]*extractor.Package)
+		if _, ok := pkgMap[purlType]; !ok {
+			pkgMap[purlType] = make(map[string][]*extractor.Package)
 		}
-		pkgMap[p.Type][p.Name] = append(pkgMap[p.Type][p.Name], pkg)
+		pkgMap[purlType][name] = append(pkgMap[purlType][name], pkg)
 	}
 	return &PackageIndex{pkgMap: pkgMap}, nil
 }

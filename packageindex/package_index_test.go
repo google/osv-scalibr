@@ -36,9 +36,10 @@ var (
 
 func TestGetAll(t *testing.T) {
 	pkgs := []*extractor.Package{
-		{Name: "software1", Plugins: []string{packagejson.Name}, PURLType: purl.TypeNPM},
-		{Name: "software2", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
-		{Name: "software3", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
+		{Name: "software1", PURLType: purl.TypeNPM},
+		{Name: "software2", PURLType: purl.TypePyPi},
+		{Name: "software3", PURLType: purl.TypePyPi},
+		{Name: "software-no-purl"},
 	}
 	want := pkgs
 
@@ -55,13 +56,14 @@ func TestGetAll(t *testing.T) {
 
 func TestGetAllOfType(t *testing.T) {
 	pkgs := []*extractor.Package{
-		{Name: "software1", Plugins: []string{packagejson.Name}, PURLType: purl.TypeNPM},
-		{Name: "software2", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
-		{Name: "software3", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
+		{Name: "software1", PURLType: purl.TypeNPM},
+		{Name: "software2", PURLType: purl.TypePyPi},
+		{Name: "software3", PURLType: purl.TypePyPi},
+		{Name: "software-no-purl"},
 	}
 	want := []*extractor.Package{
-		{Name: "software2", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
-		{Name: "software3", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi},
+		{Name: "software2", PURLType: purl.TypePyPi},
+		{Name: "software3", PURLType: purl.TypePyPi},
 	}
 
 	px, err := packageindex.New(pkgs)
@@ -76,12 +78,13 @@ func TestGetAllOfType(t *testing.T) {
 }
 
 func TestGetSpecific(t *testing.T) {
-	pkg1 := &extractor.Package{Name: "software1", Version: "1.2.3", Plugins: []string{packagejson.Name}, PURLType: purl.TypeNPM}
-	pkg2 := &extractor.Package{Name: "software2", Version: "1.2.3", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi}
-	pkg3 := &extractor.Package{Name: "software3", Plugins: []string{wheelegg.Name}, PURLType: purl.TypePyPi}
-	pkg4v123 := &extractor.Package{Name: "software4", Version: "1.2.3", Plugins: []string{packagejson.Name}, PURLType: purl.TypeNPM}
-	pkg4v456 := &extractor.Package{Name: "software4", Version: "4.5.6", Plugins: []string{packagejson.Name}, PURLType: purl.TypeNPM}
-	pkgs := []*extractor.Package{pkg1, pkg2, pkg3, pkg4v123, pkg4v456}
+	pkg1 := &extractor.Package{Name: "software1", Version: "1.2.3", PURLType: purl.TypeNPM}
+	pkg2 := &extractor.Package{Name: "software2", Version: "1.2.3", PURLType: purl.TypePyPi}
+	pkg3 := &extractor.Package{Name: "software3", PURLType: purl.TypePyPi}
+	pkg4v123 := &extractor.Package{Name: "software4", Version: "1.2.3", PURLType: purl.TypeNPM}
+	pkg4v456 := &extractor.Package{Name: "software4", Version: "4.5.6", PURLType: purl.TypeNPM}
+	pkgNoPURL := &extractor.Package{Name: "software-no-purl", Version: "1.2.3"}
+	pkgs := []*extractor.Package{pkg1, pkg2, pkg3, pkg4v123, pkg4v456, pkgNoPURL}
 
 	testCases := []struct {
 		desc    string
@@ -112,6 +115,12 @@ func TestGetSpecific(t *testing.T) {
 			pkgType: "npm",
 			pkgName: "software4",
 			want:    []*extractor.Package{pkg4v123, pkg4v456},
+		},
+		{
+			desc:    "no purl type",
+			pkgType: "",
+			pkgName: "software-no-purl",
+			want:    []*extractor.Package{pkgNoPURL},
 		},
 	}
 
