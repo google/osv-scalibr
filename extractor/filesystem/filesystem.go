@@ -627,28 +627,7 @@ func (wc *walkContext) printStatus() {
 // temporary directory on the scanning host's filesystem. It's up to the caller to delete the
 // directory once they're done using it.
 func (i *ScanInput) GetRealPath() (string, error) {
-	if i.Root != "" {
-		return filepath.Join(i.Root, i.Path), nil
-	}
-
-	// No scan root set, this is a virtual filesystem.
-	// Move the file to the scanning hosts's filesystem.
-	dir, err := os.MkdirTemp("", "scalibr-tmp")
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(dir, "file")
-	f, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, i.Reader)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // TODO(b/380419487): This list is not exhaustive. We should add more extensions here.

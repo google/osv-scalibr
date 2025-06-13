@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
+	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -33,7 +34,7 @@ type InitFn func() annotator.Annotator
 type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
-var VEX = InitMap{cachedir.Name: {cachedir.New}, dpkg.Name: {dpkg.New}}
+var VEX = InitMap{cachedir.Name: {cachedir.New}, dpkg.Name: {dpkg.New}, rpm.Name: {rpm.NewDefault}}
 
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{cachedir.Name: {cachedir.New}}

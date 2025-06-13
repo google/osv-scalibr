@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/annotator/osduplicate"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
@@ -58,7 +59,7 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in DPKG OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	locationToPKGs := buildLocationToPKGsMap(results)
+	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
 
 	dirs, err := diriterate.ReadDir(input.ScanRoot.FS, dpkgInfoDirPath)
 	if err != nil {
@@ -90,26 +91,6 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	}
 
 	return errors.Join(errs...)
-}
-
-// buildLocationToPKGsMap sets up a map of pakcage locations to package pointers from the inventory.
-func buildLocationToPKGsMap(results *inventory.Inventory) map[string][]*extractor.Package {
-	locationToPKGs := map[string][]*extractor.Package{}
-	for _, pkg := range results.Packages {
-		if len(pkg.Locations) == 0 {
-			continue
-		}
-		// The descriptor file (e.g. lockfile) is always stored in the first element.
-		// TODO(b/400910349): Separate locations into a dedicated "descriptor file"
-		// and "other files" field.
-		loc := pkg.Locations[0]
-		if prev, ok := locationToPKGs[loc]; ok {
-			locationToPKGs[loc] = append(prev, pkg)
-		} else {
-			locationToPKGs[loc] = []*extractor.Package{pkg}
-		}
-	}
-	return locationToPKGs
 }
 
 func processListFile(path string, fs scalibrfs.FS, locationToPKGs map[string][]*extractor.Package) error {
