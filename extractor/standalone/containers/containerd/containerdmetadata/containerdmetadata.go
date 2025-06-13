@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package containerd
+// Package containerdmetadata defines the metadata for the containerd standalone extractor.
+package containerdmetadata
 
 // Metadata holds parsing information for a container running on the containerd runtime.
 type Metadata struct {

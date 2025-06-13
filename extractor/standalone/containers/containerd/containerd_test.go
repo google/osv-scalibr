@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	md "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd/fakeclient"
 	"github.com/google/osv-scalibr/inventory"
 )
@@ -64,7 +65,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -78,7 +79,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
@@ -101,7 +102,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -115,7 +116,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
@@ -138,7 +139,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -152,7 +153,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
