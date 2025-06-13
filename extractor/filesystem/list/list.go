@@ -264,6 +264,7 @@ var (
 		GoSource, GoArtifact,
 		OS,
 	)
+
 	// All extractors available from SCALIBR.
 	All = concat(
 		SourceCode,
