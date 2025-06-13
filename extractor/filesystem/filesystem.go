@@ -173,11 +173,11 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 // are expected to be relative to the scan root.
 // This function is exported for TESTS ONLY.
 func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalibrfs.ScanRoot) (*walkContext, error) {
-	pathsToExtract, err := stripAllPathPrefixes(config.PathsToExtract, absScanRoots)
+	pathsToExtract, err := stripAllPathPrefixesAndToSlash(config.PathsToExtract, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
-	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
+	dirsToSkip, err := stripAllPathPrefixesAndToSlash(config.DirsToSkip, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,6 @@ type walkContext struct {
 
 func walkIndividualPaths(wc *walkContext) error {
 	for _, p := range wc.pathsToExtract {
-		p := filepath.ToSlash(p)
 		info, err := fs.Stat(wc.fs, p)
 		if err != nil {
 			err = wc.handleFile(p, nil, err)
@@ -546,7 +545,7 @@ func expandAllAbsolutePaths(scanRoots []*scalibrfs.ScanRoot) ([]*scalibrfs.ScanR
 	return result, nil
 }
 
-func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]string, error) {
+func stripAllPathPrefixesAndToSlash(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]string, error) {
 	if len(scanRoots) > 0 && scanRoots[0].IsVirtual() {
 		// We're using a virtual filesystem with no real absolute paths.
 		return paths, nil
@@ -562,7 +561,7 @@ func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]st
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, rp)
+		result = append(result, filepath.ToSlash(rp))
 	}
 
 	return result, nil
