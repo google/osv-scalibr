@@ -40,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
 	"go.uber.org/multierr"
 
@@ -188,16 +189,8 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 // LINT.IfChange
 
 // ScanResult stores the results of a scan incl. scan status and inventory found.
-type ScanResult struct {
-	Version   string
-	StartTime time.Time
-	EndTime   time.Time
-	// Status of the overall scan.
-	Status *plugin.ScanStatus
-	// Status and versions of the plugins that ran.
-	PluginStatus []*plugin.Status
-	Inventory    inventory.Inventory
-}
+// TODO: b/425645186 - Remove this alias once all callers are migrated to the result package.
+type ScanResult = result.ScanResult
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
 
