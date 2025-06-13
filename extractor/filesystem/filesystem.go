@@ -342,9 +342,9 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 		if os.IsPermission(fserr) {
 			// Permission errors are expected when traversing the entire filesystem.
-			log.Debugf("fserr (permission error): %w", fserr)
+			log.Debugf("fserr (permission error): %v", fserr)
 		} else {
-			log.Errorf("fserr (non-permission error): %w", fserr)
+			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
 		return nil
 	}
