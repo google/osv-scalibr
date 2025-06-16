@@ -177,10 +177,13 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	if err != nil {
 		return nil, err
 	}
+	pathsToExtract = toSlashPaths(pathsToExtract)
+
 	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
+	dirsToSkip = toSlashPaths(dirsToSkip)
 
 	return &walkContext{
 		ctx:               ctx,
@@ -343,9 +346,9 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 		if os.IsPermission(fserr) {
 			// Permission errors are expected when traversing the entire filesystem.
-			log.Debugf("fserr (permission error): %w", fserr)
+			log.Debugf("fserr (permission error): %v", fserr)
 		} else {
-			log.Errorf("fserr (non-permission error): %w", fserr)
+			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
 		return nil
 	}
@@ -566,6 +569,16 @@ func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]st
 	}
 
 	return result, nil
+}
+
+// toSlashPaths returns a new []string that converts all paths to use /
+func toSlashPaths(paths []string) []string {
+	returnPaths := make([]string, len(paths))
+	for i, s := range paths {
+		returnPaths[i] = filepath.ToSlash(s)
+	}
+
+	return returnPaths
 }
 
 // stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
