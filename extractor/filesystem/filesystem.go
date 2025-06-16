@@ -177,10 +177,13 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	if err != nil {
 		return nil, err
 	}
+	pathsToExtract = toSlashPaths(pathsToExtract)
+
 	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
+	dirsToSkip = toSlashPaths(dirsToSkip)
 
 	return &walkContext{
 		ctx:               ctx,
@@ -566,6 +569,16 @@ func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]st
 	}
 
 	return result, nil
+}
+
+// toSlashPaths returns a new []string that converts all paths to use /
+func toSlashPaths(paths []string) []string {
+	returnPaths := make([]string, len(paths))
+	for i, s := range paths {
+		returnPaths[i] = filepath.ToSlash(s)
+	}
+
+	return returnPaths
 }
 
 // stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
