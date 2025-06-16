@@ -23,6 +23,7 @@ import (
 // AfterExtractorStats is a struct containing stats about the results of a file extraction run.
 type AfterExtractorStats struct {
 	Path    string
+	Root    string
 	Runtime time.Duration
 
 	Inventory *inventory.Inventory
