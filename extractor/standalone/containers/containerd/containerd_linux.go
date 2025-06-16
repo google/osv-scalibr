@@ -23,16 +23,15 @@ import (
 	"os"
 	"path/filepath"
 
-	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/namespaces"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -126,7 +125,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// Extractor extracts containers from the containerd API.
+// Extract extracts containers from the containerd API.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	var result = []*extractor.Package{}
 	if e.checkIfSocketExists {
@@ -290,11 +289,3 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 
 	return md, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no ecosystem since the Package is not a software package.
-func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

@@ -102,7 +102,9 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{Network: plugin.NetworkOffline}
+}
 
 // FileRequired returns true if the specified file matches python Metadata file
 // patterns.
@@ -368,12 +370,3 @@ func splitPerRequirementOptions(s string) (string, []string) {
 	}
 	return reTextAfterFirstOptionInclusive.ReplaceAllString(s, ""), hashes
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }

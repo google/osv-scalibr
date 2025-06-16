@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -125,9 +126,10 @@ func TestExtract(t *testing.T) {
 			osrelease: NixVicuna,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "perl5.38.2-FCGI-ProcManager",
-					Version: "0.28",
-					Metadata: &nix.Metadata{
+					Name:     "perl5.38.2-FCGI-ProcManager",
+					Version:  "0.28",
+					PURLType: purl.TypeNix,
+					Metadata: &nixmeta.Metadata{
 						PackageName:       "perl5.38.2-FCGI-ProcManager",
 						PackageVersion:    "0.28",
 						PackageHash:       "xakcaxsqdzjszym0vji2r8n0wdy2inqc",
@@ -147,9 +149,10 @@ func TestExtract(t *testing.T) {
 			osrelease: NixVicuna,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "webdav-server-rs",
-					Version: "unstable-2021-08-16",
-					Metadata: &nix.Metadata{
+					Name:     "webdav-server-rs",
+					Version:  "unstable-2021-08-16",
+					PURLType: purl.TypeNix,
+					Metadata: &nixmeta.Metadata{
 						PackageName:       "webdav-server-rs",
 						PackageVersion:    "unstable-2021-08-16",
 						PackageHash:       "q5dhwzcn82by5ndc7g0q83wsnn13qkqw",
@@ -219,93 +222,6 @@ func TestExtract(t *testing.T) {
 			wantInv := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(wantInv, got); diff != "" {
 				t.Errorf("Package mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	pkgName := "pkgName"
-	pkgVersion := "pkgVersion"
-	pkgHash := "pkgHash"
-	pkgOutput := "pkgOutput"
-
-	e := nix.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *nix.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "all fields present",
-			metadata: &nix.Metadata{
-				PackageName:       pkgName,
-				PackageVersion:    pkgVersion,
-				PackageHash:       pkgHash,
-				PackageOutput:     pkgOutput,
-				OSID:              "nixos",
-				OSVersionCodename: "vicuna",
-				OSVersionID:       "24.11",
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeNix,
-				Name:    pkgName,
-				Version: pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"distro": "vicuna",
-				}),
-			},
-		},
-		{
-			name: "only VERSION_ID set",
-			metadata: &nix.Metadata{
-				PackageName:    pkgName,
-				PackageVersion: pkgVersion,
-				PackageHash:    pkgHash,
-				PackageOutput:  pkgOutput,
-				OSID:           "nixos",
-				OSVersionID:    "24.11",
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeNix,
-				Name:    pkgName,
-				Version: pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"distro": "24.11",
-				}),
-			},
-		},
-		{
-			name: "OS ID not set, fallback to Nixos",
-			metadata: &nix.Metadata{
-				PackageName:       pkgName,
-				PackageVersion:    pkgVersion,
-				PackageHash:       pkgHash,
-				PackageOutput:     pkgOutput,
-				OSVersionCodename: "vicuna",
-				OSVersionID:       "24.11",
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeNix,
-				Name:    pkgName,
-				Version: pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"distro": "vicuna",
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

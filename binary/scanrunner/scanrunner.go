@@ -28,6 +28,11 @@ import (
 // RunScan executes the scan with the given CLI flags
 // and returns the exit code passed to os.Exit() in the main binary.
 func RunScan(flags *cli.Flags) int {
+	if flags.PrintVersion {
+		log.Infof("OSV-SCALIBR v%s", scalibr.ScannerVersion)
+		return 0
+	}
+
 	if flags.Verbose {
 		log.SetLogger(&log.DefaultLogger{Verbose: true})
 	}

@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Extractor extracts FakeTestLayers built from the FakeLayerBuilder
+// FakeTestLayersExtractor extracts FakeTestLayers built from the FakeLayerBuilder
 type FakeTestLayersExtractor struct {
 }
 
@@ -59,6 +59,7 @@ func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.Sc
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      pkg,
 			Version:   version,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 		})
 	}
@@ -68,23 +69,6 @@ func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.Sc
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
-}
-
-// ToPURL always returns nil
-func (e FakeTestLayersExtractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGeneric,
-		Name:    p.Name,
-		Version: p.Version,
-	}
-}
-
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e FakeTestLayersExtractor) ToCPEs(_ *extractor.Package) []string { return []string{} }
-
-// Ecosystem returns no ecosystem as this is a mock for testing
-func (e FakeTestLayersExtractor) Ecosystem(p *extractor.Package) string {
-	return ""
 }
 
 var _ filesystem.Extractor = FakeTestLayersExtractor{}

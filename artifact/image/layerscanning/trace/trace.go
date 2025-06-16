@@ -54,7 +54,7 @@ type locationAndIndex struct {
 //
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
-func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrImage.ChainLayer, config *filesystem.Config) {
+func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrImage.ChainLayer, extractors []filesystem.Extractor, config *filesystem.Config) {
 	// If there are no chain layers, then there is nothing to trace. This should not happen, but we
 	// should handle it gracefully.
 	if len(chainLayers) == 0 {
@@ -101,20 +101,31 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 	locationIndexToPackages := map[locationAndIndex][]*extractor.Package{}
 	lastLayerIndex := len(chainLayers) - 1
 
+	// Build a map from the extractor list for faster access.
+	nameToExtractor := map[string]filesystem.Extractor{}
+	for _, e := range extractors {
+		nameToExtractor[e.Name()] = e
+	}
+
 	for _, pkg := range inventory.Packages {
 		layerDetails := chainLayerDetailsList[lastLayerIndex]
-		pkgExtractor, isFilesystemExtractor := pkg.Extractor.(filesystem.Extractor)
+		var pkgExtractor filesystem.Extractor
+		for _, name := range pkg.Plugins {
+			if ex, ok := nameToExtractor[name]; ok {
+				pkgExtractor = ex
+				break
+			}
+		}
 
-		// Only filesystem extractors are supported for layer scanning. Also, if the package has no
-		// locations, it cannot be traced.
-		isPackageTraceable := isFilesystemExtractor && len(pkg.Locations) > 0
+		// If the package has no locations or no filesystem Extractor, it cannot be traced.
+		isPackageTraceable := pkgExtractor != nil && len(pkg.Locations) > 0
 		if !isPackageTraceable {
 			continue
 		}
 
 		var pkgPURL string
-		if pkg.Extractor != nil {
-			pkgPURL = pkg.Extractor.ToPURL(pkg).String()
+		if pkg.PURL() != nil {
+			pkgPURL = pkg.PURL().String()
 		}
 
 		var foundOrigin bool
@@ -165,13 +176,9 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 
 			foundPackage := false
 			for _, oldPKG := range oldPackages {
-				if oldPKG.Extractor == nil {
-					continue
-				}
-
 				// PURLs are being used as a package key, so if they are different, skip this package.
-				oldPKGPURL := oldPKG.Extractor.ToPURL(oldPKG).String()
-				if oldPKGPURL != pkgPURL {
+				oldPKGPURL := oldPKG.PURL()
+				if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
 					continue
 				}
 

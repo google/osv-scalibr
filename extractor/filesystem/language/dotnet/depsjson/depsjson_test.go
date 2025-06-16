@@ -296,22 +296,3 @@ func TestExtract(t *testing.T) {
 func pkgLess(i1, i2 *extractor.Package) bool {
 	return i1.Name < i2.Name
 }
-
-func TestToPURL(t *testing.T) {
-	e := depsjson.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeNuget,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeNuget,
-		Name:    "Name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}

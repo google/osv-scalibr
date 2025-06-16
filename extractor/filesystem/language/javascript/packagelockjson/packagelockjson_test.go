@@ -176,25 +176,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	e := packagelockjson.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeNPM,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}
-
 func TestMetricCollector(t *testing.T) {
 	tests := []struct {
 		name             string

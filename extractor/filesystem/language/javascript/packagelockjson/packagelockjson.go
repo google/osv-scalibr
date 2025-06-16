@@ -334,12 +334,3 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 
 	return result, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Package) string { return "npm" }

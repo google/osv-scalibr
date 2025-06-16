@@ -33,7 +33,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -73,7 +72,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // Extract extracts open ports on the system.
 func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	// First, extract a mapping that provides the PID for each open socket inode number.
-	inodeToPID, err := proc.MapSocketInodesToPID(ctx, input.Root, input.FS)
+	inodeToPID, err := proc.MapSocketInodesToPID(ctx, input.ScanRoot.Path, input.ScanRoot.FS)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
@@ -104,7 +103,7 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 				continue
 			}
 
-			cmdline, err := proc.ReadProcessCmdline(ctx, pid, input.Root, input.FS)
+			cmdline, err := proc.ReadProcessCmdline(ctx, pid, input.ScanRoot.Path, input.ScanRoot.FS)
 			if err != nil {
 				return inventory.Inventory{}, err
 			}
@@ -116,15 +115,6 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 
 	return inventory.Inventory{Packages: packages}, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// This extractor does not create PURLs.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
 
 func (e Extractor) allTCPInfo(ctx context.Context) ([]*proc.NetTCPInfo, error) {
 	var entries []*proc.NetTCPInfo

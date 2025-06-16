@@ -23,11 +23,6 @@ import (
 // Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
-	// ToPURL converts a package created by this extractor into a PURL.
-	ToPURL(p *Package) *purl.PackageURL
-	// Ecosystem returns the Ecosystem of the given package created by this extractor.
-	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
-	Ecosystem(p *Package) string
 }
 
 // LINT.IfChange
@@ -68,10 +63,9 @@ type Package struct {
 	// Paths or source of files related to the package.
 	Locations []string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
-	// TODO(b/400910349): Set in all package extractors.
 	PURLType string
-	// The Extractor that found this software instance. Set by the core library.
-	Extractor Extractor
+	// The names of the Plugins that found this software instance. Set by the core library.
+	Plugins []string
 	// Annotations are additional information about the package that is useful for matching.
 	Annotations []Annotation
 	// Details about the layer that the package was attributed to.
@@ -90,15 +84,12 @@ const (
 	// happens for example when packages are renamed.
 	Transitional
 	// InsideOSPackage is set for packages that are found inside an OS package.
-	// TODO(b/364536788): Annotation for language packages inside OS packages.
 	InsideOSPackage
 	// InsideCacheDir is set for packages that are found inside a cache directory.
-	// TODO(b/364539671): Annotation for packages inside cache directories.
 	InsideCacheDir
 )
 
 // PURL returns the Package URL of this package.
-// TODO(b/400910349): Implement for all package types.
 func (p *Package) PURL() *purl.PackageURL {
 	return toPURL(p)
 }
@@ -106,7 +97,7 @@ func (p *Package) PURL() *purl.PackageURL {
 // Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
 func (p *Package) Ecosystem() string {
-	return p.Extractor.Ecosystem(p)
+	return toEcosystem(p)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

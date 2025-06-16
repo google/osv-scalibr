@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakechainlayer"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
@@ -27,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/opencontainers/go-digest"
 )
@@ -66,16 +66,18 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			chainLayers: []image.ChainLayer{},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 		},
@@ -84,6 +86,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
@@ -93,6 +96,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
@@ -102,13 +106,15 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -118,8 +124,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -129,8 +136,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -145,8 +153,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -157,8 +166,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -173,13 +183,15 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      "baz",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -191,8 +203,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -202,8 +215,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -218,18 +232,21 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -242,8 +259,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -253,8 +271,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       3,
 						DiffID:      "diff-id-3",
@@ -264,8 +283,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -280,23 +300,27 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -310,8 +334,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -321,8 +346,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       4,
 						DiffID:      "diff-id-4",
@@ -332,8 +358,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       3,
 						DiffID:      "diff-id-3",
@@ -343,8 +370,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -359,8 +387,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			chainLayers: []image.ChainLayer{
@@ -389,8 +418,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "",
@@ -409,8 +439,8 @@ func TestPopulateLayerDetails(t *testing.T) {
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 
-			PopulateLayerDetails(context.Background(), inventory.Inventory{Packages: tc.pkgs}, tc.chainLayers, config)
-			if diff := cmp.Diff(tc.wantPackages, tc.pkgs, cmpopts.IgnoreFields(extractor.Package{}, "Extractor")); diff != "" {
+			PopulateLayerDetails(context.Background(), inventory.Inventory{Packages: tc.pkgs}, tc.chainLayers, []filesystem.Extractor{fakeLayerExtractor}, config)
+			if diff := cmp.Diff(tc.wantPackages, tc.pkgs); diff != "" {
 				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.pkgs, tc.chainLayers, diff)
 			}
 		})

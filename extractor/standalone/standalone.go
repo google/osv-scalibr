@@ -41,10 +41,8 @@ type Config struct {
 
 // ScanInput provides information for the extractor about the scan.
 type ScanInput struct {
-	// FS for file access. This is rooted at Root.
-	FS scalibrfs.FS
-	// The root directory to start the extraction from.
-	Root string
+	// The root of the artifact being scanned.
+	ScanRoot *scalibrfs.ScanRoot
 }
 
 // Run the extractors that are specified in the config.
@@ -60,8 +58,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 	}
 
 	scanInput := &ScanInput{
-		FS:   config.ScanRoot.FS,
-		Root: config.ScanRoot.Path,
+		ScanRoot: config.ScanRoot,
 	}
 
 	inv := inventory.Inventory{}
@@ -76,7 +73,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 			continue
 		}
 		for _, p := range exInv.Packages {
-			p.Extractor = extractor
+			p.Plugins = append(p.Plugins, extractor.Name())
 		}
 
 		inv.Append(exInv)

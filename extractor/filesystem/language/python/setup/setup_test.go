@@ -395,22 +395,3 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
-
-func TestToPURL(t *testing.T) {
-	e := setup.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-	}
-}

@@ -124,6 +124,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "rclone",
 					Version:   "1.67.0",
+					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
 					Metadata:  &homebrew.Metadata{},
 				},
@@ -136,6 +137,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "testapp",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"},
 					Metadata:  &homebrew.Metadata{},
 				},
@@ -153,6 +155,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "android-platform-tools",
 					Version:   "35.0.2",
+					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"},
 					Metadata:  &homebrew.Metadata{},
 				},
@@ -173,42 +176,6 @@ func TestExtract(t *testing.T) {
 
 			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	tests := []struct {
-		name string
-		pkgs []*extractor.Package
-		want *purl.PackageURL
-	}{
-		{
-			name: "cask_firefox",
-			pkgs: []*extractor.Package{
-				{
-					Name:      "firefox",
-					Version:   "129.0",
-					Locations: []string{"System/Volumes/Data/usr/local/Caskroom/firefox/129.0/firefox.wrapper.sh"},
-				},
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeBrew,
-				Name:    "firefox",
-				Version: "129.0",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = homebrew.Extractor{}
-			for _, p := range tt.pkgs {
-				got := e.ToPURL(p)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-				}
 			}
 		})
 	}

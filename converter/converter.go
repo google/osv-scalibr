@@ -24,8 +24,8 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
-	cdxe "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
-	spdxe "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
@@ -47,7 +47,7 @@ var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
 
 // ToPURL converts a SCALIBR package structure into a package URL.
 func ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.Extractor.ToPURL(p)
+	return p.PURL()
 }
 
 // SPDXConfig describes custom settings that should be applied to the generated SPDX file.
@@ -95,7 +95,10 @@ func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
 			continue
 		}
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
-		pSourceInfo := fmt.Sprintf("Identified by the %s extractor", pkg.Extractor.Name())
+		pSourceInfo := ""
+		if len(pkg.Plugins) > 0 {
+			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
+		}
 		if len(pkg.Locations) == 1 {
 			pSourceInfo += " from " + pkg.Locations[0]
 		} else if l := len(pkg.Locations); l > 1 {
@@ -182,6 +185,7 @@ func toDocElementID(id string) common.DocElementID {
 type CDXConfig struct {
 	ComponentName    string
 	ComponentVersion string
+	ComponentType    string
 	Authors          []string
 }
 
@@ -193,6 +197,7 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		Component: &cyclonedx.Component{
 			Name:    c.ComponentName,
 			Version: c.ComponentVersion,
+			Type:    cyclonedx.ComponentType(c.ComponentType),
 			BOMRef:  uuid.New().String(),
 		},
 		Tools: &cyclonedx.ToolsChoice{
@@ -254,10 +259,10 @@ func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
 
 func extractCPEs(p *extractor.Package) []string {
 	// Only the two SBOM package types support storing CPEs.
-	if m, ok := p.Metadata.(*spdxe.Metadata); ok {
+	if m, ok := p.Metadata.(*spdxmeta.Metadata); ok {
 		return m.CPEs
 	}
-	if m, ok := p.Metadata.(*cdxe.Metadata); ok {
+	if m, ok := p.Metadata.(*cdxmeta.Metadata); ok {
 		return m.CPEs
 	}
 	return nil

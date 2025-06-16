@@ -29,7 +29,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"github.com/groob/plist"
+	"github.com/micromdm/plist"
 )
 
 const (
@@ -192,24 +192,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 	p := &extractor.Package{
 		Name:      metadata.CFBundleName,
 		Version:   metadata.CFBundleShortVersionString,
+		PURLType:  purl.TypeMacApps,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
 	return p, nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeMacApps,
-		Name:    p.Name,
-		Version: p.Version,
-	}
-}
-
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Package.
-func (e Extractor) ToCPEs(p *extractor.Package) []string { return nil }
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

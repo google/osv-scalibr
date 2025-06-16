@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax/relaxer"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
-	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
 
@@ -35,7 +34,7 @@ import (
 // returning the list of unique possible patches.
 // Vulnerabilities are resolved by relaxing version constraints of the direct dependencies that bring in the vulnerable packages.
 // If a patch introduces new vulnerabilities, additional relaxations are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) ([]result.Patch, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
 	patchFn := func(vulnIDs []string) common.StrategyResult {
 		patched, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
 		return common.StrategyResult{

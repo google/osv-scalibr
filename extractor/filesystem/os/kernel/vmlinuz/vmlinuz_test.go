@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -209,9 +210,10 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:    "Linux Kernel",
-					Version: "6.8.0-49-generic",
-					Metadata: &vmlinuz.Metadata{
+					Name:     "Linux Kernel",
+					Version:  "6.8.0-49-generic",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &vmlinuzmeta.Metadata{
 						Name:              "Linux Kernel",
 						Version:           "6.8.0-49-generic",
 						Architecture:      "x86",
@@ -272,156 +274,6 @@ func TestExtract(t *testing.T) {
 			wantInv := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(wantInv, got); diff != "" {
 				t.Errorf("Package mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	name := "Linux Kernel"
-	version := "version"
-	architecture := "architecture"
-	extendedVersion := "extendedVersion"
-	format := "format"
-	swapDevice := int32(10)
-	rootDevice := int32(11)
-	videoMode := "videoMode"
-	rwRootFS := true
-
-	e := vmlinuz.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *vmlinuz.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "all fields present",
-			metadata: &vmlinuz.Metadata{
-				Name:              name,
-				Version:           version,
-				Architecture:      architecture,
-				ExtendedVersion:   extendedVersion,
-				Format:            format,
-				SwapDevice:        swapDevice,
-				RootDevice:        rootDevice,
-				VideoMode:         videoMode,
-				OSID:              "ubuntu",
-				OSVersionCodename: "jammy",
-				OSVersionID:       "22.04",
-				RWRootFS:          rwRootFS,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      name,
-				Namespace: "ubuntu",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-		{
-			name: "only VERSION_ID set",
-			metadata: &vmlinuz.Metadata{
-				Name:            name,
-				Version:         version,
-				Architecture:    architecture,
-				ExtendedVersion: extendedVersion,
-				Format:          format,
-				SwapDevice:      swapDevice,
-				RootDevice:      rootDevice,
-				VideoMode:       videoMode,
-				OSID:            "ubuntu",
-				OSVersionID:     "22.04",
-				RWRootFS:        rwRootFS,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      name,
-				Namespace: "ubuntu",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-		{
-			name: "OS ID not set, fallback to linux",
-			metadata: &vmlinuz.Metadata{
-				Name:            name,
-				Version:         version,
-				Architecture:    architecture,
-				ExtendedVersion: extendedVersion,
-				Format:          format,
-				SwapDevice:      swapDevice,
-				RootDevice:      rootDevice,
-				VideoMode:       videoMode,
-				OSVersionID:     "22.04",
-				RWRootFS:        rwRootFS,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      name,
-				Namespace: "linux",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Name:      name,
-				Version:   version,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := vmlinuz.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *vmlinuz.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &vmlinuz.Metadata{
-				OSID: "ubuntu",
-			},
-			want: "Ubuntu",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &vmlinuz.Metadata{},
-			want:     "Linux",
-		},
-		{
-			name: "OS version present",
-			metadata: &vmlinuz.Metadata{
-				OSID:        "ubuntu",
-				OSVersionID: "22.04",
-			},
-			want: "Ubuntu:22.04",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
@@ -199,7 +200,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
 						SourceRPM:    "aaa_base-84.87+git20180409.04c9dae-150300.10.3.1.src.rpm",
@@ -215,7 +217,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
@@ -231,7 +234,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
@@ -257,7 +261,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
 						SourceRPM:    "acl-2.2.51-15.el7.src.rpm",
@@ -273,7 +278,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-2.8.5-4.el7.src.rpm",
@@ -289,7 +295,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-10.0-7.el7.centos.src.rpm",
@@ -348,7 +355,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -364,7 +372,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -380,7 +389,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -407,7 +417,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -422,7 +433,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -437,7 +449,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -469,7 +482,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "hello",
 					Version:   "0.0.1-rls",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
@@ -578,7 +592,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
 						SourceRPM:    "aaa_base-84.87+git20180409.04c9dae-150300.10.3.1.src.rpm",
@@ -594,7 +609,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
@@ -610,7 +626,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
@@ -635,7 +652,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
 						SourceRPM:    "acl-2.2.51-15.el7.src.rpm",
@@ -651,7 +669,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-2.8.5-4.el7.src.rpm",
@@ -667,7 +686,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-10.0-7.el7.centos.src.rpm",
@@ -692,7 +712,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -708,7 +729,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -724,7 +746,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -757,7 +780,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages_epoch"},
 					Name:      "hello",
 					Version:   "0.0.1-rls",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
@@ -836,147 +860,6 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			less := func(a, b string) bool { return a < b }
 			if diff := cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less)); diff != "" {
 				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
-	pkgname := "pkgname"
-	source := "source.rpm"
-	version := "1.2.3"
-	epoch := 1
-	e := rpm.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *rpm.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "version ID and build ID present",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSID:        "fedora",
-				OSVersionID: "32",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "fedora",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "fedora-32",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-		{
-			name: "only build ID present",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSID:        "fedora",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "fedora",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "fedora-asdf",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-		{
-			name: "ID missing",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSVersionID: "32",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "32",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Name:      pkgname,
-				Version:   version,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-	e := rpm.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *rpm.Metadata
-		want     string
-	}{
-		{
-			name: "RHEL",
-			metadata: &rpm.Metadata{
-				OSID: "rhel",
-			},
-			want: "Red Hat",
-		},
-		{
-			name: "rocky",
-			metadata: &rpm.Metadata{
-				OSID: "rocky",
-			},
-			want: "Rocky Linux",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &rpm.Metadata{},
-			want:     "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
 			}
 		})
 	}

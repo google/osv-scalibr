@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
-	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/log"
@@ -38,7 +37,7 @@ import (
 // ComputePatches attempts to resolve each vulnerability found in result independently, returning the list of unique possible patches.
 // Vulnerabilities are resolved by directly overriding versions of vulnerable packages to non-vulnerable versions.
 // If a patch introduces new vulnerabilities, additional overrides are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) ([]result.Patch, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
 	patchFn := func(vulnIDs []string) common.StrategyResult {
 		patched, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
 		return common.StrategyResult{

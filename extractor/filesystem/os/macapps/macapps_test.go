@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -143,6 +144,7 @@ func TestExtract(t *testing.T) {
 				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "130.0.6723.69",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/ValidXML.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "Google Chrome",
@@ -167,6 +169,7 @@ func TestExtract(t *testing.T) {
 				&extractor.Package{
 					Name:      "gMacInformation",
 					Version:   "202410231131",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/BinaryApp.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",
@@ -203,6 +206,7 @@ func TestExtract(t *testing.T) {
 				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/MissingData.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",

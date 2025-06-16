@@ -36,7 +36,7 @@ import (
 )
 
 func TestComputePatches(t *testing.T) {
-	mavenRW, err := maven.GetReadWriter("")
+	mavenRW, err := maven.GetReadWriter("", "")
 	if err != nil {
 		t.Fatalf("failed getting ReadWriter: %v", err)
 	}
@@ -146,10 +146,11 @@ func TestComputePatches(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			got, err := override.ComputePatches(context.Background(), cl, vm, resolved, &tt.opts)
+			gotFull, err := override.ComputePatches(context.Background(), cl, vm, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}
+			got := gotFull.Patches
 
 			// Type is not in exported to json, so just ignore it.
 			if diff := cmp.Diff(want, got, cmpopts.EquateEmpty(), cmpopts.IgnoreTypes(dep.Type{})); diff != "" {

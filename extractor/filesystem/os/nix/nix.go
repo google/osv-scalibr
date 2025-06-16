@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -128,9 +129,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	p := &extractor.Package{
-		Name:    pkgName,
-		Version: pkgVersion,
-		Metadata: &Metadata{
+		Name:     pkgName,
+		Version:  pkgVersion,
+		PURLType: purl.TypeNix,
+		Metadata: &nixmeta.Metadata{
 			PackageName:       pkgName,
 			PackageVersion:    pkgVersion,
 			PackageHash:       pkgHash,
@@ -143,43 +145,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	if len(matches) > 4 {
 		pkgOutput := matches[4]
-		p.Metadata.(*Metadata).PackageOutput = pkgOutput
+		p.Metadata.(*nixmeta.Metadata).PackageOutput = pkgOutput
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
-}
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeNix,
-		Name:       p.Name,
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }
-
-func toDistro(m *Metadata) string {
-	if m.OSVersionCodename != "" {
-		return m.OSVersionCodename
-	}
-
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
-
-	return ""
 }

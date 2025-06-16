@@ -139,9 +139,9 @@ extractor as an example.
     $ `go mod tidy`
     ```
 
-1.  Implement `ToPURL` to generate PURLs from the Inventory
-    extracted. If your extractor doesn't support CPEs feel free to return an empty
-    list.
+1.  Check that [extractor.toPURL](/extractor/convert.go)
+    generates a valid PURL for your package's PURL type. Implement your custom
+    PURL generation logic if necessary.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid
     having to give test data specific file names).
 1.  Register your extractor in

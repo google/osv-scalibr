@@ -45,6 +45,12 @@ func TestRun(t *testing.T) {
 			want:      0,
 		},
 		{
+			desc:      "extract with supported cdx-component-type",
+			setupFunc: tempDir,
+			args:      []string{"scalibr", "--root", "{dir}", "--o", "cdx-json=" + filepath.Join("{dir}", "bom.cdx.json"), "--extractors", "dotnet/depsjson", "--cdx-component-type", "library"},
+			want:      0,
+		},
+		{
 			desc:      "scan subcommand with arg before flags",
 			setupFunc: tempDir,
 			args:      []string{"scalibr", "scan", "unknown", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
@@ -56,6 +62,12 @@ func TestRun(t *testing.T) {
 			// 'unknown' should be treated as the first argument to 'scan', which should fail as it's equivalent to the above test.
 			args: []string{"scalibr", "unknown", "--root", "{dir}", "--result", filepath.Join("{dir}", "result.textproto")},
 			want: 1,
+		},
+		{
+			desc:      "extract with unknown cdx-component-type",
+			setupFunc: tempDir,
+			args:      []string{"scalibr", "--root", "{dir}", "--o", "cdx-json=" + filepath.Join("{dir}", "bom.cdx.json"), "--extractors", "dotnet/depsjson", "--cdx-component-type", "anything"},
+			want:      1,
 		},
 	}
 

@@ -114,25 +114,6 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	cargoAuditableExtractor := cargoauditable.Extractor{}
-	pkg := &extractor.Package{
-		Name:      "name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypeCargo,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeCargo,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := cargoAuditableExtractor.ToPURL(pkg)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", pkg, diff)
-	}
-}
-
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string

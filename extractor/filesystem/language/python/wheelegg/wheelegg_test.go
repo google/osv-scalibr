@@ -82,6 +82,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             ".whl",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.whl",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:             ".egg-info required if size less than maxFileSizeBytes",
 			path:             "testdata/pycups-2.0.1.egg-info",
 			maxFileSizeBytes: 1000,
@@ -240,6 +246,20 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
+			name: ".whl",
+			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
+			wantPackages: []*extractor.Package{{
+				Name:      "monotonic",
+				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
+				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "Ori Livneh",
+					AuthorEmail: "ori@wikimedia.org",
+				},
+			}},
+		},
+		{
 			name:         ".egg without PKG-INFO",
 			path:         "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
 			wantPackages: []*extractor.Package{},
@@ -327,6 +347,20 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				Version:   "1.6",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "Ori Livneh",
+					AuthorEmail: "ori@wikimedia.org",
+				},
+			},
+		},
+		{
+			name: ".whl",
+			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
+			wantPackages: &extractor.Package{
+				Name:      "monotonic",
+				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
+				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -463,24 +497,5 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	wantErr := wheelegg.ErrSizeNotSet
 	if !errors.Is(gotErr, wantErr) {
 		t.Fatalf("Extract(%s) got err: '%v', want err: '%v'", path, gotErr, wantErr)
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := wheelegg.Extractor{}
-	p := &extractor.Package{
-		Name:      "Name",
-		Version:   "1.2.3",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(p)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
 	}
 }

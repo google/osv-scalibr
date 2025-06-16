@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -196,9 +197,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 	}
 
 	p := &extractor.Package{
-		Name:    f.ID,
-		Version: pkgVersion,
-		Metadata: &Metadata{
+		Name:     f.ID,
+		Version:  pkgVersion,
+		PURLType: purl.TypeFlatpak,
+		Metadata: &flatpakmeta.Metadata{
 			PackageName:    pkgName,
 			PackageID:      f.ID,
 			PackageVersion: pkgVersion,
@@ -214,50 +216,3 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 
 	return p, nil
 }
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to ''")
-	return ""
-}
-
-func toDistro(m *Metadata) string {
-	v := m.OSVersionID
-	if v == "" {
-		v = m.OSBuildID
-		if v == "" {
-			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
-			return ""
-		}
-		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
-	}
-
-	id := m.OSID
-	if id == "" {
-		log.Errorf("os-release[ID] not set, fallback to ''")
-		return v
-	}
-	return fmt.Sprintf("%s-%s", id, v)
-}
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeFlatpak,
-		Namespace:  toNamespace(m),
-		Name:       p.Name,
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(p *extractor.Package) string { return "" }

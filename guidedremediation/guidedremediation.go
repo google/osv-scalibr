@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	golog "log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,17 +30,22 @@ import (
 	"strings"
 
 	"deps.dev/util/resolve"
-	scalibrfs "github.com/google/osv-scalibr/fs"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
+	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/common"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/inplace"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
 	"github.com/google/osv-scalibr/guidedremediation/internal/suggest"
+	"github.com/google/osv-scalibr/guidedremediation/internal/tui/components"
+	"github.com/google/osv-scalibr/guidedremediation/internal/tui/model"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
@@ -110,6 +116,61 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	return result.Result{}, errors.New("no supported strategies found")
 }
 
+// VulnDetailsRenderer provides a Render function for the markdown details of a vulnerability.
+type VulnDetailsRenderer components.DetailsRenderer
+
+// FixVulnsInteractive launches the guided remediation interactive TUI.
+// detailsRenderer is used to render the markdown details of vulnerabilities, if nil, a fallback renderer is used.
+func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetailsRenderer) error {
+	// Explicitly specifying vulns by cli flag doesn't really make sense in interactive mode.
+	opts.ExplicitVulns = []string{}
+	var manifestRW manifest.ReadWriter
+	var lockfileRW lockfile.ReadWriter
+	if opts.Manifest != "" {
+		var err error
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(manifestRW.SupportedStrategies(), strategy.StrategyRelax) {
+			return errors.New("interactive mode only supports relax strategy for manifests")
+		}
+	}
+	if opts.Lockfile != "" {
+		var err error
+		lockfileRW, err = readWriterForLockfile(opts.Lockfile)
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(lockfileRW.SupportedStrategies(), strategy.StrategyInPlace) {
+			return errors.New("interactive mode only supports inplace strategy for lockfiles")
+		}
+	}
+
+	var m tea.Model
+	var err error
+	m, err = model.NewModel(manifestRW, lockfileRW, opts, detailsRenderer)
+	if err != nil {
+		return err
+	}
+	p := tea.NewProgram(m, tea.WithAltScreen())
+
+	// Disable scalibr logging to avoid polluting the terminal.
+	golog.SetOutput(io.Discard)
+	m, err = p.Run()
+	golog.SetOutput(os.Stderr)
+	if err != nil {
+		return err
+	}
+
+	md, ok := m.(model.Model)
+	if !ok {
+		log.Warnf("tui exited in unexpected state: %v", m)
+		return nil
+	}
+	return md.Error()
+}
+
 // Update updates the dependencies to the latest version based on the UpdateOptions provided.
 // Update overwrites the manifest on disk with the updated dependencies.
 func Update(opts options.UpdateOptions) (result.Result, error) {
@@ -127,7 +188,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	mf, err := parseManifest(opts.Manifest, manifestRW)
+	mf, err := parser.ParseManifest(opts.Manifest, manifestRW)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -141,7 +202,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	err = writeManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW)
+	err = parser.WriteManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW)
 
 	return result.Result{
 		Path:      opts.Manifest,
@@ -151,7 +212,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 }
 
 func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
-	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) ([]result.Patch, error)
+	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) (common.PatchResult, error)
 	switch s {
 	case strategy.StrategyOverride:
 		computePatches = override.ComputePatches
@@ -160,7 +221,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	default:
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	m, err := parseManifest(opts.Manifest, rw)
+	m, err := parser.ParseManifest(opts.Manifest, rw)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -169,6 +230,10 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		Path:      opts.Manifest,
 		Strategy:  s,
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
+	}
+
+	if opts.DepCachePopulator != nil {
+		opts.DepCachePopulator.PopulateCache(ctx, opts.ResolveClient, m.Requirements(), opts.Manifest)
 	}
 
 	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
@@ -192,14 +257,18 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		}
 	}
 
-	allPatches, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	allPatchResults, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
+	allPatches := allPatchResults.Patches
 
 	res.Vulnerabilities = append(res.Vulnerabilities, computeVulnsResult(resolved, allPatches)...)
 	res.Patches = append(res.Patches, choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, false)...)
-	if err := writeManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
+	if m.System() == resolve.Maven && opts.NoMavenNewDepMgmt {
+		res.Patches = filterMavenPatches(res.Patches, m.EcosystemSpecific())
+	}
+	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
 		return res, err
 	}
 
@@ -217,7 +286,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	if s != strategy.StrategyInPlace {
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	g, err := parseLockfile(opts.Lockfile, rw)
+	g, err := parser.ParseLockfile(opts.Lockfile, rw)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -237,9 +306,9 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
-	res.Vulnerabilities = computeVulnsResultsLockfile(resolved, allPatches)
+	res.Vulnerabilities = computeVulnsResultsLockfile(resolved, allPatches, opts.RemediationOptions)
 	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, true)
-	err = writeLockfilePatches(opts.Lockfile, res.Patches, rw)
+	err = parser.WriteLockfilePatches(opts.Lockfile, res.Patches, rw)
 	return res, err
 }
 
@@ -284,7 +353,7 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 // e.g. CVE-123-456 affecting foo@1.0.0 is different from CVE-123-456 affecting foo@2.0.0.
 // Vulnerabilities are actionable if it can be fixed in all instances of the affected package version.
 // (in the case of npm, where a version of a package can be installed in multiple places in the project)
-func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches []result.Patch) []result.Vuln {
+func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches []result.Patch, opts options.RemediationOptions) []result.Vuln {
 	type vuln struct {
 		id         string
 		pkgName    string
@@ -303,7 +372,15 @@ func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches 
 	for _, v := range resolved.Vulns {
 		vks := make(map[resolve.VersionKey]struct{})
 		for _, sg := range v.Subgraphs {
-			vks[sg.Nodes[sg.Dependency].Version] = struct{}{}
+			// Check if the split vulnerability should've been filtered out.
+			vuln := resolution.Vulnerability{
+				OSV:       v.OSV,
+				Subgraphs: []*resolution.DependencySubgraph{sg},
+				DevOnly:   sg.IsDevOnly(nil),
+			}
+			if remediation.MatchVuln(opts, vuln) {
+				vks[sg.Nodes[sg.Dependency].Version] = struct{}{}
+			}
 		}
 		for vk := range vks {
 			_, fixable := fixableVulns[vuln{v.OSV.ID, vk.Name, vk.Version}]
@@ -325,6 +402,26 @@ func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches 
 		)
 	})
 	return vulns
+}
+
+// filterMavenPatches filters out Maven patches that are not allowed.
+func filterMavenPatches(allPatches []result.Patch, ecosystemSpecific any) []result.Patch {
+	specific, ok := ecosystemSpecific.(maven.ManifestSpecific)
+	if !ok {
+		return allPatches
+	}
+	for i := range allPatches {
+		allPatches[i].PackageUpdates = slices.DeleteFunc(allPatches[i].PackageUpdates, func(update result.PackageUpdate) bool {
+			origDep := maven.OriginalDependency(update, specific.OriginalRequirements)
+			// An empty name indicates the original dependency is not in the base project.
+			// If so, delete the patch if the new dependency management is not allowed.
+			return origDep.Name() == ":"
+		})
+	}
+	// Delete the patch if there are no package updates.
+	return slices.DeleteFunc(allPatches, func(patch result.Patch) bool {
+		return len(patch.PackageUpdates) == 0
+	})
 }
 
 // choosePatches chooses up to maxUpgrades compatible patches to apply.
@@ -423,7 +520,7 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 		return err
 	}
 
-	g, err := parseLockfile(opts.Lockfile, lockfileRW)
+	g, err := parser.ParseLockfile(opts.Lockfile, lockfileRW)
 	if err != nil {
 		return err
 	}
@@ -507,7 +604,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
-		return maven.GetReadWriter(registry)
+		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
 	}
@@ -533,75 +630,4 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 
 	// currently only npm has a lockfile and manifest.
 	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json" && manifestDir == lockfileDir
-}
-
-func parseManifest(path string, rw manifest.ReadWriter) (manifest.Manifest, error) {
-	fsys, path, err := fsAndPath(path)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := rw.Read(path, fsys)
-	if err != nil {
-		return nil, fmt.Errorf("error reading manifest: %w", err)
-	}
-	return m, nil
-}
-
-func parseLockfile(path string, rw lockfile.ReadWriter) (*resolve.Graph, error) {
-	fsys, path, err := fsAndPath(path)
-	if err != nil {
-		return nil, err
-	}
-
-	g, err := rw.Read(path, fsys)
-	if err != nil {
-		return nil, fmt.Errorf("error reading lockfile: %w", err)
-	}
-	return g, nil
-}
-
-func writeManifestPatches(path string, m manifest.Manifest, patches []result.Patch, rw manifest.ReadWriter) error {
-	fsys, _, err := fsAndPath(path)
-	if err != nil {
-		return err
-	}
-
-	return rw.Write(m, fsys, patches, path)
-}
-
-func writeLockfilePatches(path string, patches []result.Patch, rw lockfile.ReadWriter) error {
-	fsys, relPath, err := fsAndPath(path)
-	if err != nil {
-		return err
-	}
-
-	return rw.Write(relPath, fsys, patches, path)
-}
-
-func fsAndPath(path string) (scalibrfs.FS, string, error) {
-	// We need a DirFS that can potentially access files in parent directories from the file.
-	// But you cannot escape the base directory of dirfs.
-	// e.g. "pkg/core/pom.xml" may have a parent at "pkg/parent/pom.xml",
-	// if we had fsys := scalibrfs.DirFS("pkg/core"), we can't do fsys.Open("../parent/pom.xml")
-	//
-	// Since we don't know ahead of time which files might be needed,
-	// we must use the system root as the directory.
-
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Get the path relative to the root (i.e. without the leading '/')
-	// On Windows, we need the path relative to the drive letter,
-	// which also means we can't open files across drives.
-	root := filepath.VolumeName(absPath) + "/"
-	relPath, err := filepath.Rel(root, absPath)
-	if err != nil {
-		return nil, "", err
-	}
-	relPath = filepath.ToSlash(relPath)
-
-	return scalibrfs.DirFS(root), relPath, nil
 }

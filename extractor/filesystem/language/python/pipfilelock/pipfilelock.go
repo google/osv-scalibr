@@ -127,15 +127,4 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 	}
 }
 
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "PyPI"
-}
-
 var _ filesystem.Extractor = Extractor{}

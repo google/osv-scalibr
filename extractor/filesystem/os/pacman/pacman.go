@@ -28,13 +28,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -192,9 +191,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	if pkgName != "" && pkgVersion != "" {
 		p := &extractor.Package{
-			Name:    pkgName,
-			Version: pkgVersion,
-			Metadata: &Metadata{
+			Name:     pkgName,
+			Version:  pkgVersion,
+			PURLType: purl.TypePacman,
+			Metadata: &pacmanmeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				OSID:           m["ID"],
@@ -204,7 +204,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if len(pkgDependencies) != 0 {
-			p.Metadata.(*Metadata).PackageDependencies = pkgDependencies
+			p.Metadata.(*pacmanmeta.Metadata).PackageDependencies = pkgDependencies
 		}
 
 		packages = append(packages, p)
@@ -249,52 +249,4 @@ func extractValues(scanner *bufio.Scanner) (string, error) {
 	}
 
 	return strings.Join(values, ", "), nil
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-id not set, fallback to 'linux'")
-	return "linux"
-}
-
-// ToPURL converts a package created by this extractor into a PURL.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.PackageDependencies != "" {
-		q[purl.PackageDependencies] = m.PackageDependencies
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypePacman,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func toDistro(m *Metadata) string {
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
 }

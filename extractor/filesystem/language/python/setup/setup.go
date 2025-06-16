@@ -198,12 +198,3 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 func containsTemplate(s string) bool {
 	return strings.Contains(s, `%s`) || strings.ContainsAny(s, "%{}")
 }
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "PyPI" }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}

@@ -154,7 +154,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
+		return inventory.Inventory{}, fmt.Errorf("failed resolving: %w", err)
+	}
+	if g.Error != "" {
+		return inventory.Inventory{}, fmt.Errorf("failed resolving: %s", g.Error)
 	}
 
 	pkgs := []*extractor.Package{}
@@ -162,8 +165,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		pkgs = append(pkgs, &extractor.Package{
-			Name:    node.Version.Name,
-			Version: node.Version.Version,
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypePyPi,
 			// TODO(#663): record the path if it's from another requirements file.
 			Locations: []string{input.Path},
 		})
@@ -172,11 +176,3 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	return inv, nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
-	return e.BaseExtractor.ToPURL(i)
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Package) string { return "PyPI" }

@@ -40,31 +40,37 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "alice",
 					Version:   "1.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 				{
 					Name:      "bob",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 				{
 					Name:      "chuck",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 				{
 					Name:      "dave",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 				{
 					Name:      "eve",
 					Version:   "1.5.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 				{
 					Name:      "frank",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/requirements.txt"},
 				},
 			},

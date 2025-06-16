@@ -147,12 +147,3 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 	return result, nil
 }
-
-// ToPURL converts a package item into a Package URL (PURL).
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns the OSV ecosystem name for CocoaPods.
-func (Extractor) Ecosystem(_ *extractor.Package) string { return "CocoaPods" }

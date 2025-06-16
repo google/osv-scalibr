@@ -253,15 +253,4 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 	})
 }
 
-// ToPURL converts an inventory created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem implements filesystem.Extractor.
-func (e Extractor) Ecosystem(p *extractor.Package) string {
-	return "NuGet"
-}
-
 var _ filesystem.Extractor = Extractor{}

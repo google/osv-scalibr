@@ -27,13 +27,13 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/annotator"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
@@ -65,6 +65,7 @@ type ScanConfig struct {
 	FilesystemExtractors []filesystem.Extractor
 	StandaloneExtractors []standalone.Extractor
 	Detectors            []detector.Detector
+	Annotators           []annotator.Annotator
 	Enrichers            []enricher.Enricher
 	// Capabilities that the scanning environment satisfies, e.g. whether there's
 	// network access. Some plugins can only run if certain requirements are met.
@@ -159,7 +160,7 @@ func (cfg *ScanConfig) EnableRequiredExtractors() error {
 // ValidatePluginRequirements checks that the scanning environment's capabilities satisfy
 // the requirements of all enabled plugin.
 func (cfg *ScanConfig) ValidatePluginRequirements() error {
-	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Enrichers))
+	plugins := make([]plugin.Plugin, 0, len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors)+len(cfg.Detectors)+len(cfg.Annotators)+len(cfg.Enrichers))
 	for _, p := range cfg.FilesystemExtractors {
 		plugins = append(plugins, p)
 	}
@@ -167,6 +168,9 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 		plugins = append(plugins, p)
 	}
 	for _, p := range cfg.Detectors {
+		plugins = append(plugins, p)
+	}
+	for _, p := range cfg.Annotators {
 		plugins = append(plugins, p)
 	}
 	for _, p := range cfg.Enrichers {
@@ -262,9 +266,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro.Inventory.Append(standaloneInv)
 	sro.ExtractorStatus = append(sro.ExtractorStatus, standaloneStatus...)
 
-	// add annotations to the pkgs
-	annotator.Annotate(sro.Inventory.Packages)
-
 	px, err := packageindex.New(sro.Inventory.Packages)
 	if err != nil {
 		sro.Err = err
@@ -279,6 +280,16 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	sro.DetectorStatus = detectorStatus
 	if err != nil {
 		sro.Err = err
+	}
+
+	annotatorCfg := &annotator.Config{
+		Annotators: config.Annotators,
+		ScanRoot:   sysroot,
+	}
+	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &sro.Inventory)
+	sro.AnnotatorStatus = annotatorStatus
+	if err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
 	}
 
 	enricherCfg := &enricher.Config{
@@ -303,31 +314,26 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
 func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
-	chainLayers, err := img.ChainLayers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chain layers: %w", err)
-	}
-
-	if len(chainLayers) == 0 {
-		return nil, errors.New("no chain layers found")
-	}
-
-	finalChainLayer := chainLayers[len(chainLayers)-1]
-	chainfs := finalChainLayer.FS()
-
 	if len(config.ScanRoots) > 0 {
 		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
 	}
+
+	imagefs := img.FS()
 	// Overwrite the scan roots with the chain layer filesystem.
 	config.ScanRoots = []*scalibrfs.ScanRoot{
 		{
-			FS: chainfs,
+			FS: imagefs,
 		},
 	}
 
 	// Suppress running enrichers until after layer details are populated.
 	enrichers := config.Enrichers
 	config.Enrichers = nil
+
+	chainLayers, err := img.ChainLayers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain layers: %w", err)
+	}
 
 	scanResult := s.Scan(ctx, config)
 	extractorConfig := &filesystem.Config{
@@ -348,13 +354,13 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, extractorConfig)
+	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, config.FilesystemExtractors, extractorConfig)
 
 	// Run enrichers with the updated inventory.
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
-			FS: chainfs,
+			FS: imagefs,
 		},
 	}
 	enricherStatus, err := enricher.Run(ctx, enricherCfg, &scanResult.Inventory)
@@ -372,6 +378,7 @@ type newScanResultOptions struct {
 	EndTime         time.Time
 	ExtractorStatus []*plugin.Status
 	DetectorStatus  []*plugin.Status
+	AnnotatorStatus []*plugin.Status
 	EnricherStatus  []*plugin.Status
 	Inventory       inventory.Inventory
 	Err             error
@@ -388,8 +395,9 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 	r := &ScanResult{
 		StartTime:    o.StartTime,
 		EndTime:      o.EndTime,
+		Version:      ScannerVersion,
 		Status:       status,
-		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.EnricherStatus),
+		PluginStatus: slices.Concat(o.ExtractorStatus, o.DetectorStatus, o.AnnotatorStatus, o.EnricherStatus),
 		Inventory:    o.Inventory,
 	}
 
@@ -414,11 +422,20 @@ func CmpPackages(a, b *extractor.Package) int {
 	res := cmp.Or(
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.Version, b.Version),
-		cmp.Compare(a.Extractor.Name(), b.Extractor.Name()),
+		cmp.Compare(len(a.Plugins), len(b.Plugins)),
 	)
 	if res != 0 {
 		return res
 	}
+
+	res = 0
+	for i := range a.Plugins {
+		res = cmp.Or(res, cmp.Compare(a.Plugins[i], b.Plugins[i]))
+	}
+	if res != 0 {
+		return res
+	}
+
 	aloc := fmt.Sprintf("%v", a.Locations)
 	bloc := fmt.Sprintf("%v", b.Locations)
 	return cmp.Compare(aloc, bloc)

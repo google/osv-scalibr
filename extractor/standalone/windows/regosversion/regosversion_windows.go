@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -76,7 +75,7 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{RunningSystem: true}
+	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
 }
 
 // Extract the DISM patch level on Windows.
@@ -159,12 +158,3 @@ func (e Extractor) windowsRevision(key registry.Key) (string, error) {
 
 	return buildLabParts[1], nil
 }
-
-// ToPURL converts a package created by this extractor into a PURL.
-// TODO(b/400910349): Remove and use Package.PURL() directly.
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	return p.PURL()
-}
-
-// Ecosystem returns no ecosystem since OSV does not support windows regosversion yet.
-func (Extractor) Ecosystem(p *extractor.Package) string { return "" }

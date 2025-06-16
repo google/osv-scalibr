@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -59,7 +58,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{RunningSystem: true}
 }
 
-// Extractor extracts containers from the docker API.
+// Extract extracts containers from the docker API.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error
@@ -90,11 +89,3 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	}
 	return inventory.Inventory{Packages: pkgs}, nil
 }
-
-// ToPURL returns nil since there is no PURL defined for docker containers
-func (e Extractor) ToPURL(i *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Package) string { return "" }

@@ -177,10 +177,13 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	if err != nil {
 		return nil, err
 	}
+	pathsToExtract = toSlashPaths(pathsToExtract)
+
 	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
+	dirsToSkip = toSlashPaths(dirsToSkip)
 
 	return &walkContext{
 		ctx:               ctx,
@@ -343,12 +346,16 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 		if os.IsPermission(fserr) {
 			// Permission errors are expected when traversing the entire filesystem.
-			log.Debugf("fserr (permission error): %w", fserr)
+			log.Debugf("fserr (permission error): %v", fserr)
 		} else {
-			log.Errorf("fserr (non-permission error): %w", fserr)
+			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
 		return nil
 	}
+
+	wc.fileAPI.currentPath = path
+	wc.fileAPI.currentStatCalled = false
+
 	if d.Type().IsDir() {
 		wc.dirsVisited++
 		if wc.useGitignore {
@@ -362,6 +369,14 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			}
 			wc.gitignores = append(wc.gitignores, gitignores)
 		}
+
+		// Pass the path to the extractors that extract from directories.
+		for _, ex := range wc.extractors {
+			if ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
+				wc.runExtractor(ex, path, true)
+			}
+		}
+
 		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
 			return fs.SkipDir
 		}
@@ -386,12 +401,9 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
-	wc.fileAPI.currentPath = path
-	wc.fileAPI.currentStatCalled = false
-
 	fSize := int64(-1) // -1 means we haven't checked the file size yet.
 	for _, ex := range wc.extractors {
-		if ex.FileRequired(wc.fileAPI) {
+		if !ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
 			if wc.maxFileSize > 0 && fSize == -1 {
 				var err error
 				fSize, err = fileSize(wc.fileAPI)
@@ -403,7 +415,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 					return nil
 				}
 			}
-			wc.runExtractor(ex, path)
+			wc.runExtractor(ex, path, false)
 		}
 	}
 	return nil
@@ -455,18 +467,23 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string) {
-	rc, err := wc.fs.Open(path)
-	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
-		return
-	}
-	defer rc.Close()
+func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
+	var rc fs.File
+	var info fs.FileInfo
+	var err error
+	if !isDir {
+		rc, err = wc.fs.Open(path)
+		if err != nil {
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
+			return
+		}
+		defer rc.Close()
 
-	info, err := rc.Stat()
-	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
-		return
+		info, err = rc.Stat()
+		if err != nil {
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
+			return
+		}
 	}
 
 	wc.extractCalls++
@@ -493,7 +510,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 	if !results.IsEmpty() {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results.Packages {
-			r.Extractor = ex
+			r.Plugins = append(r.Plugins, ex.Name())
 			if wc.storeAbsolutePath {
 				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
 			}
@@ -552,6 +569,16 @@ func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]st
 	}
 
 	return result, nil
+}
+
+// toSlashPaths returns a new []string that converts all paths to use /
+func toSlashPaths(paths []string) []string {
+	returnPaths := make([]string, len(paths))
+	for i, s := range paths {
+		returnPaths[i] = filepath.ToSlash(s)
+	}
+
+	return returnPaths
 }
 
 // stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
@@ -613,28 +640,7 @@ func (wc *walkContext) printStatus() {
 // temporary directory on the scanning host's filesystem. It's up to the caller to delete the
 // directory once they're done using it.
 func (i *ScanInput) GetRealPath() (string, error) {
-	if i.Root != "" {
-		return filepath.Join(i.Root, i.Path), nil
-	}
-
-	// No scan root set, this is a virtual filesystem.
-	// Move the file to the scanning hosts's filesystem.
-	dir, err := os.MkdirTemp("", "scalibr-tmp")
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(dir, "file")
-	f, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, i.Reader)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // TODO(b/380419487): This list is not exhaustive. We should add more extensions here.
