@@ -498,6 +498,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	})
 	wc.stats.AfterExtractorRun(ex.Name(), &stats.AfterExtractorStats{
 		Path:      path,
+		Root:      wc.scanRoot,
 		Runtime:   time.Since(start),
 		Inventory: &results,
 		Error:     err,
