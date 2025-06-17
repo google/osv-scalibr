@@ -3,11 +3,11 @@ module github.com/google/osv-scalibr
 go 1.24.0
 
 require (
-	deps.dev/api/v3 v3.0.0-20250610062038-1c74ed268106
-	deps.dev/api/v3alpha v0.0.0-20250610062038-1c74ed268106
-	deps.dev/util/maven v0.0.0-20250610062038-1c74ed268106
-	deps.dev/util/pypi v0.0.0-20250610062038-1c74ed268106
-	deps.dev/util/resolve v0.0.0-20250610062038-1c74ed268106
+	deps.dev/api/v3 v3.0.0-20250616031631-419a06b41f9b
+	deps.dev/api/v3alpha v0.0.0-20250616031631-419a06b41f9b
+	deps.dev/util/maven v0.0.0-20250616031631-419a06b41f9b
+	deps.dev/util/pypi v0.0.0-20250616031631-419a06b41f9b
+	deps.dev/util/resolve v0.0.0-20250616031631-419a06b41f9b
 	deps.dev/util/semver v0.0.0-20250610062038-1c74ed268106
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
