@@ -22,12 +22,12 @@ import (
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/result"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -58,7 +58,7 @@ type SPDXConfig struct {
 }
 
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
-func ToSPDX23(r *scalibr.ScanResult, c SPDXConfig) *v2_3.Document {
+func ToSPDX23(r *result.ScanResult, c SPDXConfig) *v2_3.Document {
 	packages := make([]*v2_3.Package, 0, len(r.Inventory.Packages)+1)
 
 	// Add a main package that contains all other top-level packages.
@@ -190,7 +190,7 @@ type CDXConfig struct {
 }
 
 // ToCDX converts the SCALIBR scan results into a CycloneDX document.
-func ToCDX(r *scalibr.ScanResult, c CDXConfig) *cyclonedx.BOM {
+func ToCDX(r *result.ScanResult, c CDXConfig) *cyclonedx.BOM {
 	bom := cyclonedx.NewBOM()
 	bom.Metadata = &cyclonedx.Metadata{
 		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),

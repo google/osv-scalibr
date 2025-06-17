@@ -30,7 +30,6 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
@@ -64,6 +63,7 @@ import (
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/result"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -185,7 +185,7 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 }
 
 // ScanResultToProto converts a ScanResult go struct into the equivalent proto.
-func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
+func ScanResultToProto(r *result.ScanResult) (*spb.ScanResult, error) {
 	pluginStatus := make([]*spb.PluginStatus, 0, len(r.PluginStatus))
 	for _, s := range r.PluginStatus {
 		pluginStatus = append(pluginStatus, PluginStatusToProto(s))
