@@ -29,6 +29,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -171,8 +172,8 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	return inventory.Inventory{Packages: result}, nil
 }
 
-func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, error) {
-	var metadata []Metadata
+func containersFromAPI(ctx context.Context, client CtrdClient) ([]containerdmetadata.Metadata, error) {
+	var metadata []containerdmetadata.Metadata
 
 	// Get list of namespaces from the containerd API.
 	nss, err := namespacesFromAPI(ctx, client)
@@ -201,8 +202,8 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 	return nss, nil
 }
 
-func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []Metadata {
-	var containersMetadata []Metadata
+func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []containerdmetadata.Metadata {
+	var containersMetadata []containerdmetadata.Metadata
 
 	taskService := client.TaskService()
 	// List all running tasks, only running tasks have a container associated with them.
@@ -225,8 +226,8 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 	return containersMetadata
 }
 
-func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {
-	var md Metadata
+func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (containerdmetadata.Metadata, error) {
+	var md containerdmetadata.Metadata
 
 	container, err := client.LoadContainer(ctx, task.ID)
 	if err != nil {
@@ -277,7 +278,7 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	digest := image.Target().Digest.String()
 	pid := int(task.Pid)
 
-	md = Metadata{
+	md = containerdmetadata.Metadata{
 		Namespace:   namespace,
 		ImageName:   name,
 		ImageDigest: digest,
