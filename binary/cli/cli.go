@@ -40,6 +40,8 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
+	"github.com/google/osv-scalibr/enricher"
+	enl "github.com/google/osv-scalibr/enricher/enricherlist"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
@@ -128,6 +130,7 @@ type Flags struct {
 	ExtractorsToRun            []string
 	DetectorsToRun             []string
 	AnnotatorsToRun            []string
+	EnrichersToRun             []string
 	PathsToExtract             []string
 	IgnoreSubDirs              bool
 	DirsToSkip                 []string
@@ -207,6 +210,10 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateMultiStringArg(flags.AnnotatorsToRun); err != nil {
 		return fmt.Errorf("--annotators: %w", err)
 	}
+	// TODO - b/311876697: Unify plugin configurations.
+	if err := validateMultiStringArg(flags.EnrichersToRun); err != nil {
+		return fmt.Errorf("--enrichers: %w", err)
+	}
 	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
 	}
@@ -216,7 +223,7 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateGlob(flags.SkipDirGlob); err != nil {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(flags.DetectorsToRun, flags.EnrichersToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -290,16 +297,21 @@ func validateGlob(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
+func validateDependency(detectors []string, enrichers []string, extractors []string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
+		EnrichersToRun:  enrichers,
 	}
 	ex, stdex, err := f.extractorsToRun()
 	if err != nil {
 		return err
 	}
 	det, err := f.detectorsToRun()
+	if err != nil {
+		return err
+	}
+	en, err := f.enrichersToRun()
 	if err != nil {
 		return err
 	}
@@ -315,6 +327,14 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 			for _, req := range d.RequiredExtractors() {
 				if !exMap[req] {
 					return fmt.Errorf("extractor %s must be turned on for Detector %s to run", req, d.Name())
+				}
+			}
+		}
+		for _, e := range en {
+			for _, req := range e.RequiredPlugins() {
+				// TODO - b/416106602: Expand to required detectors and other enrichers.
+				if !exMap[req] {
+					return fmt.Errorf("extractor %s must be turned on for Enricher %s to run", req, e.Name())
 				}
 			}
 		}
@@ -344,9 +364,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	enrichers, err := f.enrichersToRun()
+	if err != nil {
+		return nil, err
+	}
 	capab := f.capabilities()
 	if f.FilterByCapabilities {
-		extractors, standaloneExtractors, detectors, annotators = filterByCapabilities(extractors, standaloneExtractors, detectors, annotators, capab)
+		extractors, standaloneExtractors, detectors, annotators, enrichers = filterByCapabilities(extractors, standaloneExtractors, detectors, annotators, enrichers, capab)
 	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
@@ -374,6 +398,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
 		Annotators:           annotators,
+		Enrichers:            enrichers,
 		Capabilities:         capab,
 		PathsToExtract:       f.PathsToExtract,
 		IgnoreSubDirs:        f.IgnoreSubDirs,
@@ -407,7 +432,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 	}
 }
 
-// GetCDXConfig creates an CDXConfig struct based on the CLI flags.
+// GetCDXConfig creates a CDXConfig struct based on the CLI flags.
 func (f *Flags) GetCDXConfig() converter.CDXConfig {
 	return converter.CDXConfig{
 		ComponentName:    f.CDXComponentName,
@@ -525,6 +550,17 @@ func (f *Flags) annotatorsToRun() ([]annotator.Annotator, error) {
 	return annotators, nil
 }
 
+func (f *Flags) enrichersToRun() ([]enricher.Enricher, error) {
+	if len(f.EnrichersToRun) == 0 {
+		return []enricher.Enricher{}, nil
+	}
+	enrichers, err := enl.FromNames(multiStringToList(f.EnrichersToRun))
+	if err != nil {
+		return []enricher.Enricher{}, err
+	}
+	return enrichers, nil
+}
+
 func multiStringToList(arg []string) []string {
 	var result []string
 	for _, item := range arg {
@@ -606,16 +642,17 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 	}
 }
 
-// Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors)
+// Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors, enrichers)
 // by removing all plugins that don't satisfy the specified capabilities.
 func filterByCapabilities(
 	f []filesystem.Extractor, s []standalone.Extractor,
-	d []detector.Detector, a []annotator.Annotator, capab *plugin.Capabilities) (
-	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []annotator.Annotator) {
+	d []detector.Detector, a []annotator.Annotator, e []enricher.Enricher, capab *plugin.Capabilities) (
+	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []annotator.Annotator, []enricher.Enricher) {
 	ff := make([]filesystem.Extractor, 0, len(f))
 	sf := make([]standalone.Extractor, 0, len(s))
 	df := make([]detector.Detector, 0, len(d))
-	af := make([]annotator.Annotator, 0, len(d))
+	af := make([]annotator.Annotator, 0, len(a))
+	ef := make([]enricher.Enricher, 0, len(e))
 	for _, ex := range f {
 		if err := plugin.ValidateRequirements(ex, capab); err == nil {
 			ff = append(ff, ex)
@@ -636,7 +673,12 @@ func filterByCapabilities(
 			af = append(af, an)
 		}
 	}
-	return ff, sf, df, af
+	for _, e := range e {
+		if err := plugin.ValidateRequirements(e, capab); err == nil {
+			ef = append(ef, e)
+		}
+	}
+	return ff, sf, df, af, ef
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {
