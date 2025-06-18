@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/samreg"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/systemreg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"golang.org/x/sys/windows/registry"
@@ -86,10 +87,10 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return nil }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) (inventory.Finding, error) {
 	hashes, err := d.hashes(ctx)
 	if err != nil || len(hashes) == 0 {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	return d.internalScan(ctx, hashes)
@@ -97,7 +98,7 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 
 // internalScan is the internal portion of the Scan function. The function was split in two to
 // dissociate registry operation from finding the vulnerabilities to allow unit testing.
-func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) ([]*detector.Finding, error) {
+func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) (inventory.Finding, error) {
 	// first part of the detection: if any user's password is stored using the LM format, this is a
 	// vulnerability given the weakness of the algorithm.
 	var usersWithLM []string
@@ -107,7 +108,7 @@ func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) ([]*
 		}
 	}
 
-	var findings []*detector.Finding
+	var findings []*inventory.GenericFinding
 	if len(usersWithLM) > 0 {
 		findings = append(findings, d.findingForFormatLM(usersWithLM))
 	}
@@ -115,52 +116,46 @@ func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) ([]*
 	// then, we can actually try to find weak passwords.
 	weakUsers, err := d.bruteforce(ctx, hashes)
 	if err != nil {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	if len(weakUsers) > 0 {
 		findings = append(findings, d.findingForWeakPasswords(weakUsers))
 	}
 
-	return findings, nil
+	return inventory.Finding{GenericFindings: findings}, nil
 }
 
 // findingForFormatLM creates a Scalibr finding when passwords are stored using the LM format.
-func (d Detector) findingForFormatLM(users []string) *detector.Finding {
-	return &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+func (d Detector) findingForFormatLM(users []string) *inventory.GenericFinding {
+	return &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "GOOGLE",
 				Reference: vulnRefLMPassword,
 			},
-			Sev: &detector.Severity{
-				Severity: detector.SeverityHigh,
-			},
-			Type:           detector.TypeVulnerability,
+			Sev:            inventory.SeverityHigh,
 			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regenerate the hashes.",
 			Recommendation: "Change the password of the user after changing the storage format.",
 		},
-		Extra: fmt.Sprintf("%v", users),
+		Target: &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", users)},
 	}
 }
 
 // findingForWeakPasswords creates a Scalibr finding when passwords were found from the
 // dictionaries.
-func (d Detector) findingForWeakPasswords(users map[string]string) *detector.Finding {
-	return &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+func (d Detector) findingForWeakPasswords(users map[string]string) *inventory.GenericFinding {
+	return &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "GOOGLE",
 				Reference: vulnRefWeakPass,
 			},
-			Sev: &detector.Severity{
-				Severity: detector.SeverityCritical,
-			},
-			Type:           detector.TypeVulnerability,
+			Sev:            inventory.SeverityCritical,
 			Description:    "Some passwords were identified as being weak.",
 			Recommendation: "Change the password of the user affected users.",
 		},
-		Extra: fmt.Sprintf("%v", users),
+		Target: &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", users)},
 	}
 }
 

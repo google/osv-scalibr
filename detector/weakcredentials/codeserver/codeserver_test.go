@@ -62,7 +62,7 @@ func TestScan(t *testing.T) {
 			d := New(cfg)
 			invs, _ := d.Scan(context.Background(), nil, nil)
 
-			gotVulns := len(invs) > 0
+			gotVulns := len(invs.GenericFindings) > 0
 			if gotVulns != tc.wantVulns {
 				t.Errorf("Scan() returned unexpected vulnerabilities, got findings: %v, want findings: %v", gotVulns, tc.wantVulns)
 			}
@@ -107,7 +107,7 @@ func TestScanWithTimeouts(t *testing.T) {
 				t.Errorf("Scan() unexpected error, got: %v", err)
 			}
 
-			if len(invs) != 0 {
+			if len(invs.GenericFindings) != 0 {
 				t.Errorf("Scan() returned unexpected findings, got: %v, want nothing", invs)
 			}
 

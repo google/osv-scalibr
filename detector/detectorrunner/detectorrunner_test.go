@@ -25,59 +25,68 @@ import (
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestRun(t *testing.T) {
-	finding1 := &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	finding1 := &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CVE",
 				Reference: "CVE-1234",
 			},
-			Sev: &detector.Severity{Severity: detector.SeverityMedium},
+			Sev: inventory.SeverityMedium,
 		},
 	}
-	identicalFinding1 := &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	identicalFinding1 := &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CVE",
 				Reference: "CVE-1234",
 			},
-			Sev: &detector.Severity{Severity: detector.SeverityMedium},
+			Sev: inventory.SeverityMedium,
 		},
 	}
-	finding2 := &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	finding2 := &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CVE",
 				Reference: "CVE-5678",
 			},
 		},
 	}
-	findingNoAdvisory := &detector.Finding{}
-	findingNoAdvisoryID := &detector.Finding{Adv: &detector.Advisory{}}
+	findingNoAdvisory := &inventory.GenericFinding{}
+	findingNoAdvisoryID := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{}}
+	packageVuln := &inventory.PackageVuln{
+		Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+	}
+	det1 := fd.New().WithName("det1").WithVersion(1)
+	det2 := fd.New().WithName("det2").WithVersion(2)
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
 
 	testCases := []struct {
 		desc         string
 		det          []detector.Detector
-		wantFindings []*detector.Finding
+		wantFindings inventory.Finding
 		wantStatus   []*plugin.Status
 		wantErr      error
 	}{
 		{
 			desc: "Plugins successful",
 			det: []detector.Detector{
-				fd.New("det1", 1, finding1, nil),
-				fd.New("det2", 2, finding2, nil),
+				det1.WithGenericFinding(finding1),
+				det2.WithGenericFinding(finding2),
 			},
-			wantFindings: []*detector.Finding{
-				withDetectorName(finding1, "det1"),
-				withDetectorName(finding2, "det2"),
+			wantFindings: inventory.Finding{
+				GenericFindings: []*inventory.GenericFinding{
+					withDetectorName(finding1, "det1"),
+					withDetectorName(finding2, "det2"),
+				},
 			},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
@@ -87,10 +96,12 @@ func TestRun(t *testing.T) {
 		{
 			desc: "One plugin failed",
 			det: []detector.Detector{
-				fd.New("det1", 1, finding1, nil),
-				fd.New("det2", 2, nil, errors.New("detection failed")),
+				det1.WithGenericFinding(finding1),
+				det2.WithErr(errors.New("detection failed")),
 			},
-			wantFindings: []*detector.Finding{withDetectorName(finding1, "det1")},
+			wantFindings: inventory.Finding{
+				GenericFindings: []*inventory.GenericFinding{withDetectorName(finding1, "det1")},
+			},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
 				{Name: "det2", Version: 2, Status: &plugin.ScanStatus{
@@ -101,10 +112,13 @@ func TestRun(t *testing.T) {
 		{
 			desc: "Duplicate findings with identical advisories",
 			det: []detector.Detector{
-				fd.New("det1", 1, finding1, nil),
-				fd.New("det2", 2, identicalFinding1, nil),
+				det1.WithGenericFinding(finding1),
+				det2.WithGenericFinding(identicalFinding1),
 			},
-			wantFindings: []*detector.Finding{withDetectorName(finding1, "det1"), withDetectorName(finding1, "det2")},
+			wantFindings: inventory.Finding{GenericFindings: []*inventory.GenericFinding{
+				withDetectorName(finding1, "det1"),
+				withDetectorName(finding1, "det2"),
+			}},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
 				{Name: "det2", Version: 2, Status: success},
@@ -113,12 +127,12 @@ func TestRun(t *testing.T) {
 		{
 			desc: "Duplicate findings with different advisories",
 			det: []detector.Detector{
-				fd.New("det1", 1, finding1, nil),
-				fd.New("det2", 2, &detector.Finding{
-					Adv: &detector.Advisory{ID: finding1.Adv.ID, Title: "different title"},
-				}, nil),
+				det1.WithGenericFinding(finding1),
+				det2.WithGenericFinding(&inventory.GenericFinding{
+					Adv: &inventory.GenericFindingAdvisory{ID: finding1.Adv.ID, Title: "different title"},
+				}),
 			},
-			wantFindings: []*detector.Finding{},
+			wantFindings: inventory.Finding{},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
 				{Name: "det2", Version: 2, Status: success},
@@ -128,9 +142,9 @@ func TestRun(t *testing.T) {
 		{
 			desc: "Error when Advisory is not set",
 			det: []detector.Detector{
-				fd.New("det1", 1, findingNoAdvisory, nil),
+				det1.WithGenericFinding(findingNoAdvisory),
 			},
-			wantFindings: []*detector.Finding{},
+			wantFindings: inventory.Finding{},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
 			},
@@ -139,13 +153,28 @@ func TestRun(t *testing.T) {
 		{
 			desc: "Error when Advisory ID is not set",
 			det: []detector.Detector{
-				fd.New("det1", 1, findingNoAdvisoryID, nil),
+				det1.WithGenericFinding(findingNoAdvisoryID),
 			},
-			wantFindings: []*detector.Finding{},
+			wantFindings: inventory.Finding{},
 			wantStatus: []*plugin.Status{
 				{Name: "det1", Version: 1, Status: success},
 			},
 			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Package and generic vulns",
+			det: []detector.Detector{
+				det1.WithGenericFinding(finding1),
+				det2.WithPackageVuln(packageVuln),
+			},
+			wantFindings: inventory.Finding{
+				GenericFindings: []*inventory.GenericFinding{withDetectorName(finding1, "det1")},
+				PackageVulns:    []*inventory.PackageVuln{pkgVulnWithDetectorName(packageVuln, "det2")},
+			},
+			wantStatus: []*plugin.Status{
+				{Name: "det1", Version: 1, Status: success},
+				{Name: "det2", Version: 2, Status: success},
+			},
 		},
 	}
 
@@ -169,8 +198,14 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func withDetectorName(f *detector.Finding, det string) *detector.Finding {
+func withDetectorName(f *inventory.GenericFinding, det string) *inventory.GenericFinding {
 	c := *f
-	c.Detectors = []string{det}
+	c.Plugins = []string{det}
+	return &c
+}
+
+func pkgVulnWithDetectorName(v *inventory.PackageVuln, det string) *inventory.PackageVuln {
+	c := *v
+	c.Plugins = []string{det}
 	return &c
 }

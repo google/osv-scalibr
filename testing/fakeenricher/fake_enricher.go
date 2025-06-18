@@ -132,7 +132,8 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 	}
 	newInv := invAndErr.Inventory
 	inv.Packages = newInv.Packages
-	inv.Findings = newInv.Findings
+	inv.PackageVulns = newInv.PackageVulns
+	inv.GenericFindings = newInv.GenericFindings
 	return invAndErr.Err
 }
 
