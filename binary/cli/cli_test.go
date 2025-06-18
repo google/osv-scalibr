@@ -237,6 +237,15 @@ func TestValidateFlags(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			desc: "Local Docker Image",
+			flags: &cli.Flags{
+				RemoteImage: "docker",
+				ImageLocal:  "nginx:latest",
+				ResultFile:  "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := cli.ValidateFlags(tc.flags)
@@ -285,6 +294,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"darwin":  {ImageTarball: "image.tar"},
 				"linux":   {ImageTarball: "image.tar"},
 				"windows": {ImageTarball: "image.tar"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
+		{
+			desc: "Scan root is null if local image is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageLocal: "nginx:latest"},
+				"linux":   {ImageLocal: "nginx:latest"},
+				"windows": {ImageLocal: "nginx:latest"},
 			},
 			wantScanRoots: map[string][]string{
 				"darwin":  nil,
