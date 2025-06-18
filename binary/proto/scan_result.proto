@@ -129,6 +129,7 @@ message Package {
     TRANSITIONAL = 1;
     INSIDE_OS_PACKAGE = 2;
     INSIDE_CACHE_DIR = 3;
+    UNREACHABLE = 4;
   }
 
   // Details about the layer a package was found in. This should be set only for

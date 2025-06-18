@@ -87,6 +87,8 @@ const (
 	InsideOSPackage
 	// InsideCacheDir is set for packages that are found inside a cache directory.
 	InsideCacheDir
+	// Unreachable is set for packages that are not reachable from the application.
+	Unreachable
 )
 
 // PURL returns the Package URL of this package.
