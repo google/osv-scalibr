@@ -257,6 +257,35 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
+			name: "packages with same layer, should use cache",
+			cfg: &baseimage.Config{
+				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+					{
+						req:  &baseimage.Request{ChainID: ld1.ChainID},
+						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+					},
+					{
+						req:  &baseimage.Request{ChainID: ld3.ChainID},
+						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
+					},
+				}}),
+			},
+			inv: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					withLayerDetails(pkg1, ld1),
+					withLayerDetails(pkg2, ld1),
+					withLayerDetails(pkg3, ld3),
+				},
+			},
+			want: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					withLayerDetails(pkg1, ld1base),
+					withLayerDetails(pkg2, ld1base),
+					withLayerDetails(pkg3, ld3base),
+				},
+			},
+		},
+		{
 			name: "packages with some invalid layer details",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{

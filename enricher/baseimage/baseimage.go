@@ -111,6 +111,8 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		return nil
 	}
 
+	// Map from chain ID to list of repositories it belongs to.
+	baseImageCache := make(map[string][]string)
 	var enrichErr error
 	for _, pkg := range inv.Packages {
 		// Only enrich packages that have a layer details with a chain ID.
@@ -128,23 +130,32 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			continue
 		}
 
-		// Query deps.dev for the container image repository.
-		req := &Request{
-			ChainID: chainID.String(),
-		}
-		resp, err := e.client.QueryContainerImages(ctx, req)
-		if err != nil {
-			enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to query container images for chain ID %q: %w", chainID.String(), err))
-			continue
+		repos, ok := baseImageCache[chainID.String()]
+		if !ok {
+			// Query deps.dev for the container image repository.
+			req := &Request{
+				ChainID: chainID.String(),
+			}
+			resp, err := e.client.QueryContainerImages(ctx, req)
+			if err != nil {
+				enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to query container images for chain ID %q: %w", chainID.String(), err))
+				continue
+			}
+			// If the layer exists in any base image, mark the package as in a base image.
+			if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
+				for _, result := range resp.Results {
+					if result.Repository != "" {
+						repos = append(repos, result.Repository)
+					}
+				}
+			}
+			baseImageCache[chainID.String()] = repos
 		}
 
-		// If the layer exists in any base image, mark the package as in a base image.
-		if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
-			for _, result := range resp.Results {
-				if result.Repository != "" {
-					pkg.LayerDetails.InBaseImage = true
-					break
-				}
+		for _, repo := range repos {
+			if repo != "" {
+				pkg.LayerDetails.InBaseImage = true
+				break
 			}
 		}
 	}
