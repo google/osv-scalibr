@@ -81,6 +81,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -214,6 +215,11 @@ var (
 		macapps.Name:  {macapps.NewDefault},
 	}
 
+	// Credential extractors.
+	Secrets = InitMap{
+		secrets.Name: {secrets.New},
+	}
+
 	// Misc extractors.
 	Misc = InitMap{
 		vscodeextensions.Name: {vscodeextensions.New},
@@ -240,6 +246,7 @@ var (
 		RustSource,
 		DotnetSource,
 		SwiftSource,
+		Secrets,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -254,6 +261,7 @@ var (
 		OS,
 		Misc,
 		Containers,
+		Secrets,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -292,6 +300,7 @@ var (
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
 		"containers": vals(Containers),
+		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 
 		// Collections.

@@ -25,6 +25,7 @@ import (
 type Inventory struct {
 	Packages []*extractor.Package
 	Findings []*detector.Finding
+	Secrets  []*Secret
 }
 
 // Append adds one or more inventories to the current one.
@@ -32,10 +33,11 @@ func (i *Inventory) Append(other ...Inventory) {
 	for _, o := range other {
 		i.Packages = append(i.Packages, o.Packages...)
 		i.Findings = append(i.Findings, o.Findings...)
+		i.Secrets = append(i.Secrets, o.Secrets...)
 	}
 }
 
 // IsEmpty returns true if there are no packages, findings, etc. in this Inventory.
 func (i Inventory) IsEmpty() bool {
-	return len(i.Packages) == 0 && len(i.Findings) == 0
+	return len(i.Packages) == 0 && len(i.Findings) == 0 && len(i.Secrets) == 0
 }
