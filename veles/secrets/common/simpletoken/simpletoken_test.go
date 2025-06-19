@@ -73,7 +73,7 @@ func TestDetect_truePositives(t *testing.T) {
 		name:         "multiple matches",
 		regexp:       "FOO",
 		maxSecretLen: 3,
-		in:           []byte("FOO FOO"),
+		in:           []byte("FOO FOO"), //nolint:dupword
 		want:         []veles.Secret{"FOO", "FOO"},
 		wantPos:      []int{0, 4},
 	}, {

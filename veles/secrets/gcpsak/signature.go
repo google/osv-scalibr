@@ -44,7 +44,7 @@ var (
 	payloadHash []byte
 )
 
-func init() {
+func init() { //nolint:gochecknoinits
 	h := hashAlgo.New()
 	if _, err := h.Write([]byte(payload)); err != nil {
 		// Guaranteed to never return an error.
@@ -103,7 +103,7 @@ func Valid(sig []byte, cert string) (bool, error) {
 		return false, fmt.Errorf("public key was %T not RSA public key", crt.PublicKey)
 	}
 	if err := rsa.VerifyPKCS1v15(pub, hashAlgo, payloadHash, sig); err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 	return true, nil
 }

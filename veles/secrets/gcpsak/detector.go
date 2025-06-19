@@ -28,12 +28,6 @@ var (
 	// can further refine on.
 	reJSON = regexp.MustCompile(`\{[^{]+auth_provider_x509_cert_url[^}]+\}`)
 
-	// Matches on top-level JSON string fields at arbitrary levels of escaping.
-	// This can be used to reliably extract the fields of a GCP SAK from something
-	// matched by reJSON at a higher sensitivity than relying on Go's JSON
-	// parsing.
-	reExtract = regexp.MustCompile(`[\\"]*"([^"]*)[\\"]*":[^"]*[\\"]*"([^"]*)[\\"]*",?`)
-
 	// Matches on a base64-encoded GCP service account key (in pretty JSON
 	// format). This relies on consistent field order and whitespace.
 	// That should be a reasonable heuristic. Note that this means we will miss

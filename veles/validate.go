@@ -53,7 +53,7 @@ const (
 // ValidationStatus or an error (in which case the ValidationStatus is
 // ValidationStatusFailed).
 type Validator[S Secret] interface {
-	Validate(context.Context, S) (ValidationStatus, error)
+	Validate(ctx context.Context, secret S) (ValidationStatus, error)
 }
 
 // ValidationEngine bundles a number of Validators together.
@@ -127,7 +127,7 @@ func (e *ValidationEngine) Validate(ctx context.Context, s Secret) (ValidationSt
 // These are used to type-erase Validator[S] using a shared interface.
 
 type validator interface {
-	Validate(context.Context, Secret) (ValidationStatus, error)
+	Validate(ctx context.Context, s Secret) (ValidationStatus, error)
 }
 
 type wrapped[S Secret] struct {

@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -38,16 +39,23 @@ var (
 		baseimage.Name: {baseimage.NewDefault},
 	}
 
+	// Secrets enrichers.
+	Secrets = InitMap{
+		secrets.Name: {secrets.New},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
 	// All enrichers.
 	All = concat(
 		LayerDetails,
+		Secrets,
 	)
 
 	enricherNames = concat(All, InitMap{
 		"layerdetails": vals(LayerDetails),
+		"secrets":      vals(Secrets),
 		"default":      vals(Default),
 		"all":          vals(All),
 	})

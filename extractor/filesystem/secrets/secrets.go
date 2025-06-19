@@ -57,7 +57,7 @@ var (
 	defaultEngine *veles.DetectionEngine = nil
 )
 
-func init() {
+func init() { //nolint:gochecknoinits
 	var err error
 	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
 		gcpsak.NewDetector(),

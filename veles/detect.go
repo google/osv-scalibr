@@ -164,10 +164,7 @@ func (e *DetectionEngine) Detect(ctx context.Context, r io.Reader) ([]Secret, er
 	secrets := e.detectLeft(buf[:cap(buf)])
 	for {
 		if err := ctx.Err(); err != nil {
-			// TODO: Consider returning partial results. E.g. when we've already
-			// scanned most of a file and run into a timeout, we might want to keep
-			// the findings instead of throwing them away.
-			return nil, err
+			return secrets, err
 		}
 		// At this point the buffer is filled up to its cap because of io.ReadFull.
 		// We retain the last e.retainLen bytes from the end and read in another

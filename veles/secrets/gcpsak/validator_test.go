@@ -40,7 +40,9 @@ func serveCerts(t *testing.T, certs map[string]string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefix+exampleServiceAccount, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
+		if _, err := w.Write(data); err != nil {
+			t.Errorf("unable to write HTTP response: %v", err)
+		}
 	})
 	return mux
 }

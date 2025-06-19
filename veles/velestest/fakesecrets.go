@@ -54,8 +54,8 @@ func NewFakeIntSecret(i int) FakeIntSecret {
 // nor string, t.Fatalf is invoked because this constitutes a violated
 // assumption about the environment.
 func FakeSecretsT(t *testing.T) func(datas ...any) []veles.Secret {
+	t.Helper()
 	return func(datas ...any) []veles.Secret {
-		t.Helper()
 		var secrets []veles.Secret
 		for _, d := range datas {
 			switch s := d.(type) {
@@ -82,8 +82,8 @@ func FakeSecretsT(t *testing.T) func(datas ...any) []veles.Secret {
 // underlying type FakeStringSecret or FakeIntSecret, otherwise the t.Fatalf is
 // invoked.
 func LessFakeSecretT(t *testing.T) func(a, b veles.Secret) bool {
+	t.Helper()
 	return func(a veles.Secret, b veles.Secret) bool {
-		t.Helper()
 		strA, isStrA := a.(FakeStringSecret)
 		intA, isIntA := a.(FakeIntSecret)
 		strB, isStrB := b.(FakeStringSecret)

@@ -99,7 +99,6 @@ func TestFileRequired(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			e := secrets.New()
 			if got := e.FileRequired(simplefileapi.New(tc.path, nil)); got != tc.want {
 				t.Errorf("FileRequired(%q) = %t, want %t", tc.path, got, tc.want)
@@ -176,7 +175,6 @@ func TestExtract(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			engine, err := veles.NewDetectionEngine(tc.detectors)
 			if err != nil {
 				t.Fatalf("veles.NewDetectionEngine() err: %v", err)

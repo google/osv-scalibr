@@ -196,11 +196,9 @@ func TestEnricher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			enricher := secrets.NewWithEngine(tc.engine)
 			for _, sc := range tc.subs {
 				t.Run(sc.name, func(t *testing.T) {
-					t.Parallel()
 					if err := enricher.Enrich(t.Context(), nil, &sc.input); err != nil {
 						t.Errorf("Enrich() error: %v, want nil", err)
 					}

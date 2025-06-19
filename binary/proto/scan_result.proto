@@ -46,6 +46,7 @@ message ScanResult {
 message Inventory {
   repeated Package packages = 1;
   repeated Finding findings = 2;
+  repeated Secret secrets = 3;
 }
 
 message ScanStatus {
@@ -542,4 +543,76 @@ message DockerPort {
   uint32 private_port = 2;
   uint32 public_port = 3;
   string type = 4;
+}
+
+// A secret (i.e. credential) found by Veles secret scanning.
+message Secret {
+  SecretData secret = 1;
+  SecretStatus status = 2;
+  repeated Location locations = 3;
+}
+
+message SecretData {
+  oneof secret {
+    GCPSAK gcpsak = 1;
+  }
+
+  message GCPSAK {
+    // Always filled.
+    string private_key_id = 1;
+    string client_email = 2;
+    bytes signature = 3;  // derived from the private_key for validation
+
+    // Filled only when explicitly requested.
+    string type = 4;
+    string project_id = 5;
+    string client_id = 6;
+    string auth_uri = 7;
+    string token_uri = 8;
+    string auth_provider_x509_cert_url = 9;
+    string client_x509_cert_url = 10;
+    string universe_domain = 11;
+
+    // Should not be filled out unless very explicitly requested accepting the
+    // risk that this might accidentally leak the key.
+    string private_key = 12;
+  }
+}
+
+message SecretStatus {
+  SecretStatusEnum status = 1;
+  google.protobuf.Timestamp last_updated = 2;
+
+  enum SecretStatusEnum {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INVALID = 2;
+    VALID = 3;
+  }
+}
+
+message Location {
+  oneof location {
+    Filepath filepath = 1;
+    FilepathWithLayerDetails filepath_with_layer_details = 2;
+    EnvironmentVariable environment_variable = 3;
+    ContainerCommand container_command = 4;
+  }
+}
+
+message Filepath {
+  string path = 1;
+}
+
+message FilepathWithLayerDetails {
+  string path = 1;
+  LayerDetails layer_details = 2;
+}
+
+message EnvironmentVariable {
+  string name = 1;
+}
+
+message ContainerCommand {
+  string command = 1;
 }

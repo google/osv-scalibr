@@ -101,7 +101,7 @@ func (v *Validator) Validate(ctx context.Context, sak GCPSAK) (veles.ValidationS
 
 	// If it's a 200, we can try to find the key's certificate and validate the
 	// signature. Otherwise something must have gone wrong.
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return veles.ValidationFailed, fmt.Errorf("unable to GET %q, got HTTP status %q", clientX509CertURL, res.Status)
 	}
 

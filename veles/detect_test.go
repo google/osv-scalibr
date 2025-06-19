@@ -353,13 +353,13 @@ func TestNewDetectionEngine_errors(t *testing.T) {
 // It will output "BEGINaaa...aaaEND" with number of 'a' in the middle so that
 // the total length equals the configured len.
 type fakeReader struct {
-	len     int
+	size    int
 	written int
 }
 
-func newFakeReader(len int) *fakeReader {
+func newFakeReader(size int) *fakeReader {
 	return &fakeReader{
-		len:     len,
+		size:    size,
 		written: 0,
 	}
 }
@@ -379,10 +379,10 @@ func (r *fakeReader) Read(b []byte) (int, error) {
 		n = 5
 		r.written = 5
 	}
-	if r.written >= r.len {
+	if r.written >= r.size {
 		return 0, io.EOF
 	}
-	remains := r.len - 3 - r.written
+	remains := r.size - 3 - r.written
 	for ; n < min(len(b), remains); n++ {
 		b[n] = 'a'
 		r.written++
@@ -392,17 +392,17 @@ func (r *fakeReader) Read(b []byte) (int, error) {
 	}
 	// Write "END" at the end. Need to take special care for edge cases where the
 	// buffer is almost full.
-	if n < len(b) && r.len-r.written == 3 {
+	if n < len(b) && r.size-r.written == 3 {
 		b[n] = 'E'
 		n++
 		r.written++
 	}
-	if n < len(b) && r.len-r.written == 2 {
+	if n < len(b) && r.size-r.written == 2 {
 		b[n] = 'N'
 		n++
 		r.written++
 	}
-	if n < len(b) && r.len-r.written == 1 {
+	if n < len(b) && r.size-r.written == 1 {
 		b[n] = 'D'
 		n++
 		r.written++
