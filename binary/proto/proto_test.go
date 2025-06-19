@@ -59,6 +59,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/mohae/deepcopy"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -846,6 +848,99 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins: []string{"containers/podman"},
 	}
 
+	gcpsakSecret := &inventory.Secret{
+		Secret: gcpsak.GCPSAK{
+			PrivateKeyID:   "some-private-key-id",
+			ServiceAccount: "some-service-account@gserviceaccount.iam.google.com",
+			Signature:      make([]byte, 256),
+		},
+		Location: "/foo/bar/baz.json",
+		Validation: inventory.SecretValidationResult{
+			At:     startTime,
+			Status: veles.ValidationInvalid,
+		},
+	}
+	gcpsakSecretProto := &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_Gcpsak{
+				Gcpsak: &spb.SecretData_GCPSAK{
+					PrivateKeyId: "some-private-key-id",
+					ClientEmail:  "some-service-account@gserviceaccount.iam.google.com",
+					Signature:    make([]byte, 256),
+				},
+			},
+		},
+		Status: &spb.SecretStatus{
+			Status:      spb.SecretStatus_INVALID,
+			LastUpdated: timestamppb.New(startTime),
+		},
+		Locations: []*spb.Location{
+			&spb.Location{
+				Location: &spb.Location_Filepath{
+					Filepath: &spb.Filepath{
+						Path: "/foo/bar/baz.json",
+					},
+				},
+			},
+		},
+	}
+	gcpsakSecretWithExtra := &inventory.Secret{
+		Secret: gcpsak.GCPSAK{
+			PrivateKeyID:   "some-private-key-id",
+			ServiceAccount: "some-service-account@gserviceaccount.iam.google.com",
+			Signature:      make([]byte, 256),
+			Extra: &gcpsak.ExtraFields{
+				Type:                    "service_account",
+				ProjectID:               "some-project-id",
+				ClientID:                "1122334455",
+				AuthURI:                 "https://accounts.google.com/o/oauth2/auth",
+				TokenURI:                "https://oauth2.googleapis.com/token",
+				AuthProviderX509CertURL: "https://www.googleapis.com/oauth2/v1/certs",
+				ClientX509CertURL:       "https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40gserviceaccount.iam.google.com",
+				UniverseDomain:          "googleapis.com",
+				PrivateKey:              "-----BEGIN PRIVATE KEY-----\nREDACTED\n-----END PRIVATE KEY-----\n",
+			},
+		},
+		Location: "/foo/bar/baz.json",
+		Validation: inventory.SecretValidationResult{
+			At:     startTime,
+			Status: veles.ValidationInvalid,
+		},
+	}
+	gcpsakSecretProtoWithExtra := &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_Gcpsak{
+				Gcpsak: &spb.SecretData_GCPSAK{
+					PrivateKeyId:            "some-private-key-id",
+					ClientEmail:             "some-service-account@gserviceaccount.iam.google.com",
+					Signature:               make([]byte, 256),
+					Type:                    "service_account",
+					ProjectId:               "some-project-id",
+					ClientId:                "1122334455",
+					AuthUri:                 "https://accounts.google.com/o/oauth2/auth",
+					TokenUri:                "https://oauth2.googleapis.com/token",
+					AuthProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
+					ClientX509CertUrl:       "https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40gserviceaccount.iam.google.com",
+					UniverseDomain:          "googleapis.com",
+					PrivateKey:              "-----BEGIN PRIVATE KEY-----\nREDACTED\n-----END PRIVATE KEY-----\n",
+				},
+			},
+		},
+		Status: &spb.SecretStatus{
+			Status:      spb.SecretStatus_INVALID,
+			LastUpdated: timestamppb.New(startTime),
+		},
+		Locations: []*spb.Location{
+			&spb.Location{
+				Location: &spb.Location_Filepath{
+					Filepath: &spb.Filepath{
+						Path: "/foo/bar/baz.json",
+					},
+				},
+			},
+		},
+	}
+
 	dockerPackage := &extractor.Package{
 		Name:    "redis",
 		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -1550,6 +1645,48 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "secret containing a GCP service account key",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{gcpsakSecret},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				Inventory: &spb.Inventory{
+					Secrets: []*spb.Secret{gcpsakSecretProto},
+				},
+			},
+		},
+		{
+			desc: "secret containing a GCP service account key with extra information",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{gcpsakSecretWithExtra},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				Inventory: &spb.Inventory{
+					Secrets: []*spb.Secret{gcpsakSecretProtoWithExtra},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1594,9 +1731,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			// TODO - b/421456154: test conversion of remaining types.
 			invProto := protobuf.Clone(got.GetInventory()).(*spb.Inventory)
 			invProto.Findings = nil
+			invProto.Secrets = nil
 
 			wantInv := deepcopy.Copy(tc.res.Inventory).(inventory.Inventory)
 			wantInv.Findings = nil
+			wantInv.Secrets = nil
 
 			gotInv := proto.InventoryToStruct(invProto)
 			if diff := cmp.Diff(wantInv, *gotInv); diff != "" {
