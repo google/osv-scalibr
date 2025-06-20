@@ -146,11 +146,7 @@ func (img *Image) CleanUp() error {
 		log.Warnf("failed to close content blob: %v", err)
 	}
 
-	err := os.Remove(img.contentBlob.Name())
-	if err != nil {
-		log.Warnf("failed to remove content blob: %v", err)
-	}
-	return err
+	return os.Remove(img.contentBlob.Name())
 }
 
 // Size returns the size of the underlying directory of the image in bytes.
@@ -217,7 +213,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image content file: %w", err)
 	}
-	log.Infof("Created image content file: %s", imageContentBlob.Name())
 
 	baseImageIndex, err := findBaseImageIndex(history)
 	if err != nil {
@@ -669,8 +664,9 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 		}
 
 		// Add the file to the chain layer. If there is an error, then we fail open.
-		// TODO: b/379154069 - Add logging for fail open errors.
-		_ = chainLayer.fileNodeTree.Insert(virtualPath, newNode)
+		if err := chainLayer.fileNodeTree.Insert(virtualPath, newNode); err != nil {
+			log.Warnf("failed to insert virtual file %q into chain layer: %v", virtualPath, err)
+		}
 	}
 }
 
