@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"google.golang.org/protobuf/proto"
 )
@@ -85,10 +86,14 @@ func TestRun(t *testing.T) {
 			wantInv: &inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:        "package1",
-						Version:     "1.0",
-						Locations:   []string{"tmp/package.json"},
-						Annotations: []extractor.Annotation{extractor.InsideCacheDir},
+						Name:      "package1",
+						Version:   "1.0",
+						Locations: []string{"tmp/package.json"},
+						ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+							Plugin:          cachedir.Name,
+							Justification:   vex.ComponentNotPresent,
+							MatchesAllVulns: true,
+						}},
 					},
 				},
 			},

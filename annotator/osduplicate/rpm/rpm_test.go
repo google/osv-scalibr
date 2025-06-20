@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -86,9 +87,13 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:        "pyxattr",
-					Locations:   []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "pyxattr",
+					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
 					Name:      "not-in-db",
@@ -113,9 +118,13 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:        "cracklib",
-					Locations:   []string{"usr/sbin/cracklib-check"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "cracklib",
+					Locations: []string{"usr/sbin/cracklib-check"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
 					Name:      "not-in-db",
@@ -140,9 +149,13 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:        "python3-gpg",
-					Locations:   []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "python3-gpg",
+					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
 					Name:      "not-in-db",
@@ -180,19 +193,31 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:        "pyxattr",
-					Locations:   []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "pyxattr",
+					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
-					Name:        "cracklib",
-					Locations:   []string{"usr/sbin/cracklib-check"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "cracklib",
+					Locations: []string{"usr/sbin/cracklib-check"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
-					Name:        "python3-gpg",
-					Locations:   []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "python3-gpg",
+					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          rpm.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
 					Name:      "not-in-db",

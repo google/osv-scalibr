@@ -62,6 +62,7 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/result"
@@ -73,15 +74,36 @@ import (
 )
 
 var (
-	// structToProtoAnnotations is a map of struct annotations to their corresponding proto values.
+	// structToProtoPackageVEX is a map of struct package VEXes to their corresponding proto values.
+	structToProtoPackageVEX = map[vex.Justification]spb.VexJustification{
+		vex.Unspecified:                                 spb.VexJustification_VEX_JUSTIFICATION_UNSPECIFIED,
+		vex.ComponentNotPresent:                         spb.VexJustification_COMPONENT_NOT_PRESENT,
+		vex.VulnerableCodeNotPresent:                    spb.VexJustification_VULNERABLE_CODE_NOT_PRESENT,
+		vex.VulnerableCodeNotInExecutePath:              spb.VexJustification_VULNERABLE_CODE_NOT_IN_EXECUTE_PATH,
+		vex.VulnerableCodeCannotBeControlledByAdversary: spb.VexJustification_VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY,
+		vex.InlineMitigationAlreadyExists:               spb.VexJustification_INLINE_MITIGATION_ALREADY_EXISTS,
+	}
+	// protoToStructPackageVEX is a map of protopackage VEXes to their corresponding struct values.
+	// It is initialized from structToProtoPackageVEX during runtime to ensure both maps are in sync.
+	protoToStructPackageVEX = func() map[spb.VexJustification]vex.Justification {
+		m := make(map[spb.VexJustification]vex.Justification)
+		for k, v := range structToProtoPackageVEX {
+			m[v] = k
+		}
+		if len(m) != len(structToProtoPackageVEX) {
+			panic("protoToStructAnnotations does not contain all values from structToProtoAnnotations")
+		}
+		return m
+	}()
+
+	// Same maps for the legacy annotation fields.
+	// TODO(b/400910349): Remove once integrators stop using the legacy field.
 	structToProtoAnnotations = map[extractor.Annotation]spb.Package_AnnotationEnum{
 		extractor.Unknown:         spb.Package_UNSPECIFIED,
 		extractor.Transitional:    spb.Package_TRANSITIONAL,
 		extractor.InsideOSPackage: spb.Package_INSIDE_OS_PACKAGE,
 		extractor.InsideCacheDir:  spb.Package_INSIDE_CACHE_DIR,
 	}
-	// protoToStructAnnotations is a map of proto annotations to their corresponding struct values.
-	// It is initialized from structToProtoAnnotations during runtime to ensure both maps are in sync.
 	protoToStructAnnotations = func() map[spb.Package_AnnotationEnum]extractor.Annotation {
 		m := make(map[spb.Package_AnnotationEnum]extractor.Annotation)
 		for k, v := range structToProtoAnnotations {
@@ -302,10 +324,11 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		Locations:  pkg.Locations,
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.
-		ExtractorDeprecated: firstPluginName,
-		Plugins:             pkg.Plugins,
-		Annotations:         annotationsToProto(pkg.Annotations),
-		LayerDetails:        layerDetailsToProto(pkg.LayerDetails),
+		ExtractorDeprecated:   firstPluginName,
+		Plugins:               pkg.Plugins,
+		AnnotationsDeprecated: annotationsToProto(pkg.AnnotationsDeprecated),
+		ExploitabilitySignals: packageVEXToProto(pkg.ExploitabilitySignals),
+		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto
@@ -326,15 +349,17 @@ func packageToStruct(pkgProto *spb.Package) *extractor.Package {
 	}
 
 	pkg := &extractor.Package{
-		Name:         pkgProto.GetName(),
-		Version:      pkgProto.GetVersion(),
-		SourceCode:   sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
-		Locations:    locations,
-		PURLType:     ptype,
-		Plugins:      pkgProto.GetPlugins(),
-		Annotations:  annotationsToStruct(pkgProto.GetAnnotations()),
-		LayerDetails: layerDetailsToStruct(pkgProto.GetLayerDetails()),
-		Metadata:     metadataToStruct(pkgProto),
+		Name:       pkgProto.GetName(),
+		Version:    pkgProto.GetVersion(),
+		SourceCode: sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
+		Locations:  locations,
+		PURLType:   ptype,
+		Plugins:    pkgProto.GetPlugins(),
+		//nolint:staticcheck
+		AnnotationsDeprecated: annotationsToStruct(pkgProto.GetAnnotationsDeprecated()),
+		ExploitabilitySignals: packageVEXToStruct(pkgProto.GetExploitabilitySignals()),
+		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
+		Metadata:              metadataToStruct(pkgProto),
 	}
 	return pkg
 }
@@ -1095,6 +1120,42 @@ func annotationsToStruct(ps []spb.Package_AnnotationEnum) []extractor.Annotation
 		as = append(as, protoToStructAnnotations[p])
 	}
 	return as
+}
+
+func packageVEXToProto(vs []*vex.PackageExploitabilitySignal) []*spb.PackageExploitabilitySignal {
+	var ps []*spb.PackageExploitabilitySignal
+	for _, v := range vs {
+		p := &spb.PackageExploitabilitySignal{
+			Plugin:        v.Plugin,
+			Justification: structToProtoPackageVEX[v.Justification],
+		}
+		if v.MatchesAllVulns {
+			p.VulnFilter = &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true}
+		} else {
+			p.VulnFilter = &spb.PackageExploitabilitySignal_VulnIdentifiers{
+				VulnIdentifiers: &spb.VulnIdentifiers{Identifiers: v.VulnIdentifiers},
+			}
+		}
+		ps = append(ps, p)
+	}
+	return ps
+}
+
+func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExploitabilitySignal {
+	var vs []*vex.PackageExploitabilitySignal
+	for _, p := range ps {
+		v := &vex.PackageExploitabilitySignal{
+			Plugin:        p.Plugin,
+			Justification: protoToStructPackageVEX[p.Justification],
+		}
+		if ids := p.GetVulnIdentifiers(); ids != nil {
+			v.VulnIdentifiers = ids.Identifiers
+		} else {
+			v.MatchesAllVulns = p.GetMatchesAllVulns()
+		}
+		vs = append(vs, v)
+	}
+	return vs
 }
 
 func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {

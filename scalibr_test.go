@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
@@ -565,10 +566,14 @@ func TestAnnotator(t *testing.T) {
 	}
 
 	wantPkgs := []*extractor.Package{{
-		Name:        pkgName,
-		Locations:   []string{"tmp/file.txt"},
-		Plugins:     []string{fakeExtractor.Name()},
-		Annotations: []extractor.Annotation{extractor.InsideCacheDir},
+		Name:      pkgName,
+		Locations: []string{"tmp/file.txt"},
+		Plugins:   []string{fakeExtractor.Name()},
+		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+			Plugin:          cachedir.Name,
+			Justification:   vex.ComponentNotPresent,
+			MatchesAllVulns: true,
+		}},
 	}}
 
 	got := scalibr.New().Scan(context.Background(), cfg)

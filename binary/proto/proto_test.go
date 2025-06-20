@@ -57,6 +57,7 @@ import (
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/veles"
@@ -205,9 +206,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Maintainer:        "maintainer",
 			Architecture:      "amd64",
 		},
-		Locations:   []string{"/file1"},
-		Plugins:     []string{dpkg.Name},
-		Annotations: []extractor.Annotation{extractor.Transitional},
+		Locations:             []string{"/file1"},
+		Plugins:               []string{dpkg.Name},
+		AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+			Plugin:          dpkg.Name,
+			Justification:   vex.ComponentNotPresent,
+			MatchesAllVulns: true,
+		}},
 	}
 	purlPythonPackage := &extractor.Package{
 		Name:      "software",
@@ -351,9 +357,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Architecture:      "amd64",
 			},
 		},
-		Locations:   []string{"/file1"},
-		Plugins:     []string{"os/dpkg"},
-		Annotations: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
+		Locations:             []string{"/file1"},
+		Plugins:               []string{"os/dpkg"},
+		AnnotationsDeprecated: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
+		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
+			Plugin:        dpkg.Name,
+			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
+			VulnFilter:    &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true},
+		}},
 	}
 	purlPythonPackageProto := &spb.Package{
 		Name:    "software",

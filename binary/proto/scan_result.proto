@@ -124,7 +124,12 @@ message Package {
     DockerContainersMetadata docker_containers_metadata = 48;
   }
 
-  repeated AnnotationEnum annotations = 28;
+  // Deprecated - use exploitability_signals instead
+  // TODO(b/400910349): Remove once integrators stop using this.
+  repeated AnnotationEnum annotations_deprecated = 28 [deprecated = true];
+  // Signals to indicate that specific vulnerabilities are not applicable to
+  // this package.
+  repeated PackageExploitabilitySignal exploitability_signals = 51;
   enum AnnotationEnum {
     UNSPECIFIED = 0;
     TRANSITIONAL = 1;
@@ -157,6 +162,44 @@ message LayerDetails {
   string command = 3;
   // Denotes whether the layer is in the base image.
   bool in_base_image = 4;
+}
+
+// PackageExploitabilitySignal is used to indicate that specific vulnerabilities
+// are not applicable to a given package.
+message PackageExploitabilitySignal {
+  // The name of the plugin (e.g. Annotator) that added this signal.
+  string plugin = 1;
+  // Reason for exclusion.
+  VexJustification justification = 2;
+  oneof vuln_filter {
+    // Advisory Identifier (CVE, GHSA, ...) and aliases of the vulns that are
+    // not applicable to this package.
+    VulnIdentifiers vuln_identifiers = 3;
+    // Indicates that all vulnerabilities associated with the package are
+    // irrelevant.
+    bool matches_all_vulns = 4;
+  }
+}
+
+message VulnIdentifiers {
+  repeated string identifiers = 1;
+}
+
+// Vuln exclusion reasons - Mirrors the format from the official VEX
+// documentation
+// (https://www.cisa.gov/sites/default/files/publications/VEX_Status_Justification_Jun22.pdf)
+enum VexJustification {
+  VEX_JUSTIFICATION_UNSPECIFIED = 0;
+  // The vulnerable component is not used in the affected artifact.
+  COMPONENT_NOT_PRESENT = 1;
+  // The component is used but vulnerable code was removed or not included.
+  VULNERABLE_CODE_NOT_PRESENT = 2;
+  // Vulnerable code is included but is not executed.
+  VULNERABLE_CODE_NOT_IN_EXECUTE_PATH = 3;
+  // Vulnerable code is executed but can't be exploited due to program logic.
+  VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY = 4;
+  // Code can be executed but additional mitigations prevent exploitation.
+  INLINE_MITIGATION_ALREADY_EXISTS = 5;
 }
 
 // Package URL, see https://github.com/package-url/purl-spec

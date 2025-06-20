@@ -21,8 +21,8 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -73,7 +73,11 @@ func (Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, resul
 		}
 		for _, loc := range pkg.Locations {
 			if isInsideCacheDir(loc) {
-				pkg.Annotations = append(pkg.Annotations, extractor.InsideCacheDir)
+				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+					Plugin:          Name,
+					Justification:   vex.ComponentNotPresent,
+					MatchesAllVulns: true,
+				})
 				break
 			}
 		}

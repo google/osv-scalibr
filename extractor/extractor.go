@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -66,8 +67,11 @@ type Package struct {
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
 	Plugins []string
-	// Annotations are additional information about the package that is useful for matching.
-	Annotations []Annotation
+	// Deprecated - use ExploitabilitySignals instead
+	// TODO(b/400910349): Remove once integrators stop using this.
+	AnnotationsDeprecated []Annotation
+	// Signals to indicate that specific vulnerabilities are not applicable to this package.
+	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
 	LayerDetails *LayerDetails
 	// The additional data found in the package.
@@ -75,6 +79,7 @@ type Package struct {
 }
 
 // Annotation are additional information about the package.
+// TODO(b/400910349): Remove once integrators switch to PackageExploitabilitySignal.
 type Annotation int64
 
 const (

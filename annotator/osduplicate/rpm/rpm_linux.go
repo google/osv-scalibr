@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
@@ -132,8 +133,14 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 
 			if pkgs, ok := locationToPKGs[path]; ok {
 				for _, pkg := range pkgs {
-					if !slices.Contains(pkg.Annotations, extractor.InsideOSPackage) {
-						pkg.Annotations = append(pkg.Annotations, extractor.InsideOSPackage)
+					if !slices.ContainsFunc(pkg.ExploitabilitySignals, func(s *vex.PackageExploitabilitySignal) bool {
+						return s.Plugin == Name
+					}) {
+						pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+							Plugin:          Name,
+							Justification:   vex.ComponentNotPresent,
+							MatchesAllVulns: true,
+						})
 					}
 				}
 			}

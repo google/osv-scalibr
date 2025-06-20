@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -111,9 +112,13 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:        "file-in-info",
-					Locations:   []string{"path/to/file-in-info"},
-					Annotations: []extractor.Annotation{extractor.InsideOSPackage},
+					Name:      "file-in-info",
+					Locations: []string{"path/to/file-in-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 				{
 					Name:      "file-not-in-info",
@@ -136,7 +141,7 @@ func TestAnnotate(t *testing.T) {
 				{
 					Name:      "file",
 					Locations: []string{"path/to/file"},
-					// No annotations
+					// No exploitability signals
 				},
 			},
 		},
@@ -164,7 +169,7 @@ func TestAnnotate(t *testing.T) {
 				{
 					Name:      "file",
 					Locations: []string{"path/to/file"},
-					// No annotations
+					// No exploitability signals
 				},
 			},
 			wantErr: cmpopts.AnyError,

@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 )
 
 func TestIsInsideCacheDir(t *testing.T) {
@@ -74,12 +75,16 @@ func TestIsInsideCacheDir(t *testing.T) {
 			if err := cachedir.New().Annotate(context.Background(), nil, inv); err != nil {
 				t.Errorf("Annotate(%v): %v", inv, err)
 			}
-			var want []extractor.Annotation
+			var want []*vex.PackageExploitabilitySignal
 			if tt.wantCacheAnnotation {
-				want = []extractor.Annotation{extractor.InsideCacheDir}
+				want = []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+					Plugin:          cachedir.Name,
+					Justification:   vex.ComponentNotPresent,
+					MatchesAllVulns: true,
+				}}
 			}
 
-			got := inv.Packages[0].Annotations
+			got := inv.Packages[0].ExploitabilitySignals
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Annotate(%v) (-want +got):\n%s", inv, diff)
 			}

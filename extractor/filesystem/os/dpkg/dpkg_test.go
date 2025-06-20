@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -763,8 +764,13 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Maintainers of Mozilla-related packages <team+pkg-mozilla@tracker.debian.org>",
 						Architecture:      "all",
 					},
-					Locations:   []string{"var/lib/dpkg/status"},
-					Annotations: []extractor.Annotation{extractor.Transitional},
+					Locations:             []string{"var/lib/dpkg/status"},
+					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -789,8 +795,13 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Gerrit Pape <pape@smarden.org>",
 						Architecture:      "all",
 					},
-					Locations:   []string{"var/lib/dpkg/status"},
-					Annotations: []extractor.Annotation{extractor.Transitional},
+					Locations:             []string{"var/lib/dpkg/status"},
+					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -815,8 +826,13 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Lorenzo Puliti <plorenzo@disroot.org>",
 						Architecture:      "all",
 					},
-					Locations:   []string{"var/lib/dpkg/status"},
-					Annotations: []extractor.Annotation{extractor.Transitional},
+					Locations:             []string{"var/lib/dpkg/status"},
+					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -1218,8 +1234,13 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "openwrt-21.02.1",
 						OSVersionID:       "21.02.1",
 					},
-					Locations:   []string{"usr/lib/opkg/status"},
-					Annotations: []extractor.Annotation{extractor.Transitional},
+					Locations:             []string{"usr/lib/opkg/status"},
+					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,

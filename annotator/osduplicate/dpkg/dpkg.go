@@ -31,6 +31,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -106,7 +107,14 @@ func processListFile(path string, fs scalibrfs.FS, locationToPKGs map[string][]*
 		filePath := strings.TrimPrefix(s.Text(), "/")
 		if pkgs, ok := locationToPKGs[filePath]; ok {
 			for _, pkg := range pkgs {
-				pkg.Annotations = append(pkg.Annotations, extractor.InsideOSPackage)
+				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+					Plugin: Name,
+					// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
+					// is present but already tracked by another Extractor (os/dpkg). We should consider
+					// introducing a new type to better describe these cases.
+					Justification:   vex.ComponentNotPresent,
+					MatchesAllVulns: true,
+				})
 			}
 		}
 	}
