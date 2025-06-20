@@ -83,12 +83,12 @@ func TestInternalScan(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			d := Detector{}
-			findings, err := d.internalScan(context.Background(), tc.hashes)
+			result, err := d.internalScan(context.Background(), tc.hashes)
 			if err != nil {
 				t.Fatalf("internalScan(...) unexpected error, got: %v, want: %v", err, tc.wantErr)
 			}
 
-			for _, finding := range findings {
+			for _, finding := range result.GenericFindings {
 				if !slices.Contains(tc.expectedFindingsReferences, finding.Adv.ID.Reference) {
 					t.Errorf("internalScan(...) unexpected finding, got: %v, want: %v", finding.Adv.ID.Reference, tc.expectedFindingsReferences)
 				}

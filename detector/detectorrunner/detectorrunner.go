@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -30,31 +31,35 @@ import (
 
 // Run runs the specified detectors and returns their findings,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, c stats.Collector, detectors []detector.Detector, scanRoot *scalibrfs.ScanRoot, index *packageindex.PackageIndex) ([]*detector.Finding, []*plugin.Status, error) {
-	findings := []*detector.Finding{}
+func Run(ctx context.Context, c stats.Collector, detectors []detector.Detector, scanRoot *scalibrfs.ScanRoot, index *packageindex.PackageIndex) (inventory.Finding, []*plugin.Status, error) {
+	findings := inventory.Finding{}
 	status := []*plugin.Status{}
 	for _, d := range detectors {
 		if ctx.Err() != nil {
-			return nil, nil, ctx.Err()
+			return inventory.Finding{}, nil, ctx.Err()
 		}
 		start := time.Now()
-		results, err := d.Scan(ctx, scanRoot, index)
+		result, err := d.Scan(ctx, scanRoot, index)
 		c.AfterDetectorRun(d.Name(), time.Since(start), err)
-		for _, f := range results {
-			f.Detectors = []string{d.Name()}
+		for _, v := range result.PackageVulns {
+			v.Plugins = []string{d.Name()}
 		}
-		findings = append(findings, results...)
+		for _, f := range result.GenericFindings {
+			f.Plugins = []string{d.Name()}
+		}
+		findings.PackageVulns = append(findings.PackageVulns, result.PackageVulns...)
+		findings.GenericFindings = append(findings.GenericFindings, result.GenericFindings...)
 		status = append(status, plugin.StatusFromErr(d, false, err))
 	}
-	if err := validateAdvisories(findings); err != nil {
-		return []*detector.Finding{}, status, err
+	if err := validateAdvisories(findings.GenericFindings); err != nil {
+		return inventory.Finding{}, status, err
 	}
 	return findings, status, nil
 }
 
-func validateAdvisories(findings []*detector.Finding) error {
+func validateAdvisories(findings []*inventory.GenericFinding) error {
 	// Check that findings with the same advisory ID have identical advisories.
-	ids := make(map[detector.AdvisoryID]detector.Advisory)
+	ids := make(map[inventory.AdvisoryID]inventory.GenericFindingAdvisory)
 	for _, f := range findings {
 		if f.Adv == nil {
 			return fmt.Errorf("finding has no advisory set: %v", f)

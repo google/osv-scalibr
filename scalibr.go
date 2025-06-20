@@ -269,7 +269,8 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	findings, detectorStatus, err := detectorrunner.Run(
 		ctx, config.Stats, config.Detectors, &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
-	sro.Inventory.Findings = append(sro.Inventory.Findings, findings...)
+	sro.Inventory.PackageVulns = findings.PackageVulns
+	sro.Inventory.GenericFindings = findings.GenericFindings
 	sro.DetectorStatus = detectorStatus
 	if err != nil {
 		sro.Err = err
@@ -407,7 +408,8 @@ func sortResults(results *ScanResult) {
 
 	slices.SortFunc(results.PluginStatus, cmpStatus)
 	slices.SortFunc(results.Inventory.Packages, CmpPackages)
-	slices.SortFunc(results.Inventory.Findings, cmpFindings)
+	slices.SortFunc(results.Inventory.PackageVulns, cmpPackageVulns)
+	slices.SortFunc(results.Inventory.GenericFindings, cmpGenericFindings)
 }
 
 // CmpPackages is a comparison helper fun to be used for sorting Package structs.
@@ -438,11 +440,15 @@ func cmpStatus(a, b *plugin.Status) int {
 	return cmpString(a.Name, b.Name)
 }
 
-func cmpFindings(a, b *detector.Finding) int {
+func cmpPackageVulns(a, b *inventory.PackageVuln) int {
+	return cmpString(a.ID, b.ID)
+}
+
+func cmpGenericFindings(a, b *inventory.GenericFinding) int {
 	if a.Adv.ID.Reference != b.Adv.ID.Reference {
 		return cmpString(a.Adv.ID.Reference, b.Adv.ID.Reference)
 	}
-	return cmpString(a.Extra, b.Extra)
+	return cmpString(a.Target.Extra, b.Target.Extra)
 }
 
 func cmpString(a, b string) int {

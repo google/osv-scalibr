@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -126,10 +127,10 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) (inventory.Finding, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	client := &http.Client{
@@ -144,32 +145,29 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 	if err != nil {
 		// Only ignore errors that are caused by the connection being refused.
 		if errors.Is(err, syscall.ECONNREFUSED) {
-			return nil, nil
+			return inventory.Finding{}, nil
 		}
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	if !vuln {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
-	return []*detector.Finding{
-		&detector.Finding{
-			Adv: &detector.Advisory{
-				ID: &detector.AdvisoryID{
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{
+		&inventory.GenericFinding{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
 					Publisher: "SCALIBR",
 					Reference: "CODESERVER_WEAK_CREDENTIALS",
 				},
-				Type:           detector.TypeVulnerability,
 				Title:          "Code-Server instance without authentication",
 				Description:    "Your Code-Server instance has no authentication enabled. This means that the instance is vulnerable to remote code execution.",
 				Recommendation: "Enforce an authentication in the config.yaml file. See https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-does-the-config-file-work for more details.",
-				Sev: &detector.Severity{
-					Severity: detector.SeverityCritical,
-				},
+				Sev:            inventory.SeverityCritical,
 			},
 		},
-	}, nil
+	}}, nil
 }
 
 func checkAuth(ctx context.Context, client *http.Client, target string) (bool, error) {

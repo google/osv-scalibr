@@ -71,7 +71,11 @@ func RunScan(flags *cli.Flags) int {
 	}
 
 	log.Infof("Scan status: %v", result.Status)
-	log.Infof("Found %d software packages, %d security findings", len(result.Inventory.Packages), len(result.Inventory.Findings))
+	log.Infof(
+		"Found %d software packages, %d security findings",
+		len(result.Inventory.Packages),
+		len(result.Inventory.PackageVulns)+len(result.Inventory.GenericFindings),
+	)
 
 	if err := flags.WriteScanResults(result); err != nil {
 		log.Errorf("Error writing scan results: %v", err)

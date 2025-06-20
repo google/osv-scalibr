@@ -24,10 +24,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 )
 
@@ -96,23 +96,22 @@ func TestScan(t *testing.T) {
 		"These passwords must be strong and not easily guessable."
 	wantRec := "Run the following command to reset password for the reported users:\n" +
 		"# change password for USER: sudo passwd USER"
-	wantAdv := &detector.Advisory{
-		ID: &detector.AdvisoryID{
+	wantAdv := &inventory.GenericFindingAdvisory{
+		ID: &inventory.AdvisoryID{
 			Publisher: "SCALIBR",
 			Reference: "etc-shadow-weakcredentials",
 		},
-		Type:           detector.TypeVulnerability,
 		Title:          wantTitle,
 		Description:    wantDesc,
 		Recommendation: wantRec,
-		Sev:            &detector.Severity{Severity: detector.SeverityCritical},
+		Sev:            inventory.SeverityCritical,
 	}
 
 	px, _ := packageindex.New([]*extractor.Package{})
 	testCases := []struct {
 		desc         string
 		fsys         scalibrfs.FS
-		wantFindings []*detector.Finding
+		wantFindings []*inventory.GenericFinding
 		wantErr      error
 	}{
 		{
@@ -134,11 +133,12 @@ func TestScan(t *testing.T) {
 		{
 			desc: "File with hashes, some cracked",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}},
-			wantFindings: []*detector.Finding{{
-				Adv:    wantAdv,
-				Target: &detector.TargetDetails{Location: []string{"/etc/shadow"}},
-				Extra: "The following users have weak passwords:\n" +
-					"user-bcrypt\n" + "user-bcrypt-a\n" + "user-sha512crypt\n",
+			wantFindings: []*inventory.GenericFinding{{
+				Adv: wantAdv,
+				Target: &inventory.GenericFindingTargetDetails{
+					Extra: "/etc/shadow: The following users have weak passwords:\n" +
+						"user-bcrypt\n" + "user-bcrypt-a\n" + "user-sha512crypt\n",
+				},
 			}},
 		},
 	}
@@ -146,12 +146,12 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			detector := etcshadow.Detector{}
-			findings, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
+			finding, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}
 			if err == nil {
-				if diff := cmp.Diff(tc.wantFindings, findings); diff != "" {
+				if diff := cmp.Diff(tc.wantFindings, finding.GenericFindings); diff != "" {
 					t.Errorf("detector.Scan(%v): unexpected findings (-want +got):\n%s", tc.fsys, diff)
 				}
 			}
@@ -165,8 +165,8 @@ func TestScanCancelled(t *testing.T) {
 	fsys := &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
-	findings, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, px)
-	if findings != nil || !errors.Is(err, ctx.Err()) {
+	finding, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, px)
+	if finding.GenericFindings != nil || !errors.Is(err, ctx.Err()) {
 		t.Errorf("expected scan to be cancelled")
 	}
 }
