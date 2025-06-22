@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"strconv"
 	"strings"
 	"syscall"
@@ -153,6 +154,33 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 		return nil, nil
 	}
 
+	// Check again for the hostname of the system to see if the vuln is also exposed to no localhost
+	// interfaces
+	var hostname string
+	hostname, err = os.Hostname()
+
+	if err != nil {
+		return nil, err
+	}
+
+	vulnExt, err := checkAuth(ctx, client, "http://"+net.JoinHostPort(hostname, strconv.Itoa(defaultPort)))
+
+	var vulnTitle string
+	var vulnSev detector.Severity
+	if err == nil && vulnExt {
+		// This means the vuln as found on the internal localhost and is also exposed externally.
+		vulnTitle = "Code-Server instance without authentication"
+		vulnSev = detector.Severity{
+			Severity: detector.SeverityCritical,
+		}
+	} else {
+		// This means the vuln is only exposed internally.
+		vulnTitle = "Code-Server instance without authentication on localhost"
+		vulnSev = detector.Severity{
+			Severity: detector.SeverityHigh,
+		}
+	}
+
 	return []*detector.Finding{
 		&detector.Finding{
 			Adv: &detector.Advisory{
@@ -161,12 +189,10 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 					Reference: "CODESERVER_WEAK_CREDENTIALS",
 				},
 				Type:           detector.TypeVulnerability,
-				Title:          "Code-Server instance without authentication",
+				Title:          vulnTitle,
 				Description:    "Your Code-Server instance has no authentication enabled. This means that the instance is vulnerable to remote code execution.",
 				Recommendation: "Enforce an authentication in the config.yaml file. See https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-does-the-config-file-work for more details.",
-				Sev: &detector.Severity{
-					Severity: detector.SeverityCritical,
-				},
+				Sev:            &vulnSev,
 			},
 		},
 	}, nil
