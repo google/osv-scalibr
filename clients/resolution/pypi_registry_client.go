@@ -204,7 +204,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, s
 		}
 		return file, ext, nil
 	}
-	return internalpypi.File{}, "", fmt.Errorf("Package %s version %s not found.", vk.Name, vk.Version)
+	return internalpypi.File{}, "", fmt.Errorf("package %s version %s not found.", vk.Name, vk.Version)
 }
 
 // MatchingVersions returns versions matching the requirement specified by the VersionKey.

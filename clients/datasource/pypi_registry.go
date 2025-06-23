@@ -55,7 +55,7 @@ func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
 	}
 }
 
-// GetIndex queries the Index API and returns the list of versions.
+// GetIndex queries the simple API index for a given project.
 func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
 	path, err := url.JoinPath(p.registry, project)
 	if err != nil {
@@ -76,6 +76,7 @@ func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (p
 	return indexResp, err
 }
 
+// GetFile retrieves the content of a file from the registry at the given URL.
 func (p *PyPIRegistryAPIClient) GetFile(ctx context.Context, url string) ([]byte, error) {
 	return p.get(ctx, url, false)
 }
