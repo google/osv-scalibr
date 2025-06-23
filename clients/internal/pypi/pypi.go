@@ -20,29 +20,6 @@ import (
 	"fmt"
 )
 
-// JSONResponse defines the response of JSON API.
-// https://docs.pypi.org/api/json/
-type JSONResponse struct {
-	Info Info  `json:"info"`
-	URLs []URL `json:"urls"`
-}
-
-// Info holds the info in the response of PyPI JSON API.
-type Info struct {
-	RequiresDist []string `json:"requires_dist"`
-	Yanked       bool     `json:"yanked"`
-}
-
-// URL holds the information about a release.
-type URL struct {
-	Digests Digests `json:"digests"`
-}
-
-// Digests holds the information of digests of a release.
-type Digests struct {
-	SHA256 string `json:"sha256"`
-}
-
 // IndexResponse defines the response of Index API.
 // https://docs.pypi.org/api/index-api/
 type IndexResponse struct {
@@ -54,6 +31,7 @@ type IndexResponse struct {
 // File holds the information of a file in index response.
 type File struct {
 	Name   string `json:"filename"`
+	URL    string `json:"url"`
 	Yanked Yanked `json:"yanked"`
 }
 
