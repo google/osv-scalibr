@@ -109,7 +109,11 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, filepath.Join(c.opts.LocalRegistry, "maven"))
+			localRegistry := c.opts.LocalRegistry
+			if localRegistry != "" {
+				localRegistry = filepath.Join(c.opts.LocalRegistry, "maven")
+			}
+			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, localRegistry)
 			if err != nil {
 				return nil, err
 			}
