@@ -135,7 +135,7 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 //	return cursor
 //}
 
-// getNode returns the node at the given path.
+// getNode returns the node at the given path. This will resolve all symlinks and return the final path.
 func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 	nodePath, err := cleanPath(nodePath)
 	if err != nil {
@@ -168,7 +168,7 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 			targetPath := cursor.virtualFile.targetPath
 			if !filepath.IsAbs(targetPath) {
 				// Join the parent path with the targetPath to get the real path
-				targetPath = filepath.Join(nodePath[:currentPathIndex], targetPath)
+				targetPath = filepath.Join(divider+nodePath[:currentPathIndex], targetPath)
 			}
 			cursor, err = rootNode.getNode(targetPath, depth+1)
 			if err != nil {
