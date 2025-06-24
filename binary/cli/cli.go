@@ -515,7 +515,7 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 		if e.Name() == gobinary.Name {
 			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
 		}
-		if e.Name() == pomxmlnet.Name {
+		if e.Name() == pomxmlnet.Name && f.LocalRegistry != "" {
 			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
 		}
 	}
