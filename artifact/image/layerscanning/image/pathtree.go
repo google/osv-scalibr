@@ -155,7 +155,7 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 
 	cursor := &rootNode.Node
 	// currentPathIndex can be used to get the parent directory segment including all ancestors
-	currentPathIndex := 1
+	currentPathIndex := 0
 	for _, segment := range strings.Split(nodePath, divider) {
 		next, ok := cursor.children[segment]
 		if !ok {

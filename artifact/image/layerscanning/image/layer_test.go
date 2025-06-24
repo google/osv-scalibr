@@ -231,6 +231,39 @@ func TestChainFSOpen(t *testing.T) {
 			},
 		},
 		{
+			name:    "open relative symlink from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/symlink-relative-1",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open relative symlink 2 from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/dir2/symlink-relative-2",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open relative symlink 3 nested from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/dir2/symlink-relative-3",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
 			name:    "error opening symlink due to nonexistent target",
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-nonexistent-file",
@@ -590,49 +623,67 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 			targetPath:  "/dir2/bar",
 		},
 		"/symlink2": &virtualFile{
-			virtualPath: "symlink2",
+			virtualPath: "/symlink2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink1",
 		},
 		"/symlink3": &virtualFile{
-			virtualPath: "symlink3",
+			virtualPath: "/symlink3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink2",
 		},
 		"/symlink4": &virtualFile{
-			virtualPath: "symlink4",
+			virtualPath: "/symlink4",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink3",
 		},
+		"/symlink-relative-1": &virtualFile{
+			virtualPath: "/symlink-relative-1",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "./dir2/bar",
+		},
+		"/dir2/symlink-relative-2": &virtualFile{
+			virtualPath: "/dir2/symlink-relative-2",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "./bar",
+		},
+		"/dir2/symlink-relative-3": &virtualFile{
+			virtualPath: "/dir/symlink-relative-3",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "../symlink-relative-1",
+		},
 		"/symlink-to-dir": &virtualFile{
-			virtualPath: "symlink-to-dir",
+			virtualPath: "/symlink-to-dir",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2",
 		},
 		"/symlink-to-nonexistent-file": &virtualFile{
-			virtualPath: "symlink-to-nonexistent-file",
+			virtualPath: "/symlink-to-nonexistent-file",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/nonexistent-file",
 		},
 		"/symlink-cycle1": &virtualFile{
-			virtualPath: "symlink-cycle1",
+			virtualPath: "/symlink-cycle1",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle2",
 		},
 		"/symlink-cycle2": &virtualFile{
-			virtualPath: "symlink-cycle2",
+			virtualPath: "/symlink-cycle2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle3",
 		},
 		"/symlink-cycle3": &virtualFile{
-			virtualPath: "symlink-cycle3",
+			virtualPath: "/symlink-cycle3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle1",
