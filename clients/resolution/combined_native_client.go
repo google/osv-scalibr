@@ -106,7 +106,6 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var err error
-
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
