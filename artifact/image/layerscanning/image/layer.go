@@ -185,10 +185,6 @@ func (chainfs FS) Open(name string) (fs.File, error) {
 		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
 	}
 
-	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	//}
 	return vf, nil
 }
 
@@ -199,10 +195,6 @@ func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("failed to get virtual file to stat %s: %w", name, err)
 	}
 
-	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	//}
 	return vf.Stat()
 }
 
@@ -212,11 +204,6 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get virtual file to read directory %s: %w", name, err)
 	}
-
-	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	//}
 
 	children, err := chainfs.getVirtualFileChildren(vf.virtualPath)
 	if err != nil {

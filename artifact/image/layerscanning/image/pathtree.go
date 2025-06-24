@@ -102,39 +102,6 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 	return nil
 }
 
-//// isSymlinkNode returns true if the node contains a valid virtual file that represents a symlink.
-//func isSymlinkNode(node *Node) bool {
-//	return node.virtualFile != nil && node.virtualFile.mode&fs.ModeSymlink != 0
-//}
-
-//// getFirstSymlinkNode returns the first symlink node it encounters while going down the tree. This
-//// function is used in order to handle symlinked directories.
-//func (rootNode *RootNode) getFirstSymlinkNode(nodePath string) *Node {
-//	nodePath, _ = cleanPath(nodePath)
-//
-//	// If the nodePath is empty, node is the root.
-//	if nodePath == "" {
-//		return &rootNode.Node
-//	}
-//
-//	if isSymlinkNode(&rootNode.Node) {
-//		return &rootNode.Node
-//	}
-//
-//	cursor := &rootNode.Node
-//	for _, segment := range strings.Split(nodePath, divider) {
-//		next, ok := cursor.children[segment]
-//		if !ok {
-//			return nil
-//		}
-//		if isSymlinkNode(next) {
-//			return next
-//		}
-//		cursor = next
-//	}
-//	return cursor
-//}
-
 // getNode returns the node at the given path. This will resolve all symlinks and return the final path.
 func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 	nodePath, err := cleanPath(nodePath)
@@ -196,17 +163,6 @@ func (rootNode *RootNode) Get(p string) (*virtualFile, error) {
 	}
 
 	return pathNode.virtualFile, nil
-	//symlinkNode := rootNode.getFirstSymlinkNode(p)
-	//if symlinkNode == nil || symlinkNode.virtualFile == nil {
-	//	return nil
-	//}
-
-	//targetPath := strings.Replace(p, symlinkNode.virtualFile.virtualPath, symlinkNode.virtualFile.targetPath, 1)
-	//if targetNode := rootNode.getNode(targetPath); targetNode != nil {
-	//	return targetNode.virtualFile
-	//}
-
-	//return nil
 }
 
 // GetChildren retrieves all the direct children of the given path.
