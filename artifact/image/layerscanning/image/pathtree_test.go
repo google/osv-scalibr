@@ -31,7 +31,7 @@ func assertNoError(t *testing.T, err error) {
 	}
 }
 
-func testTree(t *testing.T) *Node {
+func testTree(t *testing.T) *RootNode {
 	t.Helper()
 
 	tree := NewNode()
@@ -52,13 +52,13 @@ func testTree(t *testing.T) *Node {
 func TestNode_Insert_Error(t *testing.T) {
 	tests := []struct {
 		name string
-		tree *Node
+		tree *RootNode
 		key  string
 		val  *virtualFile
 	}{
 		{
 			name: "duplicate node",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
@@ -69,7 +69,7 @@ func TestNode_Insert_Error(t *testing.T) {
 		},
 		{
 			name: "duplicate node in subtree",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 				_ = tree.Insert("/a/b", &virtualFile{virtualPath: "/a/b", mode: fs.ModeDir})
@@ -93,7 +93,7 @@ func TestNode_Insert_Error(t *testing.T) {
 func TestNode_Get(t *testing.T) {
 	tests := []struct {
 		name string
-		tree *Node
+		tree *RootNode
 		key  string
 		want *virtualFile
 	}{
@@ -105,7 +105,7 @@ func TestNode_Get(t *testing.T) {
 		},
 		{
 			name: "single node",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
@@ -116,7 +116,7 @@ func TestNode_Get(t *testing.T) {
 		},
 		{
 			name: "nonexistent node in single node tree",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
@@ -157,7 +157,7 @@ func TestNode_Get(t *testing.T) {
 func TestNode_GetChildren(t *testing.T) {
 	tests := []struct {
 		name string
-		tree *Node
+		tree *RootNode
 		key  string
 		want []*virtualFile
 	}{
@@ -169,7 +169,7 @@ func TestNode_GetChildren(t *testing.T) {
 		},
 		{
 			name: "single node no children",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
@@ -223,7 +223,7 @@ type keyValue struct {
 func TestNode_Walk(t *testing.T) {
 	tests := []struct {
 		name string
-		tree *Node
+		tree *RootNode
 		want []keyValue
 	}{
 		{
@@ -233,7 +233,7 @@ func TestNode_Walk(t *testing.T) {
 		},
 		{
 			name: "single node",
-			tree: func() *Node {
+			tree: func() *RootNode {
 				tree := NewNode()
 				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
 

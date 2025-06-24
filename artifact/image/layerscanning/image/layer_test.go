@@ -85,12 +85,12 @@ func TestChainLayerFS(t *testing.T) {
 		mode:        filePermission,
 	}
 
-	emptyTree := func() *Node {
+	emptyTree := func() *RootNode {
 		tree := NewNode()
 		_ = tree.Insert("/", root)
 		return tree
 	}()
-	nonEmptyTree := func() *Node {
+	nonEmptyTree := func() *RootNode {
 		tree := NewNode()
 		_ = tree.Insert("/", root)
 		_ = tree.Insert("/file1", file1)

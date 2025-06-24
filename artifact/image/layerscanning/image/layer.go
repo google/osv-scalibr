@@ -45,7 +45,7 @@ type Layer struct {
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
-	fileNodeTree *Node
+	fileNodeTree *RootNode
 }
 
 // FS returns a scalibr compliant file system.
@@ -97,7 +97,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 type chainLayer struct {
 	index           int
 	chainID         digest.Digest
-	fileNodeTree    *Node
+	fileNodeTree    *RootNode
 	latestLayer     image.Layer
 	maxSymlinkDepth int
 }
@@ -130,7 +130,7 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree            *Node
+	tree            *RootNode
 	maxSymlinkDepth int
 }
 

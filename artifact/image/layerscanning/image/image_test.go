@@ -1287,7 +1287,7 @@ func TestFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *Node {
+						fileNodeTree: func() *RootNode {
 							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
@@ -1315,7 +1315,7 @@ func TestFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *Node {
+						fileNodeTree: func() *RootNode {
 							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
@@ -1335,7 +1335,7 @@ func TestFS(t *testing.T) {
 						},
 					},
 					{
-						fileNodeTree: func() *Node {
+						fileNodeTree: func() *RootNode {
 							root := NewNode()
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
