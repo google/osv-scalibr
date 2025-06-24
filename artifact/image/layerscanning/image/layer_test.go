@@ -45,7 +45,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: NewNode(),
+				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 			},
 		},
 		{
@@ -57,14 +57,14 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: NewNode(),
+				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
+			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty, DefaultMaxSymlinkDepth)
 
 			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
@@ -86,12 +86,12 @@ func TestChainLayerFS(t *testing.T) {
 	}
 
 	emptyTree := func() *RootNode {
-		tree := NewNode()
+		tree := NewNode(DefaultMaxSymlinkDepth)
 		_ = tree.Insert("/", root)
 		return tree
 	}()
 	nonEmptyTree := func() *RootNode {
-		tree := NewNode()
+		tree := NewNode(DefaultMaxSymlinkDepth)
 		_ = tree.Insert("/", root)
 		_ = tree.Insert("/file1", file1)
 		return tree
@@ -249,7 +249,9 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "error opening symlink due to cycle",
 			chainfs: populatedChainFS,
 			path:    "/symlink-cycle1",
-			wantErr: ErrSymlinkCycle,
+			// New method cannot determine links, just depth exceeded.
+			// If symlink depths is a reasonable number it should not matter.
+			wantErr: ErrSymlinkDepthExceeded,
 		},
 	}
 
@@ -530,8 +532,7 @@ func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
 	return FS{
-		tree:            NewNode(),
-		maxSymlinkDepth: DefaultMaxSymlinkDepth,
+		tree: NewNode(DefaultMaxSymlinkDepth),
 	}
 }
 
@@ -541,8 +542,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 	t.Helper()
 
 	chainfs := FS{
-		tree:            NewNode(),
-		maxSymlinkDepth: maxSymlinkDepth,
+		tree: NewNode(maxSymlinkDepth),
 	}
 
 	vfsMap := map[string]*virtualFile{

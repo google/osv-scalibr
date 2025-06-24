@@ -72,7 +72,7 @@ func (layer *Layer) Command() string {
 
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
-func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
+func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, maxSymlinkDepth int) *Layer {
 	var diffID string
 	d, err := v1Layer.DiffID()
 	if err != nil {
@@ -85,7 +85,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
-		fileNodeTree: NewNode(),
+		fileNodeTree: NewNode(maxSymlinkDepth),
 	}
 }
 
@@ -105,8 +105,7 @@ type chainLayer struct {
 // FS returns a scalibrfs.FS that can be used to scan for inventory.
 func (chainLayer *chainLayer) FS() scalibrfs.FS {
 	return &FS{
-		tree:            chainLayer.fileNodeTree,
-		maxSymlinkDepth: chainLayer.maxSymlinkDepth,
+		tree: chainLayer.fileNodeTree,
 	}
 }
 
@@ -130,8 +129,7 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree            *RootNode
-	maxSymlinkDepth int
+	tree *RootNode
 }
 
 // resolveSymlink resolves a symlink by following the target path. It returns the resolved virtual
@@ -187,11 +185,11 @@ func (chainfs FS) Open(name string) (fs.File, error) {
 		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
-	return resolvedFile, nil
+	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
+	//}
+	return vf, nil
 }
 
 // Stat returns a FileInfo object describing the file found at name.
@@ -201,11 +199,11 @@ func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("failed to get virtual file to stat %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
-	return resolvedFile.Stat()
+	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
+	//}
+	return vf.Stat()
 }
 
 // ReadDir returns the directory entries found at path name.
@@ -215,12 +213,12 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return nil, fmt.Errorf("failed to get virtual file to read directory %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
+	//resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
+	//}
 
-	children, err := chainfs.getVirtualFileChildren(resolvedFile.virtualPath)
+	children, err := chainfs.getVirtualFileChildren(vf.virtualPath)
 	if err != nil {
 		return nil, err
 	}
@@ -249,9 +247,9 @@ func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	vf := chainfs.tree.Get(normalizePath(path))
-	if vf == nil {
-		return nil, fs.ErrNotExist
+	vf, err := chainfs.tree.Get(normalizePath(path))
+	if err != nil {
+		return nil, err
 	}
 	return vf, nil
 }
@@ -263,10 +261,11 @@ func (chainfs *FS) getVirtualFileChildren(path string) ([]*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	children := chainfs.tree.GetChildren(normalizePath(path))
-	if children == nil {
-		return nil, fs.ErrNotExist
+	children, err := chainfs.tree.GetChildren(normalizePath(path))
+	if err != nil {
+		return nil, err
 	}
+
 	return children, nil
 }
 

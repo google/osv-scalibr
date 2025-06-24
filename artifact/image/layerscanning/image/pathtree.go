@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/google/osv-scalibr/log"
 	"io/fs"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,7 +30,8 @@ const divider string = "/"
 var ErrNodeAlreadyExists = errors.New("node already exists")
 
 type RootNode struct {
-	Node Node
+	Node            Node
+	MaxSymlinkDepth int
 }
 
 // Node root represents the root directory /
@@ -39,11 +41,12 @@ type Node struct {
 }
 
 // NewNode creates a new node with the given value.
-func NewNode() *RootNode {
+func NewNode(maxSymlinkDepth int) *RootNode {
 	return &RootNode{
 		Node: Node{
 			children: make(map[string]*Node),
 		},
+		MaxSymlinkDepth: maxSymlinkDepth,
 	}
 }
 
@@ -99,93 +102,124 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 	return nil
 }
 
-// isSymlinkNode returns true if the node contains a valid virtual file that represents a symlink.
-func isSymlinkNode(node *Node) bool {
-	return node.virtualFile != nil && node.virtualFile.mode&fs.ModeSymlink != 0
-}
+//// isSymlinkNode returns true if the node contains a valid virtual file that represents a symlink.
+//func isSymlinkNode(node *Node) bool {
+//	return node.virtualFile != nil && node.virtualFile.mode&fs.ModeSymlink != 0
+//}
 
-// getFirstSymlinkNode returns the first symlink node it encounters while going down the tree. This
-// function is used in order to handle symlinked directories.
-func (rootNode *RootNode) getFirstSymlinkNode(nodePath string) *Node {
-	nodePath, _ = cleanPath(nodePath)
-
-	// If the nodePath is empty, node is the root.
-	if nodePath == "" {
-		return &rootNode.Node
-	}
-
-	if isSymlinkNode(&rootNode.Node) {
-		return &rootNode.Node
-	}
-
-	cursor := &rootNode.Node
-	for _, segment := range strings.Split(nodePath, divider) {
-		next, ok := cursor.children[segment]
-		if !ok {
-			return nil
-		}
-		if isSymlinkNode(next) {
-			return next
-		}
-		cursor = next
-	}
-	return cursor
-}
+//// getFirstSymlinkNode returns the first symlink node it encounters while going down the tree. This
+//// function is used in order to handle symlinked directories.
+//func (rootNode *RootNode) getFirstSymlinkNode(nodePath string) *Node {
+//	nodePath, _ = cleanPath(nodePath)
+//
+//	// If the nodePath is empty, node is the root.
+//	if nodePath == "" {
+//		return &rootNode.Node
+//	}
+//
+//	if isSymlinkNode(&rootNode.Node) {
+//		return &rootNode.Node
+//	}
+//
+//	cursor := &rootNode.Node
+//	for _, segment := range strings.Split(nodePath, divider) {
+//		next, ok := cursor.children[segment]
+//		if !ok {
+//			return nil
+//		}
+//		if isSymlinkNode(next) {
+//			return next
+//		}
+//		cursor = next
+//	}
+//	return cursor
+//}
 
 // getNode returns the node at the given path.
-func (rootNode *RootNode) getNode(nodePath string) *Node {
+func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 	nodePath, err := cleanPath(nodePath)
 	if err != nil {
 		log.Warnf("cleanPath(%q) error: %v", nodePath, err)
-		return nil
+		return nil, err
 	}
 
 	// If the nodePath is empty, node is the root.
 	if nodePath == "" {
-		return &rootNode.Node
+		return &rootNode.Node, nil
+	}
+
+	if depth > rootNode.MaxSymlinkDepth {
+		log.Warnf("symlink depth exceeded")
+		return nil, ErrSymlinkDepthExceeded
 	}
 
 	cursor := &rootNode.Node
+	// currentPathIndex can be used to get the parent directory segment including all ancestors
+	currentPathIndex := 1
 	for _, segment := range strings.Split(nodePath, divider) {
-		//if cursor.virtualFile.targetPath != "" {
-		//	cursor = rootNode.getNode(cursor.virtualFile.targetPath)
-		//}
-
 		next, ok := cursor.children[segment]
 		if !ok {
-			return nil
+			return nil, fs.ErrNotExist
 		}
 		cursor = next
+
+		// Check if the next cursor is a symlink, if so resolve it before continuing
+		if cursor.virtualFile != nil && cursor.virtualFile.targetPath != "" {
+			targetPath := cursor.virtualFile.targetPath
+			if !filepath.IsAbs(targetPath) {
+				// Join the parent path with the targetPath to get the real path
+				targetPath = filepath.Join(nodePath[:currentPathIndex], targetPath)
+			}
+			cursor, err = rootNode.getNode(targetPath, depth+1)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		currentPathIndex += len(segment) + 1
 	}
-	return cursor
+
+	return cursor, nil
 }
 
 // Get retrieves the value at the given path. If no node exists at the given path, nil is returned.
 // If there is a symlink node along the path, then a symlink directory has been found. In order to
 // resolve it, we follow the symlink and
-func (rootNode *RootNode) Get(p string) *virtualFile {
-	if pathNode := rootNode.getNode(p); pathNode != nil {
-		return pathNode.virtualFile
+func (rootNode *RootNode) Get(p string) (*virtualFile, error) {
+	pathNode, err := rootNode.getNode(p, 0)
+	if err != nil {
+		return nil, err
 	}
 
-	symlinkNode := rootNode.getFirstSymlinkNode(p)
-	if symlinkNode == nil || symlinkNode.virtualFile == nil {
-		return nil
+	if pathNode.virtualFile == nil {
+		return nil, fs.ErrNotExist
 	}
 
-	targetPath := strings.Replace(p, symlinkNode.virtualFile.virtualPath, symlinkNode.virtualFile.targetPath, 1)
-	if targetNode := rootNode.getNode(targetPath); targetNode != nil {
-		return targetNode.virtualFile
-	}
+	return pathNode.virtualFile, nil
+	//symlinkNode := rootNode.getFirstSymlinkNode(p)
+	//if symlinkNode == nil || symlinkNode.virtualFile == nil {
+	//	return nil
+	//}
 
-	return nil
+	//targetPath := strings.Replace(p, symlinkNode.virtualFile.virtualPath, symlinkNode.virtualFile.targetPath, 1)
+	//if targetNode := rootNode.getNode(targetPath); targetNode != nil {
+	//	return targetNode.virtualFile
+	//}
+
+	//return nil
 }
 
 // GetChildren retrieves all the direct children of the given path.
-func (rootNode *RootNode) GetChildren(path string) []*virtualFile {
-	pathNode := rootNode.getNode(path)
+func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
+	pathNode, err := rootNode.getNode(path, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	if pathNode == nil {
-		return nil
+		// This should not happen, if pathNode is nil, there should be an error
+		panic("pathNode is nil while error is nil")
+		return nil, nil
 	}
 
 	children := []*virtualFile{}
@@ -197,7 +231,7 @@ func (rootNode *RootNode) GetChildren(path string) []*virtualFile {
 		}
 	}
 
-	return children
+	return children, nil
 }
 
 // Walk walks through all elements of this tree depths first, calling fn at every node.
