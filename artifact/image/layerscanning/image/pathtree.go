@@ -116,7 +116,6 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 	}
 
 	if depth > rootNode.MaxSymlinkDepth {
-		log.Warnf("symlink depth exceeded")
 		return nil, ErrSymlinkDepthExceeded
 	}
 
