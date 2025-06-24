@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-cpy/cpy"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -36,8 +35,8 @@ func TestRun(t *testing.T) {
 		Packages: []*extractor.Package{
 			{Name: "package1", Version: "1.0"},
 		},
-		Findings: []*detector.Finding{
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}}},
+		GenericFindings: []*inventory.GenericFinding{
+			{Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}}},
 		},
 	}
 	inventory2 := &inventory.Inventory{
@@ -45,9 +44,15 @@ func TestRun(t *testing.T) {
 			{Name: "package2", Version: "2.0"},
 			{Name: "package3", Version: "3.0"},
 		},
-		Findings: []*detector.Finding{
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}}},
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-67890"}, Recommendation: "do something"}, Extra: "extra info"},
+		GenericFindings: []*inventory.GenericFinding{
+			{Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}}},
+			{
+				Adv: &inventory.GenericFindingAdvisory{
+					ID:             &inventory.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-67890"},
+					Recommendation: "do something",
+				},
+				Target: &inventory.GenericFindingTargetDetails{Extra: "extra info"},
+			},
 		},
 	}
 	inventory3 := &inventory.Inventory{
@@ -56,10 +61,16 @@ func TestRun(t *testing.T) {
 			{Name: "package3", Version: "3.0"},
 			{Name: "package4", Version: "4.0"},
 		},
-		Findings: []*detector.Finding{
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}, Recommendation: "do something"}, Extra: "extra info"},
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-67890"}, Recommendation: "do something else"}, Extra: "extra info"},
-			{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Publisher: "GHSA", Reference: "GHSA-2024-45678"}, Recommendation: "none"}},
+		GenericFindings: []*inventory.GenericFinding{
+			{
+				Adv:    &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-12345"}, Recommendation: "do something"},
+				Target: &inventory.GenericFindingTargetDetails{Extra: "extra info"},
+			},
+			{
+				Adv:    &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Publisher: "CVE", Reference: "CVE-2024-67890"}, Recommendation: "do something else"},
+				Target: &inventory.GenericFindingTargetDetails{Extra: "extra info"},
+			},
+			{Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Publisher: "GHSA", Reference: "GHSA-2024-45678"}, Recommendation: "none"}},
 		},
 	}
 

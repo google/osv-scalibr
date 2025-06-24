@@ -28,7 +28,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
@@ -1019,28 +1018,21 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 						purlPythonPackageWithLayerDetails,
 						purlHomebrewPackage,
 					},
-					Findings: []*detector.Finding{
+					GenericFindings: []*inventory.GenericFinding{
 						{
-							Adv: &detector.Advisory{
-								ID: &detector.AdvisoryID{
+							Adv: &inventory.GenericFindingAdvisory{
+								ID: &inventory.AdvisoryID{
 									Publisher: "CVE",
 									Reference: "CVE-1234",
 								},
-								Type:           detector.TypeVulnerability,
 								Title:          "Title",
 								Description:    "Description",
 								Recommendation: "Recommendation",
-								Sev: &detector.Severity{
-									Severity: detector.SeverityMedium,
-									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-								},
+								Sev:            inventory.SeverityMedium,
 							},
-							Target: &detector.TargetDetails{
-								Location: []string{"/file2"},
-								Package:  purlDPKGPackage,
+							Target: &inventory.GenericFindingTargetDetails{
+								Extra: "extra details",
 							},
-							Extra: "extra details",
 						},
 					},
 				},
@@ -1075,28 +1067,21 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 						purlPythonPackageWithLayerDetailsProto,
 						purlHomebrewPackageProto,
 					},
-					Findings: []*spb.Finding{
+					GenericFindings: []*spb.GenericFinding{
 						{
-							Adv: &spb.Advisory{
+							Adv: &spb.GenericFindingAdvisory{
 								Id: &spb.AdvisoryId{
 									Publisher: "CVE",
 									Reference: "CVE-1234",
 								},
-								Type:           spb.Advisory_VULNERABILITY,
 								Title:          "Title",
 								Description:    "Description",
 								Recommendation: "Recommendation",
-								Sev: &spb.Severity{
-									Severity: spb.Severity_MEDIUM,
-									CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-									CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-								},
+								Sev:            spb.SeverityEnum_MEDIUM,
 							},
-							Target: &spb.TargetDetails{
-								Location: []string{"/file2"},
-								Package:  purlDPKGPackageProto,
+							Target: &spb.GenericFindingTargetDetails{
+								Extra: "extra details",
 							},
-							Extra: "extra details",
 						},
 					},
 				},
@@ -1133,8 +1118,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlRPMPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{purlRPMPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
@@ -1170,8 +1155,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlPACMANPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{purlPACMANPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
@@ -1207,8 +1192,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlPORTAGEPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{purlPORTAGEPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
@@ -1244,8 +1229,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlNixPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{purlNixPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
@@ -1281,8 +1266,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlHomebrewPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{purlHomebrewPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "linux"},
@@ -1318,8 +1303,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{containerdPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{containerdPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
@@ -1357,8 +1342,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{containerdRuntimePackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{containerdRuntimePackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			// TODO(b/349138656): Remove windows from this exclusion when containerd is supported
@@ -1396,8 +1381,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{dockerPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{dockerPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 		},
@@ -1432,96 +1417,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					},
 				},
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{podmanPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{podmanPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 			excludeForOS: []string{"windows", "darwin"},
-		},
-		{
-			desc: "no package target, still works",
-			res: &scalibr.ScanResult{
-				Version:   "1.0.0",
-				StartTime: startTime,
-				EndTime:   endTime,
-				Status:    success,
-				PluginStatus: []*plugin.Status{
-					{
-						Name:    "ext",
-						Version: 2,
-						Status:  success,
-					},
-					{
-						Name:    "det",
-						Version: 3,
-						Status:  success,
-					},
-				},
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
-					Findings: []*detector.Finding{
-						{
-							Adv: &detector.Advisory{
-								ID: &detector.AdvisoryID{
-									Publisher: "CVE",
-									Reference: "CVE-1234",
-								},
-								Type:           detector.TypeVulnerability,
-								Title:          "Title",
-								Description:    "Description",
-								Recommendation: "Recommendation",
-								Sev: &detector.Severity{
-									Severity: detector.SeverityMedium,
-									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-								},
-							},
-							Extra: "extra details",
-						},
-					},
-				},
-			},
-			want: &spb.ScanResult{
-				Version:   "1.0.0",
-				StartTime: timestamppb.New(startTime),
-				EndTime:   timestamppb.New(endTime),
-				Status:    successProto,
-				PluginStatus: []*spb.PluginStatus{
-					{
-						Name:    "ext",
-						Version: 2,
-						Status:  successProto,
-					},
-					{
-						Name:    "det",
-						Version: 3,
-						Status:  successProto,
-					},
-				},
-				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{purlDPKGPackageProto, purlPythonPackageProto, purlJavascriptPackageProto, cdxPackageProto},
-					Findings: []*spb.Finding{
-						{
-							Adv: &spb.Advisory{
-								Id: &spb.AdvisoryId{
-									Publisher: "CVE",
-									Reference: "CVE-1234",
-								},
-								Type:           spb.Advisory_VULNERABILITY,
-								Title:          "Title",
-								Description:    "Description",
-								Recommendation: "Recommendation",
-								Sev: &spb.Severity{
-									Severity: spb.Severity_MEDIUM,
-									CvssV2:   &spb.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-									CvssV3:   &spb.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-								},
-							},
-							Extra: "extra details",
-						},
-					},
-				},
-			},
 		},
 		{
 			desc: "advisory without id, should error",
@@ -1544,20 +1444,17 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
-					Findings: []*detector.Finding{
+					GenericFindings: []*inventory.GenericFinding{
 						{
-							Adv: &detector.Advisory{
-								Type:           detector.TypeVulnerability,
+							Adv: &inventory.GenericFindingAdvisory{
 								Title:          "Title",
 								Description:    "Description",
 								Recommendation: "Recommendation",
-								Sev: &detector.Severity{
-									Severity: detector.SeverityMedium,
-									CVSSV2:   &detector.CVSS{BaseScore: 1.0, TemporalScore: 2.0, EnvironmentalScore: 3.0},
-									CVSSV3:   &detector.CVSS{BaseScore: 4.0, TemporalScore: 5.0, EnvironmentalScore: 6.0},
-								},
+								Sev:            inventory.SeverityMedium,
 							},
-							Extra: "extra details",
+							Target: &inventory.GenericFindingTargetDetails{
+								Extra: "extra details",
+							},
 						},
 					},
 				},
@@ -1585,9 +1482,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{purlDPKGPackage, purlPythonPackage, purlJavascriptPackage, cdxPackage},
-					Findings: []*detector.Finding{
+					GenericFindings: []*inventory.GenericFinding{
 						{
-							Extra: "extra details",
+							Target: &inventory.GenericFindingTargetDetails{
+								Extra: "extra details",
+							},
 						},
 					},
 				},
@@ -1651,8 +1550,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				EndTime:   timestamppb.New(endTime),
 				Status:    successProto,
 				Inventory: &spb.Inventory{
-					Packages: []*spb.Package{mavenPackageProto},
-					Findings: []*spb.Finding{},
+					Packages:        []*spb.Package{mavenPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
 				},
 			},
 		},
@@ -1723,12 +1622,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					//nolint:staticcheck
 					p.ExtractorDeprecated = ""
 				}
-				for _, f := range got.Inventory.Findings {
-					if f.Target != nil && f.Target.Package != nil {
-						//nolint:staticcheck
-						f.Target.Package.ExtractorDeprecated = ""
-					}
-				}
 			}
 
 			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
@@ -1741,11 +1634,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 
 			// TODO - b/421456154: test conversion of remaining types.
 			invProto := protobuf.Clone(got.GetInventory()).(*spb.Inventory)
-			invProto.Findings = nil
+			invProto.GenericFindings = nil
 			invProto.Secrets = nil
 
 			wantInv := deepcopy.Copy(tc.res.Inventory).(inventory.Inventory)
-			wantInv.Findings = nil
+			wantInv.GenericFindings = nil
 			wantInv.Secrets = nil
 
 			gotInv := proto.InventoryToStruct(invProto)

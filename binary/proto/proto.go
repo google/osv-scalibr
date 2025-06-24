@@ -25,7 +25,6 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -230,7 +229,7 @@ func ScanResultToProto(r *result.ScanResult) (*spb.ScanResult, error) {
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.
 		InventoriesDeprecated: inventory.GetPackages(),
-		FindingsDeprecated:    inventory.GetFindings(),
+		FindingsDeprecated:    inventory.GetGenericFindings(),
 		Inventory:             inventory,
 	}, nil
 }
@@ -243,13 +242,15 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 		packages = append(packages, p)
 	}
 
-	findings := make([]*spb.Finding, 0, len(inv.Findings))
-	for _, f := range inv.Findings {
-		p, err := findingToProto(f)
+	// TODO(b/400910349): Add PackageVulns to the proto too.
+
+	genericFindings := make([]*spb.GenericFinding, 0, len(inv.GenericFindings))
+	for _, f := range inv.GenericFindings {
+		p, err := genericFindingToProto(f)
 		if err != nil {
 			return nil, err
 		}
-		findings = append(findings, p)
+		genericFindings = append(genericFindings, p)
 	}
 
 	secrets := make([]*spb.Secret, 0, len(inv.Secrets))
@@ -262,9 +263,9 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 	}
 
 	return &spb.Inventory{
-		Packages: packages,
-		Findings: findings,
-		Secrets:  secrets,
+		Packages:        packages,
+		GenericFindings: genericFindings,
+		Secrets:         secrets,
 	}, nil
 }
 
@@ -1218,79 +1219,48 @@ var ErrAdvisoryMissing = errors.New("advisory missing in finding")
 // ErrAdvisoryIDMissing will be returned if the Advisory ID is not set on a finding.
 var ErrAdvisoryIDMissing = errors.New("advisory ID missing in finding")
 
-func findingToProto(f *detector.Finding) (*spb.Finding, error) {
+func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, error) {
 	if f.Adv == nil {
 		return nil, ErrAdvisoryMissing
 	}
-	var target *spb.TargetDetails
+	var target *spb.GenericFindingTargetDetails
 	if f.Target != nil {
-		p := packageToProto(f.Target.Package)
-		target = &spb.TargetDetails{
-			Location: f.Target.Location,
-			Package:  p,
+		target = &spb.GenericFindingTargetDetails{
+			Extra: f.Target.Extra,
 		}
 	}
 	if f.Adv.ID == nil {
 		return nil, ErrAdvisoryIDMissing
 	}
-	return &spb.Finding{
-		Adv: &spb.Advisory{
+	return &spb.GenericFinding{
+		Adv: &spb.GenericFindingAdvisory{
 			Id: &spb.AdvisoryId{
 				Publisher: f.Adv.ID.Publisher,
 				Reference: f.Adv.ID.Reference,
 			},
-			Type:           typeEnumToProto(f.Adv.Type),
 			Title:          f.Adv.Title,
 			Description:    f.Adv.Description,
 			Recommendation: f.Adv.Recommendation,
-			Sev:            severityToProto(f.Adv.Sev),
+			Sev:            severityEnumToProto(f.Adv.Sev),
 		},
 		Target: target,
-		Extra:  f.Extra,
 	}, nil
 }
 
-func typeEnumToProto(e detector.TypeEnum) spb.Advisory_TypeEnum {
-	switch e {
-	case detector.TypeVulnerability:
-		return spb.Advisory_VULNERABILITY
-	case detector.TypeCISFinding:
-		return spb.Advisory_CIS_FINDING
+func severityEnumToProto(severity inventory.SeverityEnum) spb.SeverityEnum {
+	switch severity {
+	case inventory.SeverityMinimal:
+		return spb.SeverityEnum_MINIMAL
+	case inventory.SeverityLow:
+		return spb.SeverityEnum_LOW
+	case inventory.SeverityMedium:
+		return spb.SeverityEnum_MEDIUM
+	case inventory.SeverityHigh:
+		return spb.SeverityEnum_HIGH
+	case inventory.SeverityCritical:
+		return spb.SeverityEnum_CRITICAL
 	default:
-		return spb.Advisory_UNKNOWN
-	}
-}
-
-func severityToProto(s *detector.Severity) *spb.Severity {
-	r := &spb.Severity{}
-	switch s.Severity {
-	case detector.SeverityMinimal:
-		r.Severity = spb.Severity_MINIMAL
-	case detector.SeverityLow:
-		r.Severity = spb.Severity_LOW
-	case detector.SeverityMedium:
-		r.Severity = spb.Severity_MEDIUM
-	case detector.SeverityHigh:
-		r.Severity = spb.Severity_HIGH
-	case detector.SeverityCritical:
-		r.Severity = spb.Severity_CRITICAL
-	default:
-		r.Severity = spb.Severity_UNSPECIFIED
-	}
-	if s.CVSSV2 != nil {
-		r.CvssV2 = cvssToProto(s.CVSSV2)
-	}
-	if s.CVSSV3 != nil {
-		r.CvssV3 = cvssToProto(s.CVSSV3)
-	}
-	return r
-}
-
-func cvssToProto(c *detector.CVSS) *spb.CVSS {
-	return &spb.CVSS{
-		BaseScore:          c.BaseScore,
-		TemporalScore:      c.TemporalScore,
-		EnvironmentalScore: c.EnvironmentalScore,
+		return spb.SeverityEnum_SEVERITY_UNSPECIFIED
 	}
 }
 

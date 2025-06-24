@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -58,24 +59,24 @@ func (Detector) RequiredExtractors() []string { return []string{} }
 func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSUnix} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return d.ScanFS(ctx, scanRoot.FS, px)
 }
 
 // ScanFS starts the scan from a pseudo-filesystem.
-func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	f, err := fs.Open("etc/passwd")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// File doesn't exist, check not applicable.
-			return nil, nil
+			return inventory.Finding{}, nil
 		}
-		return nil, err
+		return inventory.Finding{}, err
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	problems := ""
@@ -85,7 +86,7 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIn
 
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
-		return nil, errors.New("failed to get file ownership info")
+		return inventory.Finding{}, errors.New("failed to get file ownership info")
 	}
 
 	if stat.Uid != 0 {
@@ -96,7 +97,7 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIn
 	}
 
 	if len(problems) == 0 {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	title := "Ensure permissions on /etc/passwd are configured"
 	description := "The /etc/passwd file contains user account information that " +
@@ -105,19 +106,17 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIn
 	recommendation := "Run the following command to set permissions on /etc/passwd :\n" +
 		"# chown root:root /etc/passwd\n" +
 		"# chmod 644 /etc/passwd"
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CIS",
 				Reference: "etc-passwd-permissions",
 			},
-			Type:           detector.TypeCISFinding,
 			Title:          title,
 			Description:    description,
 			Recommendation: recommendation,
-			Sev:            &detector.Severity{Severity: detector.SeverityMinimal},
+			Sev:            inventory.SeverityMinimal,
 		},
-		Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
-		Extra:  problems,
-	}}, nil
+		Target: &inventory.GenericFindingTargetDetails{Extra: "/etc/passwd: " + problems},
+	}}}, nil
 }

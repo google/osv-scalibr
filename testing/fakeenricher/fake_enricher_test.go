@@ -22,13 +22,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/testing/fakeenricher"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestName(t *testing.T) {
@@ -155,9 +155,14 @@ func TestEnrich(t *testing.T) {
 			Name:    "package1",
 			Version: "1.0",
 		}},
-		Findings: []*detector.Finding{{
-			Adv: &detector.Advisory{
-				ID: &detector.AdvisoryID{
+		PackageVulns: []*inventory.PackageVuln{
+			{
+				Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+			},
+		},
+		GenericFindings: []*inventory.GenericFinding{{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
 					Publisher: "CVE",
 					Reference: "CVE-2024-12345",
 				},
@@ -173,22 +178,27 @@ func TestEnrich(t *testing.T) {
 			Name:    "package3",
 			Version: "3.0",
 		}},
-		Findings: []*detector.Finding{{
-			Adv: &detector.Advisory{
-				ID: &detector.AdvisoryID{
+		PackageVulns: []*inventory.PackageVuln{{
+			Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+		}},
+		GenericFindings: []*inventory.GenericFinding{{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
 					Publisher: "CVE",
 					Reference: "CVE-2024-12345",
 				},
 			},
 		}, {
-			Adv: &detector.Advisory{
-				ID: &detector.AdvisoryID{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
 					Publisher: "CVE",
 					Reference: "CVE-2024-67890",
 				},
 				Recommendation: "do something",
 			},
-			Extra: "extra info",
+			Target: &inventory.GenericFindingTargetDetails{
+				Extra: "extra info",
+			},
 		}},
 	}
 

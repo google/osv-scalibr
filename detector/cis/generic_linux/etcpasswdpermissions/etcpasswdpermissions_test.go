@@ -23,10 +23,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 )
 
@@ -62,23 +62,22 @@ func TestScan(t *testing.T) {
 	wantRec := "Run the following command to set permissions on /etc/passwd :\n" +
 		"# chown root:root /etc/passwd\n" +
 		"# chmod 644 /etc/passwd"
-	wantAdv := &detector.Advisory{
-		ID: &detector.AdvisoryID{
+	wantAdv := &inventory.GenericFindingAdvisory{
+		ID: &inventory.AdvisoryID{
 			Publisher: "CIS",
 			Reference: "etc-passwd-permissions",
 		},
-		Type:           detector.TypeCISFinding,
 		Title:          wantTitle,
 		Description:    wantDesc,
 		Recommendation: wantRec,
-		Sev:            &detector.Severity{Severity: detector.SeverityMinimal},
+		Sev:            inventory.SeverityMinimal,
 	}
 
 	px, _ := packageindex.New([]*extractor.Package{})
 	testCases := []struct {
 		desc         string
 		fsys         scalibrfs.FS
-		wantFindings []*detector.Finding
+		wantFindings []*inventory.GenericFinding
 		wantErr      error
 	}{
 		{
@@ -94,28 +93,31 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Permissions incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 0},
-			wantFindings: []*detector.Finding{{
-				Adv:    wantAdv,
-				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
-				Extra:  "file permissions 777, expected 644\n",
+			wantFindings: []*inventory.GenericFinding{{
+				Adv: wantAdv,
+				Target: &inventory.GenericFindingTargetDetails{
+					Extra: "/etc/passwd: file permissions 777, expected 644\n",
+				},
 			}},
 		},
 		{
 			desc: "Permissions and uid incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 10, gid: 0},
-			wantFindings: []*detector.Finding{{
-				Adv:    wantAdv,
-				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
-				Extra:  "file permissions 777, expected 644\nfile owner 10, expected 0/root\n",
+			wantFindings: []*inventory.GenericFinding{{
+				Adv: wantAdv,
+				Target: &inventory.GenericFindingTargetDetails{
+					Extra: "/etc/passwd: file permissions 777, expected 644\nfile owner 10, expected 0/root\n",
+				},
 			}},
 		},
 		{
 			desc: "Permissions and gid incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 10},
-			wantFindings: []*detector.Finding{{
-				Adv:    wantAdv,
-				Target: &detector.TargetDetails{Location: []string{"/etc/passwd"}},
-				Extra:  "file permissions 777, expected 644\nfile group 10, expected 0/root\n",
+			wantFindings: []*inventory.GenericFinding{{
+				Adv: wantAdv,
+				Target: &inventory.GenericFindingTargetDetails{
+					Extra: "/etc/passwd: file permissions 777, expected 644\nfile group 10, expected 0/root\n",
+				},
 			}},
 		},
 	}
@@ -123,7 +125,8 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			det := etcpasswdpermissions.Detector{}
-			findings, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
+			got, err := det.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
+			findings := got.GenericFindings
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}

@@ -35,9 +35,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -71,25 +73,25 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan scans for the vulnerability
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	rayVersion, pkg := findRayPackage(px)
 	if rayVersion == "" {
 		log.Debugf("No Ray version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	log.Infof("Ray version found")
 
 	// Check if Ray version is vulnerable (< 2.8.1)
 	if !isVulnerableVersion(rayVersion) {
 		log.Infof("Ray version %q is not vulnerable", rayVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	log.Infof("Found potentially vulnerable Ray version %v", rayVersion)
 
 	// Check for the "Ray Dashboard" string in the HTTP response
 	if !isDashboardPresent(ctx) {
 		log.Infof("Ray Dashboard not found in HTTP response")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	// Attempt the curl request
 	filepath := attemptExploit(ctx)
@@ -97,25 +99,23 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		log.Infof("Vulnerability exploited successfully")
 	} else {
 		log.Infof("Exploit attempt failed")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2023-6019",
+
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2023-6019",
+			Summary: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
+			Details: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
+			Affected: inventory.PackageToAffected(pkg, "2.8.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: map[string]any{
+				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2023-6019",
-			Description:    "CVE-2023-6019: Ray Dashboard Remote Code Execution",
-			Recommendation: "Update Ray to version 2.8.1 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
-		Target: &detector.TargetDetails{
-			Package: pkg,
-		},
-		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-	}}, nil
+	}}}, nil
 }
 
 // Find the Ray package and its version
