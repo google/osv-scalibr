@@ -132,52 +132,6 @@ type FS struct {
 	tree *RootNode
 }
 
-// resolveSymlink resolves a symlink by following the target path. It returns the resolved virtual
-// file or an error if the symlink depth is exceeded or a cycle is found. An ErrSymlinkDepthExceeded
-// error if the symlink depth is exceeded or an ErrSymlinkCycle error if a cycle is
-// found. Whichever error is encountered first is returned. The cycle detection leverages Floyd's
-// tortoise and hare algorithm, which utilizes a slow and fast pointer.
-func (chainfs FS) resolveSymlink(node *virtualFile, depth int) (*virtualFile, error) {
-	// slowNode is used to keep track of the slow moving node.
-	slowNode := node
-	advanceSlowNode := false
-	initialSymlinkPath := node.virtualPath
-
-	var err error
-	for {
-		if depth < 0 {
-			return nil, ErrSymlinkDepthExceeded
-		}
-
-		isSymlink := node.mode&fs.ModeSymlink != 0
-		if !isSymlink {
-			return node, nil
-		}
-
-		// Move on to the next fileNode.
-		node, err = chainfs.getVirtualFile(node.targetPath)
-		if err != nil {
-			return nil, err
-		}
-
-		// If the slowNode is the same as the current node, then a cycle is found since the node caught
-		// up to the slowNode.
-		if node == slowNode {
-			return nil, fmt.Errorf("%w, initial symlink: %s", ErrSymlinkCycle, initialSymlinkPath)
-		}
-
-		if advanceSlowNode {
-			slowNode, err = chainfs.getVirtualFile(slowNode.targetPath)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		advanceSlowNode = !advanceSlowNode
-		depth--
-	}
-}
-
 // Open opens a file from the virtual filesystem.
 func (chainfs FS) Open(name string) (fs.File, error) {
 	vf, err := chainfs.getVirtualFile(name)
