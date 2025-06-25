@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/log"
@@ -134,9 +134,9 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 		// Check if the next cursor is a symlink, if so resolve it before continuing
 		if cursor.virtualFile != nil && cursor.virtualFile.targetPath != "" {
 			targetPath := cursor.virtualFile.targetPath
-			if !filepath.IsAbs(targetPath) {
+			if !path.IsAbs(targetPath) {
 				// Join the parent path with the targetPath to get the real path
-				targetPath = filepath.Join(divider+nodePath[:currentPathIndex], targetPath)
+				targetPath = path.Join(divider+nodePath[:currentPathIndex], targetPath)
 			}
 			cursor, err = rootNode.getNode(targetPath, depth+1)
 			if err != nil {
