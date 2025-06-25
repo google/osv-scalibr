@@ -288,7 +288,7 @@ func TestChainFSOpen(t *testing.T) {
 		{
 			name:    "open file that is a symlink to a file that is symlinked under another symlink directory",
 			chainfs: populatedChainFS,
-			path:    "/symlink-into-nested",
+			path:    "/symlink-into-nested-dir-symlink",
 			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
 			wantVirtualFile: &virtualFile{
 				virtualPath: "/dir2/bar",
@@ -477,6 +477,12 @@ func TestChainFSReadDir(t *testing.T) {
 					targetPath:  "/symlink3",
 				},
 				{
+					virtualPath: "/symlink-into-nested-dir-symlink",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-to-dir-nested/bar",
+				},
+				{
 					virtualPath: "/symlink-relative-1",
 					isWhiteout:  false,
 					mode:        fs.ModeSymlink,
@@ -499,6 +505,12 @@ func TestChainFSReadDir(t *testing.T) {
 					isWhiteout:  false,
 					mode:        fs.ModeSymlink,
 					targetPath:  "/symlink-cycle1",
+				},
+				{
+					virtualPath: "/symlink-to-dir-nested",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-to-dir",
 				},
 				{
 					virtualPath: "/symlink-to-nonexistent-file",
@@ -715,7 +727,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-to-dir",
 		},
-		"/symlink-into-nested": &virtualFile{
+		"/symlink-into-nested-dir-symlink": &virtualFile{
 			virtualPath: "/symlink-into-nested-dir-symlink",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
