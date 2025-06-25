@@ -94,6 +94,8 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 				continue
 			}
 			v = info.Version
+		default:
+			continue
 		}
 		if file.Yanked.Value {
 			// If a file is yanked, assume this version is yanked.
@@ -144,6 +146,8 @@ func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.Versio
 		metadata, err = pypi.SdistMetadata(ctx, file.Name, bytes.NewReader(data))
 	case ".whl":
 		metadata, err = pypi.WheelMetadata(ctx, bytes.NewReader(data), int64(len(data)))
+	default:
+		return nil, fmt.Errorf("unexpected file extension: %s", ext)
 	}
 	if err != nil {
 		return nil, err
@@ -198,6 +202,8 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, s
 			if info.Version != vk.Version {
 				continue
 			}
+		default:
+			continue
 		}
 		if skipYanked && file.Yanked.Value {
 			continue
