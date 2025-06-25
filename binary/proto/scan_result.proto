@@ -185,6 +185,15 @@ message VulnIdentifiers {
   repeated string identifiers = 1;
 }
 
+// FindingExploitabilitySignal is used to indicate that a finding is not
+// exploitable.
+message FindingExploitabilitySignal {
+  // The name of the plugin (e.g. Annotator) that added this signal.
+  string plugin = 1;
+  // Reason for exclusion.
+  VexJustification justification = 2;
+}
+
 // Vuln exclusion reasons - Mirrors the format from the official VEX
 // documentation
 // (https://www.cisa.gov/sites/default/files/publications/VEX_Status_Justification_Jun22.pdf)
@@ -236,6 +245,8 @@ message GenericFinding {
   GenericFindingTargetDetails target = 2;
   // The plugins (e.g. Detectors, Enrichers) that found this vuln.
   repeated string plugins = 4;
+  // Signals that indicate this finding is not exploitable.
+  repeated FindingExploitabilitySignal exploitability_signals = 5;
 }
 
 // Describes a security finding and how to remediate it. It should not

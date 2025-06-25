@@ -30,6 +30,14 @@ type PackageExploitabilitySignal struct {
 	MatchesAllVulns bool
 }
 
+// FindingExploitabilitySignal is used to indicate that a finding is not exploitable.
+type FindingExploitabilitySignal struct {
+	// The name of the plugin (e.g. Annotator) that added this signal.
+	Plugin string
+	// Reason for exclusion.
+	Justification Justification
+}
+
 // Justification enumerates various vuln exclusion reasons.
 // It mirrors the format from the official VEX documentation
 // (https://www.cisa.gov/sites/default/files/publications/VEX_Status_Justification_Jun22.pdf)

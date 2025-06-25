@@ -1033,6 +1033,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 							Target: &inventory.GenericFindingTargetDetails{
 								Extra: "extra details",
 							},
+							Plugins: []string{"cve/cve-1234-finder"},
+							ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{
+								Plugin:        dpkg.Name,
+								Justification: vex.ComponentNotPresent,
+							}},
 						},
 					},
 				},
@@ -1082,6 +1087,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 							Target: &spb.GenericFindingTargetDetails{
 								Extra: "extra details",
 							},
+							Plugins: []string{"cve/cve-1234-finder"},
+							ExploitabilitySignals: []*spb.FindingExploitabilitySignal{{
+								Plugin:        dpkg.Name,
+								Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
+							}},
 						},
 					},
 				},

@@ -73,8 +73,8 @@ import (
 )
 
 var (
-	// structToProtoPackageVEX is a map of struct package VEXes to their corresponding proto values.
-	structToProtoPackageVEX = map[vex.Justification]spb.VexJustification{
+	// structToProtoVEX is a map of struct VEX justifications to their corresponding proto values.
+	structToProtoVEX = map[vex.Justification]spb.VexJustification{
 		vex.Unspecified:                                 spb.VexJustification_VEX_JUSTIFICATION_UNSPECIFIED,
 		vex.ComponentNotPresent:                         spb.VexJustification_COMPONENT_NOT_PRESENT,
 		vex.VulnerableCodeNotPresent:                    spb.VexJustification_VULNERABLE_CODE_NOT_PRESENT,
@@ -82,14 +82,14 @@ var (
 		vex.VulnerableCodeCannotBeControlledByAdversary: spb.VexJustification_VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY,
 		vex.InlineMitigationAlreadyExists:               spb.VexJustification_INLINE_MITIGATION_ALREADY_EXISTS,
 	}
-	// protoToStructPackageVEX is a map of protopackage VEXes to their corresponding struct values.
-	// It is initialized from structToProtoPackageVEX during runtime to ensure both maps are in sync.
-	protoToStructPackageVEX = func() map[spb.VexJustification]vex.Justification {
+	// protoToStructVEX is a map of protopackage VEXes to their corresponding struct values.
+	// It is initialized from structToProtoVEX during runtime to ensure both maps are in sync.
+	protoToStructVEX = func() map[spb.VexJustification]vex.Justification {
 		m := make(map[spb.VexJustification]vex.Justification)
-		for k, v := range structToProtoPackageVEX {
+		for k, v := range structToProtoVEX {
 			m[v] = k
 		}
-		if len(m) != len(structToProtoPackageVEX) {
+		if len(m) != len(structToProtoVEX) {
 			panic("protoToStructAnnotations does not contain all values from structToProtoAnnotations")
 		}
 		return m
@@ -1128,7 +1128,7 @@ func packageVEXToProto(vs []*vex.PackageExploitabilitySignal) []*spb.PackageExpl
 	for _, v := range vs {
 		p := &spb.PackageExploitabilitySignal{
 			Plugin:        v.Plugin,
-			Justification: structToProtoPackageVEX[v.Justification],
+			Justification: structToProtoVEX[v.Justification],
 		}
 		if v.MatchesAllVulns {
 			p.VulnFilter = &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true}
@@ -1147,7 +1147,7 @@ func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExp
 	for _, p := range ps {
 		v := &vex.PackageExploitabilitySignal{
 			Plugin:        p.Plugin,
-			Justification: protoToStructPackageVEX[p.Justification],
+			Justification: protoToStructVEX[p.Justification],
 		}
 		if ids := p.GetVulnIdentifiers(); ids != nil {
 			v.VulnIdentifiers = ids.Identifiers
@@ -1157,6 +1157,17 @@ func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExp
 		vs = append(vs, v)
 	}
 	return vs
+}
+
+func findingVEXToProto(vs []*vex.FindingExploitabilitySignal) []*spb.FindingExploitabilitySignal {
+	var ps []*spb.FindingExploitabilitySignal
+	for _, v := range vs {
+		ps = append(ps, &spb.FindingExploitabilitySignal{
+			Plugin:        v.Plugin,
+			Justification: structToProtoVEX[v.Justification],
+		})
+	}
+	return ps
 }
 
 func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
@@ -1243,7 +1254,9 @@ func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, er
 			Recommendation: f.Adv.Recommendation,
 			Sev:            severityEnumToProto(f.Adv.Sev),
 		},
-		Target: target,
+		Target:                target,
+		Plugins:               f.Plugins,
+		ExploitabilitySignals: findingVEXToProto(f.ExploitabilitySignals),
 	}, nil
 }
 

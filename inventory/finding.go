@@ -16,6 +16,7 @@ package inventory
 
 import (
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -38,6 +39,8 @@ type PackageVuln struct {
 	osvschema.Vulnerability
 	// The plugins (e.g. Detectors, Enrichers) that found this vuln.
 	Plugins []string
+	// Signals that indicate this finding is not exploitable.
+	ExploitabilitySignals []*vex.FindingExploitabilitySignal
 }
 
 // GenericFinding is used to describe generic security findings not associated with any
@@ -51,6 +54,8 @@ type GenericFinding struct {
 	Target *GenericFindingTargetDetails
 	// The plugins (e.g. Detectors, Enrichers) that found this vuln.
 	Plugins []string
+	// Signals that indicate this finding is not exploitable.
+	ExploitabilitySignals []*vex.FindingExploitabilitySignal
 }
 
 // GenericFindingAdvisory describes a security finding and how to remediate it. It should not

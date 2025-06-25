@@ -314,7 +314,7 @@ func (x SecretStatus_SecretStatusEnum) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SecretStatus_SecretStatusEnum.Descriptor instead.
 func (SecretStatus_SecretStatusEnum) EnumDescriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{49, 0}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{50, 0}
 }
 
 // The results of a scan incl. scan status and artifacts found.
@@ -1531,6 +1531,62 @@ func (x *VulnIdentifiers) GetIdentifiers() []string {
 	return nil
 }
 
+// FindingExploitabilitySignal is used to indicate that a finding is not
+// exploitable.
+type FindingExploitabilitySignal struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the plugin (e.g. Annotator) that added this signal.
+	Plugin string `protobuf:"bytes,1,opt,name=plugin,proto3" json:"plugin,omitempty"`
+	// Reason for exclusion.
+	Justification VexJustification `protobuf:"varint,2,opt,name=justification,proto3,enum=scalibr.VexJustification" json:"justification,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FindingExploitabilitySignal) Reset() {
+	*x = FindingExploitabilitySignal{}
+	mi := &file_proto_scan_result_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindingExploitabilitySignal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindingExploitabilitySignal) ProtoMessage() {}
+
+func (x *FindingExploitabilitySignal) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindingExploitabilitySignal.ProtoReflect.Descriptor instead.
+func (*FindingExploitabilitySignal) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *FindingExploitabilitySignal) GetPlugin() string {
+	if x != nil {
+		return x.Plugin
+	}
+	return ""
+}
+
+func (x *FindingExploitabilitySignal) GetJustification() VexJustification {
+	if x != nil {
+		return x.Justification
+	}
+	return VexJustification_VEX_JUSTIFICATION_UNSPECIFIED
+}
+
 // Package URL, see https://github.com/package-url/purl-spec
 type Purl struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1554,7 +1610,7 @@ type Purl struct {
 
 func (x *Purl) Reset() {
 	*x = Purl{}
-	mi := &file_proto_scan_result_proto_msgTypes[9]
+	mi := &file_proto_scan_result_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1566,7 +1622,7 @@ func (x *Purl) String() string {
 func (*Purl) ProtoMessage() {}
 
 func (x *Purl) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[9]
+	mi := &file_proto_scan_result_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1579,7 +1635,7 @@ func (x *Purl) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Purl.ProtoReflect.Descriptor instead.
 func (*Purl) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{9}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Purl) GetPurl() string {
@@ -1641,7 +1697,7 @@ type Qualifier struct {
 
 func (x *Qualifier) Reset() {
 	*x = Qualifier{}
-	mi := &file_proto_scan_result_proto_msgTypes[10]
+	mi := &file_proto_scan_result_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1653,7 +1709,7 @@ func (x *Qualifier) String() string {
 func (*Qualifier) ProtoMessage() {}
 
 func (x *Qualifier) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[10]
+	mi := &file_proto_scan_result_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1666,7 +1722,7 @@ func (x *Qualifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Qualifier.ProtoReflect.Descriptor instead.
 func (*Qualifier) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{10}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Qualifier) GetKey() string {
@@ -1693,14 +1749,16 @@ type GenericFinding struct {
 	// Instance-specific info such as location of the vulnerable files.
 	Target *GenericFindingTargetDetails `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	// The plugins (e.g. Detectors, Enrichers) that found this vuln.
-	Plugins       []string `protobuf:"bytes,4,rep,name=plugins,proto3" json:"plugins,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Plugins []string `protobuf:"bytes,4,rep,name=plugins,proto3" json:"plugins,omitempty"`
+	// Signals that indicate this finding is not exploitable.
+	ExploitabilitySignals []*FindingExploitabilitySignal `protobuf:"bytes,5,rep,name=exploitability_signals,json=exploitabilitySignals,proto3" json:"exploitability_signals,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *GenericFinding) Reset() {
 	*x = GenericFinding{}
-	mi := &file_proto_scan_result_proto_msgTypes[11]
+	mi := &file_proto_scan_result_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1712,7 +1770,7 @@ func (x *GenericFinding) String() string {
 func (*GenericFinding) ProtoMessage() {}
 
 func (x *GenericFinding) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[11]
+	mi := &file_proto_scan_result_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1725,7 +1783,7 @@ func (x *GenericFinding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFinding.ProtoReflect.Descriptor instead.
 func (*GenericFinding) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{11}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GenericFinding) GetAdv() *GenericFindingAdvisory {
@@ -1749,6 +1807,13 @@ func (x *GenericFinding) GetPlugins() []string {
 	return nil
 }
 
+func (x *GenericFinding) GetExploitabilitySignals() []*FindingExploitabilitySignal {
+	if x != nil {
+		return x.ExploitabilitySignals
+	}
+	return nil
+}
+
 // Describes a security finding and how to remediate it. It should not
 // contain any information specific to the target (e.g. which files were
 // found vulnerable).
@@ -1767,7 +1832,7 @@ type GenericFindingAdvisory struct {
 
 func (x *GenericFindingAdvisory) Reset() {
 	*x = GenericFindingAdvisory{}
-	mi := &file_proto_scan_result_proto_msgTypes[12]
+	mi := &file_proto_scan_result_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1779,7 +1844,7 @@ func (x *GenericFindingAdvisory) String() string {
 func (*GenericFindingAdvisory) ProtoMessage() {}
 
 func (x *GenericFindingAdvisory) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[12]
+	mi := &file_proto_scan_result_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1792,7 +1857,7 @@ func (x *GenericFindingAdvisory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFindingAdvisory.ProtoReflect.Descriptor instead.
 func (*GenericFindingAdvisory) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{12}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GenericFindingAdvisory) GetId() *AdvisoryId {
@@ -1841,7 +1906,7 @@ type AdvisoryId struct {
 
 func (x *AdvisoryId) Reset() {
 	*x = AdvisoryId{}
-	mi := &file_proto_scan_result_proto_msgTypes[13]
+	mi := &file_proto_scan_result_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1853,7 +1918,7 @@ func (x *AdvisoryId) String() string {
 func (*AdvisoryId) ProtoMessage() {}
 
 func (x *AdvisoryId) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[13]
+	mi := &file_proto_scan_result_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1866,7 +1931,7 @@ func (x *AdvisoryId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdvisoryId.ProtoReflect.Descriptor instead.
 func (*AdvisoryId) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{13}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AdvisoryId) GetPublisher() string {
@@ -1894,7 +1959,7 @@ type GenericFindingTargetDetails struct {
 
 func (x *GenericFindingTargetDetails) Reset() {
 	*x = GenericFindingTargetDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[14]
+	mi := &file_proto_scan_result_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1906,7 +1971,7 @@ func (x *GenericFindingTargetDetails) String() string {
 func (*GenericFindingTargetDetails) ProtoMessage() {}
 
 func (x *GenericFindingTargetDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[14]
+	mi := &file_proto_scan_result_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1919,7 +1984,7 @@ func (x *GenericFindingTargetDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFindingTargetDetails.ProtoReflect.Descriptor instead.
 func (*GenericFindingTargetDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{14}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GenericFindingTargetDetails) GetExtra() string {
@@ -1940,7 +2005,7 @@ type PythonPackageMetadata struct {
 
 func (x *PythonPackageMetadata) Reset() {
 	*x = PythonPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[15]
+	mi := &file_proto_scan_result_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1952,7 +2017,7 @@ func (x *PythonPackageMetadata) String() string {
 func (*PythonPackageMetadata) ProtoMessage() {}
 
 func (x *PythonPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[15]
+	mi := &file_proto_scan_result_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1965,7 +2030,7 @@ func (x *PythonPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonPackageMetadata.ProtoReflect.Descriptor instead.
 func (*PythonPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{15}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *PythonPackageMetadata) GetAuthor() string {
@@ -1994,7 +2059,7 @@ type JavascriptPackageJSONMetadata struct {
 
 func (x *JavascriptPackageJSONMetadata) Reset() {
 	*x = JavascriptPackageJSONMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[16]
+	mi := &file_proto_scan_result_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2006,7 +2071,7 @@ func (x *JavascriptPackageJSONMetadata) String() string {
 func (*JavascriptPackageJSONMetadata) ProtoMessage() {}
 
 func (x *JavascriptPackageJSONMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[16]
+	mi := &file_proto_scan_result_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2019,7 +2084,7 @@ func (x *JavascriptPackageJSONMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavascriptPackageJSONMetadata.ProtoReflect.Descriptor instead.
 func (*JavascriptPackageJSONMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{16}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *JavascriptPackageJSONMetadata) GetAuthor() string {
@@ -2059,7 +2124,7 @@ type APKPackageMetadata struct {
 
 func (x *APKPackageMetadata) Reset() {
 	*x = APKPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[17]
+	mi := &file_proto_scan_result_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2071,7 +2136,7 @@ func (x *APKPackageMetadata) String() string {
 func (*APKPackageMetadata) ProtoMessage() {}
 
 func (x *APKPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[17]
+	mi := &file_proto_scan_result_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2084,7 +2149,7 @@ func (x *APKPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APKPackageMetadata.ProtoReflect.Descriptor instead.
 func (*APKPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{17}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *APKPackageMetadata) GetPackageName() string {
@@ -2156,7 +2221,7 @@ type DPKGPackageMetadata struct {
 
 func (x *DPKGPackageMetadata) Reset() {
 	*x = DPKGPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[18]
+	mi := &file_proto_scan_result_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2168,7 +2233,7 @@ func (x *DPKGPackageMetadata) String() string {
 func (*DPKGPackageMetadata) ProtoMessage() {}
 
 func (x *DPKGPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[18]
+	mi := &file_proto_scan_result_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2181,7 +2246,7 @@ func (x *DPKGPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DPKGPackageMetadata.ProtoReflect.Descriptor instead.
 func (*DPKGPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{18}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DPKGPackageMetadata) GetPackageName() string {
@@ -2273,7 +2338,7 @@ type RPMPackageMetadata struct {
 
 func (x *RPMPackageMetadata) Reset() {
 	*x = RPMPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[19]
+	mi := &file_proto_scan_result_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2285,7 +2350,7 @@ func (x *RPMPackageMetadata) String() string {
 func (*RPMPackageMetadata) ProtoMessage() {}
 
 func (x *RPMPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[19]
+	mi := &file_proto_scan_result_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2298,7 +2363,7 @@ func (x *RPMPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RPMPackageMetadata.ProtoReflect.Descriptor instead.
 func (*RPMPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{19}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RPMPackageMetadata) GetPackageName() string {
@@ -2385,7 +2450,7 @@ type COSPackageMetadata struct {
 
 func (x *COSPackageMetadata) Reset() {
 	*x = COSPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[20]
+	mi := &file_proto_scan_result_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2397,7 +2462,7 @@ func (x *COSPackageMetadata) String() string {
 func (*COSPackageMetadata) ProtoMessage() {}
 
 func (x *COSPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[20]
+	mi := &file_proto_scan_result_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2410,7 +2475,7 @@ func (x *COSPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use COSPackageMetadata.ProtoReflect.Descriptor instead.
 func (*COSPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{20}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *COSPackageMetadata) GetName() string {
@@ -2463,7 +2528,7 @@ type PACMANPackageMetadata struct {
 
 func (x *PACMANPackageMetadata) Reset() {
 	*x = PACMANPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[21]
+	mi := &file_proto_scan_result_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2475,7 +2540,7 @@ func (x *PACMANPackageMetadata) String() string {
 func (*PACMANPackageMetadata) ProtoMessage() {}
 
 func (x *PACMANPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[21]
+	mi := &file_proto_scan_result_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2488,7 +2553,7 @@ func (x *PACMANPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PACMANPackageMetadata.ProtoReflect.Descriptor instead.
 func (*PACMANPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{21}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *PACMANPackageMetadata) GetPackageName() string {
@@ -2549,7 +2614,7 @@ type NixPackageMetadata struct {
 
 func (x *NixPackageMetadata) Reset() {
 	*x = NixPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[22]
+	mi := &file_proto_scan_result_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2561,7 +2626,7 @@ func (x *NixPackageMetadata) String() string {
 func (*NixPackageMetadata) ProtoMessage() {}
 
 func (x *NixPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[22]
+	mi := &file_proto_scan_result_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2574,7 +2639,7 @@ func (x *NixPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NixPackageMetadata.ProtoReflect.Descriptor instead.
 func (*NixPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{22}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *NixPackageMetadata) GetPackageName() string {
@@ -2638,7 +2703,7 @@ type DEPSJSONMetadata struct {
 
 func (x *DEPSJSONMetadata) Reset() {
 	*x = DEPSJSONMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[23]
+	mi := &file_proto_scan_result_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2650,7 +2715,7 @@ func (x *DEPSJSONMetadata) String() string {
 func (*DEPSJSONMetadata) ProtoMessage() {}
 
 func (x *DEPSJSONMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[23]
+	mi := &file_proto_scan_result_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2663,7 +2728,7 @@ func (x *DEPSJSONMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DEPSJSONMetadata.ProtoReflect.Descriptor instead.
 func (*DEPSJSONMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{23}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DEPSJSONMetadata) GetPackageName() string {
@@ -2704,7 +2769,7 @@ type SNAPPackageMetadata struct {
 
 func (x *SNAPPackageMetadata) Reset() {
 	*x = SNAPPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[24]
+	mi := &file_proto_scan_result_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2716,7 +2781,7 @@ func (x *SNAPPackageMetadata) String() string {
 func (*SNAPPackageMetadata) ProtoMessage() {}
 
 func (x *SNAPPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[24]
+	mi := &file_proto_scan_result_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2729,7 +2794,7 @@ func (x *SNAPPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SNAPPackageMetadata.ProtoReflect.Descriptor instead.
 func (*SNAPPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{24}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SNAPPackageMetadata) GetName() string {
@@ -2801,7 +2866,7 @@ type PortagePackageMetadata struct {
 
 func (x *PortagePackageMetadata) Reset() {
 	*x = PortagePackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[25]
+	mi := &file_proto_scan_result_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2813,7 +2878,7 @@ func (x *PortagePackageMetadata) String() string {
 func (*PortagePackageMetadata) ProtoMessage() {}
 
 func (x *PortagePackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[25]
+	mi := &file_proto_scan_result_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2826,7 +2891,7 @@ func (x *PortagePackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortagePackageMetadata.ProtoReflect.Descriptor instead.
 func (*PortagePackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{25}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PortagePackageMetadata) GetPackageName() string {
@@ -2875,7 +2940,7 @@ type FlatpakPackageMetadata struct {
 
 func (x *FlatpakPackageMetadata) Reset() {
 	*x = FlatpakPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[26]
+	mi := &file_proto_scan_result_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2887,7 +2952,7 @@ func (x *FlatpakPackageMetadata) String() string {
 func (*FlatpakPackageMetadata) ProtoMessage() {}
 
 func (x *FlatpakPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[26]
+	mi := &file_proto_scan_result_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2900,7 +2965,7 @@ func (x *FlatpakPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlatpakPackageMetadata.ProtoReflect.Descriptor instead.
 func (*FlatpakPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{26}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *FlatpakPackageMetadata) GetPackageName() string {
@@ -2983,7 +3048,7 @@ type KernelModuleMetadata struct {
 
 func (x *KernelModuleMetadata) Reset() {
 	*x = KernelModuleMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[27]
+	mi := &file_proto_scan_result_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2995,7 +3060,7 @@ func (x *KernelModuleMetadata) String() string {
 func (*KernelModuleMetadata) ProtoMessage() {}
 
 func (x *KernelModuleMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[27]
+	mi := &file_proto_scan_result_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3008,7 +3073,7 @@ func (x *KernelModuleMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KernelModuleMetadata.ProtoReflect.Descriptor instead.
 func (*KernelModuleMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{27}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *KernelModuleMetadata) GetPackageName() string {
@@ -3088,7 +3153,7 @@ type VmlinuzMetadata struct {
 
 func (x *VmlinuzMetadata) Reset() {
 	*x = VmlinuzMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[28]
+	mi := &file_proto_scan_result_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3100,7 +3165,7 @@ func (x *VmlinuzMetadata) String() string {
 func (*VmlinuzMetadata) ProtoMessage() {}
 
 func (x *VmlinuzMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[28]
+	mi := &file_proto_scan_result_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3113,7 +3178,7 @@ func (x *VmlinuzMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VmlinuzMetadata.ProtoReflect.Descriptor instead.
 func (*VmlinuzMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{28}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *VmlinuzMetadata) GetName() string {
@@ -3219,7 +3284,7 @@ type MacAppsMetadata struct {
 
 func (x *MacAppsMetadata) Reset() {
 	*x = MacAppsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[29]
+	mi := &file_proto_scan_result_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3231,7 +3296,7 @@ func (x *MacAppsMetadata) String() string {
 func (*MacAppsMetadata) ProtoMessage() {}
 
 func (x *MacAppsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[29]
+	mi := &file_proto_scan_result_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3244,7 +3309,7 @@ func (x *MacAppsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MacAppsMetadata.ProtoReflect.Descriptor instead.
 func (*MacAppsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{29}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *MacAppsMetadata) GetBundleDisplayName() string {
@@ -3328,7 +3393,7 @@ type SPDXPackageMetadata struct {
 
 func (x *SPDXPackageMetadata) Reset() {
 	*x = SPDXPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[30]
+	mi := &file_proto_scan_result_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3340,7 +3405,7 @@ func (x *SPDXPackageMetadata) String() string {
 func (*SPDXPackageMetadata) ProtoMessage() {}
 
 func (x *SPDXPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[30]
+	mi := &file_proto_scan_result_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3353,7 +3418,7 @@ func (x *SPDXPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SPDXPackageMetadata.ProtoReflect.Descriptor instead.
 func (*SPDXPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{30}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *SPDXPackageMetadata) GetPurl() *Purl {
@@ -3381,7 +3446,7 @@ type CDXPackageMetadata struct {
 
 func (x *CDXPackageMetadata) Reset() {
 	*x = CDXPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[31]
+	mi := &file_proto_scan_result_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3393,7 +3458,7 @@ func (x *CDXPackageMetadata) String() string {
 func (*CDXPackageMetadata) ProtoMessage() {}
 
 func (x *CDXPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[31]
+	mi := &file_proto_scan_result_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3406,7 +3471,7 @@ func (x *CDXPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CDXPackageMetadata.ProtoReflect.Descriptor instead.
 func (*CDXPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{31}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *CDXPackageMetadata) GetPurl() *Purl {
@@ -3435,7 +3500,7 @@ type JavaArchiveMetadata struct {
 
 func (x *JavaArchiveMetadata) Reset() {
 	*x = JavaArchiveMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[32]
+	mi := &file_proto_scan_result_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3447,7 +3512,7 @@ func (x *JavaArchiveMetadata) String() string {
 func (*JavaArchiveMetadata) ProtoMessage() {}
 
 func (x *JavaArchiveMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[32]
+	mi := &file_proto_scan_result_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3460,7 +3525,7 @@ func (x *JavaArchiveMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavaArchiveMetadata.ProtoReflect.Descriptor instead.
 func (*JavaArchiveMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{32}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *JavaArchiveMetadata) GetArtifactId() string {
@@ -3497,7 +3562,7 @@ type JavaLockfileMetadata struct {
 
 func (x *JavaLockfileMetadata) Reset() {
 	*x = JavaLockfileMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[33]
+	mi := &file_proto_scan_result_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3509,7 +3574,7 @@ func (x *JavaLockfileMetadata) String() string {
 func (*JavaLockfileMetadata) ProtoMessage() {}
 
 func (x *JavaLockfileMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[33]
+	mi := &file_proto_scan_result_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3522,7 +3587,7 @@ func (x *JavaLockfileMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavaLockfileMetadata.ProtoReflect.Descriptor instead.
 func (*JavaLockfileMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{33}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *JavaLockfileMetadata) GetArtifactId() string {
@@ -3566,7 +3631,7 @@ type OSVPackageMetadata struct {
 
 func (x *OSVPackageMetadata) Reset() {
 	*x = OSVPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[34]
+	mi := &file_proto_scan_result_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3578,7 +3643,7 @@ func (x *OSVPackageMetadata) String() string {
 func (*OSVPackageMetadata) ProtoMessage() {}
 
 func (x *OSVPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[34]
+	mi := &file_proto_scan_result_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3591,7 +3656,7 @@ func (x *OSVPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSVPackageMetadata.ProtoReflect.Descriptor instead.
 func (*OSVPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{34}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *OSVPackageMetadata) GetPurlType() string {
@@ -3633,7 +3698,7 @@ type PythonRequirementsMetadata struct {
 
 func (x *PythonRequirementsMetadata) Reset() {
 	*x = PythonRequirementsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[35]
+	mi := &file_proto_scan_result_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3645,7 +3710,7 @@ func (x *PythonRequirementsMetadata) String() string {
 func (*PythonRequirementsMetadata) ProtoMessage() {}
 
 func (x *PythonRequirementsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[35]
+	mi := &file_proto_scan_result_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3658,7 +3723,7 @@ func (x *PythonRequirementsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonRequirementsMetadata.ProtoReflect.Descriptor instead.
 func (*PythonRequirementsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{35}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *PythonRequirementsMetadata) GetHashCheckingModeValues() []string {
@@ -3691,7 +3756,7 @@ type PythonSetupMetadata struct {
 
 func (x *PythonSetupMetadata) Reset() {
 	*x = PythonSetupMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[36]
+	mi := &file_proto_scan_result_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3703,7 +3768,7 @@ func (x *PythonSetupMetadata) String() string {
 func (*PythonSetupMetadata) ProtoMessage() {}
 
 func (x *PythonSetupMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[36]
+	mi := &file_proto_scan_result_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3716,7 +3781,7 @@ func (x *PythonSetupMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonSetupMetadata.ProtoReflect.Descriptor instead.
 func (*PythonSetupMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{36}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *PythonSetupMetadata) GetVersionComparator() string {
@@ -3747,7 +3812,7 @@ type ContainerdContainerMetadata struct {
 
 func (x *ContainerdContainerMetadata) Reset() {
 	*x = ContainerdContainerMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[37]
+	mi := &file_proto_scan_result_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3759,7 +3824,7 @@ func (x *ContainerdContainerMetadata) String() string {
 func (*ContainerdContainerMetadata) ProtoMessage() {}
 
 func (x *ContainerdContainerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[37]
+	mi := &file_proto_scan_result_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3772,7 +3837,7 @@ func (x *ContainerdContainerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerdContainerMetadata.ProtoReflect.Descriptor instead.
 func (*ContainerdContainerMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{37}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ContainerdContainerMetadata) GetNamespaceName() string {
@@ -3881,7 +3946,7 @@ type ContainerdRuntimeContainerMetadata struct {
 
 func (x *ContainerdRuntimeContainerMetadata) Reset() {
 	*x = ContainerdRuntimeContainerMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[38]
+	mi := &file_proto_scan_result_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3893,7 +3958,7 @@ func (x *ContainerdRuntimeContainerMetadata) String() string {
 func (*ContainerdRuntimeContainerMetadata) ProtoMessage() {}
 
 func (x *ContainerdRuntimeContainerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[38]
+	mi := &file_proto_scan_result_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3906,7 +3971,7 @@ func (x *ContainerdRuntimeContainerMetadata) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ContainerdRuntimeContainerMetadata.ProtoReflect.Descriptor instead.
 func (*ContainerdRuntimeContainerMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{38}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ContainerdRuntimeContainerMetadata) GetNamespaceName() string {
@@ -3968,7 +4033,7 @@ type WindowsOSVersion struct {
 
 func (x *WindowsOSVersion) Reset() {
 	*x = WindowsOSVersion{}
-	mi := &file_proto_scan_result_proto_msgTypes[39]
+	mi := &file_proto_scan_result_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3980,7 +4045,7 @@ func (x *WindowsOSVersion) String() string {
 func (*WindowsOSVersion) ProtoMessage() {}
 
 func (x *WindowsOSVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[39]
+	mi := &file_proto_scan_result_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3993,7 +4058,7 @@ func (x *WindowsOSVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WindowsOSVersion.ProtoReflect.Descriptor instead.
 func (*WindowsOSVersion) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{39}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *WindowsOSVersion) GetProduct() string {
@@ -4019,7 +4084,7 @@ type HomebrewPackageMetadata struct {
 
 func (x *HomebrewPackageMetadata) Reset() {
 	*x = HomebrewPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[40]
+	mi := &file_proto_scan_result_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4031,7 +4096,7 @@ func (x *HomebrewPackageMetadata) String() string {
 func (*HomebrewPackageMetadata) ProtoMessage() {}
 
 func (x *HomebrewPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[40]
+	mi := &file_proto_scan_result_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4044,7 +4109,7 @@ func (x *HomebrewPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HomebrewPackageMetadata.ProtoReflect.Descriptor instead.
 func (*HomebrewPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{40}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{41}
 }
 
 // The additional data found in Chrome extensions.
@@ -4064,7 +4129,7 @@ type ChromeExtensionsMetadata struct {
 
 func (x *ChromeExtensionsMetadata) Reset() {
 	*x = ChromeExtensionsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[41]
+	mi := &file_proto_scan_result_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4076,7 +4141,7 @@ func (x *ChromeExtensionsMetadata) String() string {
 func (*ChromeExtensionsMetadata) ProtoMessage() {}
 
 func (x *ChromeExtensionsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[41]
+	mi := &file_proto_scan_result_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4089,7 +4154,7 @@ func (x *ChromeExtensionsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChromeExtensionsMetadata.ProtoReflect.Descriptor instead.
 func (*ChromeExtensionsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{41}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ChromeExtensionsMetadata) GetName() string {
@@ -4164,7 +4229,7 @@ type VSCodeExtensionsMetadata struct {
 
 func (x *VSCodeExtensionsMetadata) Reset() {
 	*x = VSCodeExtensionsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[42]
+	mi := &file_proto_scan_result_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4176,7 +4241,7 @@ func (x *VSCodeExtensionsMetadata) String() string {
 func (*VSCodeExtensionsMetadata) ProtoMessage() {}
 
 func (x *VSCodeExtensionsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[42]
+	mi := &file_proto_scan_result_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4189,7 +4254,7 @@ func (x *VSCodeExtensionsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VSCodeExtensionsMetadata.ProtoReflect.Descriptor instead.
 func (*VSCodeExtensionsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{42}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *VSCodeExtensionsMetadata) GetId() string {
@@ -4258,7 +4323,7 @@ type PodmanMetadata struct {
 
 func (x *PodmanMetadata) Reset() {
 	*x = PodmanMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[43]
+	mi := &file_proto_scan_result_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4270,7 +4335,7 @@ func (x *PodmanMetadata) String() string {
 func (*PodmanMetadata) ProtoMessage() {}
 
 func (x *PodmanMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[43]
+	mi := &file_proto_scan_result_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4283,7 +4348,7 @@ func (x *PodmanMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodmanMetadata.ProtoReflect.Descriptor instead.
 func (*PodmanMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{43}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *PodmanMetadata) GetExposedPorts() map[uint32]*Protocol {
@@ -4351,7 +4416,7 @@ type Protocol struct {
 
 func (x *Protocol) Reset() {
 	*x = Protocol{}
-	mi := &file_proto_scan_result_proto_msgTypes[44]
+	mi := &file_proto_scan_result_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4363,7 +4428,7 @@ func (x *Protocol) String() string {
 func (*Protocol) ProtoMessage() {}
 
 func (x *Protocol) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[44]
+	mi := &file_proto_scan_result_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4376,7 +4441,7 @@ func (x *Protocol) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Protocol.ProtoReflect.Descriptor instead.
 func (*Protocol) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{44}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *Protocol) GetNames() []string {
@@ -4398,7 +4463,7 @@ type DockerContainersMetadata struct {
 
 func (x *DockerContainersMetadata) Reset() {
 	*x = DockerContainersMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[45]
+	mi := &file_proto_scan_result_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4410,7 +4475,7 @@ func (x *DockerContainersMetadata) String() string {
 func (*DockerContainersMetadata) ProtoMessage() {}
 
 func (x *DockerContainersMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[45]
+	mi := &file_proto_scan_result_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4423,7 +4488,7 @@ func (x *DockerContainersMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerContainersMetadata.ProtoReflect.Descriptor instead.
 func (*DockerContainersMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{45}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *DockerContainersMetadata) GetImageName() string {
@@ -4466,7 +4531,7 @@ type DockerPort struct {
 
 func (x *DockerPort) Reset() {
 	*x = DockerPort{}
-	mi := &file_proto_scan_result_proto_msgTypes[46]
+	mi := &file_proto_scan_result_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4478,7 +4543,7 @@ func (x *DockerPort) String() string {
 func (*DockerPort) ProtoMessage() {}
 
 func (x *DockerPort) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[46]
+	mi := &file_proto_scan_result_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4491,7 +4556,7 @@ func (x *DockerPort) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerPort.ProtoReflect.Descriptor instead.
 func (*DockerPort) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{46}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *DockerPort) GetIp() string {
@@ -4534,7 +4599,7 @@ type Secret struct {
 
 func (x *Secret) Reset() {
 	*x = Secret{}
-	mi := &file_proto_scan_result_proto_msgTypes[47]
+	mi := &file_proto_scan_result_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4546,7 +4611,7 @@ func (x *Secret) String() string {
 func (*Secret) ProtoMessage() {}
 
 func (x *Secret) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[47]
+	mi := &file_proto_scan_result_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4559,7 +4624,7 @@ func (x *Secret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Secret.ProtoReflect.Descriptor instead.
 func (*Secret) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{47}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *Secret) GetSecret() *SecretData {
@@ -4595,7 +4660,7 @@ type SecretData struct {
 
 func (x *SecretData) Reset() {
 	*x = SecretData{}
-	mi := &file_proto_scan_result_proto_msgTypes[48]
+	mi := &file_proto_scan_result_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4607,7 +4672,7 @@ func (x *SecretData) String() string {
 func (*SecretData) ProtoMessage() {}
 
 func (x *SecretData) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[48]
+	mi := &file_proto_scan_result_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4620,7 +4685,7 @@ func (x *SecretData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData.ProtoReflect.Descriptor instead.
 func (*SecretData) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{48}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *SecretData) GetSecret() isSecretData_Secret {
@@ -4659,7 +4724,7 @@ type SecretStatus struct {
 
 func (x *SecretStatus) Reset() {
 	*x = SecretStatus{}
-	mi := &file_proto_scan_result_proto_msgTypes[49]
+	mi := &file_proto_scan_result_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4671,7 +4736,7 @@ func (x *SecretStatus) String() string {
 func (*SecretStatus) ProtoMessage() {}
 
 func (x *SecretStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[49]
+	mi := &file_proto_scan_result_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4684,7 +4749,7 @@ func (x *SecretStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretStatus.ProtoReflect.Descriptor instead.
 func (*SecretStatus) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{49}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *SecretStatus) GetStatus() SecretStatus_SecretStatusEnum {
@@ -4716,7 +4781,7 @@ type Location struct {
 
 func (x *Location) Reset() {
 	*x = Location{}
-	mi := &file_proto_scan_result_proto_msgTypes[50]
+	mi := &file_proto_scan_result_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4728,7 +4793,7 @@ func (x *Location) String() string {
 func (*Location) ProtoMessage() {}
 
 func (x *Location) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[50]
+	mi := &file_proto_scan_result_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4741,7 +4806,7 @@ func (x *Location) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Location.ProtoReflect.Descriptor instead.
 func (*Location) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{50}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *Location) GetLocation() isLocation_Location {
@@ -4824,7 +4889,7 @@ type Filepath struct {
 
 func (x *Filepath) Reset() {
 	*x = Filepath{}
-	mi := &file_proto_scan_result_proto_msgTypes[51]
+	mi := &file_proto_scan_result_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4836,7 +4901,7 @@ func (x *Filepath) String() string {
 func (*Filepath) ProtoMessage() {}
 
 func (x *Filepath) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[51]
+	mi := &file_proto_scan_result_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4849,7 +4914,7 @@ func (x *Filepath) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Filepath.ProtoReflect.Descriptor instead.
 func (*Filepath) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{51}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *Filepath) GetPath() string {
@@ -4869,7 +4934,7 @@ type FilepathWithLayerDetails struct {
 
 func (x *FilepathWithLayerDetails) Reset() {
 	*x = FilepathWithLayerDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[52]
+	mi := &file_proto_scan_result_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4881,7 +4946,7 @@ func (x *FilepathWithLayerDetails) String() string {
 func (*FilepathWithLayerDetails) ProtoMessage() {}
 
 func (x *FilepathWithLayerDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[52]
+	mi := &file_proto_scan_result_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4894,7 +4959,7 @@ func (x *FilepathWithLayerDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FilepathWithLayerDetails.ProtoReflect.Descriptor instead.
 func (*FilepathWithLayerDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{52}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *FilepathWithLayerDetails) GetPath() string {
@@ -4920,7 +4985,7 @@ type EnvironmentVariable struct {
 
 func (x *EnvironmentVariable) Reset() {
 	*x = EnvironmentVariable{}
-	mi := &file_proto_scan_result_proto_msgTypes[53]
+	mi := &file_proto_scan_result_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4932,7 +4997,7 @@ func (x *EnvironmentVariable) String() string {
 func (*EnvironmentVariable) ProtoMessage() {}
 
 func (x *EnvironmentVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[53]
+	mi := &file_proto_scan_result_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4945,7 +5010,7 @@ func (x *EnvironmentVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentVariable.ProtoReflect.Descriptor instead.
 func (*EnvironmentVariable) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *EnvironmentVariable) GetName() string {
@@ -4964,7 +5029,7 @@ type ContainerCommand struct {
 
 func (x *ContainerCommand) Reset() {
 	*x = ContainerCommand{}
-	mi := &file_proto_scan_result_proto_msgTypes[54]
+	mi := &file_proto_scan_result_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4976,7 +5041,7 @@ func (x *ContainerCommand) String() string {
 func (*ContainerCommand) ProtoMessage() {}
 
 func (x *ContainerCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[54]
+	mi := &file_proto_scan_result_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4989,7 +5054,7 @@ func (x *ContainerCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerCommand.ProtoReflect.Descriptor instead.
 func (*ContainerCommand) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{54}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ContainerCommand) GetCommand() string {
@@ -5023,7 +5088,7 @@ type SecretData_GCPSAK struct {
 
 func (x *SecretData_GCPSAK) Reset() {
 	*x = SecretData_GCPSAK{}
-	mi := &file_proto_scan_result_proto_msgTypes[56]
+	mi := &file_proto_scan_result_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5035,7 +5100,7 @@ func (x *SecretData_GCPSAK) String() string {
 func (*SecretData_GCPSAK) ProtoMessage() {}
 
 func (x *SecretData_GCPSAK) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[56]
+	mi := &file_proto_scan_result_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5048,7 +5113,7 @@ func (x *SecretData_GCPSAK) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPSAK.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPSAK) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{48, 0}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{49, 0}
 }
 
 func (x *SecretData_GCPSAK) GetPrivateKeyId() string {
@@ -5236,7 +5301,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x11matches_all_vulns\x18\x04 \x01(\bH\x00R\x0fmatchesAllVulnsB\r\n" +
 	"\vvuln_filter\"3\n" +
 	"\x0fVulnIdentifiers\x12 \n" +
-	"\videntifiers\x18\x01 \x03(\tR\videntifiers\"\xc8\x01\n" +
+	"\videntifiers\x18\x01 \x03(\tR\videntifiers\"v\n" +
+	"\x1bFindingExploitabilitySignal\x12\x16\n" +
+	"\x06plugin\x18\x01 \x01(\tR\x06plugin\x12?\n" +
+	"\rjustification\x18\x02 \x01(\x0e2\x19.scalibr.VexJustificationR\rjustification\"\xc8\x01\n" +
 	"\x04Purl\x12\x12\n" +
 	"\x04purl\x18\x01 \x01(\tR\x04purl\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x12\n" +
@@ -5249,11 +5317,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\asubpath\x18\a \x01(\tR\asubpath\"3\n" +
 	"\tQualifier\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\xa1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\xfe\x01\n" +
 	"\x0eGenericFinding\x121\n" +
 	"\x03adv\x18\x01 \x01(\v2\x1f.scalibr.GenericFindingAdvisoryR\x03adv\x12<\n" +
 	"\x06target\x18\x02 \x01(\v2$.scalibr.GenericFindingTargetDetailsR\x06target\x12\x18\n" +
-	"\aplugins\x18\x04 \x03(\tR\apluginsJ\x04\b\x03\x10\x04\"\xd2\x01\n" +
+	"\aplugins\x18\x04 \x03(\tR\aplugins\x12[\n" +
+	"\x16exploitability_signals\x18\x05 \x03(\v2$.scalibr.FindingExploitabilitySignalR\x15exploitabilitySignalsJ\x04\b\x03\x10\x04\"\xd2\x01\n" +
 	"\x16GenericFindingAdvisory\x12#\n" +
 	"\x02id\x18\x01 \x01(\v2\x13.scalibr.AdvisoryIdR\x02id\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
@@ -5586,7 +5655,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                      // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                          // 1: scalibr.SeverityEnum
@@ -5602,134 +5671,137 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*LayerDetails)(nil),                       // 11: scalibr.LayerDetails
 	(*PackageExploitabilitySignal)(nil),        // 12: scalibr.PackageExploitabilitySignal
 	(*VulnIdentifiers)(nil),                    // 13: scalibr.VulnIdentifiers
-	(*Purl)(nil),                               // 14: scalibr.Purl
-	(*Qualifier)(nil),                          // 15: scalibr.Qualifier
-	(*GenericFinding)(nil),                     // 16: scalibr.GenericFinding
-	(*GenericFindingAdvisory)(nil),             // 17: scalibr.GenericFindingAdvisory
-	(*AdvisoryId)(nil),                         // 18: scalibr.AdvisoryId
-	(*GenericFindingTargetDetails)(nil),        // 19: scalibr.GenericFindingTargetDetails
-	(*PythonPackageMetadata)(nil),              // 20: scalibr.PythonPackageMetadata
-	(*JavascriptPackageJSONMetadata)(nil),      // 21: scalibr.JavascriptPackageJSONMetadata
-	(*APKPackageMetadata)(nil),                 // 22: scalibr.APKPackageMetadata
-	(*DPKGPackageMetadata)(nil),                // 23: scalibr.DPKGPackageMetadata
-	(*RPMPackageMetadata)(nil),                 // 24: scalibr.RPMPackageMetadata
-	(*COSPackageMetadata)(nil),                 // 25: scalibr.COSPackageMetadata
-	(*PACMANPackageMetadata)(nil),              // 26: scalibr.PACMANPackageMetadata
-	(*NixPackageMetadata)(nil),                 // 27: scalibr.NixPackageMetadata
-	(*DEPSJSONMetadata)(nil),                   // 28: scalibr.DEPSJSONMetadata
-	(*SNAPPackageMetadata)(nil),                // 29: scalibr.SNAPPackageMetadata
-	(*PortagePackageMetadata)(nil),             // 30: scalibr.PortagePackageMetadata
-	(*FlatpakPackageMetadata)(nil),             // 31: scalibr.FlatpakPackageMetadata
-	(*KernelModuleMetadata)(nil),               // 32: scalibr.KernelModuleMetadata
-	(*VmlinuzMetadata)(nil),                    // 33: scalibr.VmlinuzMetadata
-	(*MacAppsMetadata)(nil),                    // 34: scalibr.MacAppsMetadata
-	(*SPDXPackageMetadata)(nil),                // 35: scalibr.SPDXPackageMetadata
-	(*CDXPackageMetadata)(nil),                 // 36: scalibr.CDXPackageMetadata
-	(*JavaArchiveMetadata)(nil),                // 37: scalibr.JavaArchiveMetadata
-	(*JavaLockfileMetadata)(nil),               // 38: scalibr.JavaLockfileMetadata
-	(*OSVPackageMetadata)(nil),                 // 39: scalibr.OSVPackageMetadata
-	(*PythonRequirementsMetadata)(nil),         // 40: scalibr.PythonRequirementsMetadata
-	(*PythonSetupMetadata)(nil),                // 41: scalibr.PythonSetupMetadata
-	(*ContainerdContainerMetadata)(nil),        // 42: scalibr.ContainerdContainerMetadata
-	(*ContainerdRuntimeContainerMetadata)(nil), // 43: scalibr.ContainerdRuntimeContainerMetadata
-	(*WindowsOSVersion)(nil),                   // 44: scalibr.WindowsOSVersion
-	(*HomebrewPackageMetadata)(nil),            // 45: scalibr.HomebrewPackageMetadata
-	(*ChromeExtensionsMetadata)(nil),           // 46: scalibr.ChromeExtensionsMetadata
-	(*VSCodeExtensionsMetadata)(nil),           // 47: scalibr.VSCodeExtensionsMetadata
-	(*PodmanMetadata)(nil),                     // 48: scalibr.PodmanMetadata
-	(*Protocol)(nil),                           // 49: scalibr.Protocol
-	(*DockerContainersMetadata)(nil),           // 50: scalibr.DockerContainersMetadata
-	(*DockerPort)(nil),                         // 51: scalibr.DockerPort
-	(*Secret)(nil),                             // 52: scalibr.Secret
-	(*SecretData)(nil),                         // 53: scalibr.SecretData
-	(*SecretStatus)(nil),                       // 54: scalibr.SecretStatus
-	(*Location)(nil),                           // 55: scalibr.Location
-	(*Filepath)(nil),                           // 56: scalibr.Filepath
-	(*FilepathWithLayerDetails)(nil),           // 57: scalibr.FilepathWithLayerDetails
-	(*EnvironmentVariable)(nil),                // 58: scalibr.EnvironmentVariable
-	(*ContainerCommand)(nil),                   // 59: scalibr.ContainerCommand
-	nil,                                        // 60: scalibr.PodmanMetadata.ExposedPortsEntry
-	(*SecretData_GCPSAK)(nil),                  // 61: scalibr.SecretData.GCPSAK
-	(*timestamppb.Timestamp)(nil),              // 62: google.protobuf.Timestamp
+	(*FindingExploitabilitySignal)(nil),        // 14: scalibr.FindingExploitabilitySignal
+	(*Purl)(nil),                               // 15: scalibr.Purl
+	(*Qualifier)(nil),                          // 16: scalibr.Qualifier
+	(*GenericFinding)(nil),                     // 17: scalibr.GenericFinding
+	(*GenericFindingAdvisory)(nil),             // 18: scalibr.GenericFindingAdvisory
+	(*AdvisoryId)(nil),                         // 19: scalibr.AdvisoryId
+	(*GenericFindingTargetDetails)(nil),        // 20: scalibr.GenericFindingTargetDetails
+	(*PythonPackageMetadata)(nil),              // 21: scalibr.PythonPackageMetadata
+	(*JavascriptPackageJSONMetadata)(nil),      // 22: scalibr.JavascriptPackageJSONMetadata
+	(*APKPackageMetadata)(nil),                 // 23: scalibr.APKPackageMetadata
+	(*DPKGPackageMetadata)(nil),                // 24: scalibr.DPKGPackageMetadata
+	(*RPMPackageMetadata)(nil),                 // 25: scalibr.RPMPackageMetadata
+	(*COSPackageMetadata)(nil),                 // 26: scalibr.COSPackageMetadata
+	(*PACMANPackageMetadata)(nil),              // 27: scalibr.PACMANPackageMetadata
+	(*NixPackageMetadata)(nil),                 // 28: scalibr.NixPackageMetadata
+	(*DEPSJSONMetadata)(nil),                   // 29: scalibr.DEPSJSONMetadata
+	(*SNAPPackageMetadata)(nil),                // 30: scalibr.SNAPPackageMetadata
+	(*PortagePackageMetadata)(nil),             // 31: scalibr.PortagePackageMetadata
+	(*FlatpakPackageMetadata)(nil),             // 32: scalibr.FlatpakPackageMetadata
+	(*KernelModuleMetadata)(nil),               // 33: scalibr.KernelModuleMetadata
+	(*VmlinuzMetadata)(nil),                    // 34: scalibr.VmlinuzMetadata
+	(*MacAppsMetadata)(nil),                    // 35: scalibr.MacAppsMetadata
+	(*SPDXPackageMetadata)(nil),                // 36: scalibr.SPDXPackageMetadata
+	(*CDXPackageMetadata)(nil),                 // 37: scalibr.CDXPackageMetadata
+	(*JavaArchiveMetadata)(nil),                // 38: scalibr.JavaArchiveMetadata
+	(*JavaLockfileMetadata)(nil),               // 39: scalibr.JavaLockfileMetadata
+	(*OSVPackageMetadata)(nil),                 // 40: scalibr.OSVPackageMetadata
+	(*PythonRequirementsMetadata)(nil),         // 41: scalibr.PythonRequirementsMetadata
+	(*PythonSetupMetadata)(nil),                // 42: scalibr.PythonSetupMetadata
+	(*ContainerdContainerMetadata)(nil),        // 43: scalibr.ContainerdContainerMetadata
+	(*ContainerdRuntimeContainerMetadata)(nil), // 44: scalibr.ContainerdRuntimeContainerMetadata
+	(*WindowsOSVersion)(nil),                   // 45: scalibr.WindowsOSVersion
+	(*HomebrewPackageMetadata)(nil),            // 46: scalibr.HomebrewPackageMetadata
+	(*ChromeExtensionsMetadata)(nil),           // 47: scalibr.ChromeExtensionsMetadata
+	(*VSCodeExtensionsMetadata)(nil),           // 48: scalibr.VSCodeExtensionsMetadata
+	(*PodmanMetadata)(nil),                     // 49: scalibr.PodmanMetadata
+	(*Protocol)(nil),                           // 50: scalibr.Protocol
+	(*DockerContainersMetadata)(nil),           // 51: scalibr.DockerContainersMetadata
+	(*DockerPort)(nil),                         // 52: scalibr.DockerPort
+	(*Secret)(nil),                             // 53: scalibr.Secret
+	(*SecretData)(nil),                         // 54: scalibr.SecretData
+	(*SecretStatus)(nil),                       // 55: scalibr.SecretStatus
+	(*Location)(nil),                           // 56: scalibr.Location
+	(*Filepath)(nil),                           // 57: scalibr.Filepath
+	(*FilepathWithLayerDetails)(nil),           // 58: scalibr.FilepathWithLayerDetails
+	(*EnvironmentVariable)(nil),                // 59: scalibr.EnvironmentVariable
+	(*ContainerCommand)(nil),                   // 60: scalibr.ContainerCommand
+	nil,                                        // 61: scalibr.PodmanMetadata.ExposedPortsEntry
+	(*SecretData_GCPSAK)(nil),                  // 62: scalibr.SecretData.GCPSAK
+	(*timestamppb.Timestamp)(nil),              // 63: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	62, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	62, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	63, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	63, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
-	16, // 5: scalibr.ScanResult.findings_deprecated:type_name -> scalibr.GenericFinding
+	17, // 5: scalibr.ScanResult.findings_deprecated:type_name -> scalibr.GenericFinding
 	6,  // 6: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
 	9,  // 7: scalibr.Inventory.packages:type_name -> scalibr.Package
-	16, // 8: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
-	52, // 9: scalibr.Inventory.secrets:type_name -> scalibr.Secret
+	17, // 8: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
+	53, // 9: scalibr.Inventory.secrets:type_name -> scalibr.Secret
 	2,  // 10: scalibr.ScanStatus.status:type_name -> scalibr.ScanStatus.ScanStatusEnum
 	7,  // 11: scalibr.PluginStatus.status:type_name -> scalibr.ScanStatus
 	10, // 12: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
-	14, // 13: scalibr.Package.purl:type_name -> scalibr.Purl
-	20, // 14: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
-	21, // 15: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
-	22, // 16: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
-	23, // 17: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
-	24, // 18: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
-	25, // 19: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
-	28, // 20: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
-	35, // 21: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
-	37, // 22: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
-	38, // 23: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
-	26, // 24: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
-	27, // 25: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
-	32, // 26: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
-	33, // 27: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
-	30, // 28: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
-	39, // 29: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
-	40, // 30: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
-	41, // 31: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
-	42, // 32: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
-	29, // 33: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
-	31, // 34: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
-	34, // 35: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
-	43, // 36: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
-	36, // 37: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
-	44, // 38: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
-	45, // 39: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
-	46, // 40: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
-	47, // 41: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
-	48, // 42: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
-	50, // 43: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
+	15, // 13: scalibr.Package.purl:type_name -> scalibr.Purl
+	21, // 14: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
+	22, // 15: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
+	23, // 16: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
+	24, // 17: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
+	25, // 18: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
+	26, // 19: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
+	29, // 20: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
+	36, // 21: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
+	38, // 22: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
+	39, // 23: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
+	27, // 24: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
+	28, // 25: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
+	33, // 26: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
+	34, // 27: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
+	31, // 28: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
+	40, // 29: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
+	41, // 30: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
+	42, // 31: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
+	43, // 32: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
+	30, // 33: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
+	32, // 34: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
+	35, // 35: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
+	44, // 36: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
+	37, // 37: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
+	45, // 38: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
+	46, // 39: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
+	47, // 40: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
+	48, // 41: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
+	49, // 42: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
+	51, // 43: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
 	3,  // 44: scalibr.Package.annotations_deprecated:type_name -> scalibr.Package.AnnotationEnum
 	12, // 45: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
 	11, // 46: scalibr.Package.layer_details:type_name -> scalibr.LayerDetails
 	0,  // 47: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	13, // 48: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
-	15, // 49: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	17, // 50: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
-	19, // 51: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
-	18, // 52: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
-	1,  // 53: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
-	14, // 54: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
-	14, // 55: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
-	60, // 56: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	62, // 57: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	62, // 58: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
-	51, // 59: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
-	53, // 60: scalibr.Secret.secret:type_name -> scalibr.SecretData
-	54, // 61: scalibr.Secret.status:type_name -> scalibr.SecretStatus
-	55, // 62: scalibr.Secret.locations:type_name -> scalibr.Location
-	61, // 63: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	4,  // 64: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	62, // 65: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	56, // 66: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	57, // 67: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	58, // 68: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	59, // 69: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11, // 70: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	49, // 71: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	72, // [72:72] is the sub-list for method output_type
-	72, // [72:72] is the sub-list for method input_type
-	72, // [72:72] is the sub-list for extension type_name
-	72, // [72:72] is the sub-list for extension extendee
-	0,  // [0:72] is the sub-list for field type_name
+	0,  // 49: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
+	16, // 50: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
+	18, // 51: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
+	20, // 52: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
+	14, // 53: scalibr.GenericFinding.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
+	19, // 54: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
+	1,  // 55: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
+	15, // 56: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
+	15, // 57: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
+	61, // 58: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
+	63, // 59: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	63, // 60: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	52, // 61: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
+	54, // 62: scalibr.Secret.secret:type_name -> scalibr.SecretData
+	55, // 63: scalibr.Secret.status:type_name -> scalibr.SecretStatus
+	56, // 64: scalibr.Secret.locations:type_name -> scalibr.Location
+	62, // 65: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
+	4,  // 66: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	63, // 67: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	57, // 68: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	58, // 69: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	59, // 70: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	60, // 71: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11, // 72: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	50, // 73: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	74, // [74:74] is the sub-list for method output_type
+	74, // [74:74] is the sub-list for method input_type
+	74, // [74:74] is the sub-list for extension type_name
+	74, // [74:74] is the sub-list for extension extendee
+	0,  // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -5773,10 +5845,10 @@ func file_proto_scan_result_proto_init() {
 		(*PackageExploitabilitySignal_VulnIdentifiers)(nil),
 		(*PackageExploitabilitySignal_MatchesAllVulns)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[48].OneofWrappers = []any{
+	file_proto_scan_result_proto_msgTypes[49].OneofWrappers = []any{
 		(*SecretData_Gcpsak)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[50].OneofWrappers = []any{
+	file_proto_scan_result_proto_msgTypes[51].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
 		(*Location_FilepathWithLayerDetails)(nil),
 		(*Location_EnvironmentVariable)(nil),
@@ -5788,7 +5860,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   57,
+			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
