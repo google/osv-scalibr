@@ -162,7 +162,7 @@ func (rootNode *RootNode) getNode(nodePath string, resolveFinalSymlink bool, dep
 // Get retrieves the value at the given path. If no node exists at the given path, nil is returned.
 // If there is a symlink node along the path, it's resolved.
 // By setting resolveFinalSymlink, if the final node is a symlink, you can choose to resolve the symlink
-// until a normal file or directory. Or to get the raw symlink virtualFile.
+// until you get a normal file or directory. Or to get the raw symlink virtualFile.
 func (rootNode *RootNode) Get(p string, resolveFinalSymlink bool) (*virtualFile, error) {
 	pathNode, err := rootNode.getNode(p, resolveFinalSymlink, 0)
 	if err != nil {

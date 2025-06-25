@@ -264,6 +264,39 @@ func TestChainFSOpen(t *testing.T) {
 			},
 		},
 		{
+			name:    "open file that is symlinked via directory from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/symlink-to-dir/bar",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file that is under symlink that is symlinked to another symlink directory",
+			chainfs: populatedChainFS,
+			path:    "/symlink-to-dir-nested/bar",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file that is a symlink to a file that is symlinked under another symlink directory",
+			chainfs: populatedChainFS,
+			path:    "/symlink-into-nested",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
 			name:    "error opening symlink due to nonexistent target",
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-nonexistent-file",
@@ -671,10 +704,22 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 			targetPath:  "./bar",
 		},
 		"/dir2/symlink-relative-3": &virtualFile{
-			virtualPath: "/dir/symlink-relative-3",
+			virtualPath: "/dir2/symlink-relative-3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "../symlink-relative-1",
+		},
+		"/symlink-to-dir-nested": &virtualFile{
+			virtualPath: "/symlink-to-dir-nested",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-to-dir",
+		},
+		"/symlink-into-nested": &virtualFile{
+			virtualPath: "/symlink-into-nested-dir-symlink",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-to-dir-nested/bar",
 		},
 		"/symlink-to-dir": &virtualFile{
 			virtualPath: "/symlink-to-dir",

@@ -132,7 +132,7 @@ type FS struct {
 }
 
 // Open opens a file from the virtual filesystem.
-func (chainfs FS) Open(name string) (fs.File, error) {
+func (chainfs *FS) Open(name string) (fs.File, error) {
 	vf, err := chainfs.getVirtualFile(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
@@ -187,11 +187,7 @@ func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	vf, err := chainfs.tree.Get(normalizePath(path), true)
-	if err != nil {
-		return nil, err
-	}
-	return vf, nil
+	return chainfs.tree.Get(normalizePath(path), true)
 }
 
 // getVirtualFileChildren returns the direct virtual file children of the given path. This helper
@@ -201,12 +197,7 @@ func (chainfs *FS) getVirtualFileChildren(path string) ([]*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	children, err := chainfs.tree.GetChildren(normalizePath(path))
-	if err != nil {
-		return nil, err
-	}
-
-	return children, nil
+	return chainfs.tree.GetChildren(normalizePath(path))
 }
 
 // ========================================================
