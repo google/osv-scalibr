@@ -76,7 +76,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the specified file matches Maven POM lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "pom.xml"
+	return filepath.Base(api.Path()) == "pom.xml" || filepath.Ext(api.Path()) == ".pom"
 }
 
 // Extract extracts packages from pom.xml files passed through the scan input.

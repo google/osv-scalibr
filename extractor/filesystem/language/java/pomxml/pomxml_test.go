@@ -43,7 +43,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      true,
 		},
 		{
+			inputPath: "my-app-1.0.pom",
+			want:      true,
+		},
+		{
 			inputPath: "path/to/my/pom.xml",
+			want:      true,
+		},
+		{
+			inputPath: "path/to/my/pom/my-app-1.0.pom",
 			want:      true,
 		},
 		{
