@@ -24,7 +24,9 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -116,8 +118,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from lib/apk/db/installed passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -129,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
 // parseSingleApkRecord reads from the scanner a single record,
@@ -165,14 +167,14 @@ func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
 	return group, scanner.Err()
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
 	scanner := bufio.NewScanner(input.Reader)
-	inventories := []*extractor.Inventory{}
+	packages := []*extractor.Package{}
 
 	for eof := false; !eof; {
 		if err := ctx.Err(); err != nil {
@@ -195,10 +197,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			}
 		}
 
-		var pkg = &extractor.Inventory{
-			Name:    record["P"],
-			Version: record["V"],
-			Metadata: &Metadata{
+		var pkg = &extractor.Package{
+			Name:     record["P"],
+			Version:  record["V"],
+			PURLType: purl.TypeApk,
+			Metadata: &apkmeta.Metadata{
 				OSID:         m["ID"],
 				OSVersionID:  m["VERSION_ID"],
 				PackageName:  record["P"],
@@ -216,68 +219,8 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			continue
 		}
 
-		inventories = append(inventories, pkg)
+		packages = append(packages, pkg)
 	}
 
-	return inventories, nil
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'alpine'")
-	return "alpine"
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. 3.18.0
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.OriginName != "" {
-		q[purl.Origin] = m.OriginName
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeApk,
-		Name:       strings.ToLower(i.Name),
-		Namespace:  toNamespace(m),
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	version := toDistro(i.Metadata.(*Metadata))
-	if version == "" {
-		return "Alpine"
-	}
-	return "Alpine:" + trimDistroVersion(version)
-}
-
-// The Alpine OS info might include minor versions such as 3.12.1 while advisories are
-// only published against the minor and major versions, i.e. v3.12. Therefore we trim
-// any minor versions before putting the value into the Ecosystem.
-func trimDistroVersion(distro string) string {
-	parts := strings.Split(distro, ".")
-	if len(parts) < 2 {
-		return "v" + distro
-	}
-	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
+	return packages, nil
 }

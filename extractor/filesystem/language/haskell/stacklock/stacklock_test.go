@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -164,25 +165,29 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "fuzzyset",
 					Version:   "0.2.4",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "hasql-pool",
 					Version:   "1.0.1",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "jose-jwt",
 					Version:   "0.10.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "postgresql-libpq",
 					Version:   "0.10.1.0",
+					PURLType:  purl.TypeHaskell,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -192,7 +197,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -215,27 +220,10 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := stacklock.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeHaskell,
-		Name:    "Name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

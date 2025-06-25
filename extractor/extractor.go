@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -23,11 +24,6 @@ import (
 // Extractor is the common interface of inventory extraction plugins.
 type Extractor interface {
 	plugin.Plugin
-	// ToPURL converts an inventory created by this extractor into a PURL.
-	ToPURL(i *Inventory) *purl.PackageURL
-	// Ecosystem returns the Ecosystem of the given inventory created by this extractor.
-	// For software packages this corresponds to an OSV ecosystem value, e.g. PyPI.
-	Ecosystem(i *Inventory) string
 }
 
 // LINT.IfChange
@@ -40,14 +36,20 @@ type SourceCodeIdentifier struct {
 
 // LayerDetails stores details about the layer a package was found in.
 type LayerDetails struct {
-	Index       int
-	DiffID      string
+	Index  int
+	DiffID string
+	// The layer chain ID (sha256 hash) of the layer in the container image.
+	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+	ChainID     string
 	Command     string
 	InBaseImage bool
 }
 
-// Inventory is an instance of a software package or library found by the extractor.
-type Inventory struct {
+// Package is an instance of a software package or library found by the extractor.
+// TODO(b/400910349): Currently package is also used to store non-package data
+// like open ports. Move these into their own dedicated types.
+// TODO(b/400910349): Move from extractor into a separate package such as inventory.
+type Package struct {
 	// A human-readable name representation of the package. Note that this field
 	// should only be used for things like logging as different packages can have
 	// multiple different types of names (e.g. .deb packages have a source name
@@ -61,17 +63,23 @@ type Inventory struct {
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
 	Locations []string
-	// The Extractor that found this software instance. Set by the core library.
-	Extractor Extractor
-	// Annotations are additional information about the package that is useful for matching.
-	Annotations []Annotation
+	// The PURL type of this package, e.g. "pypi". Used for purl generation.
+	PURLType string
+	// The names of the Plugins that found this software instance. Set by the core library.
+	Plugins []string
+	// Deprecated - use ExploitabilitySignals instead
+	// TODO(b/400910349): Remove once integrators stop using this.
+	AnnotationsDeprecated []Annotation
+	// Signals to indicate that specific vulnerabilities are not applicable to this package.
+	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
 	LayerDetails *LayerDetails
 	// The additional data found in the package.
 	Metadata any
 }
 
-// Annotation are additional information about the inventory.
+// Annotation are additional information about the package.
+// TODO(b/400910349): Remove once integrators switch to PackageExploitabilitySignal.
 type Annotation int64
 
 const (
@@ -81,17 +89,20 @@ const (
 	// happens for example when packages are renamed.
 	Transitional
 	// InsideOSPackage is set for packages that are found inside an OS package.
-	// TODO(b/364536788): Annotation for language packages inside OS packages.
 	InsideOSPackage
 	// InsideCacheDir is set for packages that are found inside a cache directory.
-	// TODO(b/364539671): Annotation for packages inside cache directories.
 	InsideCacheDir
 )
 
-// Ecosystem returns the Ecosystem of the inventory. For software packages this corresponds
+// PURL returns the Package URL of this package.
+func (p *Package) PURL() *purl.PackageURL {
+	return toPURL(p)
+}
+
+// Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
-func (i *Inventory) Ecosystem() string {
-	return i.Extractor.Ecosystem(i)
+func (p *Package) Ecosystem() string {
+	return toEcosystem(p)
 }
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)

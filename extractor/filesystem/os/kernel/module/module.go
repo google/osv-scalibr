@@ -28,13 +28,13 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -131,8 +131,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from .ko files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -145,11 +145,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs := []*extractor.Inventory{}
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	packages := []*extractor.Package{}
 
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
@@ -163,7 +163,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		buf := bytes.NewBuffer([]byte{})
 		_, err := io.Copy(buf, input.Reader)
 		if err != nil {
-			return []*extractor.Inventory{}, err
+			return []*extractor.Package{}, err
 		}
 		readerAt = bytes.NewReader(buf.Bytes())
 	}
@@ -184,7 +184,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		return nil, fmt.Errorf("failed to read .modinfo section: %w", err)
 	}
 
-	var metadata Metadata
+	var metadata modulemeta.Metadata
 
 	// Sections are delimited by null bytes (\x00)
 	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
@@ -218,59 +218,15 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	metadata.OSVersionCodename = m["VERSION_CODENAME"]
 	metadata.OSVersionID = m["VERSION_ID"]
 
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      metadata.PackageName,
 		Version:   metadata.PackageVersion,
+		PURLType:  purl.TypeKernelModule,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
-	pkgs = append(pkgs, i)
+	packages = append(packages, p)
 
-	return pkgs, nil
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	return "linux"
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeKernelModule,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func toDistro(m *Metadata) string {
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
+	return packages, nil
 }

@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -40,7 +42,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      true,
 		},
 		{
+			inputPath: "gems.locked",
+			want:      true,
+		},
+		{
 			inputPath: "path/to/my/Gemfile.lock",
+			want:      true,
+		},
+		{
+			inputPath: "path/to/my/gems.locked",
 			want:      true,
 		},
 		{
@@ -74,38 +84,39 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-spec-section.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "no gem section",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-gem-section.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "no gems",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-gems.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "invalid spec",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one gem",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-gem.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ast",
 					Version:   "2.4.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/one-gem.lock"},
 				},
 			},
@@ -115,10 +126,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/source-section-at-end.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ast",
 					Version:   "2.4.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/source-section-at-end.lock"},
 				},
 			},
@@ -128,20 +140,23 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/some-gems.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "coderay",
 					Version:   "1.1.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/some-gems.lock"},
 				},
 				{
 					Name:      "method_source",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/some-gems.lock"},
 				},
 				{
 					Name:      "pry",
 					Version:   "0.14.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/some-gems.lock"},
 				},
 			},
@@ -151,35 +166,41 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-gems.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "bundler-audit",
 					Version:   "0.9.0.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 				{
 					Name:      "coderay",
 					Version:   "1.1.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 				{
 					Name:      "dotenv",
 					Version:   "2.7.6",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 				{
 					Name:      "method_source",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 				{
 					Name:      "pry",
 					Version:   "0.14.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 				{
 					Name:      "thor",
 					Version:   "1.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/multiple-gems.lock"},
 				},
 			},
@@ -189,235 +210,281 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/rails.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "actioncable",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "actionmailbox",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "actionmailer",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "actionpack",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "actiontext",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "actionview",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "activejob",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "activemodel",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "activerecord",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "activestorage",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "activesupport",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "builder",
 					Version:   "3.2.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "concurrent-ruby",
 					Version:   "1.1.9",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "crass",
 					Version:   "1.0.6",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "digest",
 					Version:   "3.1.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "erubi",
 					Version:   "1.10.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "globalid",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "i18n",
 					Version:   "1.10.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "io-wait",
 					Version:   "0.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "loofah",
 					Version:   "2.14.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "mail",
 					Version:   "2.7.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "marcel",
 					Version:   "1.0.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "method_source",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "mini_mime",
 					Version:   "1.1.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "minitest",
 					Version:   "5.15.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "net-imap",
 					Version:   "0.2.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "net-pop",
 					Version:   "0.1.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "net-protocol",
 					Version:   "0.1.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "net-smtp",
 					Version:   "0.3.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "nio4r",
 					Version:   "2.5.8",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "racc",
 					Version:   "1.6.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rack",
 					Version:   "2.2.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rack-test",
 					Version:   "1.1.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rails",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rails-dom-testing",
 					Version:   "2.0.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rails-html-sanitizer",
 					Version:   "1.4.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "railties",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "rake",
 					Version:   "13.0.6",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "strscan",
 					Version:   "3.0.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "thor",
 					Version:   "1.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "timeout",
 					Version:   "0.2.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "tzinfo",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "websocket-driver",
 					Version:   "0.7.5",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "websocket-extensions",
 					Version:   "0.1.5",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "zeitwerk",
 					Version:   "2.5.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 				{
 					Name:      "nokogiri",
 					Version:   "1.13.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rails.lock"},
 				},
 			},
@@ -427,55 +494,65 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/rubocop.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ast",
 					Version:   "2.4.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "parallel",
 					Version:   "1.21.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "parser",
 					Version:   "3.1.1.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "rainbow",
 					Version:   "3.1.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "regexp_parser",
 					Version:   "2.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "rexml",
 					Version:   "3.2.5",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "rubocop",
 					Version:   "1.25.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "rubocop-ast",
 					Version:   "1.16.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "ruby-progressbar",
 					Version:   "1.11.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 				{
 					Name:      "unicode-display_width",
 					Version:   "2.1.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rubocop.lock"},
 				},
 			},
@@ -485,155 +562,185 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/has-local-gem.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "backbone-on-rails",
 					Version:   "1.2.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "actionpack",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "actionview",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "activesupport",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "builder",
 					Version:   "3.2.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "coffee-script",
 					Version:   "2.4.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "coffee-script-source",
 					Version:   "1.12.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "concurrent-ruby",
 					Version:   "1.1.9",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "crass",
 					Version:   "1.0.6",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "eco",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "ejs",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "erubi",
 					Version:   "1.10.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "execjs",
 					Version:   "2.8.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "i18n",
 					Version:   "1.10.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "jquery-rails",
 					Version:   "4.4.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "loofah",
 					Version:   "2.14.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "method_source",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "minitest",
 					Version:   "5.15.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "racc",
 					Version:   "1.6.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "rack",
 					Version:   "2.2.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "rack-test",
 					Version:   "1.1.0",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "rails-dom-testing",
 					Version:   "2.0.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "rails-html-sanitizer",
 					Version:   "1.4.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "railties",
 					Version:   "7.0.2.2",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "rake",
 					Version:   "13.0.6",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "thor",
 					Version:   "1.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "tzinfo",
 					Version:   "2.0.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "zeitwerk",
 					Version:   "2.5.4",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "nokogiri",
 					Version:   "1.13.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 				{
 					Name:      "eco-source",
 					Version:   "1.1.0.rc.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-local-gem.lock"},
 				},
 			},
@@ -643,10 +750,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/has-git-gem.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "hanami-controller",
 					Version:   "2.0.0.alpha1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-git-gem.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "027dbe2e56397b534e859fc283990cad1b6addd6",
@@ -655,6 +763,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "hanami-utils",
 					Version:   "2.0.0.alpha1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-git-gem.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5904fc9a70683b8749aa2861257d0c8c01eae4aa",
@@ -663,16 +772,19 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "concurrent-ruby",
 					Version:   "1.1.7",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-git-gem.lock"},
 				},
 				{
 					Name:      "rack",
 					Version:   "2.2.3",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-git-gem.lock"},
 				},
 				{
 					Name:      "transproc",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/has-git-gem.lock"},
 				},
 			},
@@ -693,7 +805,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

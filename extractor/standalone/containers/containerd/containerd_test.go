@@ -24,33 +24,35 @@ import (
 	"slices"
 	"testing"
 
-	containerd "github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types/task"
+	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	md "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd/fakeclient"
+	"github.com/google/osv-scalibr/inventory"
 )
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name          string
-		onGoos        []string
-		nssTaskIDs    map[string][]string
-		tsks          []*task.Process
-		ctrs          []containerd.Container
-		wantInventory []*extractor.Inventory
-		wantErr       error
+		name         string
+		onGoos       []string
+		nssTaskIDs   map[string][]string
+		tsks         []*task.Process
+		ctrs         []containerd.Container
+		wantPackages []*extractor.Package
+		wantErr      error
 	}{
 		{
-			name:          "valid with no tasks",
-			onGoos:        []string{"linux"},
-			nssTaskIDs:    map[string][]string{"default": {}, "k8s.io": {}},
-			tsks:          []*task.Process{},
-			ctrs:          []containerd.Container{},
-			wantInventory: []*extractor.Inventory{},
+			name:         "valid with no tasks",
+			onGoos:       []string{"linux"},
+			nssTaskIDs:   map[string][]string{"default": {}, "k8s.io": {}},
+			tsks:         []*task.Process{},
+			ctrs:         []containerd.Container{},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name:       "valid with tasks and rootfs",
@@ -58,12 +60,12 @@ func TestExtract(t *testing.T) {
 			nssTaskIDs: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
 			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", "/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs")},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -77,7 +79,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
@@ -95,12 +97,12 @@ func TestExtract(t *testing.T) {
 			nssTaskIDs: map[string][]string{"default": {"123456789"}, "k8s.io": {"567890123"}},
 			tsks:       []*task.Process{{ID: "123456789", ContainerID: "", Pid: 12345}, {ID: "567890123", ContainerID: "", Pid: 5678}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", ""), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "")},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -114,7 +116,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
@@ -132,12 +134,12 @@ func TestExtract(t *testing.T) {
 			nssTaskIDs: map[string][]string{"default": {"123456788"}, "k8s.io": {"567890122"}},
 			tsks:       []*task.Process{{ID: "123456788", ContainerID: "", Pid: 12346}, {ID: "567890122", ContainerID: "", Pid: 5677}},
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "image1",
 					Version:   "digest1",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
 						ImageDigest: "digest1",
@@ -151,7 +153,7 @@ func TestExtract(t *testing.T) {
 					Name:      "image2",
 					Version:   "digest2",
 					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs"},
-					Metadata: &plugin.Metadata{
+					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
 						ImageDigest: "digest2",
@@ -185,7 +187,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.name, diff)
 			}
 		})

@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -93,19 +94,20 @@ func isCaskroom(filePath string) bool {
 }
 
 // Extract parses the recognised Homebrew file path and returns information about the installed package.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	p := SplitPath(input.Path)
 	if p == nil {
-		return []*extractor.Inventory{}, nil
+		return inventory.Inventory{}, nil
 	}
-	return []*extractor.Inventory{
+	return inventory.Inventory{Packages: []*extractor.Package{
 		{
 			Name:      p.AppName,
 			Version:   p.AppVersion,
+			PURLType:  purl.TypeBrew,
 			Locations: []string{input.Path},
 			Metadata:  &Metadata{},
 		},
-	}, nil
+	}}, nil
 }
 
 // SplitPath takes the package path and splits it into its recognised struct components
@@ -125,15 +127,3 @@ func SplitPath(path string) *BrewPath {
 	}
 	return nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeBrew,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

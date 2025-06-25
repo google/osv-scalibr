@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -75,33 +77,34 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-pom.txt",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "invalid syntax",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-syntax.xml",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.xml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.apache.maven:maven-artifact",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/one-package.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "maven-artifact",
@@ -116,10 +119,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.42.Final",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/two-packages.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "netty-all",
@@ -130,6 +134,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.slf4j:slf4j-log4j12",
 					Version:   "1.7.25",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/two-packages.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "slf4j-log4j12",
@@ -144,10 +149,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-dependency-management.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.9",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-dependency-management.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "netty-all",
@@ -158,6 +164,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.slf4j:slf4j-log4j12",
 					Version:   "1.7.25",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-dependency-management.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "slf4j-log4j12",
@@ -172,10 +179,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/interpolation.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.mine:mypackage",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/interpolation.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "mypackage",
@@ -186,6 +194,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.mine:my.package",
 					Version:   "2.3.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/interpolation.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "my.package",
@@ -196,6 +205,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.mine:ranged-package",
 					Version:   "9.4.35.v20201120",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/interpolation.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "ranged-package",
@@ -210,10 +220,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-scope.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "abc:xyz",
 					Version:   "1.2.3",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-scope.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "xyz",
@@ -224,6 +235,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "junit:junit",
 					Version:   "4.12",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-scope.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "junit",
@@ -238,10 +250,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-type-classifier.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "abc:xyz",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-type-classifier.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "xyz",
@@ -258,10 +271,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-parent.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.alice:alice",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "alice",
@@ -272,6 +286,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.bob:bob",
 					Version:   "2.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "bob",
@@ -282,6 +297,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.chuck:chuck",
 					Version:   "3.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "chuck",
@@ -292,6 +308,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.dave:dave",
 					Version:   "4.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "dave",
@@ -302,6 +319,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name: "org.frank:frank",
 					// Version is not available in the local pom.xml.
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-parent.xml"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "frank",
@@ -327,7 +345,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

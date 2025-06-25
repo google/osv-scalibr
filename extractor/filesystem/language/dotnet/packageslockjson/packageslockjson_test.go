@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -132,52 +133,60 @@ func TestExtractor(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "valid packages.lock.json",
 			path: "testdata/valid/packages.lock.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "Core.Dep",
 					Version:   "1.24.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.One",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Two",
 					Version:   "4.6.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Three",
 					Version:   "1.0.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Four",
 					Version:   "4.5.0",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Longer.Name.Dep",
 					Version:   "4.7.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Some.Dep.Five",
 					Version:   "4.7.2",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 				{
 					Name:      "Another.Longer.Name.Dep",
 					Version:   "4.5.4",
+					PURLType:  purl.TypeNuget,
 					Locations: []string{"testdata/valid/packages.lock.json"},
 				},
 			},
@@ -222,8 +231,9 @@ func TestExtractor(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)
 			}
 
-			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(test.wantInventory, got, cmpopts.SortSlices(sort)); diff != "" {
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			wantInv := inventory.Inventory{Packages: test.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", test.path, diff)
 			}
 
@@ -237,23 +247,5 @@ func TestExtractor(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", test.path, gotFileSizeMetric, info.Size())
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := packageslockjson.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeNuget,
-		Name:    "Name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

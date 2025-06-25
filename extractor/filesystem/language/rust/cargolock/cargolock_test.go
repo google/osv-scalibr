@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -83,25 +85,26 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantInventory: nil,
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/one-package.lock"},
 				},
 			},
@@ -111,15 +114,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 				{
 					Name:      "syn",
 					Version:   "1.0.73",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages.lock"},
 				},
 			},
@@ -129,15 +134,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages-with-local.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "addr2line",
 					Version:   "0.15.2",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages-with-local.lock"},
 				},
 				{
 					Name:      "local-rust-pkg",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/two-packages-with-local.lock"},
 				},
 			},
@@ -147,10 +154,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/package-with-build-string.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "wasi",
 					Version:   "0.10.2+wasi-snapshot-preview1",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/package-with-build-string.lock"},
 				},
 			},
@@ -170,7 +178,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

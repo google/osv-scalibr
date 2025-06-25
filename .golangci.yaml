@@ -2,109 +2,144 @@
 #   currently it does not because using that config raises type errors,
 #   in addition to some of the rules having violations that need addressing,
 #   so the current focus is on getting as many linters as possible running
+version: "2"
 
-output:
-  sort-results: true
 linters:
-  enable-all: true
+  default: all
   disable:
-    - cyclop
-    - depguard
-    - err113
+    - cyclop           #
+    - depguard         #
+    - err113           #
     - exhaustive       # TODO(#274): work on enabling this
-    - exhaustruct
-    - exptostd         # TODO(#274): work on enabling this
-    - forcetypeassert
-    - funlen
-    - gci
-    - gochecknoglobals
-    - gocognit
-    - goconst
+    - exhaustruct      #
+    - forcetypeassert  #
+    - funcorder        #
+    - funlen           #
+    - gochecknoglobals #
+    - gocognit         #
+    - goconst          #
     - gocritic         # TODO(#274): work on enabling this
-    - gocyclo
-    - godot
-    - godox
-    - gofumpt
+    - gocyclo          #
+    - godot            #
+    - godox            #
     - gosec            # TODO(#274): work on enabling this
-    - ireturn
-    - lll
-    - maintidx
+    - ireturn          #
+    - lll              #
+    - maintidx         #
     - mnd              # Not every number is magic
-    - nestif
+    - nestif           #
+    - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
-    - nonamedreturns
+    - nonamedreturns   #
     - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
     - prealloc         # We don't want to preallocate all the time
     - protogetter      # TODO(#274): work on enabling this
     - recvcheck        # TODO(#274): work on enabling this
-    - stylecheck       # TODO(#274): work on enabling this
-    - tagliatelle
-    - tenv             # Deprecated
-    - testpackage
+    - tagliatelle      #
+    - testpackage      #
     - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
-    - varnamelen
-    - wrapcheck
-    - wsl
-
-linters-settings:
-  forbidigo:
-    forbid:
-      # Parallel tests mixes up log lines of multiple tests in the internal test runner
-      - p: ^testing.T.Parallel$
-        pkg: ^testing$
-    analyze-types: true
-  gofmt:
-    simplify: false
-  revive:
+    - varnamelen       #
+    - wrapcheck        #
+    - wsl              #
+  settings:
+    forbidigo:
+      forbid:
+        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+        - pattern: ^testing.T.Parallel$
+          pkg: ^testing$
+      analyze-types: true
+    usetesting:
+      # TODO(#274): work on enabling this
+      os-chdir: false
+      context-background: false
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: context-keys-type
+          disabled: false
+        - name: dot-imports
+          disabled: false
+        - name: empty-block
+          disabled: false
+        - name: error-naming
+          disabled: false
+        - name: error-return
+          disabled: false
+        - name: error-strings
+          disabled: false
+        - name: errorf
+          disabled: false
+        - name: exported
+          disabled: false
+        - name: indent-error-flow
+          disabled: false
+        - name: package-comments
+          disabled: false
+        - name: range
+          disabled: false
+        - name: receiver-naming
+          disabled: false
+        - name: redefines-builtin-id
+          disabled: false
+        - name: superfluous-else
+          disabled: false
+        - name: time-naming
+          disabled: false
+        - name: unreachable-code
+          disabled: false
+        - name: use-any
+          disabled: false
+        - name: var-naming
+          disabled: false
+    staticcheck:
+      checks:
+        - all
+        - -QF1001 # apply De Morgan's law
+        - -QF1003 # use tagged switch on prefix
+        - -QF1006 # lift into loop condition
+        - -QF1008 # remove embedded field from selector
+        - -ST1005 # error strings should not be capitalized
+        - -QF1011 # omit type from declaration; it will be inferred from the right-hand side
+        - -ST1023 # omit type from declaration; it will be inferred from the right-hand side
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: blank-imports
-        disabled: false
-      - name: context-as-argument
-        disabled: false
-      - name: context-keys-type
-        disabled: false
-      - name: dot-imports
-        disabled: false
-      - name: empty-block
-        disabled: false
-      - name: error-naming
-        disabled: false
-      - name: error-return
-        disabled: false
-      - name: error-strings
-        disabled: false
-      - name: errorf
-        disabled: false
-      - name: exported
-        disabled: false
-      - name: indent-error-flow
-        disabled: false
-      - name: package-comments
-        disabled: false
-      - name: range
-        disabled: false
-      - name: receiver-naming
-        disabled: false
-      - name: redefines-builtin-id
-        disabled: false
-      - name: superfluous-else
-        disabled: false
-      - name: time-naming
-        disabled: false
-      - name: unreachable-code
-        disabled: false
-      - name: use-any
-        disabled: false
-      - name: var-naming
-        disabled: false
+      - linters:
+          - dupl
+        path: _test\.go
+      - path: veles/
+        linters:
+          - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+      - path: velestest/
+        linters:
+          - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
 issues:
-  include:
-    - EXC0015 # revive package-comments
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - dupl

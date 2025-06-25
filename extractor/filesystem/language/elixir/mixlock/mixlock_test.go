@@ -20,8 +20,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/osv-scalibr/purl"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
@@ -29,6 +27,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -166,10 +166,11 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "bunt",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeHex,
 					Locations: []string{"testdata/valid"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
@@ -178,6 +179,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:      "certifi",
 					Version:   "2.12.0",
+					PURLType:  purl.TypeHex,
 					Locations: []string{"testdata/valid"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "2d1cca2ec95f59643862af91f001478c9863c2ac9cb6e2f89780bfd8de987329",
@@ -190,10 +192,11 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "bunt",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeHex,
 					Locations: []string{"testdata/invalid"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
@@ -206,7 +209,7 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -228,27 +231,10 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := elixir.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeHex,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

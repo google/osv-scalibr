@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
@@ -133,7 +134,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
-	multipleInventories := []*extractor.Inventory{{
+	multiplePackages := []*extractor.Package{{
 		Name:      name1,
 		Locations: []string{"some path"},
 	}, {
@@ -150,7 +151,7 @@ func TestExtract(t *testing.T) {
 		name      string
 		extractor filesystem.Extractor
 		args      args
-		want      []*extractor.Inventory
+		want      []*extractor.Package
 		wantErr   error
 	}{
 		{
@@ -159,7 +160,7 @@ func TestExtract(t *testing.T) {
 				"some path": {nil, nil},
 			}),
 			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
-			want: []*extractor.Inventory{},
+			want: []*extractor.Package{},
 		},
 		{
 			name: "multiple results",
@@ -167,7 +168,7 @@ func TestExtract(t *testing.T) {
 				"some path": {[]string{name1, name2}, nil},
 			}),
 			args: args{context.Background(), &filesystem.ScanInput{Path: "some path"}},
-			want: multipleInventories,
+			want: multiplePackages,
 		},
 		{
 			name: "unrecognized path throws an error",
@@ -185,7 +186,8 @@ func TestExtract(t *testing.T) {
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("extractor.Extract(%v, %+v) got error: %v, want: %v\n", test.args.ctx, test.args.input, err, test.wantErr)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			wantInv := inventory.Inventory{Packages: test.want}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
 				t.Fatalf("extractor.Extract(%v, %+v) returned unexpected result; diff (-want +got):\n%s", test.args.ctx, test.args.input, diff)
 			}
 		})

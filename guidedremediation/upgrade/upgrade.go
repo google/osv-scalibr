@@ -15,13 +15,18 @@
 // Package upgrade provides the configuration for the allowable package upgrade levels for remediation.
 package upgrade
 
-import "deps.dev/util/semver"
+import (
+	"strings"
+
+	"deps.dev/util/semver"
+)
 
 // Level is the maximum semver level of upgrade allowed for a package.
 // i.e. if Level == Major, all upgrades are allowed,
 // if Level == Minor, only upgrades up to minor (1.0.0 - 1.*.*) are allowed.
 type Level int
 
+// these constants represent the different allowable semver upgrade levels
 const (
 	Major Level = iota
 	Minor
@@ -55,6 +60,36 @@ type Config map[string]Level
 // NewConfig creates a new Config, with all packages allowing all upgrades.
 func NewConfig() Config {
 	return make(Config)
+}
+
+// NewConfigFromStrings creates a new Config from a list of strings.
+// Each string is in the format of "pkg:level", where pkg is the package name and level is one of
+// "major", "minor", "patch", or "none".
+// If pkg is not specified, the level is set as the default level for all packages not specified.
+// Invalid strings are ignored, duplicate package strings are overwritten.
+func NewConfigFromStrings(cfgStrings []string) Config {
+	cfg := NewConfig()
+	for _, c := range cfgStrings {
+		var pkg string
+		level := c
+		if idx := strings.LastIndex(c, ":"); idx != -1 {
+			pkg = c[:idx]
+			level = c[idx+1:]
+		}
+		switch level {
+		case "major":
+			cfg.Set(pkg, Major)
+		case "minor":
+			cfg.Set(pkg, Minor)
+		case "patch":
+			cfg.Set(pkg, Patch)
+		case "none":
+			cfg.Set(pkg, None)
+			// Ignore invalid levels.
+		}
+	}
+
+	return cfg
 }
 
 // Set the allowed upgrade level for a given pkg name.

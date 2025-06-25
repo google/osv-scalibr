@@ -30,8 +30,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -181,7 +183,7 @@ func TestExtract(t *testing.T) {
 		cfg              archive.Config
 		path             string
 		contentPath      string
-		want             []*extractor.Inventory
+		want             []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -203,21 +205,22 @@ func TestExtract(t *testing.T) {
 			name:        "Jar file with no pom.properties",
 			description: "Contains other files but no pom.properties.",
 			path:        filepath.FromSlash("testdata/no_pom_properties.jar"),
-			want:        []*extractor.Inventory{},
+			want:        []*extractor.Package{},
 		},
 		{
 			name:        "Jar file with invalid pom.properties",
 			description: "Contains a pom.properties which is missing the `groupId` field and so it is ignored.",
 			path:        filepath.FromSlash("testdata/pom_missing_group_id.jar"),
-			want:        []*extractor.Inventory{},
+			want:        []*extractor.Package{},
 		},
 		{
 			name: "Jar file with pom.properties",
 			path: filepath.FromSlash("testdata/simple.jar"),
-			want: []*extractor.Inventory{{
-				Name:     "package-name",
+			want: []*extractor.Package{{
+				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
-				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
 					filepath.FromSlash("testdata/simple.jar"),
 					filepath.FromSlash("testdata/simple.jar/pom.properties"),
@@ -231,7 +234,7 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{},
+			want: []*extractor.Package{},
 		},
 		{
 			name:        "Jar file with pom.properties, IdentifyByFilename enabled",
@@ -240,10 +243,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:     "package-name",
+			want: []*extractor.Package{{
+				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
-				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
 					filepath.FromSlash("testdata/simple.jar"),
 					filepath.FromSlash("testdata/simple.jar/pom.properties"),
@@ -257,10 +261,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:     "no_pom_properties",
+			want: []*extractor.Package{{
+				Name:     "no_pom_properties:no_pom_properties",
 				Version:  "2.4.0",
-				Metadata: &archive.Metadata{ArtifactID: "no_pom_properties", GroupID: "no_pom_properties"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "no_pom_properties", GroupID: "no_pom_properties"},
 				Locations: []string{
 					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
 				},
@@ -274,10 +279,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:    "no_pom_properties",
-				Version: "2.4.0",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "org.apache.ivy:no_pom_properties",
+				Version:  "2.4.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.apache.ivy", // Group ID overridden by manifest.
 				},
@@ -294,10 +300,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:    "no_pom_properties",
-				Version: "2.4.0",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "no_pom_properties:no_pom_properties",
+				Version:  "2.4.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "no_pom_properties",
 					// Group ID defaults to Artifact ID since there was no Group ID in the
 					// manifest.
@@ -315,10 +322,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:     "pom_missing_group_id",
+			want: []*extractor.Package{{
+				Name:     "pom_missing_group_id:pom_missing_group_id",
 				Version:  "2.4.0",
-				Metadata: &archive.Metadata{ArtifactID: "pom_missing_group_id", GroupID: "pom_missing_group_id"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "pom_missing_group_id", GroupID: "pom_missing_group_id"},
 				Locations: []string{
 					filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
 				},
@@ -331,10 +339,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:     "org.eclipse.sisu.inject",
+			want: []*extractor.Package{{
+				Name:     "org.eclipse.sisu:org.eclipse.sisu.inject",
 				Version:  "0.3.5",
-				Metadata: &archive.Metadata{ArtifactID: "org.eclipse.sisu.inject", GroupID: "org.eclipse.sisu"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "org.eclipse.sisu.inject", GroupID: "org.eclipse.sisu"},
 				Locations: []string{
 					filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar"),
 				},
@@ -344,10 +353,11 @@ func TestExtract(t *testing.T) {
 			name: "Nested jars with pom.properties at depth 10",
 			path: filepath.FromSlash("testdata/nested_at_10.jar"),
 			cfg:  archive.Config{HashJars: true},
-			want: []*extractor.Inventory{{
-				Name:    "package-name",
-				Version: "1.2.3",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "com.some.package:package-name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "package-name",
 					GroupID:    "com.some.package",
 					SHA1:       "PO6pevcX8f2Rkpv4xB6NYviFokQ=", // inner most nested.jar
@@ -371,27 +381,29 @@ func TestExtract(t *testing.T) {
 			name:        "Nested jars with pom.properties at depth 100",
 			description: "Returns error with no results because max depth is reached before getting to pom.properties",
 			path:        filepath.FromSlash("testdata/nested_at_100.jar"),
-			want:        []*extractor.Inventory{},
+			want:        []*extractor.Package{},
 			wantErr:     errAny,
 		},
 		{
 			name:        "Jar file with pom.properties at multiple depths",
 			description: "A jar file with pom.properties at complex.jar/pom.properties and another at complex.jar/BOOT-INF/lib/inner.jar/pom.properties",
 			path:        filepath.FromSlash("testdata/complex.jar"),
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:     "package-name",
+					Name:     "com.some.package:package-name",
 					Version:  "1.2.3",
-					Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 					Locations: []string{
 						filepath.FromSlash("testdata/complex.jar"),
 						filepath.FromSlash("testdata/complex.jar/pom.properties"),
 					},
 				},
 				{
-					Name:     "another-package-name",
+					Name:     "com.some.anotherpackage:another-package-name",
 					Version:  "3.2.1",
-					Metadata: &archive.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
 					Locations: []string{
 						filepath.FromSlash("testdata/complex.jar"),
 						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar"),
@@ -408,10 +420,11 @@ func TestExtract(t *testing.T) {
 				Stats:          testcollector.New(),
 			},
 			path: filepath.FromSlash("testdata/complex.jar"),
-			want: []*extractor.Inventory{{
-				Name:     "package-name",
+			want: []*extractor.Package{{
+				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
-				Metadata: &archive.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
 				Locations: []string{
 					filepath.FromSlash("testdata/complex.jar"),
 					filepath.FromSlash("testdata/complex.jar/pom.properties"),
@@ -424,11 +437,12 @@ func TestExtract(t *testing.T) {
 			name: "Realistic jar file with pom.properties",
 			path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
 			cfg:  archive.Config{HashJars: true},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:    "guava",
-					Version: "31.1-jre",
-					Metadata: &archive.Metadata{
+					Name:     "com.google.guava:guava",
+					Version:  "31.1-jre",
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{
 						ArtifactID: "guava",
 						GroupID:    "com.google.guava",
 						// openssl sha1 -binary third_party/scalibr/extractor/filesystem/language/java/archive/testdata/guava-31.1-jre.jar | base64
@@ -444,16 +458,17 @@ func TestExtract(t *testing.T) {
 		{
 			name: "Test MANIFEST.MF with no valid ArtifactID",
 			path: filepath.FromSlash("testdata/com.google.src.yolo-0.1.2.jar"),
-			want: []*extractor.Inventory{},
+			want: []*extractor.Package{},
 		},
 		{
 			name:        "Test MANIFEST.MF with symbolic name",
 			path:        filepath.FromSlash("testdata/manifest-symbolicname"),
 			contentPath: filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF"),
-			want: []*extractor.Inventory{{
-				Name:    "failureaccess",
-				Version: "1.0.1",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "com.google.guava.failureaccess:failureaccess",
+				Version:  "1.0.1",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "failureaccess",
 					GroupID:    "com.google.guava.failureaccess",
 				},
@@ -467,10 +482,11 @@ func TestExtract(t *testing.T) {
 			name:        "Test invalid group or artifact id in manifest.mf",
 			path:        filepath.FromSlash("testdata/invalid-ids"),
 			contentPath: filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF"),
-			want: []*extractor.Inventory{{
-				Name:    "correct.name",
-				Version: "1.2.3",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "test.group:correct.name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "correct.name",
 					GroupID:    "test.group",
 				},
@@ -484,10 +500,11 @@ func TestExtract(t *testing.T) {
 			name:        "Test artifact ID that is mapped to a known group ID",
 			path:        filepath.FromSlash("testdata/known-group-id"),
 			contentPath: filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
-			want: []*extractor.Inventory{{
-				Name:    "spring-web",
-				Version: "5.3.26",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "org.springframework:spring-web",
+				Version:  "5.3.26",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "spring-web",
 					GroupID:    "org.springframework",
 				},
@@ -502,10 +519,11 @@ func TestExtract(t *testing.T) {
 			path:        filepath.FromSlash("testdata/ivy-2.4.0.jar"),
 			contentPath: filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
 			cfg:         archive.Config{ExtractFromFilename: true},
-			want: []*extractor.Inventory{{
-				Name:    "ivy",
-				Version: "2.4.0",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "org.apache.ivy:ivy",
+				Version:  "2.4.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "ivy",
 					GroupID:    "org.apache.ivy",
 				},
@@ -520,10 +538,11 @@ func TestExtract(t *testing.T) {
 			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
 			contentPath: filepath.FromSlash("testdata/manifest-implementation-title/MANIFEST.MF"),
 			cfg:         archive.Config{ExtractFromFilename: true},
-			want: []*extractor.Inventory{{
-				Name:    "no_pom_properties",
-				Version: "2.4.0",
-				Metadata: &archive.Metadata{
+			want: []*extractor.Package{{
+				Name:     "org.elasticsearch:no_pom_properties",
+				Version:  "2.4.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.elasticsearch",
 				},
@@ -540,10 +559,11 @@ func TestExtract(t *testing.T) {
 			cfg: archive.Config{
 				ExtractFromFilename: true,
 			},
-			want: []*extractor.Inventory{{
-				Name:     "axis",
+			want: []*extractor.Package{{
+				Name:     "org.apache.axis:axis",
 				Version:  "1.4",
-				Metadata: &archive.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
 				Locations: []string{
 					filepath.FromSlash("testdata/axis"),
 					filepath.FromSlash("testdata/axis/MANIFEST.MF"),
@@ -592,8 +612,8 @@ func TestExtract(t *testing.T) {
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
-			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(tt.want, got, cmpopts.SortSlices(sort)); diff != "" {
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(inventory.Inventory{Packages: tt.want}, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -607,29 +627,6 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := archive.Extractor{}
-	i := &extractor.Inventory{
-		Name:    "Name",
-		Version: "1.2.3",
-		Metadata: &archive.Metadata{
-			ArtifactID: "ArtifactID",
-			GroupID:    "GroupID",
-		},
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:      purl.TypeMaven,
-		Name:      "artifactid",
-		Namespace: "groupid",
-		Version:   "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }
 

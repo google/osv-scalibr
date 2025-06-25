@@ -27,6 +27,11 @@ import (
 // GitignorePattern is a list of patterns found inside a .gitignore file.
 type GitignorePattern gitignore.Matcher
 
+// EmptyGitignore returns an empty matcher that doesn't match on any pattern.
+func EmptyGitignore() GitignorePattern {
+	return gitignore.NewMatcher(nil)
+}
+
 // GitignoreMatch returns whether the specified file path should be ignored
 // according to the specified .gitignore patterns.
 func GitignoreMatch(gitignores []GitignorePattern, filePath []string, isDir bool) bool {
@@ -64,11 +69,12 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 }
 
 // ParseParentGitignores parses all .gitignore patterns between the current dir
-// and the scan root.
+// and the scan root, excluding the current directory.
 func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern, error) {
 	filePath := ""
 	result := []GitignorePattern{}
-	for _, dir := range strings.Split(dirPath, "/") {
+	components := strings.Split(dirPath, "/")
+	for _, dir := range components[:len(components)-1] {
 		filePath += dir + "/"
 		gitignores, err := ParseDirForGitignore(fs, filePath)
 		if err != nil {

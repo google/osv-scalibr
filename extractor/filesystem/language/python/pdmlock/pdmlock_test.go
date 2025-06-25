@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -88,25 +90,26 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.toml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "single package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/single-package.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "toml",
 					Version:   "0.10.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/single-package.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -119,10 +122,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "toml",
 					Version:   "0.10.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -131,6 +135,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "six",
 					Version:   "1.16.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -143,10 +148,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/dev-dependency.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "toml",
 					Version:   "0.10.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/dev-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -155,6 +161,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pyroute2",
 					Version:   "0.7.11",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/dev-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -163,6 +170,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "win-inet-pton",
 					Version:   "1.1.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/dev-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -175,10 +183,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-dependency.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "toml",
 					Version:   "0.10.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -187,6 +196,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pyroute2",
 					Version:   "0.7.11",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -195,6 +205,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "win-inet-pton",
 					Version:   "1.1.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -207,10 +218,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git-dependency.toml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "toml",
 					Version:   "0.10.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/git-dependency.toml"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -237,7 +249,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

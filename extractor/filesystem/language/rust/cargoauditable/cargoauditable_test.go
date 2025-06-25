@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -113,89 +114,82 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	cargoAuditableExtractor := cargoauditable.Extractor{}
-	inventory := &extractor.Inventory{
-		Name:      "name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeCargo,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := cargoAuditableExtractor.ToPURL(inventory)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", inventory, diff)
-	}
-}
-
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "uses_serde_json",
 			path: "testdata/uses_serde_json/uses_serde_json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "itoa",
 					Version:   "1.0.14",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "memchr",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "proc-macro2",
 					Version:   "1.0.92",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "quote",
 					Version:   "1.0.38",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "ryu",
 					Version:   "1.0.18",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde",
 					Version:   "1.0.217",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde_derive",
 					Version:   "1.0.217",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "serde_json",
 					Version:   "1.0.135",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "syn",
 					Version:   "2.0.95",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "unicode-ident",
 					Version:   "1.0.14",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 				{
 					Name:      "uses_json",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/uses_serde_json/uses_serde_json"},
 				},
 			},
@@ -203,10 +197,11 @@ func TestExtract(t *testing.T) {
 		{
 			name: "no_deps",
 			path: "testdata/no_deps/no_deps",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "no_deps",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCargo,
 					Locations: []string{"testdata/no_deps/no_deps"},
 				},
 			},
@@ -214,7 +209,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "not_binary",
 			path:             "testdata/not_binary/not_binary",
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 	}
@@ -241,8 +236,9 @@ func TestExtract(t *testing.T) {
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}
-			sort := func(a, b *extractor.Inventory) bool { return a.Name < b.Name }
-			if diff := cmp.Diff(tt.wantInventory, got, cmpopts.SortSlices(sort)); diff != "" {
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 

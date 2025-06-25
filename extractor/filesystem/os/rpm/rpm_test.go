@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
@@ -182,7 +183,7 @@ func TestExtract(t *testing.T) {
 		osrelease  string
 		timeoutval time.Duration
 		// rpm -qa --qf "%{NAME}@%{VERSION}-%{RELEASE}\n" |sort |head -n 3
-		wantInventory []*extractor.Inventory
+		wantPackages []*extractor.Package
 		// rpm -qa | wc -l
 		wantResults      int
 		wantErr          error
@@ -194,12 +195,13 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/Packages.db",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
 						SourceRPM:    "aaa_base-84.87+git20180409.04c9dae-150300.10.3.1.src.rpm",
@@ -215,7 +217,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
@@ -231,7 +234,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
@@ -252,12 +256,13 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/Packages",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
 						SourceRPM:    "acl-2.2.51-15.el7.src.rpm",
@@ -273,7 +278,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-2.8.5-4.el7.src.rpm",
@@ -289,7 +295,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-10.0-7.el7.centos.src.rpm",
@@ -307,7 +314,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "file not found",
 			path:             "testdata/foobar",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          os.ErrNotExist,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -315,7 +322,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "empty",
 			path:             "testdata/empty.sqlite",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          io.EOF,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -323,7 +330,7 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "invalid",
 			path:             "testdata/invalid",
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          io.ErrUnexpectedEOF,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -332,7 +339,7 @@ func TestExtract(t *testing.T) {
 			name:             "corrupt db times out",
 			path:             "testdata/timeout/Packages",
 			timeoutval:       1 * time.Second,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantResults:      0,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -343,12 +350,13 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/rpmdb.sqlite",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -364,7 +372,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -380,7 +389,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -402,12 +412,13 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=fedora
 			BUILD_ID=asdf`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -422,7 +433,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -437,7 +449,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -464,12 +477,13 @@ func TestExtract(t *testing.T) {
 			PRETTY_NAME="Fedora 32 (Container Image)"
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
 			wantResultMetric: stats.FileExtractedResultSuccess,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "hello",
 					Version:   "0.0.1-rls",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
@@ -519,18 +533,19 @@ func TestExtract(t *testing.T) {
 			}
 
 			// Update location with the temp path.
-			for _, i := range tt.wantInventory {
-				i.Locations = []string{filepath.Base(tmpPath)}
+			for _, p := range tt.wantPackages {
+				p.Locations = []string{filepath.Base(tmpPath)}
 			}
 
-			sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
-			gotFirst3 := got[:min(len(got), 3)]
-			if diff := cmp.Diff(tt.wantInventory, gotFirst3); diff != "" {
+			pkgs := got.Packages
+			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			gotFirst3 := pkgs[:min(len(pkgs), 3)]
+			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tmpPath, diff)
 			}
 
-			if len(got) != tt.wantResults {
-				t.Errorf("Extract(%s): got %d results, want %d\n", tmpPath, len(got), tt.wantResults)
+			if len(pkgs) != tt.wantResults {
+				t.Errorf("Extract(%s): got %d results, want %d\n", tmpPath, len(pkgs), tt.wantResults)
 			}
 
 			gotResultMetric := collector.FileExtractedResult(filepath.Base(tmpPath))
@@ -562,7 +577,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 		osrelease  string
 		timeoutval time.Duration
 		// rpm -qa --qf "%{NAME}@%{VERSION}-%{RELEASE}\n" |sort |head -n 3
-		wantInventory []*extractor.Inventory
+		wantPackages []*extractor.Package
 		// rpm -qa | wc -l
 		wantResults int
 		wantErr     error
@@ -572,12 +587,13 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:      "testdata/Packages.db",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "aaa_base",
 					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
 						SourceRPM:    "aaa_base-84.87+git20180409.04c9dae-150300.10.3.1.src.rpm",
@@ -593,7 +609,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
@@ -609,7 +626,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages.db"},
 					Name:      "bash-sh",
 					Version:   "4.4-150400.25.22",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
@@ -629,12 +647,13 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:      "testdata/Packages",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages"},
 					Name:      "acl",
 					Version:   "2.2.51-15.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
 						SourceRPM:    "acl-2.2.51-15.el7.src.rpm",
@@ -650,7 +669,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "audit-libs",
 					Version:   "2.8.5-4.el7",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-2.8.5-4.el7.src.rpm",
@@ -666,7 +686,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/Packages"},
 					Name:      "basesystem",
 					Version:   "10.0-7.el7.centos",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-10.0-7.el7.centos.src.rpm",
@@ -686,12 +707,13 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:      "testdata/rpmdb.sqlite",
 			osrelease: fedora38,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "alternatives",
 					Version:   "1.20-2.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
 						SourceRPM:    "chkconfig-1.20-2.el9.src.rpm",
@@ -707,7 +729,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "audit-libs",
 					Version:   "3.0.7-103.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
 						SourceRPM:    "audit-3.0.7-103.el9.src.rpm",
@@ -723,7 +746,8 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Locations: []string{"testdata/rpmdb.sqlite"},
 					Name:      "basesystem",
 					Version:   "11-13.el9",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
 						SourceRPM:    "basesystem-11-13.el9.src.rpm",
@@ -751,12 +775,13 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			PRETTY_NAME="Fedora 32 (Container Image)"
 			CPE_NAME="cpe:/o:fedoraproject:fedora:32"`,
 
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Locations: []string{"testdata/Packages_epoch"},
 					Name:      "hello",
 					Version:   "0.0.1-rls",
-					Metadata: &rpm.Metadata{
+					PURLType:  purl.TypeRPM,
+					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
@@ -771,18 +796,18 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 1,
 		},
 		{
-			name:          "empty",
-			path:          "testdata/empty.sqlite",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.EOF,
+			name:         "empty",
+			path:         "testdata/empty.sqlite",
+			wantPackages: nil,
+			wantResults:  0,
+			wantErr:      io.EOF,
 		},
 		{
-			name:          "invalid",
-			path:          "testdata/invalid",
-			wantInventory: nil,
-			wantResults:   0,
-			wantErr:       io.ErrUnexpectedEOF,
+			name:         "invalid",
+			path:         "testdata/invalid",
+			wantPackages: nil,
+			wantResults:  0,
+			wantErr:      io.ErrUnexpectedEOF,
 		},
 	}
 
@@ -819,14 +844,15 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
 
-			sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
-			gotFirst3 := got[:min(len(got), 3)]
-			if diff := cmp.Diff(tt.wantInventory, gotFirst3); diff != "" {
+			pkgs := got.Packages
+			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			gotFirst3 := pkgs[:min(len(pkgs), 3)]
+			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
-			if len(got) != tt.wantResults {
-				t.Errorf("Extract(%s): got %d results, want %d\n", tt.path, len(got), tt.wantResults)
+			if len(pkgs) != tt.wantResults {
+				t.Errorf("Extract(%s): got %d results, want %d\n", tt.path, len(pkgs), tt.wantResults)
 			}
 
 			// Check that no scalibr files remain in /tmp.
@@ -834,147 +860,6 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			less := func(a, b string) bool { return a < b }
 			if diff := cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less)); diff != "" {
 				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
-	pkgname := "pkgname"
-	source := "source.rpm"
-	version := "1.2.3"
-	epoch := 1
-	e := rpm.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *rpm.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "version ID and build ID present",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSID:        "fedora",
-				OSVersionID: "32",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "fedora",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "fedora-32",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-		{
-			name: "only build ID present",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSID:        "fedora",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "fedora",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "fedora-asdf",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-		{
-			name: "ID missing",
-			metadata: &rpm.Metadata{
-				PackageName: pkgname,
-				SourceRPM:   source,
-				Epoch:       epoch,
-				OSVersionID: "32",
-				OSBuildID:   "asdf",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeRPM,
-				Name:      pkgname,
-				Namespace: "",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Epoch:     "1",
-					purl.Distro:    "32",
-					purl.SourceRPM: source,
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Name:      pkgname,
-				Version:   version,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-	e := rpm.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *rpm.Metadata
-		want     string
-	}{
-		{
-			name: "RHEL",
-			metadata: &rpm.Metadata{
-				OSID: "rhel",
-			},
-			want: "Red Hat",
-		},
-		{
-			name: "rocky",
-			metadata: &rpm.Metadata{
-				OSID: "rocky",
-			},
-			want: "Rocky Linux",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &rpm.Metadata{},
-			want:     "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

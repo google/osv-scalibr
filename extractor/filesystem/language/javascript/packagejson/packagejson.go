@@ -22,11 +22,11 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -139,21 +139,21 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from package.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	i, err := parse(input.Path, input.Reader)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	p, err := parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
-		return nil, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
 	}
 
-	inventory := []*extractor.Inventory{}
-	if i != nil {
-		inventory = append(inventory, i)
-		i.Locations = []string{input.Path}
+	pkgs := []*extractor.Package{}
+	if p != nil {
+		pkgs = append(pkgs, p)
+		p.Locations = []string{input.Path}
 	}
 
 	e.reportFileExtracted(input.Path, input.Info, nil)
-	return inventory, nil
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
@@ -171,7 +171,7 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 	})
 }
 
-func parse(path string, r io.Reader) (*extractor.Inventory, error) {
+func parse(path string, r io.Reader) (*extractor.Package, error) {
 	dec := json.NewDecoder(r)
 
 	var p packageJSON
@@ -194,9 +194,10 @@ func parse(path string, r io.Reader) (*extractor.Inventory, error) {
 		return nil, nil
 	}
 
-	return &extractor.Inventory{
-		Name:    p.Name,
-		Version: p.Version,
+	return &extractor.Package{
+		Name:     p.Name,
+		Version:  p.Version,
+		PURLType: purl.TypeNPM,
 		Metadata: &JavascriptPackageJSONMetadata{
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
@@ -214,7 +215,7 @@ func (p packageJSON) hasNameAndVersionValues() bool {
 // Visual Studio Code uses package.lock files as manifest files for extensions:
 // https://code.visualstudio.com/api/references/extension-manifest
 // These files are similar to NPM package.lock:
-// https://docs.npmjs.com/cli/v10/configuring-npm/package-json
+// https://docs.npmjs.com/cli/v10/configuring-npm/package.jsonn
 // The `engine` field exists in both but is required to contain `vscode` in the extension.
 // The `contributes` field is not required but only exists for VSCode extensions.
 func (p packageJSON) isVSCodeExtension() bool {
@@ -246,17 +247,3 @@ func removeEmptyPersons(persons []*Person) []*Person {
 	}
 	return result
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-// OSV requires the name field to be a npm package. This is a javascript extractor, there is no
-// guarantee that the package is an npm package.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "npm" }

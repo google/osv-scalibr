@@ -17,10 +17,12 @@ package list
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -49,6 +51,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirementsnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -78,8 +81,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // InitFn is the extractor initializer function.
@@ -120,13 +123,15 @@ var (
 	}
 	// Python source extractors.
 	PythonSource = InitMap{
-		requirements.Name: {requirements.NewDefault},
-		setup.Name:        {setup.NewDefault},
-		pipfilelock.Name:  {pipfilelock.New},
-		pdmlock.Name:      {pdmlock.New},
-		poetrylock.Name:   {poetrylock.New},
-		condameta.Name:    {condameta.NewDefault},
-		uvlock.Name:       {uvlock.New},
+		// requirements extraction for environments with and without network access.
+		requirements.Name:    {requirements.NewDefault},
+		requirementsnet.Name: {requirementsnet.NewDefault},
+		setup.Name:           {setup.NewDefault},
+		pipfilelock.Name:     {pipfilelock.New},
+		pdmlock.Name:         {pdmlock.New},
+		poetrylock.Name:      {poetrylock.New},
+		condameta.Name:       {condameta.NewDefault},
+		uvlock.Name:          {uvlock.New},
 	}
 	// Python artifact extractors.
 	PythonArtifact = InitMap{
@@ -187,8 +192,11 @@ var (
 		podfilelock.Name:     {podfilelock.NewDefault},
 	}
 
-	// Container extractors.
-	Containers = InitMap{containerd.Name: {containerd.NewDefault}} // Wordpress extractors.
+	// Containers extractors.
+	Containers = InitMap{
+		containerd.Name: {containerd.NewDefault},
+		podman.Name:     {podman.NewDefault},
+	}
 
 	// OS extractors.
 	OS = InitMap{
@@ -205,6 +213,11 @@ var (
 		flatpak.Name:  {flatpak.NewDefault},
 		homebrew.Name: {homebrew.New},
 		macapps.Name:  {macapps.NewDefault},
+	}
+
+	// Credential extractors.
+	Secrets = InitMap{
+		secrets.Name: {secrets.New},
 	}
 
 	// Misc extractors.
@@ -233,6 +246,7 @@ var (
 		RustSource,
 		DotnetSource,
 		SwiftSource,
+		Secrets,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -247,6 +261,7 @@ var (
 		OS,
 		Misc,
 		Containers,
+		Secrets,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -257,6 +272,7 @@ var (
 		GoSource, GoArtifact,
 		OS,
 	)
+
 	// All extractors available from SCALIBR.
 	All = concat(
 		SourceCode,
@@ -284,6 +300,7 @@ var (
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
 		"containers": vals(Containers),
+		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 
 		// Collections.
@@ -305,7 +322,7 @@ func concat(initMaps ...InitMap) InitMap {
 }
 
 func vals(initMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(initMap)...)
+	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified

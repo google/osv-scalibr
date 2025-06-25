@@ -27,8 +27,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -173,7 +175,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              module.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -181,11 +183,12 @@ func TestExtract(t *testing.T) {
 			name:      "valid *.ko file",
 			path:      "testdata/valid",
 			osrelease: UbuntuJammy,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -204,10 +207,11 @@ func TestExtract(t *testing.T) {
 			name:      "valid *.ko file without version, deps, author",
 			path:      "testdata/valid_no_vers_deps_auth",
 			osrelease: UbuntuJammy,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name: "intel_mrfld_pwrbtn",
-					Metadata: &module.Metadata{
+					Name:     "intel_mrfld_pwrbtn",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_mrfld_pwrbtn",
 						PackageVermagic:                "6.8.0-49-generic SMP preempt mod_unload modversions",
 						PackageSourceVersionIdentifier: "F64DA2CCFC87C17684B7B8B",
@@ -224,7 +228,7 @@ func TestExtract(t *testing.T) {
 			name:             "invalid *.ko file, no .modinfo section",
 			path:             "testdata/invalid",
 			osrelease:        UbuntuJammy,
-			wantInventory:    nil,
+			wantPackages:     nil,
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
@@ -232,11 +236,12 @@ func TestExtract(t *testing.T) {
 			name:      "no os version",
 			path:      "testdata/valid",
 			osrelease: `ID=ubuntu`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -252,11 +257,12 @@ func TestExtract(t *testing.T) {
 		{
 			name: "missing osrelease",
 			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "intel_oaktrail",
-					Version: "0.4ac1",
-					Metadata: &module.Metadata{
+					Name:     "intel_oaktrail",
+					Version:  "0.4ac1",
+					PURLType: purl.TypeKernelModule,
+					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
 						PackageVermagic:                "6.5.0-45-generic SMP preempt mod_unload modversions",
@@ -303,146 +309,13 @@ func TestExtract(t *testing.T) {
 
 			got, err := e.Extract(context.Background(), input)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	pkgName := "pkgName"
-	pkgVersion := "pkgVersion"
-	pkgVermagic := "pkgVermagic"
-	pkgSourceVersionIdentifier := "pkgSourceVersionIdentifier"
-	pkgAuthor := "pkgAuthor"
-
-	e := module.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *module.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "all fields present",
-			metadata: &module.Metadata{
-				PackageName:                    pkgName,
-				PackageVersion:                 pkgVersion,
-				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageAuthor:                  pkgAuthor,
-				OSID:                           "ubuntu",
-				OSVersionCodename:              "jammy",
-				OSVersionID:                    "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      pkgName,
-				Namespace: "ubuntu",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-		{
-			name: "only VERSION_ID set",
-			metadata: &module.Metadata{
-				PackageName:                    pkgName,
-				PackageVersion:                 pkgVersion,
-				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageAuthor:                  pkgAuthor,
-				OSID:                           "ubuntu",
-				OSVersionID:                    "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      pkgName,
-				Namespace: "ubuntu",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-		{
-			name: "OS ID not set, fallback to linux",
-			metadata: &module.Metadata{
-				PackageName:                    pkgName,
-				PackageVersion:                 pkgVersion,
-				PackageVermagic:                pkgVermagic,
-				PackageSourceVersionIdentifier: pkgSourceVersionIdentifier,
-				PackageAuthor:                  pkgAuthor,
-				OSVersionID:                    "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeKernelModule,
-				Name:      pkgName,
-				Namespace: "linux",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := module.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *module.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &module.Metadata{
-				OSID: "ubuntu",
-			},
-			want: "Ubuntu",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &module.Metadata{},
-			want:     "Linux",
-		},
-		{
-			name: "OS version present",
-			metadata: &module.Metadata{
-				OSID:        "ubuntu",
-				OSVersionID: "22.04",
-			},
-			want: "Ubuntu:22.04",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

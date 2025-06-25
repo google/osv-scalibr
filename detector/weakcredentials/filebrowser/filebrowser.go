@@ -33,8 +33,9 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -88,30 +89,29 @@ func (Detector) Requirements() *plugin.Capabilities {
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	for _, fileBrowserPort := range fileBrowserPorts {
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return inventory.Finding{}, ctx.Err()
 		}
 		if !isVulnerable(ctx, fileBrowserIP, fileBrowserPort) {
 			continue
 		}
-		return []*detector.Finding{{
-			Adv: &detector.Advisory{
-				ID: &detector.AdvisoryID{
+		return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
 					Publisher: "SCALIBR",
 					Reference: "file-browser-weakcredentials",
 				},
-				Type:           detector.TypeVulnerability,
 				Title:          title,
 				Description:    description,
 				Recommendation: recommendation,
-				Sev:            &detector.Severity{Severity: detector.SeverityCritical},
+				Sev:            inventory.SeverityCritical,
 			},
-		}}, nil
+		}}}, nil
 	}
 
-	return nil, nil
+	return inventory.Finding{}, nil
 }
 
 func isVulnerable(ctx context.Context, fileBrowserIP string, fileBrowserPort int) bool {

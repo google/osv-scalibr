@@ -20,10 +20,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 )
 
-func TestInventoryCmpLess(t *testing.T) {
+func TestPackageCmpLess(t *testing.T) {
 	type args struct {
-		a *extractor.Inventory
-		b *extractor.Inventory
+		a *extractor.Package
+		b *extractor.Package
 	}
 	tests := []struct {
 		name string
@@ -33,12 +33,12 @@ func TestInventoryCmpLess(t *testing.T) {
 		{
 			name: "Location difference",
 			args: args{
-				a: &extractor.Inventory{
+				a: &extractor.Package{
 					Name:      "a",
 					Version:   "2.0.0",
 					Locations: []string{"aaa/bbb"},
 				},
-				b: &extractor.Inventory{
+				b: &extractor.Package{
 					Name:      "a",
 					Version:   "1.0.0",
 					Locations: []string{"ccc/ddd"},
@@ -49,12 +49,12 @@ func TestInventoryCmpLess(t *testing.T) {
 		{
 			name: "Version difference",
 			args: args{
-				a: &extractor.Inventory{
+				a: &extractor.Package{
 					Name:      "a",
 					Version:   "2.0.0",
 					Locations: []string{"aaa/bbb"},
 				},
-				b: &extractor.Inventory{
+				b: &extractor.Package{
 					Name:      "a",
 					Version:   "1.0.0",
 					Locations: []string{"aaa/bbb"},
@@ -65,8 +65,8 @@ func TestInventoryCmpLess(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InventoryCmpLess(tt.args.a, tt.args.b); got != tt.want {
-				t.Errorf("InventoryCmpLess() = %v, want %v", got, tt.want)
+			if got := PackageCmpLess(tt.args.a, tt.args.b); got != tt.want {
+				t.Errorf("PackageCmpLess() = %v, want %v", got, tt.want)
 			}
 		})
 	}

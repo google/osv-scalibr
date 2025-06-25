@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -82,25 +84,26 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -113,10 +116,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-dev.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -129,10 +133,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -141,6 +146,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -153,10 +159,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages-alt.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -165,6 +172,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -177,10 +185,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-packages.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "itsdangerous",
 					Version:   "2.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -189,6 +198,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pluggy",
 					Version:   "1.0.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -197,6 +207,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "pluggy",
 					Version:   "1.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -205,6 +216,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "markupsafe",
 					Version:   "2.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -217,7 +229,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-version.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: nil,
 		},
 	}
 
@@ -235,7 +247,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

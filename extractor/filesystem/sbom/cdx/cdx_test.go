@@ -24,8 +24,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -102,32 +104,33 @@ func TestExtract(t *testing.T) {
 	var e filesystem.Extractor = cdx.Extractor{}
 
 	tests := []struct {
-		name          string
-		path          string
-		wantErr       error
-		wantInventory []*extractor.Inventory
+		name         string
+		path         string
+		wantErr      error
+		wantPackages []*extractor.Package
 	}{
 		{
-			name:          "minimal.cdx.json",
-			path:          "testdata/minimal.cdx.json",
-			wantInventory: []*extractor.Inventory{},
+			name:         "minimal.cdx.json",
+			path:         "testdata/minimal.cdx.json",
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name: "sbom.cdx.json",
 			path: "testdata/sbom.cdx.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.cdx.json"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.json"},
@@ -137,27 +140,29 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sbom-with-nested-comps.cdx.json",
 			path: "testdata/sbom-with-nested-comps.cdx.json",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
 				},
 				{
-					Name:    "rustls",
-					Version: "0.23.13",
-					Metadata: &cdx.Metadata{
+					Name:     "rustls",
+					Version:  "0.23.13",
+					PURLType: purl.TypeCargo,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:cargo/rustls@0.23.13"),
 					},
 					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
@@ -167,19 +172,20 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sbom.cdx.xml",
 			path: "testdata/sbom.cdx.xml",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "Nginx",
 					Version: "1.21.1",
-					Metadata: &cdx.Metadata{
+					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
 					Locations: []string{"testdata/sbom.cdx.xml"},
 				},
 				{
-					Name:    "openssl",
-					Version: "1.1.1",
-					Metadata: &cdx.Metadata{
+					Name:     "openssl",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
 					Locations: []string{"testdata/sbom.cdx.xml"},
@@ -216,38 +222,16 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(invLess)); diff != "" {
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 		})
 	}
 }
 
-func TestToPURL(t *testing.T) {
-	e := cdx.Extractor{}
-	want := &purl.PackageURL{
-		Type:      purl.TypePyPi,
-		Name:      "name",
-		Namespace: "namespace",
-		Version:   "1.2.3",
-	}
-	i := &extractor.Inventory{
-		Name: "name",
-		Metadata: &cdx.Metadata{
-			PURL: want,
-			CPEs: []string{},
-		},
-		Locations: []string{"location"},
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-	}
-}
-
-func invLess(i1, i2 *extractor.Inventory) bool {
+func pkgLess(i1, i2 *extractor.Package) bool {
 	return i1.Name < i2.Name
 }
 

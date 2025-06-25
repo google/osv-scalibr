@@ -51,9 +51,6 @@ const (
 	// DefaultMaxFileBytes is the default maximum size of files that will be unpacked. Larger files are ignored.
 	// The max is large because some files, like kube-apiserver, are ~115MB.
 	DefaultMaxFileBytes = 1024 * 1024 * 1024 // 1GB
-
-	// name of sub directory where the squashed image files will be stored for layer-based extraction.
-	squashedImageDirectory = "SQUASHED"
 )
 
 // SymlinkResolution specifies how to resolve symlinks.
@@ -222,105 +219,40 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 	return nil
 }
 
-// UnpackLayers unpacks the contents of the layers of image into dir.
-// Each layer is unpacked into a subdirectory of dir where the sub-directory name is the layer digest.
-// The returned list contains the digests of the image layers from in order oldest/base layer first, and most-recent/top layer last.
-func (u *Unpacker) UnpackLayers(dir string, image v1.Image) ([]string, error) {
-	if u.SymlinkResolution == SymlinkIgnore {
-		return nil, fmt.Errorf("symlink resolution strategy %q is not supported", u.SymlinkResolution)
-	}
+// safeWriteFile is a helper function that uses os.Root to write to a file with the specified
+// permissions.
+func safeWriteFile(root *os.Root, path string, content []byte, perm os.FileMode) error {
+	// os.Root.OpenFile only supports the 9 least significant bits (0o777),
+	// so ensure we strip any other bits (like setuid, sticky bit, etc.)
+	normalizedPerm := perm & 0o777
 
-	if dir == "" {
-		return nil, fmt.Errorf("dir cannot be root %q", dir)
-	}
-	if image == nil {
-		return nil, errors.New("image cannot be nil")
-	}
-
-	// Adds the squashed image files into a sub directory in dir. The sub directory is named by
-	// the constant, squashedImageDirectory.
-	if err := u.addSquashedImageDirectory(dir, image); err != nil {
-		return nil, fmt.Errorf("failed to add squashed image directory: %w", err)
-	}
-
-	layers, err := image.Layers()
-
+	file, err := root.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, normalizedPerm)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get layers from image: %w", err)
+		log.Errorf("failed to open file %q: %v", path, err)
+		return fmt.Errorf("failed to open file %q: %w", path, err)
 	}
 
-	layerDigests := []string{}
-	for _, layer := range layers {
-		digest, err := layer.Digest()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get digest of layer: %w", err)
-		}
-		layerDigests = append(layerDigests, digest.String())
-
-		layerPath := filepath.Join(dir, strings.ReplaceAll(digest.String(), ":", "-"))
-		_ = os.Mkdir(layerPath, fs.ModePerm)
-
-		// requiredTargets stores targets that symlinks point to.
-		// This is needed because the symlink may be required by u.requirer, but the target may not be.
-		requiredTargets := make(map[string]bool)
-		for pass := range u.MaxPass {
-			finalPass := false
-			// Resolve symlinks on the last pass once all potential target files have been unpacked.
-			if pass == u.MaxPass-1 {
-				finalPass = true
-			}
-
-			reader, err := layer.Uncompressed()
-			if err != nil {
-				return nil, fmt.Errorf("failed to uncompress layer: %w", err)
-			}
-
-			if requiredTargets, err = unpack(layerPath, reader, u.SymlinkResolution, u.SymlinkErrStrategy, u.Requirer, requiredTargets, finalPass, u.MaxSizeBytes); err != nil {
-				return nil, fmt.Errorf("failed to unpack layer %q: %w", digest.String(), err)
-			}
-		}
-
-		// If inter-layer symlinks can be resolved by looking into the SQUASHED file system, then they
-		// will, otherwise they will be deleted.
-		if err := symlink.ResolveInterLayerSymlinks(dir, digest.String(), squashedImageDirectory); err != nil {
-			return nil, fmt.Errorf("failed to resolve symlinks in layer: %w", err)
-		}
-	}
-
-	return layerDigests, nil
-}
-
-// pathOutsideBaseDirectory checks that the fullPath is within the base directory even after
-// evaluating symlinks. This is to prevent symlinks from escaping the base directory and
-// writing files outside of it.
-// TODO(b/407782695): Figure out why safeopen.WriteFileBeneath didn't work. The suggestion from the
-// Go community is to use the safeopen package, however, our tests wouldn't pass when using the
-// safeopen.WriteFileBeneath function. More investigation is needed here.
-func pathOutsideBaseDirectory(baseDir, fullPath string) bool {
-	parentDir := filepath.Dir(fullPath)
-
-	// Resolve any symlinks in the parent directory. This is to ensure that the parent directory is
-	// within baseDir.
-	resolvedParentDir, err := filepath.EvalSymlinks(parentDir)
+	_, err = file.Write(content)
 	if err != nil {
-		log.Warnf("failed to resolve symlinks in parent directory: %w", err)
-		return true
+		log.Errorf("failed to write file %q: %v", path, err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
-	// The resolved parent directory might still have relative components, so the absolute path is
-	// needed again.
-	canonicalParentDir, err := filepath.Abs(resolvedParentDir)
-	if err != nil {
-		log.Warnf("failed to get canonical path of parent directory: %w", err)
-		return true
+	if err := file.Close(); err != nil {
+		log.Errorf("failed to close file %q: %v", path, err)
+		return fmt.Errorf("failed to close file %q: %w", path, err)
 	}
-
-	// Check if the resolved parent directory is within baseDir.
-	return !strings.HasPrefix(canonicalParentDir, baseDir)
+	return nil
 }
 
 func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, symlinkErrStrategy SymlinkErrStrategy, requirer require.FileRequirer, requiredTargets map[string]bool, finalPass bool, maxSizeBytes int64) (map[string]bool, error) {
 	tarReader := tar.NewReader(reader)
+
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open root directory: %w", err)
+	}
+	defer root.Close()
 
 	// Defensive copy of requiredTargets to avoid modifying the original.
 	currRequiredTargets := make(map[string]bool)
@@ -347,7 +279,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 		// Skip files already unpacked.
 		// Lstat is used instead of Stat to avoid following symlinks, because their targets may not exist yet.
-		if _, err = os.Lstat(fullPath); err == nil {
+		if _, err = root.Lstat(fullPath); err == nil {
 			continue
 		}
 
@@ -379,11 +311,11 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			if err != nil {
 				return nil, err
 			}
+
 			content := buf.Bytes()
 
 			parent := filepath.Dir(fullPath)
-			err := os.MkdirAll(parent, fs.ModePerm)
-			if err != nil {
+			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
 				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
 				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
@@ -391,17 +323,20 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			// Retain the original file permission but update it so we can always read and write the file.
 			modeWithOwnerReadWrite := header.FileInfo().Mode() | 0600
 
-			// Make sure files are written under dir. This is to prevent symlinks from escaping dir and
-			// writing files outside of the directory.
-			if pathOutsideBaseDirectory(dir, fullPath) {
-				log.Warnf("attempted to write file %q outside of base directory %q", fullPath, dir)
-				continue
-			}
-
-			err = os.WriteFile(fullPath, content, modeWithOwnerReadWrite)
+			err = safeWriteFile(root, cleanPath, content, modeWithOwnerReadWrite)
 			if err != nil {
-				log.Errorf("failed to write regular file %q: %v", fullPath, err)
-				return nil, fmt.Errorf("failed to write regular file %q: %w", fullPath, err)
+				// TODO: b/412437775 - The error handling below is not ideal. It will become a mess if other
+				// exceptions are added. Unfortunately, the os package does not export the underlying
+				// error, so we have to do string matching for now.
+				if strings.Contains(err.Error(), "path escapes from parent") {
+					log.Warnf("path escapes from parent, potential path traversal attack detected: %q: %v", fullPath, err)
+					continue
+				}
+				if strings.Contains(err.Error(), "too many levels of symbolic links") {
+					log.Warnf("too many levels of symbolic links found: %q: %v", fullPath, err)
+					continue
+				}
+				return nil, err
 			}
 
 			// TODO: b/406760694 - Remove this once the bug is fixed.
@@ -434,6 +369,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if symlinkResolution == SymlinkRetain {
+				// TODO: b/412444199 - Use the os.Root API to create symlinks when root.Symlink is available.
 				if err := os.Symlink(targetPath, fullPath); err != nil {
 					log.Errorf("failed to symlink %q to %q: %v", fullPath, targetPath, err)
 					if symlinkErrStrategy == SymlinkErrReturn {
@@ -445,24 +381,40 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 				continue
 			}
 
-			content, err := os.ReadFile(targetPath)
+			content, err := func() ([]byte, error) {
+				file, err := root.OpenFile(targetPath, os.O_RDONLY, 0644)
+				if err != nil {
+					return nil, fmt.Errorf("failed to open file %q: %w", targetPath, err)
+				}
+				content, err := io.ReadAll(file)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read file %q: %w", targetPath, err)
+				}
+				if err := file.Close(); err != nil {
+					return nil, fmt.Errorf("failed to close file %q: %w", targetPath, err)
+				}
+				return content, nil
+			}()
 			if err != nil {
+				// If there is an error getting the contents of the target file, but this is not the final
+				// pass, then we can skip. This is because another pass might resolve the target file.
 				if !finalPass {
 					continue
 				}
-				log.Errorf("failed to read file %q: %v", targetPath, err)
+				log.Errorf("failed to get contents of file %q: %v", targetPath, err)
 				if symlinkErrStrategy == SymlinkErrLog {
 					continue
 				}
 				if symlinkErrStrategy == SymlinkErrReturn {
-					return nil, fmt.Errorf("failed to read file %q: %w", targetPath, err)
+					return nil, fmt.Errorf("failed to get contents of file %q: %w", targetPath, err)
 				}
 			}
 
-			if err := os.WriteFile(fullPath, content, 0644); err != nil {
-				log.Errorf("failed to write symlink as regular file %q: %v", fullPath, err)
+			// Attempt to write the contents of the target in the symlink's path as a regular file.
+			if err := safeWriteFile(root, cleanPath, content, 0644); err != nil {
+				log.Errorf("failed to write symlink as regular file %q: %v", cleanPath, err)
 				if symlinkErrStrategy == SymlinkErrReturn {
-					return nil, fmt.Errorf("failed to write symlink as regular file %q: %w", fullPath, err)
+					return nil, fmt.Errorf("failed to write symlink as regular file %q: %w", cleanPath, err)
 				}
 			}
 
@@ -472,18 +424,4 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 	}
 
 	return currRequiredTargets, nil
-}
-
-// addSquashedImageDirectory adds a sub directory with name denoted by squashedImageDirectory that
-// holds all files present in the squashed image. The squashed sub directory is used to resolve
-// inter-layer symlinks.
-func (u *Unpacker) addSquashedImageDirectory(root string, image v1.Image) error {
-	squashedImagePath := filepath.Join(root, squashedImageDirectory)
-
-	_ = os.Mkdir(squashedImagePath, fs.ModePerm)
-
-	if err := u.UnpackSquashed(squashedImagePath, image); err != nil {
-		return fmt.Errorf("failed to unpack all squashed image: %w", err)
-	}
-	return nil
 }

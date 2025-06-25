@@ -22,9 +22,9 @@ import (
 	"os/exec"
 
 	"github.com/google/osv-scalibr/common/windows/registry"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -49,21 +49,21 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{RunningSystem: true}
+	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
 }
 
 // Extract retrieves the patch level from the DISM command line tool.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	opener := registry.NewLiveOpener()
 	reg, err := opener.Open()
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	defer reg.Close()
 	output, err := runDISM(ctx)
 	if err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
 	flavor := winproducts.WindowsFlavorFromRegistry(reg)

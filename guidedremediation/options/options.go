@@ -16,11 +16,20 @@
 package options
 
 import (
+	"context"
+
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
+
+// DependencyCachePopulator is an interface for populating the cache of a resolve.Client.
+// It is called before the initial resolution of a manifest, with the requirements of the manifest.
+// The mechanism for populating the cache is up to the implementer to decide.
+type DependencyCachePopulator interface {
+	PopulateCache(ctx context.Context, c resolve.Client, requirements []resolve.RequirementVersion, manifestPath string)
+}
 
 // FixVulnsOptions are the options for guidedremediation.FixVulns().
 type FixVulnsOptions struct {
@@ -29,9 +38,11 @@ type FixVulnsOptions struct {
 	Strategy          strategy.Strategy            // Remediation strategy to use.
 	MaxUpgrades       int                          // Maximum number of patches to apply. If <= 0 applies as many as possible.
 	NoIntroduce       bool                         // If true, do not apply patches that introduce new vulnerabilities.
+	NoMavenNewDepMgmt bool                         // If true, do not apply patches that introduce new dependency management.
 	MatcherClient     matcher.VulnerabilityMatcher // Matcher for vulnerability information.
 	ResolveClient     resolve.Client               // Client for dependency information.
 	DefaultRepository string                       // Default registry to fetch dependency information from.
+	DepCachePopulator DependencyCachePopulator     // Interface for populating the cache of the resolve.Client. Can be nil.
 	RemediationOptions
 }
 

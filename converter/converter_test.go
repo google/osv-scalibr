@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
@@ -34,7 +35,6 @@ import (
 func TestToSPDX23(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 
 	testCases := []struct {
 		desc       string
@@ -45,9 +45,14 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with no custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -98,7 +103,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-52fdfc07-2182-454f-963f-5f0f9a621d72",
@@ -129,9 +134,14 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					}},
+				},
 			},
 			config: converter.SPDXConfig{
 				DocumentName:      "Custom name",
@@ -196,7 +206,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-6694d2c4-22ac-4208-a007-2939487f6999",
@@ -227,16 +237,18 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Package with invalid PURLs skipped",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{
-					// PURL field missing
-					{Extractor: pipEx},
-					// No name
-					{
-						Version: "1.2.3", Extractor: pipEx,
-					},
-					// No version
-					{
-						Name: "software", Extractor: pipEx,
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						// PURL field missing
+						{Plugins: []string{wheelegg.Name}},
+						// No name
+						{
+							Version: "1.2.3", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
+						},
+						// No version
+						{
+							Name: "software", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
+						},
 					},
 				},
 			},
@@ -268,7 +280,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-95af5a25-3679-41ba-a2ff-6cd471c483f1",
@@ -281,9 +293,14 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Invalid chars in package name replaced",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "softw@re&", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:     "softw@re&",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -334,7 +351,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-680b4e7c-8b76-4a1b-9d49-d4955c848621",
@@ -365,9 +382,15 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "One location reported",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1"},
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:      "software",
+						Version:   "1.2.3",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						Locations: []string{"/file1"},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -418,7 +441,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-0bf50598-7592-4e66-8a5b-df2c7fc48445",
@@ -449,9 +472,15 @@ func TestToSPDX23(t *testing.T) {
 		{
 			desc: "Multiple locations reported",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx, Locations: []string{"/file1", "/file2", "/file3"},
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:      "software",
+						Version:   "1.2.3",
+						Plugins:   []string{wheelegg.Name},
+						PURLType:  purl.TypePyPi,
+						Locations: []string{"/file1", "/file2", "/file3"},
+					}},
+				},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -502,7 +531,7 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Document",
+							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-172ed857-94bb-458b-8c3b-525da1786f9f",
@@ -552,7 +581,6 @@ func ptr[T any](v T) *T {
 func TestToCDX(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	defaultBOM := cyclonedx.NewBOM()
 
 	testCases := []struct {
@@ -564,9 +592,14 @@ func TestToCDX(t *testing.T) {
 		{
 			desc: "Package with custom config",
 			scanResult: &scalibr.ScanResult{
-				Inventories: []*extractor.Inventory{{
-					Name: "software", Version: "1.2.3", Extractor: pipEx,
-				}},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					}},
+				},
 			},
 			config: converter.CDXConfig{
 				ComponentName:    "sbom-1",
@@ -604,6 +637,56 @@ func TestToCDX(t *testing.T) {
 				}),
 			},
 		},
+		{
+			desc: "Package with custom config and cdx-component-type",
+			scanResult: &scalibr.ScanResult{
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{{
+						Name:     "software",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					}},
+				},
+			},
+			config: converter.CDXConfig{
+				ComponentName:    "sbom-2",
+				ComponentType:    "library",
+				ComponentVersion: "1.0.0",
+				Authors:          []string{"author"},
+			},
+			want: &cyclonedx.BOM{
+				Metadata: &cyclonedx.Metadata{
+					Component: &cyclonedx.Component{
+						Name:    "sbom-2",
+						Type:    cyclonedx.ComponentTypeLibrary,
+						Version: "1.0.0",
+						BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
+					},
+					Authors: ptr([]cyclonedx.OrganizationalContact{{Name: "author"}}),
+					Tools: &cyclonedx.ToolsChoice{
+						Components: &[]cyclonedx.Component{
+							{
+								Type: cyclonedx.ComponentTypeApplication,
+								Name: "SCALIBR",
+								ExternalReferences: ptr([]cyclonedx.ExternalReference{
+									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
+								}),
+							},
+						},
+					},
+				},
+				Components: ptr([]cyclonedx.Component{
+					{
+						BOMRef:     "6694d2c4-22ac-4208-a007-2939487f6999",
+						Type:       "library",
+						Name:       "software",
+						Version:    "1.2.3",
+						PackageURL: "pkg:pypi/software@1.2.3",
+					},
+				}),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -626,20 +709,20 @@ func TestToCDX(t *testing.T) {
 }
 
 func TestToPURL(t *testing.T) {
-	pipEx := wheelegg.New(wheelegg.DefaultConfig())
 	tests := []struct {
-		desc      string
-		inventory *extractor.Inventory
-		want      *purl.PackageURL
-		onGoos    string
+		desc   string
+		pkg    *extractor.Package
+		want   *purl.PackageURL
+		onGoos string
 	}{
 		{
-			desc: "Valid inventory extractor",
-			inventory: &extractor.Inventory{
+			desc: "Valid package extractor",
+			pkg: &extractor.Package{
 				Name:      "software",
 				Version:   "1.0.0",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"/file1"},
-				Extractor: pipEx,
+				Plugins:   []string{wheelegg.Name},
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,
@@ -655,10 +738,10 @@ func TestToPURL(t *testing.T) {
 				t.Skipf("Skipping test on %s", runtime.GOOS)
 			}
 
-			got := converter.ToPURL(tc.inventory)
+			got := converter.ToPURL(tc.pkg)
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.inventory, diff)
+				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.pkg, diff)
 			}
 		})
 	}

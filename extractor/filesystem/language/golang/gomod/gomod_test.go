@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -69,7 +71,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
-	tests := []extracttest.TestTableEntry{
+	tests := []*extracttest.TestTableEntry{
 		{
 			Name: "invalid",
 			InputConfig: extracttest.ScanInputMockConfig{
@@ -82,17 +84,18 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.mod",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/one-package.mod"},
 				},
 			},
@@ -102,20 +105,23 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 				{
 					Name:      "gopkg.in/yaml.v2",
 					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/two-packages.mod"},
 				},
 			},
@@ -125,15 +131,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/toolchain.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.23.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain.mod"},
 				},
 			},
@@ -143,15 +151,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/toolchain-with-suffix.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain-with-suffix.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.23.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/toolchain-with-suffix.mod"},
 				},
 			},
@@ -161,35 +171,41 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/indirect-packages.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "gopkg.in/yaml.v2",
 					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "github.com/mattn/go-colorable",
 					Version:   "0.1.9",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "github.com/mattn/go-isatty",
 					Version:   "0.0.14",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "golang.org/x/sys",
 					Version:   "0.0.0-20210630005230-0f9fa26af87c",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 				{
 					Name:      "stdlib",
 					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/indirect-packages.mod"},
 				},
 			},
@@ -199,10 +215,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-one.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-one.mod"},
 				},
 			},
@@ -212,15 +229,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-mixed.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-mixed.mod"},
 				},
 				{
 					Name:      "golang.org/x/net",
 					Version:   "0.5.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-mixed.mod"},
 				},
 			},
@@ -230,15 +249,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-local.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "./fork/net",
 					Version:   "",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-local.mod"},
 				},
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-local.mod"},
 				},
 			},
@@ -248,15 +269,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-different.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/foe",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-different.mod"},
 				},
 				{
 					Name:      "example.com/fork/foe",
 					Version:   "1.4.2",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-different.mod"},
 				},
 			},
@@ -266,15 +289,17 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-not-required.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "golang.org/x/net",
 					Version:   "0.5.6",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-not-required.mod"},
 				},
 				{
 					Name:      "github.com/BurntSushi/toml",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-not-required.mod"},
 				},
 			},
@@ -284,11 +309,90 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace-no-version.mod",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "example.com/fork/net",
 					Version:   "1.4.5",
+					PURLType:  purl.TypeGolang,
 					Locations: []string{"testdata/replace-no-version.mod"},
+				},
+			},
+		},
+		{
+			Name: "test extractor for go > 1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-1.23.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/sirupsen/logrus",
+					Version:   "1.9.3",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.23",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.23.mod"},
+				},
+			},
+		},
+		{
+			Name: "test extractor for go <=1.16",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/indirect-1.16.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/davecgh/go-spew",
+					Version:   "1.1.1",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "github.com/pmezard/go-difflib",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:     "github.com/sirupsen/logrus",
+					Version:  "1.9.3",
+					PURLType: purl.TypeGolang,
+					Locations: []string{
+						"testdata/indirect-1.16.mod", "testdata/indirect-1.16.sum",
+					},
+				},
+				{
+					Name:      "github.com/stretchr/testify",
+					Version:   "1.7.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20220715151400-c0bba94af5f8",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "gopkg.in/yaml.v3",
+					Version:   "3.0.0-20200313102051-9f266ea9e77c",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.sum"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.16",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-1.16.mod"},
 				},
 			},
 		},
@@ -296,7 +400,7 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := gomod.Extractor{}
+			extr := gomod.New()
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
@@ -308,8 +412,105 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+			}
+		})
+	}
+}
+
+func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
+	tests := []struct {
+		name            string
+		config          gomod.Config
+		inputPath       string
+		wantPackages    []*extractor.Package
+		wantNotPackages []*extractor.Package
+		wantErr         error
+	}{
+		{
+			name:      "exclude indirect",
+			config:    gomod.Config{ExcludeIndirect: true},
+			inputPath: "testdata/indirect-packages.mod",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "github.com/BurntSushi/toml",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "gopkg.in/yaml.v2",
+					Version:   "2.4.0",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "stdlib",
+					Version:   "1.17",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+			},
+			wantNotPackages: []*extractor.Package{
+				{
+					Name:      "github.com/mattn/go-colorable",
+					Version:   "0.1.9",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "github.com/mattn/go-isatty",
+					Version:   "0.0.14",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+				{
+					Name:      "golang.org/x/sys",
+					Version:   "0.0.0-20210630005230-0f9fa26af87c",
+					PURLType:  purl.TypeGolang,
+					Locations: []string{"testdata/indirect-packages.mod"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			extr := gomod.NewWithConfig(tt.config)
+
+			scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+				Path: tt.inputPath,
+			})
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(context.Background(), &scanInput)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("want error %v, got nil", tt.wantErr)
+				}
+
+				if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), scanInput.Path, diff)
+				}
+
+				return
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), scanInput.Path, diff)
+			}
+
+			// Verify that packages that should not be included are actually excluded
+			for _, shouldNotHave := range tt.wantNotPackages {
+				for _, gotPkg := range got.Packages {
+					if gotPkg.Name == shouldNotHave.Name && gotPkg.Version == shouldNotHave.Version {
+						t.Errorf("Package %s@%s should not be included but was found in results", shouldNotHave.Name, shouldNotHave.Version)
+					}
+				}
 			}
 		})
 	}

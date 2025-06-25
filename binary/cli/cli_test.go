@@ -26,6 +26,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -43,9 +44,16 @@ func TestValidateFlags(t *testing.T) {
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
 				DetectorsToRun:  []string{"weakcreds,cis"},
+				AnnotatorsToRun: []string{"vex"},
+				EnrichersToRun:  []string{"enricher/baseimage"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
+			wantErr: nil,
+		},
+		{
+			desc:    "Only --version set",
+			flags:   &cli.Flags{PrintVersion: true},
 			wantErr: nil,
 		},
 		{
@@ -131,6 +139,24 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
+			desc: "Invalid enrichers",
+			flags: &cli.Flags{
+				Root:           "/",
+				ResultFile:     "result.textproto",
+				EnrichersToRun: []string{"cve,"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Nonexistent enrichers",
+			flags: &cli.Flags{
+				Root:           "/",
+				ResultFile:     "result.textproto",
+				EnrichersToRun: []string{"asdf"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
 			desc: "Detector with missing extractor dependency when ExplicitExtractors",
 			flags: &cli.Flags{
 				Root:               "/",
@@ -150,6 +176,15 @@ func TestValidateFlags(t *testing.T) {
 				DetectorsToRun:  []string{"govulncheck"}, // Needs the Go binary extractor.
 			},
 			wantErr: nil,
+		},
+		{
+			desc: "Invalid annotators",
+			flags: &cli.Flags{
+				Root:            "/",
+				ResultFile:      "result.textproto",
+				AnnotatorsToRun: []string{"vex,"},
+			},
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			desc: "Invalid paths to skip",
@@ -193,6 +228,15 @@ func TestValidateFlags(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			desc: "Remote Image with Image Tarball",
+			flags: &cli.Flags{
+				RemoteImage:  "docker",
+				ImageTarball: "image.tar",
+				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := cli.ValidateFlags(tc.flags)
@@ -235,6 +279,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"windows": {"C:\\myroot"},
 			},
 		},
+		{
+			desc: "Scan root is null if image tarball is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageTarball: "image.tar"},
+				"linux":   {ImageTarball: "image.tar"},
+				"windows": {ImageTarball: "image.tar"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
@@ -251,7 +308,7 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", flags, err)
 			}
-			gotScanRoots := []string{}
+			var gotScanRoots []string
 			for _, r := range cfg.ScanRoots {
 				gotScanRoots = append(gotScanRoots, r.Path)
 			}
@@ -421,6 +478,8 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 		flags              *cli.Flags
 		wantExtractorCount int
 		wantDetectorCount  int
+		wantAnnotatorCount int
+		wantEnricherCount  int
 	}{
 		{
 			desc: "Create an extractor",
@@ -436,6 +495,20 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			},
 			wantDetectorCount: 1,
 		},
+		{
+			desc: "Create an annotator",
+			flags: &cli.Flags{
+				AnnotatorsToRun: []string{"vex/cachedir"},
+			},
+			wantAnnotatorCount: 1,
+		},
+		{
+			desc: "Create an enricher",
+			flags: &cli.Flags{
+				EnrichersToRun: []string{"enricher/baseimage"},
+			},
+			wantEnricherCount: 1,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg, err := tc.flags.GetScanConfig()
@@ -446,7 +519,13 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
 			}
 			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
-				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
+				t.Errorf("%v.GetScanConfig() want extractor count %d got %d", tc.flags, tc.wantExtractorCount, len(cfg.FilesystemExtractors))
+			}
+			if len(cfg.Enrichers) != tc.wantEnricherCount {
+				t.Errorf("%v.GetScanConfig() want enricher count %d got %d", tc.flags, tc.wantEnricherCount, len(cfg.Enrichers))
+			}
+			if len(cfg.Annotators) != tc.wantAnnotatorCount {
+				t.Errorf("%v.GetScanConfig() want annotator count %d got %d", tc.flags, tc.wantAnnotatorCount, len(cfg.Annotators))
 			}
 		})
 	}
@@ -470,6 +549,83 @@ func TestGetScanConfig_GovulncheckParams(t *testing.T) {
 	got := cfg.Detectors[0].(*binary.Detector).OfflineVulnDBPath
 	if got != dbPath {
 		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
+	}
+}
+
+func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		flags                  *cli.Flags
+		wantVersionFromContent bool
+	}{
+		{
+			desc: "version_from_content_enabled",
+			flags: &cli.Flags{
+				ExtractorsToRun:            []string{"go"},
+				GoBinaryVersionFromContent: true,
+			},
+			wantVersionFromContent: true,
+		},
+		{
+			desc: "version_from_content_disabled",
+			flags: &cli.Flags{
+				ExtractorsToRun:            []string{"go"},
+				GoBinaryVersionFromContent: false,
+			},
+			wantVersionFromContent: false,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			var gobinaryExt *gobinary.Extractor
+			for _, e := range cfg.FilesystemExtractors {
+				if e.Name() == gobinary.Name {
+					gobinaryExt = e.(*gobinary.Extractor)
+				}
+			}
+			if gobinaryExt == nil {
+				t.Fatalf("%+v.GetScanConfig() want go binary extractor got nil", tc.flags)
+			}
+			if gobinaryExt.VersionFromContent != tc.wantVersionFromContent {
+				t.Errorf("%+v.GetScanConfig() want go binary extractor with version from content %v got %v", tc.flags, tc.wantVersionFromContent, gobinaryExt.VersionFromContent)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_MaxFileSize(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantMaxFileSize int
+	}{
+		{
+			desc: "max file size unset",
+			flags: &cli.Flags{
+				MaxFileSize: 0,
+			},
+			wantMaxFileSize: 0,
+		},
+		{
+			desc: "max file size set",
+			flags: &cli.Flags{
+				MaxFileSize: 100,
+			},
+			wantMaxFileSize: 100,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if cfg.MaxFileSize != tc.wantMaxFileSize {
+				t.Errorf("%+v.GetScanConfig() got max file size %d, want %d", tc.flags, cfg.MaxFileSize, tc.wantMaxFileSize)
+			}
+		})
 	}
 }
 

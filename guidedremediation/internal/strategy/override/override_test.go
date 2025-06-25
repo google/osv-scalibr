@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
@@ -35,11 +36,17 @@ import (
 )
 
 func TestComputePatches(t *testing.T) {
+	mavenRW, err := maven.GetReadWriter("", "")
+	if err != nil {
+		t.Fatalf("failed getting ReadWriter: %v", err)
+	}
+
 	tests := []struct {
 		name         string
 		universeFile string
 		vulnsFile    string
 		manifestPath string
+		readWriter   manifest.ReadWriter
 		opts         options.RemediationOptions
 		wantFile     string
 	}{
@@ -48,6 +55,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/zeppelin-server/universe.yaml",
 			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
 			manifestPath: "zeppelin-server/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/zeppelin-server/patches.json",
 		},
@@ -56,6 +64,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/maven-classifier/universe.yaml",
 			vulnsFile:    "testdata/maven-classifier/vulnerabilities.yaml",
 			manifestPath: "maven-classifier/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/maven-classifier/patches.json",
 		},
@@ -64,6 +73,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/zeppelin-server/universe.yaml",
 			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
 			manifestPath: "zeppelin-server/parent/pom.xml",
+			readWriter:   mavenRW,
 			opts: options.RemediationOptions{
 				ResolutionOptions: options.ResolutionOptions{
 					MavenManagement: true,
@@ -79,6 +89,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/none-to-jre/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/none-to-jre/patches.json",
 		},
@@ -87,6 +98,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/jre-to-jre/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/jre-to-jre/patches.json",
 		},
@@ -95,6 +107,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/guava/android-to-android/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/guava/android-to-android/patches.json",
 		},
@@ -103,6 +116,7 @@ func TestComputePatches(t *testing.T) {
 			universeFile: "testdata/workaround/universe.yaml",
 			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
 			manifestPath: "workaround/commons/pom.xml",
+			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
 			wantFile:     "testdata/workaround/commons/patches.json",
 		},
@@ -120,12 +134,8 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed decoding wantFile: %v", err)
 			}
 
-			rw, err := maven.GetReadWriter("")
-			if err != nil {
-				t.Fatalf("failed getting ReadWriter: %v", err)
-			}
 			fsys := scalibrfs.DirFS("./testdata")
-			m, err := rw.Read(tt.manifestPath, fsys)
+			m, err := tt.readWriter.Read(tt.manifestPath, fsys)
 			if err != nil {
 				t.Fatalf("failed reading manifest: %v", err)
 			}
@@ -136,15 +146,14 @@ func TestComputePatches(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			got, err := override.ComputePatches(context.Background(), cl, vm, resolved, &tt.opts)
+			gotFull, err := override.ComputePatches(context.Background(), cl, vm, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}
+			got := gotFull.Patches
 
-			// Type is not in exported to json, just treat them all as equal
-			typeCmp := func(dep.Type, dep.Type) bool { return true }
-
-			if diff := cmp.Diff(want, got, cmpopts.EquateEmpty(), cmp.Comparer(typeCmp)); diff != "" {
+			// Type is not in exported to json, so just ignore it.
+			if diff := cmp.Diff(want, got, cmpopts.EquateEmpty(), cmpopts.IgnoreTypes(dep.Type{})); diff != "" {
 				t.Errorf("ComputePatches: unexpected diff (-want +got):\n%s", diff)
 			}
 		})

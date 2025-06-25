@@ -23,8 +23,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -69,38 +69,39 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from pdm.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockFile *pdmLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockFile)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
-	packages := make([]*extractor.Inventory, 0, len(parsedLockFile.Packages))
+	packages := make([]*extractor.Package, 0, len(parsedLockFile.Packages))
 
-	for _, pkg := range parsedLockFile.Packages {
-		inventory := &extractor.Inventory{
-			Name:      pkg.Name,
-			Version:   pkg.Version,
+	for _, parsedPKG := range parsedLockFile.Packages {
+		pkg := &extractor.Package{
+			Name:      parsedPKG.Name,
+			Version:   parsedPKG.Version,
+			PURLType:  purl.TypePyPi,
 			Locations: []string{input.Path},
 		}
 
-		depGroups := parseGroupsToDepGroups(pkg.Groups)
+		depGroups := parseGroupsToDepGroups(parsedPKG.Groups)
 
-		inventory.Metadata = osv.DepGroupMetadata{
+		pkg.Metadata = osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
 		}
 
-		if pkg.Revision != "" {
-			inventory.SourceCode = &extractor.SourceCodeIdentifier{
-				Commit: pkg.Revision,
+		if parsedPKG.Revision != "" {
+			pkg.SourceCode = &extractor.SourceCodeIdentifier{
+				Commit: parsedPKG.Revision,
 			}
 		}
 
-		packages = append(packages, inventory)
+		packages = append(packages, pkg)
 	}
 
-	return packages, nil
+	return inventory.Inventory{Packages: packages}, nil
 }
 
 // parseGroupsToDepGroups converts pdm lockfile groups to the standard DepGroups
@@ -125,16 +126,6 @@ func parseGroupsToDepGroups(groups []string) []string {
 	}
 
 	return depGroups
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
-}
-
-// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "PyPI"
 }
 
 var _ filesystem.Extractor = Extractor{}

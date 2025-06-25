@@ -22,10 +22,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
 
@@ -73,12 +72,6 @@ func (e Extractor) FileRequired(_ filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from rpm status files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, errors.New("not supported")
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, errors.New("not supported")
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL { return nil }
-
-// Ecosystem is not defined.
-func (Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

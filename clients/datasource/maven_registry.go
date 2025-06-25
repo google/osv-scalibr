@@ -23,6 +23,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -30,6 +32,7 @@ import (
 
 	"deps.dev/util/maven"
 	"deps.dev/util/semver"
+	"github.com/google/osv-scalibr/log"
 	"golang.org/x/net/html/charset"
 )
 
@@ -43,6 +46,7 @@ type MavenRegistryAPIClient struct {
 	defaultRegistry MavenRegistry                  // The default registry that we are making requests
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
+	localRegistry   string                         // The local directory that holds Maven manifests
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -67,10 +71,14 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
+	}
+	if registry.ID == "" {
+		// Gives the default registry an ID so it is not overwritten by registry without an ID in pom.xml.
+		registry.ID = "default"
 	}
 	u, err := url.Parse(registry.URL)
 	if err != nil {
@@ -85,24 +93,36 @@ func NewMavenRegistryAPIClient(registry MavenRegistry) (*MavenRegistryAPIClient,
 	return &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
 		defaultRegistry: registry,
+		localRegistry:   localRegistry,
 		mu:              &sync.Mutex{},
 		responses:       NewRequestCache[string, response](),
 		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
 	}, nil
 }
 
+// SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
+func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
+	m.localRegistry = localRegistry
+}
+
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
 		defaultRegistry: m.defaultRegistry,
+		localRegistry:   m.localRegistry,
 		mu:              m.mu,
 		cacheTimestamp:  m.cacheTimestamp,
 		responses:       m.responses,
+		registryAuths:   m.registryAuths,
 	}
 }
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
 func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
+	if registry.ID == m.defaultRegistry.ID {
+		return m.updateDefaultRegistry(registry)
+	}
+
 	for _, reg := range m.registries {
 		if reg.ID == registry.ID {
 			return nil
@@ -117,6 +137,16 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 
+	return nil
+}
+
+func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) error {
+	u, err := url.Parse(registry.URL)
+	if err != nil {
+		return err
+	}
+	registry.Parsed = u
+	m.defaultRegistry = registry
 	return nil
 }
 
@@ -195,10 +225,9 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	if snapshot == "" {
 		snapshot = version
 	}
-	u := registry.Parsed.JoinPath(strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)).String()
 
 	var project maven.Project
-	if err := m.get(ctx, m.registryAuths[registry.ID], u, &project); err != nil {
+	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
 		return maven.Project{}, err
 	}
 
@@ -207,10 +236,8 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 
 // getVersionMetadata fetches a version level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID, version string) (maven.Metadata, error) {
-	u := registry.Parsed.JoinPath(strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml").String()
-
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], u, &metadata); err != nil {
+	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
@@ -219,19 +246,29 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
-	u := registry.Parsed.JoinPath(strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml").String()
-
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], u, &metadata); err != nil {
+	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
 	return metadata, nil
 }
 
-func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, url string, dst any) error {
-	resp, err := m.responses.Get(url, func() (response, error) {
-		resp, err := auth.Get(ctx, http.DefaultClient, url)
+func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
+	filePath := ""
+	if m.localRegistry != "" {
+		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
+		file, err := os.Open(filePath)
+		if err == nil {
+			defer file.Close()
+			// We can still fetch the file from upstream if error is not nil.
+			return NewMavenDecoder(file).Decode(dst)
+		}
+	}
+
+	u := registry.Parsed.JoinPath(paths...).String()
+	resp, err := m.responses.Get(u, func() (response, error) {
+		resp, err := auth.Get(ctx, http.DefaultClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
 		}
@@ -242,11 +279,18 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			return response{}, fmt.Errorf("%w: Maven registry query status: %d", errAPIFailed, resp.StatusCode)
 		}
 
-		if b, err := io.ReadAll(resp.Body); err == nil {
-			return response{StatusCode: resp.StatusCode, Body: b}, nil
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		return response{}, fmt.Errorf("failed to read body: %w", err)
+		if filePath != "" {
+			if err := writeFile(filePath, b); err != nil {
+				log.Infof("failed to write response to %s: %v", u, err)
+			}
+		}
+
+		return response{StatusCode: resp.StatusCode, Body: b}, nil
 	})
 	if err != nil {
 		return err
@@ -257,6 +301,27 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	}
 
 	return NewMavenDecoder(bytes.NewReader(resp.Body)).Decode(dst)
+}
+
+// writeFile writes the bytes to the file specified by the given path.
+func writeFile(path string, data []byte) error {
+	dir := filepath.Dir(path)
+	// Create the directory if it doesn't exist.
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	outFile, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", path, err)
+	}
+	defer outFile.Close()
+
+	if _, err := outFile.Write(data); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", path, err)
+	}
+
+	return nil
 }
 
 // NewMavenDecoder returns an xml decoder with CharsetReader and Entity set.

@@ -21,8 +21,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -44,9 +44,11 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{OS: plugin.OSWindows}
+}
 
 // Extract is a no-op for Linux.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	return nil, errors.New("only supported on Windows")
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, errors.New("only supported on Windows")
 }

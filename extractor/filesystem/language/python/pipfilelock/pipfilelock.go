@@ -19,17 +19,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -69,16 +69,16 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from Pipfile.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *pipenvLockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	details := make(map[string]*extractor.Inventory)
+	details := make(map[string]*extractor.Package)
 
 	addPkgDetails(details, parsedLockfile.Packages, "")
 	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
@@ -87,10 +87,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		details[key].Locations = []string{input.Path}
 	}
 
-	return maps.Values(details), nil
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
-func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]pipenvPackage, group string) {
+func addPkgDetails(details map[string]*extractor.Package, packages map[string]pipenvPackage, group string) {
 	for name, pipenvPackage := range packages {
 		if pipenvPackage.Version == "" {
 			continue
@@ -113,27 +113,18 @@ func addPkgDetails(details map[string]*extractor.Inventory, packages map[string]
 				groupSlice = []string{group}
 			}
 
-			inv := &extractor.Inventory{
-				Name:    name,
-				Version: version,
+			pkg := &extractor.Package{
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypePyPi,
 				Metadata: osv.DepGroupMetadata{
 					DepGroupVals: groupSlice,
 				},
 			}
 
-			details[name+"@"+version] = inv
+			details[name+"@"+version] = pkg
 		}
 	}
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
-}
-
-// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "PyPI"
 }
 
 var _ filesystem.Extractor = Extractor{}

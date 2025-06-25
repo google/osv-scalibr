@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -33,17 +35,18 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-packages.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -57,10 +60,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package-dev.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -74,10 +78,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@typescript-eslint/types",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -91,10 +96,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -104,6 +110,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "acorn",
 					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -117,10 +124,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-advanced.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@eslint-community/eslint-utils",
 					Version:    "4.4.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -130,6 +138,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@eslint/eslintrc",
 					Version:    "2.1.4",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -139,6 +148,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@typescript-eslint/eslint-plugin",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -148,6 +158,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@typescript-eslint/parser",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -157,6 +168,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@typescript-eslint/type-utils",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -166,6 +178,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@typescript-eslint/typescript-estree",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -175,6 +188,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "@typescript-eslint/utils",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -184,6 +198,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "debug",
 					Version:    "4.3.4",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -193,6 +208,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "eslint",
 					Version:    "8.57.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -202,6 +218,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -211,6 +228,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "7.2.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -220,6 +238,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "tsutils",
 					Version:    "3.21.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -229,6 +248,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "typescript",
 					Version:    "4.9.5",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -242,10 +262,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-versions.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "uuid",
 					Version:    "8.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -255,6 +276,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "uuid",
 					Version:    "8.3.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -264,6 +286,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "xmlbuilder",
 					Version:    "11.0.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -277,10 +300,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ansi-regex",
 					Version:   "6.0.1",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "02fa893d619d3da85411acc8fd4e2eea0e95a9d9",
@@ -292,6 +316,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "7.0.0",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1da1a89f93d1397a24d7413ed15421c139",
@@ -307,10 +332,11 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/mixed-groups.v9.yaml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-regex",
 					Version:    "5.0.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -320,6 +346,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "uuid",
 					Version:    "8.3.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -329,6 +356,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:       "is-number",
 					Version:    "7.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -353,7 +381,8 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

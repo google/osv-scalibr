@@ -114,7 +114,7 @@ test 1.0.0
 		},
 	}
 
-	vulns, err := resolution.FindVulnerabilities(context.Background(), vulnMatcher, m, g)
+	vulns, err := resolution.FindVulnerabilities(context.Background(), vulnMatcher, m.Groups(), g)
 	if err != nil {
 		t.Fatal(err)
 	}

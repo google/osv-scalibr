@@ -17,13 +17,14 @@ package image
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"archive/tar"
 
@@ -36,8 +37,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
-	"github.com/google/osv-scalibr/artifact/image/pathtree"
-	"github.com/google/osv-scalibr/artifact/image/require"
+	"github.com/opencontainers/go-digest"
 )
 
 const (
@@ -52,6 +52,14 @@ const (
 		SUPPORT_URL="http://www.debian.org/support/"
 		BUG_REPORT_URL="http://bugs.debian.org/"
 	`
+
+	diffID1 = digest.Digest("sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b") // sha256("1")
+	diffID2 = digest.Digest("sha256:d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35") // sha256("2")
+	diffID3 = digest.Digest("sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce") // sha256("3")
+
+	chainID1 = digest.Digest("sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b") // sha256("1")
+	chainID2 = digest.Digest("sha256:53e60bc18399d11a8953c224619cd6147f2f8ef1233acf2818575ba1a17f7ca2") // sha256(chainID1 + " " + diffID2)
+	chainID3 = digest.Digest("sha256:2c39000a5bc99e4311f3dc333b5a0173692f6a77d9de0847a087ad7e09edf5f8") // sha256(chainID2 + " " + diffID3)
 )
 
 type filepathContentPair struct {
@@ -160,16 +168,7 @@ func TestFromTarball(t *testing.T) {
 			name:    "invalid config - non positive maxFileBytes",
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
 			config: &Config{
-				Requirer:     &require.FileRequirerAll{},
 				MaxFileBytes: 0,
-			},
-			wantErrDuringImageCreation: ErrInvalidConfig,
-		},
-		{
-			name:    "invalid config - missing requirer",
-			tarPath: filepath.Join(testdataDir, "single-file.tar"),
-			config: &Config{
-				MaxFileBytes: DefaultMaxFileBytes,
 			},
 			wantErrDuringImageCreation: ErrInvalidConfig,
 		},
@@ -341,7 +340,6 @@ func TestFromTarball(t *testing.T) {
 			tarPath: filepath.Join(testdataDir, "single-file.tar"),
 			config: &Config{
 				MaxFileBytes: 1,
-				Requirer:     &require.FileRequirerAll{},
 			},
 			wantChainLayerEntries: []chainLayerEntries{
 				{
@@ -395,11 +393,6 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes:    DefaultMaxFileBytes,
 				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-				// dir1/sample.txt is not explicitly required, but should be unpacked because it is the
-				// target of a required symlink.
-				Requirer: require.NewFileRequirerPaths([]string{
-					"/dir1/absolute-symlink.txt",
-				}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -423,9 +416,6 @@ func TestFromTarball(t *testing.T) {
 			config: &Config{
 				MaxFileBytes:    DefaultMaxFileBytes,
 				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
-				Requirer: require.NewFileRequirerPaths([]string{
-					"/dir1/chain-symlink.txt",
-				}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -552,8 +542,6 @@ func TestFromTarball(t *testing.T) {
 			tarPath: filepath.Join(testdataDir, "multiple-files.tar"),
 			config: &Config{
 				MaxFileBytes: DefaultMaxFileBytes,
-				// Only require foo.txt.
-				Requirer: require.NewFileRequirerPaths([]string{"/foo.txt"}),
 			},
 			wantNonZeroSize: true,
 			wantChainLayerEntries: []chainLayerEntries{
@@ -635,14 +623,10 @@ func TestFromTarball(t *testing.T) {
 //  4. Devise a pathtree that will return an error when inserting a path. Make sure that Load()
 //     returns an error.
 func TestFromV1Image(t *testing.T) {
-	fakeImage, err := constructImage("1.0", "fake-package-name")
-	if err != nil {
-		t.Fatalf("Failed to construct image: %v", err)
-	}
-
 	tests := []struct {
 		name                  string
 		v1Image               v1.Image
+		config                *Config
 		wantChainLayerEntries []chainLayerEntries
 		wantErr               bool
 		wantNonZeroSize       bool
@@ -651,9 +635,15 @@ func TestFromV1Image(t *testing.T) {
 			name: "image with no config file",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
-					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
+					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
 				},
 				errorOnConfigFile: true,
+			},
+			config: DefaultConfig(),
+			wantChainLayerEntries: []chainLayerEntries{
+				chainLayerEntries{
+					filepathContentPairs: []filepathContentPair{},
+				},
 			},
 		},
 		{
@@ -668,25 +658,44 @@ func TestFromV1Image(t *testing.T) {
 				},
 				errorOnLayers: true,
 			},
+			config:  DefaultConfig(),
 			wantErr: true,
 		},
 		{
-			name:    "image with single package",
-			v1Image: *fakeImage,
+			name: "image with single package",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "etc/os-release",
+						Mode: 0777,
+						Size: int64(len(osContents)),
+					},
+					Data: bytes.NewBufferString(osContents),
+				},
+				{
+					Header: &tar.Header{
+						Name: "var/lib/dpkg/status",
+						Mode: 0777,
+						Size: int64(len("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed")),
+					},
+					Data: bytes.NewBufferString("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed"),
+				},
+			}),
 			wantChainLayerEntries: []chainLayerEntries{
 				{
 					filepathContentPairs: []filepathContentPair{
 						{
-							filepath: "etc/os-release",
+							filepath: "/etc/os-release",
 							content:  osContents,
 						},
 						{
-							filepath: "var/lib/dpkg/status",
+							filepath: "/var/lib/dpkg/status",
 							content:  "Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed",
 						},
 					},
 				},
 			},
+			config:          DefaultConfig(),
 			wantNonZeroSize: true,
 		},
 		{
@@ -694,7 +703,7 @@ func TestFromV1Image(t *testing.T) {
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
 					// Layer will fail on Uncompressed() call.
-					fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
+					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, true),
 				},
 				config: &v1.ConfigFile{
 					History: []v1.History{
@@ -704,7 +713,75 @@ func TestFromV1Image(t *testing.T) {
 					},
 				},
 			},
+			config:  DefaultConfig(),
 			wantErr: true,
+		},
+		{
+			name: "image attempting trampoline path traversal attack",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "escape/poc.txt",
+						Mode: 0777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "escape/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/trampoline/trampoline/trampoline/trampoline/../../../../tmp",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/poc.txt",
+						Mode:     0777,
+					},
+				},
+			}),
+			config: &Config{
+				MaxFileBytes:    DefaultMaxFileBytes,
+				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
+			},
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "/escape/poc.txt",
+							content:  "👻",
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -713,14 +790,44 @@ func TestFromV1Image(t *testing.T) {
 			// some. This is needed to compare the files found after the extractor runs.
 			filesInTmpWant := scalibrFilesInTmp(t)
 
-			gotImage, gotErr := FromV1Image(tc.v1Image, DefaultConfig())
+			gotImage, gotErr := FromV1Image(tc.v1Image, tc.config)
 
-			if tc.wantErr != (gotErr != nil) {
-				t.Errorf("FromV1Image() returned error: %v", gotErr)
+			if tc.wantErr {
+				if gotErr == nil {
+					t.Fatalf("FromV1Image() returned nil error, but want non-nil error")
+				}
+				return
+			}
+
+			if gotErr != nil {
+				t.Fatalf("FromV1Image() returned error: %v", gotErr)
 			}
 
 			if tc.wantNonZeroSize && gotImage.Size() == 0 {
 				t.Errorf("got image with size 0, but want non-zero size")
+			}
+
+			// Make sure the expected files are in the chain layers.
+			chainLayers, err := gotImage.ChainLayers()
+			if err != nil {
+				t.Fatalf("ChainLayers() returned error: %v", err)
+			}
+
+			// If the number of chain layers does not match the number of expected chain layer entries,
+			// then there is no point in continuing the test.
+			if len(chainLayers) != len(tc.wantChainLayerEntries) {
+				t.Fatalf("ChainLayers() returned incorrect number of chain layers: got %d chain layers, want %d chain layers", len(chainLayers), len(tc.wantChainLayerEntries))
+			}
+
+			for i := range chainLayers {
+				chainLayer := chainLayers[i]
+				wantChainLayerEntries := tc.wantChainLayerEntries[i]
+
+				if wantChainLayerEntries.ignore {
+					continue
+				}
+
+				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries, nil)
 			}
 
 			if gotImage != nil {
@@ -734,6 +841,107 @@ func TestFromV1Image(t *testing.T) {
 			filesInTmpGot := scalibrFilesInTmp(t)
 			less := func(a, b string) bool { return a < b }
 			if diff := cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less)); diff != "" {
+				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestFromV1Image_CleanUp tests that the image content blob is removed through garbage collection
+// even if image.CleanUp() is not called.
+func TestFromV1Image_CleanUp(t *testing.T) {
+	tests := []struct {
+		name                  string
+		v1Image               v1.Image
+		config                *Config
+		wantChainLayerEntries []chainLayerEntries
+	}{
+		{
+			name: "image with single package",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "etc/os-release",
+						Mode: 0777,
+						Size: int64(len(osContents)),
+					},
+					Data: bytes.NewBufferString(osContents),
+				},
+				{
+					Header: &tar.Header{
+						Name: "var/lib/dpkg/status",
+						Mode: 0777,
+						Size: int64(len("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed")),
+					},
+					Data: bytes.NewBufferString("Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed"),
+				},
+			}),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "/etc/os-release",
+							content:  osContents,
+						},
+						{
+							filepath: "/var/lib/dpkg/status",
+							content:  "Package: fake-package-name\nVersion: 1.0\nStatus: install ok installed",
+						},
+					},
+				},
+			},
+			config: DefaultConfig(),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Need to record scalibr files found in /tmp before the rpm extractor runs, as it may create
+			// some. This is needed to compare the files found after the extractor runs.
+			filesInTmpWant := scalibrFilesInTmp(t)
+
+			gotImage, gotErr := FromV1Image(tc.v1Image, tc.config)
+			if gotErr != nil {
+				t.Fatalf("FromV1Image() returned error: %v", gotErr)
+			}
+
+			// Make sure the expected files are in the chain layers.
+			chainLayers, err := gotImage.ChainLayers()
+			if err != nil {
+				t.Fatalf("ChainLayers() returned error: %v", err)
+			}
+
+			// If the number of chain layers does not match the number of expected chain layer entries,
+			// then there is no point in continuing the test.
+			if len(chainLayers) != len(tc.wantChainLayerEntries) {
+				t.Fatalf("ChainLayers() returned incorrect number of chain layers: got %d chain layers, want %d chain layers", len(chainLayers), len(tc.wantChainLayerEntries))
+			}
+
+			for i := range chainLayers {
+				chainLayer := chainLayers[i]
+				wantChainLayerEntries := tc.wantChainLayerEntries[i]
+
+				if wantChainLayerEntries.ignore {
+					continue
+				}
+
+				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries, nil)
+			}
+
+			// Wait for the image content blob to be removed.
+			// There's no guarantee that the GC will run before the next line, so we need to retry.
+			var diff string
+			for range 10 {
+				// Force a GC to make sure that the image content blob is removed.
+				runtime.GC()
+				filesInTmpGot := scalibrFilesInTmp(t)
+				less := func(a, b string) bool { return a < b }
+				diff = cmp.Diff(filesInTmpWant, filesInTmpGot, cmpopts.SortSlices(less))
+				if diff == "" {
+					break
+				}
+				time.Sleep(2 * time.Second)
+			}
+			if diff != "" {
 				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
@@ -779,19 +987,18 @@ func compareChainLayerEntries(t *testing.T, gotChainLayer image.ChainLayer, want
 	}
 }
 
-// scalibrFilesInTmp returns the list of filenames in /tmp that start with "osv-scalibr-".
+// scalibrFilesInTmp returns the list of filenames in /tmp that start with "image-blob-".
 func scalibrFilesInTmp(t *testing.T) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)
 	}
 
 	for _, f := range files {
-		name := f.Name()
-		if strings.HasPrefix(name, "osv-scalibr-") {
+		if strings.HasPrefix(f.Name(), "image-blob-") {
 			filenames = append(filenames, f.Name())
 		}
 	}
@@ -799,9 +1006,9 @@ func scalibrFilesInTmp(t *testing.T) []string {
 }
 
 func TestInitializeChainLayers(t *testing.T) {
-	fakeV1Layer1 := fakev1layer.New(t, "123", "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
-	fakeV1Layer2 := fakev1layer.New(t, "456", "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
-	fakeV1Layer3 := fakev1layer.New(t, "789", "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
+	fakeV1Layer1 := fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
+	fakeV1Layer2 := fakev1layer.New(t, diffID2.Encoded(), "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
+	fakeV1Layer3 := fakev1layer.New(t, diffID3.Encoded(), "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
 
 	tests := []struct {
 		name            string
@@ -819,12 +1026,13 @@ func TestInitializeChainLayers(t *testing.T) {
 			history: []v1.History{},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					latestLayer: &Layer{
-						diffID:  "sha256:123",
+						diffID:  diffID1,
 						isEmpty: false,
 					},
+					chainID: chainID1,
 				},
 			},
 		},
@@ -840,13 +1048,14 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        0,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
+					chainID: chainID1,
 				},
 			},
 		},
@@ -870,29 +1079,32 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        1,
+					chainID:      chainID2,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
-						diffID:       "sha256:456",
+						diffID:       diffID2,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        2,
+					chainID:      chainID3,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
-						diffID:       "sha256:789",
+						diffID:       diffID3,
 						isEmpty:      false,
 					},
 				},
@@ -933,16 +1145,17 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        1,
 					latestLayer: &Layer{
 						buildCommand: "ENTRYPOINT [\"/bin/sh\"]",
@@ -950,16 +1163,17 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        2,
+					chainID:      chainID2,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
-						diffID:       "sha256:456",
+						diffID:       diffID2,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        3,
 					latestLayer: &Layer{
 						buildCommand: "RANDOM DOCKER COMMAND",
@@ -967,16 +1181,17 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        4,
+					chainID:      chainID3,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
-						diffID:       "sha256:789",
+						diffID:       diffID3,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        5,
 					latestLayer: &Layer{
 						buildCommand: "RUN [\"/bin/sh\"]",
@@ -1003,27 +1218,30 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        0,
+					chainID:      chainID1,
 					latestLayer: &Layer{
 						buildCommand: "",
-						diffID:       "sha256:123",
+						diffID:       diffID1,
 						isEmpty:      false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        1,
+					chainID:      chainID2,
 					latestLayer: &Layer{
-						diffID:  "sha256:456",
+						diffID:  diffID2,
 						isEmpty: false,
 					},
 				},
 				{
-					fileNodeTree: pathtree.NewNode[fileNode](),
+					fileNodeTree: NewNode(),
 					index:        2,
+					chainID:      chainID3,
 					latestLayer: &Layer{
-						diffID:  "sha256:789",
+						diffID:  diffID3,
 						isEmpty: false,
 					},
 				},
@@ -1052,47 +1270,151 @@ func TestInitializeChainLayers(t *testing.T) {
 	}
 }
 
-// constructImage constructs a fake v1.Image that contains a single layer with two files:
-//   - The file `osContents` defines the OS, which allows the image to be scanned.
-//   - The file `statusContents` defines the packages in the image, in this probe it contains a
-//     single fake package with a specified version, so it is only affected by the Note created in
-//     this execution.
-//
-// Put them in a single tarball to make a single layer and put that layer in an empty image to
-// make the minimal image that will work.
-func constructImage(version, fakePackageName string) (*v1.Image, error) {
-	// The file containing the fake package version.
-	statusContents := fmt.Sprintf("Package: %s\nVersion: %s\nStatus: install ok installed", fakePackageName, version)
+func TestFS(t *testing.T) {
+	tests := []struct {
+		name            string
+		image           *Image
+		wantFilesFromFS []string
+		wantErr         bool
+	}{
+		{
+			name:    "no chain layers",
+			image:   &Image{},
+			wantErr: true,
+		},
+		{
+			name: "single chain layer",
+			image: &Image{
+				chainLayers: []*chainLayer{
+					{
+						fileNodeTree: func() *Node {
+							root := NewNode()
+							_ = root.Insert("/", &virtualFile{
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &virtualFile{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							isEmpty:      false,
+						},
+					},
+				},
+			},
+			wantFilesFromFS: []string{"/foo.txt"},
+		},
+		{
+			name: "multiple chain layers",
+			image: &Image{
+				chainLayers: []*chainLayer{
+					{
+						fileNodeTree: func() *Node {
+							root := NewNode()
+							_ = root.Insert("/", &virtualFile{
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &virtualFile{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							isEmpty:      false,
+						},
+					},
+					{
+						fileNodeTree: func() *Node {
+							root := NewNode()
+							_ = root.Insert("/", &virtualFile{
+								virtualPath: "/",
+								isWhiteout:  false,
+								mode:        fs.ModeDir | dirPermission,
+							})
+							_ = root.Insert("/foo.txt", &virtualFile{
+								virtualPath: "/foo.txt",
+								mode:        filePermission,
+							})
+							_ = root.Insert("/bar.txt", &virtualFile{
+								virtualPath: "/bar.txt",
+								mode:        filePermission,
+							})
+							return root
+						}(),
+						index: 0,
+						latestLayer: &Layer{
+							buildCommand: "",
+							isEmpty:      false,
+						},
+					},
+				},
+			},
+			wantFilesFromFS: []string{"/foo.txt", "/bar.txt"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotFS := tc.image.FS()
+
+			var gotPaths []string
+			err := fs.WalkDir(gotFS, "/", func(path string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return err
+				}
+
+				gotPaths = append(gotPaths, path)
+				return nil
+			})
+
+			if err != nil {
+				if tc.wantErr {
+					return
+				}
+				t.Fatalf("WalkDir() returned error: %v", err)
+			}
+
+			if diff := cmp.Diff(tc.wantFilesFromFS, gotPaths, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+				t.Errorf("TopFS() returned incorrect files: got %v, want %v", gotPaths, tc.wantFilesFromFS)
+			}
+		})
+	}
+}
+
+// tarEntry represents a single entry in a tarball. It contains the header and data for the entry.
+// If the data is nil, the entry will be written without any content.
+type tarEntry struct {
+	Header *tar.Header
+	Data   io.Reader
+}
+
+func constructImageWithTarEntries(t *testing.T, tarEntries []*tarEntry) v1.Image {
+	t.Helper()
 
 	var buf bytes.Buffer
 	w := tar.NewWriter(&buf)
 
-	// These files are the minimal set to create an image that will be scanned by Container Analysis.
-	// - The file `osContents` defines the OS, which allows the image to be scanned.
-	// - The file `statusContents` defines the packages in the image, in this probe it contains a
-	//   single fake package with a specified version, so it is only affected by the Note created in
-	//   this execution.
-	//
 	// Put them in a single tarball to make a single layer and put that layer in an empty image to
 	// make the minimal image that will work.
-	files := []struct {
-		name, contents string
-	}{
-		{"etc/os-release", osContents},
-		{"var/lib/dpkg/status", statusContents},
-	}
-	for _, file := range files {
-		hdr := &tar.Header{
-			Name:     file.name,
-			Mode:     0600,
-			Size:     int64(len(file.contents)),
-			Typeflag: tar.TypeReg,
+	for _, entry := range tarEntries {
+		if err := w.WriteHeader(entry.Header); err != nil {
+			t.Fatalf("couldn't write header for %s: %v", entry.Header.Name, err)
 		}
-		if err := w.WriteHeader(hdr); err != nil {
-			return nil, fmt.Errorf("couldn't write header for %s: %w", file.name, err)
-		}
-		if _, err := w.Write([]byte(file.contents)); err != nil {
-			return nil, fmt.Errorf("couldn't write %s: %w", file.name, err)
+		if entry.Data != nil {
+			if _, err := io.Copy(w, entry.Data); err != nil {
+				t.Fatalf("writing content for %s: %v", entry.Header.Name, err)
+			}
 		}
 	}
 	w.Close()
@@ -1100,8 +1422,13 @@ func constructImage(version, fakePackageName string) (*v1.Image, error) {
 		return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to create layer: %w", err)
+		t.Fatalf("unable to create layer: %v", err)
 	}
+
 	image, err := mutate.AppendLayers(empty.Image, layer)
-	return &image, err
+	if err != nil {
+		t.Fatalf("unable append layer to image: %v", err)
+	}
+
+	return image
 }

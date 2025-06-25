@@ -27,14 +27,14 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -134,8 +134,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts information from vmlinuz files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -148,11 +148,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs := []*extractor.Inventory{}
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	packages := []*extractor.Package{}
 
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
@@ -179,20 +179,21 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 	metadata.OSVersionCodename = m["VERSION_CODENAME"]
 	metadata.OSVersionID = m["VERSION_ID"]
 
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      metadata.Name,
 		Version:   metadata.Version,
+		PURLType:  purl.TypeKernelModule,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
-	pkgs = append(pkgs, i)
+	packages = append(packages, p)
 
-	return pkgs, nil
+	return packages, nil
 }
 
-func parseVmlinuzMetadata(magicType []string) Metadata {
-	var m Metadata
+func parseVmlinuzMetadata(magicType []string) vmlinuzmeta.Metadata {
+	var m vmlinuzmeta.Metadata
 
 	m.Name = "Linux Kernel"
 
@@ -249,49 +250,4 @@ func parseVmlinuzMetadata(magicType []string) Metadata {
 		}
 	}
 	return m
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	return "linux"
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeKernelModule,
-		Name:       m.Name,
-		Namespace:  toNamespace(m),
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func toDistro(m *Metadata) string {
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
 }

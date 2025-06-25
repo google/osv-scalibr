@@ -19,10 +19,10 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -43,10 +43,10 @@ type Package struct {
 }
 
 // ParseMixLockFile extracts packages from Erlang Mix.lock files passed through the scan input.
-func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
 
-	inventories := []*extractor.Inventory{}
+	packages := []*extractor.Package{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -78,10 +78,11 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 			commit = match[5]
 		}
 
-		// Directly appending to inventories
-		inventories = append(inventories, &extractor.Inventory{
+		// Directly appending to packages
+		packages = append(packages, &extractor.Package{
 			Name:      name,
 			Version:   version,
+			PURLType:  purl.TypeHex,
 			Locations: []string{input.Path},
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
@@ -90,17 +91,8 @@ func ParseMixLockFile(input *filesystem.ScanInput) ([]*extractor.Inventory, erro
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error while scanning %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error while scanning %s: %w", input.Path, err)
 	}
 
-	return inventories, nil
-}
-
-// ToPURL converts a package into a PURL.
-func ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeHex,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}
+	return inventory.Inventory{Packages: packages}, nil
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path"
 	"path/filepath"
 	"slices"
@@ -29,11 +30,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -237,7 +237,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // FileRequired returns true if the specified file matches npm lockfile patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if filepath.Base(path) != "package-lock.json" {
+	if !slices.Contains([]string{"package-lock.json", "npm-shrinkwrap.json"}, filepath.Base(path)) {
 		return false
 	}
 	// Skip lockfiles inside node_modules directories since the packages they list aren't
@@ -273,8 +273,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from package-lock.json files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventories, err := e.extractPkgLock(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	packages, err := e.extractPkgLock(ctx, input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -288,10 +288,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 
-	return inventories, err
+	return inventory.Inventory{Packages: packages}, err
 }
 
-func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	// If both package-lock.json and npm-shrinkwrap.json are present in the root of a project,
+	// npm-shrinkwrap.json will take precedence and package-lock.json will be ignored.
+	if filepath.Base(input.Path) == "package-lock.json" {
+		npmShrinkwrapPath := path.Join(filepath.ToSlash(filepath.Dir(input.Path)), "npm-shrinkwrap.json")
+		_, err := input.FS.Open(npmShrinkwrapPath)
+		if err == nil {
+			return nil, nil
+		}
+	}
+
 	var parsedLockfile *packagelockjson.LockFile
 
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -300,20 +310,21 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
 	}
 
-	packages := maps.Values(parseNpmLock(*parsedLockfile))
-	inventories := make([]*extractor.Inventory, len(packages))
+	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))
+	result := make([]*extractor.Package, len(packages))
 
 	for i, pkg := range packages {
 		if pkg.DepGroups == nil {
 			pkg.DepGroups = []string{}
 		}
 
-		inventories[i] = &extractor.Inventory{
+		result[i] = &extractor.Package{
 			Name: pkg.Name,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
 			},
-			Version: pkg.Version,
+			Version:  pkg.Version,
+			PURLType: purl.TypeNPM,
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},
@@ -321,17 +332,5 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		}
 	}
 
-	return inventories, nil
+	return result, nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV ecosystem ('npm') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string { return "npm" }

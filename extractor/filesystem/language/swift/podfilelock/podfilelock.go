@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/swiftutils"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -112,8 +113,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract processes and extracts dependency information from a Podfile.lock file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -125,35 +126,24 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	pkgs, err := swiftutils.ParsePodfileLock(input.Reader)
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	packages, err := swiftutils.ParsePodfileLock(input.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	var inventories []*extractor.Inventory
-	for _, pkg := range pkgs {
-		inventories = append(inventories, &extractor.Inventory{
+	var result []*extractor.Package
+	for _, pkg := range packages {
+		result = append(result, &extractor.Package{
 			Name:      pkg.Name,
 			Version:   pkg.Version,
+			PURLType:  purl.TypeCocoapods,
 			Locations: []string{input.Path},
 		})
 	}
 
-	return inventories, nil
+	return result, nil
 }
-
-// ToPURL converts an inventory item into a Package URL (PURL).
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCocoapods,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV ecosystem name for CocoaPods.
-func (Extractor) Ecosystem(_ *extractor.Inventory) string { return "CocoaPods" }

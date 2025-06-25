@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -126,17 +127,18 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "yaml gemspec",
 			path: "testdata/yaml-0.2.1.gemspec",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "yaml",
 					Version:   "0.2.1",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/yaml-0.2.1.gemspec"},
 				},
 			},
@@ -145,10 +147,11 @@ func TestExtract(t *testing.T) {
 		{
 			name: "rss gemspec",
 			path: "testdata/rss-0.2.9.gemspec",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "rss",
 					Version:   "0.2.9",
+					PURLType:  purl.TypeGem,
 					Locations: []string{"testdata/rss-0.2.9.gemspec"},
 				},
 			},
@@ -163,13 +166,13 @@ func TestExtract(t *testing.T) {
 		{
 			name:             "empty gemspec",
 			path:             "testdata/empty.gemspec",
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name:             "bad definition gemspec",
 			path:             "testdata/badspec.gemspec",
-			wantInventory:    []*extractor.Inventory{},
+			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
@@ -200,9 +203,9 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)
 			}
 
-			var want []*extractor.Inventory
-			if test.wantInventory != nil {
-				want = test.wantInventory
+			var want inventory.Inventory
+			if test.wantPackages != nil {
+				want = inventory.Inventory{Packages: test.wantPackages}
 			}
 
 			if diff := cmp.Diff(want, got); diff != "" {
@@ -219,23 +222,5 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", test.path, gotFileSizeMetric, info.Size())
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := gemspec.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeGem,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

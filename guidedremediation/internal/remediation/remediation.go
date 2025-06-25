@@ -30,12 +30,17 @@ import (
 	"github.com/google/osv-scalibr/internal/mavenutil"
 )
 
-// ResolvedManifest is a manifest, its resolved dependency graph, and the vulnerabilities found in it.
-type ResolvedManifest struct {
-	Manifest        manifest.Manifest
+// ResolvedGraph is a dependency graph and the vulnerabilities found in it.
+type ResolvedGraph struct {
 	Graph           *resolve.Graph
 	Vulns           []resolution.Vulnerability
 	UnfilteredVulns []resolution.Vulnerability
+}
+
+// ResolvedManifest is a manifest, its resolved dependency graph, and the vulnerabilities found in it.
+type ResolvedManifest struct {
+	Manifest manifest.Manifest
+	ResolvedGraph
 }
 
 // ResolveManifest resolves and find vulnerabilities in a manifest.
@@ -45,9 +50,22 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 		return nil, err
 	}
 
-	allVulns, err := resolution.FindVulnerabilities(ctx, vm, m, g)
+	resGraph, err := ResolveGraphVulns(ctx, cl, vm, g, m.Groups(), opts)
 	if err != nil {
 		return nil, err
+	}
+
+	return &ResolvedManifest{
+		Manifest:      m,
+		ResolvedGraph: resGraph,
+	}, nil
+}
+
+// ResolveGraphVulns finds the vulnerabilities in a graph.
+func ResolveGraphVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, g *resolve.Graph, depGroups map[manifest.RequirementKey][]string, opts *options.RemediationOptions) (ResolvedGraph, error) {
+	allVulns, err := resolution.FindVulnerabilities(ctx, vm, depGroups, g)
+	if err != nil {
+		return ResolvedGraph{}, err
 	}
 
 	// If explicit vulns are set, add the others to ignored vulns.
@@ -61,9 +79,7 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 
 	filteredVulns := slices.Clone(allVulns)
 	filteredVulns = slices.DeleteFunc(filteredVulns, func(v resolution.Vulnerability) bool { return !MatchVuln(*opts, v) })
-
-	return &ResolvedManifest{
-		Manifest:        m,
+	return ResolvedGraph{
 		Graph:           g,
 		Vulns:           filteredVulns,
 		UnfilteredVulns: allVulns,
@@ -110,12 +126,12 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 	}
 	slices.SortFunc(output.Introduced, func(a, b result.Vuln) int { return cmp.Compare(a.ID, b.ID) })
 
-	oldReqs := make(map[resolve.PackageKey]resolve.RequirementVersion)
+	oldReqs := make(map[manifest.RequirementKey]resolve.RequirementVersion)
 	for _, req := range oldRes.Manifest.Requirements() {
-		oldReqs[req.PackageKey] = req
+		oldReqs[resolution.MakeRequirementKey(req)] = req
 	}
 	for _, req := range newRes.Manifest.Requirements() {
-		oldReq, ok := oldReqs[req.PackageKey]
+		oldReq, ok := oldReqs[resolution.MakeRequirementKey(req)]
 		if !ok {
 			typ := dep.NewType()
 			typ.AddAttr(dep.MavenDependencyOrigin, mavenutil.OriginManagement)
@@ -150,13 +166,23 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 			Transitive:  !direct,
 		})
 	}
-	slices.SortFunc(output.PackageUpdates, func(a, b result.PackageUpdate) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
+	cmpFn := func(a, b result.PackageUpdate) int {
+		if c := cmp.Compare(a.Name, b.Name); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(a.VersionFrom, b.VersionFrom); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(a.VersionTo, b.VersionTo); c != 0 {
+			return c
+		}
+		return a.Type.Compare(b.Type)
+	}
+	slices.SortFunc(output.PackageUpdates, cmpFn)
 	// It's possible something is in the requirements twice (e.g. with Maven dependencyManagement)
 	// Deduplicate the patches in this case.
 	output.PackageUpdates = slices.CompactFunc(output.PackageUpdates, func(a, b result.PackageUpdate) bool {
-		return a.Name == b.Name && a.VersionFrom == b.VersionFrom && a.VersionTo == b.VersionTo
+		return cmpFn(a, b) == 0
 	})
 
 	return output

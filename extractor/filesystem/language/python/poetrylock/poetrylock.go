@@ -23,8 +23,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/internal/pypipurl"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -97,21 +97,22 @@ func resolveGroups(pkg poetryLockPackage) []string {
 }
 
 // Extract extracts packages from poetry.lock files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *poetryLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(parsedLockfile.Packages))
+	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, lockPackage := range parsedLockfile.Packages {
-		pkgDetails := &extractor.Inventory{
+		pkgDetails := &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
+			PURLType:  purl.TypePyPi,
 			Locations: []string{input.Path},
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: resolveGroups(lockPackage),
@@ -125,17 +126,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		packages = append(packages, pkgDetails)
 	}
 
-	return packages, nil
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return pypipurl.MakePackageURL(i)
-}
-
-// Ecosystem returns the OSV ecosystem ('PyPI') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "PyPI"
+	return inventory.Inventory{Packages: packages}, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

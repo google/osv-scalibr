@@ -28,13 +28,14 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -155,8 +156,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from dpkg status files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -168,17 +169,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
 	rd := textproto.NewReader(bufio.NewReader(input.Reader))
-	pkgs := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for eof := false; !eof; {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
@@ -194,7 +195,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			} else {
 				if strings.Contains(input.Path, "status.d") {
 					log.Warnf("Failed to read MIME header from %q: %v", input.Path, err)
-					return []*extractor.Inventory{}, nil
+					return []*extractor.Package{}, nil
 				}
 				return pkgs, err
 			}
@@ -232,16 +233,28 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 		description := strings.ToLower(h.Get("Description"))
 		var annotations []extractor.Annotation
+		var vexes []*vex.PackageExploitabilitySignal
 		if strings.Contains(description, "transitional package") ||
 			strings.Contains(description, "transitional dummy package") ||
 			strings.Contains(description, "transitional empty package") {
 			annotations = append(annotations, extractor.Transitional)
+			vexes = append(vexes, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 
-		i := &extractor.Inventory{
-			Name:    pkgName,
-			Version: pkgVersion,
-			Metadata: &Metadata{
+		purlType := purl.TypeDebian
+		if input.Path == "usr/lib/opkg/status" {
+			purlType = purl.TypeOpkg
+		}
+
+		p := &extractor.Package{
+			Name:     pkgName,
+			Version:  pkgVersion,
+			PURLType: purlType,
+			Metadata: &dpkgmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
 				Status:            h.Get("Status"),
@@ -251,19 +264,21 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Maintainer:        h.Get("Maintainer"),
 				Architecture:      h.Get("Architecture"),
 			},
-			Locations:   []string{input.Path},
-			Annotations: annotations,
+			Locations: []string{input.Path},
+			// TODO(b/400910349): Remove once integrators stop using annotations.
+			AnnotationsDeprecated: annotations,
+			ExploitabilitySignals: vexes,
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))
 		if err != nil {
 			return pkgs, fmt.Errorf("parseSourceNameVersion(%q): %w", h.Get("Source"), err)
 		}
 		if sourceName != "" {
-			i.Metadata.(*Metadata).SourceName = sourceName
-			i.Metadata.(*Metadata).SourceVersion = sourceVersion
+			p.Metadata.(*dpkgmeta.Metadata).SourceName = sourceName
+			p.Metadata.(*dpkgmeta.Metadata).SourceVersion = sourceVersion
 		}
 
-		pkgs = append(pkgs, i)
+		pkgs = append(pkgs, p)
 	}
 	return pkgs, nil
 }
@@ -293,79 +308,4 @@ func parseSourceNameVersion(source string) (string, string, error) {
 		return n, v, nil
 	}
 	return source, "", nil
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	// TODO(b/298152210): Implement metric
-	return "linux"
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. jammy
-	if m.OSVersionCodename != "" {
-		return m.OSVersionCodename
-	}
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
-	return ""
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.SourceName != "" {
-		q[purl.Source] = m.SourceName
-	}
-	if m.SourceVersion != "" {
-		q[purl.SourceVersion] = m.SourceVersion
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-
-	// Determine the package type (opkg or dpkg) based on file location
-	typePurl := ""
-
-	for _, location := range i.Locations {
-		if location == "usr/lib/opkg/status" {
-			typePurl = purl.TypeOpkg
-			break
-		}
-	}
-
-	// Default to dpkg if no specific file path matches
-	if typePurl == "" {
-		typePurl = purl.TypeDebian
-	}
-
-	return &purl.PackageURL{
-		Type:       typePurl,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
 }

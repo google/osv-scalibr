@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -87,32 +89,33 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json5",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -126,10 +129,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package-dev.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -144,10 +148,11 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad1' from"},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/bad-tuple.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -162,10 +167,11 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/bad-tuple.json5",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract 'wrappy-bad2' from"},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/bad-tuple.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -179,10 +185,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -192,6 +199,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -205,10 +213,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/same-package-different-groups.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "3.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -218,6 +227,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "5.5.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -231,10 +241,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@typescript-eslint/types",
 					Version:    "5.62.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -248,10 +259,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/scoped-packages-mixed.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/code-frame",
 					Version:    "7.26.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -261,6 +273,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "@babel/helper-validator-identifier",
 					Version:    "7.25.9",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -270,6 +283,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "js-tokens",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -279,6 +293,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "picocolors",
 					Version:    "1.1.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -288,6 +303,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "wrappy",
 					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -301,10 +317,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
 					Version:    "8.14.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -314,6 +331,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "fsevents",
 					Version:    "0.3.8",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -323,6 +341,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "nan",
 					Version:    "2.22.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -336,10 +355,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-implicit.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -349,6 +369,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "acorn",
 					Version:    "8.14.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -362,10 +383,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-explicit.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -375,6 +397,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "acorn",
 					Version:    "8.14.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -388,10 +411,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -401,6 +425,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "chalk",
 					Version:    "4.1.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -410,6 +435,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "color-convert",
 					Version:    "2.0.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -419,6 +445,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "color-name",
 					Version:    "1.1.4",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -428,6 +455,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "2.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -437,6 +465,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "5.5.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -446,6 +475,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "7.2.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -455,6 +485,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "3.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -464,6 +495,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -477,10 +509,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies-dup.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -490,6 +523,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "chalk",
 					Version:    "4.1.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -499,6 +533,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "color-convert",
 					Version:    "2.0.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -508,6 +543,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "color-name",
 					Version:    "1.1.4",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -517,6 +553,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "2.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -526,6 +563,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "7.2.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -535,6 +573,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -548,10 +587,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/alias.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
 					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -561,6 +601,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "7.2.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -570,6 +611,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "supports-color",
 					Version:    "6.1.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -579,6 +621,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "has-flag",
 					Version:    "3.0.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -592,10 +635,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/commits.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/helper-plugin-utils",
 					Version:    "7.26.5",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -605,6 +649,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "@babel/helper-string-parser",
 					Version:    "7.25.9",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -614,6 +659,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "@babel/helper-validator-identifier",
 					Version:    "7.25.9",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -623,6 +669,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "@babel/parser",
 					Version:    "7.26.5",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -632,6 +679,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "@babel/types",
 					Version:    "7.26.5",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -641,6 +689,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "@prettier/sync",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
@@ -652,6 +701,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "babel-preset-php",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
@@ -663,6 +713,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
@@ -674,6 +725,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
@@ -685,6 +737,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "is-number",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
@@ -696,6 +749,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "jquery",
 					Version:    "3.7.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -705,6 +759,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "lodash",
 					Version:    "1.3.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -714,6 +769,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "make-synchronized",
 					Version:    "0.2.9",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -723,6 +779,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "php-parser",
 					Version:    "2.2.0",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -732,6 +789,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "prettier",
 					Version:    "3.4.2",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -741,6 +799,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "raven-js",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
@@ -752,6 +811,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "slick-carousel",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
@@ -763,6 +823,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "stopwords",
 					Version:    "0.0.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -776,10 +837,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/files.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:       "etag",
 					Version:    "",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -789,6 +851,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:       "lodash",
 					Version:    "1.3.1",
+					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
@@ -802,10 +865,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/blog-sample.json5",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "uWebSockets.js",
 					Version:   "",
+					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/blog-sample.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
@@ -832,7 +896,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

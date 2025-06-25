@@ -28,12 +28,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -132,8 +132,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from "desc" files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 
 	if e.stats != nil {
 		var fileSizeBytes int64
@@ -146,10 +146,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -157,12 +157,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	s := bufio.NewScanner(input.Reader)
 	var pkgName, pkgVersion, pkgDependencies string
-	pkgs := []*extractor.Inventory{}
+	packages := []*extractor.Package{}
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 		}
 
 		line := s.Text()
@@ -185,15 +185,16 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				log.Warnf("Reached EOF for desc file in %v", input.Path)
 				break
 			}
-			return pkgs, fmt.Errorf("%s halted at %q: %w", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted at %q: %w", e.Name(), input.Path, err)
 		}
 	}
 
 	if pkgName != "" && pkgVersion != "" {
-		i := &extractor.Inventory{
-			Name:    pkgName,
-			Version: pkgVersion,
-			Metadata: &Metadata{
+		p := &extractor.Package{
+			Name:     pkgName,
+			Version:  pkgVersion,
+			PURLType: purl.TypePacman,
+			Metadata: &pacmanmeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
 				OSID:           m["ID"],
@@ -203,13 +204,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if len(pkgDependencies) != 0 {
-			i.Metadata.(*Metadata).PackageDependencies = pkgDependencies
+			p.Metadata.(*pacmanmeta.Metadata).PackageDependencies = pkgDependencies
 		}
 
-		pkgs = append(pkgs, i)
+		packages = append(packages, p)
 	}
 
-	return pkgs, nil
+	return packages, nil
 }
 
 func extractValue(scanner *bufio.Scanner) (string, error) {
@@ -248,52 +249,4 @@ func extractValues(scanner *bufio.Scanner) (string, error) {
 	}
 
 	return strings.Join(values, ", "), nil
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-id not set, fallback to 'linux'")
-	return "linux"
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.PackageDependencies != "" {
-		q[purl.PackageDependencies] = m.PackageDependencies
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypePacman,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func toDistro(m *Metadata) string {
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
 }

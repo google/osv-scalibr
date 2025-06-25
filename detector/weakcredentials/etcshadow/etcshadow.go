@@ -27,7 +27,8 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -57,20 +58,20 @@ func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilitie
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Scan starts the scan.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	f, err := scanRoot.FS.Open("etc/shadow")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// File doesn't exist, check not applicable.
-			return nil, nil
+			return inventory.Finding{}, nil
 		}
-		return nil, err
+		return inventory.Finding{}, err
 	}
 	defer f.Close()
 
 	users, err := parseShadowFile(f)
 	if err != nil {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	cracker := NewPasswordCracker()
@@ -83,7 +84,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	var problemUsers []string
 	for user, hash := range users {
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return inventory.Finding{}, ctx.Err()
 		}
 		if _, err := cracker.Crack(ctx, hash); err == nil { // if cracked
 			// Report only user name to avoid PII leakage.
@@ -92,7 +93,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 
 	if len(problemUsers) == 0 {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	title := "Ensure all users have strong passwords configured"
@@ -110,21 +111,19 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 	problemDescription := buf.String()
 
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "SCALIBR",
 				Reference: "etc-shadow-weakcredentials",
 			},
-			Type:           detector.TypeVulnerability,
 			Title:          title,
 			Description:    description,
 			Recommendation: recommendation,
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
+			Sev:            inventory.SeverityCritical,
 		},
-		Target: &detector.TargetDetails{Location: []string{"/etc/shadow"}},
-		Extra:  problemDescription,
-	}}, nil
+		Target: &inventory.GenericFindingTargetDetails{Extra: "/etc/shadow: " + problemDescription},
+	}}}, nil
 }
 
 func parseShadowFile(f fs.File) (map[string]string, error) {

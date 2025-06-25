@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -90,10 +91,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/caaadbdomjkkjkaonfhkkikfgjllcleb/1.2.85/manifest.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
-					Name:    "caaadbdomjkkjkaonfhkkikfgjllcleb",
-					Version: "1.2.85",
+					Name:     "caaadbdomjkkjkaonfhkkikfgjllcleb",
+					Version:  "1.2.85",
+					PURLType: purl.TypeGeneric,
 					Metadata: &extensions.Metadata{
 						Description:     "A decentralized wallet for blockchain transactions.",
 						HostPermissions: []string{"file://*/*", "http://*/*", "https://*/*"},
@@ -117,10 +119,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/ghbmnnjooekpmoecnnnilnnbdlolhkhi/1.89.1/manifest.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
-					Name:    "ghbmnnjooekpmoecnnnilnnbdlolhkhi",
-					Version: "1.89.1",
+					Name:     "ghbmnnjooekpmoecnnnilnnbdlolhkhi",
+					Version:  "1.89.1",
+					PURLType: purl.TypeGeneric,
 					Metadata: &extensions.Metadata{
 						AuthorEmail:          "docs-hosted-app-own@google.com",
 						Description:          "Edit, create, and view your documents, spreadsheets, and presentations — all without internet access.",
@@ -150,7 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			if diff := cmp.Diff(tt.WantPackages, got.Packages, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

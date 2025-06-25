@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -42,6 +43,8 @@ var (
 	// ErrNotRelativeToScanRoots is returned when one of the file or directory to be retrieved or
 	// skipped is not relative to any of the scan roots.
 	ErrNotRelativeToScanRoots = errors.New("path not relative to any of the scan roots")
+	// ErrFailedToOpenFile is returned when opening a file fails.
+	ErrFailedToOpenFile = errors.New("failed to open file")
 )
 
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
@@ -54,7 +57,7 @@ type Extractor interface {
 	// library for that.
 	FileRequired(api FileAPI) bool
 	// Extract extracts inventory data relevant for the extractor from a given file.
-	Extract(ctx context.Context, input *ScanInput) ([]*extractor.Inventory, error)
+	Extract(ctx context.Context, input *ScanInput) (inventory.Inventory, error)
 }
 
 // FileAPI is the interface for accessing file information and path.
@@ -107,6 +110,8 @@ type Config struct {
 	ReadSymlinks bool
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
+	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
+	MaxFileSize int
 	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
 	// is set, the absolute path is stored instead.
 	StoreAbsolutePath bool
@@ -118,48 +123,47 @@ type Config struct {
 
 // Run runs the specified extractors and returns their extraction results,
 // as well as info about whether the plugin runs completed successfully.
-func Run(ctx context.Context, config *Config) ([]*extractor.Inventory, []*plugin.Status, error) {
+func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.Status, error) {
 	if len(config.Extractors) == 0 {
-		return []*extractor.Inventory{}, []*plugin.Status{}, nil
+		return inventory.Inventory{}, []*plugin.Status{}, nil
 	}
 
 	scanRoots, err := expandAllAbsolutePaths(config.ScanRoots)
 	if err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
 	wc, err := InitWalkContext(ctx, config, scanRoots)
 	if err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
-	var inventory []*extractor.Inventory
 	var status []*plugin.Status
-
+	inv := inventory.Inventory{}
 	for _, root := range scanRoots {
-		inv, st, err := runOnScanRoot(ctx, config, root, wc)
+		newInv, st, err := runOnScanRoot(ctx, config, root, wc)
 		if err != nil {
-			return nil, nil, err
+			return inv, nil, err
 		}
 
-		inventory = append(inventory, inv...)
+		inv.Append(newInv)
 		status = append(status, st...)
 	}
 
-	return inventory, status, nil
+	return inv, status, nil
 }
 
-func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.ScanRoot, wc *walkContext) (inventory.Inventory, []*plugin.Status, error) {
 	abs := ""
 	var err error
 	if !scanRoot.IsVirtual() {
 		abs, err = filepath.Abs(scanRoot.Path)
 		if err != nil {
-			return nil, nil, err
+			return inventory.Inventory{}, nil, err
 		}
 	}
 	if err = wc.UpdateScanRoot(abs, scanRoot.FS); err != nil {
-		return nil, nil, err
+		return inventory.Inventory{}, nil, err
 	}
 
 	return RunFS(ctx, config, wc)
@@ -173,10 +177,13 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	if err != nil {
 		return nil, err
 	}
+	pathsToExtract = toSlashPaths(pathsToExtract)
+
 	dirsToSkip, err := stripAllPathPrefixes(config.DirsToSkip, absScanRoots)
 	if err != nil {
 		return nil, err
 	}
+	dirsToSkip = toSlashPaths(dirsToSkip)
 
 	return &walkContext{
 		ctx:               ctx,
@@ -190,13 +197,14 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		useGitignore:      config.UseGitignore,
 		readSymlinks:      config.ReadSymlinks,
 		maxInodes:         config.MaxInodes,
+		maxFileSize:       config.MaxFileSize,
 		inodesVisited:     0,
 		storeAbsolutePath: config.StoreAbsolutePath,
 		errorOnFSErrors:   config.ErrorOnFSErrors,
 
 		lastStatus: time.Now(),
 
-		inventory: []*extractor.Inventory{},
+		inventory: inventory.Inventory{},
 		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
 
@@ -208,10 +216,10 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // as well as info about whether the plugin runs completed successfully.
 // scanRoot is the location of fsys.
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
-func RunFS(ctx context.Context, config *Config, wc *walkContext) ([]*extractor.Inventory, []*plugin.Status, error) {
+func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inventory, []*plugin.Status, error) {
 	start := time.Now()
 	if wc == nil || wc.fs == nil {
-		return nil, nil, errors.New("walk context is nil")
+		return inventory.Inventory{}, nil, errors.New("walk context is nil")
 	}
 
 	var err error
@@ -261,6 +269,7 @@ type walkContext struct {
 	useGitignore      bool
 	maxInodes         int
 	inodesVisited     int
+	maxFileSize       int // In bytes.
 	dirsVisited       int
 	storeAbsolutePath bool
 	errorOnFSErrors   bool
@@ -268,7 +277,7 @@ type walkContext struct {
 	// applicable gitignore patterns for the current and parent directories.
 	gitignores []internal.GitignorePattern
 	// Inventories found.
-	inventory []*extractor.Inventory
+	inventory inventory.Inventory
 	// Extractor name to runtime errors.
 	errors map[string]error
 	// Whether an extractor found any inventory.
@@ -337,23 +346,39 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 		if os.IsPermission(fserr) {
 			// Permission errors are expected when traversing the entire filesystem.
-			log.Debugf("fserr (permission error): %w", fserr)
+			log.Debugf("fserr (permission error): %v", fserr)
 		} else {
-			log.Errorf("fserr (non-permission error): %w", fserr)
+			log.Errorf("fserr (non-permission error): %v", fserr)
 		}
 		return nil
 	}
+
+	wc.fileAPI.currentPath = path
+	wc.fileAPI.currentStatCalled = false
+
 	if d.Type().IsDir() {
 		wc.dirsVisited++
-		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
-			return fs.SkipDir
-		}
 		if wc.useGitignore {
-			gitignores, err := internal.ParseDirForGitignore(wc.fs, path)
-			if err != nil {
-				return err
+			gitignores := internal.EmptyGitignore()
+			var err error
+			if !wc.shouldSkipDir(path) {
+				gitignores, err = internal.ParseDirForGitignore(wc.fs, path)
+				if err != nil {
+					return err
+				}
 			}
 			wc.gitignores = append(wc.gitignores, gitignores)
+		}
+
+		// Pass the path to the extractors that extract from directories.
+		for _, ex := range wc.extractors {
+			if ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
+				wc.runExtractor(ex, path, true)
+			}
+		}
+
+		if wc.shouldSkipDir(path) { // Skip everything inside this dir.
+			return fs.SkipDir
 		}
 		return nil
 	}
@@ -376,12 +401,21 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
-	wc.fileAPI.currentPath = path
-	wc.fileAPI.currentStatCalled = false
-
+	fSize := int64(-1) // -1 means we haven't checked the file size yet.
 	for _, ex := range wc.extractors {
-		if ex.FileRequired(wc.fileAPI) {
-			wc.runExtractor(ex, path)
+		if !ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
+			if wc.maxFileSize > 0 && fSize == -1 {
+				var err error
+				fSize, err = fileSize(wc.fileAPI)
+				if err != nil {
+					return fmt.Errorf("failed to get file size for %q: %w", path, err)
+				}
+				if fSize > int64(wc.maxFileSize) {
+					log.Debugf("Skipping file %q because it has size %d bytes and the maximum is %d bytes", path, fSize, wc.maxFileSize)
+					return nil
+				}
+			}
+			wc.runExtractor(ex, path, false)
 		}
 	}
 	return nil
@@ -433,18 +467,23 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
-func (wc *walkContext) runExtractor(ex Extractor, path string) {
-	rc, err := wc.fs.Open(path)
-	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
-		return
-	}
-	defer rc.Close()
+func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
+	var rc fs.File
+	var info fs.FileInfo
+	var err error
+	if !isDir {
+		rc, err = wc.fs.Open(path)
+		if err != nil {
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
+			return
+		}
+		defer rc.Close()
 
-	info, err := rc.Stat()
-	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
-		return
+		info, err = rc.Stat()
+		if err != nil {
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
+			return
+		}
 	}
 
 	wc.extractCalls++
@@ -457,21 +496,27 @@ func (wc *walkContext) runExtractor(ex Extractor, path string) {
 		Info:   info,
 		Reader: rc,
 	})
-	wc.stats.AfterExtractorRun(ex.Name(), time.Since(start), err)
+	wc.stats.AfterExtractorRun(ex.Name(), &stats.AfterExtractorStats{
+		Path:      path,
+		Root:      wc.scanRoot,
+		Runtime:   time.Since(start),
+		Inventory: &results,
+		Error:     err,
+	})
 
 	if err != nil {
 		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
 	}
 
-	if len(results) > 0 {
+	if !results.IsEmpty() {
 		wc.foundInv[ex.Name()] = true
-		for _, r := range results {
-			r.Extractor = ex
+		for _, r := range results.Packages {
+			r.Plugins = append(r.Plugins, ex.Name())
 			if wc.storeAbsolutePath {
 				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
 			}
-			wc.inventory = append(wc.inventory, r)
 		}
+		wc.inventory.Append(results)
 	}
 }
 
@@ -525,6 +570,16 @@ func stripAllPathPrefixes(paths []string, scanRoots []*scalibrfs.ScanRoot) ([]st
 	}
 
 	return result, nil
+}
+
+// toSlashPaths returns a new []string that converts all paths to use /
+func toSlashPaths(paths []string) []string {
+	returnPaths := make([]string, len(paths))
+	for i, s := range paths {
+		returnPaths[i] = filepath.ToSlash(s)
+	}
+
+	return returnPaths
 }
 
 // stripFromAtLeastOnePrefix returns the path relative to the first prefix it is relative to.
@@ -586,28 +641,7 @@ func (wc *walkContext) printStatus() {
 // temporary directory on the scanning host's filesystem. It's up to the caller to delete the
 // directory once they're done using it.
 func (i *ScanInput) GetRealPath() (string, error) {
-	if i.Root != "" {
-		return filepath.Join(i.Root, i.Path), nil
-	}
-
-	// No scan root set, this is a virtual filesystem.
-	// Move the file to the scanning hosts's filesystem.
-	dir, err := os.MkdirTemp("", "scalibr-tmp")
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(dir, "file")
-	f, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, i.Reader)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // TODO(b/380419487): This list is not exhaustive. We should add more extensions here.
@@ -661,4 +695,12 @@ func IsInterestingExecutable(api FileAPI) bool {
 
 	mode, err := api.Stat()
 	return err == nil && mode.Mode()&0111 != 0
+}
+
+func fileSize(file FileAPI) (int64, error) {
+	info, err := file.Stat()
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
 }

@@ -36,9 +36,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type airflowPackageNames struct {
@@ -145,21 +147,21 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns the python wheel extractor.
 func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
-func findairflowVersions(ix *inventoryindex.InventoryIndex) (string, *extractor.Inventory, []string) {
+func findairflowVersions(px *packageindex.PackageIndex) (string, *extractor.Package, []string) {
 	for _, r := range airflowPackages {
-		for _, i := range ix.GetSpecific(r.name, r.packageType) {
-			return i.Version, i, r.affectedVersions
+		for _, p := range px.GetSpecific(r.name, r.packageType) {
+			return p.Version, p, r.affectedVersions
 		}
 	}
 	return "", nil, []string{}
 }
 
 // Scan checks for the presence of the airflow CVE-2020-11978 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	airflowVersion, inventory, affectedVersions := findairflowVersions(ix)
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
+	airflowVersion, pkg, affectedVersions := findairflowVersions(px)
 	if airflowVersion == "" {
 		log.Debugf("No airflow version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	isVulnVersion := false
@@ -171,33 +173,33 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", airflowVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Found Potentially vulnerable airflow version %v", airflowVersion)
 
 	if !CheckAccessibility(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Airflow server not accessible. Version %q not vulnerable", airflowVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !CheckForBashTask(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !CheckForPause(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !triggerAndWaitForDAG(ctx, airflowServerIP, airflowServerPort) {
 		log.Infof("Version %q not vulnerable", airflowVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !fileExists(scanRoot.FS, randFilePath) {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Version %q is vulnerable", airflowVersion)
@@ -207,23 +209,20 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 		log.Infof("Error removing file: %v", err)
 	}
 
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2020-11978",
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2020-11978",
+			Summary: "CVE-2020-11978",
+			Details: "CVE-2020-11978",
+			Affected: inventory.PackageToAffected(pkg, "1.10.11", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: map[string]any{
+				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2020-11978",
-			Description:    "CVE-2020-11978",
-			Recommendation: "Update apache-airflow to version 1.10.11 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
-		Target: &detector.TargetDetails{
-			Inventory: inventory,
-		},
-		Extra: fmt.Sprintf("%s %s %s", inventory.Name, inventory.Version, strings.Join(inventory.Locations, ", ")),
-	}}, nil
+	}}}, nil
 }
 
 // doGetRequest does a GET request to the specified target URL and returns the response.

@@ -28,10 +28,12 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -78,22 +80,22 @@ func isVersionWithinRange(openSSHVersion string, lower string, upper string) (bo
 }
 
 // Scan checks for the presence of the OpenSSH CVE-2023-38408 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	// 1. OpenSSH between and 5.5 and 9.3p1 (inclusive)
 	openSSHVersion := getOpenSSHVersion()
 	if openSSHVersion == "" {
 		log.Debugf("No OpenSSH version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	isVulnVersion, err := isVersionWithinRange(openSSHVersion, "5.5", "9.3p1")
 
 	if err != nil {
-		return nil, err
+		return inventory.Finding{}, err
 	}
 
 	if !isVulnVersion {
 		log.Debugf("Version %q not vuln", openSSHVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	log.Debugf("Found OpenSSH in range 5.5 to 9.3p1 (inclusive): %v", openSSHVersion)
 
@@ -112,7 +114,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	socketFiles, err := filepath.Glob("/tmp/ssh-*/agent.*")
 	if err != nil {
 		// The only possible returned error is ErrBadPattern, when pattern is malformed
-		return nil, fmt.Errorf("filepath.Glob(\"/tmp/ssh-*/agent.*\"): %w", err)
+		return inventory.Finding{}, fmt.Errorf("filepath.Glob(\"/tmp/ssh-*/agent.*\"): %w", err)
 	}
 	socketExists := len(socketFiles) > 0
 	if socketExists {
@@ -139,23 +141,29 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 	}
 	locations = append(locations, socketFiles...)
 
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2023-38408",
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2023-38408",
+			Summary: "CVE-2023-38408",
+			Details: "CVE-2023-38408",
+			Affected: []osvschema.Affected{{
+				Package: osvschema.Package{
+					Name: "openssh",
+				},
+				Severity: []osvschema.Severity{{
+					Type:  osvschema.SeverityCVSSV3,
+					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+				}},
+				Ranges: []osvschema.Range{{
+					Type:   osvschema.RangeEcosystem,
+					Events: []osvschema.Event{{Fixed: "9.3.p2"}},
+				}},
+			}},
+			DatabaseSpecific: map[string]any{
+				"extra": buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2023-38408",
-			Description:    "CVE-2023-38408",
-			Recommendation: "Update openssh to 9.3p2 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityMedium},
 		},
-		Target: &detector.TargetDetails{
-			Location: locations,
-		},
-		Extra: buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations),
-	}}, nil
+	}}}, nil
 }
 
 func getOpenSSHVersion() string {
@@ -174,7 +182,7 @@ func getOpenSSHVersion() string {
 	return ""
 }
 
-func buildExtra(isVulnVersion bool, configsWithForward []fileLocations, socketFiles []string, historyLocations []fileLocations) string {
+func buildExtra(isVulnVersion bool, configsWithForward []fileLocations, socketFiles []string, historyLocations []fileLocations, targetLocations []string) string {
 	list := []bool{isVulnVersion, len(configsWithForward) > 0, len(socketFiles) > 0, len(historyLocations) > 0}
 	slist := []string{}
 	for _, l := range list {
@@ -184,7 +192,7 @@ func buildExtra(isVulnVersion bool, configsWithForward []fileLocations, socketFi
 			slist = append(slist, "0")
 		}
 	}
-	return strings.Join(slist, ":")
+	return strings.Join(slist, ":") + "\nLocations:\n" + strings.Join(targetLocations, ",")
 }
 
 func fileExists(path string) bool {

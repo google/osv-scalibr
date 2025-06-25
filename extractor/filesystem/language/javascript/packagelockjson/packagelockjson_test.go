@@ -21,11 +21,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -70,8 +73,8 @@ func TestExtractor_FileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:         "path.to.my.package-lock.json",
-			path:         filepath.FromSlash("path.to.my.package-lock.json"),
+			name:         "path.to.my.package.lock.json",
+			path:         filepath.FromSlash("path.to.my.package.lock.json"),
 			wantRequired: false,
 		},
 		{
@@ -111,6 +114,33 @@ func TestExtractor_FileRequired(t *testing.T) {
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
+		{
+			name:             "npm-shrinkwrap.json",
+			path:             filepath.FromSlash("npm-shrinkwrap.json"),
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "npm-shrinkwrap.json at the end of a path",
+			path:             filepath.FromSlash("path/to/my/npm-shrinkwrap.json"),
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "npm-shrinkwrap.json as path segment",
+			path:         filepath.FromSlash("path/to/my/npm-shrinkwrap.json/file"),
+			wantRequired: false,
+		},
+		{
+			name:         "npm-shrinkwrap.json.file (wrong extension)",
+			path:         filepath.FromSlash("path/to/my/npm-shrinkwrap.json.file"),
+			wantRequired: false,
+		},
+		{
+			name:         "path.to.my.npm-shrinkwrap.json",
+			path:         filepath.FromSlash("path.to.my.npm-shrinkwrap.json"),
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -143,24 +173,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := packagelockjson.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }
 
@@ -207,6 +219,150 @@ func TestMetricCollector(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.inputConfig.Path)
 			if gotFileSizeMetric != scanInput.Info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.inputConfig.Path, gotFileSizeMetric, scanInput.Info.Size())
+			}
+		})
+	}
+}
+
+func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
+	tests := []extracttest.TestTableEntry{
+		{
+			Name: "invalid json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/not-json.txt",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract from"},
+		},
+		{
+			Name: "valid package-lock.json only",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/package-lock-only/package-lock.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "wrappy",
+					Version:   "1.0.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "supports-color",
+					Version:   "5.5.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "valid npm-shrinkwrap.json only",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/npm-shrinkwrap-only/npm-shrinkwrap.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "wrappy",
+					Version:   "1.0.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "supports-color",
+					Version:   "5.5.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "valid package-lock.json and npm-shrinkwrap.json and extract package-lock.json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/both/package-lock.json",
+			},
+			WantPackages: nil,
+		},
+		{
+			Name: "valid package-lock.json and npm-shrinkwrap.json and extract npm-shrinkwrap.json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/both/npm-shrinkwrap.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "wrappy",
+					Version:   "1.0.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "supports-color",
+					Version:   "5.5.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			collector := testcollector.New()
+			extr := packagelockjson.New(packagelockjson.Config{
+				Stats: collector,
+			})
+
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(context.Background(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+				return
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+			}
+
+			gotFileSizeMetric := collector.FileExtractedFileSize(tt.InputConfig.Path)
+			if gotFileSizeMetric != scanInput.Info.Size() {
+				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.InputConfig.Path, gotFileSizeMetric, scanInput.Info.Size())
 			}
 		})
 	}

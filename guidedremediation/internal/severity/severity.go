@@ -26,49 +26,80 @@ import (
 	gocvss40 "github.com/pandatix/go-cvss/40"
 )
 
-// CalculateScore returns the numeric score for the given severity field.
-// i.e. returns the CVSS Score (0.0 - 10.0)
+// CalculateScoreAndRating returns the numeric score and rating for the given severity field.
+// i.e. returns the CVSS Score (0.0 - 10.0) and the rating (e.g. "CRITICAL")
 //
-// returns (-1.0, nil) if the severity is the empty struct.
-// returns (-1.0, error) if severity type or score is invalid.
-func CalculateScore(severity osvschema.Severity) (float64, error) {
+// returns (-1.0, "UNKNOWN", nil) if the severity is the empty struct.
+// returns (-1.0, "", error) if severity type or score is invalid.
+func CalculateScoreAndRating(severity osvschema.Severity) (float64, string, error) {
 	var empty osvschema.Severity
 	if severity == empty {
-		return -1.0, nil
+		return -1.0, "UNKNOWN", nil
 	}
 
 	switch severity.Type {
 	case osvschema.SeverityCVSSV2:
 		vec, err := gocvss20.ParseVector(severity.Score)
 		if err != nil {
-			return -1.0, err
+			return -1.0, "", err
 		}
-		return vec.BaseScore(), nil
+		score := vec.BaseScore()
+		// CVSS 2.0 does not have a rating. Use the CVSS 3.0 rating instead.
+		rating, err := gocvss30.Rating(score)
+		if err != nil {
+			rating = "UNKNOWN"
+		}
+		return score, rating, nil
 	case osvschema.SeverityCVSSV3:
 		switch {
 		case strings.HasPrefix(severity.Score, "CVSS:3.0/"):
 			vec, err := gocvss30.ParseVector(severity.Score)
 			if err != nil {
-				return -1.0, err
+				return -1.0, "", err
 			}
-			return vec.BaseScore(), nil
+			score := vec.BaseScore()
+			rating, err := gocvss30.Rating(score)
+			if err != nil {
+				rating = "UNKNOWN"
+			}
+			return score, rating, nil
 		case strings.HasPrefix(severity.Score, "CVSS:3.1/"):
 			vec, err := gocvss31.ParseVector(severity.Score)
 			if err != nil {
-				return -1.0, err
+				return -1.0, "", err
 			}
-			return vec.BaseScore(), nil
+			score := vec.BaseScore()
+			rating, err := gocvss31.Rating(score)
+			if err != nil {
+				rating = "UNKNOWN"
+			}
+			return score, rating, nil
 		default:
-			return -1.0, fmt.Errorf("unsupported CVSS_V3 version: %s", severity.Score)
+			return -1.0, "", fmt.Errorf("unsupported CVSS_V3 version: %s", severity.Score)
 		}
 	case osvschema.SeverityCVSSV4:
 		vec, err := gocvss40.ParseVector(severity.Score)
 		if err != nil {
-			return -1.0, err
+			return -1.0, "", err
 		}
-		return vec.Score(), nil
+		score := vec.Score()
+		rating, err := gocvss40.Rating(score)
+		if err != nil {
+			rating = "UNKNOWN"
+		}
+		return score, rating, nil
 
 	default:
-		return -1.0, fmt.Errorf("unsupported severity type: %s", severity.Type)
+		return -1.0, "", fmt.Errorf("unsupported severity type: %s", severity.Type)
 	}
+}
+
+// CalculateScore returns the numeric score for the given severity field.
+// i.e. returns the CVSS Score (0.0 - 10.0)
+//
+// returns (-1.0, nil) if the severity is the empty struct.
+// returns (-1.0, error) if severity type or score is invalid.
+func CalculateScore(severity osvschema.Severity) (float64, error) {
+	score, _, err := CalculateScoreAndRating(severity)
+	return score, err
 }

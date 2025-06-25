@@ -19,12 +19,11 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/mixlockutils"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
 
@@ -119,8 +118,8 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 }
 
 // Extract parses the mix.lock file to extract Elixir package dependencies.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	packages, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	inv, err := mixlockutils.ParseMixLockFile(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -132,20 +131,5 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return packages, err
-}
-
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	// Parse the Mix.lock file into a list of packages and return Inventory directly
-	return mixlockutils.ParseMixLockFile(input)
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL using mixlockutils.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return mixlockutils.ToPURL(i)
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "Hex"
+	return inv, err
 }

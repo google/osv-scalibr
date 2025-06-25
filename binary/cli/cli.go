@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -28,6 +29,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/annotator"
+	al "github.com/google/osv-scalibr/annotator/list"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
@@ -37,7 +40,11 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
+	"github.com/google/osv-scalibr/enricher"
+	enl "github.com/google/osv-scalibr/enricher/enricherlist"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
@@ -116,40 +123,58 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
-	Root                  string
-	ResultFile            string
-	Output                Array
-	ExtractorsToRun       []string
-	DetectorsToRun        []string
-	PathsToExtract        []string
-	IgnoreSubDirs         bool
-	DirsToSkip            []string
-	SkipDirRegex          string
-	SkipDirGlob           string
-	UseGitignore          bool
-	RemoteImage           string
-	ImagePlatform         string
-	GovulncheckDBPath     string
-	SPDXDocumentName      string
-	SPDXDocumentNamespace string
-	SPDXCreators          string
-	CDXComponentName      string
-	CDXComponentVersion   string
-	CDXAuthors            string
-	Verbose               bool
-	ExplicitExtractors    bool
-	FilterByCapabilities  bool
-	StoreAbsolutePath     bool
-	WindowsAllDrives      bool
-	Offline               bool
+	PrintVersion               bool
+	Root                       string
+	ResultFile                 string
+	Output                     Array
+	ExtractorsToRun            []string
+	DetectorsToRun             []string
+	AnnotatorsToRun            []string
+	EnrichersToRun             []string
+	PathsToExtract             []string
+	IgnoreSubDirs              bool
+	DirsToSkip                 []string
+	SkipDirRegex               string
+	SkipDirGlob                string
+	MaxFileSize                int
+	UseGitignore               bool
+	RemoteImage                string
+	ImageTarball               string
+	ImagePlatform              string
+	GoBinaryVersionFromContent bool
+	GovulncheckDBPath          string
+	SPDXDocumentName           string
+	SPDXDocumentNamespace      string
+	SPDXCreators               string
+	CDXComponentName           string
+	CDXComponentType           string
+	CDXComponentVersion        string
+	CDXAuthors                 string
+	Verbose                    bool
+	ExplicitExtractors         bool
+	FilterByCapabilities       bool
+	StoreAbsolutePath          bool
+	WindowsAllDrives           bool
+	Offline                    bool
+	LocalRegistry              string
 }
 
 var supportedOutputFormats = []string{
 	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml", "cdx-json", "cdx-xml",
 }
 
+var supportedComponentTypes = []string{
+	"application", "framework", "library", "container", "platform",
+	"operating-system", "device", "device-driver", "firmware", "file",
+	"machine-learning-model", "data", "cryptographic-asset",
+}
+
 // ValidateFlags validates the passed command line flags.
 func ValidateFlags(flags *Flags) error {
+	if flags.PrintVersion {
+		// SCALIBR prints the version and exits so other flags don't need to be present.
+		return nil
+	}
 	if len(flags.ResultFile) == 0 && len(flags.Output) == 0 {
 		return errors.New("either --result or --o needs to be set")
 	}
@@ -158,6 +183,12 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if flags.ImagePlatform != "" && len(flags.RemoteImage) == 0 {
 		return errors.New("--image-platform cannot be used without --remote-image")
+	}
+	if flags.ImageTarball != "" && flags.RemoteImage != "" {
+		return errors.New("--image-tarball cannot be used with --remote-image")
+	}
+	if flags.ImageTarball != "" && flags.ImagePlatform != "" {
+		return errors.New("--image-tarball cannot be used with --image-platform")
 	}
 	if err := validateResultPath(flags.ResultFile); err != nil {
 		return fmt.Errorf("--result %w", err)
@@ -176,6 +207,13 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateMultiStringArg(flags.DetectorsToRun); err != nil {
 		return fmt.Errorf("--detectors: %w", err)
 	}
+	if err := validateMultiStringArg(flags.AnnotatorsToRun); err != nil {
+		return fmt.Errorf("--annotators: %w", err)
+	}
+	// TODO - b/311876697: Unify plugin configurations.
+	if err := validateMultiStringArg(flags.EnrichersToRun); err != nil {
+		return fmt.Errorf("--enrichers: %w", err)
+	}
 	if err := validateMultiStringArg(flags.DirsToSkip); err != nil {
 		return fmt.Errorf("--skip-dirs: %w", err)
 	}
@@ -185,7 +223,10 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateGlob(flags.SkipDirGlob); err != nil {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
-	if err := validateDetectorDependency(flags.DetectorsToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(flags.DetectorsToRun, flags.EnrichersToRun, flags.ExtractorsToRun, flags.ExplicitExtractors); err != nil {
+		return err
+	}
+	if err := validateComponentType(flags.CDXComponentType); err != nil {
 		return err
 	}
 	return nil
@@ -256,16 +297,21 @@ func validateGlob(arg string) error {
 	return err
 }
 
-func validateDetectorDependency(detectors []string, extractors []string, requireExtractors bool) error {
+func validateDependency(detectors []string, enrichers []string, extractors []string, requireExtractors bool) error {
 	f := &Flags{
 		ExtractorsToRun: extractors,
 		DetectorsToRun:  detectors,
+		EnrichersToRun:  enrichers,
 	}
 	ex, stdex, err := f.extractorsToRun()
 	if err != nil {
 		return err
 	}
 	det, err := f.detectorsToRun()
+	if err != nil {
+		return err
+	}
+	en, err := f.enrichersToRun()
 	if err != nil {
 		return err
 	}
@@ -284,7 +330,23 @@ func validateDetectorDependency(detectors []string, extractors []string, require
 				}
 			}
 		}
+		for _, e := range en {
+			for _, req := range e.RequiredPlugins() {
+				// TODO - b/416106602: Expand to required detectors and other enrichers.
+				if !exMap[req] {
+					return fmt.Errorf("extractor %s must be turned on for Enricher %s to run", req, e.Name())
+				}
+			}
+		}
 	}
+	return nil
+}
+
+func validateComponentType(componentType string) error {
+	if len(componentType) > 0 && !slices.Contains(supportedComponentTypes, componentType) {
+		return fmt.Errorf("unsupported cdx-component-type '%s'", componentType)
+	}
+
 	return nil
 }
 
@@ -298,9 +360,17 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	annotators, err := f.annotatorsToRun()
+	if err != nil {
+		return nil, err
+	}
+	enrichers, err := f.enrichersToRun()
+	if err != nil {
+		return nil, err
+	}
 	capab := f.capabilities()
 	if f.FilterByCapabilities {
-		extractors, standaloneExtractors, detectors = filterByCapabilities(extractors, standaloneExtractors, detectors, capab)
+		extractors, standaloneExtractors, detectors, annotators, enrichers = filterByCapabilities(extractors, standaloneExtractors, detectors, annotators, enrichers, capab)
 	}
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
@@ -327,12 +397,15 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		FilesystemExtractors: extractors,
 		StandaloneExtractors: standaloneExtractors,
 		Detectors:            detectors,
+		Annotators:           annotators,
+		Enrichers:            enrichers,
 		Capabilities:         capab,
 		PathsToExtract:       f.PathsToExtract,
 		IgnoreSubDirs:        f.IgnoreSubDirs,
 		DirsToSkip:           f.dirsToSkip(scanRoots),
 		SkipDirRegex:         skipDirRegex,
 		SkipDirGlob:          skipDirGlob,
+		MaxFileSize:          f.MaxFileSize,
 		UseGitignore:         f.UseGitignore,
 		StoreAbsolutePath:    f.StoreAbsolutePath,
 	}, nil
@@ -359,10 +432,11 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 	}
 }
 
-// GetCDXConfig creates an CDXConfig struct based on the CLI flags.
+// GetCDXConfig creates a CDXConfig struct based on the CLI flags.
 func (f *Flags) GetCDXConfig() converter.CDXConfig {
 	return converter.CDXConfig{
 		ComponentName:    f.CDXComponentName,
+		ComponentType:    f.CDXComponentType,
 		ComponentVersion: f.CDXComponentVersion,
 		Authors:          strings.Split(f.CDXAuthors, ","),
 	}
@@ -437,6 +511,15 @@ func (f *Flags) extractorsToRun() ([]filesystem.Extractor, []standalone.Extracto
 		}
 	}
 
+	for _, e := range fsExtractors {
+		if e.Name() == gobinary.Name {
+			e.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
+		}
+		if e.Name() == pomxmlnet.Name && f.LocalRegistry != "" {
+			e.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
+		}
+	}
+
 	return fsExtractors, standaloneExtractors, nil
 }
 
@@ -454,6 +537,28 @@ func (f *Flags) detectorsToRun() ([]detector.Detector, error) {
 		}
 	}
 	return dets, nil
+}
+
+func (f *Flags) annotatorsToRun() ([]annotator.Annotator, error) {
+	if len(f.AnnotatorsToRun) == 0 {
+		return []annotator.Annotator{}, nil
+	}
+	annotators, err := al.AnnotatorsFromNames(multiStringToList(f.AnnotatorsToRun))
+	if err != nil {
+		return []annotator.Annotator{}, err
+	}
+	return annotators, nil
+}
+
+func (f *Flags) enrichersToRun() ([]enricher.Enricher, error) {
+	if len(f.EnrichersToRun) == 0 {
+		return []enricher.Enricher{}, nil
+	}
+	enrichers, err := enl.FromNames(multiStringToList(f.EnrichersToRun))
+	if err != nil {
+		return []enricher.Enricher{}, err
+	}
+	return enrichers, nil
 }
 
 func multiStringToList(arg []string) []string {
@@ -477,6 +582,12 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 
 	if len(f.Root) != 0 {
 		return scalibrfs.RealFSScanRoots(f.Root), nil
+	}
+
+	// If ImageTarball is set, do not set the root.
+	// It is computed later on by ScanContainer(...) when the tarball is read.
+	if f.ImageTarball != "" {
+		return nil, nil
 	}
 
 	// Compute the default scan roots.
@@ -531,15 +642,17 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 	}
 }
 
-// Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors)
+// Filters the specified list of plugins (filesystem extractors, standalone extractors, detectors, enrichers)
 // by removing all plugins that don't satisfy the specified capabilities.
 func filterByCapabilities(
 	f []filesystem.Extractor, s []standalone.Extractor,
-	d []detector.Detector, capab *plugin.Capabilities) (
-	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector) {
+	d []detector.Detector, a []annotator.Annotator, e []enricher.Enricher, capab *plugin.Capabilities) (
+	[]filesystem.Extractor, []standalone.Extractor, []detector.Detector, []annotator.Annotator, []enricher.Enricher) {
 	ff := make([]filesystem.Extractor, 0, len(f))
 	sf := make([]standalone.Extractor, 0, len(s))
 	df := make([]detector.Detector, 0, len(d))
+	af := make([]annotator.Annotator, 0, len(a))
+	ef := make([]enricher.Enricher, 0, len(e))
 	for _, ex := range f {
 		if err := plugin.ValidateRequirements(ex, capab); err == nil {
 			ff = append(ff, ex)
@@ -555,7 +668,17 @@ func filterByCapabilities(
 			df = append(df, det)
 		}
 	}
-	return ff, sf, df
+	for _, an := range a {
+		if err := plugin.ValidateRequirements(an, capab); err == nil {
+			af = append(af, an)
+		}
+	}
+	for _, e := range e {
+		if err := plugin.ValidateRequirements(e, capab); err == nil {
+			ef = append(ef, e)
+		}
+	}
+	return ff, sf, df, af, ef
 }
 
 func (f *Flags) dirsToSkip(scanRoots []*scalibrfs.ScanRoot) []string {

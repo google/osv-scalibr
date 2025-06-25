@@ -26,11 +26,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/osv-scalibr/clients/datasource/internal/pypi"
+	"github.com/google/osv-scalibr/clients/internal/pypi"
 )
 
-// pyPIAPI holds the base of the URL of PyPI JSON and Index API.
-const pyPIAPI = "https://pypi.org/"
+// pyPIAPI holds the base of the URL of PyPI Index API.
+const pyPIAPI = "https://pypi.org/simple"
 
 // PyPIRegistryAPIClient defines a client to fetch metadata from a PyPI registry.
 // TODO(#541): support multiple registries and authentication
@@ -55,31 +55,11 @@ func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
 	}
 }
 
-// GetVersionJSON queries the JSON API and returns the requires dist for a specific version.
-func (p *PyPIRegistryAPIClient) GetVersionJSON(ctx context.Context, project, version string) (pypi.JSONResponse, error) {
-	path, err := url.JoinPath(p.registry, "pypi", project, version, "json")
+// GetIndex queries the simple API index for a given project.
+func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
+	path, err := url.JoinPath(p.registry, project)
 	if err != nil {
-		return pypi.JSONResponse{}, err
-	}
-
-	var jsonResp pypi.JSONResponse
-	err = p.get(ctx, path, false, &jsonResp)
-	return jsonResp, err
-}
-
-// GetVersions queries the Index API and returns the list of versions.
-func (p *PyPIRegistryAPIClient) GetVersions(ctx context.Context, project string) ([]string, error) {
-	resp, err := p.getIndex(ctx, project)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Versions, nil
-}
-
-func (p *PyPIRegistryAPIClient) getIndex(ctx context.Context, project string) (pypi.IndexReponse, error) {
-	path, err := url.JoinPath(p.registry, "simple", project)
-	if err != nil {
-		return pypi.IndexReponse{}, err
+		return pypi.IndexResponse{}, err
 	}
 
 	// The Index API requires an ending slash.
@@ -87,12 +67,21 @@ func (p *PyPIRegistryAPIClient) getIndex(ctx context.Context, project string) (p
 		path += "/"
 	}
 
-	var indexResp pypi.IndexReponse
-	err = p.get(ctx, path, true, &indexResp)
+	var indexResp pypi.IndexResponse
+	resp, err := p.get(ctx, path, true)
+	if err != nil {
+		return pypi.IndexResponse{}, err
+	}
+	err = json.Unmarshal(resp, &indexResp)
 	return indexResp, err
 }
 
-func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool, dst any) error {
+// GetFile retrieves the content of a file from the registry at the given URL.
+func (p *PyPIRegistryAPIClient) GetFile(ctx context.Context, url string) ([]byte, error) {
+	return p.get(ctx, url, false)
+}
+
+func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
 	resp, err := p.responses.Get(url, func() (response, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -120,12 +109,12 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 		return response{}, fmt.Errorf("failed to read body: %w", err)
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%w: PyPI registry query status: %d", errAPIFailed, resp.StatusCode)
+		return nil, fmt.Errorf("%w: PyPI registry query status: %d", errAPIFailed, resp.StatusCode)
 	}
 
-	return json.Unmarshal(resp.Body, dst)
+	return resp.Body, nil
 }

@@ -18,6 +18,7 @@ package lockfile
 import (
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 )
 
@@ -26,5 +27,10 @@ type ReadWriter interface {
 	System() resolve.System
 	Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 	SupportedStrategies() []strategy.Strategy
-	// TODO(#454): Write()
+
+	// Write writes the lockfile after applying the patches to outputPath.
+	//
+	// path is the path to the original (unpatched) lockfile in fsys.
+	// outputPath is the path on disk (*not* in fsys) to write the entire patched lockfile to (this can overwrite the original lockfile).
+	Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error
 }

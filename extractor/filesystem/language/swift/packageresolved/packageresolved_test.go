@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -165,20 +166,23 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "swift-algorithms",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "swift-async-algorithms",
 					Version:   "0.1.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 				{
 					Name:      "swift-atomics",
 					Version:   "1.1.0",
+					PURLType:  purl.TypeCocoapods,
 					Locations: []string{"testdata/valid"},
 				},
 			},
@@ -217,27 +221,10 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := packageresolved.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypeCocoapods,
-		Name:    "Name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

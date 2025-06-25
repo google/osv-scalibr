@@ -27,12 +27,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -139,10 +139,10 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from portage database files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(input)
 	if e.stats == nil {
-		return inventory, err
+		return inventory.Inventory{Packages: pkgs}, err
 	}
 	var fileSizeBytes int64
 	if input.Info != nil {
@@ -153,10 +153,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 		FileSizeBytes: fileSizeBytes,
 	})
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	osRelease, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.GetOSRelease(): %v", err)
@@ -180,10 +180,11 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		return nil, fmt.Errorf("no package name or version found in PF file: %s", pf)
 	}
 
-	i := &extractor.Inventory{
-		Name:    pkgName,
-		Version: pkgVersion,
-		Metadata: &Metadata{
+	p := &extractor.Package{
+		Name:     pkgName,
+		Version:  pkgVersion,
+		PURLType: purl.TypePortage,
+		Metadata: &portagemeta.Metadata{
 			PackageName:    pkgName,
 			PackageVersion: pkgVersion,
 			OSID:           osRelease["ID"],
@@ -192,7 +193,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.I
 		Locations: []string{input.Path},
 	}
 
-	return []*extractor.Inventory{i}, nil
+	return []*extractor.Package{p}, nil
 }
 
 func splitPackageAndVersion(path string) (string, string) {
@@ -214,47 +215,4 @@ func splitPackageAndVersion(path string) (string, string) {
 	packageVersion := strings.Join(versionParts, "-")
 
 	return packageName, packageVersion
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	return "linux"
-}
-
-func toDistro(m *Metadata) string {
-	if m.OSVersionID != "" {
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_ID not set in os-release")
-	return ""
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypePortage,
-		Name:       m.PackageName,
-		Version:    m.PackageVersion,
-		Namespace:  toNamespace(m),
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -95,24 +97,25 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/only-comments",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "empty statement",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/only-empty",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-pkg",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.springframework.security:spring-security-crypto",
 					Version:   "5.7.3",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/one-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-security-crypto",
@@ -126,10 +129,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/5-pkg",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.springframework.boot:spring-boot-autoconfigure",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-autoconfigure",
@@ -139,6 +143,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-configuration-processor",
 					Version:   "2.7.5",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-configuration-processor",
@@ -148,6 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-devtools",
 					Version:   "2.7.6",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-devtools",
@@ -157,6 +163,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-starter-aop",
 					Version:   "2.7.7",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-starter-aop",
@@ -166,6 +173,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-starter-data-jpa",
 					Version:   "2.7.8",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/5-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-starter-data-jpa",
@@ -179,10 +187,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-bad-pkg",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.springframework.boot:spring-boot-autoconfigure",
 					Version:   "2.7.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-bad-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-autoconfigure",
@@ -192,6 +201,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "org.springframework.boot:spring-boot-configuration-processor",
 					Version:   "2.7.5",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/with-bad-pkg"},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "spring-boot-configuration-processor",
@@ -216,7 +226,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

@@ -18,10 +18,17 @@ package fakedetector
 import (
 	"context"
 
-	"github.com/google/osv-scalibr/detector"
+	"github.com/google/go-cpy/cpy"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+)
+
+var (
+	copier = cpy.New(
+		cpy.IgnoreAllUnexported(),
+	)
 )
 
 // fakeDetector is an Detector implementation to be used in tests.
@@ -30,90 +37,70 @@ type fakeDetector struct {
 	DetName       string
 	DetVersion    int
 	ReqExtractors []string
-	Finding       *detector.Finding
+	Findings      inventory.Finding
 	Err           error
 }
 
-// New returns a fake detector.
-//
-// The detector returns the specified Finding or error.
-func New(name string, version int, finding *detector.Finding, err error) detector.Detector {
-	var c *detector.Finding
-	if finding != nil {
-		c = &detector.Finding{}
-		*c = *finding
-	}
-	return &fakeDetector{
-		DetName:    name,
-		DetVersion: version,
-		Finding:    c,
-		Err:        err,
-	}
+// New creates an empty new fake detector.
+func New() *fakeDetector {
+	return &fakeDetector{}
 }
 
 // Name returns the detector's name.
-func (d *fakeDetector) Name() string { return d.DetName }
+func (fd *fakeDetector) Name() string { return fd.DetName }
 
 // Version returns the detector's version.
-func (d *fakeDetector) Version() int { return d.DetVersion }
+func (fd *fakeDetector) Version() int { return fd.DetVersion }
 
 // Requirements returns the detector's requirements.
-func (d *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (fd *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // RequiredExtractors returns a list of Extractors that this Detector requires.
-func (d *fakeDetector) RequiredExtractors() []string { return d.ReqExtractors }
+func (fd *fakeDetector) RequiredExtractors() []string { return fd.ReqExtractors }
 
 // Scan always returns the same predefined finding or error.
-func (d *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	if d.Finding == nil {
-		return nil, d.Err
-	}
-	return []*detector.Finding{d.Finding}, d.Err
+func (fd *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
+	return fd.Findings, fd.Err
 }
 
-// Option is an option that can be set when creating a new fake detector
-type Option func(*fakeDetector)
-
 // WithName sets the fake detector's name.
-func WithName(name string) Option {
-	return func(fd *fakeDetector) {
-		fd.DetName = name
-	}
+func (fd *fakeDetector) WithName(name string) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.DetName = name
+	return newDet
 }
 
 // WithVersion sets the fake detector's version.
-func WithVersion(version int) Option {
-	return func(fd *fakeDetector) {
-		fd.DetVersion = version
-	}
+func (fd *fakeDetector) WithVersion(version int) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.DetVersion = version
+	return newDet
 }
 
 // WithRequiredExtractors sets the fake detector's required extractors.
-func WithRequiredExtractors(extractors ...string) Option {
-	return func(fd *fakeDetector) {
-		fd.ReqExtractors = extractors
-	}
+func (fd *fakeDetector) WithRequiredExtractors(extractors ...string) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.ReqExtractors = extractors
+	return newDet
 }
 
-// WithFinding sets the fake detector's finding that is returned when Scan() is called.
-func WithFinding(finding *detector.Finding) Option {
-	return func(fd *fakeDetector) {
-		fd.Finding = finding
-	}
+// WithPackageVuln sets the fake detector's package vulnerability that is returned when Scan() is called.
+func (fd *fakeDetector) WithPackageVuln(vuln *inventory.PackageVuln) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.Findings.PackageVulns = []*inventory.PackageVuln{vuln}
+	return newDet
+}
+
+// WithGenericFinding sets the fake detector's generic finding that is returned when Scan() is called.
+func (fd *fakeDetector) WithGenericFinding(finding *inventory.GenericFinding) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.Findings.GenericFindings = []*inventory.GenericFinding{finding}
+	return newDet
 }
 
 // WithErr sets the fake detector's error that is returned when Scan() is called.
-func WithErr(err error) Option {
-	return func(fd *fakeDetector) {
-		fd.Err = err
-	}
-}
-
-// NewWithOptions creates a new fake detector with its properties set according to opts.
-func NewWithOptions(opts ...Option) detector.Detector {
-	fd := &fakeDetector{}
-	for _, opt := range opts {
-		opt(fd)
-	}
-	return fd
+func (fd *fakeDetector) WithErr(err error) *fakeDetector {
+	newDet := copier.Copy(fd).(*fakeDetector)
+	newDet.Err = err
+	return newDet
 }

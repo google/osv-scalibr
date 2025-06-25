@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -165,8 +166,8 @@ func parseNameAtVersion(value string) (name string, version string) {
 	return matches[1], matches[2]
 }
 
-func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
-	packages := make([]*extractor.Inventory, 0, len(lockfile.Packages))
+func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
+	packages := make([]*extractor.Package, 0, len(lockfile.Packages))
 	errs := []error{}
 
 	for s, pkg := range lockfile.Packages {
@@ -208,9 +209,10 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Inventory, error) {
 			depGroups = append(depGroups, "dev")
 		}
 
-		packages = append(packages, &extractor.Inventory{
-			Name:    name,
-			Version: version,
+		packages = append(packages, &extractor.Package{
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeNPM,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
@@ -252,13 +254,13 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from a pnpm-lock.yaml file passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *pnpmLockfile
 
 	err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
 	// this will happen if the file is empty
@@ -266,26 +268,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		parsedLockfile = &pnpmLockfile{}
 	}
 
-	inventories, err := parsePnpmLock(*parsedLockfile)
-	for i := range inventories {
-		inventories[i].Locations = []string{input.Path}
+	packages, err := parsePnpmLock(*parsedLockfile)
+	for i := range packages {
+		packages[i].Locations = []string{input.Path}
 	}
 
-	return inventories, err
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeNPM,
-		Name:    strings.ToLower(i.Name),
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "npm"
+	return inventory.Inventory{Packages: packages}, err
 }
 
 var _ filesystem.Extractor = Extractor{}

@@ -1,0 +1,9 @@
+{
+  "name": "pkg",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "bar": "^1.0.0",
+    "dep": "^1.0.0"
+  }
+}

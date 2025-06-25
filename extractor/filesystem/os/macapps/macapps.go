@@ -25,10 +25,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"github.com/groob/plist"
+	"github.com/micromdm/plist"
 )
 
 const (
@@ -133,8 +134,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from Info.plist files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	i, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	p, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -147,15 +148,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 	if err != nil {
-		return nil, fmt.Errorf("macOS Application.extract(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("macOS Application.extract(%s): %w", input.Path, err)
 	}
-	if i == nil {
-		return []*extractor.Inventory{}, nil
+	if p == nil {
+		return inventory.Inventory{}, nil
 	}
-	return []*extractor.Inventory{i}, nil
+	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Package, error) {
 	// Read the first 8 bytes to check for binary plist header
 	header := make([]byte, 8)
 	_, err := io.ReadFull(input.Reader, header)
@@ -188,27 +189,13 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inv
 		}
 	}
 
-	i := &extractor.Inventory{
+	p := &extractor.Package{
 		Name:      metadata.CFBundleName,
 		Version:   metadata.CFBundleShortVersionString,
+		PURLType:  purl.TypeMacApps,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}
 
-	return i, nil
+	return p, nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeMacApps,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e Extractor) ToCPEs(i *extractor.Inventory) []string { return nil }
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

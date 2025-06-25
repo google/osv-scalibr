@@ -40,11 +40,13 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
 const (
+	// Name is the name of the Extractor.
 	Name = "rust/cargotoml"
 )
 
@@ -138,25 +140,26 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract extracts packages from Cargo.toml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedTomlFile cargoTomlFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
 	}
 
-	packages := make([]*extractor.Inventory, 0, len(parsedTomlFile.Dependencies)+1)
+	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
-	packages = append(packages, &extractor.Inventory{
+	packages = append(packages, &extractor.Package{
 		Name:      parsedTomlFile.Package.Name,
 		Version:   parsedTomlFile.Package.Version,
+		PURLType:  purl.TypeCargo,
 		Locations: []string{input.Path},
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
 		if err := ctx.Err(); err != nil {
-			return packages, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+			return inventory.Inventory{Packages: packages}, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 		}
 
 		var srcCode *extractor.SourceCodeIdentifier
@@ -172,29 +175,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			continue
 		}
 
-		packages = append(packages, &extractor.Inventory{
+		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
+			PURLType:   purl.TypeCargo,
 			Locations:  []string{input.Path},
 			SourceCode: srcCode,
 		})
 	}
 
-	return packages, nil
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeCargo,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV ecosystem ('crates.io') of the software extracted by this extractor.
-func (e Extractor) Ecosystem(_ *extractor.Inventory) string {
-	return "crates.io"
+	return inventory.Inventory{Packages: packages}, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

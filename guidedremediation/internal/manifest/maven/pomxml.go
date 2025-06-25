@@ -183,8 +183,8 @@ type readWriter struct {
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(registry string) (manifest.ReadWriter, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: registry, ReleasesEnabled: true})
+func GetReadWriter(remote, local string) (manifest.ReadWriter, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +256,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	if err := mavenutil.MergeParents(ctx, project.Parent, &project, mavenutil.Options{
 		Input:              &filesystem.ScanInput{FS: fsys, Path: path},
 		Client:             r.MavenRegistryAPIClient,
+		AddRegistry:        true,
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
@@ -536,11 +537,13 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 	return nil
 }
 
+// Patches represents all the dependencies and properties to be updated
 type Patches struct {
 	DependencyPatches DependencyPatches
 	PropertyPatches   PropertyPatches
 }
 
+// Patch represents an individual dependency to be upgraded, and the version to upgrade to
 type Patch struct {
 	maven.DependencyKey
 	NewRequire string
@@ -1020,6 +1023,32 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 	return enc.Flush()
 }
 
+// indentation returns the indentation of the dependency element.
+// If dependencies or dependency elements are not found, the default
+// indentation (four space) is returned.
+func indentation(raw string) string {
+	i := strings.Index(raw, "<dependencies>")
+	if i < 0 {
+		return "    "
+	}
+
+	raw = raw[i+len("<dependencies>"):]
+	// Find the first dependency element.
+	j := strings.Index(raw, "<dependency>")
+	if j < 0 {
+		return "    "
+	}
+
+	raw = raw[:j]
+	// Find the last new line and get the space between.
+	k := strings.LastIndex(raw, "\n")
+	if k < 0 {
+		return "    "
+	}
+
+	return raw[k+1:]
+}
+
 func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches map[Patch]bool) error {
 	dec := forkedxml.NewDecoder(bytes.NewReader([]byte(raw)))
 	for {
@@ -1055,7 +1084,7 @@ func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches ma
 				// Sort dependencies for consistency in testing.
 				slices.SortFunc(deps, compareDependency)
 
-				enc.Indent("      ", "  ")
+				enc.Indent(indentation(raw), "  ")
 				// Write a new line to keep the format.
 				if _, err := w.Write([]byte("\n")); err != nil {
 					return err

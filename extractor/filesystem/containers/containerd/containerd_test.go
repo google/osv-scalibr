@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -91,7 +92,7 @@ func TestExtract(t *testing.T) {
 		containerdID      string
 		cfg               containerd.Config
 		onGoos            string
-		wantInventory     []*extractor.Inventory
+		wantPackages      []*extractor.Package
 		wantErr           error
 	}{
 		{
@@ -105,7 +106,7 @@ func TestExtract(t *testing.T) {
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
 			onGoos: "linux",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
 					Version: "sha256:832ad48c9872fdcae32f2ea369d9874fa34f2ea369d9874fa34f271b4dbc58ce04393c757befa462",
@@ -137,7 +138,7 @@ func TestExtract(t *testing.T) {
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
 			onGoos: "linux",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "us-docker.pkg.dev/google-samples/containers/gke/security/maven-vulns:latest",
 					Version: "sha256:2de1666a491de0d56f4b204a51fedbc27b21a6211c67bfacbce56f18a7fb06ee",
@@ -171,8 +172,8 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
+			wantPackages: nil,
+			wantErr:      cmpopts.AnyError,
 		},
 		{
 			name:              "metadb too large",
@@ -185,8 +186,8 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 1 * units.KiB,
 			},
-			wantInventory: []*extractor.Inventory{},
-			wantErr:       cmpopts.AnyError,
+			wantPackages: nil,
+			wantErr:      cmpopts.AnyError,
 		},
 		{
 			name:              "invalid status file",
@@ -199,7 +200,7 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name:            "metadb valid windows",
@@ -212,7 +213,7 @@ func TestExtract(t *testing.T) {
 			},
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos: "ignore",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:    "mcr.microsoft.com/windows/nanoserver:ltsc2022",
 					Version: "sha256:31c8aa02d47af7d65c11da9c3a279c8407c32afd3fc6bec2e9a544db8e3715b3",
@@ -239,7 +240,7 @@ func TestExtract(t *testing.T) {
 			cfg: containerd.Config{
 				MaxMetaDBFileSize: 500 * units.MiB,
 			},
-			wantInventory: []*extractor.Inventory{},
+			wantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -273,7 +274,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 			// Remove all files and the test directory.

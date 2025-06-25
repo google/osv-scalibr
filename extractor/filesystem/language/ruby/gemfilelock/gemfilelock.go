@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -59,7 +60,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file is a Gemfile.lock file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return filepath.Base(api.Path()) == "Gemfile.lock"
+	return slices.Contains([]string{"Gemfile.lock", "gems.locked"}, filepath.Base(api.Path()))
 }
 
 type gemlockSection struct {
@@ -109,13 +110,14 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	return sections, nil
 }
 
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+// Extract extracts packages from the Gemfile.lock file.
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	sections, err := parseLockfileSections(input)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error parsing %s: %w", input.Path, err)
 	}
 
-	invs := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, section := range sections {
 		if !slices.Contains([]string{"GIT", "GEM", "PATH", "PLUGIN SOURCE"}, section.name) {
 			// Not a source section.
@@ -128,34 +130,21 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 				continue
 			}
 			name, version := m[1], m[2]
-			i := &extractor.Inventory{
+			p := &extractor.Package{
 				Name:      name,
 				Version:   version,
+				PURLType:  purl.TypeGem,
 				Locations: []string{input.Path},
 			}
 			if section.revision != "" {
-				i.SourceCode = &extractor.SourceCodeIdentifier{
+				p.SourceCode = &extractor.SourceCodeIdentifier{
 					Commit: section.revision,
 				}
 			}
-			invs = append(invs, i)
+			pkgs = append(pkgs, p)
 		}
 	}
-	return invs, nil
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGem,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string {
-	return "RubyGems"
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

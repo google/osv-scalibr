@@ -17,17 +17,18 @@ package list
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // InitFn is the extractor initializer function.
@@ -56,6 +57,7 @@ var (
 	// Containers standalone extractors.
 	Containers = InitMap{
 		containerd.Name: {containerd.NewDefault},
+		docker.Name:     {docker.New},
 	}
 
 	// Default standalone extractors.
@@ -83,7 +85,7 @@ func concat(initMaps ...InitMap) InitMap {
 }
 
 func vals(initMap InitMap) []InitFn {
-	return slices.Concat(maps.Values(initMap)...)
+	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
 // FromCapabilities returns all extractors that can run under the specified

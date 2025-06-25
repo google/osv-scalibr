@@ -53,7 +53,7 @@ SCALIBR supports extracting software package information from a variety of OS an
   * Lockfiles: pom.xml, gradle.lockfile, verification-metadata.xml
 * Javascript
   * Installed NPM packages (package.json)
-  * Lockfiles: package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lock
+  * Lockfiles: package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml, bun.lock
 * ObjectiveC
   * Podfile.lock
 * PHP:
@@ -85,6 +85,8 @@ SCALIBR supports extracting software package information from a variety of OS an
 ## Container inventory
 
 * Containerd container images that are running on host
+* Docker container images that are running on host
+* Podman container images that are running on host
 
 ## SBOM files
 

@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -178,70 +179,81 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "pysaml2",
 					Version:   "6.5.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "xmlschema",
 					Version:   "1.7.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "requests",
 					Version:   "2.25.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "lxml",
 					Version:   "4.6.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "Jinja2",
 					Version:   "2.11.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "pkg1",
 					Version:   "0.1.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "pkg2",
 					Version:   "0.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "foo",
 					Version:   "2.20",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "pydantic",
 					Version:   "1.8.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "certifi",
 					Version:   "2017.4.17",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "pkg3",
 					Version:   "1.2.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid"},
 					Metadata:  &setup.Metadata{VersionComparator: "<="},
 				},
@@ -252,28 +264,32 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid_2",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "accelerate",
 					Version:   "0.26.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_2"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "transformers",
 					Version:   "4.37.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_2"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "datasets",
 					Version:   "2.16.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_2"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "mteb",
 					Version:   "1.4.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_2"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
@@ -284,22 +300,25 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid_3",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "nanoplotter",
 					Version:   "0.13.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_3"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "nanoget",
 					Version:   "0.11.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_3"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "nanomath",
 					Version:   "0.12.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/valid_3"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
@@ -310,40 +329,43 @@ func TestExtract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/template",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "requests",
 					Version:   "2.25.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/template"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 				{
 					Name:      "lxml",
 					Version:   "4.6.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/template"},
 					Metadata:  &setup.Metadata{VersionComparator: ">="},
 				},
 				{
 					Name:      "Jinja2",
 					Version:   "2.11.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/template"},
 					Metadata:  &setup.Metadata{VersionComparator: "=="},
 				},
 			},
 		},
 		{
-			Name: "empty pkg setup.py file",
+			Name: "empty package setup.py file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "empty file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty_2",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -366,27 +388,10 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := setup.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

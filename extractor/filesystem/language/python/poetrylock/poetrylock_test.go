@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -82,25 +84,26 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-toml.txt",
 			},
-			WantErr:       extracttest.ContainsErrStr{Str: "could not extract from"},
-			WantInventory: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantPackages: nil,
 		},
 		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -113,10 +116,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "proto-plus",
 					Version:   "1.22.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -125,6 +129,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "protobuf",
 					Version:   "4.21.5",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -137,10 +142,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-with-metadata.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "emoji",
 					Version:   "2.0.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-with-metadata.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -153,10 +159,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/source-git.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ike",
 					Version:   "0.2.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-git.lock"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "cd66602cd29f61a2d2e7fb995fef1e61708c034d",
@@ -172,10 +179,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/source-legacy.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "appdirs",
 					Version:   "1.4.4",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-legacy.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -188,10 +196,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "numpy",
 					Version:   "1.23.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-package.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -204,10 +213,11 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multiple-packages.v2.lock",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "async-timeout",
 					Version:   "5.0.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -216,6 +226,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "factory-boy",
 					Version:   "3.3.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -224,6 +235,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "faker",
 					Version:   "33.3.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -232,6 +244,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "proto-plus",
 					Version:   "1.22.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -240,6 +253,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "proto-plus",
 					Version:   "1.23.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -248,6 +262,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "protobuf",
 					Version:   "4.25.5",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -256,6 +271,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "python-dateutil",
 					Version:   "2.9.0.post0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -264,6 +280,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "six",
 					Version:   "1.17.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -272,6 +289,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "typing-extensions",
 					Version:   "4.12.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
@@ -280,6 +298,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "urllib3",
 					Version:   "2.3.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -288,6 +307,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "redis",
 					Version:   "5.2.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
@@ -311,7 +331,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

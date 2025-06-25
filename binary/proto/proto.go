@@ -18,21 +18,23 @@ package proto
 import (
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
-	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -40,29 +42,77 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
+	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/result"
+	"github.com/google/osv-scalibr/veles"
+	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+var (
+	// structToProtoPackageVEX is a map of struct package VEXes to their corresponding proto values.
+	structToProtoPackageVEX = map[vex.Justification]spb.VexJustification{
+		vex.Unspecified:                                 spb.VexJustification_VEX_JUSTIFICATION_UNSPECIFIED,
+		vex.ComponentNotPresent:                         spb.VexJustification_COMPONENT_NOT_PRESENT,
+		vex.VulnerableCodeNotPresent:                    spb.VexJustification_VULNERABLE_CODE_NOT_PRESENT,
+		vex.VulnerableCodeNotInExecutePath:              spb.VexJustification_VULNERABLE_CODE_NOT_IN_EXECUTE_PATH,
+		vex.VulnerableCodeCannotBeControlledByAdversary: spb.VexJustification_VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY,
+		vex.InlineMitigationAlreadyExists:               spb.VexJustification_INLINE_MITIGATION_ALREADY_EXISTS,
+	}
+	// protoToStructPackageVEX is a map of protopackage VEXes to their corresponding struct values.
+	// It is initialized from structToProtoPackageVEX during runtime to ensure both maps are in sync.
+	protoToStructPackageVEX = func() map[spb.VexJustification]vex.Justification {
+		m := make(map[spb.VexJustification]vex.Justification)
+		for k, v := range structToProtoPackageVEX {
+			m[v] = k
+		}
+		if len(m) != len(structToProtoPackageVEX) {
+			panic("protoToStructAnnotations does not contain all values from structToProtoAnnotations")
+		}
+		return m
+	}()
+
+	// Same maps for the legacy annotation fields.
+	// TODO(b/400910349): Remove once integrators stop using the legacy field.
+	structToProtoAnnotations = map[extractor.Annotation]spb.Package_AnnotationEnum{
+		extractor.Unknown:         spb.Package_UNSPECIFIED,
+		extractor.Transitional:    spb.Package_TRANSITIONAL,
+		extractor.InsideOSPackage: spb.Package_INSIDE_OS_PACKAGE,
+		extractor.InsideCacheDir:  spb.Package_INSIDE_CACHE_DIR,
+	}
+	protoToStructAnnotations = func() map[spb.Package_AnnotationEnum]extractor.Annotation {
+		m := make(map[spb.Package_AnnotationEnum]extractor.Annotation)
+		for k, v := range structToProtoAnnotations {
+			m[v] = k
+		}
+		if len(m) != len(structToProtoAnnotations) {
+			panic("protoToStructAnnotations does not contain all values from structToProtoAnnotations")
+		}
+		return m
+	}()
 )
 
 // fileType represents the type of a proto result file.
@@ -159,25 +209,15 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 }
 
 // ScanResultToProto converts a ScanResult go struct into the equivalent proto.
-func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
+func ScanResultToProto(r *result.ScanResult) (*spb.ScanResult, error) {
 	pluginStatus := make([]*spb.PluginStatus, 0, len(r.PluginStatus))
 	for _, s := range r.PluginStatus {
-		pluginStatus = append(pluginStatus, pluginStatusToProto(s))
+		pluginStatus = append(pluginStatus, PluginStatusToProto(s))
 	}
 
-	inventories := make([]*spb.Inventory, 0, len(r.Inventories))
-	for _, i := range r.Inventories {
-		p := inventoryToProto(i)
-		inventories = append(inventories, p)
-	}
-
-	findings := make([]*spb.Finding, 0, len(r.Findings))
-	for _, f := range r.Findings {
-		p, err := findingToProto(f)
-		if err != nil {
-			return nil, err
-		}
-		findings = append(findings, p)
+	inventory, err := InventoryToProto(&r.Inventory)
+	if err != nil {
+		return nil, err
 	}
 
 	return &spb.ScanResult{
@@ -186,8 +226,46 @@ func ScanResultToProto(r *scalibr.ScanResult) (*spb.ScanResult, error) {
 		EndTime:      timestamppb.New(r.EndTime),
 		Status:       scanStatusToProto(r.Status),
 		PluginStatus: pluginStatus,
-		Inventories:  inventories,
-		Findings:     findings,
+		// TODO(b/400910349): Stop setting the deprecated fields
+		// once integrators no longer read them.
+		InventoriesDeprecated: inventory.GetPackages(),
+		FindingsDeprecated:    inventory.GetGenericFindings(),
+		Inventory:             inventory,
+	}, nil
+}
+
+// InventoryToProto converts a Inventory go struct into the equivalent proto.
+func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
+	packages := make([]*spb.Package, 0, len(inv.Packages))
+	for _, p := range inv.Packages {
+		p := packageToProto(p)
+		packages = append(packages, p)
+	}
+
+	// TODO(b/400910349): Add PackageVulns to the proto too.
+
+	genericFindings := make([]*spb.GenericFinding, 0, len(inv.GenericFindings))
+	for _, f := range inv.GenericFindings {
+		p, err := genericFindingToProto(f)
+		if err != nil {
+			return nil, err
+		}
+		genericFindings = append(genericFindings, p)
+	}
+
+	secrets := make([]*spb.Secret, 0, len(inv.Secrets))
+	for _, s := range inv.Secrets {
+		p, err := secretToProto(s)
+		if err != nil {
+			return nil, err
+		}
+		secrets = append(secrets, p)
+	}
+
+	return &spb.Inventory{
+		Packages:        packages,
+		GenericFindings: genericFindings,
+		Secrets:         secrets,
 	}, nil
 }
 
@@ -206,7 +284,8 @@ func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
 	return &spb.ScanStatus{Status: e, FailureReason: s.FailureReason}
 }
 
-func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
+// PluginStatusToProto converts a plugin.Status go struct into the equivalent proto.
+func PluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	return &spb.PluginStatus{
 		Name:    s.Name,
 		Version: int32(s.Version),
@@ -214,37 +293,89 @@ func pluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 	}
 }
 
-func inventoryToProto(i *extractor.Inventory) *spb.Inventory {
-	if i == nil {
-		return nil
+// InventoryToStruct converts a ScanResult proto into the equivalent go struct.
+func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
+	var packages []*extractor.Package
+	for _, pProto := range invProto.GetPackages() {
+		p := packageToStruct(pProto)
+		packages = append(packages, p)
 	}
-	p := converter.ToPURL(i)
-	inventoryProto := &spb.Inventory{
-		Name:         i.Name,
-		Version:      i.Version,
-		SourceCode:   sourceCodeIdentifierToProto(i.SourceCode),
-		Purl:         purlToProto(p),
-		Ecosystem:    i.Ecosystem(),
-		Locations:    i.Locations,
-		Extractor:    i.Extractor.Name(),
-		Annotations:  annotationsToProto(i.Annotations),
-		LayerDetails: layerDetailsToProto(i.LayerDetails),
+	// TODO - b/421456154: implement conversion or remaining types.
+
+	return &inventory.Inventory{
+		Packages: packages,
 	}
-	setProtoMetadata(i.Metadata, inventoryProto)
-	return inventoryProto
 }
 
-func setProtoMetadata(meta any, i *spb.Inventory) {
+func packageToProto(pkg *extractor.Package) *spb.Package {
+	if pkg == nil {
+		return nil
+	}
+	p := converter.ToPURL(pkg)
+	firstPluginName := ""
+	if len(pkg.Plugins) > 0 {
+		firstPluginName = pkg.Plugins[0]
+	}
+	packageProto := &spb.Package{
+		Name:       pkg.Name,
+		Version:    pkg.Version,
+		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
+		Purl:       purlToProto(p),
+		Ecosystem:  pkg.Ecosystem(),
+		Locations:  pkg.Locations,
+		// TODO(b/400910349): Stop setting the deprecated fields
+		// once integrators no longer read them.
+		ExtractorDeprecated:   firstPluginName,
+		Plugins:               pkg.Plugins,
+		AnnotationsDeprecated: annotationsToProto(pkg.AnnotationsDeprecated),
+		ExploitabilitySignals: packageVEXToProto(pkg.ExploitabilitySignals),
+		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
+	}
+	setProtoMetadata(pkg.Metadata, packageProto)
+	return packageProto
+}
+
+func packageToStruct(pkgProto *spb.Package) *extractor.Package {
+	if pkgProto == nil {
+		return nil
+	}
+
+	var locations []string
+	locations = append(locations, pkgProto.GetLocations()...)
+
+	// TODO - b/421463494: Remove this once windows PURLs are corrected.
+	ptype := pkgProto.GetPurl().GetType()
+	if pkgProto.GetPurl().GetType() == purl.TypeGeneric && pkgProto.GetPurl().GetNamespace() == "microsoft" {
+		ptype = "windows"
+	}
+
+	pkg := &extractor.Package{
+		Name:       pkgProto.GetName(),
+		Version:    pkgProto.GetVersion(),
+		SourceCode: sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
+		Locations:  locations,
+		PURLType:   ptype,
+		Plugins:    pkgProto.GetPlugins(),
+		//nolint:staticcheck
+		AnnotationsDeprecated: annotationsToStruct(pkgProto.GetAnnotationsDeprecated()),
+		ExploitabilitySignals: packageVEXToStruct(pkgProto.GetExploitabilitySignals()),
+		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
+		Metadata:              metadataToStruct(pkgProto),
+	}
+	return pkg
+}
+
+func setProtoMetadata(meta any, p *spb.Package) {
 	switch m := meta.(type) {
 	case *wheelegg.PythonPackageMetadata:
-		i.Metadata = &spb.Inventory_PythonMetadata{
+		p.Metadata = &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      m.Author,
 				AuthorEmail: m.AuthorEmail,
 			},
 		}
 	case *packagejson.JavascriptPackageJSONMetadata:
-		i.Metadata = &spb.Inventory_JavascriptMetadata{
+		p.Metadata = &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
 				Author:       m.Author.PersonString(),
 				Contributors: personsToProto(m.Contributors),
@@ -252,15 +383,15 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *depsjson.Metadata:
-		i.Metadata = &spb.Inventory_DepsjsonMetadata{
+		p.Metadata = &spb.Package_DepsjsonMetadata{
 			DepsjsonMetadata: &spb.DEPSJSONMetadata{
 				PackageName:    m.PackageName,
 				PackageVersion: m.PackageVersion,
 				Type:           m.Type,
 			},
 		}
-	case *apk.Metadata:
-		i.Metadata = &spb.Inventory_ApkMetadata{
+	case *apkmeta.Metadata:
+		p.Metadata = &spb.Package_ApkMetadata{
 			ApkMetadata: &spb.APKPackageMetadata{
 				PackageName:  m.PackageName,
 				OriginName:   m.OriginName,
@@ -271,8 +402,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				License:      m.License,
 			},
 		}
-	case *dpkg.Metadata:
-		i.Metadata = &spb.Inventory_DpkgMetadata{
+	case *dpkgmeta.Metadata:
+		p.Metadata = &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       m.PackageName,
 				SourceName:        m.SourceName,
@@ -286,8 +417,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Architecture:      m.Architecture,
 			},
 		}
-	case *snap.Metadata:
-		i.Metadata = &spb.Inventory_SnapMetadata{
+	case *snapmeta.Metadata:
+		p.Metadata = &spb.Package_SnapMetadata{
 			SnapMetadata: &spb.SNAPPackageMetadata{
 				Name:              m.Name,
 				Version:           m.Version,
@@ -299,8 +430,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:       m.OSVersionID,
 			},
 		}
-	case *rpm.Metadata:
-		i.Metadata = &spb.Inventory_RpmMetadata{
+	case *rpmmeta.Metadata:
+		p.Metadata = &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  m.PackageName,
 				SourceRpm:    m.SourceRPM,
@@ -314,8 +445,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				License:      m.License,
 			},
 		}
-	case *cos.Metadata:
-		i.Metadata = &spb.Inventory_CosMetadata{
+	case *cosmeta.Metadata:
+		p.Metadata = &spb.Package_CosMetadata{
 			CosMetadata: &spb.COSPackageMetadata{
 				Name:        m.Name,
 				Version:     m.Version,
@@ -324,8 +455,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId: m.OSVersionID,
 			},
 		}
-	case *pacman.Metadata:
-		i.Metadata = &spb.Inventory_PacmanMetadata{
+	case *pacmanmeta.Metadata:
+		p.Metadata = &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:         m.PackageName,
 				PackageVersion:      m.PackageVersion,
@@ -334,8 +465,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				PackageDependencies: m.PackageDependencies,
 			},
 		}
-	case *portage.Metadata:
-		i.Metadata = &spb.Inventory_PortageMetadata{
+	case *portagemeta.Metadata:
+		p.Metadata = &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    m.PackageName,
 				PackageVersion: m.PackageVersion,
@@ -343,8 +474,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:    m.OSVersionID,
 			},
 		}
-	case *flatpak.Metadata:
-		i.Metadata = &spb.Inventory_FlatpakMetadata{
+	case *flatpakmeta.Metadata:
+		p.Metadata = &spb.Package_FlatpakMetadata{
 			FlatpakMetadata: &spb.FlatpakPackageMetadata{
 				PackageName:    m.PackageName,
 				PackageId:      m.PackageID,
@@ -357,8 +488,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				Developer:      m.Developer,
 			},
 		}
-	case *nix.Metadata:
-		i.Metadata = &spb.Inventory_NixMetadata{
+	case *nixmeta.Metadata:
+		p.Metadata = &spb.Package_NixMetadata{
 			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       m.PackageName,
 				PackageVersion:    m.PackageVersion,
@@ -370,7 +501,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *macapps.Metadata:
-		i.Metadata = &spb.Inventory_MacAppsMetadata{
+		p.Metadata = &spb.Package_MacAppsMetadata{
 			MacAppsMetadata: &spb.MacAppsMetadata{
 				BundleDisplayName:        m.CFBundleDisplayName,
 				BundleIdentifier:         m.CFBundleIdentifier,
@@ -385,11 +516,11 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *homebrew.Metadata:
-		i.Metadata = &spb.Inventory_HomebrewMetadata{
+		p.Metadata = &spb.Package_HomebrewMetadata{
 			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
 		}
-	case *module.Metadata:
-		i.Metadata = &spb.Inventory_KernelModuleMetadata{
+	case *modulemeta.Metadata:
+		p.Metadata = &spb.Package_KernelModuleMetadata{
 			KernelModuleMetadata: &spb.KernelModuleMetadata{
 				PackageName:                    m.PackageName,
 				PackageVersion:                 m.PackageVersion,
@@ -400,8 +531,8 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				OsVersionId:                    m.OSVersionID,
 				PackageAuthor:                  m.PackageAuthor},
 		}
-	case *vmlinuz.Metadata:
-		i.Metadata = &spb.Inventory_VmlinuzMetadata{
+	case *vmlinuzmeta.Metadata:
+		p.Metadata = &spb.Package_VmlinuzMetadata{
 			VmlinuzMetadata: &spb.VmlinuzMetadata{
 				Name:              m.Name,
 				Version:           m.Version,
@@ -418,7 +549,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *ctrdfs.Metadata:
-		i.Metadata = &spb.Inventory_ContainerdContainerMetadata{
+		p.Metadata = &spb.Package_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName: m.Namespace,
 				ImageName:     m.ImageName,
@@ -436,7 +567,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *ctrdruntime.Metadata:
-		i.Metadata = &spb.Inventory_ContainerdRuntimeContainerMetadata{
+		p.Metadata = &spb.Package_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: m.Namespace,
 				ImageName:     m.ImageName,
@@ -447,22 +578,22 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				RootfsPath:    m.RootFS,
 			},
 		}
-	case *spdx.Metadata:
-		i.Metadata = &spb.Inventory_SpdxMetadata{
+	case *spdxmeta.Metadata:
+		p.Metadata = &spb.Package_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
-	case *cdx.Metadata:
-		i.Metadata = &spb.Inventory_CdxMetadata{
+	case *cdxmeta.Metadata:
+		p.Metadata = &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
 			},
 		}
-	case *archive.Metadata:
-		i.Metadata = &spb.Inventory_JavaArchiveMetadata{
+	case *archivemeta.Metadata:
+		p.Metadata = &spb.Package_JavaArchiveMetadata{
 			JavaArchiveMetadata: &spb.JavaArchiveMetadata{
 				ArtifactId: m.ArtifactID,
 				GroupId:    m.GroupID,
@@ -470,7 +601,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *javalockfile.Metadata:
-		i.Metadata = &spb.Inventory_JavaLockfileMetadata{
+		p.Metadata = &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   m.ArtifactID,
 				GroupId:      m.GroupID,
@@ -478,7 +609,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *osv.Metadata:
-		i.Metadata = &spb.Inventory_OsvMetadata{
+		p.Metadata = &spb.Package_OsvMetadata{
 			OsvMetadata: &spb.OSVPackageMetadata{
 				PurlType:  m.PURLType,
 				Commit:    m.Commit,
@@ -487,27 +618,28 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *requirements.Metadata:
-		i.Metadata = &spb.Inventory_PythonRequirementsMetadata{
+		p.Metadata = &spb.Package_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
+				Requirement:            m.Requirement,
 			},
 		}
 	case *setup.Metadata:
-		i.Metadata = &spb.Inventory_PythonSetupMetadata{
+		p.Metadata = &spb.Package_PythonSetupMetadata{
 			PythonSetupMetadata: &spb.PythonSetupMetadata{
 				VersionComparator: m.VersionComparator,
 			},
 		}
 	case *winmetadata.OSVersion:
-		i.Metadata = &spb.Inventory_WindowsOsVersionMetadata{
+		p.Metadata = &spb.Package_WindowsOsVersionMetadata{
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     m.Product,
 				FullVersion: m.FullVersion,
 			},
 		}
 	case *chromeextensions.Metadata:
-		i.Metadata = &spb.Inventory_ChromeExtensionsMetadata{
+		p.Metadata = &spb.Package_ChromeExtensionsMetadata{
 			ChromeExtensionsMetadata: &spb.ChromeExtensionsMetadata{
 				Name:                 m.Name,
 				Description:          m.Description,
@@ -520,7 +652,7 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 			},
 		}
 	case *vscodeextensions.Metadata:
-		i.Metadata = &spb.Inventory_VscodeExtensionsMetadata{
+		p.Metadata = &spb.Package_VscodeExtensionsMetadata{
 			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
 				Id:                   m.ID,
 				PublisherId:          m.PublisherID,
@@ -531,7 +663,329 @@ func setProtoMetadata(meta any, i *spb.Inventory) {
 				InstalledTimestamp:   m.InstalledTimestamp,
 			},
 		}
+	case *podman.Metadata:
+		exposedPorts := map[uint32]*spb.Protocol{}
+		for p, protocols := range m.ExposedPorts {
+			exposedPorts[uint32(p)] = &spb.Protocol{Names: protocols}
+		}
+		p.Metadata = &spb.Package_PodmanMetadata{
+			PodmanMetadata: &spb.PodmanMetadata{
+				ExposedPorts:  exposedPorts,
+				Pid:           int32(m.PID),
+				NamespaceName: m.NameSpace,
+				StartedTime:   timestamppb.New(m.StartedTime),
+				FinishedTime:  timestamppb.New(m.FinishedTime),
+				Status:        m.Status,
+				ExitCode:      m.ExitCode,
+				Exited:        m.Exited,
+			},
+		}
+	case *docker.Metadata:
+		ports := make([]*spb.DockerPort, 0, len(m.Ports))
+		for _, p := range m.Ports {
+			ports = append(ports, &spb.DockerPort{
+				Ip:          p.IP,
+				PrivatePort: uint32(p.PrivatePort),
+				PublicPort:  uint32(p.PublicPort),
+				Type:        p.Type,
+			})
+		}
+		p.Metadata = &spb.Package_DockerContainersMetadata{
+			DockerContainersMetadata: &spb.DockerContainersMetadata{
+				ImageName:   m.ImageName,
+				ImageDigest: m.ImageDigest,
+				Id:          m.ID,
+				Ports:       ports,
+			},
+		}
 	}
+}
+
+func metadataToStruct(md *spb.Package) any {
+	switch md.GetMetadata().(type) {
+	case *spb.Package_PythonMetadata:
+		return &wheelegg.PythonPackageMetadata{
+			Author:      md.GetPythonMetadata().GetAuthor(),
+			AuthorEmail: md.GetPythonMetadata().GetAuthorEmail(),
+		}
+	case *spb.Package_JavascriptMetadata:
+		var author *packagejson.Person
+		if md.GetJavascriptMetadata().GetAuthor() != "" {
+			author = &packagejson.Person{
+				Name: md.GetJavascriptMetadata().GetAuthor(),
+			}
+		}
+		return &packagejson.JavascriptPackageJSONMetadata{
+			Author:       author,
+			Contributors: personsToStruct(md.GetJavascriptMetadata().GetContributors()),
+			Maintainers:  personsToStruct(md.GetJavascriptMetadata().GetMaintainers()),
+		}
+	case *spb.Package_DepsjsonMetadata:
+		return &depsjson.Metadata{
+			PackageName:    md.GetDepsjsonMetadata().GetPackageName(),
+			PackageVersion: md.GetDepsjsonMetadata().GetPackageVersion(),
+			Type:           md.GetDepsjsonMetadata().GetType(),
+		}
+	case *spb.Package_ApkMetadata:
+		return &apkmeta.Metadata{
+			PackageName:  md.GetApkMetadata().GetPackageName(),
+			OriginName:   md.GetApkMetadata().GetOriginName(),
+			OSID:         md.GetApkMetadata().GetOsId(),
+			OSVersionID:  md.GetApkMetadata().GetOsVersionId(),
+			Maintainer:   md.GetApkMetadata().GetMaintainer(),
+			Architecture: md.GetApkMetadata().GetArchitecture(),
+			License:      md.GetApkMetadata().GetLicense(),
+		}
+	case *spb.Package_DpkgMetadata:
+		return &dpkgmeta.Metadata{
+			PackageName:       md.GetDpkgMetadata().GetPackageName(),
+			SourceName:        md.GetDpkgMetadata().GetSourceName(),
+			Status:            md.GetDpkgMetadata().GetStatus(),
+			SourceVersion:     md.GetDpkgMetadata().GetSourceVersion(),
+			PackageVersion:    md.GetDpkgMetadata().GetPackageVersion(),
+			OSID:              md.GetDpkgMetadata().GetOsId(),
+			OSVersionCodename: md.GetDpkgMetadata().GetOsVersionCodename(),
+			OSVersionID:       md.GetDpkgMetadata().GetOsVersionId(),
+			Maintainer:        md.GetDpkgMetadata().GetMaintainer(),
+			Architecture:      md.GetDpkgMetadata().GetArchitecture(),
+		}
+	case *spb.Package_SnapMetadata:
+		return &snapmeta.Metadata{
+			Name:              md.GetSnapMetadata().GetName(),
+			Version:           md.GetSnapMetadata().GetVersion(),
+			Grade:             md.GetSnapMetadata().GetGrade(),
+			Type:              md.GetSnapMetadata().GetType(),
+			Architectures:     md.GetSnapMetadata().GetArchitectures(),
+			OSID:              md.GetSnapMetadata().GetOsId(),
+			OSVersionCodename: md.GetSnapMetadata().GetOsVersionCodename(),
+			OSVersionID:       md.GetSnapMetadata().GetOsVersionId(),
+		}
+	case *spb.Package_RpmMetadata:
+		return &rpmmeta.Metadata{
+			PackageName:  md.GetRpmMetadata().GetPackageName(),
+			SourceRPM:    md.GetRpmMetadata().GetSourceRpm(),
+			Epoch:        int(md.GetRpmMetadata().GetEpoch()),
+			OSName:       md.GetRpmMetadata().GetOsName(),
+			OSID:         md.GetRpmMetadata().GetOsId(),
+			OSVersionID:  md.GetRpmMetadata().GetOsVersionId(),
+			OSBuildID:    md.GetRpmMetadata().GetOsBuildId(),
+			Vendor:       md.GetRpmMetadata().GetVendor(),
+			Architecture: md.GetRpmMetadata().GetArchitecture(),
+			License:      md.GetRpmMetadata().GetLicense(),
+		}
+	case *spb.Package_CosMetadata:
+		return &cosmeta.Metadata{
+			Name:        md.GetCosMetadata().GetName(),
+			Version:     md.GetCosMetadata().GetVersion(),
+			Category:    md.GetCosMetadata().GetCategory(),
+			OSVersion:   md.GetCosMetadata().GetOsVersion(),
+			OSVersionID: md.GetCosMetadata().GetOsVersionId(),
+		}
+	case *spb.Package_PacmanMetadata:
+		return &pacmanmeta.Metadata{
+			PackageName:         md.GetPacmanMetadata().GetPackageName(),
+			PackageVersion:      md.GetPacmanMetadata().GetPackageVersion(),
+			OSID:                md.GetPacmanMetadata().GetOsId(),
+			OSVersionID:         md.GetPacmanMetadata().GetOsVersionId(),
+			PackageDependencies: md.GetPacmanMetadata().GetPackageDependencies(),
+		}
+	case *spb.Package_PortageMetadata:
+		return &portagemeta.Metadata{
+			PackageName:    md.GetPortageMetadata().GetPackageName(),
+			PackageVersion: md.GetPortageMetadata().GetPackageVersion(),
+			OSID:           md.GetPortageMetadata().GetOsId(),
+			OSVersionID:    md.GetPortageMetadata().GetOsVersionId(),
+		}
+	case *spb.Package_FlatpakMetadata:
+		return &flatpakmeta.Metadata{
+			PackageName:    md.GetFlatpakMetadata().GetPackageName(),
+			PackageID:      md.GetFlatpakMetadata().GetPackageId(),
+			PackageVersion: md.GetFlatpakMetadata().GetPackageVersion(),
+			ReleaseDate:    md.GetFlatpakMetadata().GetReleaseDate(),
+			OSName:         md.GetFlatpakMetadata().GetOsName(),
+			OSID:           md.GetFlatpakMetadata().GetOsId(),
+			OSVersionID:    md.GetFlatpakMetadata().GetOsVersionId(),
+			OSBuildID:      md.GetFlatpakMetadata().GetOsBuildId(),
+			Developer:      md.GetFlatpakMetadata().GetDeveloper(),
+		}
+	case *spb.Package_NixMetadata:
+		return &nixmeta.Metadata{
+			PackageName:       md.GetNixMetadata().GetPackageName(),
+			PackageVersion:    md.GetNixMetadata().GetPackageVersion(),
+			PackageHash:       md.GetNixMetadata().GetPackageHash(),
+			PackageOutput:     md.GetNixMetadata().GetPackageOutput(),
+			OSID:              md.GetNixMetadata().GetOsId(),
+			OSVersionCodename: md.GetNixMetadata().GetOsVersionCodename(),
+			OSVersionID:       md.GetNixMetadata().GetOsVersionId(),
+		}
+	case *spb.Package_MacAppsMetadata:
+		return &macapps.Metadata{
+			CFBundleDisplayName:        md.GetMacAppsMetadata().GetBundleDisplayName(),
+			CFBundleIdentifier:         md.GetMacAppsMetadata().GetBundleIdentifier(),
+			CFBundleShortVersionString: md.GetMacAppsMetadata().GetBundleShortVersionString(),
+			CFBundleExecutable:         md.GetMacAppsMetadata().GetBundleExecutable(),
+			CFBundleName:               md.GetMacAppsMetadata().GetBundleName(),
+			CFBundlePackageType:        md.GetMacAppsMetadata().GetBundlePackageType(),
+			CFBundleSignature:          md.GetMacAppsMetadata().GetBundleSignature(),
+			CFBundleVersion:            md.GetMacAppsMetadata().GetBundleVersion(),
+			KSProductID:                md.GetMacAppsMetadata().GetProductId(),
+			KSUpdateURL:                md.GetMacAppsMetadata().GetUpdateUrl(),
+		}
+	case *spb.Package_HomebrewMetadata:
+		return &homebrew.Metadata{}
+	case *spb.Package_KernelModuleMetadata:
+		return &modulemeta.Metadata{
+			PackageName:                    md.GetKernelModuleMetadata().GetPackageName(),
+			PackageVersion:                 md.GetKernelModuleMetadata().GetPackageVersion(),
+			PackageVermagic:                md.GetKernelModuleMetadata().GetPackageVermagic(),
+			PackageSourceVersionIdentifier: md.GetKernelModuleMetadata().GetPackageSourceVersionIdentifier(),
+			OSID:                           md.GetKernelModuleMetadata().GetOsId(),
+			OSVersionCodename:              md.GetKernelModuleMetadata().GetOsVersionCodename(),
+			OSVersionID:                    md.GetKernelModuleMetadata().GetOsVersionId(),
+			PackageAuthor:                  md.GetKernelModuleMetadata().GetPackageAuthor(),
+		}
+	case *spb.Package_VmlinuzMetadata:
+		return &vmlinuzmeta.Metadata{
+			Name:              md.GetVmlinuzMetadata().GetName(),
+			Version:           md.GetVmlinuzMetadata().GetVersion(),
+			Architecture:      md.GetVmlinuzMetadata().GetArchitecture(),
+			ExtendedVersion:   md.GetVmlinuzMetadata().GetExtendedVersion(),
+			Format:            md.GetVmlinuzMetadata().GetFormat(),
+			SwapDevice:        md.GetVmlinuzMetadata().GetSwapDevice(),
+			RootDevice:        md.GetVmlinuzMetadata().GetRootDevice(),
+			VideoMode:         md.GetVmlinuzMetadata().GetVideoMode(),
+			OSID:              md.GetVmlinuzMetadata().GetOsId(),
+			OSVersionCodename: md.GetVmlinuzMetadata().GetOsVersionCodename(),
+			OSVersionID:       md.GetVmlinuzMetadata().GetOsVersionId(),
+			RWRootFS:          md.GetVmlinuzMetadata().GetRwRootFs(),
+		}
+	case *spb.Package_ContainerdContainerMetadata:
+		return &ctrdfs.Metadata{
+			Namespace:    md.GetContainerdContainerMetadata().GetNamespaceName(),
+			ImageName:    md.GetContainerdContainerMetadata().GetImageName(),
+			ImageDigest:  md.GetContainerdContainerMetadata().GetImageDigest(),
+			Runtime:      md.GetContainerdContainerMetadata().GetRuntime(),
+			ID:           md.GetContainerdContainerMetadata().GetId(),
+			PodName:      md.GetContainerdContainerMetadata().GetPodName(),
+			PodNamespace: md.GetContainerdContainerMetadata().GetPodNamespace(),
+			PID:          int(md.GetContainerdContainerMetadata().GetPid()),
+			Snapshotter:  md.GetContainerdContainerMetadata().GetSnapshotter(),
+			SnapshotKey:  md.GetContainerdContainerMetadata().GetSnapshotKey(),
+			LowerDir:     md.GetContainerdContainerMetadata().GetLowerDir(),
+			UpperDir:     md.GetContainerdContainerMetadata().GetUpperDir(),
+			WorkDir:      md.GetContainerdContainerMetadata().GetWorkDir(),
+		}
+	case *spb.Package_ContainerdRuntimeContainerMetadata:
+		return &ctrdruntime.Metadata{
+			Namespace:   md.GetContainerdRuntimeContainerMetadata().GetNamespaceName(),
+			ImageName:   md.GetContainerdRuntimeContainerMetadata().GetImageName(),
+			ImageDigest: md.GetContainerdRuntimeContainerMetadata().GetImageDigest(),
+			Runtime:     md.GetContainerdRuntimeContainerMetadata().GetRuntime(),
+			ID:          md.GetContainerdRuntimeContainerMetadata().GetId(),
+			PID:         int(md.GetContainerdRuntimeContainerMetadata().GetPid()),
+			RootFS:      md.GetContainerdRuntimeContainerMetadata().GetRootfsPath(),
+		}
+	case *spb.Package_SpdxMetadata:
+		return &spdxmeta.Metadata{
+			PURL: purlToStruct(md.GetSpdxMetadata().GetPurl()),
+			CPEs: md.GetSpdxMetadata().GetCpes(),
+		}
+	case *spb.Package_CdxMetadata:
+		return &cdxmeta.Metadata{
+			PURL: purlToStruct(md.GetCdxMetadata().GetPurl()),
+			CPEs: md.GetCdxMetadata().GetCpes(),
+		}
+	case *spb.Package_JavaArchiveMetadata:
+		return &archivemeta.Metadata{
+			ArtifactID: md.GetJavaArchiveMetadata().GetArtifactId(),
+			GroupID:    md.GetJavaArchiveMetadata().GetGroupId(),
+			SHA1:       md.GetJavaArchiveMetadata().GetSha1(),
+		}
+	case *spb.Package_JavaLockfileMetadata:
+		return &javalockfile.Metadata{
+			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
+			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
+			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
+		}
+	case *spb.Package_OsvMetadata:
+		return &osv.Metadata{
+			PURLType:  md.GetOsvMetadata().GetPurlType(),
+			Commit:    md.GetOsvMetadata().GetCommit(),
+			Ecosystem: md.GetOsvMetadata().GetEcosystem(),
+			CompareAs: md.GetOsvMetadata().GetCompareAs(),
+		}
+	case *spb.Package_PythonRequirementsMetadata:
+		return &requirements.Metadata{
+			HashCheckingModeValues: md.GetPythonRequirementsMetadata().GetHashCheckingModeValues(),
+			VersionComparator:      md.GetPythonRequirementsMetadata().GetVersionComparator(),
+			Requirement:            md.GetPythonRequirementsMetadata().GetRequirement(),
+		}
+	case *spb.Package_PythonSetupMetadata:
+		return &setup.Metadata{
+			VersionComparator: md.GetPythonSetupMetadata().GetVersionComparator(),
+		}
+	case *spb.Package_WindowsOsVersionMetadata:
+		return &winmetadata.OSVersion{
+			Product:     md.GetWindowsOsVersionMetadata().GetProduct(),
+			FullVersion: md.GetWindowsOsVersionMetadata().GetFullVersion(),
+		}
+	case *spb.Package_ChromeExtensionsMetadata:
+		return &chromeextensions.Metadata{
+			Name:                 md.GetChromeExtensionsMetadata().GetName(),
+			Description:          md.GetChromeExtensionsMetadata().GetDescription(),
+			AuthorEmail:          md.GetChromeExtensionsMetadata().GetAuthorEmail(),
+			HostPermissions:      md.GetChromeExtensionsMetadata().GetHostPermissions(),
+			ManifestVersion:      int(md.GetChromeExtensionsMetadata().GetManifestVersion()),
+			MinimumChromeVersion: md.GetChromeExtensionsMetadata().GetMinimumChromeVersion(),
+			Permissions:          md.GetChromeExtensionsMetadata().GetPermissions(),
+			UpdateURL:            md.GetChromeExtensionsMetadata().GetUpdateUrl(),
+		}
+	case *spb.Package_VscodeExtensionsMetadata:
+		return &vscodeextensions.Metadata{
+			ID:                   md.GetVscodeExtensionsMetadata().GetId(),
+			PublisherID:          md.GetVscodeExtensionsMetadata().GetPublisherId(),
+			PublisherDisplayName: md.GetVscodeExtensionsMetadata().GetPublisherDisplayName(),
+			TargetPlatform:       md.GetVscodeExtensionsMetadata().GetTargetPlatform(),
+			Updated:              md.GetVscodeExtensionsMetadata().GetUpdated(),
+			IsPreReleaseVersion:  md.GetVscodeExtensionsMetadata().GetIsPreReleaseVersion(),
+			InstalledTimestamp:   md.GetVscodeExtensionsMetadata().GetInstalledTimestamp(),
+		}
+	case *spb.Package_PodmanMetadata:
+		exposedPorts := map[uint16][]string{}
+		for p, protocol := range md.GetPodmanMetadata().GetExposedPorts() {
+			for _, name := range protocol.GetNames() {
+				exposedPorts[uint16(p)] = append(exposedPorts[uint16(p)], name)
+			}
+		}
+		return &podman.Metadata{
+			ExposedPorts: exposedPorts,
+			PID:          int(md.GetPodmanMetadata().GetPid()),
+			NameSpace:    md.GetPodmanMetadata().GetNamespaceName(),
+			StartedTime:  md.GetPodmanMetadata().GetStartedTime().AsTime(),
+			FinishedTime: md.GetPodmanMetadata().GetFinishedTime().AsTime(),
+			Status:       md.GetPodmanMetadata().GetStatus(),
+			ExitCode:     md.GetPodmanMetadata().GetExitCode(),
+			Exited:       md.GetPodmanMetadata().GetExited(),
+		}
+	case *spb.Package_DockerContainersMetadata:
+		var ports []container.Port
+		for _, p := range md.GetDockerContainersMetadata().GetPorts() {
+			ports = append(ports, container.Port{
+				IP:          p.GetIp(),
+				PrivatePort: uint16(p.GetPrivatePort()),
+				PublicPort:  uint16(p.GetPublicPort()),
+				Type:        p.GetType(),
+			})
+		}
+		return &docker.Metadata{
+			ImageName:   md.GetDockerContainersMetadata().GetImageName(),
+			ImageDigest: md.GetDockerContainersMetadata().GetImageDigest(),
+			ID:          md.GetDockerContainersMetadata().GetId(),
+			Ports:       ports,
+		}
+	}
+
+	return nil
 }
 
 func personsToProto(persons []*packagejson.Person) []string {
@@ -540,6 +994,14 @@ func personsToProto(persons []*packagejson.Person) []string {
 		personStrings = append(personStrings, p.PersonString())
 	}
 	return personStrings
+}
+
+func personsToStruct(personStrings []string) []*packagejson.Person {
+	var persons []*packagejson.Person
+	for _, p := range personStrings {
+		persons = append(persons, packagejson.PersonFromString(p))
+	}
+	return persons
 }
 
 func purlToProto(p *purl.PackageURL) *spb.Purl {
@@ -557,30 +1019,144 @@ func purlToProto(p *purl.PackageURL) *spb.Purl {
 	}
 }
 
-func annotationsToProto(as []extractor.Annotation) []spb.Inventory_AnnotationEnum {
-	if as == nil {
+func purlToStruct(p *spb.Purl) *purl.PackageURL {
+	if p == nil {
 		return nil
 	}
-	ps := []spb.Inventory_AnnotationEnum{}
+
+	// There's no guarantee that the PURL fields will match the PURL string.
+	// Use the fields if the string is blank or invalid.
+	// Elese, compare the string and fields, prioritizing the fields.
+	pfs := purlFromString(p.GetPurl())
+	if pfs == nil {
+		return &purl.PackageURL{
+			Type:       p.GetType(),
+			Namespace:  p.GetNamespace(),
+			Name:       p.GetName(),
+			Version:    p.GetVersion(),
+			Qualifiers: qualifiersToStruct(p.GetQualifiers()),
+			Subpath:    p.GetSubpath(),
+		}
+	}
+
+	// Prioritize fields from the PURL proto over the PURL string.
+	ptype := pfs.Type
+	if p.GetType() != "" {
+		ptype = p.GetType()
+	}
+	namespace := pfs.Namespace
+	if p.GetNamespace() != "" {
+		namespace = p.GetNamespace()
+	}
+	name := pfs.Name
+	if p.GetName() != "" {
+		name = p.GetName()
+	}
+	version := pfs.Version
+	if p.GetVersion() != "" {
+		version = p.GetVersion()
+	}
+	qualifiers := pfs.Qualifiers
+	if len(p.GetQualifiers()) > 0 {
+		qualifiers = qualifiersToStruct(p.GetQualifiers())
+	}
+	subpath := pfs.Subpath
+	if p.GetSubpath() != "" {
+		subpath = p.GetSubpath()
+	}
+
+	// TODO - b/421463494: Remove this once windows PURLs are corrected.
+	if ptype == purl.TypeGeneric && namespace == "microsoft" {
+		ptype = "windows"
+		namespace = ""
+	}
+
+	return &purl.PackageURL{
+		Type:       ptype,
+		Namespace:  namespace,
+		Name:       name,
+		Version:    version,
+		Qualifiers: qualifiers,
+		Subpath:    subpath,
+	}
+}
+
+func purlFromString(s string) *purl.PackageURL {
+	if s == "" {
+		return nil
+	}
+	p, err := purl.FromString(s)
+	if err != nil {
+		log.Errorf("failed to parse PURL string %q: %v", s, err)
+		return nil
+	}
+	if len(p.Qualifiers) == 0 {
+		p.Qualifiers = nil
+	}
+	return &p
+}
+
+func qualifiersToStruct(qs []*spb.Qualifier) purl.Qualifiers {
+	if len(qs) == 0 {
+		return nil
+	}
+	qsmap := map[string]string{}
+	for _, q := range qs {
+		qsmap[q.GetKey()] = q.GetValue()
+	}
+	return purl.QualifiersFromMap(qsmap)
+}
+
+func annotationsToProto(as []extractor.Annotation) []spb.Package_AnnotationEnum {
+	var ps []spb.Package_AnnotationEnum
 	for _, a := range as {
-		ps = append(ps, annotationToProto(a))
+		ps = append(ps, structToProtoAnnotations[a])
 	}
 	return ps
 }
 
-func annotationToProto(s extractor.Annotation) spb.Inventory_AnnotationEnum {
-	var e spb.Inventory_AnnotationEnum
-	switch s {
-	case extractor.Transitional:
-		e = spb.Inventory_TRANSITIONAL
-	case extractor.InsideOSPackage:
-		e = spb.Inventory_INSIDE_OS_PACKAGE
-	case extractor.InsideCacheDir:
-		e = spb.Inventory_INSIDE_CACHE_DIR
-	default:
-		e = spb.Inventory_UNSPECIFIED
+func annotationsToStruct(ps []spb.Package_AnnotationEnum) []extractor.Annotation {
+	var as []extractor.Annotation
+	for _, p := range ps {
+		as = append(as, protoToStructAnnotations[p])
 	}
-	return e
+	return as
+}
+
+func packageVEXToProto(vs []*vex.PackageExploitabilitySignal) []*spb.PackageExploitabilitySignal {
+	var ps []*spb.PackageExploitabilitySignal
+	for _, v := range vs {
+		p := &spb.PackageExploitabilitySignal{
+			Plugin:        v.Plugin,
+			Justification: structToProtoPackageVEX[v.Justification],
+		}
+		if v.MatchesAllVulns {
+			p.VulnFilter = &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true}
+		} else {
+			p.VulnFilter = &spb.PackageExploitabilitySignal_VulnIdentifiers{
+				VulnIdentifiers: &spb.VulnIdentifiers{Identifiers: v.VulnIdentifiers},
+			}
+		}
+		ps = append(ps, p)
+	}
+	return ps
+}
+
+func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExploitabilitySignal {
+	var vs []*vex.PackageExploitabilitySignal
+	for _, p := range ps {
+		v := &vex.PackageExploitabilitySignal{
+			Plugin:        p.Plugin,
+			Justification: protoToStructPackageVEX[p.Justification],
+		}
+		if ids := p.GetVulnIdentifiers(); ids != nil {
+			v.VulnIdentifiers = ids.Identifiers
+		} else {
+			v.MatchesAllVulns = p.GetMatchesAllVulns()
+		}
+		vs = append(vs, v)
+	}
+	return vs
 }
 
 func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
@@ -590,8 +1166,22 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 	return &spb.LayerDetails{
 		Index:       int32(ld.Index),
 		DiffId:      ld.DiffID,
+		ChainId:     ld.ChainID,
 		Command:     ld.Command,
 		InBaseImage: ld.InBaseImage,
+	}
+}
+
+func layerDetailsToStruct(ld *spb.LayerDetails) *extractor.LayerDetails {
+	if ld == nil {
+		return nil
+	}
+	return &extractor.LayerDetails{
+		Index:       int(ld.GetIndex()),
+		DiffID:      ld.GetDiffId(),
+		ChainID:     ld.GetChainId(),
+		Command:     ld.GetCommand(),
+		InBaseImage: ld.GetInBaseImage(),
 	}
 }
 
@@ -600,6 +1190,16 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 		return nil
 	}
 	return &spb.SourceCodeIdentifier{
+		Repo:   s.Repo,
+		Commit: s.Commit,
+	}
+}
+
+func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.SourceCodeIdentifier {
+	if s == nil {
+		return nil
+	}
+	return &extractor.SourceCodeIdentifier{
 		Repo:   s.Repo,
 		Commit: s.Commit,
 	}
@@ -619,78 +1219,136 @@ var ErrAdvisoryMissing = errors.New("advisory missing in finding")
 // ErrAdvisoryIDMissing will be returned if the Advisory ID is not set on a finding.
 var ErrAdvisoryIDMissing = errors.New("advisory ID missing in finding")
 
-func findingToProto(f *detector.Finding) (*spb.Finding, error) {
+func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, error) {
 	if f.Adv == nil {
 		return nil, ErrAdvisoryMissing
 	}
-	var target *spb.TargetDetails
+	var target *spb.GenericFindingTargetDetails
 	if f.Target != nil {
-		i := inventoryToProto(f.Target.Inventory)
-		target = &spb.TargetDetails{
-			Location:  f.Target.Location,
-			Inventory: i,
+		target = &spb.GenericFindingTargetDetails{
+			Extra: f.Target.Extra,
 		}
 	}
 	if f.Adv.ID == nil {
 		return nil, ErrAdvisoryIDMissing
 	}
-	return &spb.Finding{
-		Adv: &spb.Advisory{
+	return &spb.GenericFinding{
+		Adv: &spb.GenericFindingAdvisory{
 			Id: &spb.AdvisoryId{
 				Publisher: f.Adv.ID.Publisher,
 				Reference: f.Adv.ID.Reference,
 			},
-			Type:           typeEnumToProto(f.Adv.Type),
 			Title:          f.Adv.Title,
 			Description:    f.Adv.Description,
 			Recommendation: f.Adv.Recommendation,
-			Sev:            severityToProto(f.Adv.Sev),
+			Sev:            severityEnumToProto(f.Adv.Sev),
 		},
 		Target: target,
-		Extra:  f.Extra,
 	}, nil
 }
 
-func typeEnumToProto(e detector.TypeEnum) spb.Advisory_TypeEnum {
-	switch e {
-	case detector.TypeVulnerability:
-		return spb.Advisory_VULNERABILITY
-	case detector.TypeCISFinding:
-		return spb.Advisory_CIS_FINDING
+func severityEnumToProto(severity inventory.SeverityEnum) spb.SeverityEnum {
+	switch severity {
+	case inventory.SeverityMinimal:
+		return spb.SeverityEnum_MINIMAL
+	case inventory.SeverityLow:
+		return spb.SeverityEnum_LOW
+	case inventory.SeverityMedium:
+		return spb.SeverityEnum_MEDIUM
+	case inventory.SeverityHigh:
+		return spb.SeverityEnum_HIGH
+	case inventory.SeverityCritical:
+		return spb.SeverityEnum_CRITICAL
 	default:
-		return spb.Advisory_UNKNOWN
+		return spb.SeverityEnum_SEVERITY_UNSPECIFIED
 	}
 }
 
-func severityToProto(s *detector.Severity) *spb.Severity {
-	r := &spb.Severity{}
-	switch s.Severity {
-	case detector.SeverityMinimal:
-		r.Severity = spb.Severity_MINIMAL
-	case detector.SeverityLow:
-		r.Severity = spb.Severity_LOW
-	case detector.SeverityMedium:
-		r.Severity = spb.Severity_MEDIUM
-	case detector.SeverityHigh:
-		r.Severity = spb.Severity_HIGH
-	case detector.SeverityCritical:
-		r.Severity = spb.Severity_CRITICAL
-	default:
-		r.Severity = spb.Severity_UNSPECIFIED
+func secretToProto(s *inventory.Secret) (*spb.Secret, error) {
+	sec, err := velesSecretToProto(s.Secret)
+	if err != nil {
+		return nil, err
 	}
-	if s.CVSSV2 != nil {
-		r.CvssV2 = cvssToProto(s.CVSSV2)
+	res, err := validationResultToProto(s.Validation)
+	if err != nil {
+		return nil, err
 	}
-	if s.CVSSV3 != nil {
-		r.CvssV3 = cvssToProto(s.CVSSV3)
-	}
-	return r
+	return &spb.Secret{
+		Secret:    sec,
+		Status:    res,
+		Locations: locationToProto(s.Location),
+	}, nil
 }
 
-func cvssToProto(c *detector.CVSS) *spb.CVSS {
-	return &spb.CVSS{
-		BaseScore:          c.BaseScore,
-		TemporalScore:      c.TemporalScore,
-		EnvironmentalScore: c.EnvironmentalScore,
+func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
+	switch t := s.(type) {
+	case velesgcpsak.GCPSAK:
+		return gcpsakToProto(t), nil
+	default:
+		return nil, fmt.Errorf("unsupported veles.Secret of type %T", s)
+	}
+}
+
+func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
+	sakPB := &spb.SecretData_GCPSAK{
+		PrivateKeyId: sak.PrivateKeyID,
+		ClientEmail:  sak.ServiceAccount,
+		Signature:    sak.Signature,
+	}
+	if sak.Extra != nil {
+		sakPB.Type = sak.Extra.Type
+		sakPB.ProjectId = sak.Extra.ProjectID
+		sakPB.ClientId = sak.Extra.ClientID
+		sakPB.AuthUri = sak.Extra.AuthURI
+		sakPB.TokenUri = sak.Extra.TokenURI
+		sakPB.AuthProviderX509CertUrl = sak.Extra.AuthProviderX509CertURL
+		sakPB.ClientX509CertUrl = sak.Extra.ClientX509CertURL
+		sakPB.UniverseDomain = sak.Extra.UniverseDomain
+		sakPB.PrivateKey = sak.Extra.PrivateKey
+	}
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Gcpsak{
+			Gcpsak: sakPB,
+		},
+	}
+}
+
+func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
+	status, err := validationStatusToProto(r.Status)
+	if err != nil {
+		return nil, err
+	}
+	return &spb.SecretStatus{
+		Status:      status,
+		LastUpdated: timestamppb.New(r.At),
+	}, nil
+}
+
+func validationStatusToProto(s veles.ValidationStatus) (spb.SecretStatus_SecretStatusEnum, error) {
+	switch s {
+	case veles.ValidationUnspecified:
+		return spb.SecretStatus_UNSPECIFIED, nil
+	case veles.ValidationUnsupported:
+		return spb.SecretStatus_UNKNOWN, nil
+	case veles.ValidationFailed:
+		return spb.SecretStatus_UNKNOWN, nil
+	case veles.ValidationInvalid:
+		return spb.SecretStatus_INVALID, nil
+	case veles.ValidationValid:
+		return spb.SecretStatus_VALID, nil
+	default:
+		return spb.SecretStatus_UNSPECIFIED, fmt.Errorf("unsupported veles.ValidationStatus %q", s)
+	}
+}
+
+func locationToProto(filepath string) []*spb.Location {
+	return []*spb.Location{
+		{
+			Location: &spb.Location_Filepath{
+				Filepath: &spb.Filepath{
+					Path: filepath,
+				},
+			},
+		},
 	}
 }

@@ -19,13 +19,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakechainlayer"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/opencontainers/go-digest"
 )
@@ -48,77 +49,84 @@ func TestPopulateLayerDetails(t *testing.T) {
 	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(), "testdata/populatelayers.yml")
 
 	tests := []struct {
-		name          string
-		inventory     []*extractor.Inventory
-		extractor     filesystem.Extractor
-		chainLayers   []image.ChainLayer
-		wantInventory []*extractor.Inventory
+		name         string
+		pkgs         []*extractor.Package
+		extractor    filesystem.Extractor
+		chainLayers  []image.ChainLayer
+		wantPackages []*extractor.Package
 	}{
 		{
-			name:          "empty inventory",
-			inventory:     []*extractor.Inventory{},
-			chainLayers:   []image.ChainLayer{},
-			wantInventory: []*extractor.Inventory{},
+			name:         "empty package",
+			pkgs:         []*extractor.Package{},
+			chainLayers:  []image.ChainLayer{},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name: "empty chain layers",
-			inventory: []*extractor.Inventory{
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			chainLayers: []image.ChainLayer{},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 		},
 		{
-			name: "inventory with nil extractor",
-			inventory: []*extractor.Inventory{
+			name: "package with nil extractor",
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
 				},
 			},
 		},
 		{
-			name: "inventory in single chain layer",
-			inventory: []*extractor.Inventory{
+			name: "package in single chain layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -128,8 +136,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -140,12 +149,13 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in two chain layers - package deleted in second layer",
-			inventory: []*extractor.Inventory{
+			name: "package in two chain layers - package deleted in second layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -153,11 +163,12 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayers[0],
 				fakeChainLayers[1],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -168,17 +179,19 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in multiple chain layers - package added in third layer",
-			inventory: []*extractor.Inventory{
+			name: "packages in multiple chain layers - package added in third layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      "baz",
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -187,11 +200,12 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayers[1],
 				fakeChainLayers[2],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -201,8 +215,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -213,22 +228,25 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in multiple chain layers - bar package added back in last layer",
-			inventory: []*extractor.Inventory{
+			name: "packages in multiple chain layers - bar package added back in last layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -238,11 +256,12 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayers[2],
 				fakeChainLayers[3],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -252,8 +271,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       3,
 						DiffID:      "diff-id-3",
@@ -263,8 +283,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -275,27 +296,31 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "inventory in multiple chain layers - foo package overwritten in last layer",
-			inventory: []*extractor.Inventory{
+			name: "package in multiple chain layers - foo package overwritten in last layer",
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			extractor: fakeLayerExtractor,
@@ -306,11 +331,12 @@ func TestPopulateLayerDetails(t *testing.T) {
 				fakeChainLayers[3],
 				fakeChainLayers[4],
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "diff-id-0",
@@ -320,8 +346,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      foo2Package,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       4,
 						DiffID:      "diff-id-4",
@@ -331,8 +358,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      barPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{barFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       3,
 						DiffID:      "diff-id-3",
@@ -342,8 +370,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 				{
 					Name:      bazPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{bazFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       2,
 						DiffID:      "diff-id-2",
@@ -355,11 +384,12 @@ func TestPopulateLayerDetails(t *testing.T) {
 		},
 		{
 			name: "chain layer with invalid diffID",
-			inventory: []*extractor.Inventory{
+			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 				},
 			},
 			chainLayers: []image.ChainLayer{
@@ -369,18 +399,28 @@ func TestPopulateLayerDetails(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed creating fake layer: %v", err)
 					}
-					cl, err := fakechainlayer.New(tmp, 0, digest.Digest(""), "command-0", layer, map[string]string{fooFile: fooPackage}, false)
+					cfg := &fakechainlayer.Config{
+						TestDir:           tmp,
+						Index:             0,
+						DiffID:            digest.Digest(""),
+						Command:           "command-0",
+						Layer:             layer,
+						Files:             map[string]string{fooFile: fooPackage},
+						FilesAlreadyExist: false,
+					}
+					cl, err := fakechainlayer.New(cfg)
 					if err != nil {
 						t.Fatalf("failed creating fake chain layer: %v", err)
 					}
 					return cl
 				}(),
 			},
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      fooPackage,
+					PURLType:  purl.TypeGeneric,
 					Locations: []string{fooFile},
-					Extractor: fakeLayerExtractor,
+					Plugins:   []string{fakeLayerExtractor.Name()},
 					LayerDetails: &extractor.LayerDetails{
 						Index:       0,
 						DiffID:      "",
@@ -399,9 +439,9 @@ func TestPopulateLayerDetails(t *testing.T) {
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 
-			PopulateLayerDetails(context.Background(), tc.inventory, tc.chainLayers, config)
-			if diff := cmp.Diff(tc.wantInventory, tc.inventory, cmpopts.IgnoreFields(extractor.Inventory{}, "Extractor")); diff != "" {
-				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.inventory, tc.chainLayers, diff)
+			PopulateLayerDetails(context.Background(), inventory.Inventory{Packages: tc.pkgs}, tc.chainLayers, []filesystem.Extractor{fakeLayerExtractor}, config)
+			if diff := cmp.Diff(tc.wantPackages, tc.pkgs); diff != "" {
+				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.pkgs, tc.chainLayers, diff)
 			}
 		})
 	}

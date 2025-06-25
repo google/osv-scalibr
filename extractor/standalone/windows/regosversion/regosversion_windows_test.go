@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/mockregistry"
 )
 
@@ -31,7 +32,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		reg     *mockregistry.MockRegistry
-		want    []*extractor.Inventory
+		want    []*extractor.Package
 		wantErr bool
 	}{
 		{
@@ -65,10 +66,11 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:    "windows_11:21H2",
-					Version: "10.0.22000.1234",
+					Name:     "windows_11:21H2",
+					Version:  "10.0.22000.1234",
+					PURLType: "windows",
 					Metadata: &metadata.OSVersion{
 						Product:     "windows_11:21H2",
 						FullVersion: "10.0.22000.1234",
@@ -107,10 +109,11 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:    "unknownWindows",
-					Version: "10.0.12345.1234",
+					Name:     "unknownWindows",
+					Version:  "10.0.12345.1234",
+					PURLType: "windows",
 					Metadata: &metadata.OSVersion{
 						Product:     "unknownWindows",
 						FullVersion: "10.0.12345.1234",
@@ -145,10 +148,11 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:    "windows_xp",
-					Version: "5.1.2600.1234",
+					Name:     "windows_xp",
+					Version:  "5.1.2600.1234",
+					PURLType: "windows",
 					Metadata: &metadata.OSVersion{
 						Product:     "windows_xp",
 						FullVersion: "5.1.2600.1234",
@@ -183,10 +187,11 @@ func TestExtract(t *testing.T) {
 					},
 				},
 			},
-			want: []*extractor.Inventory{
+			want: []*extractor.Package{
 				{
-					Name:    "unknownWindows",
-					Version: "5.1.1234.1234",
+					Name:     "unknownWindows",
+					Version:  "5.1.1234.1234",
+					PURLType: "windows",
 					Metadata: &metadata.OSVersion{
 						Product:     "unknownWindows",
 						FullVersion: "5.1.1234.1234",
@@ -214,7 +219,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(inventory.Inventory{Packages: tc.want}, got); diff != "" {
 				t.Errorf("Extract() returned an unexpected diff (-want +got): %v", diff)
 			}
 		})

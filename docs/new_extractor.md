@@ -68,13 +68,18 @@ which contains the path, `fs.FileInfo` and `io.Reader` for the file.
 
 ## Output
 
-The `Extract` method should return a list of
-[Inventory](https://github.com/google/osv-scalibr/blob/28397d99/extractor/extractor.go#L44).
+The `Extract` method should return an [Inventory](https://github.com/google/osv-scalibr/tree/main/inventory/inventory.go) struct.
 
-<!--  See extractor/extractor.go symbol \bInventory\b -->
+<!--  See inventory/inventory.go symbol \bInventory\b -->
 
-You can return an empty list in case you don't find inventory in the file or
-multiple Inventory entries in case there are multiple in one file.
+The Inventory struct should have its appropriate fields set (e.g. `Packages`
+for software packages):
+
+<!--  See extractor/extractor.go symbol \bPackage\b -->
+
+You can return an empty Inventory struct in case you don't find software
+packages or other inventory in the file. You can also add multiple Package
+entries in case there are multiple in one file.
 
 ## Code location
 
@@ -134,9 +139,9 @@ extractor as an example.
     $ `go mod tidy`
     ```
 
-1.  Implement `ToPURL` to generate PURLs from the Inventory
-    extracted. If your extractor doesn't support CPEs feel free to return an empty
-    list.
+1.  Check that [extractor.toPURL](/extractor/convert.go)
+    generates a valid PURL for your package's PURL type. Implement your custom
+    PURL generation logic if necessary.
 1.  Write tests (you can separate tests for FileRequired and Extract, to avoid
     having to give test data specific file names).
 1.  Register your extractor in

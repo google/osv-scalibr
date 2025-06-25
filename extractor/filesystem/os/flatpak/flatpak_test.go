@@ -28,8 +28,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -146,7 +148,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              flatpak.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -154,11 +156,12 @@ func TestExtract(t *testing.T) {
 			name:      "valid metainfo xml file is extracted",
 			path:      "testdata/valid.xml",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "org.gimp.GIMP",
-					Version: "2.10.38",
-					Metadata: &flatpak.Metadata{
+					Name:     "org.gimp.GIMP",
+					Version:  "2.10.38",
+					PURLType: purl.TypeFlatpak,
+					Metadata: &flatpakmeta.Metadata{
 						PackageName:    "GNU Image Manipulation Program",
 						PackageID:      "org.gimp.GIMP",
 						PackageVersion: "2.10.38",
@@ -177,11 +180,12 @@ func TestExtract(t *testing.T) {
 			name:      "metainfo xml file without package name is extracted",
 			path:      "testdata/noname.xml",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "org.gimp.GIMP",
-					Version: "2.10.38",
-					Metadata: &flatpak.Metadata{
+					Name:     "org.gimp.GIMP",
+					Version:  "2.10.38",
+					PURLType: purl.TypeFlatpak,
+					Metadata: &flatpakmeta.Metadata{
 						PackageName:    "",
 						PackageID:      "org.gimp.GIMP",
 						PackageVersion: "2.10.38",
@@ -247,7 +251,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -259,106 +264,6 @@ func TestExtract(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	pkgname := "pkgname"
-	pkgid := "pkgid"
-	pkgversion := "1.2.3"
-	releasedate := "2024-05-02"
-	osname := "Debian GNU/Linux"
-	osid := "debian"
-	osversionid := "12"
-	osbuildid := "bookworm"
-	developer := "developer"
-	e := flatpak.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *flatpak.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "Both VERSION_ID and BUILD_ID is set",
-			metadata: &flatpak.Metadata{
-				PackageName:    pkgname,
-				PackageID:      pkgid,
-				PackageVersion: pkgversion,
-				ReleaseDate:    releasedate,
-				OSName:         osname,
-				OSID:           osid,
-				OSVersionID:    osversionid,
-				OSBuildID:      osbuildid,
-				Developer:      developer,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeFlatpak,
-				Name:      pkgname,
-				Namespace: "debian",
-				Version:   pkgversion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "debian-12",
-				}),
-			},
-		},
-		{
-			name: "only BUILD_ID set",
-			metadata: &flatpak.Metadata{
-				PackageName:    pkgname,
-				PackageID:      pkgid,
-				PackageVersion: pkgversion,
-				ReleaseDate:    releasedate,
-				OSName:         osname,
-				OSID:           osid,
-				OSBuildID:      osbuildid,
-				Developer:      developer,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeFlatpak,
-				Name:      pkgname,
-				Namespace: "debian",
-				Version:   pkgversion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "debian-bookworm",
-				}),
-			},
-		},
-		{
-			name: "OS_ID not set",
-			metadata: &flatpak.Metadata{
-				PackageName:    pkgname,
-				PackageID:      pkgid,
-				PackageVersion: pkgversion,
-				ReleaseDate:    releasedate,
-				OSName:         osname,
-				OSVersionID:    osversionid,
-				OSBuildID:      osbuildid,
-				Developer:      developer,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeFlatpak,
-				Name:      pkgname,
-				Namespace: "",
-				Version:   pkgversion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "12",
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Name:      pkgname,
-				Version:   pkgversion,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

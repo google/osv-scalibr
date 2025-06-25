@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -77,6 +78,12 @@ func TestFileRequired(t *testing.T) {
 		{
 			name:             ".egg",
 			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".whl",
+			path:             "python3.10/site-packages/monotonic-1.6-py3.10.whl",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
@@ -149,16 +156,17 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		cfg              wheelegg.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: ".dist-info/METADATA",
 			path: "testdata/distinfo_meta",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "pip",
 				Version:   "22.2.2",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/distinfo_meta"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "The pip developers",
@@ -169,9 +177,10 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg/EGG-INFO/PKG-INFO",
 			path: "testdata/egginfo_pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "setuptools",
 				Version:   "57.4.0",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/egginfo_pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Python Packaging Authority",
@@ -182,9 +191,10 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg-info",
 			path: "testdata/egginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "pycups",
 				Version:   "2.0.1",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/egginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Zdenek Dohnal",
@@ -195,9 +205,10 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg-info/PKG-INFO",
 			path: "testdata/pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "httplib2",
 				Version:   "0.20.4",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Joe Gregorio",
@@ -209,9 +220,10 @@ func TestExtract(t *testing.T) {
 		{
 			name: "malformed PKG-INFO",
 			path: "testdata/malformed_pkginfo",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "passlib",
 				Version:   "1.7.4",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/malformed_pkginfo"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Eli Collins",
@@ -222,9 +234,10 @@ func TestExtract(t *testing.T) {
 		{
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
-			wantInventory: []*extractor.Inventory{{
+			wantPackages: []*extractor.Package{{
 				Name:      "monotonic",
 				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
@@ -233,9 +246,23 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
-			name:          ".egg without PKG-INFO",
-			path:          "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
-			wantInventory: []*extractor.Inventory{},
+			name: ".whl",
+			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
+			wantPackages: []*extractor.Package{{
+				Name:      "monotonic",
+				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
+				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "Ori Livneh",
+					AuthorEmail: "ori@wikimedia.org",
+				},
+			}},
+		},
+		{
+			name:         ".egg without PKG-INFO",
+			path:         "testdata/monotonic_no_pkginfo-1.6-py3.10.egg",
+			wantPackages: []*extractor.Package{},
 		},
 	}
 
@@ -269,7 +296,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}
 
-			want := tt.wantInventory
+			want := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
@@ -308,17 +335,32 @@ func TestExtractWithoutReadAt(t *testing.T) {
 	var e filesystem.Extractor = wheelegg.New(wheelegg.DefaultConfig())
 
 	tests := []struct {
-		name          string
-		path          string
-		wantInventory *extractor.Inventory
+		name         string
+		path         string
+		wantPackages *extractor.Package
 	}{
 		{
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
-			wantInventory: &extractor.Inventory{
+			wantPackages: &extractor.Package{
 				Name:      "monotonic",
 				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "Ori Livneh",
+					AuthorEmail: "ori@wikimedia.org",
+				},
+			},
+		},
+		{
+			name: ".whl",
+			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
+			wantPackages: &extractor.Package{
+				Name:      "monotonic",
+				Version:   "1.6",
+				PURLType:  purl.TypePyPi,
+				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -353,7 +395,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
 			}
 
-			want := []*extractor.Inventory{tt.wantInventory}
+			want := inventory.Inventory{Packages: []*extractor.Package{tt.wantPackages}}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
@@ -455,23 +497,5 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	wantErr := wheelegg.ErrSizeNotSet
 	if !errors.Is(gotErr, wantErr) {
 		t.Fatalf("Extract(%s) got err: '%v', want err: '%v'", path, gotErr, wantErr)
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	e := wheelegg.Extractor{}
-	i := &extractor.Inventory{
-		Name:      "Name",
-		Version:   "1.2.3",
-		Locations: []string{"location"},
-	}
-	want := &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    "name",
-		Version: "1.2.3",
-	}
-	got := e.ToPURL(i)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
 	}
 }

@@ -65,6 +65,10 @@ type Capabilities struct {
 	// * We're scanning a virtual filesystem unrelated to the host where SCALIBR is running.
 	// * We're scanning a real filesystem of e.g. a container image that's mounted somewhere on disk.
 	RunningSystem bool
+	// Whether the filesystem extractor plugin requires scanning directories in addition to files.
+	// TODO(b/400910349): This doesn't quite fit into Capabilities so this should be moved into a
+	// separate Filesystem Extractor specific function.
+	ExtractFromDirs bool
 }
 
 // Plugin is the part of the plugin interface that's shared between extractors and detectors.
@@ -79,7 +83,7 @@ type Plugin interface {
 
 // LINT.IfChange
 
-// Status contains the status and version of the inventory+vuln plugins that ran.
+// Status contains the status and version of the plugins that ran.
 type Status struct {
 	Name    string
 	Version int
@@ -108,6 +112,9 @@ const (
 // ValidateRequirements checks that the specified  scanning capabilities satisfy
 // the requirements of a given plugin.
 func ValidateRequirements(p Plugin, capabs *Capabilities) error {
+	if capabs == nil {
+		return nil
+	}
 	errs := []string{}
 	if p.Requirements().OS == OSUnix {
 		if capabs.OS != OSLinux && capabs.OS != OSMac {

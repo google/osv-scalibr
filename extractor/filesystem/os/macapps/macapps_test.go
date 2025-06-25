@@ -30,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -131,17 +133,18 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
 			name: "Valid_XML_Info.plist_data ",
 			path: "testdata/ValidXML.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "130.0.6723.69",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/ValidXML.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "Google Chrome",
@@ -162,10 +165,11 @@ func TestExtract(t *testing.T) {
 		{
 			name: "Valid_Binary_Info.plist_data ",
 			path: "testdata/BinaryApp.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "gMacInformation",
 					Version:   "202410231131",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/BinaryApp.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",
@@ -198,10 +202,11 @@ func TestExtract(t *testing.T) {
 		{
 			name: "Missing_Info.plist_data ",
 			path: "testdata/MissingData.plist",
-			wantInventory: []*extractor.Inventory{
-				&extractor.Inventory{
+			wantPackages: []*extractor.Package{
+				&extractor.Package{
 					Name:      "Chrome",
 					Version:   "",
+					PURLType:  purl.TypeMacApps,
 					Locations: []string{"testdata/MissingData.plist"},
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",
@@ -267,7 +272,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 

@@ -38,8 +38,8 @@ type Vulnerability struct {
 
 // FindVulnerabilities scans for vulnerabilities in a resolved graph.
 // One Vulnerability is created per unique ID, which may affect multiple graph nodes.
-func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m manifest.Manifest, graph *resolve.Graph) ([]Vulnerability, error) {
-	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToInventory(graph))
+func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, depGroups map[manifest.RequirementKey][]string, graph *resolve.Graph) ([]Vulnerability, error) {
+	nodeVulns, err := cl.MatchVulnerabilities(ctx, graphToPackage(graph))
 	if err != nil {
 		return nil, err
 	}
@@ -73,20 +73,20 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, m
 	for id, vuln := range uniqueVulns {
 		vuln := Vulnerability{OSV: vuln, DevOnly: true}
 		vuln.Subgraphs = vulnSubgraphs[id]
-		vuln.DevOnly = !slices.ContainsFunc(vuln.Subgraphs, func(ds *DependencySubgraph) bool { return !ds.IsDevOnly(m.Groups()) })
+		vuln.DevOnly = !slices.ContainsFunc(vuln.Subgraphs, func(ds *DependencySubgraph) bool { return !ds.IsDevOnly(depGroups) })
 		vulns = append(vulns, vuln)
 	}
 
 	return vulns, nil
 }
 
-// graphToInventory is a helper function to convert a Graph into an Inventory for use with VulnerabilityMatcher.
-func graphToInventory(g *resolve.Graph) []*extractor.Inventory {
+// graphToPackage is a helper function to convert a Graph into Packages for use with VulnerabilityMatcher.
+func graphToPackage(g *resolve.Graph) []*extractor.Package {
 	// g.Nodes[0] is the root node of the graph that should be excluded.
-	inv := make([]*extractor.Inventory, len(g.Nodes)-1)
+	pkg := make([]*extractor.Package, len(g.Nodes)-1)
 	for i, n := range g.Nodes[1:] {
-		inv[i] = vulns.VKToInventory(n.Version)
+		pkg[i] = vulns.VKToPackage(n.Version)
 	}
 
-	return inv
+	return pkg
 }

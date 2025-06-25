@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -91,19 +93,25 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/empty.xml",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: nil,
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/one-package.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.apache.maven:maven-artifact",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/one-package.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "maven-artifact",
+						GroupID:      "org.apache.maven",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 			},
 		},
@@ -112,18 +120,30 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/two-packages.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.42.Final",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/two-packages.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "netty-all",
+						GroupID:      "io.netty",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.slf4j:slf4j-log4j12",
 					Version:   "1.7.25",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/two-packages.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "slf4j-log4j12",
+						GroupID:      "org.slf4j",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 			},
 		},
@@ -132,18 +152,30 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/with-dependency-management.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "io.netty:netty-all",
 					Version:   "4.1.9",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/with-dependency-management.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "netty-all",
+						GroupID:      "io.netty",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.slf4j:slf4j-log4j12",
 					Version:   "1.7.25",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/with-dependency-management.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "slf4j-log4j12",
+						GroupID:      "org.slf4j",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 			},
 		},
@@ -152,24 +184,42 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/interpolation.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.mine:mypackage",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/interpolation.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "mypackage",
+						GroupID:      "org.mine",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.mine:my.package",
 					Version:   "2.3.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/interpolation.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my.package",
+						GroupID:      "org.mine",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.mine:ranged-package",
 					Version:   "9.4.37",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/interpolation.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "ranged-package",
+						GroupID:      "org.mine",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 			},
 		},
@@ -178,12 +228,18 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/with-scope.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "junit:junit",
 					Version:   "4.12",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/with-scope.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{"runtime"}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "junit",
+						GroupID:      "junit",
+						IsTransitive: false,
+						DepGroupVals: []string{"runtime"},
+					},
 				},
 			},
 		},
@@ -192,48 +248,90 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/maven/transitive.xml",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "org.direct:alice",
 					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "alice",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.direct:bob",
 					Version:   "2.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "bob",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.direct:chris",
 					Version:   "3.0.0",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "chris",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.transitive:chuck",
 					Version:   "1.1.1",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: true, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "chuck",
+						GroupID:      "org.transitive",
+						IsTransitive: true,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.transitive:dave",
 					Version:   "2.2.2",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: true, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "dave",
+						GroupID:      "org.transitive",
+						IsTransitive: true,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.transitive:eve",
 					Version:   "3.3.3",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: true, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "eve",
+						GroupID:      "org.transitive",
+						IsTransitive: true,
+						DepGroupVals: []string{},
+					},
 				},
 				{
 					Name:      "org.transitive:frank",
 					Version:   "4.4.4",
+					PURLType:  purl.TypeMaven,
 					Locations: []string{"testdata/maven/transitive.xml"},
-					Metadata:  javalockfile.Metadata{IsTransitive: true, DepGroupVals: []string{}},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "frank",
+						GroupID:      "org.transitive",
+						IsTransitive: true,
+						DepGroupVals: []string{},
+					},
 				},
 			},
 		},
@@ -257,7 +355,8 @@ func TestExtractor_Extract(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
@@ -270,42 +369,78 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 		InputConfig: extracttest.ScanInputMockConfig{
 			Path: "testdata/maven/with-parent.xml",
 		},
-		WantInventory: []*extractor.Inventory{
+		WantPackages: []*extractor.Package{
 			{
 				Name:      "org.alice:alice",
 				Version:   "1.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "alice",
+					GroupID:      "org.alice",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 			{
 				Name:      "org.bob:bob",
 				Version:   "2.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "bob",
+					GroupID:      "org.bob",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 			{
 				Name:      "org.chuck:chuck",
 				Version:   "3.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "chuck",
+					GroupID:      "org.chuck",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 			{
 				Name:      "org.dave:dave",
 				Version:   "4.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "dave",
+					GroupID:      "org.dave",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 			{
 				Name:      "org.eve:eve",
 				Version:   "5.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "eve",
+					GroupID:      "org.eve",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 			{
 				Name:      "org.frank:frank",
 				Version:   "6.0.0",
+				PURLType:  purl.TypeMaven,
 				Locations: []string{"testdata/maven/with-parent.xml"},
-				Metadata:  javalockfile.Metadata{IsTransitive: false, DepGroupVals: []string{}},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "frank",
+					GroupID:      "org.frank",
+					IsTransitive: false,
+					DepGroupVals: []string{},
+				},
 			},
 		},
 	}
@@ -344,7 +479,7 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 	</project>
 	`))
 
-	apiClient, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true})
+	apiClient, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -365,7 +500,8 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 		return
 	}
 
-	if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+	wantInv := inventory.Inventory{Packages: tt.WantPackages}
+	if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 		t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 	}
 }

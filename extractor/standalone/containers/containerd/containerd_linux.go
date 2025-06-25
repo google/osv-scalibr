@@ -23,15 +23,16 @@ import (
 	"os"
 	"path/filepath"
 
-	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/namespaces"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -125,13 +126,13 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// Extractor extracts containers from the containerd API.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([]*extractor.Inventory, error) {
-	var inventory = []*extractor.Inventory{}
+// Extract extracts containers from the containerd API.
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+	var result = []*extractor.Package{}
 	if e.checkIfSocketExists {
 		if _, err := os.Stat(e.socketAddr); err != nil {
 			log.Infof("Containerd socket %v does not exist, skipping extraction.", e.socketAddr)
-			return inventory, err
+			return inventory.Inventory{}, err
 		}
 	}
 	// Creating client here instead of New() to prevent client creation when extractor is not in use.
@@ -141,38 +142,38 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) ([
 		cli, err := containerd.New(e.socketAddr)
 		if err != nil {
 			log.Errorf("Failed to connect to containerd socket %v, error: %v", e.socketAddr, err)
-			return inventory, err
+			return inventory.Inventory{}, err
 		}
 		e.client = cli
 		e.initNewCtrdClient = false
 	}
 
 	if e.client == nil {
-		return inventory, errors.New("containerd API client is not initialized")
+		return inventory.Inventory{}, errors.New("containerd API client is not initialized")
 	}
 
 	ctrMetadata, err := containersFromAPI(ctx, e.client)
 	if err != nil {
-		log.Errorf("Could not get container inventory from the containerd: %v", err)
-		return inventory, err
+		log.Errorf("Could not get container package from the containerd: %v", err)
+		return inventory.Inventory{}, err
 	}
 
 	for _, ctr := range ctrMetadata {
-		pkg := &extractor.Inventory{
+		pkg := &extractor.Package{
 			Name:      ctr.ImageName,
 			Version:   ctr.ImageDigest,
 			Locations: []string{ctr.RootFS},
 			Metadata:  &ctr,
 		}
-		inventory = append(inventory, pkg)
+		result = append(result, pkg)
 	}
 
 	defer e.client.Close()
-	return inventory, nil
+	return inventory.Inventory{Packages: result}, nil
 }
 
-func containersFromAPI(ctx context.Context, client CtrdClient) ([]Metadata, error) {
-	var metadata []Metadata
+func containersFromAPI(ctx context.Context, client CtrdClient) ([]containerdmetadata.Metadata, error) {
+	var metadata []containerdmetadata.Metadata
 
 	// Get list of namespaces from the containerd API.
 	nss, err := namespacesFromAPI(ctx, client)
@@ -201,8 +202,8 @@ func namespacesFromAPI(ctx context.Context, client CtrdClient) ([]string, error)
 	return nss, nil
 }
 
-func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []Metadata {
-	var containersMetadata []Metadata
+func containersMetadata(ctx context.Context, client CtrdClient, namespace string, defaultAbsoluteToBundlePath string) []containerdmetadata.Metadata {
+	var containersMetadata []containerdmetadata.Metadata
 
 	taskService := client.TaskService()
 	// List all running tasks, only running tasks have a container associated with them.
@@ -225,8 +226,8 @@ func containersMetadata(ctx context.Context, client CtrdClient, namespace string
 	return containersMetadata
 }
 
-func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (Metadata, error) {
-	var md Metadata
+func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, namespace string, defaultAbsoluteToBundlePath string) (containerdmetadata.Metadata, error) {
+	var md containerdmetadata.Metadata
 
 	container, err := client.LoadContainer(ctx, task.ID)
 	if err != nil {
@@ -277,7 +278,7 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 	digest := image.Target().Digest.String()
 	pid := int(task.Pid)
 
-	md = Metadata{
+	md = containerdmetadata.Metadata{
 		Namespace:   namespace,
 		ImageName:   name,
 		ImageDigest: digest,
@@ -289,11 +290,3 @@ func taskMetadata(ctx context.Context, client CtrdClient, task *task.Process, na
 
 	return md, nil
 }
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns no ecosystem since the Inventory is not a software package.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }

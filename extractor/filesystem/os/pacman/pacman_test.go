@@ -27,8 +27,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -183,7 +185,7 @@ func TestExtract(t *testing.T) {
 		path             string
 		osrelease        string
 		cfg              pacman.Config
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -191,11 +193,12 @@ func TestExtract(t *testing.T) {
 			name:      "valid desc file",
 			path:      "testdata/valid",
 			osrelease: ArchRolling,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -211,11 +214,12 @@ func TestExtract(t *testing.T) {
 			name:      "valid desc file one dependency",
 			path:      "testdata/valid_one_dep",
 			osrelease: ArchRolling,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "filesystem",
-					Version: "2024.11.21-1",
-					Metadata: &pacman.Metadata{
+					Name:     "filesystem",
+					Version:  "2024.11.21-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "filesystem",
 						PackageVersion:      "2024.11.21-1",
 						OSID:                "arch",
@@ -231,11 +235,12 @@ func TestExtract(t *testing.T) {
 			name:      "valid desc file no dependencies",
 			path:      "testdata/valid_no_dep",
 			osrelease: ArchRolling,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "libxml2",
-					Version: "2.13.5-1",
-					Metadata: &pacman.Metadata{
+					Name:     "libxml2",
+					Version:  "2.13.5-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:    "libxml2",
 						PackageVersion: "2.13.5-1",
 						OSID:           "arch",
@@ -250,11 +255,12 @@ func TestExtract(t *testing.T) {
 			name:      "no os version",
 			path:      "testdata/valid",
 			osrelease: `ID=arch`,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -268,11 +274,12 @@ func TestExtract(t *testing.T) {
 		{
 			name: "missing osrelease",
 			path: "testdata/valid",
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						PackageDependencies: "sh, glibc, mpfr",
@@ -283,20 +290,21 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:          "invalid value eof",
-			path:          "testdata/invalid_value_eof",
-			osrelease:     ArchRolling,
-			wantInventory: []*extractor.Inventory{},
+			name:         "invalid value eof",
+			path:         "testdata/invalid_value_eof",
+			osrelease:    ArchRolling,
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name:      "eof after dependencies",
 			path:      "testdata/eof_after_dependencies",
 			osrelease: ArchRolling,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
-					Name:    "gawk",
-					Version: "5.3.1-1",
-					Metadata: &pacman.Metadata{
+					Name:     "gawk",
+					Version:  "5.3.1-1",
+					PURLType: purl.TypePacman,
+					Metadata: &pacmanmeta.Metadata{
 						PackageName:         "gawk",
 						PackageVersion:      "5.3.1-1",
 						OSID:                "arch",
@@ -343,136 +351,9 @@ func TestExtract(t *testing.T) {
 
 			got, err := e.Extract(context.Background(), input)
 
-			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
-				t.Errorf("Inventory mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	pkgName := "pkgName"
-	pkgVersion := "pkgVersion"
-	PackageDependencies := "pkgDependencies1, pkgDependencies2"
-
-	e := pacman.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *pacman.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "all fields present",
-			metadata: &pacman.Metadata{
-				PackageName:         pkgName,
-				PackageVersion:      pkgVersion,
-				OSID:                "arch",
-				OSVersionID:         "20241201.0.284684",
-				PackageDependencies: PackageDependencies,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypePacman,
-				Name:      pkgName,
-				Namespace: "arch",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro:              "20241201.0.284684",
-					purl.PackageDependencies: PackageDependencies,
-				}),
-			},
-		},
-		{
-			name: "only VERSION_ID set",
-			metadata: &pacman.Metadata{
-				PackageName:         pkgName,
-				PackageVersion:      pkgVersion,
-				OSID:                "arch",
-				OSVersionID:         "20241201.0.284684",
-				PackageDependencies: PackageDependencies,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypePacman,
-				Name:      pkgName,
-				Namespace: "arch",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro:              "20241201.0.284684",
-					purl.PackageDependencies: PackageDependencies,
-				}),
-			},
-		},
-		{
-			name: "OS ID not set, fallback to Linux",
-			metadata: &pacman.Metadata{
-				PackageName:         pkgName,
-				PackageVersion:      pkgVersion,
-				OSVersionID:         "20241201.0.284684",
-				PackageDependencies: PackageDependencies,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypePacman,
-				Name:      pkgName,
-				Namespace: "linux",
-				Version:   pkgVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro:              "20241201.0.284684",
-					purl.PackageDependencies: PackageDependencies,
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := pacman.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *pacman.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &pacman.Metadata{
-				OSID: "arch",
-			},
-			want: "Arch",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &pacman.Metadata{},
-			want:     "Linux",
-		},
-		{
-			name: "OS version present",
-			metadata: &pacman.Metadata{
-				OSID:        "arch",
-				OSVersionID: "20241201.0.284684",
-			},
-			want: "Arch:20241201.0.284684",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
+				t.Errorf("Package mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

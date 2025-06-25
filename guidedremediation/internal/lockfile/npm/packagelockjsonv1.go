@@ -15,13 +15,20 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"slices"
+	"strings"
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // nodesFromDependencies extracts graph from old-style (npm < 7 / lockfileVersion 1) dependencies structure
@@ -112,4 +119,70 @@ func computeDependenciesRecursive(g *resolve.Graph, parent *nodeModule, deps map
 	}
 
 	return nil
+}
+
+// writeDependencies writes the patches to the "dependencies" section (v1) of the lockfile (if it exists).
+func writeDependencies(lockf []byte, patchMap map[string]map[string]string, api *datasource.NPMRegistryAPIClient) ([]byte, error) {
+	if !gjson.GetBytes(lockf, "packages").Exists() {
+		return lockf, nil
+	}
+	// Check if the lockfile is using CRLF or LF by checking the first newline.
+	i := slices.Index(lockf, byte('\n'))
+	crlf := i > 0 && lockf[i-1] == '\r'
+
+	return writeDependenciesRecursive(lockf, patchMap, api, "dependencies", 1, crlf)
+}
+
+func writeDependenciesRecursive(lockf []byte, patchMap map[string]map[string]string, api *datasource.NPMRegistryAPIClient, path string, depth int, crlf bool) ([]byte, error) {
+	for pkg, data := range gjson.GetBytes(lockf, path).Map() {
+		pkgPath := path + "." + gjson.Escape(pkg)
+		if data.Get("dependencies").Exists() {
+			var err error
+			lockf, err = writeDependenciesRecursive(lockf, patchMap, api, pkgPath+".dependencies", depth+1, crlf)
+			if err != nil {
+				return nil, err
+			}
+		}
+		isAlias := false
+		realPkg, version := npm.SplitNPMAlias(data.Get("version").String())
+		if realPkg != "" {
+			isAlias = true
+			pkg = realPkg
+		}
+
+		if upgrades, ok := patchMap[pkg]; ok {
+			if version, ok := upgrades[version]; ok {
+				// update dependency in place
+				npmData, err := api.FullJSON(context.Background(), pkg, version)
+				if err != nil {
+					return lockf, err
+				}
+				// The only necessary fields to update appear to be "version", "resolved", "integrity", and "requires"
+				newVersion := npmData.Get("version").String()
+				if isAlias {
+					newVersion = "npm:" + pkg + "@" + newVersion
+				}
+				// These shouldn't error.
+				lockf, _ = sjson.SetBytes(lockf, pkgPath+".version", newVersion)
+				lockf, _ = sjson.SetBytes(lockf, pkgPath+".resolved", npmData.Get("dist.tarball").String())
+				lockf, _ = sjson.SetBytes(lockf, pkgPath+".integrity", npmData.Get("dist.integrity").String())
+				// formatting & padding to output for the correct level at this depth
+				pretty := fmt.Sprintf("|@pretty:{\"prefix\": %q}", strings.Repeat(" ", 4*depth+2))
+				reqs := npmData.Get("dependencies" + pretty)
+				if !reqs.Exists() {
+					lockf, _ = sjson.DeleteBytes(lockf, pkgPath+".requires")
+				} else {
+					text := reqs.Raw
+					// remove trailing newlines that @pretty creates for objects
+					text = strings.TrimSuffix(text, "\n")
+					if crlf {
+						text = strings.ReplaceAll(text, "\n", "\r\n")
+					}
+					lockf, _ = sjson.SetRawBytes(lockf, pkgPath+".requires", []byte(text))
+				}
+			}
+		}
+	}
+
+	return lockf, nil
 }

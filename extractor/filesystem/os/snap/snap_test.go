@@ -30,8 +30,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -152,7 +154,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		wantInventory    []*extractor.Inventory
+		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
 	}{
@@ -167,12 +169,13 @@ func TestExtract(t *testing.T) {
 			name:      "valid yaml with single arch",
 			path:      "testdata/single-arch.yaml",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
+					PURLType:  purl.TypeSnap,
 					Locations: []string{"testdata/single-arch.yaml"},
-					Metadata: &snap.Metadata{
+					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",
 						Grade:             "stable",
@@ -190,12 +193,13 @@ func TestExtract(t *testing.T) {
 			name:      "valid yaml with multiple arch",
 			path:      "testdata/multi-arch.yaml",
 			osrelease: DebianBookworm,
-			wantInventory: []*extractor.Inventory{
+			wantPackages: []*extractor.Package{
 				{
 					Name:      "core",
 					Version:   "16-2.61.4-20240607",
+					PURLType:  purl.TypeSnap,
 					Locations: []string{"testdata/multi-arch.yaml"},
-					Metadata: &snap.Metadata{
+					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",
 						Grade:             "stable",
@@ -266,7 +270,8 @@ func TestExtract(t *testing.T) {
 			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
 				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
 			})
-			if diff := cmp.Diff(tt.wantInventory, got, ignoreOrder); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -278,132 +283,6 @@ func TestExtract(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	snapName := "testSnap"
-	snapVersion := "1.2.3"
-	snapGrade := "stable"
-	snapType := "os"
-	architectures := []string{"amd64", "arm64"}
-	osID := "debian"
-	osVersionCodename := "bookworm"
-	osVersionID := "12"
-
-	e := snap.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *snap.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name: "Both VERSION_CODENAME and VERSION_ID are set",
-			metadata: &snap.Metadata{
-				Name:              snapName,
-				Version:           snapVersion,
-				Grade:             snapGrade,
-				Type:              snapType,
-				Architectures:     architectures,
-				OSID:              osID,
-				OSVersionCodename: osVersionCodename,
-				OSVersionID:       osVersionID,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeSnap,
-				Name:      snapName,
-				Namespace: osID,
-				Version:   snapVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: osVersionCodename,
-				}),
-			},
-		},
-		{
-			name: "Only VERSION_ID is set",
-			metadata: &snap.Metadata{
-				Name:          snapName,
-				Version:       snapVersion,
-				Grade:         snapGrade,
-				Type:          snapType,
-				Architectures: architectures,
-				OSID:          osID,
-				OSVersionID:   osVersionID,
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeSnap,
-				Name:      snapName,
-				Namespace: osID,
-				Version:   snapVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: osVersionID,
-				}),
-			},
-		},
-		{
-			name: "OSID, VERSION_CODENAME and VERSION_ID all are not set",
-			metadata: &snap.Metadata{
-				Name:          snapName,
-				Version:       snapVersion,
-				Grade:         snapGrade,
-				Type:          snapType,
-				Architectures: architectures,
-			},
-			want: &purl.PackageURL{
-				Type:       purl.TypeSnap,
-				Name:       snapName,
-				Namespace:  "",
-				Version:    snapVersion,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Name:      snapName,
-				Version:   snapVersion,
-				Metadata:  tt.metadata,
-				Locations: []string{"location"},
-			}
-			got := e.ToPURL(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", i, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := snap.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *snap.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &snap.Metadata{
-				OSID: "ubuntu",
-			},
-			want: "Ubuntu",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &snap.Metadata{},
-			want:     "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			i := &extractor.Inventory{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(i)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", i, diff)
 			}
 		})
 	}

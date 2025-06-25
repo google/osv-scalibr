@@ -21,11 +21,12 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
 
-// Extractor extracts FakeTestLayers built from the FakeLayerBuilder
+// FakeTestLayersExtractor extracts FakeTestLayers built from the FakeLayerBuilder
 type FakeTestLayersExtractor struct {
 }
 
@@ -46,44 +47,28 @@ func (e FakeTestLayersExtractor) FileRequired(_ filesystem.FileAPI) bool {
 }
 
 // Extract extracts packages from yarn.lock files passed through the scan input.
-func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e FakeTestLayersExtractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
-	invs := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 
 	for scanner.Scan() {
 		pkgline := scanner.Text()
 		// If no version found, just return "" as version
 		pkg, version, _ := strings.Cut(pkgline, "@")
 
-		invs = append(invs, &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      pkg,
 			Version:   version,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 		})
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return inventory.Inventory{}, err
 	}
 
-	return invs, nil
-}
-
-// ToPURL always returns nil
-func (e FakeTestLayersExtractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	return &purl.PackageURL{
-		Type:    purl.TypeGeneric,
-		Name:    i.Name,
-		Version: i.Version,
-	}
-}
-
-// ToCPEs is not applicable as this extractor does not infer CPEs from the Inventory.
-func (e FakeTestLayersExtractor) ToCPEs(_ *extractor.Inventory) []string { return []string{} }
-
-// Ecosystem returns no ecosystem as this is a mock for testing
-func (e FakeTestLayersExtractor) Ecosystem(i *extractor.Inventory) string {
-	return ""
+	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 var _ filesystem.Extractor = FakeTestLayersExtractor{}

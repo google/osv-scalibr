@@ -22,15 +22,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"strings"
+	"slices"
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/inventoryindex"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/vuln/scan"
 )
 
@@ -71,16 +73,16 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan takes the go binaries gathered in the extraction phase and runs govulncheck on them.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *inventoryindex.InventoryIndex) ([]*detector.Finding, error) {
-	result := []*detector.Finding{}
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
+	result := inventory.Finding{}
 	scanned := make(map[string]bool)
 	var allErrs error = nil
-	for _, i := range ix.GetAllOfType(purl.TypeGolang) {
+	for _, p := range px.GetAllOfType(purl.TypeGolang) {
 		// We only look at Go binaries (no source code).
-		if i.Extractor.Name() != gobinary.Name {
+		if !slices.Contains(p.Plugins, gobinary.Name) {
 			continue
 		}
-		for _, l := range i.Locations {
+		for _, l := range p.Locations {
 			if scanned[l] {
 				continue
 			}
@@ -93,12 +95,12 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, ix *in
 				allErrs = appendError(allErrs, fmt.Errorf("d.runGovulncheck(%s): %w", l, err))
 				continue
 			}
-			r, err := parseVulnsFromOutput(out, l)
+			r, err := parseVulnsFromOutput(out)
 			if err != nil {
 				allErrs = appendError(allErrs, fmt.Errorf("d.parseVulnsFromOutput(%v, %s): %w", out, l, err))
 				continue
 			}
-			result = append(result, r...)
+			result.PackageVulns = append(result.PackageVulns, r...)
 		}
 	}
 	return result, allErrs
@@ -125,9 +127,9 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 	return &out, nil
 }
 
-func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Finding, error) {
-	result := []*detector.Finding{}
-	allOSVs := make(map[string]*osvEntry)
+func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
+	result := []*inventory.PackageVuln{}
+	allOSVs := make(map[string]*osvschema.Vulnerability)
 	detectedOSVs := make(map[string]struct{}) // osvs detected at the symbol level
 	dec := json.NewDecoder(bytes.NewReader(out.Bytes()))
 	for dec.More() {
@@ -150,51 +152,9 @@ func parseVulnsFromOutput(out *bytes.Buffer, binaryPath string) ([]*detector.Fin
 	// create scalibr findings for detected govulncheck findings
 	for osvID := range detectedOSVs {
 		osv := allOSVs[osvID]
-		recommendation := "Remove the binary or upgrade its affected dependencies to non-vulnerable versions"
-		extra := ""
-		affected, err := json.Marshal(osv.Affected)
-		if err == nil {
-			extra = fmt.Sprintf("Vulnerable dependencies for binary %s: %s", binaryPath, string(affected))
-		} else {
-			log.Warnf("error serializing affected software: %w", err)
-		}
-		result = append(result, &detector.Finding{
-			Adv: &detector.Advisory{
-				ID:             getAdvisoryID(osv),
-				Type:           detector.TypeVulnerability,
-				Title:          osv.Summary,
-				Description:    osv.Details,
-				Recommendation: recommendation,
-				Sev:            &detector.Severity{Severity: detector.SeverityMedium},
-			},
-			Target: &detector.TargetDetails{Location: []string{binaryPath}},
-			Extra:  extra,
-		})
+		result = append(result, &inventory.PackageVuln{Vulnerability: *osv})
 	}
 	return result, nil
-}
-
-func getAdvisoryID(e *osvEntry) *detector.AdvisoryID {
-	// Get the CVE or GHSA advisory if it exists.
-	for _, a := range e.Aliases {
-		var publisher string
-		if strings.HasPrefix(a, "CVE-") {
-			publisher = "CVE"
-		} else if strings.HasPrefix(a, "GHSA-") {
-			publisher = "GHSA"
-		} else {
-			continue
-		}
-		return &detector.AdvisoryID{
-			Publisher: publisher,
-			Reference: a,
-		}
-	}
-	// Fall back to the Go vuln DB advisory ID.
-	return &detector.AdvisoryID{
-		Publisher: "vuln.go.dev",
-		Reference: e.ID,
-	}
 }
 
 func appendError(err1, err2 error) error {

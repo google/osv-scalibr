@@ -27,17 +27,26 @@ option java_multiple_files = true;
 // modified make sure to regenerate the go_proto file by running
 // `make protos`
 
-// The software inventory and security findings that a scan run found.
+// The results of a scan incl. scan status and artifacts found.
 message ScanResult {
   string version = 1;
   google.protobuf.Timestamp start_time = 2;
   google.protobuf.Timestamp end_time = 3;
   // Status of the overall scan.
   ScanStatus status = 4;
-  // Status and versions of the inventory+vuln plugins that ran.
+  // Status and versions of the plugins that ran.
   repeated PluginStatus plugin_status = 5;
-  repeated Inventory inventories = 6;
-  repeated Finding findings = 7;
+  // TODO(b/400910349): Remove once integrators stop using these fields.
+  repeated Package inventories_deprecated = 6 [deprecated = true];
+  repeated GenericFinding findings_deprecated = 7 [deprecated = true];
+  Inventory inventory = 8;
+}
+
+// The artifacts (e.g. software inventory, security findings) that a scan found.
+message Inventory {
+  repeated Package packages = 1;
+  repeated GenericFinding generic_findings = 2;
+  repeated Secret secrets = 3;
 }
 
 message ScanStatus {
@@ -59,7 +68,7 @@ message PluginStatus {
 
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
-message Inventory {
+message Package {
   reserved 3, 4;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
@@ -75,9 +84,11 @@ message Inventory {
   string ecosystem = 27;
   // Paths or source of files related to the package.
   repeated string locations = 2;
-  // The name of the Extractor that found this software. Set by the
+  // TODO(b/400910349): Remove once integrators stop using these fields.
+  string extractor_deprecated = 10 [deprecated = true];
+  // The names of the plugins that found this software. Set by the
   // core library.
-  string extractor = 10;
+  repeated string plugins = 49;
   // The additional data found in the package.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
@@ -109,9 +120,16 @@ message Inventory {
     HomebrewPackageMetadata homebrew_metadata = 42;
     ChromeExtensionsMetadata chrome_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
+    PodmanMetadata podman_metadata = 50;
+    DockerContainersMetadata docker_containers_metadata = 48;
   }
 
-  repeated AnnotationEnum annotations = 28;
+  // Deprecated - use exploitability_signals instead
+  // TODO(b/400910349): Remove once integrators stop using this.
+  repeated AnnotationEnum annotations_deprecated = 28 [deprecated = true];
+  // Signals to indicate that specific vulnerabilities are not applicable to
+  // this package.
+  repeated PackageExploitabilitySignal exploitability_signals = 51;
   enum AnnotationEnum {
     UNSPECIFIED = 0;
     TRANSITIONAL = 1;
@@ -136,11 +154,52 @@ message LayerDetails {
   int32 index = 1;
   // The diff ID (typically a sha256 hash) of the layer in the container image.
   string diff_id = 2;
+  // The layer chain ID (sha256 hash) of the layer in the container image.
+  // https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+  string chain_id = 5;
   // The layer build command that was used to build the layer. This may not be
   // found in all layers depending on how the container image is built.
   string command = 3;
   // Denotes whether the layer is in the base image.
   bool in_base_image = 4;
+}
+
+// PackageExploitabilitySignal is used to indicate that specific vulnerabilities
+// are not applicable to a given package.
+message PackageExploitabilitySignal {
+  // The name of the plugin (e.g. Annotator) that added this signal.
+  string plugin = 1;
+  // Reason for exclusion.
+  VexJustification justification = 2;
+  oneof vuln_filter {
+    // Advisory Identifier (CVE, GHSA, ...) and aliases of the vulns that are
+    // not applicable to this package.
+    VulnIdentifiers vuln_identifiers = 3;
+    // Indicates that all vulnerabilities associated with the package are
+    // irrelevant.
+    bool matches_all_vulns = 4;
+  }
+}
+
+message VulnIdentifiers {
+  repeated string identifiers = 1;
+}
+
+// Vuln exclusion reasons - Mirrors the format from the official VEX
+// documentation
+// (https://www.cisa.gov/sites/default/files/publications/VEX_Status_Justification_Jun22.pdf)
+enum VexJustification {
+  VEX_JUSTIFICATION_UNSPECIFIED = 0;
+  // The vulnerable component is not used in the affected artifact.
+  COMPONENT_NOT_PRESENT = 1;
+  // The component is used but vulnerable code was removed or not included.
+  VULNERABLE_CODE_NOT_PRESENT = 2;
+  // Vulnerable code is included but is not executed.
+  VULNERABLE_CODE_NOT_IN_EXECUTE_PATH = 3;
+  // Vulnerable code is executed but can't be exploited due to program logic.
+  VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY = 4;
+  // Code can be executed but additional mitigations prevent exploitation.
+  INLINE_MITIGATION_ALREADY_EXISTS = 5;
 }
 
 // Package URL, see https://github.com/package-url/purl-spec
@@ -166,34 +225,31 @@ message Qualifier {
   string value = 2;
 }
 
-// A security finding found by a detector. It could describe things like a CVE
-// or a CIS non-compliance.
-message Finding {
+// Describes generic security findings not associated with any
+// specific package, e.g. weak credentials.
+message GenericFinding {
+  reserved 3;
   // Info specific to the finding. Should always be the same for the same type
   // of finding.
-  Advisory adv = 1;
+  GenericFindingAdvisory adv = 1;
   // Instance-specific info such as location of the vulnerable files.
-  TargetDetails target = 2;
-  // Additional free-text info.
-  string extra = 3;
-  // The name of the Detectors that found this finding. Set by the core library.
-  repeated string detectors = 4;
+  GenericFindingTargetDetails target = 2;
+  // The plugins (e.g. Detectors, Enrichers) that found this vuln.
+  repeated string plugins = 4;
 }
 
-message Advisory {
+// Describes a security finding and how to remediate it. It should not
+// contain any information specific to the target (e.g. which files were
+// found vulnerable).
+message GenericFindingAdvisory {
+  reserved 2, 6;
   // A unique ID for the finding.
   AdvisoryId id = 1;
-  TypeEnum type = 2;
   string title = 3;
   string description = 4;
   // Remediation instructions, e.g. "update to latest version".
   string recommendation = 5;
-  Severity sev = 6;
-  enum TypeEnum {
-    UNKNOWN = 0;
-    VULNERABILITY = 1;
-    CIS_FINDING = 2;
-  }
+  SeverityEnum sev = 7;
 }
 
 // A unique identifier per advisory.
@@ -202,34 +258,20 @@ message AdvisoryId {
   string reference = 2;  // e.g. "CVE-2023-1234".
 }
 
-message Severity {
-  // Required severity enum. Can be used for e.g. prioritizing filed bugs.
-  SeverityEnum severity = 1;
-  // Optional CVSS scores, only set for vulns with CVEs.
-  CVSS cvss_v2 = 2;
-  CVSS cvss_v3 = 3;
-  enum SeverityEnum {
-    UNSPECIFIED = 0;
-    MINIMAL = 1;
-    LOW = 2;
-    MEDIUM = 3;
-    HIGH = 4;
-    CRITICAL = 5;
-  }
+enum SeverityEnum {
+  SEVERITY_UNSPECIFIED = 0;
+  MINIMAL = 1;
+  LOW = 2;
+  MEDIUM = 3;
+  HIGH = 4;
+  CRITICAL = 5;
 }
 
-message CVSS {
-  float base_score = 1;
-  float temporal_score = 2;
-  float environmental_score = 3;
-}
-
-message TargetDetails {
-  // The software affected by the finding.
-  Inventory inventory = 1;
-  // Location of vulnerable files not related to the inventory,
-  // e.g. config files with misconfigurations.
-  repeated string location = 3;
+// Instance-specific details about the generic security finding.
+message GenericFindingTargetDetails {
+  reserved 1, 2, 3;
+  // Free-text info.
+  string extra = 4;
 }
 
 // The additional data found in python packages.
@@ -435,6 +477,7 @@ message OSVPackageMetadata {
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
   string version_comparator = 2;
+  string requirement = 3;
 }
 
 message PythonSetupMetadata {
@@ -496,4 +539,106 @@ message VSCodeExtensionsMetadata {
   bool updated = 5;
   bool is_pre_release_version = 6;
   int64 installed_timestamp = 7;
+}
+
+// The additional data found in Podman containers.
+message PodmanMetadata {
+  map<uint32, Protocol> exposed_ports = 1;
+  int32 pid = 2;
+  string namespace_name = 3;
+  google.protobuf.Timestamp started_time = 4;
+  google.protobuf.Timestamp finished_time = 5;
+  string status = 6;
+  int32 exit_code = 7;
+  bool exited = 8;
+}
+
+message Protocol {
+  repeated string names = 1;
+}
+
+message DockerContainersMetadata {
+  string image_name = 1;
+  string image_digest = 2;
+  string id = 3;
+  repeated DockerPort ports = 4;
+}
+
+message DockerPort {
+  string ip = 1;
+  uint32 private_port = 2;
+  uint32 public_port = 3;
+  string type = 4;
+}
+
+// A secret (i.e. credential) found by Veles secret scanning.
+message Secret {
+  SecretData secret = 1;
+  SecretStatus status = 2;
+  repeated Location locations = 3;
+}
+
+message SecretData {
+  oneof secret {
+    GCPSAK gcpsak = 1;
+  }
+
+  message GCPSAK {
+    // Always filled.
+    string private_key_id = 1;
+    string client_email = 2;
+    bytes signature = 3;  // derived from the private_key for validation
+
+    // Filled only when explicitly requested.
+    string type = 4;
+    string project_id = 5;
+    string client_id = 6;
+    string auth_uri = 7;
+    string token_uri = 8;
+    string auth_provider_x509_cert_url = 9;
+    string client_x509_cert_url = 10;
+    string universe_domain = 11;
+
+    // Should not be filled out unless very explicitly requested accepting the
+    // risk that this might accidentally leak the key.
+    string private_key = 12;
+  }
+}
+
+message SecretStatus {
+  SecretStatusEnum status = 1;
+  google.protobuf.Timestamp last_updated = 2;
+
+  enum SecretStatusEnum {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INVALID = 2;
+    VALID = 3;
+  }
+}
+
+message Location {
+  oneof location {
+    Filepath filepath = 1;
+    FilepathWithLayerDetails filepath_with_layer_details = 2;
+    EnvironmentVariable environment_variable = 3;
+    ContainerCommand container_command = 4;
+  }
+}
+
+message Filepath {
+  string path = 1;
+}
+
+message FilepathWithLayerDetails {
+  string path = 1;
+  LayerDetails layer_details = 2;
+}
+
+message EnvironmentVariable {
+  string name = 1;
+}
+
+message ContainerCommand {
+  string command = 1;
 }

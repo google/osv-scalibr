@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 
-	containerd "github.com/containerd/containerd"
 	tasks "github.com/containerd/containerd/api/services/tasks/v1"
 	task "github.com/containerd/containerd/api/types/task"
-	"github.com/containerd/containerd/cio"
-	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/namespaces"
-	"github.com/containerd/containerd/oci"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/containers"
+	"github.com/containerd/containerd/v2/pkg/cio"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
+	"github.com/containerd/containerd/v2/pkg/oci"
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/opencontainers/go-digest"
 	imagespecs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -210,6 +210,7 @@ func (c *Container) Info(ctx context.Context, opts ...containerd.InfoOpts) (cont
 	}, nil
 }
 
+// Task mocks a containerd.Task with a fake task.
 func (c *Container) Task(context.Context, cio.Attach) (containerd.Task, error) {
 	return NewFakeTask(c.rootfs), nil
 }

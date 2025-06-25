@@ -23,20 +23,21 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"time"
 
 	rpmdb "github.com/erikvarga/go-rpmdb/pkg"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 
 	// SQLite driver needed for parsing rpmdb.sqlite files.
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // Name is the name for the RPM extractor
@@ -147,8 +148,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from rpm status files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	inventory, err := e.extractFromInput(ctx, input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	pkgs, err := e.extractFromInput(ctx, input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -160,10 +161,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 			FileSizeBytes: fileSizeBytes,
 		})
 	}
-	return inventory, err
+	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	absPath, err := input.GetRealPath()
 	if err != nil {
 		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
@@ -187,9 +188,9 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	pkgs := []*extractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, p := range rpmPkgs {
-		metadata := &Metadata{
+		metadata := &rpmmeta.Metadata{
 			PackageName:  p.Name,
 			SourceRPM:    p.SourceRPM,
 			Epoch:        p.Epoch,
@@ -202,14 +203,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			License:      p.License,
 		}
 
-		i := &extractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      p.Name,
 			Version:   fmt.Sprintf("%s-%s", p.Version, p.Release),
+			PURLType:  purl.TypeRPM,
 			Locations: []string{input.Path},
 			Metadata:  metadata,
-		}
-
-		pkgs = append(pkgs, i)
+		})
 	}
 
 	return pkgs, nil
@@ -269,68 +269,4 @@ type rpmPackageInfo struct {
 	Vendor       string
 	Architecture string
 	License      string
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to ''")
-	return ""
-}
-
-func toDistro(m *Metadata) string {
-	v := m.OSVersionID
-	if v == "" {
-		v = m.OSBuildID
-		if v == "" {
-			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
-			return ""
-		}
-		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
-	}
-
-	id := m.OSID
-	if id == "" {
-		log.Errorf("os-release[ID] not set, fallback to ''")
-		return v
-	}
-	return fmt.Sprintf("%s-%s", id, v)
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	if m.Epoch > 0 {
-		q[purl.Epoch] = strconv.Itoa(m.Epoch)
-	}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.SourceRPM != "" {
-		q[purl.SourceRPM] = m.SourceRPM
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeRPM,
-		Namespace:  toNamespace(m),
-		Name:       i.Name,
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns the OSV Ecosystem of the software extracted by this extractor.
-func (Extractor) Ecosystem(i *extractor.Inventory) string {
-	m := i.Metadata.(*Metadata)
-	if m.OSID == "rhel" {
-		return "Red Hat"
-	} else if m.OSID == "rocky" {
-		return "Rocky Linux"
-	}
-	return ""
 }

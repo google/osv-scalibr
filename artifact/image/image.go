@@ -58,6 +58,9 @@ type ChainLayer interface {
 	FS() scalibrfs.FS
 	// Index is the index of the latest layer in the layer chain.
 	Index() int
+	// ChainID is the layer chain ID (sha256 hash) of the layer in the container image.
+	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
+	ChainID() digest.Digest
 	// Layer is the latest layer in the layer chain.
 	Layer() Layer
 }
@@ -65,12 +68,14 @@ type ChainLayer interface {
 // Image is a container image that can be scanned for software inventory. It is composed of a set of
 // layers that can be scanned for software inventory.
 type Image interface {
-	Layer(index int) (Layer, error)
+	// Layers returns the layers of the image.
 	Layers() ([]Layer, error)
-	ChainLayer(index int) (ChainLayer, error)
+	// ChainLayers returns the chain layers of the image.
 	ChainLayers() ([]ChainLayer, error)
+	// ConfigFile returns the config file of the image.
 	ConfigFile() *v1.ConfigFile
-	FileHistory(filepath string) History
+	// FS returns a SCALIBR compliant filesystem that represents the image.
+	FS() scalibrfs.FS
 }
 
 // V1ImageFromRemoteName creates a v1.Image from a remote container image name.

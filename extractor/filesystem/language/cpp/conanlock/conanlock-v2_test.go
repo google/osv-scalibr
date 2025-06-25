@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -33,17 +35,18 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/one-package.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -56,10 +59,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-name.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/no-name.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -72,10 +76,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.11",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/two-packages.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -84,6 +89,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "bzip2",
 					Version:   "1.0.8",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/two-packages.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -96,10 +102,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nested-dependencies.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "zlib",
 					Version:   "1.2.13",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -108,6 +115,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "bzip2",
 					Version:   "1.0.8",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -116,6 +124,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "freetype",
 					Version:   "2.12.1",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -124,6 +133,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "libpng",
 					Version:   "1.6.39",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -132,6 +142,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:      "brotli",
 					Version:   "1.0.9",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/nested-dependencies.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
@@ -144,10 +155,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package-dev.v2.json",
 			},
-			WantInventory: []*extractor.Inventory{
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "ninja",
 					Version:   "1.11.1",
+					PURLType:  purl.TypeConan,
 					Locations: []string{"testdata/one-package-dev.v2.json"},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"build-requires"},
@@ -171,7 +183,8 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.WantInventory, got, cmpopts.SortSlices(extracttest.InventoryCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

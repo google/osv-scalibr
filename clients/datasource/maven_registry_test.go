@@ -26,7 +26,7 @@ import (
 
 func TestGetProject(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true})
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
 	srv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
 	<project>
 	  <groupId>org.example</groupId>
@@ -53,7 +53,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true})
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "")
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -105,7 +105,7 @@ func TestGetProjectSnapshot(t *testing.T) {
 
 func TestMultipleRegistry(t *testing.T) {
 	dft := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true})
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -115,7 +115,7 @@ func TestMultipleRegistry(t *testing.T) {
 	    <release>3.0.0</release>
 	    <versions>
 	      <version>2.0.0</version>
-		  <version>3.0.0</version>
+		    <version>3.0.0</version>
 	    </versions>
 	  </versioning>
 	</metadata>
@@ -148,7 +148,7 @@ func TestMultipleRegistry(t *testing.T) {
 	    <release>2.0.0</release>
 	    <versions>
 	      <version>1.0.0</version>
-		  <version>2.0.0</version>
+		    <version>2.0.0</version>
 	    </versions>
 	  </versioning>
 	</metadata>
@@ -188,6 +188,60 @@ func TestMultipleRegistry(t *testing.T) {
 		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
 	}
 	wantVersions := []maven.String{"1.0.0", "2.0.0", "3.0.0"}
+	if !reflect.DeepEqual(gotVersions, wantVersions) {
+		t.Errorf("GetVersions(%s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", gotVersions, wantVersions)
+	}
+}
+
+func TestUpdateDefaultRegistry(t *testing.T) {
+	dft := clienttest.NewMockHTTPServer(t)
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
+	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <versioning>
+	    <latest>1.0.0</latest>
+	    <release>1.0.0</release>
+	    <versions>
+	      <version>1.0.0</version>
+	    </versions>
+	  </versioning>
+	</metadata>
+	`))
+
+	gotVersions, err := client.GetVersions(context.Background(), "org.example", "x.y.z")
+	if err != nil {
+		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
+	}
+	wantVersions := []maven.String{"1.0.0"}
+	if !reflect.DeepEqual(gotVersions, wantVersions) {
+		t.Errorf("GetVersions(%s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", gotVersions, wantVersions)
+	}
+
+	srv := clienttest.NewMockHTTPServer(t)
+	if err := client.AddRegistry(datasource.MavenRegistry{URL: srv.URL, ID: "default", ReleasesEnabled: true}); err != nil {
+		t.Fatalf("failed to add registry %s: %v", srv.URL, err)
+	}
+	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <versioning>
+	    <latest>2.0.0</latest>
+	    <release>2.0.0</release>
+	    <versions>
+	      <version>2.0.0</version>
+	    </versions>
+	  </versioning>
+	</metadata>
+	`))
+
+	gotVersions, err = client.GetVersions(context.Background(), "org.example", "x.y.z")
+	if err != nil {
+		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
+	}
+	wantVersions = []maven.String{"2.0.0"}
 	if !reflect.DeepEqual(gotVersions, wantVersions) {
 		t.Errorf("GetVersions(%s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", gotVersions, wantVersions)
 	}

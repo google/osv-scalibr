@@ -34,6 +34,7 @@ var (
 			"10.0.17763": "windows_server_2019",
 			"10.0.20348": "windows_server_2022",
 			"10.0.25398": "windows_server_2022:23H2",
+			"10.0.26100": "windows_server_2025",
 		},
 		"client": {
 			"5.1.2600":   "windows_xp",
@@ -47,6 +48,7 @@ var (
 			"10.0.22000": "windows_11:21H2",
 			"10.0.22621": "windows_11:22H2",
 			"10.0.22631": "windows_11:23H2",
+			"10.0.26100": "windows_11:24H2",
 		},
 	}
 )

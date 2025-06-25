@@ -24,7 +24,9 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -147,8 +149,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract extracts packages from metainfo xml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Inventory, error) {
-	i, err := e.extractFromInput(input)
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	p, err := e.extractFromInput(input)
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -161,15 +163,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) ([]
 		})
 	}
 	if err != nil {
-		return nil, fmt.Errorf("flatpak.extract(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("flatpak.extract(%s): %w", input.Path, err)
 	}
-	if i == nil {
-		return []*extractor.Inventory{}, nil
+	if p == nil {
+		return inventory.Inventory{}, nil
 	}
-	return []*extractor.Inventory{i}, nil
+	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inventory, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
@@ -194,10 +196,11 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inv
 		return nil, fmt.Errorf("PackageVersion: %v does not exist", pkgVersion)
 	}
 
-	i := &extractor.Inventory{
-		Name:    f.ID,
-		Version: pkgVersion,
-		Metadata: &Metadata{
+	p := &extractor.Package{
+		Name:     f.ID,
+		Version:  pkgVersion,
+		PURLType: purl.TypeFlatpak,
+		Metadata: &flatpakmeta.Metadata{
 			PackageName:    pkgName,
 			PackageID:      f.ID,
 			PackageVersion: pkgVersion,
@@ -211,52 +214,5 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Inv
 		Locations: []string{input.Path},
 	}
 
-	return i, nil
+	return p, nil
 }
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to ''")
-	return ""
-}
-
-func toDistro(m *Metadata) string {
-	v := m.OSVersionID
-	if v == "" {
-		v = m.OSBuildID
-		if v == "" {
-			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
-			return ""
-		}
-		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
-	}
-
-	id := m.OSID
-	if id == "" {
-		log.Errorf("os-release[ID] not set, fallback to ''")
-		return v
-	}
-	return fmt.Sprintf("%s-%s", id, v)
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e Extractor) ToPURL(i *extractor.Inventory) *purl.PackageURL {
-	m := i.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	return &purl.PackageURL{
-		Type:       purl.TypeFlatpak,
-		Namespace:  toNamespace(m),
-		Name:       i.Name,
-		Version:    i.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-// Ecosystem returns no Ecosystem since the ecosystem is not known by OSV yet.
-func (e Extractor) Ecosystem(i *extractor.Inventory) string { return "" }
