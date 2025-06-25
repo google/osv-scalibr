@@ -95,11 +95,10 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, maxSymlinkDe
 
 // chainLayer represents all the files on up to a layer (files from a chain of layers).
 type chainLayer struct {
-	index           int
-	chainID         digest.Digest
-	fileNodeTree    *RootNode
-	latestLayer     image.Layer
-	maxSymlinkDepth int
+	index        int
+	chainID      digest.Digest
+	fileNodeTree *RootNode
+	latestLayer  image.Layer
 }
 
 // FS returns a scalibrfs.FS that can be used to scan for inventory.

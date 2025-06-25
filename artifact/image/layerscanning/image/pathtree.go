@@ -17,10 +17,11 @@ package image
 import (
 	"errors"
 	"fmt"
-	"github.com/google/osv-scalibr/log"
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/osv-scalibr/log"
 )
 
 const divider string = "/"
@@ -29,12 +30,13 @@ const divider string = "/"
 // shouldn't be any duplicates to the tree, we should return this error if a node already exists.
 var ErrNodeAlreadyExists = errors.New("node already exists")
 
+// RootNode represents the root directory /
 type RootNode struct {
 	Node            Node
 	MaxSymlinkDepth int
 }
 
-// Node root represents the root directory /
+// Node represents a directory with any number of files
 type Node struct {
 	virtualFile *virtualFile
 	children    map[string]*Node
@@ -173,7 +175,6 @@ func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
 
 	if pathNode == nil {
 		// This should not happen, if pathNode is nil, there should be an error
-		panic("pathNode is nil while error is nil")
 		return nil, nil
 	}
 
