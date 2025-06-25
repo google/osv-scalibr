@@ -187,7 +187,7 @@ func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	vf, err := chainfs.tree.Get(normalizePath(path))
+	vf, err := chainfs.tree.Get(normalizePath(path), true)
 	if err != nil {
 		return nil, err
 	}
