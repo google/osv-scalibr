@@ -444,6 +444,12 @@ func TestChainFSReadDir(t *testing.T) {
 					targetPath:  "/symlink3",
 				},
 				{
+					virtualPath: "/symlink-relative-1",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "./dir2/bar",
+				},
+				{
 					virtualPath: "/symlink-cycle1",
 					isWhiteout:  false,
 					mode:        fs.ModeSymlink,
@@ -502,6 +508,18 @@ func TestChainFSReadDir(t *testing.T) {
 					virtualPath: "/dir2/bar",
 					isWhiteout:  false,
 					mode:        filePermission,
+				},
+				{
+					virtualPath: "/dir2/symlink-relative-2",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "./bar",
+				},
+				{
+					virtualPath: "/dir/symlink-relative-3",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "../symlink-relative-1",
 				},
 			},
 		},
