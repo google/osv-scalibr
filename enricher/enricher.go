@@ -16,10 +16,13 @@
 package enricher
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -29,6 +32,13 @@ import (
 var (
 	// ErrNoDirectFS is returned when an enricher requires direct filesystem access but the scan root is nil.
 	ErrNoDirectFS = errors.New("enrichment requires direct filesystem access but scan root is nil")
+
+	// EnricherOrder describes the order in which specific enrichers need to run in.
+	// TODO(b/416106602): Use required enrichers instead of a global ordering list.
+	EnricherOrder = []string{
+		"osv-dev",
+		"vex/filter",
+	}
 )
 
 // Enricher is the interface for an enrichment plugin, used to enrich scan results with additional
@@ -60,6 +70,8 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 		return statuses, nil
 	}
 
+	orderEnrichers(config.Enrichers)
+
 	for _, e := range config.Enrichers {
 		capabilities := e.Requirements()
 		if capabilities != nil && capabilities.DirectFS && config.ScanRoot == nil {
@@ -87,4 +99,27 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 		statuses = append(statuses, plugin.StatusFromErr(e, false, err))
 	}
 	return statuses, nil
+}
+
+// Orders the enrichers to make sure they're run in the order specified by EnricherOrder.
+func orderEnrichers(enrichers []Enricher) {
+	nameToPlace := make(map[string]int)
+	for i, name := range EnricherOrder {
+		nameToPlace[name] = i
+	}
+	getPlace := func(name string) int {
+		if place, ok := nameToPlace[name]; ok {
+			return place
+		}
+		// Enrichers not in the explicit list can run in any order.
+		return len(nameToPlace)
+	}
+
+	slices.SortFunc(enrichers, func(a Enricher, b Enricher) int {
+		return cmp.Or(
+			cmp.Compare(getPlace(a.Name()), getPlace(b.Name())),
+			// Use the name as a tie-breaker to keep ordering deterministic.
+			strings.Compare(a.Name(), b.Name()),
+		)
+	})
 }

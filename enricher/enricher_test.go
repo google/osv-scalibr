@@ -176,3 +176,75 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+type fakeVulnMatcher struct{}
+
+func (fakeVulnMatcher) Name() string                       { return "osv-dev" }
+func (fakeVulnMatcher) Version() int                       { return 0 }
+func (fakeVulnMatcher) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (fakeVulnMatcher) RequiredPlugins() []string          { return nil }
+func (fakeVulnMatcher) Enrich(_ context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{})
+	return nil
+}
+
+// Expects the fakeVulnMatcher plugin to run first.
+type fakeVEXFilterer struct{}
+
+func (fakeVEXFilterer) Name() string                       { return "vex/filter" }
+func (fakeVEXFilterer) Version() int                       { return 0 }
+func (fakeVEXFilterer) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (fakeVEXFilterer) RequiredPlugins() []string          { return nil }
+func (fakeVEXFilterer) Enrich(_ context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	if len(inv.PackageVulns) == 0 {
+		return errors.New("vuln matcher didn't run before vex filterer")
+	}
+	inv.PackageVulns = nil
+	return nil
+}
+
+// A third enricher that can run in any order.
+type fakePackageAdder struct{}
+
+func (fakePackageAdder) Name() string                       { return "fake-package-adder" }
+func (fakePackageAdder) Version() int                       { return 0 }
+func (fakePackageAdder) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (fakePackageAdder) RequiredPlugins() []string          { return nil }
+func (fakePackageAdder) Enrich(_ context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	inv.Packages = append(inv.Packages, &extractor.Package{})
+	return nil
+}
+
+func TestRunEnricherOrdering(t *testing.T) {
+	cfg := &enricher.Config{
+		Enrichers: []enricher.Enricher{
+			&fakePackageAdder{},
+			&fakeVEXFilterer{},
+			&fakeVulnMatcher{},
+		},
+	}
+	inv := &inventory.Inventory{}
+
+	wantInv := &inventory.Inventory{
+		// One package (added by fakePackageAdder)
+		Packages: []*extractor.Package{{}},
+		// No vulns (removed by fakeVEXFilterer)
+		PackageVulns: nil,
+	}
+	wantStatus := []*plugin.Status{
+		{Name: "osv-dev", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
+		{Name: "vex/filter", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
+		{Name: "fake-package-adder", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
+	}
+
+	gotStatus, err := enricher.Run(context.Background(), cfg, inv)
+	if err != nil {
+		t.Errorf("Run(%+v) error: %v", cfg, err)
+	}
+	if diff := cmp.Diff(wantStatus, gotStatus); diff != "" {
+		t.Errorf("Run(%+v) returned an unexpected diff of statuses (-want +got): %v", cfg, diff)
+	}
+	if diff := cmp.Diff(wantInv, inv); diff != "" {
+		t.Errorf("Run(%+v) returned an unexpected diff of mutated inventory (-want +got): %v", cfg, diff)
+	}
+}

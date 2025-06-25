@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/secrets"
+	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -37,6 +38,16 @@ var (
 	// LayerDetails enrichers.
 	LayerDetails = InitMap{
 		baseimage.Name: {baseimage.NewDefault},
+	}
+
+	// VulnMatching enrichers.
+	VulnMatching = InitMap{
+		// TODO(https://github.com/google/osv-scalibr/issues/858): Add OSV.dev enricher.
+	}
+
+	// VEX related enrichers.
+	VEX = InitMap{
+		filter.Name: {filter.New},
 	}
 
 	// Secrets enrichers.
@@ -54,6 +65,8 @@ var (
 	)
 
 	enricherNames = concat(All, InitMap{
+		"vex":          vals(VEX),
+		"vulnmatching": vals(VulnMatching),
 		"layerdetails": vals(LayerDetails),
 		"secrets":      vals(Secrets),
 		"default":      vals(Default),
