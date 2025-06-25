@@ -262,8 +262,8 @@ func TestRunScan(t *testing.T) {
 			if len(result.Inventory.Packages) != tc.wantPackagesCount {
 				t.Errorf("Unexpected package count, want %d got %d", tc.wantPackagesCount, len(result.Inventory.Packages))
 			}
-			if len(result.Inventory.Findings) != tc.wantFindingCount {
-				t.Errorf("Unexpected finding count, want %d got %d", tc.wantFindingCount, len(result.Inventory.Findings))
+			if len(result.Inventory.GenericFindings) != tc.wantFindingCount {
+				t.Errorf("Unexpected finding count, want %d got %d", tc.wantFindingCount, len(result.Inventory.GenericFindings))
 			}
 		})
 	}

@@ -189,7 +189,7 @@ func TestExtract(t *testing.T) {
 			if err != nil {
 				t.Errorf("Extract() err=%v, want nil", err)
 			}
-			if len(gotInv.Packages) > 0 || len(gotInv.Findings) > 0 {
+			if len(gotInv.Packages) > 0 || len(gotInv.GenericFindings) > 0 {
 				t.Errorf("Extract() got inventory other than secrets: %v", gotInv)
 			}
 			got := gotInv.Secrets

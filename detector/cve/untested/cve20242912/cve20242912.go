@@ -39,9 +39,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type bentomlPackageNames struct {
@@ -169,18 +171,18 @@ func fileExists(filesys scalibrfs.FS, path string) bool {
 }
 
 // Scan checks for the presence of the BentoML CVE-2024-2912 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	bentomlVersion, pkg, fixedVersion := findBentomlVersions(px)
 	if bentomlVersion == "" {
 		log.Debugf("No BentoML version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	bv := strings.Split(strings.TrimLeft(strings.ToLower(bentomlVersion), "v"), ".")
 	fbv := strings.Split(fixedVersion, ".")
 	if len(bv) < 3 {
 		log.Infof("Unable to parse version: %q", bentomlVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	// Check if the installed version is lower than the fixed.
@@ -195,26 +197,26 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 	if !isVulnVersion {
 		log.Infof("Version not vulnerable: %q", bentomlVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Version is potentially vulnerable: %q", bentomlVersion)
 
 	if !CheckAccessibility(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML server not accessible")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !ExploitBentoml(ctx, bentomlServerIP, bentomlServerPort) {
 		log.Infof("BentoML exploit unsuccessful")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Exploit complete")
 
 	if !fileExists(scanRoot.FS, payloadPath) {
 		log.Infof("No POC file detected")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("BentoML version %q vulnerable", bentomlVersion)
@@ -225,21 +227,18 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 	log.Infof("Payload file removed")
 
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2024-2912",
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2024-2912",
+			Summary: "CVE-2024-2912",
+			Details: "CVE-2024-2912",
+			Affected: inventory.PackageToAffected(pkg, "1.2.5", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: map[string]any{
+				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2024-2912",
-			Description:    "CVE-2024-2912",
-			Recommendation: "Update BentoML to version 1.2.5 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
-		Target: &detector.TargetDetails{
-			Package: pkg,
-		},
-		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-	}}, nil
+	}}}, nil
 }

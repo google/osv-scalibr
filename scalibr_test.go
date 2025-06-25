@@ -81,7 +81,7 @@ func TestScan(t *testing.T) {
 	}
 	pkgWithLayerDetails := withLayerDetails(pkg, &extractor.LayerDetails{InBaseImage: true})
 	pkgWithLayerDetails.Plugins = []string{fakeExtractor.Name()}
-	finding := &detector.Finding{Adv: &detector.Advisory{ID: &detector.AdvisoryID{Reference: "CVE-1234"}}}
+	finding := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-1234"}}}
 
 	fakeEnricherCfg := &fen.Config{
 		Name:         "enricher",
@@ -98,12 +98,16 @@ func TestScan(t *testing.T) {
 				},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector"),
+					},
 				},
 			): fen.InventoryAndErr{
 				Inventory: &inventory.Inventory{
 					Packages: []*extractor.Package{pkgWithLayerDetails},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector"),
+					},
 				},
 			},
 		},
@@ -119,12 +123,16 @@ func TestScan(t *testing.T) {
 				t, &enricher.ScanInput{ScanRoot: &scalibrfs.ScanRoot{FS: fs, Path: tmp}},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector2"),
+					},
 				},
 			): fen.InventoryAndErr{
 				Inventory: &inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector2"),
+					},
 				},
 				Err: errors.New(enrFailure.FailureReason),
 			},
@@ -142,7 +150,7 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
-					fd.New("detector", 2, finding, nil),
+					fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding),
 				},
 				Enrichers: []enricher.Enricher{fakeEnricher},
 				ScanRoots: tmpRoot,
@@ -157,7 +165,9 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{pkgWithLayerDetails},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector"),
+					},
 				},
 			},
 		},
@@ -166,10 +176,10 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				Detectors: []detector.Detector{
 					// Will error due to duplicate non-identical Advisories.
-					fd.New("detector", 2, finding, nil),
-					fd.New("detector", 3, &detector.Finding{
-						Adv: &detector.Advisory{ID: finding.Adv.ID, Title: "different title"},
-					}, nil),
+					fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding),
+					fd.New().WithName("detector").WithVersion(3).WithGenericFinding(&inventory.GenericFinding{
+						Adv: &inventory.GenericFindingAdvisory{ID: finding.Adv.ID, Title: "different title"},
+					}),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -191,7 +201,7 @@ func TestScan(t *testing.T) {
 				FilesystemExtractors: []filesystem.Extractor{
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
 				},
-				Detectors: []detector.Detector{fd.New("detector", 2, finding, nil)},
+				Detectors: []detector.Detector{fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding)},
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
@@ -203,7 +213,9 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: nil,
-					Findings: []*detector.Finding{withDetectorName(finding, "detector")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector"),
+					},
 				},
 			},
 		},
@@ -212,7 +224,7 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
-					fd.New("detector", 2, nil, errors.New(pluginFailure)),
+					fd.New().WithName("detector").WithVersion(2).WithErr(errors.New(pluginFailure)),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -233,7 +245,7 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
 				Detectors: []detector.Detector{
-					fd.New("detector2", 2, finding, nil),
+					fd.New().WithName("detector2").WithVersion(2).WithGenericFinding(finding),
 				},
 				Enrichers: []enricher.Enricher{fakeEnricherErr},
 				ScanRoots: tmpRoot,
@@ -248,7 +260,9 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
-					Findings: []*detector.Finding{withDetectorName(finding, "detector2")},
+					GenericFindings: []*inventory.GenericFinding{
+						withDetectorName(finding, "detector2"),
+					},
 				},
 			},
 		},
@@ -283,9 +297,9 @@ func TestScan(t *testing.T) {
 	}
 }
 
-func withDetectorName(f *detector.Finding, det string) *detector.Finding {
+func withDetectorName(f *inventory.GenericFinding, det string) *inventory.GenericFinding {
 	c := *f
-	c.Detectors = []string{det}
+	c.Plugins = []string{det}
 	return &c
 }
 
@@ -303,7 +317,7 @@ func TestEnableRequiredExtractors(t *testing.T) {
 			name: "no required extractors",
 			cfg: scalibr.ScanConfig{
 				Detectors: []detector.Detector{
-					fd.NewWithOptions(fd.WithName("foo")),
+					fd.New().WithName("foo"),
 				},
 			},
 		},
@@ -311,7 +325,7 @@ func TestEnableRequiredExtractors(t *testing.T) {
 			name: "required extractor in already enabled",
 			cfg: scalibr.ScanConfig{
 				Detectors: []detector.Detector{
-					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("bar/baz")),
+					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
 				FilesystemExtractors: []filesystem.Extractor{
 					fe.New("bar/baz", 0, nil, nil),
@@ -323,7 +337,7 @@ func TestEnableRequiredExtractors(t *testing.T) {
 			name: "auto-loaded required extractor",
 			cfg: scalibr.ScanConfig{
 				Detectors: []detector.Detector{
-					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("python/wheelegg")),
+					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
 				},
 			},
 			wantExtractors: []string{"python/wheelegg"},
@@ -341,7 +355,7 @@ func TestEnableRequiredExtractors(t *testing.T) {
 			name: "required extractor doesn't exist",
 			cfg: scalibr.ScanConfig{
 				Detectors: []detector.Detector{
-					fd.NewWithOptions(fd.WithName("foo"), fd.WithRequiredExtractors("bar/baz")),
+					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
 			},
 			wantErr: cmpopts.AnyError,
@@ -392,8 +406,8 @@ type fakeDetNeedsFS struct {
 func (fakeDetNeedsFS) Name() string                 { return "fake-extractor" }
 func (fakeDetNeedsFS) Version() int                 { return 0 }
 func (fakeDetNeedsFS) RequiredExtractors() []string { return nil }
-func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
-	return nil, nil
+func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
+	return inventory.Finding{}, nil
 }
 func (fakeDetNeedsFS) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{DirectFS: true}

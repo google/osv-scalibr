@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -154,17 +153,17 @@ func TestEnrich(t *testing.T) {
 	}
 
 	// Additional scan result types to ensure they are not modified.
-	finding1 := &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	finding1 := &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CVE",
 				Reference: "CVE-2024-1234",
 			},
 		},
 	}
-	finding2 := &detector.Finding{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
+	finding2 := &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
 				Publisher: "CVE",
 				Reference: "CVE-2024-5678",
 			},
@@ -245,7 +244,7 @@ func TestEnrich(t *testing.T) {
 					withLayerDetails(pkg2, ld2),
 					withLayerDetails(pkg3, ld3),
 				},
-				Findings: []*detector.Finding{finding1, finding2},
+				GenericFindings: []*inventory.GenericFinding{finding1, finding2},
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
@@ -253,7 +252,7 @@ func TestEnrich(t *testing.T) {
 					withLayerDetails(pkg2, ld2),
 					withLayerDetails(pkg3, ld3base),
 				},
-				Findings: []*detector.Finding{finding1, finding2},
+				GenericFindings: []*inventory.GenericFinding{finding1, finding2},
 			},
 		},
 		{

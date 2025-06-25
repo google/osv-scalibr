@@ -35,9 +35,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type sparkUIPackageNames struct {
@@ -100,11 +102,11 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // Scan scans for the vulnerability, doh!
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	sparkUIVersion, pkg, affectedVersions := findApacheSparkUIPackage(px)
 	if sparkUIVersion == "" {
 		log.Debugf("No Apache Spark UI version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	isVulnVersion := false
@@ -116,7 +118,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", sparkUIVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	log.Infof("Found Potentially vulnerable Apache Spark UI version %v", sparkUIVersion)
 
@@ -143,25 +145,23 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		log.Infof("Version %q not vuln (Temp file not found)", sparkUIVersion)
 	}
 	if !vulnerable {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2022-33891",
+
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2022-33891",
+			Summary: "CVE-2022-33891",
+			Details: "CVE-2022-33891",
+			Affected: inventory.PackageToAffected(pkg, "3.2.2", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: map[string]any{
+				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2022-33891",
-			Description:    "CVE-2022-33891",
-			Recommendation: "Update pyspark to 3.2.2 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
-		Target: &detector.TargetDetails{
-			Package: pkg,
-		},
-		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-	}}, nil
+	}}}, nil
 }
 
 func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cmdExec string) int {

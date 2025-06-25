@@ -46,9 +46,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type saltPackageNames struct {
@@ -130,11 +132,11 @@ func findSaltVersions(px *packageindex.PackageIndex) (string, *extractor.Package
 }
 
 // Scan checks for the presence of the Salt CVE-2020-16846 vulnerability on the filesystem.
-func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) ([]*detector.Finding, error) {
+func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	saltVersion, pkg, affectedVersions := findSaltVersions(px)
 	if saltVersion == "" {
 		log.Debugf("No Salt version found")
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 	isVulnVersion := false
 	for _, r := range affectedVersions {
@@ -145,25 +147,25 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 	if !isVulnVersion {
 		log.Infof("Version %q not vuln", saltVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Found Potentially vulnerable Salt version %v", saltVersion)
 
 	if !CheckForCherrypy(ctx, saltServerIP, saltServerPort) {
 		log.Infof("Cherry py not found. Version %q not vulnerable", saltVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	if !ExploitSalt(ctx, saltServerIP, saltServerPort) {
 		log.Infof("Version %q not vulnerable", saltVersion)
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Exploit successful")
 
 	if !fileExists(scanRoot.FS, randFilePath) {
-		return nil, nil
+		return inventory.Finding{}, nil
 	}
 
 	log.Infof("Version %q is vulnerable", saltVersion)
@@ -173,23 +175,20 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		log.Infof("Error removing file: %v", err)
 	}
 
-	return []*detector.Finding{{
-		Adv: &detector.Advisory{
-			ID: &detector.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "CVE-2020-16846",
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2020-16846",
+			Summary: "CVE-2020-16846",
+			Details: "CVE-2020-16846",
+			Affected: inventory.PackageToAffected(pkg, "3002.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: map[string]any{
+				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
 			},
-			Type:           detector.TypeVulnerability,
-			Title:          "CVE-2020-16846",
-			Description:    "CVE-2020-16846",
-			Recommendation: "Update salt to version 3002.1 or later",
-			Sev:            &detector.Severity{Severity: detector.SeverityCritical},
 		},
-		Target: &detector.TargetDetails{
-			Package: pkg,
-		},
-		Extra: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-	}}, nil
+	}}}, nil
 }
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.
