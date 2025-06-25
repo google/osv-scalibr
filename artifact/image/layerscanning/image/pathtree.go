@@ -104,8 +104,10 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 	return nil
 }
 
-// getNode returns the node at the given path. This will resolve all symlinks and return the final path.
-func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
+// getNode returns the node at the given path. This will resolve all intermediate symlinks.
+// By setting resolveFinalSymlink, you can choose not to resolve the final symlink,
+// so the returned Node could still be a symlink to another Node.
+func (rootNode *RootNode) getNode(nodePath string, resolveFinalSymlink bool, depth int) (*Node, error) {
 	nodePath, err := cleanPath(nodePath)
 	if err != nil {
 		log.Warnf("cleanPath(%q) error: %v", nodePath, err)
@@ -124,12 +126,18 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 	cursor := &rootNode.Node
 	// currentPathIndex can be used to get the parent directory segment including all ancestors
 	currentPathIndex := 0
-	for _, segment := range strings.Split(nodePath, divider) {
+	segments := strings.Split(nodePath, divider)
+	for i, segment := range segments {
 		next, ok := cursor.children[segment]
 		if !ok {
 			return nil, fs.ErrNotExist
 		}
 		cursor = next
+
+		// Skip symlink resolution if this is the last element and we are not resolving the final symlink
+		if i == len(segments)-1 && !resolveFinalSymlink {
+			break
+		}
 
 		// Check if the next cursor is a symlink, if so resolve it before continuing
 		if cursor.virtualFile != nil && cursor.virtualFile.targetPath != "" {
@@ -138,7 +146,8 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 				// Join the parent path with the targetPath to get the real path
 				targetPath = path.Join(divider+nodePath[:currentPathIndex], targetPath)
 			}
-			cursor, err = rootNode.getNode(targetPath, depth+1)
+			// resolveFinalSymlink should always be true for intermediate resolutions
+			cursor, err = rootNode.getNode(targetPath, true, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -151,10 +160,11 @@ func (rootNode *RootNode) getNode(nodePath string, depth int) (*Node, error) {
 }
 
 // Get retrieves the value at the given path. If no node exists at the given path, nil is returned.
-// If there is a symlink node along the path, then a symlink directory has been found. In order to
-// resolve it, we follow the symlink and
-func (rootNode *RootNode) Get(p string) (*virtualFile, error) {
-	pathNode, err := rootNode.getNode(p, 0)
+// If there is a symlink node along the path, it's resolved.
+// By setting resolveFinalSymlink, if the final node is a symlink, you can choose to resolve the symlink
+// until a normal file or directory. Or to get the raw symlink virtualFile.
+func (rootNode *RootNode) Get(p string, resolveFinalSymlink bool) (*virtualFile, error) {
+	pathNode, err := rootNode.getNode(p, resolveFinalSymlink, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +178,7 @@ func (rootNode *RootNode) Get(p string) (*virtualFile, error) {
 
 // GetChildren retrieves all the direct children of the given path.
 func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
-	pathNode, err := rootNode.getNode(path, 0)
+	pathNode, err := rootNode.getNode(path, true, 0)
 	if err != nil {
 		return nil, err
 	}

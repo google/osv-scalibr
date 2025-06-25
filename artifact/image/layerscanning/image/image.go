@@ -559,7 +559,7 @@ func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainL
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.
-		if vf, _ := currentChainLayer.fileNodeTree.Get(runningDir); vf != nil {
+		if vf, _ := currentChainLayer.fileNodeTree.Get(runningDir, false); vf != nil {
 			continue
 		}
 
@@ -646,7 +646,8 @@ func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *
 func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *virtualFile) {
 	virtualPath := newNode.virtualPath
 	for _, chainLayer := range chainLayersToFill {
-		if node, _ := chainLayer.fileNodeTree.Get(virtualPath); node != nil {
+		// We want the raw final symlink when checking for existence.
+		if node, _ := chainLayer.fileNodeTree.Get(virtualPath, false); node != nil {
 			// A newer version of the file already exists on a later chainLayer.
 			// Since we do not want to overwrite a later layer with information
 			// written in an earlier layer, skip this file.
@@ -678,7 +679,7 @@ func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 			break
 		}
 
-		node, err := layer.fileNodeTree.Get(dirname)
+		node, err := layer.fileNodeTree.Get(dirname, false)
 		if err != nil {
 			return false
 		}

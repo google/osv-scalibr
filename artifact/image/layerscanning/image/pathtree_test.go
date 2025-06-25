@@ -150,7 +150,7 @@ func TestNode_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.tree.Get(tt.key)
+			got, err := tt.tree.Get(tt.key, true)
 			if errDiff := cmp.Diff(err, tt.wantErr, cmpopts.EquateErrors()); errDiff != "" {
 				t.Errorf("Node.Get() err diff (-want +got):\n%s", errDiff)
 			}
