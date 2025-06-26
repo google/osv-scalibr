@@ -182,10 +182,12 @@ func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if pathNode == nil {
 		// This should not happen, if pathNode is nil, there should be an error
 		return nil, nil
+	}
+	if pathNode.virtualFile == nil || !pathNode.virtualFile.IsDir() {
+		return nil, fs.ErrInvalid
 	}
 
 	children := []*virtualFile{}

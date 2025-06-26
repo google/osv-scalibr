@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	stdlibpath "path"
 	"slices"
 	"strings"
 
@@ -213,6 +214,8 @@ func normalizePath(path string) string {
 	if path[0] != '/' {
 		path = "/" + path
 	}
+	path = stdlibpath.Clean(path)
+
 	return path
 }
 

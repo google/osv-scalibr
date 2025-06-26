@@ -209,6 +209,26 @@ func TestChainFSOpen(t *testing.T) {
 			},
 		},
 		{
+			name:    "open file with .. in path",
+			chainfs: populatedChainFS,
+			path:    "/dir1/../dir2/bar",
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file with .. outside of root (This should get normalized to root)",
+			chainfs: populatedChainFS,
+			path:    "../../dir2/bar",
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
 			name:    "open absolute symlink from filled tree with depth 1",
 			chainfs: populatedChainFS,
 			path:    "/symlink1",
@@ -539,10 +559,10 @@ func TestChainFSReadDir(t *testing.T) {
 			},
 		},
 		{
-			name:             "read file node leaf from filled tree",
-			chainfs:          populatedChainFS,
-			path:             "/dir1/foo",
-			wantVirtualFiles: []*virtualFile{},
+			name:    "read file node leaf from filled tree should return error",
+			chainfs: populatedChainFS,
+			path:    "/dir1/foo",
+			wantErr: fs.ErrInvalid,
 		},
 		{
 			name:    "read symlink from filled tree",
