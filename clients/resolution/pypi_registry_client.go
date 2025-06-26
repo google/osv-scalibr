@@ -276,10 +276,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, s
 				continue
 			}
 		default:
-			// For other formats, check whether the file name contains the version.
-			if !strings.Contains(file.Name, vk.Version) {
-				continue
-			}
+			continue
 		}
 		return file, ext, nil
 	}

@@ -80,7 +80,7 @@ func TestVersions(t *testing.T) {
 			"requires-python": ">=3.6.0",
 			"size": 147925,
 			"upload-time": "2024-01-17T16:53:12.779164Z",
-			"url": "`+srv.URL+`/beautifulsoup4-4.12.3-py3-none-any.whl",
+			"url": "https://files.pythonhosted.org/packages/b1/fe/e8c672695b37eecc5cbf43e1d0638d88d66ba3a44c4d321c796f4e59167f/beautifulsoup4-4.12.3-py3-none-any.whl",
 			"yanked": false
 		  },
 		  {
