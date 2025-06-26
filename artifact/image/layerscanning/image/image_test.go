@@ -456,7 +456,10 @@ func TestFromTarball(t *testing.T) {
 					},
 				},
 			},
-			wantErrWhileReadingFiles: ErrSymlinkCycle,
+			//wantErrWhileReadingFiles: ErrSymlinkCycle,
+			// New method cannot determine links, just depth exceeded.
+			// If symlink depths is a reasonable number it should not matter.
+			wantErrWhileReadingFiles: ErrSymlinkDepthExceeded,
 		},
 		{
 			name:    "image with symlink depth exceeded",
@@ -1026,7 +1029,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			history: []v1.History{},
 			want: []*chainLayer{
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        0,
 					latestLayer: &Layer{
 						diffID:  diffID1,
@@ -1048,7 +1051,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        0,
 					latestLayer: &Layer{
 						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
@@ -1079,7 +1082,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1089,7 +1092,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1099,7 +1102,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1145,7 +1148,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1155,7 +1158,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        1,
 					latestLayer: &Layer{
 						buildCommand: "ENTRYPOINT [\"/bin/sh\"]",
@@ -1163,7 +1166,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        2,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1173,7 +1176,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        3,
 					latestLayer: &Layer{
 						buildCommand: "RANDOM DOCKER COMMAND",
@@ -1181,7 +1184,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        4,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1191,7 +1194,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        5,
 					latestLayer: &Layer{
 						buildCommand: "RUN [\"/bin/sh\"]",
@@ -1218,7 +1221,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 			want: []*chainLayer{
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        0,
 					chainID:      chainID1,
 					latestLayer: &Layer{
@@ -1228,7 +1231,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        1,
 					chainID:      chainID2,
 					latestLayer: &Layer{
@@ -1237,7 +1240,7 @@ func TestInitializeChainLayers(t *testing.T) {
 					},
 				},
 				{
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 					index:        2,
 					chainID:      chainID3,
 					latestLayer: &Layer{
@@ -1278,8 +1281,10 @@ func TestFS(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name:    "no chain layers",
-			image:   &Image{},
+			name: "no chain layers",
+			image: &Image{
+				config: DefaultConfig(),
+			},
 			wantErr: true,
 		},
 		{
@@ -1287,8 +1292,8 @@ func TestFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *Node {
-							root := NewNode()
+						fileNodeTree: func() *RootNode {
+							root := NewNode(DefaultMaxSymlinkDepth)
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
@@ -1307,6 +1312,7 @@ func TestFS(t *testing.T) {
 						},
 					},
 				},
+				config: DefaultConfig(),
 			},
 			wantFilesFromFS: []string{"/foo.txt"},
 		},
@@ -1315,8 +1321,8 @@ func TestFS(t *testing.T) {
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
-						fileNodeTree: func() *Node {
-							root := NewNode()
+						fileNodeTree: func() *RootNode {
+							root := NewNode(DefaultMaxSymlinkDepth)
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
@@ -1335,8 +1341,8 @@ func TestFS(t *testing.T) {
 						},
 					},
 					{
-						fileNodeTree: func() *Node {
-							root := NewNode()
+						fileNodeTree: func() *RootNode {
+							root := NewNode(DefaultMaxSymlinkDepth)
 							_ = root.Insert("/", &virtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
@@ -1359,6 +1365,7 @@ func TestFS(t *testing.T) {
 						},
 					},
 				},
+				config: DefaultConfig(),
 			},
 			wantFilesFromFS: []string{"/foo.txt", "/bar.txt"},
 		},

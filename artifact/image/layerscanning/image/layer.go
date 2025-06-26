@@ -45,7 +45,7 @@ type Layer struct {
 	diffID       digest.Digest
 	buildCommand string
 	isEmpty      bool
-	fileNodeTree *Node
+	fileNodeTree *RootNode
 }
 
 // FS returns a scalibr compliant file system.
@@ -72,7 +72,7 @@ func (layer *Layer) Command() string {
 
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
-func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
+func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, maxSymlinkDepth int) *Layer {
 	var diffID string
 	d, err := v1Layer.DiffID()
 	if err != nil {
@@ -85,7 +85,7 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 		diffID:       digest.Digest(diffID),
 		buildCommand: command,
 		isEmpty:      isEmpty,
-		fileNodeTree: NewNode(),
+		fileNodeTree: NewNode(maxSymlinkDepth),
 	}
 }
 
@@ -95,18 +95,16 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool) *Layer {
 
 // chainLayer represents all the files on up to a layer (files from a chain of layers).
 type chainLayer struct {
-	index           int
-	chainID         digest.Digest
-	fileNodeTree    *Node
-	latestLayer     image.Layer
-	maxSymlinkDepth int
+	index        int
+	chainID      digest.Digest
+	fileNodeTree *RootNode
+	latestLayer  image.Layer
 }
 
 // FS returns a scalibrfs.FS that can be used to scan for inventory.
 func (chainLayer *chainLayer) FS() scalibrfs.FS {
 	return &FS{
-		tree:            chainLayer.fileNodeTree,
-		maxSymlinkDepth: chainLayer.maxSymlinkDepth,
+		tree: chainLayer.fileNodeTree,
 	}
 }
 
@@ -130,68 +128,17 @@ func (chainLayer *chainLayer) Layer() image.Layer {
 
 // FS implements the scalibrfs.FS interface that will be used when scanning for inventory.
 type FS struct {
-	tree            *Node
-	maxSymlinkDepth int
-}
-
-// resolveSymlink resolves a symlink by following the target path. It returns the resolved virtual
-// file or an error if the symlink depth is exceeded or a cycle is found. An ErrSymlinkDepthExceeded
-// error if the symlink depth is exceeded or an ErrSymlinkCycle error if a cycle is
-// found. Whichever error is encountered first is returned. The cycle detection leverages Floyd's
-// tortoise and hare algorithm, which utilizes a slow and fast pointer.
-func (chainfs FS) resolveSymlink(node *virtualFile, depth int) (*virtualFile, error) {
-	// slowNode is used to keep track of the slow moving node.
-	slowNode := node
-	advanceSlowNode := false
-	initialSymlinkPath := node.virtualPath
-
-	var err error
-	for {
-		if depth < 0 {
-			return nil, ErrSymlinkDepthExceeded
-		}
-
-		isSymlink := node.mode&fs.ModeSymlink != 0
-		if !isSymlink {
-			return node, nil
-		}
-
-		// Move on to the next fileNode.
-		node, err = chainfs.getVirtualFile(node.targetPath)
-		if err != nil {
-			return nil, err
-		}
-
-		// If the slowNode is the same as the current node, then a cycle is found since the node caught
-		// up to the slowNode.
-		if node == slowNode {
-			return nil, fmt.Errorf("%w, initial symlink: %s", ErrSymlinkCycle, initialSymlinkPath)
-		}
-
-		if advanceSlowNode {
-			slowNode, err = chainfs.getVirtualFile(slowNode.targetPath)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		advanceSlowNode = !advanceSlowNode
-		depth--
-	}
+	tree *RootNode
 }
 
 // Open opens a file from the virtual filesystem.
-func (chainfs FS) Open(name string) (fs.File, error) {
+func (chainfs *FS) Open(name string) (fs.File, error) {
 	vf, err := chainfs.getVirtualFile(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
-	return resolvedFile, nil
+	return vf, nil
 }
 
 // Stat returns a FileInfo object describing the file found at name.
@@ -201,11 +148,7 @@ func (chainfs *FS) Stat(name string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("failed to get virtual file to stat %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
-	return resolvedFile.Stat()
+	return vf.Stat()
 }
 
 // ReadDir returns the directory entries found at path name.
@@ -215,12 +158,7 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return nil, fmt.Errorf("failed to get virtual file to read directory %s: %w", name, err)
 	}
 
-	resolvedFile, err := chainfs.resolveSymlink(vf, chainfs.maxSymlinkDepth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlink for virtual file %s: %w", vf.virtualPath, err)
-	}
-
-	children, err := chainfs.getVirtualFileChildren(resolvedFile.virtualPath)
+	children, err := chainfs.getVirtualFileChildren(vf.virtualPath)
 	if err != nil {
 		return nil, err
 	}
@@ -249,11 +187,7 @@ func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	vf := chainfs.tree.Get(normalizePath(path))
-	if vf == nil {
-		return nil, fs.ErrNotExist
-	}
-	return vf, nil
+	return chainfs.tree.Get(normalizePath(path), true)
 }
 
 // getVirtualFileChildren returns the direct virtual file children of the given path. This helper
@@ -263,11 +197,7 @@ func (chainfs *FS) getVirtualFileChildren(path string) ([]*virtualFile, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	children := chainfs.tree.GetChildren(normalizePath(path))
-	if children == nil {
-		return nil, fs.ErrNotExist
-	}
-	return children, nil
+	return chainfs.tree.GetChildren(normalizePath(path))
 }
 
 // ========================================================

@@ -45,7 +45,7 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "sha256:abc123",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: NewNode(),
+				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 			},
 		},
 		{
@@ -57,14 +57,14 @@ func TestConvertV1Layer(t *testing.T) {
 				diffID:       "",
 				buildCommand: "ADD file",
 				isEmpty:      false,
-				fileNodeTree: NewNode(),
+				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty)
+			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty, DefaultMaxSymlinkDepth)
 
 			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
@@ -85,13 +85,13 @@ func TestChainLayerFS(t *testing.T) {
 		mode:        filePermission,
 	}
 
-	emptyTree := func() *Node {
-		tree := NewNode()
+	emptyTree := func() *RootNode {
+		tree := NewNode(DefaultMaxSymlinkDepth)
 		_ = tree.Insert("/", root)
 		return tree
 	}()
-	nonEmptyTree := func() *Node {
-		tree := NewNode()
+	nonEmptyTree := func() *RootNode {
+		tree := NewNode(DefaultMaxSymlinkDepth)
 		_ = tree.Insert("/", root)
 		_ = tree.Insert("/file1", file1)
 		return tree
@@ -231,6 +231,72 @@ func TestChainFSOpen(t *testing.T) {
 			},
 		},
 		{
+			name:    "open relative symlink from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/symlink-relative-1",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open relative symlink 2 from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/dir2/symlink-relative-2",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open relative symlink 3 nested from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/dir2/symlink-relative-3",
+			// The node the symlink points to is expected.
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file that is symlinked via directory from filled tree",
+			chainfs: populatedChainFS,
+			path:    "/symlink-to-dir/bar",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file that is under symlink that is symlinked to another symlink directory",
+			chainfs: populatedChainFS,
+			path:    "/symlink-to-dir-nested/bar",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
+			name:    "open file that is a symlink to a file that is symlinked under another symlink directory",
+			chainfs: populatedChainFS,
+			path:    "/symlink-into-nested-dir-symlink",
+			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
+			wantVirtualFile: &virtualFile{
+				virtualPath: "/dir2/bar",
+				isWhiteout:  false,
+				mode:        filePermission,
+			},
+		},
+		{
 			name:    "error opening symlink due to nonexistent target",
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-nonexistent-file",
@@ -249,7 +315,9 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "error opening symlink due to cycle",
 			chainfs: populatedChainFS,
 			path:    "/symlink-cycle1",
-			wantErr: ErrSymlinkCycle,
+			// New method cannot determine links, just depth exceeded.
+			// If symlink depths is a reasonable number it should not matter.
+			wantErr: ErrSymlinkDepthExceeded,
 		},
 	}
 
@@ -409,6 +477,18 @@ func TestChainFSReadDir(t *testing.T) {
 					targetPath:  "/symlink3",
 				},
 				{
+					virtualPath: "/symlink-into-nested-dir-symlink",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-to-dir-nested/bar",
+				},
+				{
+					virtualPath: "/symlink-relative-1",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "./dir2/bar",
+				},
+				{
 					virtualPath: "/symlink-cycle1",
 					isWhiteout:  false,
 					mode:        fs.ModeSymlink,
@@ -425,6 +505,12 @@ func TestChainFSReadDir(t *testing.T) {
 					isWhiteout:  false,
 					mode:        fs.ModeSymlink,
 					targetPath:  "/symlink-cycle1",
+				},
+				{
+					virtualPath: "/symlink-to-dir-nested",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "/symlink-to-dir",
 				},
 				{
 					virtualPath: "/symlink-to-nonexistent-file",
@@ -467,6 +553,18 @@ func TestChainFSReadDir(t *testing.T) {
 					virtualPath: "/dir2/bar",
 					isWhiteout:  false,
 					mode:        filePermission,
+				},
+				{
+					virtualPath: "/dir2/symlink-relative-2",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "./bar",
+				},
+				{
+					virtualPath: "/dir/symlink-relative-3",
+					isWhiteout:  false,
+					mode:        fs.ModeSymlink,
+					targetPath:  "../symlink-relative-1",
 				},
 			},
 		},
@@ -530,8 +628,7 @@ func setUpEmptyChainFS(t *testing.T) FS {
 	t.Helper()
 
 	return FS{
-		tree:            NewNode(),
-		maxSymlinkDepth: DefaultMaxSymlinkDepth,
+		tree: NewNode(DefaultMaxSymlinkDepth),
 	}
 }
 
@@ -541,8 +638,7 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 	t.Helper()
 
 	chainfs := FS{
-		tree:            NewNode(),
-		maxSymlinkDepth: maxSymlinkDepth,
+		tree: NewNode(maxSymlinkDepth),
 	}
 
 	vfsMap := map[string]*virtualFile{
@@ -590,49 +686,79 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 			targetPath:  "/dir2/bar",
 		},
 		"/symlink2": &virtualFile{
-			virtualPath: "symlink2",
+			virtualPath: "/symlink2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink1",
 		},
 		"/symlink3": &virtualFile{
-			virtualPath: "symlink3",
+			virtualPath: "/symlink3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink2",
 		},
 		"/symlink4": &virtualFile{
-			virtualPath: "symlink4",
+			virtualPath: "/symlink4",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink3",
 		},
+		"/symlink-relative-1": &virtualFile{
+			virtualPath: "/symlink-relative-1",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "./dir2/bar",
+		},
+		"/dir2/symlink-relative-2": &virtualFile{
+			virtualPath: "/dir2/symlink-relative-2",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "./bar",
+		},
+		"/dir2/symlink-relative-3": &virtualFile{
+			virtualPath: "/dir2/symlink-relative-3",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "../symlink-relative-1",
+		},
+		"/symlink-to-dir-nested": &virtualFile{
+			virtualPath: "/symlink-to-dir-nested",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-to-dir",
+		},
+		"/symlink-into-nested-dir-symlink": &virtualFile{
+			virtualPath: "/symlink-into-nested-dir-symlink",
+			isWhiteout:  false,
+			mode:        fs.ModeSymlink,
+			targetPath:  "/symlink-to-dir-nested/bar",
+		},
 		"/symlink-to-dir": &virtualFile{
-			virtualPath: "symlink-to-dir",
+			virtualPath: "/symlink-to-dir",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2",
 		},
 		"/symlink-to-nonexistent-file": &virtualFile{
-			virtualPath: "symlink-to-nonexistent-file",
+			virtualPath: "/symlink-to-nonexistent-file",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/nonexistent-file",
 		},
 		"/symlink-cycle1": &virtualFile{
-			virtualPath: "symlink-cycle1",
+			virtualPath: "/symlink-cycle1",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle2",
 		},
 		"/symlink-cycle2": &virtualFile{
-			virtualPath: "symlink-cycle2",
+			virtualPath: "/symlink-cycle2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle3",
 		},
 		"/symlink-cycle3": &virtualFile{
-			virtualPath: "symlink-cycle3",
+			virtualPath: "/symlink-cycle3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle1",

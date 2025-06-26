@@ -117,7 +117,7 @@ type Image struct {
 func (img *Image) FS() scalibrfs.FS {
 	if len(img.chainLayers) == 0 {
 		emptyChainLayer := &chainLayer{
-			fileNodeTree: NewNode(),
+			fileNodeTree: NewNode(img.config.MaxSymlinkDepth),
 		}
 		return emptyChainLayer.FS()
 	}
@@ -367,11 +367,10 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		for i, v1Layer := range v1Layers {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree:    NewNode(),
-				index:           i,
-				chainID:         chainIDs[i],
-				latestLayer:     convertV1Layer(v1Layer, "", false),
-				maxSymlinkDepth: maxSymlinkDepth,
+				fileNodeTree: NewNode(maxSymlinkDepth),
+				index:        i,
+				chainID:      chainIDs[i],
+				latestLayer:  convertV1Layer(v1Layer, "", false, maxSymlinkDepth),
 			})
 		}
 		return chainLayers, nil
@@ -389,14 +388,13 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	for _, entry := range history {
 		if entry.EmptyLayer {
 			chainLayers = append(chainLayers, &chainLayer{
-				fileNodeTree: NewNode(),
+				fileNodeTree: NewNode(maxSymlinkDepth),
 				index:        historyIndex,
 				latestLayer: &Layer{
 					buildCommand: entry.CreatedBy,
 					isEmpty:      true,
-					fileNodeTree: NewNode(),
+					fileNodeTree: NewNode(maxSymlinkDepth),
 				},
-				maxSymlinkDepth: maxSymlinkDepth,
 			})
 			historyIndex++
 			continue
@@ -408,11 +406,10 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 		nextNonEmptyLayer := v1Layers[v1LayerIndex]
 		chainLayer := &chainLayer{
-			fileNodeTree:    NewNode(),
-			index:           historyIndex,
-			chainID:         chainIDs[v1LayerIndex],
-			latestLayer:     convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false),
-			maxSymlinkDepth: maxSymlinkDepth,
+			fileNodeTree: NewNode(maxSymlinkDepth),
+			index:        historyIndex,
+			chainID:      chainIDs[v1LayerIndex],
+			latestLayer:  convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false, maxSymlinkDepth),
 		}
 		chainLayers = append(chainLayers, chainLayer)
 
@@ -424,11 +421,10 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 	// This can happen depending on the build process used to create an image.
 	for v1LayerIndex < len(v1Layers) {
 		chainLayers = append(chainLayers, &chainLayer{
-			fileNodeTree:    NewNode(),
-			index:           historyIndex,
-			chainID:         chainIDs[v1LayerIndex],
-			latestLayer:     convertV1Layer(v1Layers[v1LayerIndex], "", false),
-			maxSymlinkDepth: maxSymlinkDepth,
+			fileNodeTree: NewNode(maxSymlinkDepth),
+			index:        historyIndex,
+			chainID:      chainIDs[v1LayerIndex],
+			latestLayer:  convertV1Layer(v1Layers[v1LayerIndex], "", false, maxSymlinkDepth),
 		})
 		v1LayerIndex++
 		historyIndex++
@@ -563,7 +559,7 @@ func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainL
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.
-		if currentChainLayer.fileNodeTree.Get(runningDir) != nil {
+		if vf, _ := currentChainLayer.fileNodeTree.Get(runningDir, false); vf != nil {
 			continue
 		}
 
@@ -650,7 +646,8 @@ func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *
 func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *virtualFile) {
 	virtualPath := newNode.virtualPath
 	for _, chainLayer := range chainLayersToFill {
-		if node := chainLayer.fileNodeTree.Get(virtualPath); node != nil {
+		// We want the raw final symlink when checking for existence.
+		if node, _ := chainLayer.fileNodeTree.Get(virtualPath, false); node != nil {
 			// A newer version of the file already exists on a later chainLayer.
 			// Since we do not want to overwrite a later layer with information
 			// written in an earlier layer, skip this file.
@@ -682,7 +679,10 @@ func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 			break
 		}
 
-		node := layer.fileNodeTree.Get(dirname)
+		node, err := layer.fileNodeTree.Get(dirname, false)
+		if err != nil {
+			return false
+		}
 		if node == nil {
 			return false
 		}
