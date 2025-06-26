@@ -58,7 +58,7 @@ func (m *pythonManifest) Requirements() []resolve.RequirementVersion {
 
 // Groups returns the dependency groups that the direct requirements belong to.
 func (m *pythonManifest) Groups() map[manifest.RequirementKey][]string {
-	return nil
+	return map[manifest.RequirementKey][]string{}
 }
 
 // LocalManifests returns Manifests of any local packages.
@@ -152,10 +152,10 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
-					Name:   "",
+					Name:   "myproject",
 				},
 				VersionType: resolve.Concrete,
-				Version:     "",
+				Version:     "1.0.0",
 			},
 		},
 		requirements: reqs,

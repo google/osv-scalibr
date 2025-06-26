@@ -59,10 +59,10 @@ func TestRead(t *testing.T) {
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
-					Name:   "",
+					Name:   "myproject",
 				},
 				VersionType: resolve.Concrete,
-				Version:     "",
+				Version:     "1.0.0",
 			},
 		},
 		System: resolve.PyPI,
@@ -71,20 +71,38 @@ func TestRead(t *testing.T) {
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
-						Name:   "flask",
+						Name:   "pytest",
 					},
 					VersionType: resolve.Requirement,
-					Version:     "==1.0.0",
 				},
 			},
 			{
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
-						Name:   "django",
+						Name:   "pytest-cov",
 					},
 					VersionType: resolve.Requirement,
-					Version:     "==1.11.29",
+				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "beautifulsoup4",
+					},
+					VersionType: resolve.Requirement,
+				},
+			},
+
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "docopt",
+					},
+					VersionType: resolve.Requirement,
+					Version:     "== 0.6.1",
 				},
 			},
 			{
@@ -94,7 +112,39 @@ func TestRead(t *testing.T) {
 						Name:   "requests",
 					},
 					VersionType: resolve.Requirement,
-					Version:     "==2.20.0",
+					Version:     ">= 2.8.1, == 2.8.*",
+				},
+			},
+
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "keyring",
+					},
+					VersionType: resolve.Requirement,
+					Version:     ">= 4.1.1",
+				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "coverage",
+					},
+					VersionType: resolve.Requirement,
+					Version:     "!= 3.5",
+				},
+			},
+
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "Mopidy-Dirble",
+					},
+					VersionType: resolve.Requirement,
+					Version:     "~= 1.1",
 				},
 			},
 		},
