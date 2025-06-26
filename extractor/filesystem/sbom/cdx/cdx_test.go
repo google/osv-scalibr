@@ -170,6 +170,24 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "sbom-with-locations.cdx.json",
+			path: "testdata/sbom-with-locations.cdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "@gar/promisify",
+					Version:  "1.1.3",
+					PURLType: purl.TypeNPM,
+					Metadata: &cdxmeta.Metadata{
+						PURL: purlFromString(t, "pkg:npm/%40gar%2Fpromisify@1.1.3"),
+					},
+					Locations: []string{
+						"testdata/sbom-with-locations.cdx.json",
+						"home/test/.vscode-server/bin/node_modules/@gar/promisify/package.json",
+					},
+				},
+			},
+		},
+		{
 			name: "sbom.cdx.xml",
 			path: "testdata/sbom.cdx.xml",
 			wantPackages: []*extractor.Package{

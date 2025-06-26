@@ -134,7 +134,7 @@ func (e Extractor) convertCdxBomToPackage(cdxBom *cyclonedx.BOM, path string) []
 	enumerateComponents(*cdxBom.Components, &results)
 
 	for p := range results {
-		results[p].Locations = []string{path}
+		results[p].Locations = append([]string{path}, results[p].Locations...)
 	}
 
 	return results
@@ -162,6 +162,13 @@ func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Package 
 			}
 			if pkg.Version == "" {
 				pkg.Version = packageURL.Version
+			}
+		}
+	}
+	if cdxPkg.Evidence != nil && cdxPkg.Evidence.Occurrences != nil {
+		for _, occ := range *cdxPkg.Evidence.Occurrences {
+			if occ.Location != "" {
+				pkg.Locations = append(pkg.Locations, occ.Location)
 			}
 		}
 	}
