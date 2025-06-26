@@ -394,7 +394,42 @@ func TestChainFSStat(t *testing.T) {
 			path:    "/wh.foobar",
 			wantErr: fs.ErrNotExist,
 		},
-		// TODO: b/377553505 - Add more tests for Stat() that involve more complex file structures.
+		{
+			name:    "stat regular file",
+			chainfs: populatedChainFS,
+			path:    "/baz",
+			wantFileInfo: fakefs.FakeFileInfo{
+				FileName: "baz",
+				FileMode: filePermission,
+			},
+		},
+		{
+			name:    "stat directory",
+			chainfs: populatedChainFS,
+			path:    "/dir1",
+			wantFileInfo: fakefs.FakeFileInfo{
+				FileName: "dir1",
+				FileMode: fs.ModeDir | dirPermission,
+			},
+		},
+		{
+			name:    "stat symlink to file should return details about the target file",
+			chainfs: populatedChainFS,
+			path:    "/symlink1",
+			wantFileInfo: fakefs.FakeFileInfo{
+				FileName: "bar",
+				FileMode: filePermission,
+			},
+		},
+		{
+			name:    "stat file through symlinked directory",
+			chainfs: populatedChainFS,
+			path:    "/symlink-to-dir/bar",
+			wantFileInfo: fakefs.FakeFileInfo{
+				FileName: "bar",
+				FileMode: filePermission,
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
