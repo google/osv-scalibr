@@ -594,7 +594,7 @@ func TestChainFSReadDir(t *testing.T) {
 			},
 		},
 		{
-			name:    "read file node leaf from filled tree should return error",
+			name:    "readdir file node leaf from filled tree should return error",
 			chainfs: populatedChainFS,
 			path:    "/dir1/foo",
 			wantErr: fs.ErrInvalid,
