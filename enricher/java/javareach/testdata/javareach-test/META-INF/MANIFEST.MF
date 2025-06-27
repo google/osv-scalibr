@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Created-By: 24.0.1 (Google Inc.)
+Main-Class: com.example.App
+
