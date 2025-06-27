@@ -58,7 +58,7 @@ func (dpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 		}
 	}
 
-	return errors.Join(err)
+	return errors.Join(errs...)
 }
 
 func (d dpkgFilter) ShouldExclude(ctx context.Context, fs scalibrfs.FS, binaryPath string) bool {
@@ -81,21 +81,15 @@ func processDpkgListFile(path string, fs scalibrfs.FS, knownBinariesSet map[stri
 	s := bufio.NewScanner(reader)
 	for s.Scan() {
 		// Remove leading '/' since SCALIBR fs paths don't include that.
-		filePath := strings.TrimPrefix(s.Text(), "/")
-
-		if _, ok := knownBinariesSet[filePath]; ok {
-			delete(knownBinariesSet, filePath)
-		}
+		// noop if filePath doesn't exist
+		delete(knownBinariesSet, strings.TrimPrefix(s.Text(), "/"))
 
 		evalPath, err := fs.(image.EvalSymlinksFS).EvalSymlink(s.Text())
 		if err != nil {
 			continue
 		}
 
-		evalPath = strings.TrimPrefix(evalPath, "/")
-		if _, ok := knownBinariesSet[evalPath]; ok {
-			delete(knownBinariesSet, evalPath)
-		}
+		delete(knownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 	}
 	return nil
 }

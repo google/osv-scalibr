@@ -1,3 +1,5 @@
+// Package filterknownbinaries removes all packages extracted by unknown binaries
+// filters out the known binaries, and records the remaining as a finding.
 package filterknownbinaries
 
 import (
@@ -9,12 +11,13 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scanner/v2/internal/scalibrextract/filesystem/unknownbinary"
 )
 
+// Name of the plugin
 const Name = "filterknownbinaries"
 
 // List of filters to apply to exclude known binaries

@@ -1,3 +1,4 @@
+// Package unknownbinary identifies binary files on the filesystem and adds them as packages.
 package unknownbinary
 
 import (
@@ -24,7 +25,7 @@ var (
 		".run",
 		".o",
 
-		// Shared libary extension
+		// Shared library extension
 		".so",
 		// and .so.[number]
 
@@ -49,6 +50,7 @@ const (
 	Name = "filesystem/unknownbinaries"
 )
 
+// Extractor finds unknown binaries on the filesystem
 type Extractor struct {
 }
 

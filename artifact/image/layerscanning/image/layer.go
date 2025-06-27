@@ -183,6 +183,8 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return dirEntries, nil
 }
 
+// EvalSymlink returns the "real" path of a given path.
+// This only works for paths where an actual file (symlink or otherwise) actually exists at that location.
 func (chainfs *FS) EvalSymlink(path string) (string, error) {
 	vf, err := chainfs.getVirtualFile(path)
 	if err != nil || vf == nil {
