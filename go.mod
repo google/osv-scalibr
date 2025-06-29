@@ -8,7 +8,7 @@ require (
 	deps.dev/util/maven v0.0.0-20250616031631-419a06b41f9b
 	deps.dev/util/pypi v0.0.0-20250616031631-419a06b41f9b
 	deps.dev/util/resolve v0.0.0-20250616031631-419a06b41f9b
-	deps.dev/util/semver v0.0.0-20250610062038-1c74ed268106
+	deps.dev/util/semver v0.0.0-20250616031631-419a06b41f9b
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
@@ -16,9 +16,9 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/containerd/containerd/api v1.9.0
-	github.com/containerd/containerd/v2 v2.1.2
+	github.com/containerd/containerd/v2 v2.1.3
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
-	github.com/docker/docker v28.2.2+incompatible
+	github.com/docker/docker v28.3.0+incompatible
 	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gobwas/glob v0.2.3
@@ -27,14 +27,14 @@ require (
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-cpy v0.0.0-20211218193943-a9c933c06932
 	github.com/google/uuid v1.6.0
-	github.com/michaelkedar/xml v0.0.0-20250501021638-021a7b1a061e
+	github.com/michaelkedar/xml v0.0.0-20250626233154-4ec9e090d1cd
 	github.com/micromdm/plist v0.2.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/muesli/reflow v0.3.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20250527054414-66246866dc20
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20250624014330-174a94dbf586
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
@@ -43,7 +43,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tidwall/sjson v1.2.5
-	go.etcd.io/bbolt v1.4.1
+	go.etcd.io/bbolt v1.4.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.39.0
 	golang.org/x/mod v0.25.0
