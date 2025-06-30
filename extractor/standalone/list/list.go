@@ -21,7 +21,6 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
@@ -56,8 +55,9 @@ var (
 
 	// Containers standalone extractors.
 	Containers = InitMap{
-		containerd.Name: {containerd.NewDefault},
-		docker.Name:     {docker.New},
+		// TODO(b/XYZ): Re-enable once integration issue has been fixed.
+		// containerd.Name: {containerd.NewDefault},
+		docker.Name: {docker.New},
 	}
 
 	// Default standalone extractors.
