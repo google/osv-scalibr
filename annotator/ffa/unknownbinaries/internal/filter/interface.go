@@ -2,6 +2,7 @@ package filter
 
 import (
 	"context"
+
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 

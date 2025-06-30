@@ -40,8 +40,8 @@ var (
 		".awk", // Awk
 		".tcl", // tcl
 	}
-	fileExtRegexes = []*regexp.Regexp{
-		regexp.MustCompile(`.so.\d+$`),
+	fileExtRegexes = map[string]*regexp.Regexp{
+		".so.": regexp.MustCompile(`.so.\d+$`),
 	}
 )
 
@@ -77,8 +77,8 @@ func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 		}
 	}
 
-	for _, regex := range fileExtRegexes {
-		if regex.MatchString(path) {
+	for substrTest, regex := range fileExtRegexes {
+		if strings.Contains(path, substrTest) && regex.MatchString(path) {
 			return true
 		}
 	}
@@ -100,7 +100,7 @@ func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 }
 
 // Extract determines the most likely package version from the directory and returns them as
-// commit hash inventory entries
+// package entries with "Location" filled in.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// TODO: If target file is a symlink, we should store the symlink target as a unknown binary
 

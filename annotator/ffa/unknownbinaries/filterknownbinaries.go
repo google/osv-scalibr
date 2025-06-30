@@ -5,6 +5,10 @@ package unknownbinaries
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
+
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/dpkgfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/filter"
@@ -12,9 +16,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinary"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"maps"
-	"slices"
-	"strings"
 )
 
 // Name of the plugin
@@ -25,10 +26,12 @@ var filters = []filter.Filter{
 	dpkgfilter.DpkgFilter{},
 }
 
-// UnknownBinaryAnnotator is the Java Reach enricher.
+// UnknownBinaryAnnotator further processes the UnknownBinaryExtractor
 type UnknownBinaryAnnotator struct {
 }
 
+// Annotate removes all packages extracted by unknown binaries,
+// filters out the known binaries, and records the remaining as a finding.
 func (enr UnknownBinaryAnnotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
 	unknownBinariesSet := map[string]struct{}{}
 	filteredPackages := make([]*extractor.Package, 0, len(inv.Packages))
