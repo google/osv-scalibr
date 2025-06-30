@@ -1,4 +1,4 @@
-package filterknownbinaries
+package dpkgfilter
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/filter"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
@@ -20,15 +21,15 @@ var (
 	}
 )
 
-type dpkgFilter struct{}
+type DpkgFilter struct{}
 
-var _ filter = dpkgFilter{}
+var _ filter.Filter = DpkgFilter{}
 
-func (dpkgFilter) Name() string {
-	return "dpkgFilter"
+func (DpkgFilter) Name() string {
+	return "DpkgFilter"
 }
 
-func (dpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]struct{}) error {
+func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]struct{}) error {
 	dirs, err := diriterate.ReadDir(fs, dpkgInfoDirPath)
 	if err != nil {
 		return err
@@ -61,7 +62,7 @@ func (dpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 	return errors.Join(errs...)
 }
 
-func (d dpkgFilter) ShouldExclude(ctx context.Context, fs scalibrfs.FS, binaryPath string) bool {
+func (d DpkgFilter) ShouldExclude(ctx context.Context, fs scalibrfs.FS, binaryPath string) bool {
 	for _, ignorePath := range ignorePathPrefix {
 		if strings.HasPrefix(binaryPath, ignorePath) {
 			return false

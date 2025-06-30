@@ -47,7 +47,7 @@ var (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "filesystem/unknownbinaries"
+	Name = "ffa/unknownbinaries"
 )
 
 // Extractor finds unknown binaries on the filesystem
