@@ -1,3 +1,4 @@
+// Package dpkgfilter filters out binaries that are part of a dpkg package
 package dpkgfilter
 
 import (
@@ -21,14 +22,17 @@ var (
 	}
 )
 
+// DpkgFilter is a filter for binaries that are part of a dpkg package.
 type DpkgFilter struct{}
 
 var _ filter.Filter = DpkgFilter{}
 
+// Name returns the name of the filter.
 func (DpkgFilter) Name() string {
 	return "DpkgFilter"
 }
 
+// HashSetFilter removes binaries from the input set that are found in dpkg .list files.
 func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]struct{}) error {
 	dirs, err := diriterate.ReadDir(fs, dpkgInfoDirPath)
 	if err != nil {
@@ -36,7 +40,7 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 	}
 	defer dirs.Close()
 
-	errs := []error{}
+	var errs []error
 	for {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
@@ -62,7 +66,8 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 	return errors.Join(errs...)
 }
 
-func (d DpkgFilter) ShouldExclude(ctx context.Context, fs scalibrfs.FS, binaryPath string) bool {
+// ShouldExclude returns whether a given binary path should be excluded from the scan.
+func (d DpkgFilter) ShouldExclude(_ context.Context, _ scalibrfs.FS, binaryPath string) bool {
 	for _, ignorePath := range ignorePathPrefix {
 		if strings.HasPrefix(binaryPath, ignorePath) {
 			return false
