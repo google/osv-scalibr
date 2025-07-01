@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"deps.dev/util/pypi"
 	"deps.dev/util/resolve"
@@ -79,6 +80,9 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 
 	yankedVersions := make(map[string]bool)
 	for _, file := range resp.Files {
+		if !file.Yanked.Value {
+			continue
+		}
 		var v string
 		switch filepath.Ext(file.Name) {
 		case ".gz":
@@ -94,13 +98,23 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 				continue
 			}
 			v = info.Version
+		case ".egg":
+			v, err = versionFromEggFilename(file.Name)
+			if err != nil {
+				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				continue
+			}
+		case ".zip":
+			v, err = versionFromZipFilename(file.Name)
+			if err != nil {
+				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				continue
+			}
 		default:
 			continue
 		}
-		if file.Yanked.Value {
-			// If a file is yanked, assume this version is yanked.
-			yankedVersions[v] = true
-		}
+		// If a file is yanked, assume this version is yanked.
+		yankedVersions[v] = true
 	}
 
 	var versions []resolve.Version
@@ -119,6 +133,44 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 	}
 
 	return versions, nil
+}
+
+// versionFromZipFilename extracts the version from a PyPI .zip filename.
+func versionFromZipFilename(filename string) (version string, err error) {
+	baseName := strings.TrimSuffix(filename, ".zip")
+	lastHyphenIndex := strings.LastIndex(baseName, "-")
+	if lastHyphenIndex == -1 {
+		// No hyphen found, likely just a package name without a version or invalid format
+		return "", fmt.Errorf("could not find version in filename: %s", filename)
+	}
+	return baseName[lastHyphenIndex+1:], nil
+}
+
+// versionFromEggFilename extracts the version from an .egg filename.
+func versionFromEggFilename(filename string) (version string, err error) {
+	baseName := strings.TrimSuffix(filename, ".egg")
+	pyTagIndex := strings.LastIndex(baseName, "-py")
+
+	if pyTagIndex == -1 {
+		// If no '-py' tag is found, treat it like a simple 'package-name-version.egg' format.
+		lastHyphenIndex := strings.LastIndex(baseName, "-")
+		if lastHyphenIndex == -1 {
+			return "", fmt.Errorf("could not find version in filename: %s", filename)
+		}
+		version = baseName[lastHyphenIndex+1:]
+	} else {
+		// Standard egg file name format: 'package_name-version-pyX.Y'
+		// The part before '-py' contains "package_name-version".
+		nameAndVersion := baseName[:pyTagIndex]
+
+		lastHyphenInNameAndVersion := strings.LastIndex(nameAndVersion, "-")
+		if lastHyphenInNameAndVersion == -1 {
+			// No hyphen found that indicates an unexpected format
+			return "", fmt.Errorf("could not find version in filename: %s", filename)
+		}
+		version = nameAndVersion[lastHyphenInNameAndVersion+1:]
+	}
+	return version, nil
 }
 
 // Requirements returns requirements of a version specified by the VersionKey.
@@ -147,7 +199,7 @@ func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.Versio
 	case ".whl":
 		metadata, err = pypi.WheelMetadata(ctx, bytes.NewReader(data), int64(len(data)))
 	default:
-		return nil, fmt.Errorf("unexpected file extension: %s", ext)
+		return nil, fmt.Errorf("unsupported file extension for requirements: %s", ext)
 	}
 	if err != nil {
 		return nil, err
@@ -182,6 +234,9 @@ func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.Versio
 // lookupFile searches for the first file that matches the given version from the list of available distribution files.
 func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, skipYanked bool) (internalpypi.File, string, error) {
 	for _, file := range files {
+		if skipYanked && file.Yanked.Value {
+			continue
+		}
 		ext := filepath.Ext(file.Name)
 		switch ext {
 		case ".gz":
@@ -202,10 +257,25 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, s
 			if info.Version != vk.Version {
 				continue
 			}
+		case ".egg":
+			v, err := versionFromEggFilename(file.Name)
+			if err != nil {
+				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				continue
+			}
+			if v != vk.Version {
+				continue
+			}
+		case ".zip":
+			v, err := versionFromZipFilename(file.Name)
+			if err != nil {
+				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				continue
+			}
+			if v != vk.Version {
+				continue
+			}
 		default:
-			continue
-		}
-		if skipYanked && file.Yanked.Value {
 			continue
 		}
 		return file, ext, nil

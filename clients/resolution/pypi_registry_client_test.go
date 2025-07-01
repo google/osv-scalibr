@@ -33,6 +33,14 @@ func TestVersions(t *testing.T) {
 	{
 		"files": [
 		  {
+			"filename": "beautifulsoup4-0.0.1-py2.4-linux-x86_64.egg",
+			"yanked": "yanked"
+		  },
+		  {
+			"filename": "beautifulsoup4-0.0.2.zip",
+			"yanked": "yanked"
+		  },
+		  {
 			"core-metadata": false,
 			"data-dist-info-metadata": false,
 			"filename": "beautifulsoup4-4.0.1.tar.gz",
@@ -129,6 +137,8 @@ func TestVersions(t *testing.T) {
 		},
 		"name": "beautifulsoup4",
 		"versions": [
+		  "0.0.1",
+		  "0.0.2",
 		  "4.0.1",
 		  "4.0.2",
 		  "4.12.3",
@@ -151,6 +161,22 @@ func TestVersions(t *testing.T) {
 	var yanked version.AttrSet
 	yanked.SetAttr(version.Blocked, "")
 	want := []resolve.Version{
+		{
+			VersionKey: resolve.VersionKey{
+				PackageKey:  pk,
+				Version:     "0.0.1",
+				VersionType: resolve.Concrete,
+			},
+			AttrSet: yanked,
+		},
+		{
+			VersionKey: resolve.VersionKey{
+				PackageKey:  pk,
+				Version:     "0.0.2",
+				VersionType: resolve.Concrete,
+			},
+			AttrSet: yanked,
+		},
 		{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
