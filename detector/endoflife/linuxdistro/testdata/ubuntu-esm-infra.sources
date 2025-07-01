@@ -1,0 +1,6 @@
+# Written by ubuntu-pro-client
+Types: deb
+URIs: https://esm.ubuntu.com/infra/ubuntu
+Suites: nobre-infra-security noble-infra-updates
+Components: main
+Signed-By: /usr/share/keyrings/ubuntu-pro-esm-infra.gpg

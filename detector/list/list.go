@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
+	"github.com/google/osv-scalibr/detector/endoflife/linuxdistro"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -47,6 +48,9 @@ var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
 
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
+
+// End-Of-Life detectors.
+var EOL = InitMap{linuxdistro.Name: {linuxdistro.New}}
 
 // Untested CVE scanning related detectors - since they don't have proper testing they
 // might not work as expected in the future.
@@ -83,6 +87,7 @@ var All = concat(
 	Govulncheck,
 	Weakcreds,
 	Untested,
+	EOL,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -91,6 +96,7 @@ var detectorNames = concat(All, InitMap{
 	"weakcreds":   vals(Weakcreds),
 	"untested":    vals(Untested),
 	"default":     vals(Default),
+	"eol": 		vals(EOL),
 	"all":         vals(All),
 })
 
