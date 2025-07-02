@@ -12,7 +12,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 var (
@@ -110,16 +109,6 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 				Locations: []string{input.Path},
 			},
 		}}, nil
-}
-
-// ToPURL converts an inventory created by this extractor into a PURL.
-func (e *Extractor) ToPURL(_ *extractor.Package) *purl.PackageURL {
-	return nil
-}
-
-// Ecosystem returns an empty string as all inventories are commit hashes
-func (e *Extractor) Ecosystem(_ *extractor.Package) string {
-	return ""
 }
 
 var _ filesystem.Extractor = &Extractor{}
