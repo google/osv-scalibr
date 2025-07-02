@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"github.com/google/osv-scalibr/extractor"
 	"io"
 	"path"
 	"strings"
@@ -38,7 +39,7 @@ func (DpkgFilter) Name() string {
 }
 
 // HashSetFilter removes binaries from the input set that are found in dpkg .list files.
-func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]struct{}) error {
+func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]*extractor.Package) error {
 	dirs, err := diriterate.ReadDir(fs, dpkgInfoDirPath)
 	if err != nil {
 		return err

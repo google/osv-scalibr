@@ -5,10 +5,6 @@ package unknownbinariesanno
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
-	"strings"
-
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/dpkgfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
@@ -16,6 +12,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"slices"
 )
 
 // Name of the plugin
@@ -33,7 +30,7 @@ type Annotator struct {
 // Annotate removes all packages extracted by unknown binaries,
 // filters out the known binaries, and records the remaining as a finding.
 func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
-	unknownBinariesSet := map[string]struct{}{}
+	unknownBinariesSet := map[string]*extractor.Package{}
 	filteredPackages := make([]*extractor.Package, 0, len(inv.Packages))
 	for _, e := range inv.Packages {
 		if !slices.Contains(e.Plugins, unknownbinariesextr.Name) {
@@ -41,7 +38,7 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 			continue
 		}
 
-		unknownBinariesSet[e.Locations[0]] = struct{}{}
+		unknownBinariesSet[e.Locations[0]] = e
 	}
 
 	// Remove all unknown binary packages from output packages
@@ -57,28 +54,18 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 		}
 	}
 
-	remainingPaths := maps.Keys(unknownBinariesSet)
-	filteredRemainingPaths := make([]string, 0, len(unknownBinariesSet))
-
 	// Loop Filter
 RemainingPathsLoop:
-	for p := range remainingPaths {
+	for p, val := range unknownBinariesSet {
 		for _, f := range filters {
 			if f.ShouldExclude(ctx, input.ScanRoot.FS, p) {
 				continue RemainingPathsLoop
 			}
 		}
 
-		filteredRemainingPaths = append(filteredRemainingPaths, p)
+		val.Plugins = append(val.Plugins)
+		inv.Packages = append(inv.Packages, val)
 	}
-
-	// Finally join the remaining unknown paths as a big finding.
-	findings := strings.Join(filteredRemainingPaths, "\n")
-	inv.GenericFindings = append(inv.GenericFindings, &inventory.GenericFinding{
-		Target: &inventory.GenericFindingTargetDetails{
-			Extra: findings,
-		},
-	})
 
 	return nil
 }

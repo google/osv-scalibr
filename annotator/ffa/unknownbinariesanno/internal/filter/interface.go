@@ -3,6 +3,7 @@ package filter
 
 import (
 	"context"
+	"github.com/google/osv-scalibr/extractor"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
@@ -10,7 +11,7 @@ import (
 // Filter is an interface for filtering out binaries that are known to be from an existing extracted source.
 type Filter interface {
 	// HashSetFilter removes binaries from the unknownBinariesSet that are found to be from a trusted source.
-	HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]struct{}) error
+	HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]*extractor.Package) error
 	// ShouldExclude returns whether a given binary path should be excluded from the scan.
 	ShouldExclude(ctx context.Context, fs scalibrfs.FS, binaryPath string) bool
 	// Name returns the name of the filter.
