@@ -96,12 +96,13 @@ func processDpkgListFile(path string, fs scalibrfs.FS, knownBinariesSet map[stri
 		// noop if filePath doesn't exist
 		delete(knownBinariesSet, strings.TrimPrefix(s.Text(), "/"))
 
-		evalPath, err := fs.(image.EvalSymlinksFS).EvalSymlink(s.Text())
-		if err != nil {
-			continue
+		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
+			evalPath, err := evalFS.EvalSymlink(s.Text())
+			if err != nil {
+				continue
+			}
+			delete(knownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 		}
-
-		delete(knownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 	}
 	return nil
 }
