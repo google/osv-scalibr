@@ -56,7 +56,7 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
-	// Java reachability analysis enrichers.
+	// Javareach enrichers.
 	Javareach = InitMap{
 		javareach.Name: {javareach.NewDefault},
 	}
