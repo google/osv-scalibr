@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/java/javareach"
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/plugin"
@@ -55,6 +56,11 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
+	// Java reachability analysis enrichers.
+	Javareach = InitMap{
+		javareach.Name: {javareach.NewDefault},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
@@ -69,6 +75,7 @@ var (
 		"vulnmatching": vals(VulnMatching),
 		"layerdetails": vals(LayerDetails),
 		"secrets":      vals(Secrets),
+		"javareach":    vals(Javareach),
 		"default":      vals(Default),
 		"all":          vals(All),
 	})
