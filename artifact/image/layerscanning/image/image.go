@@ -674,7 +674,7 @@ func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 		if filePath == "" {
 			break
 		}
-		dirname := filepath.Dir(filePath)
+		dirname := path.Dir(filePath)
 		if filePath == dirname {
 			break
 		}
