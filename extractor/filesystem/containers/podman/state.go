@@ -117,6 +117,7 @@ func newSqliteState(path string) (state, error) {
 
 // AllContainers return all the pods
 func (s *sqliteState) AllContainers() ([]*container, error) {
+	//nolint:noctx // this function is defined by an interface, so we can't pass a context through to here
 	rows, err := s.conn.Query("SELECT ContainerConfig.JSON, ContainerState.JSON AS StateJSON FROM ContainerConfig INNER JOIN ContainerState ON ContainerConfig.ID = ContainerState.ID;")
 	if err != nil {
 		return nil, err
