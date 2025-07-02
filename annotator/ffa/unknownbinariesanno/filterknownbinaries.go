@@ -1,6 +1,6 @@
-// Package unknownbinaries removes all packages extracted by unknown binaries
+// Package unknownbinariesanno removes all packages extracted by unknown binaries
 // filters out the known binaries, and records the remaining as a finding.
-package unknownbinaries
+package unknownbinariesanno
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/dpkgfilter"
-	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/filter"
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/dpkgfilter"
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinary"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -26,18 +26,17 @@ var filters = []filter.Filter{
 	dpkgfilter.DpkgFilter{},
 }
 
-// UnknownBinaryAnnotator further processes the UnknownBinaryExtractor
-type UnknownBinaryAnnotator struct {
+// Annotator further processes the UnknownBinaryExtractor
+type Annotator struct {
 }
 
 // Annotate removes all packages extracted by unknown binaries,
 // filters out the known binaries, and records the remaining as a finding.
-func (enr UnknownBinaryAnnotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
+func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
 	unknownBinariesSet := map[string]struct{}{}
 	filteredPackages := make([]*extractor.Package, 0, len(inv.Packages))
 	for _, e := range inv.Packages {
-		//Plugin contains unknownbinary.Name
-		if !slices.Contains(e.Plugins, unknownbinary.Name) {
+		if !slices.Contains(e.Plugins, unknownbinariesextr.Name) {
 			filteredPackages = append(filteredPackages, e)
 			continue
 		}
@@ -54,7 +53,7 @@ func (enr UnknownBinaryAnnotator) Annotate(ctx context.Context, input *annotator
 	for _, f := range filters {
 		err := f.HashSetFilter(ctx, input.ScanRoot.FS, unknownBinariesSet)
 		if err != nil {
-			return fmt.Errorf("%s halted at %q (%q) because %w", enr.Name(), input.ScanRoot.Path, f.Name(), err)
+			return fmt.Errorf("%s halted at %q (%q) because %w", anno.Name(), input.ScanRoot.Path, f.Name(), err)
 		}
 	}
 
@@ -84,24 +83,24 @@ RemainingPathsLoop:
 	return nil
 }
 
-var _ annotator.Annotator = &UnknownBinaryAnnotator{}
+var _ annotator.Annotator = &Annotator{}
 
 // Name returns the name of the enricher.
-func (UnknownBinaryAnnotator) Name() string {
+func (*Annotator) Name() string {
 	return Name
 }
 
 // Version returns the version of the enricher.
-func (UnknownBinaryAnnotator) Version() int {
+func (*Annotator) Version() int {
 	return 0
 }
 
 // Requirements returns the requirements of the enricher.
-func (UnknownBinaryAnnotator) Requirements() *plugin.Capabilities {
+func (*Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
 // RequiredPlugins returns the names of the plugins required by the enricher.
-func (UnknownBinaryAnnotator) RequiredPlugins() []string {
-	return []string{unknownbinary.Name}
+func (*Annotator) RequiredPlugins() []string {
+	return []string{unknownbinariesextr.Name}
 }

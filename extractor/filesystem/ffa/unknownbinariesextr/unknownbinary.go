@@ -1,5 +1,5 @@
-// Package unknownbinary identifies binary files on the filesystem and adds them as packages.
-package unknownbinary
+// Package unknownbinariesextr identifies binary files on the filesystem and adds them as packages.
+package unknownbinariesextr
 
 import (
 	"context"

@@ -9,16 +9,21 @@ import (
 	"path"
 	"strings"
 
-	"github.com/google/osv-scalibr/annotator/ffa/unknownbinaries/internal/filter"
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
 )
 
 var (
-	dpkgInfoDirPath  = "var/lib/dpkg/info"
+	dpkgInfoDirPath = "var/lib/dpkg/info"
+
 	ignorePathPrefix = []string{
-		"/var/lib/dpkg/info",
+		// We want to ignore everything in the info directory as DPKG indexes doesn't index itself.
+		// There are many executable scripts in this directory, including preinstall/postinstall/preremove/postremove scripts.
+		"var/lib/dpkg/info",
+		// This is a debian docker specific file to disable irrelevant services from starting during apt install
+		"usr/sbin/policy-rc.d",
 	}
 )
 
@@ -70,7 +75,7 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 func (d DpkgFilter) ShouldExclude(_ context.Context, _ scalibrfs.FS, binaryPath string) bool {
 	for _, ignorePath := range ignorePathPrefix {
 		if strings.HasPrefix(binaryPath, ignorePath) {
-			return false
+			return true
 		}
 	}
 
