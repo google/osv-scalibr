@@ -5,13 +5,13 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/google/osv-scalibr/extractor"
 	"io"
 	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
+	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
 )
@@ -83,7 +83,7 @@ func (d DpkgFilter) ShouldExclude(_ context.Context, _ scalibrfs.FS, binaryPath 
 	return false
 }
 
-func processDpkgListFile(path string, fs scalibrfs.FS, knownBinariesSet map[string]struct{}) error {
+func processDpkgListFile(path string, fs scalibrfs.FS, knownBinariesSet map[string]*extractor.Package) error {
 	reader, err := fs.Open(path)
 	if err != nil {
 		return err

@@ -5,6 +5,8 @@ package unknownbinariesanno
 import (
 	"context"
 	"fmt"
+	"slices"
+
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/dpkgfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
@@ -12,7 +14,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"slices"
 )
 
 // Name of the plugin
@@ -63,7 +64,6 @@ RemainingPathsLoop:
 			}
 		}
 
-		val.Plugins = append(val.Plugins)
 		inv.Packages = append(inv.Packages, val)
 	}
 

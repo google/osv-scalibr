@@ -3,8 +3,8 @@ package filter
 
 import (
 	"context"
-	"github.com/google/osv-scalibr/extractor"
 
+	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
