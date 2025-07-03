@@ -17,12 +17,10 @@
 package apk
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate"
@@ -53,39 +51,6 @@ func (Annotator) Version() int { return 0 }
 // Requirements of the annotator.
 func (Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSLinux}
-}
-
-// parseSingleApkRecord reads from the scanner a single record,
-// returns nil, nil when scanner ends.
-func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
-	// There is currently 26 keys defined here (Under "Installed Database V2"):
-	// https://wiki.alpinelinux.org/wiki/Apk_spec
-	group := map[string]string{}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if line != "" {
-			key, val, found := strings.Cut(line, ":")
-
-			if !found {
-				return nil, fmt.Errorf("invalid line: %q", line)
-			}
-
-			group[key] = val
-			continue
-		}
-
-		// check both that line is empty and we have filled out data in group
-		// this avoids double empty lines returning early
-		if line == "" && len(group) > 0 {
-			// scanner.Err() could only be non nil when Scan() returns false
-			// so we can return nil directly here
-			return group, nil
-		}
-	}
-
-	return group, scanner.Err()
 }
 
 // Annotate adds annotations to language packages that have already been found in APK OS packages.
