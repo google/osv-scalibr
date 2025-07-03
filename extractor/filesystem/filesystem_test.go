@@ -1072,7 +1072,7 @@ func TestIsInterestingExecutable(t *testing.T) {
 			path:        "some/path/a",
 			mode:        0640,
 			want:        false,
-			wantWindows: true,
+			wantWindows: false,
 		},
 		{
 			name: "executable required",

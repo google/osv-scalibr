@@ -72,8 +72,6 @@ func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 // Extract determines the most likely package version from the directory and returns them as
 // package entries with "Location" filled in.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	// TODO: If target file is a symlink, we should store the symlink target as a unknown binary
-
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
