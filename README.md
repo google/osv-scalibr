@@ -91,32 +91,35 @@ scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-name
 ### With the standalone binary
 
 The binary runs SCALIBR's "recommended" internal plugins by default. You can
-enable more plugins with the `--extractors=` and `--detectors=` flags. See the
+enable more plugins with the `--plugins=` flags. See the
 definition files for a list of all built-in plugins and their CLI flags
-([extractors (fs)](/extractor/filesystem/list/list.go#L26),
-[detectors](/detector/list/list.go#L26)).
+([extractors (fs)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/filesystem/list/list.go),
+[detectors](/detector/list/list.go),
+[annotators](/annotator/list/list.go),
+[enrichers](/enricher/enricherlist/list.go)).
 
 ### With the library
 
 A collection of all built-in plugin modules can be found in the definition files
-([extractors](/extractor/filesystem/list/list.go#L26),
-[detectors](/detector/list/list.go#L26)). To enable them, just import the module
-and add the appropriate plugin names to the scan config, e.g.
-
+([extractors (fs)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/filesystem/list/list.go),
+[detectors](/detector/list/list.go),
+[annotators](/annotator/list/list.go),
+[enrichers](/enricher/enricherlist/list.go)).
+To enable them, just import plugins/list and add the appropriate plugin names
+to the scan config, e.g.
 ```
 import (
   "context"
   scalibr "github.com/google/osv-scalibr"
-  el "github.com/google/osv-scalibr/extractor/filesystem/list"
-  dl "github.com/google/osv-scalibr/detector/list"
+  pl "github.com/google/osv-scalibr/plugins/list"
   scalibrfs "github.com/google/osv-scalibr/fs"
 )
-exs, _ := el.ExtractorsFromNames([]string{"language"})
-dets, _ := dl.DetectorsFromNames([]string{"cis"})
+plugins, _ := pl.FromNames([]string{"os", "cis", "vex"})
 cfg := &scalibr.ScanConfig{
-  ScanRoots:            scalibrfs.RealFSScanRoots("/"),
-  FilesystemExtractors: exs,
-  Detectors:            dets,
+  ScanRoots: scalibrfs.RealFSScanRoots("/"),
+  Plugins:   plugins,
 }
 results := scalibr.New().Scan(context.Background(), cfg)
 ```
@@ -137,9 +140,8 @@ capab := &plugin.Capabilities{
 }
 ...
 cfg := &scalibr.ScanConfig{
-  ScanRoots:            scalibrfs.RealFSScanRoots("/"),
-  FilesystemExtractors: el.FilterByCapabilities(exs, capab),
-  Detectors:            dl.FilterByCapabilities(dets, capab),
+  ScanRoots: scalibrfs.RealFSScanRoots("/"),
+  Plugins:   plugin.FilterByCapabilities(plugins, capab),
 }
 ...
 ```
@@ -155,12 +157,12 @@ Custom plugins can only be run when using OSV-SCALIBR as a library.
 
 ```
 import (
-  "github.com/google/osv-scalibr/extractor/filesystem"
+  "github.com/google/osv-scalibr/plugin"
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{
   Root:                 "/",
-  FilesystemExtractors: []extractor.Extractor{&myExtractor{}},
+  Plugins: []plugin.Plugin{&myExtractor{}},
 }
 results := scalibr.New().Scan(context.Background(), cfg)
 ```

@@ -19,6 +19,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -101,6 +103,20 @@ func TestValidateRequirements(t *testing.T) {
 				t.Fatalf("plugin.ValidateRequirements(%v, %v) got error: %v, want: %v\n", tc.pluginReqs, tc.capabs, err, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestFilterByCapabilities(t *testing.T) {
+	capab := &plugin.Capabilities{OS: plugin.OSLinux}
+	pls := []plugin.Plugin{snap.NewDefault(), homebrew.New()}
+	got := plugin.FilterByCapabilities(pls, capab)
+	if len(got) != 1 {
+		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))
+	}
+	gotName := got[0].Name()
+	wantName := "os/snap" // os/homebrew is for Mac only
+	if gotName != wantName {
+		t.Fatalf("plugin.FilterCapabilities(%v, %v): want plugin %q, got %q", pls, capab, wantName, gotName)
 	}
 }
 
