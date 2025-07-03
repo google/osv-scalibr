@@ -42,6 +42,13 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 		unknownBinariesSet[e.Locations[0]] = e
 	}
 
+	// First account for all the files we have successfully extracted.
+	for _, e := range filteredPackages {
+		for _, location := range e.Locations {
+			delete(unknownBinariesSet, location)
+		}
+	}
+
 	// Remove all unknown binary packages from output packages
 	inv.Packages = filteredPackages
 
