@@ -72,6 +72,13 @@ func (Detector) RequiredExtractors() []string {
 	return []string{gobinary.Name}
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+// TODO: b/428851334 - For now, we do not return any advisories. But we want to be able to propagate
+// detection capabilities here.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{}
+}
+
 // Scan takes the go binaries gathered in the extraction phase and runs govulncheck on them.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	result := inventory.Finding{}

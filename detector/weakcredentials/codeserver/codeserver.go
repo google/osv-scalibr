@@ -126,6 +126,28 @@ func (Detector) RequiredExtractors() []string {
 	return []string{}
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.finding()
+}
+
+func (Detector) finding() inventory.Finding {
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{
+		&inventory.GenericFinding{
+			Adv: &inventory.GenericFindingAdvisory{
+				ID: &inventory.AdvisoryID{
+					Publisher: "SCALIBR",
+					Reference: "CODESERVER_WEAK_CREDENTIALS",
+				},
+				Title:          "Code-Server instance without authentication",
+				Description:    "Your Code-Server instance has no authentication enabled. This means that the instance is vulnerable to remote code execution.",
+				Recommendation: "Enforce an authentication in the config.yaml file. See https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-does-the-config-file-work for more details.",
+				Sev:            inventory.SeverityCritical,
+			},
+		},
+	}}
+}
+
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) (inventory.Finding, error) {
 	jar, err := cookiejar.New(nil)
@@ -154,20 +176,7 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 		return inventory.Finding{}, nil
 	}
 
-	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{
-		&inventory.GenericFinding{
-			Adv: &inventory.GenericFindingAdvisory{
-				ID: &inventory.AdvisoryID{
-					Publisher: "SCALIBR",
-					Reference: "CODESERVER_WEAK_CREDENTIALS",
-				},
-				Title:          "Code-Server instance without authentication",
-				Description:    "Your Code-Server instance has no authentication enabled. This means that the instance is vulnerable to remote code execution.",
-				Recommendation: "Enforce an authentication in the config.yaml file. See https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-does-the-config-file-work for more details.",
-				Sev:            inventory.SeverityCritical,
-			},
-		},
-	}}, nil
+	return d.finding(), nil
 }
 
 func checkAuth(ctx context.Context, client *http.Client, target string) (bool, error) {

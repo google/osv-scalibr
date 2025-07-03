@@ -55,6 +55,11 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return nil }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{}
+}
+
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return inventory.Finding{}, errors.New("only supported on Windows")

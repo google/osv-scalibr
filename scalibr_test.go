@@ -403,9 +403,10 @@ func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 type fakeDetNeedsFS struct {
 }
 
-func (fakeDetNeedsFS) Name() string                 { return "fake-extractor" }
-func (fakeDetNeedsFS) Version() int                 { return 0 }
-func (fakeDetNeedsFS) RequiredExtractors() []string { return nil }
+func (fakeDetNeedsFS) Name() string                       { return "fake-extractor" }
+func (fakeDetNeedsFS) Version() int                       { return 0 }
+func (fakeDetNeedsFS) RequiredExtractors() []string       { return nil }
+func (fakeDetNeedsFS) DetectedFinding() inventory.Finding { return inventory.Finding{} }
 func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return inventory.Finding{}, nil
 }

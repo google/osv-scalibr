@@ -86,6 +86,16 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return nil }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{
+		GenericFindings: []*inventory.GenericFinding{
+			d.findingForFormatLM(nil),
+			d.findingForWeakPasswords(nil),
+		},
+	}
+}
+
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageindex.PackageIndex) (inventory.Finding, error) {
 	hashes, err := d.hashes(ctx)
@@ -110,7 +120,8 @@ func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) (inv
 
 	var findings []*inventory.GenericFinding
 	if len(usersWithLM) > 0 {
-		findings = append(findings, d.findingForFormatLM(usersWithLM))
+		target := &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", usersWithLM)}
+		findings = append(findings, d.findingForFormatLM(target))
 	}
 
 	// then, we can actually try to find weak passwords.
@@ -120,14 +131,15 @@ func (d Detector) internalScan(ctx context.Context, hashes []*userHashInfo) (inv
 	}
 
 	if len(weakUsers) > 0 {
-		findings = append(findings, d.findingForWeakPasswords(weakUsers))
+		target := &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", weakUsers)}
+		findings = append(findings, d.findingForWeakPasswords(target))
 	}
 
 	return inventory.Finding{GenericFindings: findings}, nil
 }
 
 // findingForFormatLM creates a Scalibr finding when passwords are stored using the LM format.
-func (d Detector) findingForFormatLM(users []string) *inventory.GenericFinding {
+func (d Detector) findingForFormatLM(target *inventory.GenericFindingTargetDetails) *inventory.GenericFinding {
 	return &inventory.GenericFinding{
 		Adv: &inventory.GenericFindingAdvisory{
 			ID: &inventory.AdvisoryID{
@@ -138,13 +150,13 @@ func (d Detector) findingForFormatLM(users []string) *inventory.GenericFinding {
 			Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regenerate the hashes.",
 			Recommendation: "Change the password of the user after changing the storage format.",
 		},
-		Target: &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", users)},
+		Target: target,
 	}
 }
 
 // findingForWeakPasswords creates a Scalibr finding when passwords were found from the
 // dictionaries.
-func (d Detector) findingForWeakPasswords(users map[string]string) *inventory.GenericFinding {
+func (d Detector) findingForWeakPasswords(target *inventory.GenericFindingTargetDetails) *inventory.GenericFinding {
 	return &inventory.GenericFinding{
 		Adv: &inventory.GenericFindingAdvisory{
 			ID: &inventory.AdvisoryID{
@@ -155,7 +167,7 @@ func (d Detector) findingForWeakPasswords(users map[string]string) *inventory.Ge
 			Description:    "Some passwords were identified as being weak.",
 			Recommendation: "Change the password of the user affected users.",
 		},
-		Target: &inventory.GenericFindingTargetDetails{Extra: fmt.Sprintf("%v", users)},
+		Target: target,
 	}
 }
 
