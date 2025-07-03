@@ -56,8 +56,8 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
-	// Javareach enrichers.
-	Javareach = InitMap{
+	// Reachability enrichers.
+	Reachability = InitMap{
 		javareach.Name: {javareach.NewDefault},
 	}
 
@@ -75,7 +75,7 @@ var (
 		"vulnmatching": vals(VulnMatching),
 		"layerdetails": vals(LayerDetails),
 		"secrets":      vals(Secrets),
-		"javareach":    vals(Javareach),
+		"reachability": vals(Reachability),
 		"default":      vals(Default),
 		"all":          vals(All),
 	})
