@@ -21,12 +21,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/apk/apkutil"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -100,23 +100,15 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 	errs := []error{}
 
-	scanner := bufio.NewScanner(f)
-	for {
+	scanner := apkutil.NewScanner(f)
+	for scanner.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			errs = append(errs, fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err))
 			break
 		}
 
-		record, err := parseSingleApkRecord(scanner)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("error while parsing apk status file %q: %w", input.ScanRoot.Path, err))
-			return errors.Join(errs...)
-		}
-
-		if len(record) == 0 {
-			break
-		}
+		record := scanner.Record()
 
 		folder := record["F"]
 		filename := record["R"]
@@ -139,7 +131,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 	}
 
-	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
+	if err := scanner.Err(); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
