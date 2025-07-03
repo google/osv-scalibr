@@ -6,8 +6,6 @@ import (
 	"regexp"
 
 	//nolint:gosec //md5 used to identify files, not for security purposes
-	"strings"
-
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
@@ -68,34 +66,7 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true for likely directories to contain vendored c/c++ code
 func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
-	path := fapi.Path()
-
-	for _, ext := range fileExts {
-		if strings.HasSuffix(path, ext) {
-			return true
-		}
-	}
-
-	for substrTest, regex := range fileExtRegexes {
-		if strings.Contains(path, substrTest) && regex.MatchString(path) {
-			return true
-		}
-	}
-
-	stat, err := fapi.Stat()
-	if err != nil {
-		return false
-	}
-
-	if !stat.Mode().IsRegular() {
-		return false
-	}
-	// Is executable bit set
-	if stat.Mode().Perm()&0o111 != 0 {
-		return true
-	}
-
-	return false
+	return filesystem.IsInterestingExecutable(fapi)
 }
 
 // Extract determines the most likely package version from the directory and returns them as

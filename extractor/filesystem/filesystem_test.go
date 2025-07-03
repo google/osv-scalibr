@@ -1092,6 +1092,48 @@ func TestIsInterestingExecutable(t *testing.T) {
 			mode: 0766,
 			want: false,
 		},
+		{
+			name: "python script without execute permissions",
+			path: "some/path/a.py",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "shell script without execute permissions",
+			path: "some/path/a.sh",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "shared library without execute permissions",
+			path: "some/path/a.so",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "binary file without execute permissions",
+			path: "some/path/a.bin",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "versioned shared library",
+			path: "some/path/library.so.1",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "versioned shared library with multiple digits",
+			path: "some/path/library.so.12",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "not a versioned shared library",
+			path: "some/path/library.so.foo",
+			mode: 0666,
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
