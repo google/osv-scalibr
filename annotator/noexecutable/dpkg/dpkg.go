@@ -12,26 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dpkg implements an annotator for packages that don't contain any executables.
+// Package dpkg implements an annotator for DPKG packages that don't contain any executables.
 package dpkg
 
 import (
 	"bufio"
 	"context"
-	"errors"
-	"fmt"
-	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/fs/diriterate"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -43,7 +37,7 @@ const (
 	dpkgInfoDirPath = "var/lib/dpkg/info"
 )
 
-// Annotator adds annotations for packages that don't contain any executables.
+// Annotator adds annotations for DPKG packages that don't contain any executables.
 type Annotator struct{}
 
 // New returns a new Annotator.
@@ -60,53 +54,57 @@ func (Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSLinux}
 }
 
-// Annotate adds annotations for packages that don't contain any executables.
+func fileRequired(path string) bool {
+	normalized := filepath.ToSlash(path)
+
+	// Normal status file matching DPKG or OPKG format
+	if normalized == "var/lib/dpkg/status" || normalized == "usr/lib/opkg/status" {
+		return true
+	}
+
+	// Should only match status files in status.d directory.
+	return strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") && !strings.HasSuffix(normalized, ".md5sums")
+}
+
+// Annotate adds annotations for DPKG packages that don't contain any executables.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
 
-	dirs, err := diriterate.ReadDir(input.ScanRoot.FS, dpkgInfoDirPath)
-	if err != nil {
-		return err
-	}
-	defer dirs.Close()
-
-	errs := []error{}
-	for {
-		// Return if canceled or exceeding deadline.
-		if err := ctx.Err(); err != nil {
-			errs = append(errs, fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err))
-			break
+	errors := []error{}
+	for location, pkgs := range locationToPKGs {
+		// check if the pkgs are DPKG
+		if !fileRequired(location) {
+			continue
 		}
 
-		f, err := dirs.Next()
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				errs = append(errs, err)
-			}
-			break
-		}
+		// for each pkg access the .list file
+		for _, pkg := range pkgs {
+			listFile := filepath.Join(dpkgInfoDirPath, pkg.Name)
 
-		if !f.IsDir() && path.Ext(f.Name()) == ".list" {
-			listFile := path.Join(dpkgInfoDirPath, f.Name())
-			ok, err := containsExecutable(listFile, input.ScanRoot.FS)
+			// check if the .list files contains at least one executable file
+			containsExecutable, err := listContainsExecutable(listFile, input)
+			// if an error happens do nothing, false positives are better than false negatives
 			if err != nil {
-				errs = append(errs, err)
+				errors = append(errors, err)
 				continue
 			}
-			if ok {
+			if containsExecutable {
 				continue
 			}
-			if err := processListFile(listFile, input.ScanRoot.FS, locationToPKGs); err != nil {
-				errs = append(errs, err)
-			}
+			// if the list file does not contain any binary annotate the pkg
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
-
-	return errors.Join(errs...)
+	return nil
 }
 
-func containsExecutable(path string, fs scalibrfs.FS) (bool, error) {
-	reader, err := fs.Open(path)
+// listContainsExecutable open a .list file and check if at least one of the listed file IsInterestingExecutable
+func listContainsExecutable(path string, input *annotator.ScanInput) (bool, error) {
+	reader, err := input.ScanRoot.FS.Open(path)
 	if err != nil {
 		return false, err
 	}
@@ -125,29 +123,4 @@ func containsExecutable(path string, fs scalibrfs.FS) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-func processListFile(path string, fs scalibrfs.FS, locationToPKGs map[string][]*extractor.Package) error {
-	reader, err := fs.Open(path)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	s := bufio.NewScanner(reader)
-	for s.Scan() {
-		// Remove leading '/' since SCALIBR fs paths don't include that.
-		filePath := strings.TrimPrefix(s.Text(), "/")
-		if pkgs, ok := locationToPKGs[filePath]; ok {
-			for _, pkg := range pkgs {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin: Name,
-					// TODO: find a better Justification
-					Justification:   vex.VulnerableCodeCannotBeControlledByAdversary,
-					MatchesAllVulns: true,
-				})
-			}
-		}
-	}
-	return nil
 }
