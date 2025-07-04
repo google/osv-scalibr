@@ -54,7 +54,7 @@ var (
 		".yaml":      true,
 	}
 
-	defaultEngine *veles.DetectionEngine = nil
+	defaultEngine *veles.DetectionEngine
 )
 
 func init() { //nolint:gochecknoinits
