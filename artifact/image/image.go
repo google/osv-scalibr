@@ -72,8 +72,6 @@ type Image interface {
 	Layers() ([]Layer, error)
 	// ChainLayers returns the chain layers of the image.
 	ChainLayers() ([]ChainLayer, error)
-	// ConfigFile returns the config file of the image.
-	ConfigFile() *v1.ConfigFile
 	// FS returns a SCALIBR compliant filesystem that represents the image.
 	FS() scalibrfs.FS
 }
