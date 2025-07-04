@@ -71,6 +71,8 @@ RemainingPathsLoop:
 			}
 		}
 
+		// TODO(b/400910349): We are currently readding it as packages, but eventually we would want a separate type
+		// as this information does not behave like packages.
 		inv.Packages = append(inv.Packages, val)
 	}
 
