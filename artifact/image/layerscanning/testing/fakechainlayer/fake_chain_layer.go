@@ -112,19 +112,12 @@ func (fakeChainLayer *FakeChainLayer) FS() scalibrfs.FS {
 
 // Open returns a file if it exists in the files map.
 func (fakeChainLayer *FakeChainLayer) Open(name string) (fs.File, error) {
-	if _, ok := fakeChainLayer.files[name]; ok {
-		filename := filepath.Join(fakeChainLayer.testDir, name)
-		return os.Open(filename)
-	}
-	return nil, os.ErrNotExist
+	return os.Open(filepath.Join(fakeChainLayer.testDir, name))
 }
 
 // Stat returns the file info of a file if it exists in the files map.
 func (fakeChainLayer *FakeChainLayer) Stat(name string) (fs.FileInfo, error) {
-	if _, ok := fakeChainLayer.files[name]; ok {
-		return os.Stat(path.Join(fakeChainLayer.testDir, name))
-	}
-	return nil, os.ErrNotExist
+	return os.Stat(path.Join(fakeChainLayer.testDir, name))
 }
 
 // ReadDir is not used in the trace package since individual files are opened instead of
