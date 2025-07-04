@@ -132,6 +132,7 @@ func TestHashSetFilter(t *testing.T) {
 				"var/lib/dpkg/info/package3.list": "/usr/bin/symlink1\n/path/to/another/symlink\n",
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
+				t.Helper()
 				return &mockEvalSymlinksFS{
 					FS: fl,
 					symlinks: map[string]string{
@@ -156,6 +157,7 @@ func TestHashSetFilter(t *testing.T) {
 				"var/lib/dpkg/info/package4.list": "/usr/bin/symlink2\n",
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
+				t.Helper()
 				return &mockEvalSymlinksFS{
 					FS: fl,
 					symlinks: map[string]string{
