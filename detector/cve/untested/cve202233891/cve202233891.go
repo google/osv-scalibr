@@ -101,6 +101,30 @@ func (Detector) RequiredExtractors() []string {
 	return []string{wheelegg.Name}
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForPackage(nil)
+}
+
+func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+	pkg := &extractor.Package{
+		Name:     "pyspark",
+		PURLType: "pypi",
+	}
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2022-33891",
+			Summary: "CVE-2022-33891",
+			Details: "CVE-2022-33891",
+			Affected: inventory.PackageToAffected(pkg, "3.2.2", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: dbSpecific,
+		},
+	}}}
+}
+
 // Scan scans for the vulnerability, doh!
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	sparkUIVersion, pkg, affectedVersions := findApacheSparkUIPackage(px)
@@ -148,20 +172,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		return inventory.Finding{}, nil
 	}
 
-	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2022-33891",
-			Summary: "CVE-2022-33891",
-			Details: "CVE-2022-33891",
-			Affected: inventory.PackageToAffected(pkg, "3.2.2", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
-				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
-			}),
-			DatabaseSpecific: map[string]any{
-				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-			},
-		},
-	}}}, nil
+	dbSpecific := map[string]any{
+		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	}
+	return d.findingForPackage(dbSpecific), nil
 }
 
 func sparkUIHTTPQuery(ctx context.Context, sparkDomain string, sparkPort int, cmdExec string) int {

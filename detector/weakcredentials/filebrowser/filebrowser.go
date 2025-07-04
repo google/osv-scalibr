@@ -45,17 +45,6 @@ const (
 
 	fileBrowserIP  = "127.0.0.1"
 	requestTimeout = 2 * time.Second
-	title          = "Filebrowser default credentials"
-	description    = "Filebrowser is a self-hosted web application to manage files and folders. " +
-		"It has been detected that the default credentials are in use, which can be exploited by an" +
-		" attacker to execute arbitrary commands on the affected system."
-	recommendation = "If you have devlify installed, run 'devlify update' to apply the fix." +
-		" Follow the prompts until you get a 'Configuration is done!' message." +
-		" If the update succeeded, the output of the 'podman ps' command should no longer" +
-		" show the File Browser container." +
-		" In all other instances where filebrowser is installed as a stand-alone, the vulnerability" +
-		" can be remediated by changing the default credentials through the Web UI and restarting the service" +
-		" or by uninstalling the filebrowser service/container."
 )
 
 var (
@@ -88,6 +77,34 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.finding()
+}
+
+func (Detector) finding() inventory.Finding {
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
+				Publisher: "SCALIBR",
+				Reference: "file-browser-weakcredentials",
+			},
+			Title: "Filebrowser default credentials",
+			Description: "Filebrowser is a self-hosted web application to manage files and folders. " +
+				"It has been detected that the default credentials are in use, which can be exploited by an" +
+				" attacker to execute arbitrary commands on the affected system.",
+			Recommendation: "If you have devlify installed, run 'devlify update' to apply the fix." +
+				" Follow the prompts until you get a 'Configuration is done!' message." +
+				" If the update succeeded, the output of the 'podman ps' command should no longer" +
+				" show the File Browser container." +
+				" In all other instances where filebrowser is installed as a stand-alone, the vulnerability" +
+				" can be remediated by changing the default credentials through the Web UI and restarting the service" +
+				" or by uninstalling the filebrowser service/container.",
+			Sev: inventory.SeverityCritical,
+		},
+	}}}
+}
+
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	for _, fileBrowserPort := range fileBrowserPorts {
@@ -97,18 +114,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		if !isVulnerable(ctx, fileBrowserIP, fileBrowserPort) {
 			continue
 		}
-		return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
-			Adv: &inventory.GenericFindingAdvisory{
-				ID: &inventory.AdvisoryID{
-					Publisher: "SCALIBR",
-					Reference: "file-browser-weakcredentials",
-				},
-				Title:          title,
-				Description:    description,
-				Recommendation: recommendation,
-				Sev:            inventory.SeverityCritical,
-			},
-		}}}, nil
+		return d.finding(), nil
 	}
 
 	return inventory.Finding{}, nil

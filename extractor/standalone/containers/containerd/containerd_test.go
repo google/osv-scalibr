@@ -24,8 +24,8 @@ import (
 	"slices"
 	"testing"
 
+	containerd "github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types/task"
-	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"

@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/enricher/java/javareach"
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
-	"github.com/google/osv-scalibr/plugin"
 )
 
 // InitFn is the enricher initializer function.
@@ -71,13 +70,15 @@ var (
 	)
 
 	enricherNames = concat(All, InitMap{
-		"vex":          vals(VEX),
-		"vulnmatching": vals(VulnMatching),
-		"layerdetails": vals(LayerDetails),
-		"secrets":      vals(Secrets),
-		"reachability": vals(Reachability),
-		"default":      vals(Default),
-		"all":          vals(All),
+		"vex":               vals(VEX),
+		"vulnmatching":      vals(VulnMatching),
+		"layerdetails":      vals(LayerDetails),
+		"secrets":           vals(Secrets),
+    "reachability":      vals(Reachability),
+		"enrichers/default": vals(Default),
+		"default":           vals(Default),
+		"enrichers/all":     vals(All),
+		"all":               vals(All),
 	})
 )
 
@@ -93,8 +94,8 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.AppendSeq(make([][]InitFn, 0, len(initMap)), maps.Values(initMap))...)
 }
 
-// FromName returns a single extractor based on its exact name.
-func FromName(name string) (enricher.Enricher, error) {
+// EnricherFromName returns a single enricher based on its exact name.
+func EnricherFromName(name string) (enricher.Enricher, error) {
 	initers, ok := enricherNames[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown enricher %q", name)
@@ -109,57 +110,14 @@ func FromName(name string) (enricher.Enricher, error) {
 	return e, nil
 }
 
-// FromNames returns a list of enrichers from a list of names.
-func FromNames(names []string) ([]enricher.Enricher, error) {
-	resultMap := make(map[string]enricher.Enricher)
-	for _, n := range names {
-		if initers, ok := enricherNames[n]; ok {
-			for _, initer := range initers {
-				e := initer()
-				if _, ok := resultMap[e.Name()]; !ok {
-					resultMap[e.Name()] = e
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("unknown enricher %q", n)
-		}
-	}
-	if len(resultMap) == 0 {
-		return nil, nil
-	}
-	result := make([]enricher.Enricher, 0, len(resultMap))
-	for _, e := range resultMap {
-		result = append(result, e)
-	}
-	return result, nil
-}
-
-// FromCapabilities returns all enrichers that can run under the specified
-// capabilities (OS, direct filesystem access, network access, etc.) of the
-// scanning environment.
-func FromCapabilities(capabilities *plugin.Capabilities) []enricher.Enricher {
-	var all []enricher.Enricher
-	for _, initers := range All {
+// EnrichersFromName returns a list of enrichers from a name.
+func EnrichersFromName(name string) ([]enricher.Enricher, error) {
+	if initers, ok := enricherNames[name]; ok {
+		result := []enricher.Enricher{}
 		for _, initer := range initers {
-			all = append(all, initer())
+			result = append(result, initer())
 		}
+		return result, nil
 	}
-	return FilterByCapabilities(all, capabilities)
-}
-
-// FilterByCapabilities returns all enrichers from the given list that can run
-// under the specified capabilities (OS, direct filesystem access, network
-// access, etc.) of the scanning environment.
-func FilterByCapabilities(es []enricher.Enricher, capabilities *plugin.Capabilities) []enricher.Enricher {
-	if capabilities == nil {
-		capabilities = &plugin.Capabilities{}
-	}
-
-	var result []enricher.Enricher
-	for _, e := range es {
-		if err := plugin.ValidateRequirements(e, capabilities); err == nil {
-			result = append(result, e)
-		}
-	}
-	return result
+	return nil, fmt.Errorf("unknown enricher %q", name)
 }
