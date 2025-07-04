@@ -74,7 +74,7 @@ var (
 		"vulnmatching":      vals(VulnMatching),
 		"layerdetails":      vals(LayerDetails),
 		"secrets":           vals(Secrets),
-    "reachability":      vals(Reachability),
+		"reachability":      vals(Reachability),
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),
 		"enrichers/all":     vals(All),
