@@ -31,7 +31,7 @@ import (
 
 const (
 	// Name is the name of the base image enricher.
-	Name = "enricher/baseimage"
+	Name = "baseimage"
 	// Version is the version of the base image enricher.
 	Version = 0
 )
