@@ -79,7 +79,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 		// for each pkg access the .list file
 		for _, pkg := range pkgs {
-			listFile := filepath.Join(dpkgInfoDirPath, pkg.Name)
+			listFile := filepath.Join(dpkgInfoDirPath, pkg.Name+".list")
 
 			// check if the .list files contains at least one executable file
 			containsExecutable, err := listContainsExecutable(listFile, input)
