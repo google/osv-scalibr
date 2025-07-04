@@ -3,43 +3,12 @@ package unknownbinariesextr
 
 import (
 	"context"
-	"regexp"
 
 	//nolint:gosec //md5 used to identify files, not for security purposes
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-)
-
-var (
-	// Common binary / executable file extensions
-	fileExts = []string{
-		".a",
-		// Binary extensions
-		".bin",
-		".elf",
-		".run",
-		".o",
-
-		// Shared library extension
-		".so",
-		// and .so.[number]
-
-		// Script extensions
-		".py", // Python
-		".sh", // bash/sh/zsh
-		".bash",
-
-		".pl",  // Perl
-		".rb",  // Ruby
-		".php", // Php
-		".awk", // Awk
-		".tcl", // tcl
-	}
-	fileExtRegexes = map[string]*regexp.Regexp{
-		".so.": regexp.MustCompile(`.so.\d+$`),
-	}
 )
 
 const (
