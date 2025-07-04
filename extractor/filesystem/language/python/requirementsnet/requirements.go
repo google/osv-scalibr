@@ -40,9 +40,9 @@ const (
 
 // Config is the configuration for the Extractor.
 type Config struct {
+	resolve.Client
 	// This should be an extractor to extract inventories from requirements.txt offline.
 	*requirements.Extractor // Extractor to extract inventories from requirements.txt offline.
-	resolve.Client
 }
 
 // DefaultConfig returns the default configuration for the extractor.
@@ -55,8 +55,9 @@ func DefaultConfig() Config {
 
 // Extractor extracts python packages from requirements.txt files.
 type Extractor struct {
-	BaseExtractor *requirements.Extractor // The base extractor that we use to extract direct dependencies.
 	resolve.Client
+
+	BaseExtractor *requirements.Extractor // The base extractor that we use to extract direct dependencies.
 }
 
 // New returns a requirements.txt transitive extractor.
