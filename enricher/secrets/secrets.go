@@ -29,7 +29,7 @@ import (
 
 const (
 	// Name is the unique name of this Enricher.
-	Name = "enricher/secrets/veles"
+	Name = "secrets/veles"
 
 	version = 1
 )
