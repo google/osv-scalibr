@@ -22,6 +22,7 @@ import "github.com/google/osv-scalibr/stats"
 // by path.
 type Collector struct {
 	stats.NoopCollector
+
 	fileRequiredStats  map[string]*stats.FileRequiredStats
 	fileExtractedStats map[string]*stats.FileExtractedStats
 }
