@@ -37,6 +37,7 @@ type Finding struct {
 // It follows the OSV Schema format: https://ossf.github.io/osv-schema
 type PackageVuln struct {
 	osvschema.Vulnerability
+
 	// The plugins (e.g. Detectors, Enrichers) that found this vuln.
 	Plugins []string
 	// Signals that indicate this finding is not exploitable.

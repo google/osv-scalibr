@@ -50,8 +50,9 @@ type Extractor struct {
 
 // Config is the configuration for the pomxmlnet Extractor.
 type Config struct {
-	DependencyClient resolve.Client
 	*datasource.MavenRegistryAPIClient
+
+	DependencyClient resolve.Client
 }
 
 // NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.

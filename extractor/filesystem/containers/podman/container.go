@@ -29,14 +29,14 @@ type container struct {
 
 // containerConfig is a subset of the Podman's actual containerConfig
 type containerConfig struct {
+	// embedded sub-configs
+	containerRootFSConfig
+	containerNetworkConfig
+
 	ID           string `json:"id"`
 	Pod          string `json:"pod,omitempty"`
 	Namespace    string `json:"namespace,omitempty"`
 	RawImageName string `json:"RawImageName,omitempty"`
-
-	// embedded sub-configs
-	containerRootFSConfig
-	containerNetworkConfig
 }
 
 // containerRootFSConfig contains the info about podman's Rootfs

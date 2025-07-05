@@ -40,6 +40,7 @@ import (
 // RequirementKey is a comparable type that uniquely identifies a package dependency in a manifest.
 type RequirementKey struct {
 	resolve.PackageKey
+
 	KnownAs string
 }
 
