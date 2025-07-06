@@ -33,6 +33,8 @@ type DependencyCachePopulator interface {
 
 // FixVulnsOptions are the options for guidedremediation.FixVulns().
 type FixVulnsOptions struct {
+	RemediationOptions
+
 	Manifest          string                       // Path to manifest file on disk.
 	Lockfile          string                       // Path to lockfile on disk.
 	Strategy          strategy.Strategy            // Remediation strategy to use.
@@ -43,11 +45,12 @@ type FixVulnsOptions struct {
 	ResolveClient     resolve.Client               // Client for dependency information.
 	DefaultRepository string                       // Default registry to fetch dependency information from.
 	DepCachePopulator DependencyCachePopulator     // Interface for populating the cache of the resolve.Client. Can be nil.
-	RemediationOptions
 }
 
 // RemediationOptions are the configuration options for vulnerability remediation.
 type RemediationOptions struct {
+	ResolutionOptions
+
 	IgnoreVulns   []string // Vulnerability IDs to ignore
 	ExplicitVulns []string // If set, only consider these vulnerability IDs & ignore all others
 
@@ -57,7 +60,6 @@ type RemediationOptions struct {
 
 	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
 
-	ResolutionOptions
 }
 
 // DefaultRemediationOptions creates a default initialized remediation configuration.

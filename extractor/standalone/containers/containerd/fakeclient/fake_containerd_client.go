@@ -39,6 +39,7 @@ import (
 // CtrdClient is a fake implementation of CtrdClient for testing purposes.
 type CtrdClient struct {
 	plugin.CtrdClient
+
 	tasksService tasks.TasksClient
 	nsService    namespaces.Store
 	// A map of task IDs to containerd.Container objects.
@@ -118,6 +119,7 @@ func initContainerTasks(tsks []*task.Process, ctrs []containerd.Container) (map[
 // TasksService is a fake implementation of the containerd tasks service.
 type TasksService struct {
 	tasks.TasksClient
+
 	tasks      []*task.Process
 	nssTaskIDs map[string][]string
 }
@@ -159,6 +161,7 @@ func (s *TasksService) List(ctx context.Context, in *tasks.ListTasksRequest, opt
 // NamespacesService is a fake implementation of the containerd namespaces service.
 type NamespacesService struct {
 	namespaces.Store
+
 	namespaces []string
 }
 
@@ -177,6 +180,7 @@ func (s *NamespacesService) List(ctx context.Context) ([]string, error) {
 // Container is a fake implementation of the containerd container object.
 type Container struct {
 	containerd.Container
+
 	id     string
 	image  string
 	digest string
@@ -223,6 +227,7 @@ func (c *Container) Image(ctx context.Context) (containerd.Image, error) {
 // Image is a fake implementation of the containerd image object.
 type Image struct {
 	containerd.Image
+
 	digest string
 }
 
@@ -244,6 +249,7 @@ func (i *Image) Target() imagespecs.Descriptor {
 // Task is a fake implementation of the containerd task object.
 type Task struct {
 	containerd.Task
+
 	rootfs string
 }
 
