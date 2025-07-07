@@ -17,6 +17,7 @@ package python
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"slices"
 
@@ -73,8 +74,13 @@ func (m *pythonManifest) EcosystemSpecific() any {
 
 // PatchRequirement modifies the manifest's requirements to include the new requirement version.
 func (m *pythonManifest) PatchRequirement(req resolve.RequirementVersion) error {
-	// TODO(#853): implement this function
-	return nil
+	for i, oldReq := range m.requirements {
+		if oldReq.PackageKey == req.PackageKey {
+			m.requirements[i] = req
+			return nil
+		}
+	}
+	return fmt.Errorf("package %s not found in manifest", req.Name)
 }
 
 // Clone returns a copy of this manifest that is safe to modify.
