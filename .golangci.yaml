@@ -31,6 +31,7 @@ linters:
     - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
+    - noinlineerr      #
     - nonamedreturns   #
     - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
     - prealloc         # We don't want to preallocate all the time
@@ -42,6 +43,7 @@ linters:
     - varnamelen       #
     - wrapcheck        #
     - wsl              #
+    - wsl_v5           #
   settings:
     forbidigo:
       forbid:
@@ -97,6 +99,10 @@ linters:
           disabled: false
         - name: var-naming
           disabled: false
+          arguments:
+            - [] # AllowList
+            - [] # DenyList
+            - - skip-package-name-checks: true
     staticcheck:
       checks:
         - all
