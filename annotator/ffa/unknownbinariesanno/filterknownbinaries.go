@@ -28,8 +28,8 @@ var filters = []filter.Filter{
 type Annotator struct {
 }
 
-// Annotate removes all packages extracted by unknown binaries,
-// filters out the known binaries, and records the remaining as a finding.
+// Annotate filters out binaries extracted by unknwonbinaries extractor that can be accounted for by other
+// inventories or metadata on the FS.
 func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
 	unknownBinariesSet := map[string]*extractor.Package{}
 	filteredPackages := make([]*extractor.Package, 0, len(inv.Packages))
