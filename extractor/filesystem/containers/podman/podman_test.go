@@ -81,12 +81,12 @@ func TestExtractor_Extract(t *testing.T) {
 			// so the error appears during the container listing phase.
 			Name:    "invalid_sqlite_db",
 			Path:    "testdata/notdb.sql",
-			WantErr: extracttest.ContainsErrStr{Str: "Error listing containers in file"},
+			WantErr: extracttest.ContainsErrStr{Str: "error listing containers in file"},
 		},
 		{
 			Name:    "invalid boltstatedb",
 			Path:    "testdata/not_bolt_state.db",
-			WantErr: extracttest.ContainsErrStr{Str: "Error opening file"},
+			WantErr: extracttest.ContainsErrStr{Str: "error opening file"},
 		},
 		{
 			Name:   "valid using sqlite3 - all",

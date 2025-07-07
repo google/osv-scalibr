@@ -49,7 +49,7 @@ func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package,
 
 		parts := strings.Fields(line)
 		if len(parts) != 3 {
-			return nil, fmt.Errorf("Error reading line: %d", lineNumber)
+			return nil, fmt.Errorf("error reading line: %d", lineNumber)
 		}
 
 		name := parts[0]
