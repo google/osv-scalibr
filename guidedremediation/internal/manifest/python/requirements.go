@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"unicode"
 
 	"deps.dev/util/pypi"
 	"deps.dev/util/resolve"
@@ -342,7 +343,7 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 		}
 		if index >= 0 {
 			for i := index - 1; i >= 0; i-- {
-				// Copy the space between requirements and post-requirements
+				// Copy the space between requirements and post-requirements.
 				if i < 0 || line[i] != ' ' {
 					break
 				}
@@ -350,15 +351,14 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 			}
 			sb.WriteString(line[index:])
 		} else {
-			// Copy the newline characters
+			// Copy space characters if nothing meaningful is found.
 			for i := len(line) - 1; i >= 0; i-- {
-				if i < 0 || (line[i] != '\n' && line[i] != '\r') {
+				if i < 0 || !unicode.IsSpace(rune(line[i])) {
 					break
 				}
 				sb.WriteByte(line[i])
 			}
 		}
-
 	}
 
 	return sb.String(), nil
