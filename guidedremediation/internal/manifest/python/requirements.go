@@ -352,12 +352,14 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 			sb.WriteString(line[index:])
 		} else {
 			// Copy space characters if nothing meaningful is found.
+			spaceIndex := -1
 			for i := len(line) - 1; i >= 0; i-- {
 				if i < 0 || !unicode.IsSpace(rune(line[i])) {
+					spaceIndex = i
 					break
 				}
-				sb.WriteByte(line[i])
 			}
+			sb.WriteString(line[spaceIndex+1:])
 		}
 	}
 
