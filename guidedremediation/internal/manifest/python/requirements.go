@@ -302,36 +302,32 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 	if err != nil {
 		return "", fmt.Errorf("error reading requirements: %w", err)
 	}
-	content := string(data)
-
-	lines := strings.SplitAfter(content, "\n")
 
 	var sb strings.Builder
-	for _, original := range lines {
-		line := strings.TrimSpace(original)
-		if line == "" {
-			sb.WriteString(original)
+	for _, line := range strings.SplitAfter(string(data), "\n") {
+		if strings.TrimSpace(line) == "" {
+			sb.WriteString(line)
 			continue
 		}
 
 		d, err := pypi.ParseDependency(line)
 		if err != nil {
 			log.Warnf("failed to parse Python dependency %s: %v", line, err)
-			sb.WriteString(original)
+			sb.WriteString(line)
 			continue
 		}
 
 		newReq, ok := requirements[d.Name]
 		if !ok {
 			// We don't need to update the requirement of this dependency.
-			sb.WriteString(original)
+			sb.WriteString(line)
 			continue
 		}
 
 		opIndex := findFirstOperatorIndex(line)
 		if opIndex < 0 {
 			// No operator is found.
-			sb.WriteString(original)
+			sb.WriteString(line)
 			continue
 		}
 		sb.WriteString(line[:opIndex])
@@ -346,16 +342,23 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 		}
 		if index >= 0 {
 			for i := index - 1; i >= 0; i-- {
-				// Copy the space between requirements and post-requirements,
+				// Copy the space between requirements and post-requirements
 				if i < 0 || line[i] != ' ' {
 					break
 				}
 				sb.WriteByte(' ')
 			}
 			sb.WriteString(line[index:])
+		} else {
+			// Copy the newline characters
+			for i := len(line) - 1; i >= 0; i-- {
+				if i < 0 || (line[i] != '\n' && line[i] != '\r') {
+					break
+				}
+				sb.WriteByte(line[i])
+			}
 		}
 
-		sb.WriteByte('\n')
 	}
 
 	return sb.String(), nil

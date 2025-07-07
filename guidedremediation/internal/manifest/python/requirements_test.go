@@ -196,18 +196,18 @@ func TestWrite(t *testing.T) {
 	outFile := filepath.Join(outDir, "requirements.txt")
 
 	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
-		t.Fatalf("failed to write package.json: %v", err)
+		t.Fatalf("failed to write requirements.txt: %v", err)
 	}
 
 	got, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatalf("failed to read got package.json: %v", err)
+		t.Fatalf("failed to read got requirements.txt: %v", err)
 	}
 	want, err := os.ReadFile(filepath.Join("./testdata", "want.requirements.txt"))
 	if err != nil {
-		t.Fatalf("failed to read want package.json: %v", err)
+		t.Fatalf("failed to read want requirements.txt: %v", err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("package.json (-want +got):\n%s", diff)
+		t.Errorf("requirements.txt (-want +got):\n%s", diff)
 	}
 }
