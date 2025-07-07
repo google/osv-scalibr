@@ -272,9 +272,8 @@ func formatConstraints(constraints []VersionConstraint, space bool) string {
 
 	if space {
 		return strings.Join(parts, ", ") // Add space after comma
-	} else {
-		return strings.Join(parts, ",")
 	}
+	return strings.Join(parts, ",")
 }
 
 // findFirstOperatorIndex finds the index of the first appearance of any operator
@@ -347,7 +346,7 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 		}
 		if index >= 0 {
 			for i := index - 1; i >= 0; i-- {
-				// Copy the space bewteen requirements and post-requirements,
+				// Copy the space between requirements and post-requirements,
 				if i < 0 || line[i] != ' ' {
 					break
 				}
