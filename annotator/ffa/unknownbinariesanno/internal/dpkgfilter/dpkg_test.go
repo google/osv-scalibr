@@ -63,6 +63,7 @@ func TestShouldExclude(t *testing.T) {
 
 type mockEvalSymlinksFS struct {
 	scalibrfs.FS
+
 	symlinks map[string]string
 }
 
