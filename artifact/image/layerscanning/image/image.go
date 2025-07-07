@@ -231,7 +231,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// call CleanUp() or there is an error during creation of the image.
 	runtime.AddCleanup(outputImage, func(file *os.File) {
 		// Defensively close the file. Ignore the error because the file may already be closed.
-		file.Close()
+		_ = file.Close()
 		err := os.Remove(file.Name())
 		if err == nil {
 			log.Warnf("%q was removed through cleanup function. This is unexpected as the user should have called CleanUp()", file.Name())

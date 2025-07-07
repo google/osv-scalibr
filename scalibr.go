@@ -364,6 +364,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		scanResult.Status.FailureReason = err.Error()
 	}
 
+	err = img.CleanUp()
+	if err != nil {
+		log.Errorf("failed to clean up image: %s", err)
+	}
+
 	return scanResult, nil
 }
 
