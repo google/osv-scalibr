@@ -60,14 +60,15 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
 	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
-	extractorsToRun := cli.NewStringListFlag([]string{"default"})
-	fs.Var(&extractorsToRun, "extractors", "Comma-separated list of extractor plugins to run")
-	detectorsToRun := cli.NewStringListFlag([]string{"default"})
-	fs.Var(&detectorsToRun, "detectors", "Comma-separated list of detectors plugins to run")
-	annotatorsToRun := cli.NewStringListFlag([]string{"default"})
-	fs.Var(&annotatorsToRun, "annotators", "Comma-separated list of annotators plugins to run")
-	enrichersToRun := cli.NewStringListFlag([]string{"default"})
-	fs.Var(&enrichersToRun, "enrichers", "Comma-separated list of enrichers plugins to run")
+	pluginsToRun := cli.NewStringListFlag(nil)
+	fs.Var(&pluginsToRun, "plugins", "Comma-separated list of plugin to run")
+	extractorsToRun := cli.NewStringListFlag(nil)
+	fs.Var(&extractorsToRun, "extractors", "[Legacy field, prefer using --plugins instead] Comma-separated list of extractor plugins to run")
+	detectorsToRun := cli.NewStringListFlag(nil)
+	fs.Var(&detectorsToRun, "detectors", "[Legacy field, prefer using --plugins instead] Comma-separated list of detectors plugins to run")
+	annotatorsToRun := cli.NewStringListFlag(nil)
+	// TODO(b/400910349): Remove once integrators stop using this CLI arg.
+	fs.Var(&annotatorsToRun, "annotators", "[Legacy field, prefer using --plugins instead] Comma-separated list of annotators plugins to run")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -104,10 +105,10 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		Root:                       *root,
 		ResultFile:                 *resultFile,
 		Output:                     output,
+		PluginsToRun:               pluginsToRun.GetSlice(),
 		ExtractorsToRun:            extractorsToRun.GetSlice(),
 		DetectorsToRun:             detectorsToRun.GetSlice(),
 		AnnotatorsToRun:            annotatorsToRun.GetSlice(),
-		EnrichersToRun:             enrichersToRun.GetSlice(),
 		PathsToExtract:             pathsToExtract,
 		IgnoreSubDirs:              *ignoreSubDirs,
 		DirsToSkip:                 dirsToSkip.GetSlice(),

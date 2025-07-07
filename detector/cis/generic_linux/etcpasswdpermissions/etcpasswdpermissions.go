@@ -63,8 +63,33 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	return d.ScanFS(ctx, scanRoot.FS, px)
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForTarget(nil)
+}
+
+func (Detector) findingForTarget(target *inventory.GenericFindingTargetDetails) inventory.Finding {
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
+				Publisher: "CIS",
+				Reference: "etc-passwd-permissions",
+			},
+			Title: "Ensure permissions on /etc/passwd are configured",
+			Description: "The /etc/passwd file contains user account information that " +
+				"is used by many system utilities and therefore must be readable for these " +
+				"utilities to operate.",
+			Recommendation: "Run the following command to set permissions on /etc/passwd :\n" +
+				"# chown root:root /etc/passwd\n" +
+				"# chmod 644 /etc/passwd",
+			Sev: inventory.SeverityMinimal,
+		},
+		Target: target,
+	}}}
+}
+
 // ScanFS starts the scan from a pseudo-filesystem.
-func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIndex) (inventory.Finding, error) {
+func (d Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	f, err := fs.Open("etc/passwd")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -99,24 +124,7 @@ func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIn
 	if len(problems) == 0 {
 		return inventory.Finding{}, nil
 	}
-	title := "Ensure permissions on /etc/passwd are configured"
-	description := "The /etc/passwd file contains user account information that " +
-		"is used by many system utilities and therefore must be readable for these " +
-		"utilities to operate."
-	recommendation := "Run the following command to set permissions on /etc/passwd :\n" +
-		"# chown root:root /etc/passwd\n" +
-		"# chmod 644 /etc/passwd"
-	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
-		Adv: &inventory.GenericFindingAdvisory{
-			ID: &inventory.AdvisoryID{
-				Publisher: "CIS",
-				Reference: "etc-passwd-permissions",
-			},
-			Title:          title,
-			Description:    description,
-			Recommendation: recommendation,
-			Sev:            inventory.SeverityMinimal,
-		},
-		Target: &inventory.GenericFindingTargetDetails{Extra: "/etc/passwd: " + problems},
-	}}}, nil
+
+	target := &inventory.GenericFindingTargetDetails{Extra: "/etc/passwd: " + problems}
+	return d.findingForTarget(target), nil
 }

@@ -57,6 +57,29 @@ func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilitie
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForTarget(nil)
+}
+
+func (d Detector) findingForTarget(target *inventory.GenericFindingTargetDetails) inventory.Finding {
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
+				Publisher: "SCALIBR",
+				Reference: "etc-shadow-weakcredentials",
+			},
+			Title: "Ensure all users have strong passwords configured",
+			Description: "The /etc/shadow file contains user account password hashes. " +
+				"These passwords must be strong and not easily guessable.",
+			Recommendation: "Run the following command to reset password for the reported users:\n" +
+				"# change password for USER: sudo passwd USER",
+			Sev: inventory.SeverityCritical,
+		},
+		Target: target,
+	}}}
+}
+
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	f, err := scanRoot.FS.Open("etc/shadow")
@@ -96,12 +119,6 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		return inventory.Finding{}, nil
 	}
 
-	title := "Ensure all users have strong passwords configured"
-	description := "The /etc/shadow file contains user account password hashes. " +
-		"These passwords must be strong and not easily guessable."
-	recommendation := "Run the following command to reset password for the reported users:\n" +
-		"# change password for USER: sudo passwd USER"
-
 	// Sort users to avoid non-determinism in the processing order from users map.
 	sort.Strings(problemUsers)
 	buf := new(strings.Builder)
@@ -110,20 +127,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		_, _ = fmt.Fprintln(buf, u)
 	}
 	problemDescription := buf.String()
-
-	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
-		Adv: &inventory.GenericFindingAdvisory{
-			ID: &inventory.AdvisoryID{
-				Publisher: "SCALIBR",
-				Reference: "etc-shadow-weakcredentials",
-			},
-			Title:          title,
-			Description:    description,
-			Recommendation: recommendation,
-			Sev:            inventory.SeverityCritical,
-		},
-		Target: &inventory.GenericFindingTargetDetails{Extra: "/etc/shadow: " + problemDescription},
-	}}}, nil
+	target := &inventory.GenericFindingTargetDetails{Extra: "/etc/shadow: " + problemDescription}
+	return d.findingForTarget(target), nil
 }
 
 func parseShadowFile(f fs.File) (map[string]string, error) {

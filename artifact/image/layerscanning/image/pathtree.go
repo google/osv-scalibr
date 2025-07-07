@@ -107,8 +107,8 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 // getNode returns the node at the given path. This will resolve all intermediate symlinks.
 // By setting resolveFinalSymlink, you can choose not to resolve the final symlink,
 // so the returned Node could still be a symlink to another Node.
-func (rootNode *RootNode) getNode(nodePath string, resolveFinalSymlink bool, depth int) (*Node, error) {
-	nodePath, err := cleanPath(nodePath)
+func (rootNode *RootNode) getNode(rawNodePath string, resolveFinalSymlink bool, depth int) (*Node, error) {
+	nodePath, err := cleanPath(rawNodePath)
 	if err != nil {
 		log.Warnf("cleanPath(%q) error: %v", nodePath, err)
 		return nil, err

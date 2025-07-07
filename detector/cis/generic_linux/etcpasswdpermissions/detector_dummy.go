@@ -54,6 +54,26 @@ func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilitie
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
+				Publisher: "CIS",
+				Reference: "etc-passwd-permissions",
+			},
+			Title: "Ensure permissions on /etc/passwd are configured",
+			Description: "The /etc/passwd file contains user account information that " +
+				"is used by many system utilities and therefore must be readable for these " +
+				"utilities to operate.",
+			Recommendation: "Run the following command to set permissions on /etc/passwd :\n" +
+				"# chown root:root /etc/passwd\n" +
+				"# chmod 644 /etc/passwd",
+			Sev: inventory.SeverityMinimal,
+		},
+	}}}
+}
+
 // Scan is a no-op for Windows.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return inventory.Finding{}, fmt.Errorf("plugin only supported on Linux")
