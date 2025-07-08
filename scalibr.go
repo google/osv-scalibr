@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"sort"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -374,10 +373,6 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 
 // sortResults sorts the result to make the output deterministic and diffable.
 func sortResults(results *ScanResult) {
-	for _, pkg := range results.Inventory.Packages {
-		sort.Strings(pkg.Locations)
-	}
-
 	slices.SortFunc(results.PluginStatus, cmpStatus)
 	slices.SortFunc(results.Inventory.Packages, CmpPackages)
 	slices.SortFunc(results.Inventory.PackageVulns, cmpPackageVulns)
