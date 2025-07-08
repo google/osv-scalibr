@@ -129,7 +129,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var pkgs = []*extractor.Package{}
 
 	if input.Info != nil && input.Info.Size() > e.maxMetaDBFileSize {
-		return inventory.Inventory{}, fmt.Errorf("Containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
+		return inventory.Inventory{}, fmt.Errorf("containerd metadb file %s is too large: %d", input.Path, input.Info.Size())
 	}
 	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
 	// This will still allow to handle the snapshot of a machine.
