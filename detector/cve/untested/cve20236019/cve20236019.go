@@ -72,6 +72,30 @@ func (Detector) RequiredExtractors() []string {
 	return []string{wheelegg.Name}
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForPackage(nil)
+}
+
+func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+	pkg := &extractor.Package{
+		Name:     "ray",
+		PURLType: "pypi",
+	}
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2023-6019",
+			Summary: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
+			Details: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
+			Affected: inventory.PackageToAffected(pkg, "2.8.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: dbSpecific,
+		},
+	}}}
+}
+
 // Scan scans for the vulnerability
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	rayVersion, pkg := findRayPackage(px)
@@ -102,20 +126,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		return inventory.Finding{}, nil
 	}
 
-	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2023-6019",
-			Summary: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
-			Details: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
-			Affected: inventory.PackageToAffected(pkg, "2.8.1", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
-				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-			}),
-			DatabaseSpecific: map[string]any{
-				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-			},
-		},
-	}}}, nil
+	dbSpecific := map[string]any{
+		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	}
+	return d.findingForPackage(dbSpecific), nil
 }
 
 // Find the Ray package and its version

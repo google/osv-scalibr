@@ -132,6 +132,9 @@ type FS struct {
 	tree *RootNode
 }
 
+var _ scalibrfs.FS = &FS{}
+var _ EvalSymlinksFS = &FS{}
+
 // Open opens a file from the virtual filesystem.
 func (chainfs *FS) Open(name string) (fs.File, error) {
 	vf, err := chainfs.getVirtualFile(name)
@@ -179,6 +182,17 @@ func (chainfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return strings.Compare(a.Name(), b.Name())
 	})
 	return dirEntries, nil
+}
+
+// EvalSymlink returns the "real" path of a given path.
+// This only works for paths where an actual file (symlink or otherwise) actually exists at that location.
+func (chainfs *FS) EvalSymlink(path string) (string, error) {
+	vf, err := chainfs.getVirtualFile(path)
+	if err != nil || vf == nil {
+		return "", fmt.Errorf("failed to get virtual file to eval symlink %s: %w", path, err)
+	}
+
+	return vf.virtualPath, nil
 }
 
 // getVirtualFile returns the virtualFile object for the given path. The virtualFile object stores

@@ -45,6 +45,7 @@ import (
 // RequirementKey is a comparable type that uniquely identifies a package dependency in a manifest.
 type RequirementKey struct {
 	resolve.PackageKey
+
 	ArtifactType string
 	Classifier   string
 }
@@ -76,12 +77,14 @@ type ManifestSpecific struct {
 // PropertyWithOrigin is a maven property with the origin where it comes from.
 type PropertyWithOrigin struct {
 	maven.Property
+
 	Origin string // Origin indicates where the property comes from
 }
 
 // DependencyWithOrigin is a maven dependency with the origin where it comes from.
 type DependencyWithOrigin struct {
 	maven.Dependency
+
 	Origin string // Origin indicates where the dependency comes from
 }
 
@@ -546,6 +549,7 @@ type Patches struct {
 // Patch represents an individual dependency to be upgraded, and the version to upgrade to
 type Patch struct {
 	maven.DependencyKey
+
 	NewRequire string
 }
 
@@ -909,6 +913,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 				updated["parent"] = true
 				type RawParent struct {
 					maven.ProjectKey
+
 					InnerXML string `xml:",innerxml"`
 				}
 				var rawParent RawParent
@@ -950,6 +955,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 				}
 				type RawProfile struct {
 					maven.Profile
+
 					InnerXML string `xml:",innerxml"`
 				}
 				var rawProfile RawProfile
@@ -968,6 +974,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 				}
 				type RawPlugin struct {
 					maven.Plugin
+
 					InnerXML string `xml:",innerxml"`
 				}
 				var rawPlugin RawPlugin
@@ -982,6 +989,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 			case "dependencyManagement":
 				type RawDependencyManagement struct {
 					maven.DependencyManagement
+
 					InnerXML string `xml:",innerxml"`
 				}
 				var rawDepMgmt RawDependencyManagement
@@ -1101,6 +1109,7 @@ func writeDependency(w io.Writer, enc *forkedxml.Encoder, raw string, patches ma
 			if tt.Name.Local == "dependency" {
 				type RawDependency struct {
 					maven.Dependency
+
 					InnerXML string `xml:",innerxml"`
 				}
 				var rawDep RawDependency

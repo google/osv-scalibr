@@ -21,6 +21,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
+	"github.com/google/osv-scalibr/log"
 )
 
 // NpmRelaxer implements RequirementRelaxer for npm.
@@ -55,23 +56,28 @@ func (r NpmRelaxer) Relax(ctx context.Context, cl resolve.Client, req resolve.Re
 	if err != nil {
 		return req, false
 	}
-	var vers []string
+	var vers []*semver.Version
 	for _, vk := range allVKs {
-		if vk.VersionType == resolve.Concrete {
-			vers = append(vers, vk.Version)
+		if vk.VersionType != resolve.Concrete {
+			continue
 		}
+		sv, err := semver.NPM.Parse(vk.Version)
+		if err != nil {
+			log.Warnf("failed to parse npm version %s: %v", vk.Version, err)
+			continue
+		}
+		vers = append(vers, sv)
 	}
-	slices.SortFunc(vers, semver.NPM.Compare)
+	slices.SortFunc(vers, func(a *semver.Version, b *semver.Version) int {
+		return a.Compare(b)
+	})
 
 	// Find the versions on either side of the upper boundary of the requirement
 	var lastIdx int   // highest version matching constraint
 	nextIdx := -1     // next version outside of range, preferring non-prerelease
 	nextIsPre := true // if the next version is a prerelease version
 	for lastIdx = len(vers) - 1; lastIdx >= 0; lastIdx-- {
-		v, err := semver.NPM.Parse(vers[lastIdx])
-		if err != nil {
-			continue
-		}
+		v := vers[lastIdx]
 		if c.MatchVersion(v) { // found the upper bound, stop iterating
 			break
 		}
@@ -100,7 +106,7 @@ func (r NpmRelaxer) Relax(ctx context.Context, cl resolve.Client, req resolve.Re
 	// using the latest versions of the ranges
 
 	cmpVer := vers[lastIdx]
-	_, diff, _ := semver.NPM.Difference(cmpVer, vers[nextIdx])
+	_, diff := cmpVer.Difference(vers[nextIdx])
 	if !configLevel.Allows(diff) {
 		return req, false
 	}
@@ -115,11 +121,7 @@ func (r NpmRelaxer) Relax(ctx context.Context, cl resolve.Client, req resolve.Re
 	// Find the highest version with the same difference
 	best := vers[nextIdx]
 	for i := nextIdx + 1; i < len(vers); i++ {
-		_, d, err := semver.NPM.Difference(cmpVer, vers[i])
-		if err != nil {
-			continue
-		}
-
+		_, d := cmpVer.Difference(vers[i])
 		// If we've exceeded our allowed upgrade level, stop looking.
 		if !configLevel.Allows(d) {
 			break
@@ -130,19 +132,15 @@ func (r NpmRelaxer) Relax(ctx context.Context, cl resolve.Client, req resolve.Re
 		if d < diff {
 			break
 		}
-		ver, err := semver.NPM.Parse(vers[i])
-		if err != nil {
-			continue
-		}
-		if !ver.IsPrerelease() || nextIsPre {
+		if !vers[i].IsPrerelease() || nextIsPre {
 			best = vers[i]
 		}
 	}
 
 	if diff == semver.DiffPatch {
-		req.Version = "~" + best
+		req.Version = "~" + best.String()
 	} else {
-		req.Version = "^" + best
+		req.Version = "^" + best.String()
 	}
 
 	return req, true

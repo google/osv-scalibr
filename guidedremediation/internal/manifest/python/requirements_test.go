@@ -15,12 +15,15 @@
 package python
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"deps.dev/util/resolve"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
+	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 type testManifest struct {
@@ -144,10 +147,67 @@ func TestRead(t *testing.T) {
 						Name:   "Mopidy-Dirble",
 					},
 					VersionType: resolve.Requirement,
-					Version:     "~= 1.1",
+					Version:     "~=1.1",
 				},
 			},
 		},
 	}
 	checkManifest(t, "Manifest", got, want)
+}
+
+func TestWrite(t *testing.T) {
+	rw := GetReadWriter()
+	fsys := fs.DirFS("./testdata")
+	manif, err := rw.Read("requirements.txt", fsys)
+	if err != nil {
+		t.Fatalf("error reading manifest: %v", err)
+	}
+
+	patches := []result.Patch{
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "docopt",
+					VersionFrom: "==0.6.1",
+					VersionTo:   "==0.6.2",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "requests",
+					VersionFrom: ">=2.8.1,== 2.8.*",
+					VersionTo:   ">=2.32.4,<3.0.0",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "mopidy-dirble",
+					VersionFrom: "!=1.1",
+					VersionTo:   ">=1.3.0,<2.0.0",
+				},
+			},
+		},
+	}
+	outDir := t.TempDir()
+	outFile := filepath.Join(outDir, "requirements.txt")
+
+	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+		t.Fatalf("failed to write requirements.txt: %v", err)
+	}
+
+	got, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatalf("failed to read got requirements.txt: %v", err)
+	}
+	want, err := os.ReadFile(filepath.Join("./testdata", "want.requirements.txt"))
+	if err != nil {
+		t.Fatalf("failed to read want requirements.txt: %v", err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("requirements.txt (-want +got):\n%s", diff)
+	}
 }

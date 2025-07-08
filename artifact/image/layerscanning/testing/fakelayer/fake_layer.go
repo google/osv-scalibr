@@ -89,23 +89,17 @@ func (fakeLayer *FakeLayer) Uncompressed() (io.ReadCloser, error) {
 
 // Open returns a file if it exists in the files map.
 func (fakeLayer *FakeLayer) Open(name string) (fs.File, error) {
-	if _, ok := fakeLayer.files[name]; ok {
-		filename := filepath.Join(fakeLayer.testDir, name)
-		return os.Open(filename)
-	}
-	return nil, os.ErrNotExist
+	filename := filepath.Join(fakeLayer.testDir, name)
+
+	return os.Open(filename)
 }
 
 // Stat returns the file info of a file if it exists in the files map.
 func (fakeLayer *FakeLayer) Stat(name string) (fs.FileInfo, error) {
-	if _, ok := fakeLayer.files[name]; ok {
-		return os.Stat(path.Join(fakeLayer.testDir, name))
-	}
-	return nil, os.ErrNotExist
+	return os.Stat(path.Join(fakeLayer.testDir, name))
 }
 
-// ReadDir is not used in the trace package since individual files are opened instead of
-// directories.
+// ReadDir reads the directory named by name and returns a list of directory entries.
 func (fakeLayer *FakeLayer) ReadDir(name string) ([]fs.DirEntry, error) {
-	return nil, errors.New("not implemented")
+	return os.ReadDir(filepath.Join(fakeLayer.testDir, name))
 }

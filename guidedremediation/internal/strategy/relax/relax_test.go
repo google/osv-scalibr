@@ -27,6 +27,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
 	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
@@ -38,8 +39,10 @@ import (
 func TestComputePatches(t *testing.T) {
 	npmRW, err := npm.GetReadWriter("")
 	if err != nil {
-		t.Fatalf("failed getting ReadWriter: %v", err)
+		t.Fatalf("failed getting npm ReadWriter: %v", err)
 	}
+	pythonRW := python.GetReadWriter()
+
 	tests := []struct {
 		name         string
 		universeFile string
@@ -114,6 +117,81 @@ func TestComputePatches(t *testing.T) {
 				UpgradeConfig: upgrade.NewConfig(),
 			},
 			wantFile: "testdata/npm/deepen/patches.json",
+		},
+		{
+			name:         "python-simple",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/simple/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/simple/patches.json",
+		},
+		{
+			name:         "python-no-fix",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/no-fix/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/no-fix/patches.json",
+		},
+		{
+			name:         "python-diamond",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/diamond/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/diamond/patches.json",
+		},
+		{
+			name:         "python-removed-dependency",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/removed/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/removed/patches.json",
+		},
+		{
+			name:         "python-introduce-new-vuln",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/introduce/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/introduce/patches.json",
+		},
+		{
+			name:         "python-non-constraining-dependency",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/non-constraining/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/non-constraining/patches.json",
+		},
+		{
+			name:         "python-deepen",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/deepen/requirements.txt",
+			readWriter:   pythonRW,
+			opts:         options.DefaultRemediationOptions(),
+			wantFile:     "testdata/python/deepen/patches.json",
+		},
+		{
+			name:         "python-max-depth",
+			universeFile: "testdata/python/universe.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			manifestPath: "python/max-depth/requirements.txt",
+			readWriter:   pythonRW,
+			opts: options.RemediationOptions{
+				MaxDepth:      3,
+				UpgradeConfig: upgrade.NewConfig(),
+			},
+			wantFile: "testdata/python/max-depth/patches.json",
 		},
 	}
 

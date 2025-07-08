@@ -39,8 +39,9 @@ type ResolvedGraph struct {
 
 // ResolvedManifest is a manifest, its resolved dependency graph, and the vulnerabilities found in it.
 type ResolvedManifest struct {
-	Manifest manifest.Manifest
 	ResolvedGraph
+
+	Manifest manifest.Manifest
 }
 
 // ResolveManifest resolves and find vulnerabilities in a manifest.
