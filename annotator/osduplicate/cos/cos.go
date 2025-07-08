@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/annotator/osduplicate"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -31,8 +30,8 @@ import (
 const (
 	// Name of the Annotator.
 	Name           = "vex/os-duplicate/cos"
-	CosPkgInfoPath = "etc/cos-package-info.json"
-	CosPkgDir      = "mnt/stateful_partition/var_overlay/db/pkg/"
+	cosPkgInfoPath = "etc/cos-package-info.json"
+	cosPkgDir      = "mnt/stateful_partition/var_overlay/db/pkg/"
 )
 
 // Annotator adds annotations to language packages that have already been found in COS OS packages.
@@ -54,25 +53,26 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in COS OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
-
-	for location, pkgs := range locationToPKGs {
+	for _, pkg := range results.Packages {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
 		}
-		// annotate every package found under COS pkg install folder
-		if !strings.HasPrefix(location, CosPkgDir) {
+
+		if len(pkg.Locations) == 0 {
 			continue
 		}
 
-		for _, pkg := range pkgs {
-			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-				Plugin:          Name,
-				Justification:   vex.ComponentNotPresent,
-				MatchesAllVulns: true,
-			})
+		loc := pkg.Locations[0]
+		// annotate every package found under COS pkg install folder
+		if !strings.HasPrefix(loc, cosPkgDir) {
+			continue
 		}
+		pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+			Plugin:          Name,
+			Justification:   vex.ComponentNotPresent,
+			MatchesAllVulns: true,
+		})
 	}
 	return nil
 }
