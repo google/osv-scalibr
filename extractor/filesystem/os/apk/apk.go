@@ -16,14 +16,13 @@
 package apk
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/apk/apkutil"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
@@ -136,61 +135,21 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-// parseSingleApkRecord reads from the scanner a single record,
-// returns nil, nil when scanner ends.
-func parseSingleApkRecord(scanner *bufio.Scanner) (map[string]string, error) {
-	// There is currently 26 keys defined here (Under "Installed Database V2"):
-	// https://wiki.alpinelinux.org/wiki/Apk_spec
-	group := map[string]string{}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if line != "" {
-			key, val, found := strings.Cut(line, ":")
-
-			if !found {
-				return nil, fmt.Errorf("invalid line: %q", line)
-			}
-
-			group[key] = val
-			continue
-		}
-
-		// check both that line is empty and we have filled out data in group
-		// this avoids double empty lines returning early
-		if line == "" && len(group) > 0 {
-			// scanner.Err() could only be non nil when Scan() returns false
-			// so we can return nil directly here
-			return group, nil
-		}
-	}
-
-	return group, scanner.Err()
-}
-
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	scanner := bufio.NewScanner(input.Reader)
+	scanner := apkutil.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
 
-	for eof := false; !eof; {
+	for scanner.Scan() {
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
 		}
 
-		record, err := parseSingleApkRecord(scanner)
-		if err != nil {
-			return nil, fmt.Errorf("error while parsing apk status file %q: %w", input.Path, err)
-		}
-
-		if len(record) == 0 {
-			break
-		}
+		record := scanner.Record()
 
 		var sourceCode *extractor.SourceCodeIdentifier
 		if commit, ok := record["c"]; ok {
@@ -222,6 +181,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		packages = append(packages, pkg)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error while parsing apk status file %q: %w", input.Path, err)
 	}
 
 	return packages, nil
