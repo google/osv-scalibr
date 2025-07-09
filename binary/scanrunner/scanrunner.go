@@ -58,6 +58,12 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+
+		cleanupErr := img.CleanUp()
+		if cleanupErr != nil {
+			log.Errorf("failed to clean up image: %s", err)
+		}
+
 		if err != nil {
 			log.Errorf("Failed to scan container: %v", err)
 			return 1

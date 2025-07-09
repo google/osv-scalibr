@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"runtime"
 	"slices"
 	"time"
 
@@ -337,6 +338,9 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
 	}
+
+	// Keep the img variable alive till the end incase cleanup is not called on the parent.
+	runtime.KeepAlive(img)
 
 	return scanResult, nil
 }

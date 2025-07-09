@@ -146,7 +146,12 @@ func (img *Image) CleanUp() error {
 		log.Warnf("failed to close content blob: %v", err)
 	}
 
-	return os.Remove(img.contentBlob.Name())
+	err := os.Remove(img.contentBlob.Name())
+	// Make sure the image is alive so that the runtime cleanup doesn't run
+	// until this cleanup is finished.
+	runtime.KeepAlive(img)
+
+	return err
 }
 
 // Size returns the size of the underlying directory of the image in bytes.
@@ -231,7 +236,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 	// call CleanUp() or there is an error during creation of the image.
 	runtime.AddCleanup(outputImage, func(file *os.File) {
 		// Defensively close the file. Ignore the error because the file may already be closed.
-		file.Close()
+		_ = file.Close()
 		err := os.Remove(file.Name())
 		if err == nil {
 			log.Warnf("%q was removed through cleanup function. This is unexpected as the user should have called CleanUp()", file.Name())
