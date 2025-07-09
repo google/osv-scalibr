@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
+	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
 )
@@ -35,10 +36,11 @@ type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
 var VEX = InitMap{
+	apk.Name:      {apk.New},
 	cachedir.Name: {cachedir.New},
+	cos.Name:      {cos.New},
 	dpkg.Name:     {dpkg.New},
 	rpm.Name:      {rpm.NewDefault},
-	apk.Name:      {apk.New},
 }
 
 // Default detectors that are recommended to be enabled.
