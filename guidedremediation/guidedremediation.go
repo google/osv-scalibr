@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
@@ -607,6 +608,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
+	case "requirements.txt":
+		return python.GetReadWriter(), nil
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
