@@ -126,8 +126,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	}
 	defer f.Close()
 
-	ctx := context.Background()
-	inv, err := requirements.NewDefault().Extract(ctx, &filesystem.ScanInput{
+	inv, err := requirements.NewDefault().Extract(context.Background(), &filesystem.ScanInput{
 		FS:     fsys,
 		Path:   path,
 		Root:   filepath.Dir(path),
@@ -178,6 +177,7 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	requirements := make(map[string][]VersionConstraint)
 	for _, patch := range patches {

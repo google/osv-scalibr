@@ -61,8 +61,8 @@ import (
 // patched to remove vulnerabilities. It also returns a Result describing the changes made.
 func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	var (
-		hasManifest bool = (opts.Manifest != "")
-		hasLockfile bool = (opts.Lockfile != "")
+		hasManifest = opts.Manifest != ""
+		hasLockfile = opts.Lockfile != ""
 		manifestRW  manifest.ReadWriter
 		lockfileRW  lockfile.ReadWriter
 	)
