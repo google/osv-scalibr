@@ -32,7 +32,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	scalibrImage "github.com/google/osv-scalibr/artifact/image"
+	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -125,11 +125,11 @@ func (img *Image) FS() scalibrfs.FS {
 }
 
 // ChainLayers returns the chain layers of the image.
-func (img *Image) ChainLayers() ([]scalibrImage.ChainLayer, error) {
+func (img *Image) ChainLayers() ([]scalibrimage.ChainLayer, error) {
 	if len(img.chainLayers) == 0 {
 		return nil, ErrNoLayersFound
 	}
-	scalibrChainLayers := make([]scalibrImage.ChainLayer, 0, len(img.chainLayers))
+	scalibrChainLayers := make([]scalibrimage.ChainLayer, 0, len(img.chainLayers))
 	for _, chainLayer := range img.chainLayers {
 		scalibrChainLayers = append(scalibrChainLayers, chainLayer)
 	}
@@ -161,7 +161,7 @@ func (img *Image) Size() int64 {
 
 // FromRemoteName creates an Image from a remote container image name.
 func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Option) (*Image, error) {
-	v1Image, err := scalibrImage.V1ImageFromRemoteName(imageName, imageOptions...)
+	v1Image, err := scalibrimage.V1ImageFromRemoteName(imageName, imageOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
