@@ -292,12 +292,17 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	}
 
 	// Suppress running enrichers until after layer details are populated.
-	enrichers := pl.Enrichers(config.Plugins)
-	for i, p := range config.Plugins {
-		if _, ok := p.(enricher.Enricher); ok {
-			config.Plugins[i] = nil
+	var enrichers []enricher.Enricher
+	var nonEnricherPlugins []plugin.Plugin
+
+	for _, p := range config.Plugins {
+		if e, ok := p.(enricher.Enricher); ok {
+			enrichers = append(enrichers, e)
+		} else {
+			nonEnricherPlugins = append(nonEnricherPlugins, p)
 		}
 	}
+	config.Plugins = nonEnricherPlugins
 
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
