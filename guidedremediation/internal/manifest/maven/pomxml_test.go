@@ -23,7 +23,7 @@ import (
 	"runtime"
 	"testing"
 
-	mavenutil "deps.dev/util/maven"
+	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
@@ -334,69 +334,136 @@ func TestReadWrite(t *testing.T) {
 			mavenReqKey(t, "org.import:xyz", "pom", ""): {"import"},
 		},
 		EcosystemSpecific: ManifestSpecific{
-			Parent: mavenutil.Parent{
-				ProjectKey: mavenutil.ProjectKey{
+			Parent: maven.Parent{
+				ProjectKey: maven.ProjectKey{
 					GroupID:    "org.parent",
 					ArtifactID: "parent-pom",
 					Version:    "1.1.1",
 				},
 				RelativePath: "../parent/pom.xml",
 			},
+			ParentPaths: []string{"my-app/pom.xml", "parent/pom.xml", "parent/grandparent/pom.xml"},
 			Properties: []PropertyWithOrigin{
-				{Property: mavenutil.Property{Name: "project.build.sourceEncoding", Value: "UTF-8"}},
-				{Property: mavenutil.Property{Name: "maven.compiler.source", Value: "1.7"}},
-				{Property: mavenutil.Property{Name: "maven.compiler.target", Value: "1.7"}},
-				{Property: mavenutil.Property{Name: "junit.version", Value: "4.12"}},
-				{Property: mavenutil.Property{Name: "zeppelin.daemon.package.base", Value: "../bin"}},
-				{Property: mavenutil.Property{Name: "def.version", Value: "2.3.4"}, Origin: "profile@profile-one"},
+				{Property: maven.Property{Name: "project.build.sourceEncoding", Value: "UTF-8"}},
+				{Property: maven.Property{Name: "maven.compiler.source", Value: "1.7"}},
+				{Property: maven.Property{Name: "maven.compiler.target", Value: "1.7"}},
+				{Property: maven.Property{Name: "junit.version", Value: "4.12"}},
+				{Property: maven.Property{Name: "zeppelin.daemon.package.base", Value: "../bin"}},
+				{Property: maven.Property{Name: "def.version", Value: "2.3.4"}, Origin: "profile@profile-one"},
+				{Property: maven.Property{Name: "aaa.version", Value: "1.1.1"}},
 			},
 			OriginalRequirements: []DependencyWithOrigin{
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.1.1", Type: "pom"},
+					Dependency: maven.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.1.1", Type: "pom"},
 					Origin:     "parent",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "junit", ArtifactID: "junit", Version: "${junit.version}", Scope: "test"},
+					Dependency: maven.Dependency{GroupID: "junit", ArtifactID: "junit", Version: "${junit.version}", Scope: "test"},
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "abc", Version: "1.0.1"},
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "abc", Version: "1.0.1"},
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "no-version"},
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version"},
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "exclusions", Version: "1.0.0",
-						Exclusions: []mavenutil.Exclusion{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "exclusions", Version: "1.0.0",
+						Exclusions: []maven.Exclusion{
 							{GroupID: "org.exclude", ArtifactID: "exclude"},
 						}},
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "xyz", Version: "2.0.0"},
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "xyz", Version: "2.0.0"},
 					Origin:     "management",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "no-version", Version: "2.0.0"},
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version", Version: "2.0.0"},
 					Origin:     "management",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.import", ArtifactID: "import", Version: "1.0.0", Scope: "import", Type: "pom"},
+					Dependency: maven.Dependency{GroupID: "org.import", ArtifactID: "import", Version: "1.0.0", Scope: "import", Type: "pom"},
 					Origin:     "management",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.profile", ArtifactID: "abc", Version: "1.2.3"},
+					Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "abc", Version: "1.2.3"},
 					Origin:     "profile@profile-one",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.profile", ArtifactID: "def", Version: "${def.version}"},
+					Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "def", Version: "${def.version}"},
 					Origin:     "profile@profile-one",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.import", ArtifactID: "xyz", Version: "6.6.6", Scope: "import", Type: "pom"},
+					Dependency: maven.Dependency{GroupID: "org.import", ArtifactID: "xyz", Version: "6.6.6", Scope: "import", Type: "pom"},
 					Origin:     "profile@profile-two@management",
 				},
 				{
-					Dependency: mavenutil.Dependency{GroupID: "org.dep", ArtifactID: "plugin-dep", Version: "2.3.3"},
+					Dependency: maven.Dependency{GroupID: "org.dep", ArtifactID: "plugin-dep", Version: "2.3.3"},
 					Origin:     "plugin@org.plugin:plugin",
+				},
+			},
+			LocalRequirements: []DependencyWithOrigin{
+				{
+					Dependency: maven.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.1.1", Type: "pom"},
+					Origin:     "parent",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "junit", ArtifactID: "junit", Version: "${junit.version}", Scope: "test"},
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "abc", Version: "1.0.1"},
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version"},
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "exclusions", Version: "1.0.0",
+						Exclusions: []maven.Exclusion{
+							{GroupID: "org.exclude", ArtifactID: "exclude"},
+						}},
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "xyz", Version: "2.0.0"},
+					Origin:     "management",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version", Version: "2.0.0"},
+					Origin:     "management",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.import", ArtifactID: "import", Version: "1.0.0", Scope: "import", Type: "pom"},
+					Origin:     "management",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "abc", Version: "1.2.3"},
+					Origin:     "profile@profile-one",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "def", Version: "${def.version}"},
+					Origin:     "profile@profile-one",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.import", ArtifactID: "xyz", Version: "6.6.6", Scope: "import", Type: "pom"},
+					Origin:     "profile@profile-two@management",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.dep", ArtifactID: "plugin-dep", Version: "2.3.3"},
+					Origin:     "plugin@org.plugin:plugin",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.grandparent", ArtifactID: "grandparent-pom", Version: "1.1.1", Type: "pom"},
+					Origin:     "parent@parent/pom.xml@parent",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "ddd", Version: "1.2.3"},
+					Origin:     "parent@parent/pom.xml",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "aaa", Version: "${aaa.version}"},
+					Origin:     "parent@parent/pom.xml@management",
+				},
+				{
+					Dependency: maven.Dependency{GroupID: "org.upstream", ArtifactID: "parent-pom", Version: "1.2.3", Type: "pom"},
+					Origin:     "parent@parent/grandparent/pom.xml@parent",
 				},
 			},
 			RequirementsForUpdates: []resolve.RequirementVersion{
@@ -511,7 +578,7 @@ func TestMavenWrite(t *testing.T) {
 		DependencyPatches: DependencyPatches{
 			"": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.example",
 						ArtifactID: "abc",
 						Type:       "jar",
@@ -519,7 +586,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "1.0.2",
 				}: true,
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.example",
 						ArtifactID: "no-version",
 						Type:       "jar",
@@ -529,7 +596,7 @@ func TestMavenWrite(t *testing.T) {
 			},
 			"management": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.example",
 						ArtifactID: "xyz",
 						Type:       "jar",
@@ -537,7 +604,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "2.0.1",
 				}: true,
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.example",
 						ArtifactID: "extra-one",
 						Type:       "jar",
@@ -545,7 +612,7 @@ func TestMavenWrite(t *testing.T) {
 					NewRequire: "6.6.6",
 				}: false,
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.example",
 						ArtifactID: "extra-two",
 						Type:       "jar",
@@ -555,7 +622,7 @@ func TestMavenWrite(t *testing.T) {
 			},
 			"profile@profile-one": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.profile",
 						ArtifactID: "abc",
 						Type:       "jar",
@@ -565,7 +632,7 @@ func TestMavenWrite(t *testing.T) {
 			},
 			"profile@profile-two@management": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.import",
 						ArtifactID: "xyz",
 						Type:       "pom",
@@ -575,7 +642,7 @@ func TestMavenWrite(t *testing.T) {
 			},
 			"plugin@org.plugin:plugin": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.dep",
 						ArtifactID: "plugin-dep",
 						Type:       "jar",
@@ -615,7 +682,7 @@ func TestMavenWriteDM(t *testing.T) {
 		DependencyPatches: DependencyPatches{
 			"": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "junit",
 						ArtifactID: "junit",
 						Type:       "jar",
@@ -625,7 +692,7 @@ func TestMavenWriteDM(t *testing.T) {
 			},
 			"parent": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.parent",
 						ArtifactID: "parent-pom",
 						Type:       "jar",
@@ -635,7 +702,7 @@ func TestMavenWriteDM(t *testing.T) {
 			},
 			"management": map[Patch]bool{
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.management",
 						ArtifactID: "abc",
 						Type:       "jar",
@@ -643,7 +710,7 @@ func TestMavenWriteDM(t *testing.T) {
 					NewRequire: "1.2.3",
 				}: false,
 				{
-					DependencyKey: mavenutil.DependencyKey{
+					DependencyKey: maven.DependencyKey{
 						GroupID:    "org.management",
 						ArtifactID: "xyz",
 						Type:       "jar",
@@ -750,8 +817,8 @@ func Test_buildPatches(t *testing.T) {
 		},
 	}
 	specific := ManifestSpecific{
-		Parent: mavenutil.Parent{
-			ProjectKey: mavenutil.ProjectKey{
+		Parent: maven.Parent{
+			ProjectKey: maven.ProjectKey{
 				GroupID:    "org.parent",
 				ArtifactID: "parent-pom",
 				Version:    "1.1.1",
@@ -759,70 +826,70 @@ func Test_buildPatches(t *testing.T) {
 			RelativePath: "../parent/pom.xml",
 		},
 		Properties: []PropertyWithOrigin{
-			{Property: mavenutil.Property{Name: "property.version", Value: "1.0.0"}},
-			{Property: mavenutil.Property{Name: "no.update.minor", Value: "9"}},
-			{Property: mavenutil.Property{Name: "def.version", Value: "2.3.4"}, Origin: "profile@profile-one"},
-			{Property: mavenutil.Property{Name: "aaa.version", Value: "1.1.1"}, Origin: "parent@" + parentPath},
+			{Property: maven.Property{Name: "property.version", Value: "1.0.0"}},
+			{Property: maven.Property{Name: "no.update.minor", Value: "9"}},
+			{Property: maven.Property{Name: "def.version", Value: "2.3.4"}, Origin: "profile@profile-one"},
+			{Property: maven.Property{Name: "aaa.version", Value: "1.1.1"}, Origin: "parent@" + parentPath},
 		},
-		OriginalRequirements: []DependencyWithOrigin{
+		LocalRequirements: []DependencyWithOrigin{
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.2.0", Type: "pom"},
+				Dependency: maven.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.2.0", Type: "pom"},
 				Origin:     "parent",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "junit", ArtifactID: "junit", Version: "${junit.version}", Scope: "test"},
+				Dependency: maven.Dependency{GroupID: "junit", ArtifactID: "junit", Version: "${junit.version}", Scope: "test"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "abc", Version: "1.0.1"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "abc", Version: "1.0.1"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "no-updates", Version: "9.9.9"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-updates", Version: "9.9.9"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "no-version"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "property", Version: "${property.version}"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "property", Version: "${property.version}"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "property-no-update", Version: "1.${no.update.minor}"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "property-no-update", Version: "1.${no.update.minor}"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "same-property", Version: "${property.version}"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "same-property", Version: "${property.version}"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "another-property", Version: "${property.version}"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "another-property", Version: "${property.version}"},
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "no-version", Version: "2.0.0"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "no-version", Version: "2.0.0"},
 				Origin:     "management",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "xyz", Version: "2.0.0"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "xyz", Version: "2.0.0"},
 				Origin:     "management",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.profile", ArtifactID: "abc", Version: "1.2.3"},
+				Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "abc", Version: "1.2.3"},
 				Origin:     "profile@profile-one",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.profile", ArtifactID: "def", Version: "${def.version}"},
+				Dependency: maven.Dependency{GroupID: "org.profile", ArtifactID: "def", Version: "${def.version}"},
 				Origin:     "profile@profile-one",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.import", ArtifactID: "xyz", Version: "6.6.6", Scope: "import", Type: "pom"},
+				Dependency: maven.Dependency{GroupID: "org.import", ArtifactID: "xyz", Version: "6.6.6", Scope: "import", Type: "pom"},
 				Origin:     "profile@profile-two@management",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.dep", ArtifactID: "plugin-dep", Version: "2.3.3"},
+				Dependency: maven.Dependency{GroupID: "org.dep", ArtifactID: "plugin-dep", Version: "2.3.3"},
 				Origin:     "plugin@org.plugin:plugin",
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "ddd", Version: "1.2.3"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "ddd", Version: "1.2.3"},
 				Origin:     "parent@" + parentPath,
 			},
 			{
-				Dependency: mavenutil.Dependency{GroupID: "org.example", ArtifactID: "aaa", Version: "${aaa.version}"},
+				Dependency: maven.Dependency{GroupID: "org.example", ArtifactID: "aaa", Version: "${aaa.version}"},
 				Origin:     "parent@" + parentPath + "@management",
 			},
 		},
@@ -832,7 +899,7 @@ func Test_buildPatches(t *testing.T) {
 			DependencyPatches: DependencyPatches{
 				"": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "abc",
 							Type:       "jar",
@@ -840,7 +907,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "1.0.2",
 					}: true,
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "another-property",
 							Type:       "jar",
@@ -848,7 +915,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "1.1.0",
 					}: true,
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "property-no-update",
 							Type:       "jar",
@@ -858,7 +925,7 @@ func Test_buildPatches(t *testing.T) {
 				},
 				"management": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "xyz",
 							Type:       "jar",
@@ -866,7 +933,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "2.0.1",
 					}: true,
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "no-version",
 							Type:       "jar",
@@ -874,7 +941,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "2.0.1",
 					}: true,
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "override",
 							Type:       "jar",
@@ -882,7 +949,7 @@ func Test_buildPatches(t *testing.T) {
 						NewRequire: "2.0.0",
 					}: false,
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "suggest",
 							Type:       "jar",
@@ -892,7 +959,7 @@ func Test_buildPatches(t *testing.T) {
 				},
 				"profile@profile-one": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.profile",
 							ArtifactID: "abc",
 							Type:       "jar",
@@ -902,7 +969,7 @@ func Test_buildPatches(t *testing.T) {
 				},
 				"profile@profile-two@management": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.import",
 							ArtifactID: "xyz",
 							Type:       "pom",
@@ -912,7 +979,7 @@ func Test_buildPatches(t *testing.T) {
 				},
 				"plugin@org.plugin:plugin": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.dep",
 							ArtifactID: "plugin-dep",
 							Type:       "jar",
@@ -922,7 +989,7 @@ func Test_buildPatches(t *testing.T) {
 				},
 				"parent": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.parent",
 							ArtifactID: "parent-pom",
 							Type:       "pom",
@@ -944,7 +1011,7 @@ func Test_buildPatches(t *testing.T) {
 			DependencyPatches: DependencyPatches{
 				"": map[Patch]bool{
 					{
-						DependencyKey: mavenutil.DependencyKey{
+						DependencyKey: maven.DependencyKey{
 							GroupID:    "org.example",
 							ArtifactID: "ddd",
 							Type:       "jar",
