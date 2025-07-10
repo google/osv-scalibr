@@ -617,7 +617,7 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 				// Not default plugins
 				"govulncheck/binary",
 				"vscode/extensions",
-				"enricher/baseimage",
+				"baseimage",
 			},
 		},
 		{
@@ -731,7 +731,7 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 				PluginsToRun: []string{"enrichers/all"},
 			},
 			wantPlugins: []string{
-				"enricher/baseimage",
+				"baseimage",
 			},
 			dontWantPlugins: []string{
 				// Not Enrichers
@@ -754,7 +754,7 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 				// Not default plugins
 				"govulncheck/binary",
 				"vscode/extensions",
-				"enricher/baseimage",
+				"baseimage",
 			},
 		},
 		{
@@ -767,7 +767,7 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 				"windows/dismpatch",
 				"govulncheck/binary",
 				"vex/cachedir",
-				"enricher/baseimage",
+				"baseimage",
 			},
 		},
 	} {

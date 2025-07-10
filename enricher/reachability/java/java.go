@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package javareach
+// Package java provides an Enricher to add reachability annotations for Java Packages.
+package java
 
 import (
 	"archive/zip"
@@ -42,7 +43,7 @@ import (
 
 const (
 	// Name is the unique name of this detector.
-	Name = "enricher/java/javareach"
+	Name = "reachability/java"
 	// MetaDirPath is the path to the META-INF directory.
 	MetaDirPath   = "META-INF"
 	pathSeparator = '/'

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package javareach_test
+package java_test
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/java/javareach"
+	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
@@ -48,7 +48,7 @@ func TestScan(t *testing.T) {
 	jar := filepath.Join("testdata", reachableJar)
 
 	mockClient := mockClient(t)
-	enr := javareach.NewEnricher(mockClient)
+	enr := java.NewEnricher(mockClient)
 
 	pkgs := setupPackages([]string{testJar})
 	input := enricher.ScanInput{
@@ -99,11 +99,11 @@ func mockClient(t *testing.T) *http.Client {
 		}
 	}))
 
-	originalURL := javareach.MavenBaseURL
-	javareach.MavenBaseURL = server.URL
+	originalURL := java.MavenBaseURL
+	java.MavenBaseURL = server.URL
 
 	t.Cleanup(func() {
-		javareach.MavenBaseURL = originalURL
+		java.MavenBaseURL = originalURL
 		server.Close()
 	})
 

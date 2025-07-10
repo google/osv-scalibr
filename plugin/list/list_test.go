@@ -23,13 +23,57 @@ import (
 	pl "github.com/google/osv-scalibr/plugin/list"
 )
 
-func TestPluginNamesUnique(t *testing.T) {
+func TestExtractorNamesUnique(t *testing.T) {
+	all := pl.All()
 	names := make(map[string]plugin.Plugin)
-	for _, p := range pl.All() {
-		if prev, ok := names[p.Name()]; ok {
-			t.Errorf("%q for plugin %v already used by plugin: %v", p.Name(), p, prev)
+	for _, e := range pl.FilesystemExtractors(all) {
+		if prev, ok := names[e.Name()]; ok {
+			t.Errorf("%q for Extractor %v already used by Extractor: %v", e.Name(), e, prev)
 		} else {
-			names[p.Name()] = p
+			names[e.Name()] = e
+		}
+	}
+	for _, e := range pl.StandaloneExtractors(all) {
+		if prev, ok := names[e.Name()]; ok {
+			t.Errorf("%q for Extractor %v already used by Extractor: %v", e.Name(), e, prev)
+		} else {
+			names[e.Name()] = e
+		}
+	}
+}
+
+func TestDetectorNamesUnique(t *testing.T) {
+	all := pl.All()
+	names := make(map[string]plugin.Plugin)
+	for _, d := range pl.Detectors(all) {
+		if prev, ok := names[d.Name()]; ok {
+			t.Errorf("%q for Detector %v already used by Detector: %v", d.Name(), d, prev)
+		} else {
+			names[d.Name()] = d
+		}
+	}
+}
+
+func TestAnnotatorNamesUnique(t *testing.T) {
+	all := pl.All()
+	names := make(map[string]plugin.Plugin)
+	for _, a := range pl.Annotators(all) {
+		if prev, ok := names[a.Name()]; ok {
+			t.Errorf("%q for Annotator %v already used by Annotator: %v", a.Name(), a, prev)
+		} else {
+			names[a.Name()] = a
+		}
+	}
+}
+
+func TestEnricherNamesUnique(t *testing.T) {
+	all := pl.All()
+	names := make(map[string]plugin.Plugin)
+	for _, e := range pl.Enrichers(all) {
+		if prev, ok := names[e.Name()]; ok {
+			t.Errorf("%q for Enricher %v already used by Enricher: %v", e.Name(), e, prev)
+		} else {
+			names[e.Name()] = e
 		}
 	}
 }
@@ -71,7 +115,7 @@ func TestFromNames(t *testing.T) {
 		{
 			desc:      "Find_all_Plugins_of_a_type",
 			names:     []string{"python", "windows", "cis", "vex", "layerdetails"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/requirementsnet", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "enricher/baseimage"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/requirementsnet", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "baseimage"},
 		},
 		{
 			desc:      "Remove_duplicates",
