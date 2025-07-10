@@ -124,6 +124,19 @@ func (img *Image) FS() scalibrfs.FS {
 	return img.chainLayers[len(img.chainLayers)-1].FS()
 }
 
+// Layers returns the individual layers of the image.
+func (img *Image) Layers() ([]scalibrimage.Layer, error) {
+	chainLayers, err := img.ChainLayers()
+	if err != nil {
+		return nil, err
+	}
+	scalibrLayers := make([]scalibrimage.Layer, 0, len(chainLayers))
+	for _, chainLayer := range chainLayers {
+		scalibrLayers = append(scalibrLayers, chainLayer.Layer())
+	}
+	return scalibrLayers, nil
+}
+
 // ChainLayers returns the chain layers of the image.
 func (img *Image) ChainLayers() ([]scalibrimage.ChainLayer, error) {
 	if len(img.chainLayers) == 0 {
