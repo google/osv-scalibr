@@ -186,7 +186,7 @@ func TestWrite(t *testing.T) {
 			PackageUpdates: []result.PackageUpdate{
 				{
 					Name:        "mopidy-dirble",
-					VersionFrom: "!=1.1",
+					VersionFrom: "~=1.1",
 					VersionTo:   ">=1.3.0,<2.0.0",
 				},
 			},

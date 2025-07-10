@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
@@ -60,8 +61,8 @@ import (
 // patched to remove vulnerabilities. It also returns a Result describing the changes made.
 func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	var (
-		hasManifest bool = (opts.Manifest != "")
-		hasLockfile bool = (opts.Lockfile != "")
+		hasManifest = opts.Manifest != ""
+		hasLockfile = opts.Lockfile != ""
 		manifestRW  manifest.ReadWriter
 		lockfileRW  lockfile.ReadWriter
 	)
@@ -607,6 +608,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
+	case "requirements.txt":
+		return python.GetReadWriter(), nil
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }

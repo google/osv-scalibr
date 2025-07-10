@@ -114,8 +114,7 @@ func (r readWriter) System() resolve.System {
 
 // SupportedStrategies returns the remediation strategies supported for this manifest.
 func (r readWriter) SupportedStrategies() []strategy.Strategy {
-	// TODO(#853): add relax and in-place strategy
-	return []strategy.Strategy{}
+	return []strategy.Strategy{strategy.StrategyRelax}
 }
 
 // Read parses the manifest from the given file.
@@ -127,8 +126,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	}
 	defer f.Close()
 
-	ctx := context.Background()
-	inv, err := requirements.NewDefault().Extract(ctx, &filesystem.ScanInput{
+	inv, err := requirements.NewDefault().Extract(context.Background(), &filesystem.ScanInput{
 		FS:     fsys,
 		Path:   path,
 		Root:   filepath.Dir(path),
@@ -179,6 +177,7 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	requirements := make(map[string][]VersionConstraint)
 	for _, patch := range patches {
@@ -344,7 +343,7 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 		if index >= 0 {
 			for i := index - 1; i >= 0; i-- {
 				// Copy the space between requirements and post-requirements.
-				if i < 0 || line[i] != ' ' {
+				if line[i] != ' ' {
 					break
 				}
 				sb.WriteByte(' ')
@@ -354,7 +353,7 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 			// Copy space characters if nothing meaningful is found.
 			spaceIndex := -1
 			for i := len(line) - 1; i >= 0; i-- {
-				if i < 0 || !unicode.IsSpace(rune(line[i])) {
+				if !unicode.IsSpace(rune(line[i])) {
 					spaceIndex = i
 					break
 				}

@@ -169,12 +169,20 @@ func TestFixRelax(t *testing.T) {
 		noIntroduce      bool
 	}{
 		{
-			name:             "basic",
+			name:             "npm basic",
 			universeDir:      "testdata/npm",
 			manifest:         "testdata/npm/basicrelax/package.json",
 			lockfile:         "testdata/npm/basicrelax/package-lock.json",
 			wantManifestPath: "testdata/npm/basicrelax/want.package.json",
 			wantResultPath:   "testdata/npm/basicrelax/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
+		{
+			name:             "python basic",
+			universeDir:      "testdata/python",
+			manifest:         "testdata/python/relax/requirements.txt",
+			wantManifestPath: "testdata/python/relax/want.requirements.txt",
+			wantResultPath:   "testdata/python/relax/result.json",
 			remOpts:          options.DefaultRemediationOptions(),
 		},
 	} {
@@ -183,7 +191,7 @@ func TestFixRelax(t *testing.T) {
 			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
 
 			tmpDir := t.TempDir()
-			manifestPath := filepath.Join(tmpDir, "package.json")
+			manifestPath := filepath.Join(tmpDir, filepath.Base(tt.manifest))
 			data, err := os.ReadFile(tt.manifest)
 			if err != nil {
 				t.Fatalf("failed reading manifest for copy: %v", err)
@@ -194,7 +202,7 @@ func TestFixRelax(t *testing.T) {
 
 			var lockfilePath string
 			if tt.lockfile != "" {
-				lockfilePath = filepath.Join(tmpDir, "package-lock.json")
+				lockfilePath = filepath.Join(tmpDir, filepath.Base(tt.lockfile))
 				data, err := os.ReadFile(tt.lockfile)
 				if err != nil {
 					t.Fatalf("failed reading lockfile for copy: %v", err)
