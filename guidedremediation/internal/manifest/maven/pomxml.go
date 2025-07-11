@@ -68,8 +68,10 @@ func MakeRequirementKey(requirement resolve.RequirementVersion) RequirementKey {
 // ManifestSpecific is ecosystem-specific information needed for the pom.xml manifest.
 type ManifestSpecific struct {
 	Parent                 maven.Parent
-	Properties             []PropertyWithOrigin         // Properties from the base project
+	ParentPaths            []string                     // Paths to the parent pom.xml files
+	Properties             []PropertyWithOrigin         // Properties from the base project and any local parent projects
 	OriginalRequirements   []DependencyWithOrigin       // Dependencies from the base project
+	LocalRequirements      []DependencyWithOrigin       // Dependencies from the base project and any local parent projects
 	RequirementsForUpdates []resolve.RequirementVersion // Requirements that we only need for updates
 	Repositories           []maven.Repository
 }
@@ -140,8 +142,10 @@ func (m *mavenManifest) Clone() manifest.Manifest {
 		groups:       maps.Clone(m.groups),
 		specific: ManifestSpecific{
 			Parent:                 m.specific.Parent,
+			ParentPaths:            slices.Clone(m.specific.ParentPaths),
 			Properties:             slices.Clone(m.specific.Properties),
 			OriginalRequirements:   slices.Clone(m.specific.OriginalRequirements),
+			LocalRequirements:      slices.Clone(m.specific.LocalRequirements),
 			RequirementsForUpdates: slices.Clone(m.specific.RequirementsForUpdates),
 			Repositories:           slices.Clone(m.specific.Repositories),
 		},
@@ -296,6 +300,12 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		reqsForUpdates = addRequirements(reqsForUpdates, groups, plugin.Dependencies, "")
 	}
 
+	// Get the local dependencies and properties from all parent projects.
+	localDeps, localProps, paths, err := getLocalDepsAndProps(fsys, path, project.Parent)
+	if err != nil {
+		return nil, err
+	}
+
 	return &mavenManifest{
 		filePath: path,
 		root: resolve.Version{
@@ -312,8 +322,10 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		groups:       groups,
 		specific: ManifestSpecific{
 			Parent:                 project.Parent,
-			Properties:             properties,
+			ParentPaths:            paths,
+			Properties:             append(properties, localProps...),
 			OriginalRequirements:   origRequirements,
+			LocalRequirements:      append(origRequirements, localDeps...),
 			RequirementsForUpdates: reqsForUpdates,
 			Repositories:           project.Repositories,
 		},
@@ -441,6 +453,58 @@ func mavenOrigin(list ...string) string {
 	return result
 }
 
+// TODO: refactor MergeParents to return local requirements and properties
+func getLocalDepsAndProps(fsys scalibrfs.FS, path string, parent maven.Parent) ([]DependencyWithOrigin, []PropertyWithOrigin, []string, error) {
+	var localDeps []DependencyWithOrigin
+	var localProps []PropertyWithOrigin
+
+	// Walk through local parent pom.xml for original dependencies and properties.
+	currentPath := path
+	visited := make(map[maven.ProjectKey]bool, mavenutil.MaxParent)
+	paths := []string{currentPath}
+	for range mavenutil.MaxParent {
+		if parent.GroupID == "" || parent.ArtifactID == "" || parent.Version == "" {
+			break
+		}
+		if visited[parent.ProjectKey] {
+			// A cycle of parents is detected
+			return nil, nil, nil, errors.New("a cycle of parents is detected")
+		}
+		visited[parent.ProjectKey] = true
+
+		currentPath = mavenutil.ParentPOMPath(&filesystem.ScanInput{FS: fsys}, currentPath, string(parent.RelativePath))
+		if currentPath == "" {
+			// No more local parent pom.xml exists.
+			break
+		}
+
+		f, err := fsys.Open(currentPath)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open parent file %s: %w", currentPath, err)
+		}
+
+		var proj maven.Project
+		err = datasource.NewMavenDecoder(f).Decode(&proj)
+		f.Close()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to unmarshal project: %w", err)
+		}
+		if mavenutil.ProjectKey(proj) != parent.ProjectKey || proj.Packaging != "pom" {
+			// This is not the project that we are looking for, we should fetch from upstream
+			// that we don't have write access so we give up here.
+			break
+		}
+
+		origin := mavenOrigin(mavenutil.OriginParent, currentPath)
+		localDeps = append(localDeps, buildOriginalRequirements(proj, origin)...)
+		localProps = append(localProps, buildPropertiesWithOrigins(proj, origin)...)
+		paths = append(paths, currentPath)
+		parent = proj.Parent
+	}
+
+	return localDeps, localProps, paths, nil
+}
+
 // Write writes the manifest after applying the patches to outputPath.
 //
 // original is the manifest without patches. fsys is the FS that the manifest was read from.
@@ -453,58 +517,12 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 		return errors.New("invalid maven ManifestSpecific data")
 	}
 
-	// Walk through local parent pom.xml for original dependencies and properties.
-	// TODO: investigate if this can be done when merging parents in manifest reading
-	currentPath := original.FilePath()
-	parent := specific.Parent
-	visited := make(map[maven.ProjectKey]bool, mavenutil.MaxParent)
-	paths := []string{currentPath}
-	for range mavenutil.MaxParent {
-		if parent.GroupID == "" || parent.ArtifactID == "" || parent.Version == "" {
-			break
-		}
-		if visited[parent.ProjectKey] {
-			// A cycle of parents is detected
-			return errors.New("a cycle of parents is detected")
-		}
-		visited[parent.ProjectKey] = true
-
-		currentPath = mavenutil.ParentPOMPath(&filesystem.ScanInput{FS: fsys}, currentPath, string(parent.RelativePath))
-		if currentPath == "" {
-			// No more local parent pom.xml exists.
-			break
-		}
-
-		f, err := fsys.Open(currentPath)
-		if err != nil {
-			return fmt.Errorf("failed to open parent file %s: %w", currentPath, err)
-		}
-
-		var proj maven.Project
-		err = datasource.NewMavenDecoder(f).Decode(&proj)
-		f.Close()
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal project: %w", err)
-		}
-		if mavenutil.ProjectKey(proj) != parent.ProjectKey || proj.Packaging != "pom" {
-			// This is not the project that we are looking for, we should fetch from upstream
-			// that we don't have write access so we give up here.
-			break
-		}
-
-		origin := mavenOrigin(mavenutil.OriginParent, currentPath)
-		specific.OriginalRequirements = append(specific.OriginalRequirements, buildOriginalRequirements(proj, origin)...)
-		specific.Properties = append(specific.Properties, buildPropertiesWithOrigins(proj, origin)...)
-		parent = proj.Parent
-		paths = append(paths, currentPath)
-	}
-
 	allPatches, err := buildPatches(patches, specific)
 	if err != nil {
 		return err
 	}
 
-	for _, patchPath := range paths {
+	for _, patchPath := range specific.ParentPaths {
 		patches := allPatches[patchPath]
 		if patchPath == original.FilePath() {
 			patches = allPatches[""]
@@ -623,7 +641,7 @@ func buildPatches(patches []result.Patch, specific ManifestSpecific) (map[string
 	result := make(map[string]Patches)
 	for patch := range iterUpgrades(patches) {
 		var path string
-		origDep := OriginalDependency(patch, specific.OriginalRequirements)
+		origDep := OriginalDependency(patch, specific.LocalRequirements)
 		path, origDep.Origin = parentPathFromOrigin(origDep.Origin)
 		if _, ok := result[path]; !ok {
 			result[path] = Patches{
