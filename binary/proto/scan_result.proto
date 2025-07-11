@@ -296,6 +296,7 @@ message JavascriptPackageJSONMetadata {
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
+  bool from_npm_repository = 4;
 }
 
 // The additional data found in APK packages.

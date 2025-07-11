@@ -100,6 +100,13 @@ type JavascriptPackageJSONMetadata struct {
 	Author       *Person   `json:"author"`
 	Maintainers  []*Person `json:"maintainers"`
 	Contributors []*Person `json:"contributors"`
+
+	// FromNPMRepository field is annotated by the misc/from-npm annotator by parsing the lockfile
+	// of the root-level directory. This field is used to indicate whether this package's dependency
+	// was resolved from the official NPM registry during installation. If false, it means the package
+	// was either installed from a local path, a git repository, or another private registry.
+	// This is to identify name collisions between locally published packages and official NPM packages.
+	FromNPMRepository bool
 }
 
 func rawToPerson(rawJSON map[string]any) map[string]string {

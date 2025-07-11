@@ -27,7 +27,8 @@ type LockFile struct {
 // Dependency is the representation of an installed dependency in lockfileVersion 1
 type Dependency struct {
 	// For an aliased package, Version is like "npm:[name]@[version]"
-	Version string `json:"version"`
+	Version  string `json:"version"`
+	Resolved string `json:"resolved"`
 
 	Dev      bool `json:"dev,omitempty"`
 	Optional bool `json:"optional,omitempty"`

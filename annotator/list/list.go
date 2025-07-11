@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
+	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
@@ -43,16 +44,21 @@ var VEX = InitMap{
 	rpm.Name:      {rpm.NewDefault},
 }
 
+// Misc annotators.
+var Misc = InitMap{fromnpm.Name: {fromnpm.New}}
+
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{cachedir.Name: {cachedir.New}}
 
 // All annotators.
 var All = concat(
 	VEX,
+	Misc,
 )
 
 var annotatorNames = concat(All, InitMap{
 	"vex":                vals(VEX),
+	"misc":               vals(Misc),
 	"annotators/default": vals(Default),
 	"default":            vals(Default),
 	"annotators/all":     vals(All),

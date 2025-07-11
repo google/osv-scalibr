@@ -377,9 +377,10 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	case *packagejson.JavascriptPackageJSONMetadata:
 		p.Metadata = &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
-				Author:       m.Author.PersonString(),
-				Contributors: personsToProto(m.Contributors),
-				Maintainers:  personsToProto(m.Maintainers),
+				Author:            m.Author.PersonString(),
+				Contributors:      personsToProto(m.Contributors),
+				Maintainers:       personsToProto(m.Maintainers),
+				FromNpmRepository: m.FromNPMRepository,
 			},
 		}
 	case *depsjson.Metadata:
