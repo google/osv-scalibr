@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
@@ -241,8 +242,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:     "software",
 		Version:  "1.0.0",
 		PURLType: purl.TypeNPM,
-		Metadata: &packagejson.JavascriptPackageJSONMetadata{
-			Maintainers: []*packagejson.Person{
+		Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
+			Maintainers: []*javascriptmeta.Person{
 				{
 					Name:  "maintainer1",
 					Email: "maintainer1@corp.com",

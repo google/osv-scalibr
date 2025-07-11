@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -44,12 +45,12 @@ const (
 )
 
 type packageJSON struct {
-	Version      string    `json:"version"`
-	Name         string    `json:"name"`
-	Engines      any       `json:"engines"`
-	Author       *Person   `json:"author"`
-	Maintainers  []*Person `json:"maintainers"`
-	Contributors []*Person `json:"contributors"`
+	Version      string             `json:"version"`
+	Name         string             `json:"name"`
+	Engines      any                `json:"engines"`
+	Author       *metadata.Person   `json:"author"`
+	Maintainers  []*metadata.Person `json:"maintainers"`
+	Contributors []*metadata.Person `json:"contributors"`
 	// Not an NPM field but present for VSCode Extension Manifest files.
 	Contributes *struct {
 	} `json:"contributes"`
@@ -198,7 +199,7 @@ func parse(path string, r io.Reader) (*extractor.Package, error) {
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
-		Metadata: &JavascriptPackageJSONMetadata{
+		Metadata: &metadata.JavascriptPackageJSONMetadata{
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
@@ -238,8 +239,8 @@ func (p packageJSON) isUnityPackage() bool {
 	return p.Unity != ""
 }
 
-func removeEmptyPersons(persons []*Person) []*Person {
-	var result []*Person
+func removeEmptyPersons(persons []*metadata.Person) []*metadata.Person {
+	var result []*metadata.Person
 	for _, p := range persons {
 		if p.Name != "" {
 			result = append(result, p)

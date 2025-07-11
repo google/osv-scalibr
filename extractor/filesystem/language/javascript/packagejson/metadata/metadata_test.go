@@ -12,32 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packagejson_test
+package metadata_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 )
 
 func TestUnmarshalJSON_Person(t *testing.T) {
 	testCases := []struct {
 		desc    string
 		input   string
-		want    *packagejson.Person
+		want    *metadata.Person
 		wantErr error
 	}{
 		{
 			desc:  "empty person",
 			input: `""`,
-			want:  &packagejson.Person{},
+			want:  &metadata.Person{},
 		},
 		{
 			desc:  "full person string",
 			input: `"Developer <dev@corp.com> (http://dev.blog.com)"`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -46,12 +46,12 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 		{
 			desc:  "person string no name",
 			input: `"<dev@corp.com> (http://dev.blog.com)"`,
-			want:  &packagejson.Person{},
+			want:  &metadata.Person{},
 		},
 		{
 			desc:  "person string no email",
 			input: `"Developer (http://dev.blog.com)"`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
 			},
@@ -59,7 +59,7 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 		{
 			desc:  "person string no url",
 			input: `"Developer <dev@corp.com>"`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 			},
@@ -67,18 +67,18 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 		{
 			desc:  "empty person object",
 			input: `{}`,
-			want:  &packagejson.Person{},
+			want:  &metadata.Person{},
 		},
 		{
 			desc:    "invalid json object",
 			input:   `:"Developer"`,
-			want:    &packagejson.Person{},
+			want:    &metadata.Person{},
 			wantErr: cmpopts.AnyError,
 		},
 		{
 			desc:  "full person object",
 			input: `{"name":"Developer","email":"dev@corp.com","url":"http://dev.blog.com"}`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -87,12 +87,12 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 		{
 			desc:  "person object no name",
 			input: `{"email":"dev@corp.com","url":"http://dev.blog.com"}`,
-			want:  &packagejson.Person{},
+			want:  &metadata.Person{},
 		},
 		{
 			desc:  "person object no email",
 			input: `{"name":"Developer","url":"http://dev.blog.com"}`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
 			},
@@ -100,7 +100,7 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 		{
 			desc:  "person object no url",
 			input: `{"name":"Developer","email":"dev@corp.com"}`,
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 			},
@@ -109,7 +109,7 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := &packagejson.Person{}
+			p := &metadata.Person{}
 			if err := p.UnmarshalJSON([]byte(tc.input)); !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("UnmarshalJSON(%+v) error: got %v, want %v\n", tc.input, err, tc.wantErr)
 			}
@@ -123,7 +123,7 @@ func TestUnmarshalJSON_Person(t *testing.T) {
 func TestPersonString(t *testing.T) {
 	testCases := []struct {
 		desc  string
-		input *packagejson.Person
+		input *metadata.Person
 		want  string
 	}{
 		{
@@ -133,7 +133,7 @@ func TestPersonString(t *testing.T) {
 		},
 		{
 			desc: "person with no name",
-			input: &packagejson.Person{
+			input: &metadata.Person{
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
 			},
@@ -141,7 +141,7 @@ func TestPersonString(t *testing.T) {
 		},
 		{
 			desc: "person with no email",
-			input: &packagejson.Person{
+			input: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
 			},
@@ -149,7 +149,7 @@ func TestPersonString(t *testing.T) {
 		},
 		{
 			desc: "person with no url",
-			input: &packagejson.Person{
+			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 			},
@@ -157,7 +157,7 @@ func TestPersonString(t *testing.T) {
 		},
 		{
 			desc: "person object",
-			input: &packagejson.Person{
+			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -170,7 +170,7 @@ func TestPersonString(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := tc.input.PersonString()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("packagejson.PersonString(%+v) diff (-want +got):\n%s", tc.input, diff)
+				t.Errorf("metadata.PersonString(%+v) diff (-want +got):\n%s", tc.input, diff)
 			}
 		})
 	}
@@ -180,7 +180,7 @@ func TestPersonFromString(t *testing.T) {
 	testCases := []struct {
 		desc  string
 		input string
-		want  *packagejson.Person
+		want  *metadata.Person
 	}{
 		{
 			desc:  "empty input",
@@ -190,7 +190,7 @@ func TestPersonFromString(t *testing.T) {
 		{
 			desc:  "name, email, and url",
 			input: "Developer <dev@corp.com> (http://dev.blog.com)",
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -199,7 +199,7 @@ func TestPersonFromString(t *testing.T) {
 		{
 			desc:  "name, and url",
 			input: "Developer (http://dev.blog.com)",
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
 			},
@@ -207,7 +207,7 @@ func TestPersonFromString(t *testing.T) {
 		{
 			desc:  "name, email",
 			input: "Developer <dev@corp.com>",
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
 			},
@@ -215,7 +215,7 @@ func TestPersonFromString(t *testing.T) {
 		{
 			desc:  "name only",
 			input: "Developer",
-			want: &packagejson.Person{
+			want: &metadata.Person{
 				Name: "Developer",
 			},
 		},
@@ -223,9 +223,9 @@ func TestPersonFromString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := packagejson.PersonFromString(tc.input)
+			got := metadata.PersonFromString(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("packagejson.PersonFromString(%+v) diff (-want +got):\n%s", tc.input, diff)
+				t.Errorf("metadata.PersonFromString(%+v) diff (-want +got):\n%s", tc.input, diff)
 			}
 		})
 	}

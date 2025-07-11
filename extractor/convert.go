@@ -63,7 +63,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case purl.TypeMaven:
 		return mavenpurl.MakePackageURL(p.Version, p.Metadata)
 	case purl.TypeNPM:
-		return npmpurl.MakePackageURL(p.Name, p.Version)
+		return npmpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	case purl.TypeGolang:
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
