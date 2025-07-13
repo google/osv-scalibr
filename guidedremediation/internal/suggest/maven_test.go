@@ -325,7 +325,7 @@ func TestMavenSuggester_Suggest(t *testing.T) {
 					Type: depPlugin,
 				},
 			},
-			OriginalRequirements: []mavenmanifest.DependencyWithOrigin{
+			LocalRequirements: []mavenmanifest.DependencyWithOrigin{
 				{
 					Dependency: maven.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.2.0", Type: "pom"},
 					Origin:     "parent",

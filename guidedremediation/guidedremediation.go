@@ -413,7 +413,7 @@ func filterMavenPatches(allPatches []result.Patch, ecosystemSpecific any) []resu
 	}
 	for i := range allPatches {
 		allPatches[i].PackageUpdates = slices.DeleteFunc(allPatches[i].PackageUpdates, func(update result.PackageUpdate) bool {
-			origDep := maven.OriginalDependency(update, specific.OriginalRequirements)
+			origDep := maven.OriginalDependency(update, specific.LocalRequirements)
 			// An empty name indicates the original dependency is not in the base project.
 			// If so, delete the patch if the new dependency management is not allowed.
 			return origDep.Name() == ":"
