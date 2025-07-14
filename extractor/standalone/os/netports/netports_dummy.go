@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux
+//go:build !linux && !windows
 
-// Package netports extracts open ports on the system and maps them to running processes when
-// possible.
 package netports
 
 import (
@@ -53,5 +51,5 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // Extract is a no-op for non Linux.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
-	return inventory.Inventory{}, errors.New("only supported on Linux")
+	return inventory.Inventory{}, errors.New("only supported on Linux and Windows")
 }
