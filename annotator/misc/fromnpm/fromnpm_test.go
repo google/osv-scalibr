@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
-	scanresultpb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"google.golang.org/protobuf/proto"
@@ -64,8 +64,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "abandoned-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -83,8 +83,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "supports-color",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/supports-color/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -102,8 +102,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "custom-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/custom-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -121,8 +121,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "wrappy",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -140,8 +140,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "string-width",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -159,8 +159,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "@babel/highlight",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -178,8 +178,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "ajv",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -195,8 +195,8 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				Name:      "abandoned-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 			wantAnyErr: true,
@@ -257,8 +257,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "abandoned-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -276,8 +276,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "supports-color",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/supports-color/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -295,8 +295,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "@babel/code-frame",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -314,8 +314,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "string-width",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -333,8 +333,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "custom-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/custom-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 		},
@@ -352,8 +352,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "wrappy",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -371,8 +371,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "@babel/highlight",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -390,8 +390,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "ajv",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: true,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: true,
 				},
 			},
 		},
@@ -407,8 +407,8 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				Name:      "abandoned-package",
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
-				Metadata: &scanresultpb.JavascriptPackageJSONMetadata{
-					FromNpmRepository: false,
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
 				},
 			},
 			wantAnyErr: true,

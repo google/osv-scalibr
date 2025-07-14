@@ -29,8 +29,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
-	scanresultpb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/inventory"
@@ -86,15 +86,15 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 		for _, pkg := range pkgs {
 			if pkg.Metadata == nil {
-				pkg.Metadata = &scanresultpb.JavascriptPackageJSONMetadata{}
+				pkg.Metadata = &metadata.JavascriptPackageJSONMetadata{}
 			}
-			castedMetadata, ok := pkg.Metadata.(*scanresultpb.JavascriptPackageJSONMetadata)
+			castedMetadata, ok := pkg.Metadata.(*metadata.JavascriptPackageJSONMetadata)
 			if !ok {
-				errs = append(errs, fmt.Errorf("%s expected type *scanresultpb.JavascriptPackageJSONMetadata but got %T for package %q", a.Name(), pkg.Metadata, pkg.Name))
+				errs = append(errs, fmt.Errorf("%s expected type *metadata.JavascriptPackageJSONMetadata but got %T for package %q", a.Name(), pkg.Metadata, pkg.Name))
 				continue
 			}
 			// If no lockfile is found, we assume they are locally published packages.
-			castedMetadata.FromNpmRepository = registryResolvedMap != nil && registryResolvedMap[pkg.Name]
+			castedMetadata.FromNPMRepository = registryResolvedMap != nil && registryResolvedMap[pkg.Name]
 		}
 	}
 	return errors.Join(errs...)
