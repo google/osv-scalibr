@@ -42,34 +42,34 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: testKey,
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `RUBYGEMS_API_KEY=` + testKey,
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `RUBYGEMS_API_KEY="` + testKey + `"`,
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "1\n",
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey[:len(testKey)-1] + "1"},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
 		name: "larger input containing key",
@@ -78,13 +78,13 @@ func TestDetector_truePositives(t *testing.T) {
 :rubygems_api_key: %s 
 		`, testKey),
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: testKey + `test`,
 		want: []veles.Secret{
-			&rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}}
 	for _, tc := range cases {

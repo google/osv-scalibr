@@ -33,7 +33,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) veles.Secret {
-			return &GCPAPIKey{Key: string(b)}
+			return GCPAPIKey{Key: string(b)}
 		},
 	}
 }
