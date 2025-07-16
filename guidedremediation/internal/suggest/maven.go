@@ -147,6 +147,11 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 		if _, diff := v.Difference(current); !level.Allows(diff) {
 			continue
 		}
+		if mavenutil.IsPrerelease(v, req.VersionKey) {
+			// Skip prerelease versions for updates considering that most people prefer stable, released
+			// versions for dependency updates.
+			continue
+		}
 		newReq = v
 	}
 	if constraint.IsSimple() || !constraint.MatchVersion(newReq) {
