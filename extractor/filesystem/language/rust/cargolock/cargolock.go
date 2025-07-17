@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"encoding/json"
+	"net/http"
+
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -66,7 +69,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract extracts packages from Cargo.lock files passed through the scan input.
-func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *cargoLockFile
 
 	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
@@ -78,15 +81,53 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, lockPackage := range parsedLockfile.Packages {
+		isYanked, err := isYanked(ctx, lockPackage.Name, lockPackage.Version)
+		if err != nil {
+			isYanked = false // Non-fatal
+		}
+
 		packages = append(packages, &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			PURLType:  purl.TypeCargo,
 			Locations: []string{input.Path},
+			Yanked:    isYanked,
 		})
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+func isYanked(ctx context.Context, crate, version string) (bool, error) {
+	url := fmt.Sprintf("https://crates.io/api/v1/crates/%s/%s", crate, version)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch yanked info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var data struct {
+		Version struct {
+			Yanked bool `json:"yanked"`
+		} `json:"version"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return false, fmt.Errorf("failed to decode crates.io response: %w", err)
+	}
+
+	return data.Version.Yanked, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

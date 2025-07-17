@@ -163,6 +163,22 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			Name: "yanked package",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/yanked-version.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "url",
+					Version:   "2.5.3",
+					PURLType:  purl.TypeCargo,
+					Locations: []string{"testdata/yanked-version.lock"},
+					Yanked:    true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
