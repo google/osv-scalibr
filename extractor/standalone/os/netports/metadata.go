@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package netports provides metadata types for open network ports.
 package netports
 
 // Metadata contains metadata about a given open port.
