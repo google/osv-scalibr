@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows || linux
-
 // Package netports extracts open ports on the system and maps them to running processes when
 // possible.
 package netports
@@ -31,7 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-
+	psutilnet "github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -65,38 +63,35 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	var packages []*extractor.Package
 
-	// First, get all processes.
-	processes, err := process.ProcessesWithContext(ctx)
+	connections, err := psutilnet.ConnectionsWithContext(ctx, "tcp")
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
 
-	// Retrieve all open ports.
-	for _, p := range processes {
-		cmdline, _ := p.Cmdline()
+	for _, c := range connections {
+		// only consider listening TCP connections
+		if c.Status != "LISTEN" {
+			continue
+		}
 
-		// Get all connections of the process.
-		connections, err := p.ConnectionsWithContext(ctx)
+		// Skip loopback connections.
+		laddrIP := net.ParseIP(c.Laddr.IP)
+		if laddrIP.IsLoopback() {
+			continue
+		}
+
+		processInfo, err := process.NewProcess(c.Pid)
 		if err != nil {
 			continue
 		}
 
-		for _, c := range connections {
-			// Only consider listening TCP connections.
-			if c.Status != "LISTEN" {
-				continue
-			}
-
-			// Skip loopback connections.
-			laddrIP := net.ParseIP(c.Laddr.IP)
-			if laddrIP.IsLoopback() {
-				continue
-			}
-
-			packages = append(packages, e.newPackage(c.Laddr.Port, "tcp", cmdline))
+		cmdline, err := processInfo.Cmdline()
+		if err != nil {
+			continue
 		}
-	}
 
+		packages = append(packages, e.newPackage(c.Laddr.Port, "tcp", cmdline))
+	}
 	return inventory.Inventory{Packages: packages}, nil
 }
 
