@@ -31,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -73,7 +72,10 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 
 	// Retrieve all open ports.
 	for _, p := range processes {
-		cmdline, _ := p.Cmdline()
+		cmdline, err := p.Cmdline()
+		if err != nil {
+			continue
+		}
 
 		// Get all connections of the process.
 		connections, err := p.ConnectionsWithContext(ctx)
