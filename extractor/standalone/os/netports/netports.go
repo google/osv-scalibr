@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows || linux
-
 // Package netports extracts open ports on the system and maps them to running processes when
 // possible.
 package netports
@@ -30,8 +28,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -65,21 +63,36 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	var packages []*extractor.Package
 
+	log.Infof("----DEBUG----: Getting all processes")
 	// First, get all processes.
 	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
 
+	log.Infof("----DEBUG----: Found %d processes", len(processes))
+	log.Infof("----DEBUG----: Processes: %v", processes)
+	log.Infof("----DEBUG----: End processes")
+
 	// Retrieve all open ports.
 	for _, p := range processes {
-		cmdline, _ := p.Cmdline()
+		log.Infof("----DEBUG----: Processing process %v", p)
+		cmdline, err := p.Cmdline()
 
+		if err != nil {
+			log.Infof("----DEBUG----: cmdline error: %v, skipping...", err)
+			continue
+		}
 		// Get all connections of the process.
+		log.Infof("----DEBUG----: cmdline: %v. Getting connections...", cmdline)
+
 		connections, err := p.ConnectionsWithContext(ctx)
 		if err != nil {
 			continue
 		}
+
+		log.Infof("----DEBUG----: Found %d connections", len(connections))
+		log.Infof("----DEBUG----: Connections: %v", connections)
 
 		for _, c := range connections {
 			// Only consider listening TCP connections.
@@ -88,11 +101,13 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 			}
 
 			// Skip loopback connections.
+			log.Infof("----DEBUG----: Paring IP %v", c.Laddr.IP)
 			laddrIP := net.ParseIP(c.Laddr.IP)
 			if laddrIP.IsLoopback() {
 				continue
 			}
 
+			log.Infof("----DEBUG----: Adding package %v", e.newPackage(c.Laddr.Port, "tcp", cmdline))
 			packages = append(packages, e.newPackage(c.Laddr.Port, "tcp", cmdline))
 		}
 	}
