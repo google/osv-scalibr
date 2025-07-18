@@ -14,6 +14,10 @@
 
 //go:build !linux && !windows
 
+
+// Package netports provides an extractor for open network ports metadata.
+// This file contains a dummy implementation for unsupported platforms (non-Linux and non-Windows).
+
 package netports
 
 import (

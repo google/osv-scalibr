@@ -21,6 +21,7 @@ import (
 
 // Metadata holds parsing information for packages extracted from CDX files.
 type Metadata struct {
-	PURL *purl.PackageURL
-	CPEs []string
+	PURL         *purl.PackageURL
+	CPEs         []string
+	CDXLocations []string
 }
