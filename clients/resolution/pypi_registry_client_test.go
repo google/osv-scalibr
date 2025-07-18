@@ -256,6 +256,19 @@ func TestRequirements(t *testing.T) {
 			"yanked": false
 		  },
 		  {
+			"core-metadata": false,
+			"data-dist-info-metadata": false,
+			"filename": "beautifulsoup4-4.12.3.tar.gz",
+			"hashes": {
+			  "sha256": "74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051"
+			},
+			"requires-python": ">=3.6.0",
+			"size": 581181,
+			"upload-time": "2024-01-17T16:53:17.902970Z",
+			"url": "`+srv.URL+`/beautifulsoup4-4.12.3.tar.gz",
+			"yanked": false
+		  },
+		  {
 			"core-metadata": {
 			  "sha256": "524392d64a088e56a4232f50d6edb208dc03105394652acb72c6d5fa64c89f3e"
 			},
@@ -270,19 +283,6 @@ func TestRequirements(t *testing.T) {
 			"size": 147925,
 			"upload-time": "2024-01-17T16:53:12.779164Z",
 			"url": "`+srv.URL+`/beautifulsoup4-4.12.3-py3-none-any.whl",
-			"yanked": false
-		  },
-		  {
-			"core-metadata": false,
-			"data-dist-info-metadata": false,
-			"filename": "beautifulsoup4-4.12.3.tar.gz",
-			"hashes": {
-			  "sha256": "74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051"
-			},
-			"requires-python": ">=3.6.0",
-			"size": 581181,
-			"upload-time": "2024-01-17T16:53:17.902970Z",
-			"url": "https://files.pythonhosted.org/packages/b3/ca/824b1195773ce6166d388573fc106ce56d4a805bd7427b624e063596ec58/beautifulsoup4-4.12.3.tar.gz",
 			"yanked": false
 		  },
 		  {

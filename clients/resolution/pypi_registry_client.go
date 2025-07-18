@@ -52,13 +52,14 @@ func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey)
 		return resolve.Version{}, err
 	}
 
-	file, _, err := lookupFile(vk, resp.Name, resp.Files, false)
-	if err != nil {
-		return resolve.Version{}, err
+	files := lookupFile(vk, resp.Name, resp.Files)
+	if len(files) == 0 {
+		return resolve.Version{}, fmt.Errorf("no file found for package %s version %s", vk.Name, vk.Version)
 	}
 
 	ver := resolve.Version{VersionKey: vk}
-	if file.Yanked.Value {
+	if files[0].Yanked.Value {
+		// Assume this version is yanked if the first file is yanked.
 		var yanked version.AttrSet
 		yanked.SetAttr(version.Blocked, "")
 		ver.AttrSet = yanked
@@ -182,61 +183,63 @@ func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.Versio
 
 	// We choose the first file that matches the specified version.
 	// TODO(#845): select the release file based on some criteria (e.g. platform)
-	file, ext, err := lookupFile(vk, resp.Name, resp.Files, true)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := c.api.GetFile(ctx, file.URL)
-	if err != nil {
-		return nil, err
-	}
-
-	var metadata *pypi.Metadata
-	switch ext {
-	case ".gz":
-		metadata, err = pypi.SdistMetadata(ctx, file.Name, bytes.NewReader(data))
-	case ".whl":
-		metadata, err = pypi.WheelMetadata(ctx, bytes.NewReader(data), int64(len(data)))
-	default:
-		return nil, fmt.Errorf("unsupported file extension for requirements: %s", ext)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	var reqs []resolve.RequirementVersion
-	for _, d := range metadata.Dependencies {
-		t := dep.NewType()
-		if d.Extras != "" {
-			t.AddAttr(dep.EnabledDependencies, d.Extras)
-		}
-		if d.Environment != "" {
-			t.AddAttr(dep.Environment, d.Environment)
-		}
-
-		reqs = append(reqs, resolve.RequirementVersion{
-			VersionKey: resolve.VersionKey{
-				PackageKey: resolve.PackageKey{
-					System: resolve.PyPI,
-					Name:   d.Name,
-				},
-				Version:     d.Constraint,
-				VersionType: resolve.Requirement,
-			},
-			Type: t,
-		})
-	}
-
-	return reqs, nil
-}
-
-// lookupFile searches for the first file that matches the given version from the list of available distribution files.
-func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, skipYanked bool) (internalpypi.File, string, error) {
+	files := lookupFile(vk, resp.Name, resp.Files)
+	// For each file, parse the metadata. If there is an error, try the next file until some requirements are found.
 	for _, file := range files {
-		if skipYanked && file.Yanked.Value {
+		data, err := c.api.GetFile(ctx, file.URL)
+		if err != nil {
+			log.Warnf("failed to get file %s: %v", file.Name, err)
 			continue
 		}
+
+		var metadata *pypi.Metadata
+		switch ext := filepath.Ext(file.Name); ext {
+		case ".gz":
+			metadata, err = pypi.SdistMetadata(ctx, file.Name, bytes.NewReader(data))
+		case ".whl":
+			metadata, err = pypi.WheelMetadata(ctx, bytes.NewReader(data), int64(len(data)))
+		default:
+			log.Warnf("unsupported file extension for requirements: %s", ext)
+			continue
+		}
+		if err != nil {
+			log.Warnf("failed to parse metadata for file %s: %v", file.Name, err)
+			continue
+		}
+
+		var reqs []resolve.RequirementVersion
+		for _, d := range metadata.Dependencies {
+			t := dep.NewType()
+			if d.Extras != "" {
+				t.AddAttr(dep.EnabledDependencies, d.Extras)
+			}
+			if d.Environment != "" {
+				t.AddAttr(dep.Environment, d.Environment)
+			}
+
+			reqs = append(reqs, resolve.RequirementVersion{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   d.Name,
+					},
+					Version:     d.Constraint,
+					VersionType: resolve.Requirement,
+				},
+				Type: t,
+			})
+		}
+
+		return reqs, nil
+	}
+
+	return nil, fmt.Errorf("no file can be used for parsing requirements for package %s version %s", vk.Name, vk.Version)
+}
+
+// lookupFile searches for all file that matches the given version from the list of available distribution files.
+func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File) []internalpypi.File {
+	var matches []internalpypi.File
+	for _, file := range files {
 		ext := filepath.Ext(file.Name)
 		switch ext {
 		case ".gz":
@@ -278,9 +281,9 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File, s
 		default:
 			continue
 		}
-		return file, ext, nil
+		matches = append(matches, file)
 	}
-	return internalpypi.File{}, "", fmt.Errorf("package %s version %s not found", vk.Name, vk.Version)
+	return matches
 }
 
 // MatchingVersions returns versions matching the requirement specified by the VersionKey.
