@@ -41,7 +41,7 @@ func TestComputePatches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed getting npm ReadWriter: %v", err)
 	}
-	pythonRW := python.GetReadWriter()
+	pythonRW, _ := python.GetReadWriter()
 
 	tests := []struct {
 		name         string

@@ -33,6 +33,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
+	pythonlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/python"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
@@ -556,12 +557,19 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 
 func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 	base := filepath.Base(manifestPath)
-	if base != "package.json" {
-		return fmt.Errorf("unsupported manifest: %q", base)
+	switch base {
+	case "package.json":
+		return writeNpmLockfile(ctx, manifestPath)
+	case "requirements.in":
+		return writeRequirementsLockfile(ctx, manifestPath)
+	default:
+		return fmt.Errorf("unsupported manifest type: %s", base)
 	}
+}
 
+func writeNpmLockfile(ctx context.Context, path string) error {
 	// shell out to npm to write the package-lock.json file.
-	dir := filepath.Dir(manifestPath)
+	dir := filepath.Dir(path)
 	npmPath, err := exec.LookPath("npm")
 	if err != nil {
 		return fmt.Errorf("cannot find npm executable: %w", err)
@@ -601,6 +609,21 @@ func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 	return nil
 }
 
+func writeRequirementsLockfile(ctx context.Context, path string) error {
+	dir := filepath.Dir(path)
+	pipCompilePath, err := exec.LookPath("pip-compile")
+	if err != nil {
+		return fmt.Errorf("cannot find pip-compile executable: %w", err)
+	}
+
+	log.Infof("Running pip-compile to regenerate requirements.txt")
+	cmd := exec.CommandContext(ctx, pipCompilePath, "--generate-hashes", "requirements.in")
+	cmd.Dir = dir
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run()
+}
+
 func readWriterForManifest(manifestPath string, registry string) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
@@ -608,8 +631,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
-	case "requirements.txt":
-		return python.GetReadWriter(), nil
+	case "requirements.in", "requirements.txt":
+		return python.GetReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
@@ -619,6 +642,8 @@ func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	switch strings.ToLower(baseName) {
 	case "package-lock.json":
 		return npmlock.GetReadWriter()
+	case "requirements.txt":
+		return pythonlock.GetReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported lockfile: %q", baseName)
 }
@@ -631,6 +656,11 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 	lockfileDir := filepath.Dir(lockfilePath)
 	lockfileBaseName := filepath.Base(lockfilePath)
 
-	// currently only npm has a lockfile and manifest.
-	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json" && manifestDir == lockfileDir
+	if manifestDir != lockfileDir {
+		return false
+	}
+	if manifestBaseName == "requirements.in" {
+		return lockfileBaseName == "requirements.txt"
+	}
+	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json"
 }
