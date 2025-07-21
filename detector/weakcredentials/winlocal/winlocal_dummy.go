@@ -30,7 +30,9 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "weakcredentials/winlocal"
+	Name              = "weakcredentials/winlocal"
+	vulnRefLMPassword = "PASSWORD_HASH_LM_FORMAT"
+	vulnRefWeakPass   = "WINDOWS_WEAK_PASSWORD"
 )
 
 // Detector is a SCALIBR Detector for weak passwords detector for local accounts on Windows.
@@ -54,6 +56,36 @@ func (Detector) Requirements() *plugin.Capabilities {
 
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return nil }
+
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{
+		GenericFindings: []*inventory.GenericFinding{
+			&inventory.GenericFinding{
+				Adv: &inventory.GenericFindingAdvisory{
+					ID: &inventory.AdvisoryID{
+						Publisher: "GOOGLE",
+						Reference: vulnRefLMPassword,
+					},
+					Sev:            inventory.SeverityHigh,
+					Description:    "Password hashes are stored in the LM format. Please switch local storage to use NT format and regenerate the hashes.",
+					Recommendation: "Change the password of the user after changing the storage format.",
+				},
+			},
+			&inventory.GenericFinding{
+				Adv: &inventory.GenericFindingAdvisory{
+					ID: &inventory.AdvisoryID{
+						Publisher: "GOOGLE",
+						Reference: vulnRefWeakPass,
+					},
+					Sev:            inventory.SeverityCritical,
+					Description:    "Some passwords were identified as being weak.",
+					Recommendation: "Change the password of the user affected users.",
+				},
+			},
+		},
+	}
+}
 
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {

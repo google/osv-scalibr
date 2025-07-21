@@ -58,6 +58,11 @@ func (fd *fakeDetector) Requirements() *plugin.Capabilities { return &plugin.Cap
 // RequiredExtractors returns a list of Extractors that this Detector requires.
 func (fd *fakeDetector) RequiredExtractors() []string { return fd.ReqExtractors }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (fd *fakeDetector) DetectedFinding() inventory.Finding {
+	return inventory.Finding{}
+}
+
 // Scan always returns the same predefined finding or error.
 func (fd *fakeDetector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return fd.Findings, fd.Err

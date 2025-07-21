@@ -31,6 +31,7 @@ linters:
     - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
+    - noinlineerr      #
     - nonamedreturns   #
     - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
     - prealloc         # We don't want to preallocate all the time
@@ -42,6 +43,7 @@ linters:
     - varnamelen       #
     - wrapcheck        #
     - wsl              #
+    - wsl_v5           #
   settings:
     forbidigo:
       forbid:
@@ -75,6 +77,8 @@ linters:
           disabled: false
         - name: exported
           disabled: false
+        - name: import-alias-naming
+          disabled: false
         - name: indent-error-flow
           disabled: false
         - name: package-comments
@@ -93,8 +97,14 @@ linters:
           disabled: false
         - name: use-any
           disabled: false
+        - name: var-declaration
+          disabled: false
         - name: var-naming
           disabled: false
+          arguments:
+            - [] # AllowList
+            - [] # DenyList
+            - - skip-package-name-checks: true
     staticcheck:
       checks:
         - all
@@ -102,7 +112,6 @@ linters:
         - -QF1003 # use tagged switch on prefix
         - -QF1006 # lift into loop condition
         - -QF1008 # remove embedded field from selector
-        - -ST1005 # error strings should not be capitalized
         - -QF1011 # omit type from declaration; it will be inferred from the right-hand side
         - -ST1023 # omit type from declaration; it will be inferred from the right-hand side
   exclusions:

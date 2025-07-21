@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"slices"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	"github.com/google/osv-scalibr/log"
 )
 
 // MavenSuggester suggests update patch for Maven dependencies.
@@ -44,6 +44,7 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 	}
 
 	var packageUpdates []result.PackageUpdate
+	updated := make(map[resolve.VersionKey]bool)
 	for _, req := range append(mf.Requirements(), specific.RequirementsForUpdates...) {
 		if opts.UpgradeConfig.Get(req.Name) == upgrade.None {
 			continue
@@ -57,10 +58,16 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 			// If there are unresolved properties, we should skip this version.
 			continue
 		}
+		if updated[req.VersionKey] {
+			// Skip the update if the dependency is already updated.
+			continue
+		}
+		updated[req.VersionKey] = true
 
 		latest, err := suggestMavenVersion(ctx, opts.ResolveClient, req, opts.UpgradeConfig.Get(req.Name))
 		if err != nil {
-			return result.Patch{}, fmt.Errorf("suggesting latest version of %s: %w", req.Version, err)
+			log.Warnf("failed to suggest Maven version for package %s: %v", req.Name, err)
+			continue
 		}
 		if latest.Version == req.Version {
 			// No need to update
@@ -73,7 +80,7 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 			VersionTo:   latest.Version,
 			Type:        req.Type,
 		}
-		origDep := mavenmanifest.OriginalDependency(pu, specific.OriginalRequirements)
+		origDep := mavenmanifest.OriginalDependency(pu, specific.LocalRequirements)
 		if origDep.Name() != ":" {
 			// An empty name indicates the dependency is not found, so the original dependency is not in the base project.
 			// Only add a package update if it is from the base project.
@@ -96,11 +103,15 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 	if err != nil {
 		return resolve.RequirementVersion{}, fmt.Errorf("requesting versions of Maven package %s: %w", req.Name, err)
 	}
+	if len(versions) == 0 {
+		return resolve.RequirementVersion{}, fmt.Errorf("no versions found for Maven package %s", req.Name)
+	}
+
 	semvers := make([]*semver.Version, 0, len(versions))
 	for _, ver := range versions {
 		parsed, err := semver.Maven.Parse(ver.Version)
 		if err != nil {
-			log.Printf("parsing Maven version %s: %v", parsed, err)
+			log.Warnf("parsing Maven version %s: %v", parsed, err)
 			continue
 		}
 		semvers = append(semvers, parsed)
@@ -134,6 +145,11 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 			continue
 		}
 		if _, diff := v.Difference(current); !level.Allows(diff) {
+			continue
+		}
+		if mavenutil.IsPrerelease(v, req.VersionKey) {
+			// Skip prerelease versions for updates considering that most people prefer stable, released
+			// versions for dependency updates.
 			continue
 		}
 		newReq = v

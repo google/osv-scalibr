@@ -28,12 +28,12 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202338408"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20236019"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20242912"
+	"github.com/google/osv-scalibr/detector/endoflife/linuxdistro"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
-	"github.com/google/osv-scalibr/plugin"
 )
 
 // InitFn is the detector initializer function.
@@ -47,6 +47,9 @@ var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
 
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
+
+// EndOfLife detectors.
+var EndOfLife = InitMap{linuxdistro.Name: {linuxdistro.New}}
 
 // Untested CVE scanning related detectors - since they don't have proper testing they
 // might not work as expected in the future.
@@ -66,8 +69,8 @@ var Untested = InitMap{
 	cve20242912.Name: {cve20242912.New},
 }
 
-// Weakcreds detectors for weak credentials.
-var Weakcreds = InitMap{
+// Weakcredentials detectors for weak credentials.
+var Weakcredentials = InitMap{
 	codeserver.Name:  {codeserver.NewDefault},
 	etcshadow.Name:   {etcshadow.New},
 	filebrowser.Name: {filebrowser.New},
@@ -80,18 +83,22 @@ var Default = InitMap{}
 // All detectors internal to SCALIBR.
 var All = concat(
 	CIS,
+	EndOfLife,
 	Govulncheck,
-	Weakcreds,
+	Weakcredentials,
 	Untested,
 )
 
 var detectorNames = concat(All, InitMap{
-	"cis":         vals(CIS),
-	"govulncheck": vals(Govulncheck),
-	"weakcreds":   vals(Weakcreds),
-	"untested":    vals(Untested),
-	"default":     vals(Default),
-	"all":         vals(All),
+	"cis":               vals(CIS),
+	"endoflife":         vals(EndOfLife),
+	"govulncheck":       vals(Govulncheck),
+	"weakcredentials":   vals(Weakcredentials),
+	"untested":          vals(Untested),
+	"detectors/default": vals(Default),
+	"default":           vals(Default),
+	"detectors/all":     vals(All),
+	"all":               vals(All),
 })
 
 func concat(initMaps ...InitMap) InitMap {
@@ -106,50 +113,14 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
-// FromCapabilities returns all detectors that can run under the specified
-// capabilities (OS, direct filesystem access, network access, etc.) of the
-// scanning environment.
-func FromCapabilities(capabs *plugin.Capabilities) []detector.Detector {
-	all := []detector.Detector{}
-	for _, initers := range All {
+// DetectorsFromName returns a list of detectors from a name.
+func DetectorsFromName(name string) ([]detector.Detector, error) {
+	if initers, ok := detectorNames[name]; ok {
+		result := []detector.Detector{}
 		for _, initer := range initers {
-			all = append(all, initer())
+			result = append(result, initer())
 		}
+		return result, nil
 	}
-	return FilterByCapabilities(all, capabs)
-}
-
-// FilterByCapabilities returns all detectors from the given list that can run
-// under the specified capabilities (OS, direct filesystem access, network
-// access, etc.) of the scanning environment.
-func FilterByCapabilities(dets []detector.Detector, capabs *plugin.Capabilities) []detector.Detector {
-	result := []detector.Detector{}
-	for _, det := range dets {
-		if err := plugin.ValidateRequirements(det, capabs); err == nil {
-			result = append(result, det)
-		}
-	}
-	return result
-}
-
-// DetectorsFromNames returns a deduplicated list of detectors from a list of names.
-func DetectorsFromNames(names []string) ([]detector.Detector, error) {
-	resultMap := make(map[string]detector.Detector)
-	for _, n := range names {
-		if initers, ok := detectorNames[n]; ok {
-			for _, initer := range initers {
-				d := initer()
-				if _, ok := resultMap[d.Name()]; !ok {
-					resultMap[d.Name()] = d
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("unknown detector %q", n)
-		}
-	}
-	result := make([]detector.Detector, 0, len(resultMap))
-	for _, d := range resultMap {
-		result = append(result, d)
-	}
-	return result, nil
+	return nil, fmt.Errorf("unknown detector %q", name)
 }

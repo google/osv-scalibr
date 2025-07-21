@@ -36,7 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -374,12 +374,13 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				AuthorEmail: m.AuthorEmail,
 			},
 		}
-	case *packagejson.JavascriptPackageJSONMetadata:
+	case *javascriptmeta.JavascriptPackageJSONMetadata:
 		p.Metadata = &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
-				Author:       m.Author.PersonString(),
-				Contributors: personsToProto(m.Contributors),
-				Maintainers:  personsToProto(m.Maintainers),
+				Author:            m.Author.PersonString(),
+				Contributors:      personsToProto(m.Contributors),
+				Maintainers:       personsToProto(m.Maintainers),
+				FromNpmRepository: m.FromNPMRepository,
 			},
 		}
 	case *depsjson.Metadata:
@@ -709,13 +710,13 @@ func metadataToStruct(md *spb.Package) any {
 			AuthorEmail: md.GetPythonMetadata().GetAuthorEmail(),
 		}
 	case *spb.Package_JavascriptMetadata:
-		var author *packagejson.Person
+		var author *javascriptmeta.Person
 		if md.GetJavascriptMetadata().GetAuthor() != "" {
-			author = &packagejson.Person{
+			author = &javascriptmeta.Person{
 				Name: md.GetJavascriptMetadata().GetAuthor(),
 			}
 		}
-		return &packagejson.JavascriptPackageJSONMetadata{
+		return &javascriptmeta.JavascriptPackageJSONMetadata{
 			Author:       author,
 			Contributors: personsToStruct(md.GetJavascriptMetadata().GetContributors()),
 			Maintainers:  personsToStruct(md.GetJavascriptMetadata().GetMaintainers()),
@@ -988,7 +989,7 @@ func metadataToStruct(md *spb.Package) any {
 	return nil
 }
 
-func personsToProto(persons []*packagejson.Person) []string {
+func personsToProto(persons []*javascriptmeta.Person) []string {
 	var personStrings []string
 	for _, p := range persons {
 		personStrings = append(personStrings, p.PersonString())
@@ -996,10 +997,10 @@ func personsToProto(persons []*packagejson.Person) []string {
 	return personStrings
 }
 
-func personsToStruct(personStrings []string) []*packagejson.Person {
-	var persons []*packagejson.Person
+func personsToStruct(personStrings []string) []*javascriptmeta.Person {
+	var persons []*javascriptmeta.Person
 	for _, p := range personStrings {
-		persons = append(persons, packagejson.PersonFromString(p))
+		persons = append(persons, javascriptmeta.PersonFromString(p))
 	}
 	return persons
 }

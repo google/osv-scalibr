@@ -25,9 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
-	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
-	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -148,11 +146,11 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Successful scan",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
+					fakeExtractor,
 					fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding),
+					fakeEnricher,
 				},
-				Enrichers: []enricher.Enricher{fakeEnricher},
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
@@ -174,7 +172,7 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Global error",
 			cfg: &scalibr.ScanConfig{
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
 					// Will error due to duplicate non-identical Advisories.
 					fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding),
 					fd.New().WithName("detector").WithVersion(3).WithGenericFinding(&inventory.GenericFinding{
@@ -198,10 +196,10 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Extractor plugin failed",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
+					fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding),
 				},
-				Detectors: []detector.Detector{fd.New().WithName("detector").WithVersion(2).WithGenericFinding(finding)},
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
@@ -222,8 +220,8 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Detector plugin failed",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
+					fakeExtractor,
 					fd.New().WithName("detector").WithVersion(2).WithErr(errors.New(pluginFailure)),
 				},
 				ScanRoots: tmpRoot,
@@ -243,11 +241,11 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Enricher plugin failed",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
+					fakeExtractor,
 					fd.New().WithName("detector2").WithVersion(2).WithGenericFinding(finding),
+					fakeEnricherErr,
 				},
-				Enrichers: []enricher.Enricher{fakeEnricherErr},
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
@@ -269,8 +267,8 @@ func TestScan(t *testing.T) {
 		{
 			desc: "Missing scan roots causes error",
 			cfg: &scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
-				ScanRoots:            []*scalibrfs.ScanRoot{},
+				Plugins:   []plugin.Plugin{fakeExtractor},
+				ScanRoots: []*scalibrfs.ScanRoot{},
 			},
 			want: &scalibr.ScanResult{
 				Version: scalibr.ScannerVersion,
@@ -303,12 +301,12 @@ func withDetectorName(f *inventory.GenericFinding, det string) *inventory.Generi
 	return &c
 }
 
-func TestEnableRequiredExtractors(t *testing.T) {
+func TestEnableRequiredPlugins(t *testing.T) {
 	cases := []struct {
-		name           string
-		cfg            scalibr.ScanConfig
-		wantExtractors []string
-		wantErr        error
+		name        string
+		cfg         scalibr.ScanConfig
+		wantPlugins []string
+		wantErr     error
 	}{
 		{
 			name: "empty",
@@ -316,45 +314,44 @@ func TestEnableRequiredExtractors(t *testing.T) {
 		{
 			name: "no required extractors",
 			cfg: scalibr.ScanConfig{
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo"),
 				},
 			},
+			wantPlugins: []string{"foo"},
 		},
 		{
 			name: "required extractor in already enabled",
 			cfg: scalibr.ScanConfig{
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
-				},
-				FilesystemExtractors: []filesystem.Extractor{
 					fe.New("bar/baz", 0, nil, nil),
 				},
 			},
-			wantExtractors: []string{"bar/baz"},
+			wantPlugins: []string{"foo", "bar/baz"},
 		},
 		{
 			name: "auto-loaded required extractor",
 			cfg: scalibr.ScanConfig{
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
 				},
 			},
-			wantExtractors: []string{"python/wheelegg"},
+			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
 			name: "auto-loaded required extractor by enricher",
 			cfg: scalibr.ScanConfig{
-				Enrichers: []enricher.Enricher{
-					fen.MustNew(t, &fen.Config{RequiredPlugins: []string{"python/wheelegg"}}),
+				Plugins: []plugin.Plugin{
+					fen.MustNew(t, &fen.Config{Name: "foo", RequiredPlugins: []string{"python/wheelegg"}}),
 				},
 			},
-			wantExtractors: []string{"python/wheelegg"},
+			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
 			name: "required extractor doesn't exist",
 			cfg: scalibr.ScanConfig{
-				Detectors: []detector.Detector{
+				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
 			},
@@ -364,24 +361,21 @@ func TestEnableRequiredExtractors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := tc.cfg.EnableRequiredExtractors(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
-				t.Fatalf("EnableRequiredExtractors() error: %v, want %v", tc.wantErr, err)
+			if err := tc.cfg.EnableRequiredPlugins(); !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
+				t.Fatalf("EnableRequiredPlugins() error: %v, want %v", tc.wantErr, err)
 			}
 			if tc.wantErr == nil {
-				gotExtractors := []string{}
-				for _, e := range tc.cfg.FilesystemExtractors {
-					gotExtractors = append(gotExtractors, e.Name())
-				}
-				for _, e := range tc.cfg.StandaloneExtractors {
-					gotExtractors = append(gotExtractors, e.Name())
+				gotPlugins := []string{}
+				for _, p := range tc.cfg.Plugins {
+					gotPlugins = append(gotPlugins, p.Name())
 				}
 				if diff := cmp.Diff(
-					tc.wantExtractors,
-					gotExtractors,
+					tc.wantPlugins,
+					gotPlugins,
 					cmpopts.EquateEmpty(),
 					cmpopts.SortSlices(func(l, r string) bool { return l < r }),
 				); diff != "" {
-					t.Errorf("EnableRequiredExtractors() diff (-want, +got):\n%s", diff)
+					t.Errorf("EnableRequiredPlugins() diff (-want, +got):\n%s", diff)
 				}
 			}
 		})
@@ -403,9 +397,10 @@ func (fakeExNeedsNetwork) Requirements() *plugin.Capabilities {
 type fakeDetNeedsFS struct {
 }
 
-func (fakeDetNeedsFS) Name() string                 { return "fake-extractor" }
-func (fakeDetNeedsFS) Version() int                 { return 0 }
-func (fakeDetNeedsFS) RequiredExtractors() []string { return nil }
+func (fakeDetNeedsFS) Name() string                       { return "fake-extractor" }
+func (fakeDetNeedsFS) Version() int                       { return 0 }
+func (fakeDetNeedsFS) RequiredExtractors() []string       { return nil }
+func (fakeDetNeedsFS) DetectedFinding() inventory.Finding { return inventory.Finding{} }
 func (fakeDetNeedsFS) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	return inventory.Finding{}, nil
 }
@@ -422,13 +417,9 @@ func TestValidatePluginRequirements(t *testing.T) {
 		{
 			desc: "requirements satisfied",
 			cfg: scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
-				},
-				Detectors: []detector.Detector{
 					&fakeDetNeedsFS{},
-				},
-				Enrichers: []enricher.Enricher{
 					fen.MustNew(t, &fen.Config{
 						Name:    "enricher",
 						Version: 1,
@@ -448,10 +439,8 @@ func TestValidatePluginRequirements(t *testing.T) {
 		{
 			desc: "one detector's requirements unsatisfied",
 			cfg: scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
-				},
-				Detectors: []detector.Detector{
 					&fakeDetNeedsFS{},
 				},
 				Capabilities: &plugin.Capabilities{
@@ -464,10 +453,8 @@ func TestValidatePluginRequirements(t *testing.T) {
 		{
 			desc: "one enrichers's requirements unsatisfied",
 			cfg: scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
-				},
-				Enrichers: []enricher.Enricher{
 					fen.MustNew(t, &fen.Config{
 						Name:    "enricher",
 						Version: 1,
@@ -487,10 +474,8 @@ func TestValidatePluginRequirements(t *testing.T) {
 		{
 			desc: "both plugin's requirements unsatisfied",
 			cfg: scalibr.ScanConfig{
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
-				},
-				Detectors: []detector.Detector{
 					&fakeDetNeedsFS{},
 				},
 				Capabilities: &plugin.Capabilities{
@@ -542,7 +527,7 @@ func TestErrorOnFSErrors(t *testing.T) {
 			fs := errorFS{err: errors.New("some error")}
 			cfg := &scalibr.ScanConfig{
 				ScanRoots: []*scalibrfs.ScanRoot{{FS: fs}},
-				FilesystemExtractors: []filesystem.Extractor{
+				Plugins: []plugin.Plugin{
 					// Just a random extractor, such that walk is running.
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: []string{"software"}}}),
 				},
@@ -574,9 +559,8 @@ func TestAnnotator(t *testing.T) {
 	)
 
 	cfg := &scalibr.ScanConfig{
-		FilesystemExtractors: []filesystem.Extractor{fakeExtractor},
-		Annotators:           []annotator.Annotator{cachedir.New()},
-		ScanRoots:            tmpRoot,
+		Plugins:   []plugin.Plugin{fakeExtractor, cachedir.New()},
+		ScanRoots: tmpRoot,
 	}
 
 	wantPkgs := []*extractor.Package{{

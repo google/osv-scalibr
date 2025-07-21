@@ -48,13 +48,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	state, err := getDBState(path)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("Error opening file: %s with error: %w", path, err)
+		return inventory.Inventory{}, fmt.Errorf("error opening file: %s with error: %w", path, err)
 	}
 	defer state.Close()
 
 	ctrs, err := state.AllContainers()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("Error listing containers in file: %s with error: %w", path, err)
+		return inventory.Inventory{}, fmt.Errorf("error listing containers in file: %s with error: %w", path, err)
 	}
 
 	pkgs := make([]*extractor.Package, 0, len(ctrs))

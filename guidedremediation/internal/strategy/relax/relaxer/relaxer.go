@@ -44,7 +44,9 @@ func ForEcosystem(ecosystem resolve.System) (RequirementRelaxer, error) {
 	switch ecosystem {
 	case resolve.NPM:
 		return NpmRelaxer{}, nil
-	case resolve.Maven, resolve.PyPI, resolve.UnknownSystem:
+	case resolve.PyPI:
+		return PythonRelaxer{}, nil
+	case resolve.Maven, resolve.UnknownSystem:
 		fallthrough
 	default:
 		return nil, errors.New("unsupported ecosystem")

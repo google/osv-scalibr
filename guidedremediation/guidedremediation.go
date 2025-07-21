@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
+	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
@@ -60,8 +61,8 @@ import (
 // patched to remove vulnerabilities. It also returns a Result describing the changes made.
 func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	var (
-		hasManifest bool = (opts.Manifest != "")
-		hasLockfile bool = (opts.Lockfile != "")
+		hasManifest = opts.Manifest != ""
+		hasLockfile = opts.Lockfile != ""
 		manifestRW  manifest.ReadWriter
 		lockfileRW  lockfile.ReadWriter
 	)
@@ -412,7 +413,7 @@ func filterMavenPatches(allPatches []result.Patch, ecosystemSpecific any) []resu
 	}
 	for i := range allPatches {
 		allPatches[i].PackageUpdates = slices.DeleteFunc(allPatches[i].PackageUpdates, func(update result.PackageUpdate) bool {
-			origDep := maven.OriginalDependency(update, specific.OriginalRequirements)
+			origDep := maven.OriginalDependency(update, specific.LocalRequirements)
 			// An empty name indicates the original dependency is not in the base project.
 			// If so, delete the patch if the new dependency management is not allowed.
 			return origDep.Name() == ":"
@@ -607,6 +608,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 		return maven.GetReadWriter(registry, "")
 	case "package.json":
 		return npm.GetReadWriter(registry)
+	case "requirements.txt":
+		return python.GetReadWriter(), nil
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }

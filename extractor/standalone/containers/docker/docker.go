@@ -71,7 +71,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	// extract running containers
 	containers, err := e.client.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("Error fetching containers: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("error fetching containers: %w", err)
 	}
 
 	pkgs := make([]*extractor.Package, 0, len(containers))

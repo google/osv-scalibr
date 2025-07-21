@@ -7,6 +7,11 @@
           "name": "pkg:e",
           "versionFrom": "1.0.0",
           "versionTo": "2.0.0"
+        },
+        {
+          "name": "pkg:a",
+          "versionFrom": "1.0.0",
+          "versionTo": "1.1.0"
         }
       ]
     }

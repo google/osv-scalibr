@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
@@ -73,6 +74,9 @@ func TestToPURL(t *testing.T) {
 				Version:   "1.2.3",
 				PURLType:  purl.TypeNPM,
 				Locations: []string{"location"},
+				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
+					FromNPMRepository: false,
+				},
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeNPM,

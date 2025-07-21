@@ -915,6 +915,7 @@ func setupMapFS(t *testing.T, mapFS mapFS) scalibrfs.FS {
 // To not break the test every time we add a new metric, we inherit from the NoopCollector.
 type fakeCollector struct {
 	stats.NoopCollector
+
 	AfterInodeVisitedCount int
 }
 
@@ -1072,7 +1073,7 @@ func TestIsInterestingExecutable(t *testing.T) {
 			path:        "some/path/a",
 			mode:        0640,
 			want:        false,
-			wantWindows: true,
+			wantWindows: false,
 		},
 		{
 			name: "executable required",
@@ -1090,6 +1091,48 @@ func TestIsInterestingExecutable(t *testing.T) {
 			name: "another unwanted extension",
 			path: "some/path/a.txt",
 			mode: 0766,
+			want: false,
+		},
+		{
+			name: "python script without execute permissions",
+			path: "some/path/a.py",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "shell script without execute permissions",
+			path: "some/path/a.sh",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "shared library without execute permissions",
+			path: "some/path/a.so",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "binary file without execute permissions",
+			path: "some/path/a.bin",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "versioned shared library",
+			path: "some/path/library.so.1",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "versioned shared library with multiple digits",
+			path: "some/path/library.so.12",
+			mode: 0666,
+			want: true,
+		},
+		{
+			name: "not a versioned shared library",
+			path: "some/path/library.so.foo",
+			mode: 0666,
 			want: false,
 		},
 	}

@@ -285,3 +285,13 @@ func CompareVersions(vk resolve.VersionKey, a *semver.Version, b *semver.Version
 
 	return a.Compare(b)
 }
+
+// IsPrerelease returns whether the given version is a prerelease version.
+// There is a special handling for com.google.guava:guava, which has 'flavors' with versions ending
+// with '-jre' or '-android'. These versions are not considered as prerelease versions.
+func IsPrerelease(ver *semver.Version, vk resolve.VersionKey) bool {
+	if vk.Name == "com.google.guava:guava" {
+		return false
+	}
+	return ver.IsPrerelease()
+}

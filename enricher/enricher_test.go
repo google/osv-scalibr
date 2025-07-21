@@ -179,7 +179,7 @@ func TestRun(t *testing.T) {
 
 type fakeVulnMatcher struct{}
 
-func (fakeVulnMatcher) Name() string                       { return "osv-dev" }
+func (fakeVulnMatcher) Name() string                       { return "vulnmatch/osvdev" }
 func (fakeVulnMatcher) Version() int                       { return 0 }
 func (fakeVulnMatcher) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 func (fakeVulnMatcher) RequiredPlugins() []string          { return nil }
@@ -232,7 +232,7 @@ func TestRunEnricherOrdering(t *testing.T) {
 		PackageVulns: nil,
 	}
 	wantStatus := []*plugin.Status{
-		{Name: "osv-dev", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
+		{Name: "vulnmatch/osvdev", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
 		{Name: "vex/filter", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
 		{Name: "fake-package-adder", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
 	}

@@ -325,7 +325,7 @@ func TestMavenSuggester_Suggest(t *testing.T) {
 					Type: depPlugin,
 				},
 			},
-			OriginalRequirements: []mavenmanifest.DependencyWithOrigin{
+			LocalRequirements: []mavenmanifest.DependencyWithOrigin{
 				{
 					Dependency: maven.Dependency{GroupID: "org.parent", ArtifactID: "parent-pom", Version: "1.2.0", Type: "pom"},
 					Origin:     "parent",
@@ -469,7 +469,8 @@ func Test_suggestMavenVersion(t *testing.T) {
 		System: resolve.Maven,
 		Name:   "abc:xyz",
 	}
-	for _, version := range []string{"1.0.0", "1.0.1", "1.1.0", "1.2.3", "2.0.0", "2.2.2", "2.3.4"} {
+	// Version 3.0.0-beta1 will be skipped as it is a prerelease version.
+	for _, version := range []string{"1.0.0", "1.0.1", "1.1.0", "1.2.3", "2.0.0", "2.2.2", "2.3.4", "3.0.0-beta1"} {
 		lc.AddVersion(resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,

@@ -22,6 +22,7 @@ import (
 // DepsDevClient is a ResolutionClient wrapping the official resolve.APIClient
 type DepsDevClient struct {
 	resolve.APIClient
+
 	c *datasource.CachedInsightsClient
 }
 

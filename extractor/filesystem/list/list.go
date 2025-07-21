@@ -82,7 +82,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
-	"github.com/google/osv-scalibr/plugin"
 )
 
 // InitFn is the extractor initializer function.
@@ -304,10 +303,12 @@ var (
 		"misc":       vals(Misc),
 
 		// Collections.
-		"artifact":   vals(Artifact),
-		"sourcecode": vals(SourceCode),
-		"default":    vals(Default),
-		"all":        vals(All),
+		"artifact":           vals(Artifact),
+		"sourcecode":         vals(SourceCode),
+		"default":            vals(Default),
+		"extractors/default": vals(Default),
+		"all":                vals(All),
+		"extractors/all":     vals(All),
 	})
 )
 
@@ -325,66 +326,14 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
-// FromCapabilities returns all extractors that can run under the specified
-// capabilities (OS, direct filesystem access, network access, etc.) of the
-// scanning environment.
-func FromCapabilities(capabs *plugin.Capabilities) []filesystem.Extractor {
-	all := []filesystem.Extractor{}
-	for _, initers := range All {
+// ExtractorsFromName returns a list of extractors from a name.
+func ExtractorsFromName(name string) ([]filesystem.Extractor, error) {
+	if initers, ok := extractorNames[name]; ok {
+		result := []filesystem.Extractor{}
 		for _, initer := range initers {
-			all = append(all, initer())
+			result = append(result, initer())
 		}
+		return result, nil
 	}
-	return FilterByCapabilities(all, capabs)
-}
-
-// FilterByCapabilities returns all extractors from the given list that can run
-// under the specified capabilities (OS, direct filesystem access, network
-// access, etc.) of the scanning environment.
-func FilterByCapabilities(exs []filesystem.Extractor, capabs *plugin.Capabilities) []filesystem.Extractor {
-	result := []filesystem.Extractor{}
-	for _, ex := range exs {
-		if err := plugin.ValidateRequirements(ex, capabs); err == nil {
-			result = append(result, ex)
-		}
-	}
-	return result
-}
-
-// ExtractorsFromNames returns a deduplicated list of extractors from a list of names.
-func ExtractorsFromNames(names []string) ([]filesystem.Extractor, error) {
-	resultMap := make(map[string]filesystem.Extractor)
-	for _, n := range names {
-		if initers, ok := extractorNames[n]; ok {
-			for _, initer := range initers {
-				e := initer()
-				if _, ok := resultMap[e.Name()]; !ok {
-					resultMap[e.Name()] = e
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("unknown extractor %q", n)
-		}
-	}
-	result := make([]filesystem.Extractor, 0, len(resultMap))
-	for _, e := range resultMap {
-		result = append(result, e)
-	}
-	return result, nil
-}
-
-// ExtractorFromName returns a single extractor based on its exact name.
-func ExtractorFromName(name string) (filesystem.Extractor, error) {
-	initers, ok := extractorNames[name]
-	if !ok {
-		return nil, fmt.Errorf("unknown extractor %q", name)
-	}
-	if len(initers) != 1 {
-		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
-	}
-	e := initers[0]()
-	if e.Name() != name {
-		return nil, fmt.Errorf("not an exact name for an extractor: %s", name)
-	}
-	return e, nil
+	return nil, fmt.Errorf("unknown extractor %q", name)
 }

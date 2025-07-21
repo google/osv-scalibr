@@ -142,6 +142,19 @@ func ValidateRequirements(p Plugin, capabs *Capabilities) error {
 	return fmt.Errorf("plugin %s can't be enabled: %s", p.Name(), strings.Join(errs, ", "))
 }
 
+// FilterByCapabilities returns all plugins from the given list that can run
+// under the specified capabilities (OS, direct filesystem access, network
+// access, etc.) of the scanning environment.
+func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
+	result := []Plugin{}
+	for _, pl := range pls {
+		if err := ValidateRequirements(pl, capabs); err == nil {
+			result = append(result, pl)
+		}
+	}
+	return result
+}
+
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
 func StatusFromErr(p Plugin, partial bool, err error) *Status {
 	status := &ScanStatus{}

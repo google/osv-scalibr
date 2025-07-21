@@ -72,6 +72,35 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{} }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForPackage(nil)
+}
+
+func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2023-38408",
+			Summary: "CVE-2023-38408",
+			Details: "CVE-2023-38408",
+			Affected: []osvschema.Affected{{
+				Package: osvschema.Package{
+					Name: "openssh",
+				},
+				Severity: []osvschema.Severity{{
+					Type:  osvschema.SeverityCVSSV3,
+					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+				}},
+				Ranges: []osvschema.Range{{
+					Type:   osvschema.RangeEcosystem,
+					Events: []osvschema.Event{{Fixed: "9.3.p2"}},
+				}},
+			}},
+			DatabaseSpecific: dbSpecific,
+		},
+	}}}
+}
+
 func isVersionWithinRange(openSSHVersion string, lower string, upper string) (bool, error) {
 	lessEq, err1 := versionLessEqual(lower, openSSHVersion)
 	greaterEq, err2 := versionLessEqual(openSSHVersion, upper)
@@ -141,29 +170,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 	locations = append(locations, socketFiles...)
 
-	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2023-38408",
-			Summary: "CVE-2023-38408",
-			Details: "CVE-2023-38408",
-			Affected: []osvschema.Affected{{
-				Package: osvschema.Package{
-					Name: "openssh",
-				},
-				Severity: []osvschema.Severity{{
-					Type:  osvschema.SeverityCVSSV3,
-					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-				}},
-				Ranges: []osvschema.Range{{
-					Type:   osvschema.RangeEcosystem,
-					Events: []osvschema.Event{{Fixed: "9.3.p2"}},
-				}},
-			}},
-			DatabaseSpecific: map[string]any{
-				"extra": buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations),
-			},
-		},
-	}}}, nil
+	dbSpecific := map[string]any{
+		"extra": buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations),
+	}
+	return d.findingForPackage(dbSpecific), nil
 }
 
 func getOpenSSHVersion() string {

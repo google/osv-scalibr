@@ -20,11 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/detector"
-	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	dl "github.com/google/osv-scalibr/detector/list"
-	"github.com/google/osv-scalibr/plugin"
 )
 
 var (
@@ -42,57 +38,21 @@ func TestPluginNamesValid(t *testing.T) {
 	}
 }
 
-func TestFromCapabilities(t *testing.T) {
-	found := false
-	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
-	want := "cis/generic-linux/etcpasswdpermissions" // Doesn't need direct FS access.
-	dontWant := "govulncheck/binary"                 // Needs direct FS access.
-	for _, ex := range dl.FromCapabilities(capab) {
-		if ex.Name() == want {
-			found = true
-			break
-		}
-		if ex.Name() == dontWant {
-			t.Errorf("dl.FromCapabilities(%v): %q included in results, shouldn't be", capab, dontWant)
-		}
-	}
-	if !found {
-		t.Errorf("dl.FromCapabilities(%v): %q not included in results, should be", capab, want)
-	}
-}
-
-func TestFilterByCapabilities(t *testing.T) {
-	capab := &plugin.Capabilities{OS: plugin.OSLinux, DirectFS: false}
-	dets := []detector.Detector{
-		etcpasswdpermissions.New(),
-		binary.New(),
-	}
-	got := dl.FilterByCapabilities(dets, capab)
-	if len(got) != 1 {
-		t.Fatalf("dl.FilterCapabilities(%v, %v): want 1 plugin, got %d", dets, capab, len(got))
-	}
-	gotName := got[0].Name()
-	wantName := "cis/generic-linux/etcpasswdpermissions" // govulncheck/binary needs direct FS access.
-	if gotName != wantName {
-		t.Fatalf("dl.FilterCapabilities(%v, %v): want plugin %q, got %q", dets, capab, wantName, gotName)
-	}
-}
-
-func TestDetectorsFromNames(t *testing.T) {
+func TestDetectorsFromName(t *testing.T) {
 	testCases := []struct {
 		desc     string
-		names    []string
+		name     string
 		wantDets []string
 		wantErr  error
 	}{
 		{
 			desc:     "Find all detectors of a type",
-			names:    []string{"cis"},
+			name:     "cis",
 			wantDets: []string{"cis/generic-linux/etcpasswdpermissions"},
 		},
 		{
-			desc:  "Find weak credentials detectors",
-			names: []string{"weakcreds"},
+			desc: "Find weak credentials detectors",
+			name: "weakcredentials",
 			wantDets: []string{
 				"weakcredentials/codeserver",
 				"weakcredentials/etcshadow",
@@ -101,13 +61,8 @@ func TestDetectorsFromNames(t *testing.T) {
 			},
 		},
 		{
-			desc:     "Remove duplicates",
-			names:    []string{"cis", "cis"},
-			wantDets: []string{"cis/generic-linux/etcpasswdpermissions"},
-		},
-		{
 			desc:     "Nonexistent plugin",
-			names:    []string{"nonexistent"},
+			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
 			wantDets: []string{},
 		},
@@ -115,16 +70,16 @@ func TestDetectorsFromNames(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := dl.DetectorsFromNames(tc.names)
+			got, err := dl.DetectorsFromName(tc.name)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("dl.DetectorsFromNames(%v) error got diff (-want +got):\n%s", tc.names, diff)
+				t.Errorf("dl.DetectorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}
 			gotNames := []string{}
 			for _, d := range got {
 				gotNames = append(gotNames, d.Name())
 			}
 			if diff := cmp.Diff(tc.wantDets, gotNames, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
-				t.Errorf("dl.DetectorsFromNames(%v): got diff (-want +got):\n%s", tc.names, diff)
+				t.Errorf("dl.DetectorsFromName(%v): got diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
 	}

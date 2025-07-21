@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -152,8 +153,8 @@ func TestExtract(t *testing.T) {
 					Version:   "10.46.8",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/package.json"},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Author: &packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Author: &metadata.Person{
 							Name:  "Developer",
 							Email: "dev@corp.com",
 							URL:   "http://blog.dev.com",
@@ -171,8 +172,8 @@ func TestExtract(t *testing.T) {
 					Version:   "1.3.8",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/accepts/package.json"},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Contributors: []*packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Contributors: []*metadata.Person{
 							{
 								Name:  "Douglas Christopher Wilson",
 								Email: "doug@somethingdoug.com",
@@ -196,8 +197,8 @@ func TestExtract(t *testing.T) {
 					Version:   "1.3.8",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/no-person-name/package.json"},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Contributors: []*packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Contributors: []*metadata.Person{
 							{
 								Name:  "Jonathan Ong",
 								Email: "me@jongleberry.com",
@@ -217,8 +218,8 @@ func TestExtract(t *testing.T) {
 					Version:   "1.2.2",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Maintainers: []*packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Maintainers: []*metadata.Person{
 							{
 								Name:  "Marijn Haverbeke",
 								Email: "marijnh@gmail.com",
@@ -273,8 +274,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{
 						"testdata/undici-package.json",
 					},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Contributors: []*packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Contributors: []*metadata.Person{
 							{
 								Name: "Daniele Belardi",
 								URL:  "https://github.com/dnlup",
@@ -300,8 +301,8 @@ func TestExtract(t *testing.T) {
 					Version:   "1.3.1",
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/not-vscode.json"},
-					Metadata: &packagejson.JavascriptPackageJSONMetadata{
-						Author: &packagejson.Person{
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Author: &metadata.Person{
 							Name:  "Tim Caswell",
 							Email: "tim@creationix.com",
 						},

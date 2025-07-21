@@ -33,7 +33,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) veles.Secret {
-			return &RubyGemsAPIKey{Key: string(b)}
+			return RubyGemsAPIKey{Key: string(b)}
 		},
 	}
 }

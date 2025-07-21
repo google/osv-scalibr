@@ -31,6 +31,11 @@ type Detector interface {
 	// RequiredExtractors returns a list of Extractors that need to be enabled for this
 	// Detector to run.
 	RequiredExtractors() []string
+	// DetectedFinding returns generic information about the finding identified by the detector.
+	// Generic means the finding do not contain any information specific to the target or extras.
+	// E.g. no paths (locations), no IP addresses or any other information that could identify the
+	// target.
+	DetectedFinding() inventory.Finding
 	// Scan performs the security scan, considering scanRoot to be the root directory.
 	// Implementations may use PackageIndex to check if a relevant software package is installed and
 	// terminate early if it's not.

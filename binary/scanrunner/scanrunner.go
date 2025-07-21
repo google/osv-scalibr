@@ -43,10 +43,7 @@ func RunScan(flags *cli.Flags) int {
 		return 1
 	}
 
-	log.Infof(
-		"Running scan with %d extractors and %d detectors",
-		len(cfg.FilesystemExtractors)+len(cfg.StandaloneExtractors), len(cfg.Detectors),
-	)
+	log.Infof("Running scan with %d plugins", len(cfg.Plugins))
 	if len(cfg.PathsToExtract) > 0 {
 		log.Infof("Paths to extract: %s", cfg.PathsToExtract)
 	}
@@ -61,6 +58,12 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+
+		cleanupErr := img.CleanUp()
+		if cleanupErr != nil {
+			log.Errorf("failed to clean up image: %s", err)
+		}
+
 		if err != nil {
 			log.Errorf("Failed to scan container: %v", err)
 			return 1

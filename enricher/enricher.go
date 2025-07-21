@@ -36,7 +36,8 @@ var (
 	// EnricherOrder describes the order in which specific enrichers need to run in.
 	// TODO(b/416106602): Use required enrichers instead of a global ordering list.
 	EnricherOrder = []string{
-		"osv-dev",
+		"reachability/java",
+		"vulnmatch/osvdev",
 		"vex/filter",
 	}
 )

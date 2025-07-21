@@ -121,6 +121,30 @@ func (Detector) Requirements() *plugin.Capabilities {
 // RequiredExtractors returns an empty list as there are no dependencies.
 func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForPackage(nil)
+}
+
+func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+	pkg := &extractor.Package{
+		Name:     "salt",
+		PURLType: "pypi",
+	}
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Vulnerability: osvschema.Vulnerability{
+			ID:      "CVE-2020-16846",
+			Summary: "CVE-2020-16846",
+			Details: "CVE-2020-16846",
+			Affected: inventory.PackageToAffected(pkg, "3002.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: dbSpecific,
+		},
+	}}}
+}
+
 func findSaltVersions(px *packageindex.PackageIndex) (string, *extractor.Package, []string) {
 	for _, r := range saltPackages {
 		pkg := px.GetSpecific(r.name, r.packageType)
@@ -175,20 +199,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		log.Infof("Error removing file: %v", err)
 	}
 
-	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2020-16846",
-			Summary: "CVE-2020-16846",
-			Details: "CVE-2020-16846",
-			Affected: inventory.PackageToAffected(pkg, "3002.1", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
-				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-			}),
-			DatabaseSpecific: map[string]any{
-				"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
-			},
-		},
-	}}}, nil
+	dbSpecific := map[string]any{
+		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	}
+	return d.findingForPackage(dbSpecific), nil
 }
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.

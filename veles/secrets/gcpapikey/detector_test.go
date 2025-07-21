@@ -45,40 +45,40 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: testKey,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `API_KEY=` + testKey,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `API_KEY="` + testKey + `"`,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "matching string with mixed case",
 		input: testKeyMixedCase,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKeyMixedCase},
+			gcpapikey.GCPAPIKey{Key: testKeyMixedCase},
 		},
 	}, {
 		name:  "multiple matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
-			&gcpapikey.GCPAPIKey{Key: testKey},
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "1\n",
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
-			&gcpapikey.GCPAPIKey{Key: testKey[:len(testKey)-1] + "1"},
+			gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
 		name: "larger input containing key",
@@ -88,13 +88,13 @@ API_KEY=%s
 CLOUD_PROJECT=my-project
 		`, testKey),
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: testKey + `test`,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: testKey},
+			gcpapikey.GCPAPIKey{Key: testKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -145,7 +145,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "overlapping matches are not supported",
 		input: `AIza` + testKey,
 		want: []veles.Secret{
-			&gcpapikey.GCPAPIKey{Key: `AIza` + testKey[:len(testKey)-4]},
+			gcpapikey.GCPAPIKey{Key: `AIza` + testKey[:len(testKey)-4]},
 		},
 	}}
 	for _, tc := range cases {

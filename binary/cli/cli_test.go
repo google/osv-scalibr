@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
+	pl "github.com/google/osv-scalibr/plugin/list"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -43,9 +44,8 @@ func TestValidateFlags(t *testing.T) {
 				ResultFile:      "result.textproto",
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
-				DetectorsToRun:  []string{"weakcreds,cis"},
-				AnnotatorsToRun: []string{"vex"},
-				EnrichersToRun:  []string{"enricher/baseimage"},
+				DetectorsToRun:  []string{"weakcredentials,cis"},
+				PluginsToRun:    []string{"vex"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
@@ -139,24 +139,6 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Invalid enrichers",
-			flags: &cli.Flags{
-				Root:           "/",
-				ResultFile:     "result.textproto",
-				EnrichersToRun: []string{"cve,"},
-			},
-			wantErr: cmpopts.AnyError,
-		},
-		{
-			desc: "Nonexistent enrichers",
-			flags: &cli.Flags{
-				Root:           "/",
-				ResultFile:     "result.textproto",
-				EnrichersToRun: []string{"asdf"},
-			},
-			wantErr: cmpopts.AnyError,
-		},
-		{
 			desc: "Detector with missing extractor dependency when ExplicitExtractors",
 			flags: &cli.Flags{
 				Root:               "/",
@@ -176,15 +158,6 @@ func TestValidateFlags(t *testing.T) {
 				DetectorsToRun:  []string{"govulncheck"}, // Needs the Go binary extractor.
 			},
 			wantErr: nil,
-		},
-		{
-			desc: "Invalid annotators",
-			flags: &cli.Flags{
-				Root:            "/",
-				ResultFile:      "result.textproto",
-				AnnotatorsToRun: []string{"vex,"},
-			},
-			wantErr: cmpopts.AnyError,
 		},
 		{
 			desc: "Invalid paths to skip",
@@ -474,40 +447,44 @@ func TestGetScanConfig_SkipDirRegex(t *testing.T) {
 
 func TestGetScanConfig_CreatePlugins(t *testing.T) {
 	for _, tc := range []struct {
-		desc               string
-		flags              *cli.Flags
-		wantExtractorCount int
-		wantDetectorCount  int
-		wantAnnotatorCount int
-		wantEnricherCount  int
+		desc            string
+		flags           *cli.Flags
+		wantPluginCount int
 	}{
 		{
 			desc: "Create an extractor",
 			flags: &cli.Flags{
-				ExtractorsToRun: []string{"python/wheelegg"},
+				PluginsToRun: []string{"python/wheelegg"},
 			},
-			wantExtractorCount: 1,
+			wantPluginCount: 1,
 		},
 		{
-			desc: "Create a detector",
+			desc: "Create an extractor - legacy field",
+			flags: &cli.Flags{
+				ExtractorsToRun: []string{"python/wheelegg"},
+			},
+			wantPluginCount: 1,
+		},
+		{
+			desc: "Create a detector - legacy field",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"cis"},
+			},
+			wantPluginCount: 1,
+		},
+		{
+			desc: "Create a detector - legacy field",
 			flags: &cli.Flags{
 				DetectorsToRun: []string{"cis"},
 			},
-			wantDetectorCount: 1,
+			wantPluginCount: 1,
 		},
 		{
 			desc: "Create an annotator",
 			flags: &cli.Flags{
-				AnnotatorsToRun: []string{"vex/cachedir"},
+				PluginsToRun: []string{"vex/cachedir"},
 			},
-			wantAnnotatorCount: 1,
-		},
-		{
-			desc: "Create an enricher",
-			flags: &cli.Flags{
-				EnrichersToRun: []string{"enricher/baseimage"},
-			},
-			wantEnricherCount: 1,
+			wantPluginCount: 1,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -515,17 +492,8 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
 			}
-			if len(cfg.Detectors) != tc.wantDetectorCount {
-				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
-			}
-			if len(cfg.FilesystemExtractors) != tc.wantExtractorCount {
-				t.Errorf("%v.GetScanConfig() want extractor count %d got %d", tc.flags, tc.wantExtractorCount, len(cfg.FilesystemExtractors))
-			}
-			if len(cfg.Enrichers) != tc.wantEnricherCount {
-				t.Errorf("%v.GetScanConfig() want enricher count %d got %d", tc.flags, tc.wantEnricherCount, len(cfg.Enrichers))
-			}
-			if len(cfg.Annotators) != tc.wantAnnotatorCount {
-				t.Errorf("%v.GetScanConfig() want annotator count %d got %d", tc.flags, tc.wantAnnotatorCount, len(cfg.Annotators))
+			if len(cfg.Plugins) != tc.wantPluginCount {
+				t.Errorf("%v.GetScanConfig() want plugin count %d got %d", tc.flags, tc.wantPluginCount, len(cfg.Plugins))
 			}
 		})
 	}
@@ -543,10 +511,11 @@ func TestGetScanConfig_GovulncheckParams(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v.GetScanConfig(): %v", flags, err)
 	}
-	if len(cfg.Detectors) != 1 {
-		t.Fatalf("%v.GetScanConfig() want 1 detector got %d", flags, len(cfg.Detectors))
+	detectors := pl.Detectors(cfg.Plugins)
+	if len(detectors) != 1 {
+		t.Fatalf("%v.GetScanConfig() want 1 detector got %d", flags, len(detectors))
 	}
-	got := cfg.Detectors[0].(*binary.Detector).OfflineVulnDBPath
+	got := detectors[0].(*binary.Detector).OfflineVulnDBPath
 	if got != dbPath {
 		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
 	}
@@ -581,9 +550,9 @@ func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
 				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
 			}
 			var gobinaryExt *gobinary.Extractor
-			for _, e := range cfg.FilesystemExtractors {
-				if e.Name() == gobinary.Name {
-					gobinaryExt = e.(*gobinary.Extractor)
+			for _, p := range cfg.Plugins {
+				if p.Name() == gobinary.Name {
+					gobinaryExt = p.(*gobinary.Extractor)
 				}
 			}
 			if gobinaryExt == nil {
@@ -624,6 +593,208 @@ func TestGetScanConfig_MaxFileSize(t *testing.T) {
 			}
 			if cfg.MaxFileSize != tc.wantMaxFileSize {
 				t.Errorf("%+v.GetScanConfig() got max file size %d, want %d", tc.flags, cfg.MaxFileSize, tc.wantMaxFileSize)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_PluginGroups(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantPlugins     []string
+		dontWantPlugins []string
+	}{
+		{
+			desc:  "default_plugins_if_nothing_is_specified",
+			flags: &cli.Flags{},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not default plugins
+				"govulncheck/binary",
+				"vscode/extensions",
+				"baseimage",
+			},
+		},
+		{
+			desc: "default_extractors_legacy",
+			flags: &cli.Flags{
+				ExtractorsToRun: []string{"default"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"python/wheelegg",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not a default Extractor
+				"vscode/extensions",
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_extractors_legacy",
+			flags: &cli.Flags{
+				ExtractorsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"vscode/extensions",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "default_detectors_legacy",
+			flags: &cli.Flags{
+				DetectorsToRun: []string{"default"},
+			},
+			// There are no default Detectors at the moment.
+			dontWantPlugins: []string{
+				// Not a default Detector
+				"govulncheck/binary",
+				// Not a Detector
+				"python/wheelegg",
+			},
+		},
+		{
+			desc: "all_detectors_legacy",
+			flags: &cli.Flags{
+				DetectorsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				"govulncheck/binary",
+			},
+			dontWantPlugins: []string{
+				// Not Detectors
+				"python/wheelegg",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "all_extractors",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"extractors/all"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"vscode/extensions",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_detectors",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"detectors/all"},
+			},
+			wantPlugins: []string{
+				"govulncheck/binary",
+			},
+			dontWantPlugins: []string{
+				// Not Detectors
+				"python/wheelegg",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "all_annotators",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"annotators/all"},
+			},
+			wantPlugins: []string{
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not Annotators
+				"python/wheelegg",
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_enrichers",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"enrichers/all"},
+			},
+			wantPlugins: []string{
+				"baseimage",
+			},
+			dontWantPlugins: []string{
+				// Not Enrichers
+				"python/wheelegg",
+				"govulncheck/binary",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "default_plugins",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"default"},
+			},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not default plugins
+				"govulncheck/binary",
+				"vscode/extensions",
+				"baseimage",
+			},
+		},
+		{
+			desc: "all_plugins",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"govulncheck/binary",
+				"vex/cachedir",
+				"baseimage",
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			for _, name := range tc.wantPlugins {
+				found := false
+				for _, p := range cfg.Plugins {
+					if p.Name() == name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("%+v.GetScanConfig() didn't find wanted plugin %q in config", tc.flags, name)
+				}
+			}
+			for _, name := range tc.dontWantPlugins {
+				for _, p := range cfg.Plugins {
+					if p.Name() == name {
+						t.Errorf("%+v.GetScanConfig() found unwanted plugin %q in config", tc.flags, name)
+						break
+					}
+				}
 			}
 		})
 	}

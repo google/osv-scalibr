@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -645,52 +644,91 @@ func (i *ScanInput) GetRealPath() (string, error) {
 }
 
 // TODO(b/380419487): This list is not exhaustive. We should add more extensions here.
-var unlikelyExecutableExtensions = map[string]bool{
-	".c":             true,
-	".cc":            true,
-	".cargo-ok":      true,
-	".crate":         true,
-	".css":           true,
-	".db":            true,
-	".gitattributes": true,
-	".gitignore":     true,
-	".go":            true,
-	".h":             true,
-	".html":          true,
-	".json":          true,
-	".lock":          true,
-	".log":           true,
-	".md":            true,
-	".mod":           true,
-	".png":           true,
-	".proto":         true,
-	".rs":            true,
-	".stderr":        true,
-	".sum":           true,
-	".svg":           true,
-	".tar":           true,
-	".tmpl":          true,
-	".toml":          true,
-	".txt":           true,
-	".woff2":         true,
-	".xml":           true,
-	".yaml":          true,
-	".yml":           true,
-	".zip":           true,
-	".ziphash":       true,
-}
+var (
+	unlikelyExecutableExtensions = map[string]bool{
+		".c":             true,
+		".cc":            true,
+		".cargo-ok":      true,
+		".crate":         true,
+		".css":           true,
+		".db":            true,
+		".gitattributes": true,
+		".gitignore":     true,
+		".go":            true,
+		".h":             true,
+		".html":          true,
+		".jpg":           true,
+		".json":          true,
+		".lock":          true,
+		".log":           true,
+		".md":            true,
+		".mod":           true,
+		".png":           true,
+		".proto":         true,
+		".rs":            true,
+		".stderr":        true,
+		".sum":           true,
+		".svg":           true,
+		".tar":           true,
+		".tmpl":          true,
+		".toml":          true,
+		".txt":           true,
+		".woff2":         true,
+		".xml":           true,
+		".yaml":          true,
+		".yml":           true,
+		".zip":           true,
+		".ziphash":       true,
+	}
+
+	// Always interesting binary extensions
+	likelyFileExts = map[string]bool{
+		".a": true,
+		// Binary extensions
+		".bin": true,
+		".elf": true,
+		".run": true,
+		".o":   true,
+		// Windows Binary extensions:
+		".exe": true,
+		".dll": true,
+
+		// Shared library: true extension: true
+		".so": true,
+		// and .so: true.[number]
+
+		// Script extensions: true
+		".py":   true, // Python
+		".sh":   true, // bash/sh/zsh
+		".bash": true,
+
+		".pl":  true, // Perl
+		".rb":  true, // Ruby
+		".php": true, // Php
+		".awk": true, // Awk
+		".tcl": true, // tcl
+	}
+	likelyFileExtRegexes = map[string]*regexp.Regexp{
+		".so.": regexp.MustCompile(`.so.\d+$`),
+	}
+)
 
 // IsInterestingExecutable returns true if the specified file is an executable which may need scanning.
 func IsInterestingExecutable(api FileAPI) bool {
-	extension := filepath.Ext(api.Path())
+	path := api.Path()
+	extension := filepath.Ext(path)
 	if unlikelyExecutableExtensions[extension] {
 		return false
 	}
 
-	// TODO(b/279138598): Research: Maybe on windows all files have the executable bit set.
-	// Either windows .exe/.dll or unix executable bit should be set.
-	if runtime.GOOS == "windows" || extension == ".exe" || extension == ".dll" {
+	if likelyFileExts[extension] {
 		return true
+	}
+
+	for substrTest, regex := range likelyFileExtRegexes {
+		if strings.Contains(path, substrTest) && regex.MatchString(path) {
+			return true
+		}
 	}
 
 	mode, err := api.Stat()

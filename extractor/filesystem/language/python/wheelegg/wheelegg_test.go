@@ -489,7 +489,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 
 	// Set FileInfo to nil, which does not allow input.info.Size(). This is required for unzipping the
 	// egg file.
-	var info fs.FileInfo = nil
+	var info fs.FileInfo
 
 	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
