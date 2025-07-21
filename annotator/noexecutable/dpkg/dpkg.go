@@ -20,9 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -57,6 +55,65 @@ func (Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSLinux}
 }
 
+// Annotate adds annotations for DPKG packages that don't contain any executables.
+func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+	errs := []error{}
+
+	for _, pkg := range results.Packages {
+		// Return if canceled or exceeding deadline.
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
+		}
+
+		metadata, ok := pkg.Metadata.(dpkgmetadata.Metadata)
+		if !ok {
+			continue
+		}
+
+		// check if the pkg files contains at least one executable file
+		containsExecutable, err := pkgContainsExecutable(input, pkg.Name, metadata.Architecture)
+		// if the pkg contains an executable or there was an error checking the files, skip the pkg
+		// here, false positives are better then false negatives
+		if containsExecutable || err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// if the pkg does not contain any executable then add an annotation
+		pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+			Plugin:          Name,
+			Justification:   vex.ComponentNotPresent,
+			MatchesAllVulns: true,
+		})
+	}
+	return errors.Join(errs...)
+}
+
+// pkgContainsExecutable opens a pkg related .list file and check if at least one of the listed file IsInterestingExecutable
+func pkgContainsExecutable(input *annotator.ScanInput, pkgName, pkgArchitecture string) (bool, error) {
+	listF, err := getListFile(input, pkgName, pkgArchitecture)
+	if err != nil {
+		return false, err
+	}
+	defer listF.Close()
+
+	s := bufio.NewScanner(listF)
+	errs := []error{}
+	for s.Scan() {
+		info, err := input.ScanRoot.FS.Stat(s.Text())
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		api := simplefileapi.New(s.Text(), info)
+		if filesystem.IsInterestingExecutable(api) {
+			return true, errors.Join(errs...)
+		}
+	}
+	return false, errors.Join(errs...)
+}
+
+// getListFile given a pkgName and pkgArchitecture returns a DPKG .list file containing all the installed files
 func getListFile(input *annotator.ScanInput, pkgName string, pkgArchitecture string) (fs.File, error) {
 	options := []string{
 		pkgName,
@@ -74,62 +131,4 @@ func getListFile(input *annotator.ScanInput, pkgName string, pkgArchitecture str
 	}
 
 	return nil, fmt.Errorf("no list file detected for %q", pkgName)
-}
-
-// Annotate adds annotations for DPKG packages that don't contain any executables.
-func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	errs := []error{}
-
-	for _, pkg := range results.Packages {
-		// Return if canceled or exceeding deadline.
-		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
-		}
-
-		if len(pkg.Locations) == 0 {
-			continue
-		}
-
-		metadata, ok := pkg.Metadata.(dpkgmetadata.Metadata)
-		if !ok {
-			continue
-		}
-
-		listF, err := getListFile(input, pkg.Name, metadata.Architecture)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		// check if the .list files contains at least one executable file
-		if listContainsExecutable(listF) {
-			continue
-		}
-		// if the list file does not contain any executable annotate the pkg
-		pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-			Plugin:          Name,
-			Justification:   vex.ComponentNotPresent,
-			MatchesAllVulns: true,
-		})
-	}
-	return errors.Join(errs...)
-}
-
-// listContainsExecutable open a .list file and check if at least one of the listed file IsInterestingExecutable
-func listContainsExecutable(reader io.ReadCloser) bool {
-	defer reader.Close()
-
-	s := bufio.NewScanner(reader)
-	for s.Scan() {
-		mode, err := os.Stat(s.Text())
-		if err != nil {
-			// TODO: do something here, simply skipping a file could result into a FN
-			continue
-		}
-		api := simplefileapi.New(s.Text(), mode)
-		if filesystem.IsInterestingExecutable(api) {
-			return true
-		}
-	}
-	return false
 }
