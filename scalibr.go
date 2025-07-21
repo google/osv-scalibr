@@ -291,6 +291,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 		},
 	}
 
+	storeAbsPath := config.StoreAbsolutePath
+	// Don't try and store absolute path because on windows it will turn unix paths into
+	// Windows paths.
+	config.StoreAbsolutePath = false
+
 	// Suppress running enrichers until after layer details are populated.
 	var enrichers []enricher.Enricher
 	var nonEnricherPlugins []plugin.Plugin
@@ -329,6 +334,17 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
+
+	// Since we skipped storing absolute path in the main Scan function.
+	// Actually convert it to absolute path here.
+	if storeAbsPath {
+		for i := range scanResult.Inventory.Packages {
+			for i2 := range scanResult.Inventory.Packages[i].Locations {
+				scanResult.Inventory.Packages[i].Locations[i2] =
+					"/" + scanResult.Inventory.Packages[i].Locations[i2]
+			}
+		}
+	}
 
 	// Run enrichers with the updated inventory.
 	enricherCfg := &enricher.Config{
