@@ -89,26 +89,26 @@ func (c *PyPIRegistryClient) Versions(ctx context.Context, pk resolve.PackageKey
 		case ".gz":
 			_, v, err = pypi.SdistVersion(resp.Name, file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from sdist file name %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from sdist file name %s: %v", file.Name, err)
 				continue
 			}
 		case ".whl":
 			info, err := pypi.ParseWheelName(file.Name)
 			if err != nil {
-				log.Errorf("failed to parse wheel name %s: %v", file.Name, err)
+				log.Warnf("failed to parse wheel name %s: %v", file.Name, err)
 				continue
 			}
 			v = info.Version
 		case ".egg":
 			v, err = versionFromEggFilename(file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from file %s: %v", file.Name, err)
 				continue
 			}
 		case ".zip":
 			v, err = versionFromZipFilename(file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from file %s: %v", file.Name, err)
 				continue
 			}
 		default:
@@ -199,7 +199,7 @@ func (c *PyPIRegistryClient) Requirements(ctx context.Context, vk resolve.Versio
 		case ".whl":
 			metadata, err = pypi.WheelMetadata(ctx, bytes.NewReader(data), int64(len(data)))
 		default:
-			log.Warnf("unsupported file extension for requirements: %s", ext)
+			log.Infof("unsupported file extension for requirements: %s", ext)
 			continue
 		}
 		if err != nil {
@@ -245,7 +245,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File) [
 		case ".gz":
 			_, v, err := pypi.SdistVersion(name, file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from sdist file name %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from sdist file name %s: %v", file.Name, err)
 				continue
 			}
 			if v != vk.Version {
@@ -254,7 +254,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File) [
 		case ".whl":
 			info, err := pypi.ParseWheelName(file.Name)
 			if err != nil {
-				log.Errorf("failed to parse wheel name %s: %v", file.Name, err)
+				log.Warnf("failed to parse wheel name %s: %v", file.Name, err)
 				continue
 			}
 			if info.Version != vk.Version {
@@ -263,7 +263,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File) [
 		case ".egg":
 			v, err := versionFromEggFilename(file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from file %s: %v", file.Name, err)
 				continue
 			}
 			if v != vk.Version {
@@ -272,7 +272,7 @@ func lookupFile(vk resolve.VersionKey, name string, files []internalpypi.File) [
 		case ".zip":
 			v, err := versionFromZipFilename(file.Name)
 			if err != nil {
-				log.Errorf("failed to extract version from file %s: %v", file.Name, err)
+				log.Warnf("failed to extract version from file %s: %v", file.Name, err)
 				continue
 			}
 			if v != vk.Version {
