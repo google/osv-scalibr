@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -58,6 +59,11 @@ func (Annotator) Requirements() *plugin.Capabilities {
 // Annotate adds annotations for DPKG packages that don't contain any executables.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	errs := []error{}
+
+	// early exit if the dpkgInfoDirPath does not exists
+	if _, err := input.ScanRoot.FS.Stat(dpkgInfoDirPath); err != nil {
+		return fmt.Errorf("folder %q does not exists", dpkgInfoDirPath)
+	}
 
 	for _, pkg := range results.Packages {
 		// Return if canceled or exceeding deadline.
@@ -100,12 +106,20 @@ func pkgContainsExecutable(input *annotator.ScanInput, pkgName, pkgArchitecture 
 	s := bufio.NewScanner(listF)
 	errs := []error{}
 	for s.Scan() {
-		info, err := input.ScanRoot.FS.Stat(s.Text())
+		// Remove leading '/' since SCALIBR fs paths don't include that.
+		filePath := strings.TrimPrefix(s.Text(), "/")
+
+		info, err := input.ScanRoot.FS.Stat(filePath)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		api := simplefileapi.New(s.Text(), info)
+
+		if info.IsDir() {
+			continue
+		}
+
+		api := simplefileapi.New(filePath, info)
 		if filesystem.IsInterestingExecutable(api) {
 			return true, errors.Join(errs...)
 		}
