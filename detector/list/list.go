@@ -48,8 +48,8 @@ var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
 
-// EOL (End of Life) detectors.
-var EOL = InitMap{linuxdistro.Name: {linuxdistro.New}}
+// EndOfLife detectors.
+var EndOfLife = InitMap{linuxdistro.Name: {linuxdistro.New}}
 
 // Untested CVE scanning related detectors - since they don't have proper testing they
 // might not work as expected in the future.
@@ -69,8 +69,8 @@ var Untested = InitMap{
 	cve20242912.Name: {cve20242912.New},
 }
 
-// Weakcreds detectors for weak credentials.
-var Weakcreds = InitMap{
+// Weakcredentials detectors for weak credentials.
+var Weakcredentials = InitMap{
 	codeserver.Name:  {codeserver.NewDefault},
 	etcshadow.Name:   {etcshadow.New},
 	filebrowser.Name: {filebrowser.New},
@@ -83,17 +83,17 @@ var Default = InitMap{}
 // All detectors internal to SCALIBR.
 var All = concat(
 	CIS,
-	EOL,
+	EndOfLife,
 	Govulncheck,
-	Weakcreds,
+	Weakcredentials,
 	Untested,
 )
 
 var detectorNames = concat(All, InitMap{
 	"cis":               vals(CIS),
-	"eol":               vals(EOL),
+	"endoflife":         vals(EndOfLife),
 	"govulncheck":       vals(Govulncheck),
-	"weakcreds":         vals(Weakcreds),
+	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),

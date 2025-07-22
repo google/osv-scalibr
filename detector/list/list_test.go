@@ -52,7 +52,7 @@ func TestDetectorsFromName(t *testing.T) {
 		},
 		{
 			desc: "Find weak credentials detectors",
-			name: "weakcreds",
+			name: "weakcredentials",
 			wantDets: []string{
 				"weakcredentials/codeserver",
 				"weakcredentials/etcshadow",

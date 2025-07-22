@@ -44,7 +44,7 @@ func TestValidateFlags(t *testing.T) {
 				ResultFile:      "result.textproto",
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
-				DetectorsToRun:  []string{"weakcreds,cis"},
+				DetectorsToRun:  []string{"weakcredentials,cis"},
 				PluginsToRun:    []string{"vex"},
 				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
