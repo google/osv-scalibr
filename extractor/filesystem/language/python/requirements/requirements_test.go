@@ -56,6 +56,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "requirements.in",
+			path:             "RsaCtfTool/requirements.in",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:         "non requirements.txt txt file",
 			path:         "requirements-asdf/test.txt",
 			wantRequired: false,

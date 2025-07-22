@@ -110,7 +110,12 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if filepath.Ext(path) != ".txt" || !strings.Contains(filepath.Base(path), "requirements") {
+
+	// Check for both ".txt" and ".in" extensions
+	if filepath.Ext(path) != ".txt" && filepath.Ext(path) != ".in" {
+		return false
+	}
+	if !strings.Contains(filepath.Base(path), "requirements") {
 		return false
 	}
 
