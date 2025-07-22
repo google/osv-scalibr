@@ -338,10 +338,9 @@ func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *Sc
 	// Since we skipped storing absolute path in the main Scan function.
 	// Actually convert it to absolute path here.
 	if storeAbsPath {
-		for i := range scanResult.Inventory.Packages {
-			for i2 := range scanResult.Inventory.Packages[i].Locations {
-				scanResult.Inventory.Packages[i].Locations[i2] =
-					"/" + scanResult.Inventory.Packages[i].Locations[i2]
+		for _, pkg := range scanResult.Inventory.Packages {
+			for i := range pkg.Locations {
+				pkg.Locations[i] = "/" + pkg.Locations[i]
 			}
 		}
 	}
