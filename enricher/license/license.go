@@ -35,8 +35,7 @@ import (
 
 const (
 	// Name is the unique name of this Enricher.
-	// TODO: add a better name
-	Name    = "license/license"
+	Name    = "license/depsdev"
 	version = 1
 )
 
@@ -78,8 +77,8 @@ func (Enricher) Requirements() *plugin.Capabilities {
 }
 
 // RequiredPlugins returns the plugins that are required to be enabled for this
-// Enricher to run. While it works on the results of [TODO: add something]
-// Extractor, the Enricher itself can run independently.
+// Enricher to run. While it works on the results of other extractors,
+// the Enricher itself can run independently.
 func (Enricher) RequiredPlugins() []string {
 	return []string{}
 }
