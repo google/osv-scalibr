@@ -32,6 +32,10 @@ const (
 	// OSUnix is used only when specifying Plugin requirements.
 	// Specifies that the plugin needs to be run either on Linux or Mac.
 	OSUnix OS = iota
+
+	// OSUnknown is used by consumers to indicate they don't know the OS
+	// which means only plugins that support any OS should be run.
+	OSUnknown = OSAny
 )
 
 // Network is the network access of the scanner or the network
