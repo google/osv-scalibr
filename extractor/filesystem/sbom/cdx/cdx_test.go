@@ -179,10 +179,13 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeNPM,
 					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:npm/%40gar%2Fpromisify@1.1.3"),
+						CDXLocations: []string{
+							"home/test/.vscode-server/bin/node_modules/@gar/promisify/package.json",
+							"usr/lib/node_modules/@gar/promisify/package.json",
+						},
 					},
 					Locations: []string{
 						"testdata/sbom-with-locations.cdx.json",
-						"home/test/.vscode-server/bin/node_modules/@gar/promisify/package.json",
 					},
 				},
 			},
