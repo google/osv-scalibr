@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -38,6 +39,11 @@ var (
 	// LayerDetails enrichers.
 	LayerDetails = InitMap{
 		baseimage.Name: {baseimage.NewDefault},
+	}
+
+	// License enrichers.
+	License = InitMap{
+		license.Name: {license.New},
 	}
 
 	// VulnMatching enrichers.
@@ -67,9 +73,11 @@ var (
 	All = concat(
 		LayerDetails,
 		Secrets,
+		License,
 	)
 
 	enricherNames = concat(All, InitMap{
+		"license":           vals(License),
 		"vex":               vals(VEX),
 		"vulnmatch":         vals(VulnMatching),
 		"layerdetails":      vals(LayerDetails),

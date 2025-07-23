@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	depsdevpb "deps.dev/api/v3"
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
@@ -86,7 +85,9 @@ func (Enricher) RequiredPlugins() []string {
 // Enrich adds license data to all the packages using deps.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	if e.client == nil {
-		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr/"+scalibr.ScannerVersion)
+		// TODO: cannot use scalibr.ScannerVersion in the user agent due to an import cycle.
+		// To fix move the ScannerVersion inside a `version package`
+		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr")
 		if err != nil {
 			return fmt.Errorf("cannot connect with deps.dev %w", err)
 		}
