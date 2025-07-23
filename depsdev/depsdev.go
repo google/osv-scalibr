@@ -25,7 +25,7 @@ import (
 // docs.deps.dev/api.
 const DepsdevAPI = "api.deps.dev:443"
 
-// System maps from a lockfile system to the depsdev API system.
+// System maps from purl type to the depsdev API system.
 var System = map[string]depsdevpb.System{
 	purl.TypeNPM:    depsdevpb.System_NPM,
 	purl.TypeNuget:  depsdevpb.System_NUGET,

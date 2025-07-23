@@ -23,8 +23,8 @@ import (
 	depsdevpb "deps.dev/api/v3"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/license/depsdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -45,11 +45,11 @@ var _ enricher.Enricher = &Enricher{}
 
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
-	client *datasource.CachedInsightsClient
+	client Client
 }
 
 // NewWithClient returns an Enricher which uses a specified deps.dev client.
-func NewWithClient(c *datasource.CachedInsightsClient) enricher.Enricher {
+func NewWithClient(c Client) enricher.Enricher {
 	return &Enricher{client: c}
 }
 
@@ -100,7 +100,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			return err
 		}
 
-		ecoSystem, ok := depsdev.System[pkg.Ecosystem()]
+		ecoSystem, ok := depsdev.System[pkg.PURLType]
 		if !ok {
 			continue
 		}
