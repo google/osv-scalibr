@@ -45,9 +45,6 @@ type LayerDetails struct {
 	InBaseImage bool
 }
 
-// License contains License information about a package
-type License string
-
 // Package is an instance of a software package or library found by the extractor.
 // TODO(b/400910349): Currently package is also used to store non-package data
 // like open ports. Move these into their own dedicated types.
@@ -80,7 +77,7 @@ type Package struct {
 	// The additional data found in the package.
 	Metadata any
 	// License information of this package
-	License []License
+	License []string
 }
 
 // Annotation are additional information about the package.

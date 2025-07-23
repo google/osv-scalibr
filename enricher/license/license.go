@@ -24,7 +24,6 @@ import (
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"golang.org/x/sync/errgroup"
@@ -124,15 +123,15 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 // query. It makes these requests concurrently, sharing the single HTTP/2
 // connection. The order in which the requests are specified should correspond
 // to the order of licenses returned by this function.
-func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]extractor.License, error) {
-	licenses := make([][]extractor.License, len(queries))
+func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]string, error) {
+	licenses := make([][]string, len(queries))
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxConcurrentRequests)
 
 	for i := range queries {
 		if queries[i] == nil {
 			// This may be a private package.
-			licenses[i] = []extractor.License{extractor.License("UNKNOWN")}
+			licenses[i] = []string{"UNKNOWN"}
 			continue
 		}
 		g.Go(func() error {
@@ -145,15 +144,15 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 
 				return err
 			}
-			ls := make([]extractor.License, len(resp.GetLicenses()))
+			ls := make([]string, len(resp.GetLicenses()))
 			for j, license := range resp.GetLicenses() {
-				ls[j] = extractor.License(license)
+				ls[j] = license
 			}
 			if len(ls) == 0 {
 				// The deps.dev API will return an
 				// empty slice if the license is
 				// unknown.
-				ls = []extractor.License{extractor.License("UNKNOWN")}
+				ls = []string{"UNKNOWN"}
 			}
 			licenses[i] = ls
 

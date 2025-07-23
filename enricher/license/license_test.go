@@ -81,9 +81,9 @@ func TestEnrich(t *testing.T) {
 				{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang},
 			},
 			wantPackages: []*extractor.Package{
-				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []extractor.License{"MIT"}},
-				{Name: "requests", Version: "2.26.0", PURLType: purl.TypePyPi, License: []extractor.License{"Apache-2.0"}},
-				{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang, License: []extractor.License{"MIT"}},
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"MIT"}},
+				{Name: "requests", Version: "2.26.0", PURLType: purl.TypePyPi, License: []string{"Apache-2.0"}},
+				{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang, License: []string{"MIT"}},
 			},
 		},
 		{
@@ -103,7 +103,7 @@ func TestEnrich(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				// UNKNOWN license
-				{Name: "unknown", Version: "1.8.1", PURLType: purl.TypeGolang, License: []extractor.License{"UNKNOWN"}},
+				{Name: "unknown", Version: "1.8.1", PURLType: purl.TypeGolang, License: []string{"UNKNOWN"}},
 			},
 		},
 	}
