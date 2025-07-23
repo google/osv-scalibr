@@ -310,7 +310,9 @@ message APKPackageMetadata {
   string os_version_id = 4;
   string maintainer = 5;
   string architecture = 6;
-  string license = 7;
+
+  reserved 7;
+  reserved "license";
 }
 
 // The additional data found in DPKG packages.
@@ -339,7 +341,9 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
-  string license = 10;
+
+  reserved 10;
+  reserved "license";
 }
 
 // The additional data found in COS packages.

@@ -479,8 +479,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			OSName:       "Red Hat Enterprise Linux",
 			Vendor:       "CentOS",
 			Architecture: "x86_64",
-			License:      "BSD",
 		},
+		License:   []string{"BSD"},
 		Locations: []string{"/file1"},
 		Plugins:   []string{rpm.Name},
 	}
@@ -500,6 +500,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				{Key: "sourcerpm", Value: "openssh-5.3p1-124.el6_10.src.rpm"},
 			},
 		},
+		License:   []string{"BSD"},
 		Ecosystem: "Red Hat",
 		Metadata: &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
@@ -512,7 +513,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsName:       "Red Hat Enterprise Linux",
 				Vendor:       "CentOS",
 				Architecture: "x86_64",
-				License:      "BSD",
 			},
 		},
 		Locations: []string{"/file1"},

@@ -402,7 +402,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionId:  m.OSVersionID,
 				Maintainer:   m.Maintainer,
 				Architecture: m.Architecture,
-				License:      m.License,
 			},
 		}
 	case *dpkgmeta.Metadata:
@@ -445,7 +444,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsBuildId:    m.OSBuildID,
 				Vendor:       m.Vendor,
 				Architecture: m.Architecture,
-				License:      m.License,
 			},
 		}
 	case *cosmeta.Metadata:
@@ -737,7 +735,6 @@ func metadataToStruct(md *spb.Package) any {
 			OSVersionID:  md.GetApkMetadata().GetOsVersionId(),
 			Maintainer:   md.GetApkMetadata().GetMaintainer(),
 			Architecture: md.GetApkMetadata().GetArchitecture(),
-			License:      md.GetApkMetadata().GetLicense(),
 		}
 	case *spb.Package_DpkgMetadata:
 		return &dpkgmeta.Metadata{
@@ -774,7 +771,6 @@ func metadataToStruct(md *spb.Package) any {
 			OSBuildID:    md.GetRpmMetadata().GetOsBuildId(),
 			Vendor:       md.GetRpmMetadata().GetVendor(),
 			Architecture: md.GetRpmMetadata().GetArchitecture(),
-			License:      md.GetRpmMetadata().GetLicense(),
 		}
 	case *spb.Package_CosMetadata:
 		return &cosmeta.Metadata{

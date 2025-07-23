@@ -306,8 +306,8 @@ func getPackage(path, pkgName, origin, version, osID, osVersionID, maintainer, a
 			OSVersionID:  osVersionID,
 			Maintainer:   maintainer,
 			Architecture: arch,
-			License:      license,
 		},
+		License: []string{license},
 	}
 	if commit != "" {
 		p.SourceCode = &extractor.SourceCodeIdentifier{

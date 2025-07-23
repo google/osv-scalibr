@@ -32,7 +32,6 @@ type Metadata struct {
 	OSBuildID    string
 	Vendor       string
 	Architecture string
-	License      string
 }
 
 // ToNamespace extracts the PURL namespace from the metadata.
