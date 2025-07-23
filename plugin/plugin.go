@@ -25,6 +25,9 @@ type OS int
 
 // OS values
 const (
+	// OSAny is used only when specifying Plugin requirements.
+	// Specifies that the plugin expects to be compatible with any OS,
+	// and so should be fine to run even if OS is unknown.
 	OSAny     OS = iota
 	OSLinux   OS = iota
 	OSWindows OS = iota
@@ -33,8 +36,9 @@ const (
 	// Specifies that the plugin needs to be run either on Linux or Mac.
 	OSUnix OS = iota
 
-	// OSUnknown is used by consumers to indicate they don't know the OS
-	// which means only plugins that support any OS should be run.
+	// OSUnknown is only used when specifying Capabilities.
+	// Specifies that the OS is not known and so only
+	// plugins that require OSAny should be run.
 	OSUnknown = OSAny
 )
 
