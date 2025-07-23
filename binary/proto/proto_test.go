@@ -982,6 +982,17 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins: []string{"containers/docker"},
 	}
 
+	licensePackage := &extractor.Package{
+		Name:    "express",
+		Version: "4.17.1",
+		License: []string{"MIT"},
+	}
+	licensePackageProto := &spb.Package{
+		Name:    "express",
+		Version: "4.17.1",
+		License: []string{"MIT"},
+	}
+
 	testCases := []struct {
 		desc         string
 		res          *scalibr.ScanResult
@@ -1607,6 +1618,27 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Status:    successProto,
 				Inventory: &spb.Inventory{
 					Secrets: []*spb.Secret{gcpsakSecretProtoWithExtra},
+				},
+			},
+		},
+		{
+			desc: "package containing license data",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{licensePackage},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				Inventory: &spb.Inventory{
+					Packages: []*spb.Package{licensePackageProto},
 				},
 			},
 		},

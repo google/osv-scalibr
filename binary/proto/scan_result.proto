@@ -140,6 +140,9 @@ message Package {
   // Details about the layer a package was found in. This should be set only for
   // container image scanning.
   LayerDetails layer_details = 35;
+
+  // Software license information
+  repeated string license = 52;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).

@@ -330,6 +330,7 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		AnnotationsDeprecated: annotationsToProto(pkg.AnnotationsDeprecated),
 		ExploitabilitySignals: packageVEXToProto(pkg.ExploitabilitySignals),
 		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
+		License:               pkg.License,
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto
@@ -361,6 +362,7 @@ func packageToStruct(pkgProto *spb.Package) *extractor.Package {
 		ExploitabilitySignals: packageVEXToStruct(pkgProto.GetExploitabilitySignals()),
 		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
 		Metadata:              metadataToStruct(pkgProto),
+		License:               pkgProto.GetLicense(),
 	}
 	return pkg
 }
