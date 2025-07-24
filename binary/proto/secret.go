@@ -92,9 +92,9 @@ func validationStatusToProto(s veles.ValidationStatus) (spb.SecretStatus_SecretS
 	case veles.ValidationUnspecified:
 		return spb.SecretStatus_UNSPECIFIED, nil
 	case veles.ValidationUnsupported:
-		return spb.SecretStatus_UNKNOWN, nil
+		return spb.SecretStatus_UNSUPPORTED, nil
 	case veles.ValidationFailed:
-		return spb.SecretStatus_UNKNOWN, nil
+		return spb.SecretStatus_FAILED, nil
 	case veles.ValidationInvalid:
 		return spb.SecretStatus_INVALID, nil
 	case veles.ValidationValid:

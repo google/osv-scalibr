@@ -622,10 +622,18 @@ message SecretStatus {
   google.protobuf.Timestamp last_updated = 2;
 
   enum SecretStatusEnum {
+    // The default value for SecretStatusEnum. Should not be returned.
     UNSPECIFIED = 0;
-    UNKNOWN = 1;
+    // Deprecated. Use UNSPECIFIED instead.
+    UNKNOWN = 1 [deprecated = true];
+    // The secret is confirmed to be invalid.
     INVALID = 2;
+    // The secret is confirmed to be valid.
     VALID = 3;
+    // Validating the secret is not supported by the scanner.
+    UNSUPPORTED = 4;
+    // Validation is supported but the validation failed.
+    FAILED = 5;
   }
 }
 
