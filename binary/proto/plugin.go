@@ -20,10 +20,35 @@ import (
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
+var (
+	// structToProtoScanStatus is a map of struct ScanStatus to their corresponding proto values.
+	structToProtoScanStatus = map[plugin.ScanStatusEnum]spb.ScanStatus_ScanStatusEnum{
+		plugin.ScanStatusSucceeded:          spb.ScanStatus_SUCCEEDED,
+		plugin.ScanStatusPartiallySucceeded: spb.ScanStatus_PARTIALLY_SUCCEEDED,
+		plugin.ScanStatusFailed:             spb.ScanStatus_FAILED,
+		plugin.ScanStatusUnspecified:        spb.ScanStatus_UNSPECIFIED,
+	}
+
+	protoToStructScanStatus = func() map[spb.ScanStatus_ScanStatusEnum]plugin.ScanStatusEnum {
+		m := make(map[spb.ScanStatus_ScanStatusEnum]plugin.ScanStatusEnum)
+		for k, v := range structToProtoScanStatus {
+			m[v] = k
+		}
+		if len(m) != len(structToProtoScanStatus) {
+			panic("protoToStructScanStatus does not contain all values from structToProtoScanStatus")
+		}
+		return m
+	}()
+)
+
 // --- Struct to Proto
 
 // PluginStatusToProto converts a plugin.Status go struct into the equivalent proto.
 func PluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
+	if s == nil {
+		return nil
+	}
+
 	return &spb.PluginStatus{
 		Name:    s.Name,
 		Version: int32(s.Version),
@@ -32,18 +57,32 @@ func PluginStatusToProto(s *plugin.Status) *spb.PluginStatus {
 }
 
 func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
-	var e spb.ScanStatus_ScanStatusEnum
-	switch s.Status {
-	case plugin.ScanStatusSucceeded:
-		e = spb.ScanStatus_SUCCEEDED
-	case plugin.ScanStatusPartiallySucceeded:
-		e = spb.ScanStatus_PARTIALLY_SUCCEEDED
-	case plugin.ScanStatusFailed:
-		e = spb.ScanStatus_FAILED
-	default:
-		e = spb.ScanStatus_UNSPECIFIED
+	if s == nil {
+		return nil
 	}
-	return &spb.ScanStatus{Status: e, FailureReason: s.FailureReason}
+	statusEnum := structToProtoScanStatus[s.Status]
+	return &spb.ScanStatus{Status: statusEnum, FailureReason: s.FailureReason}
 }
 
 // --- Proto to Struct
+
+// PluginStatusToStruct converts a plugin.Status proto into the equivalent go struct.
+func PluginStatusToStruct(s *spb.PluginStatus) *plugin.Status {
+	if s == nil {
+		return nil
+	}
+
+	return &plugin.Status{
+		Name:    s.GetName(),
+		Version: int(s.GetVersion()),
+		Status:  scanStatusToStruct(s.GetStatus()),
+	}
+}
+
+func scanStatusToStruct(s *spb.ScanStatus) *plugin.ScanStatus {
+	if s == nil {
+		return nil
+	}
+	statusEnum := protoToStructScanStatus[s.GetStatus()]
+	return &plugin.ScanStatus{Status: statusEnum, FailureReason: s.GetFailureReason()}
+}
