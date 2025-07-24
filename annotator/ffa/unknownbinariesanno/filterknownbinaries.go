@@ -22,6 +22,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/apkfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/dpkgfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/extractor"
@@ -36,6 +37,7 @@ const Name = "ffa/unknownbinaries"
 // List of filters to apply to exclude known binaries
 var filters = []filter.Filter{
 	dpkgfilter.DpkgFilter{},
+	apkfilter.ApkFilter{},
 }
 
 // Annotator further processes the UnknownBinaryExtractor
