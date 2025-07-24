@@ -79,7 +79,16 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	rootDirToPackages := MapNPMProjectRootsToPackages(results.Packages)
 	var errs []error
 	for rootDir, pkgs := range rootDirToPackages {
-		registryResolvedMap, err := ResolvedFromLockfile(rootDir, input.ScanRoot.FS)
+		fullPath := rootDir
+		var relError error
+		if filepath.IsAbs(fullPath) {
+			fullPath, relError = filepath.Rel(input.ScanRoot.Path, fullPath)
+		}
+		if relError != nil {
+			errs = append(errs, fmt.Errorf("%s failed to get relative path for %q from base %q: %w", a.Name(), fullPath, input.ScanRoot.Path, relError))
+			continue
+		}
+		registryResolvedMap, err := ResolvedFromLockfile(fullPath, input.ScanRoot.FS)
 		if err != nil {
 			// If no lockfile is found, we want to annotate the packages as locally published packages.
 			errs = append(errs, fmt.Errorf("%s failed to resolve lockfile in %q: %w", a.Name(), rootDir, err))
@@ -116,7 +125,7 @@ func ResolvedFromLockfile(root string, fsys scalibrfs.FS) (map[string]bool, erro
 			lockfilePath = filepath.Join(root, nodeModulesDirectory, ".package-lock.json")
 		}
 
-		parsedLockfile, err := npmLockfile(lockfilePath, fsys)
+		parsedLockfile, err := npmLockfile(filepath.ToSlash(lockfilePath), fsys)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to resolve lockfile: %w", err))
 			continue

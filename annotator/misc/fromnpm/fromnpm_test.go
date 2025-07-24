@@ -18,7 +18,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -33,11 +32,53 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func TestAnnotate_LockfileV1(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+func TestAnnotate_AbsolutePackagePath(t *testing.T) {
+	copier := cpy.New(
+		cpy.Func(proto.Clone),
+		cpy.IgnoreAllUnexported(),
+	)
+
+	lockfiles := map[string]string{
+		"testproject/package-lock.json": "testdata/package-lock.v1.json",
 	}
 
+	root := setupNPMLockfiles(t, lockfiles)
+
+	inputPackage := &extractor.Package{
+		Name:     "wrappy",
+		PURLType: "npm",
+		// Locations is the absolute path of the package.json file.
+		Locations: []string{filepath.Join(root, "testproject/node_modules/dependency-1/package.json")},
+	}
+	inv := &inventory.Inventory{Packages: []*extractor.Package{copier.Copy(inputPackage).(*extractor.Package)}}
+
+	input := &annotator.ScanInput{
+		ScanRoot: scalibrfs.RealFSScanRoot(root),
+	}
+
+	wantPackage := &extractor.Package{
+		Name:      "wrappy",
+		PURLType:  "npm",
+		Locations: []string{filepath.Join(root, "testproject/node_modules/dependency-1/package.json")},
+		Metadata: &metadata.JavascriptPackageJSONMetadata{
+			// We want to assert that the package was resolved from the NPM repository which means that
+			// the lockfile was read from the relative path in the scan root.
+			FromNPMRepository: true,
+		},
+	}
+
+	err := fromnpm.New().Annotate(context.Background(), input, inv)
+	if err != nil {
+		t.Errorf("Annotate(%v) error: %v; want error presence = false", inputPackage, err)
+	}
+
+	want := &inventory.Inventory{Packages: []*extractor.Package{wantPackage}}
+	if diff := cmp.Diff(want, inv, protocmp.Transform()); diff != "" {
+		t.Errorf("Annotate(%v): unexpected diff (-want +got):\n%s", inputPackage, diff)
+	}
+}
+
+func TestAnnotate_LockfileV1(t *testing.T) {
 	copier := cpy.New(
 		cpy.Func(proto.Clone),
 		cpy.IgnoreAllUnexported(),
@@ -228,9 +269,6 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 }
 
 func TestAnnotate_LockfileV2(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
 	copier := cpy.New(
 		cpy.Func(proto.Clone),
 		cpy.IgnoreAllUnexported(),
@@ -440,14 +478,32 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 }
 
 func TestMapNPMProjectRootsToPackages(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
 	testCases := []struct {
 		name          string
 		inputPackages []*extractor.Package
 		want          map[string][]*extractor.Package
 	}{
+		{
+			name: "maps root directory to package from node_modules/../package.json",
+			inputPackages: []*extractor.Package{
+				{
+					Name:      "acorn",
+					Version:   "1.0.0",
+					PURLType:  "npm",
+					Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				},
+			},
+			want: map[string][]*extractor.Package{
+				"testproject": []*extractor.Package{
+					{
+						Name:      "acorn",
+						Version:   "1.0.0",
+						PURLType:  "npm",
+						Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+					},
+				},
+			},
+		},
 		{
 			name: "maps root directory to package from node_modules/../package.json",
 			inputPackages: []*extractor.Package{
@@ -617,10 +673,6 @@ func TestResolvedFromLockfile(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		if tt.skipWindows && runtime.GOOS == "windows" {
-			t.Logf("Skipping test %q for Windows", tt.name)
-			continue
-		}
 		t.Run(tt.name, func(t *testing.T) {
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			fsys := scalibrfs.DirFS(root)
