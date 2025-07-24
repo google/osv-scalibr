@@ -15,12 +15,19 @@
 package proto
 
 import (
+	"errors"
+
 	"github.com/google/osv-scalibr/inventory/vex"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 var (
+	// --- Errors
+
+	// ErrVulnIdentifiersAndMatchsAllSet will be returned if both VulnIdentifiers and MatchesAllVulns are set.
+	ErrVulnIdentifiersAndMatchsAllSet = errors.New("cannot set both VulnIdentifiers and MatchesAllVulns")
+
 	// structToProtoVEX is a map of struct VEX justifications to their corresponding proto values.
 	structToProtoVEX = map[vex.Justification]spb.VexJustification{
 		vex.Unspecified:                                 spb.VexJustification_VEX_JUSTIFICATION_UNSPECIFIED,
@@ -30,7 +37,7 @@ var (
 		vex.VulnerableCodeCannotBeControlledByAdversary: spb.VexJustification_VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY,
 		vex.InlineMitigationAlreadyExists:               spb.VexJustification_INLINE_MITIGATION_ALREADY_EXISTS,
 	}
-	// protoToStructVEX is a map of protopackage VEXes to their corresponding struct values.
+	// protoToStructVEX is a map of proto VEX justifications to their corresponding struct values.
 	// It is initialized from structToProtoVEX during runtime to ensure both maps are in sync.
 	protoToStructVEX = func() map[spb.VexJustification]vex.Justification {
 		m := make(map[spb.VexJustification]vex.Justification)
@@ -46,62 +53,69 @@ var (
 
 // --- Struct to Proto
 
-func packageVEXToProto(vs []*vex.PackageExploitabilitySignal) []*spb.PackageExploitabilitySignal {
-	var ps []*spb.PackageExploitabilitySignal
-	for _, v := range vs {
-		p := &spb.PackageExploitabilitySignal{
-			Plugin:        v.Plugin,
-			Justification: structToProtoVEX[v.Justification],
-		}
-		if v.MatchesAllVulns {
-			p.VulnFilter = &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true}
-		} else {
-			p.VulnFilter = &spb.PackageExploitabilitySignal_VulnIdentifiers{
-				VulnIdentifiers: &spb.VulnIdentifiers{Identifiers: v.VulnIdentifiers},
-			}
-		}
-		ps = append(ps, p)
+// PackageVEXToProto converts a struct PackageExploitabilitySignal to its proto representation.
+func PackageVEXToProto(v *vex.PackageExploitabilitySignal) (*spb.PackageExploitabilitySignal, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return ps
+	if len(v.VulnIdentifiers) != 0 && v.MatchesAllVulns {
+		return nil, ErrVulnIdentifiersAndMatchsAllSet
+	}
+
+	p := &spb.PackageExploitabilitySignal{
+		Plugin:        v.Plugin,
+		Justification: structToProtoVEX[v.Justification],
+	}
+	if v.MatchesAllVulns {
+		p.VulnFilter = &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true}
+	} else {
+		p.VulnFilter = &spb.PackageExploitabilitySignal_VulnIdentifiers{
+			VulnIdentifiers: &spb.VulnIdentifiers{Identifiers: v.VulnIdentifiers},
+		}
+	}
+	return p, nil
 }
 
-func findingVEXToProto(vs []*vex.FindingExploitabilitySignal) []*spb.FindingExploitabilitySignal {
-	var ps []*spb.FindingExploitabilitySignal
-	for _, v := range vs {
-		ps = append(ps, &spb.FindingExploitabilitySignal{
-			Plugin:        v.Plugin,
-			Justification: structToProtoVEX[v.Justification],
-		})
+// FindingVEXToProto converts a struct FindingExploitabilitySignal to its proto representation.
+func FindingVEXToProto(v *vex.FindingExploitabilitySignal) *spb.FindingExploitabilitySignal {
+	if v == nil {
+		return nil
 	}
-	return ps
+
+	return &spb.FindingExploitabilitySignal{
+		Plugin:        v.Plugin,
+		Justification: structToProtoVEX[v.Justification],
+	}
 }
 
 // --- Proto to Struct
 
-func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExploitabilitySignal {
-	var vs []*vex.PackageExploitabilitySignal
-	for _, p := range ps {
-		v := &vex.PackageExploitabilitySignal{
-			Plugin:        p.Plugin,
-			Justification: protoToStructVEX[p.Justification],
-		}
-		if ids := p.GetVulnIdentifiers(); ids != nil {
-			v.VulnIdentifiers = ids.Identifiers
-		} else {
-			v.MatchesAllVulns = p.GetMatchesAllVulns()
-		}
-		vs = append(vs, v)
+// PackageVEXToStruct converts a proto PackageExploitabilitySignal to its struct representation.
+func PackageVEXToStruct(p *spb.PackageExploitabilitySignal) (*vex.PackageExploitabilitySignal, error) {
+	if p == nil {
+		return nil, nil
 	}
-	return vs
+
+	v := &vex.PackageExploitabilitySignal{
+		Plugin:        p.Plugin,
+		Justification: protoToStructVEX[p.Justification],
+	}
+	if ids := p.GetVulnIdentifiers(); ids != nil {
+		v.VulnIdentifiers = ids.Identifiers
+	} else {
+		v.MatchesAllVulns = p.GetMatchesAllVulns()
+	}
+	return v, nil
 }
 
-func findingVEXToStruct(ps []*spb.FindingExploitabilitySignal) []*vex.FindingExploitabilitySignal {
-	var vs []*vex.FindingExploitabilitySignal
-	for _, p := range ps {
-		vs = append(vs, &vex.FindingExploitabilitySignal{
-			Plugin:        p.Plugin,
-			Justification: protoToStructVEX[p.Justification],
-		})
+// FindingVEXToStruct converts a proto FindingExploitabilitySignal to its struct representation.
+func FindingVEXToStruct(p *spb.FindingExploitabilitySignal) *vex.FindingExploitabilitySignal {
+	if p == nil {
+		return nil
 	}
-	return vs
+
+	return &vex.FindingExploitabilitySignal{
+		Plugin:        p.Plugin,
+		Justification: protoToStructVEX[p.Justification],
+	}
 }

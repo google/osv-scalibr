@@ -17,6 +17,7 @@ package proto
 import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -67,6 +68,17 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 	if len(pkg.Plugins) > 0 {
 		firstPluginName = pkg.Plugins[0]
 	}
+
+	var exps []*spb.PackageExploitabilitySignal
+	for _, exp := range pkg.ExploitabilitySignals {
+		expProto, err := PackageVEXToProto(exp)
+		if err != nil {
+			log.Errorf("Failed to convert PackageExploitabilitySignal to proto: %v", err)
+			continue
+		}
+		exps = append(exps, expProto)
+	}
+
 	packageProto := &spb.Package{
 		Name:       pkg.Name,
 		Version:    pkg.Version,
@@ -79,7 +91,7 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		ExtractorDeprecated:   firstPluginName,
 		Plugins:               pkg.Plugins,
 		AnnotationsDeprecated: annotationsToProto(pkg.AnnotationsDeprecated),
-		ExploitabilitySignals: packageVEXToProto(pkg.ExploitabilitySignals),
+		ExploitabilitySignals: exps,
 		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
@@ -493,6 +505,16 @@ func packageToStruct(pkgProto *spb.Package) *extractor.Package {
 		ptype = "windows"
 	}
 
+	var exps []*vex.PackageExploitabilitySignal
+	for _, exp := range pkgProto.GetExploitabilitySignals() {
+		expStruct, err := PackageVEXToStruct(exp)
+		if err != nil {
+			log.Errorf("Failed to convert PackageExploitabilitySignal to struct: %v", err)
+			continue
+		}
+		exps = append(exps, expStruct)
+	}
+
 	pkg := &extractor.Package{
 		Name:       pkgProto.GetName(),
 		Version:    pkgProto.GetVersion(),
@@ -502,7 +524,7 @@ func packageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Plugins:    pkgProto.GetPlugins(),
 		//nolint:staticcheck
 		AnnotationsDeprecated: annotationsToStruct(pkgProto.GetAnnotationsDeprecated()),
-		ExploitabilitySignals: packageVEXToStruct(pkgProto.GetExploitabilitySignals()),
+		ExploitabilitySignals: exps,
 		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
 		Metadata:              metadataToStruct(pkgProto),
 	}

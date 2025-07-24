@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -72,6 +73,13 @@ func GenericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, er
 			Extra: f.Target.Extra,
 		}
 	}
+
+	var exps []*spb.FindingExploitabilitySignal
+	for _, exp := range f.ExploitabilitySignals {
+		expProto := FindingVEXToProto(exp)
+		exps = append(exps, expProto)
+	}
+
 	return &spb.GenericFinding{
 		Adv: &spb.GenericFindingAdvisory{
 			Id: &spb.AdvisoryId{
@@ -85,7 +93,7 @@ func GenericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, er
 		},
 		Target:                target,
 		Plugins:               f.Plugins,
-		ExploitabilitySignals: findingVEXToProto(f.ExploitabilitySignals),
+		ExploitabilitySignals: exps,
 	}, nil
 }
 
@@ -107,6 +115,12 @@ func GenericFindingToStruct(f *spb.GenericFinding) (*inventory.GenericFinding, e
 		Extra: f.Target.GetExtra(),
 	}
 
+	var exps []*vex.FindingExploitabilitySignal
+	for _, exp := range f.GetExploitabilitySignals() {
+		expStruct := FindingVEXToStruct(exp)
+		exps = append(exps, expStruct)
+	}
+
 	return &inventory.GenericFinding{
 		Adv: &inventory.GenericFindingAdvisory{
 			ID: &inventory.AdvisoryID{
@@ -120,6 +134,6 @@ func GenericFindingToStruct(f *spb.GenericFinding) (*inventory.GenericFinding, e
 		},
 		Target:                target,
 		Plugins:               f.GetPlugins(),
-		ExploitabilitySignals: findingVEXToStruct(f.GetExploitabilitySignals()),
+		ExploitabilitySignals: exps,
 	}, nil
 }
