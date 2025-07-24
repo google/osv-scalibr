@@ -164,9 +164,12 @@ var (
 	}
 	// Rust source extractors.
 	RustSource = InitMap{
-		cargolock.Name:      {cargolock.New},
+		cargolock.Name: {cargolock.New},
+		cargotoml.Name: {cargotoml.New},
+	}
+	// Rust artifact extractors.
+	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.NewDefault},
-		cargotoml.Name:      {cargotoml.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -256,6 +259,7 @@ var (
 		PythonArtifact,
 		GoArtifact,
 		DotnetArtifact,
+		RustArtifact,
 		SBOM,
 		OS,
 		Misc,
