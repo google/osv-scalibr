@@ -35,7 +35,7 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 
 	genericFindings := make([]*spb.GenericFinding, 0, len(inv.GenericFindings))
 	for _, f := range inv.GenericFindings {
-		p, err := genericFindingToProto(f)
+		p, err := GenericFindingToProto(f)
 		if err != nil {
 			return nil, err
 		}

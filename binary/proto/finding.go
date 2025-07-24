@@ -23,27 +23,54 @@ import (
 )
 
 var (
+	// --- Errors
+
 	// ErrAdvisoryMissing will be returned if the Advisory is not set on a finding.
 	ErrAdvisoryMissing = errors.New("advisory missing in finding")
 
 	// ErrAdvisoryIDMissing will be returned if the Advisory ID is not set on a finding.
 	ErrAdvisoryIDMissing = errors.New("advisory ID missing in finding")
+
+	genericFindingSeverityEnumToProto = map[inventory.SeverityEnum]spb.SeverityEnum{
+		inventory.SeverityMinimal:     spb.SeverityEnum_MINIMAL,
+		inventory.SeverityLow:         spb.SeverityEnum_LOW,
+		inventory.SeverityMedium:      spb.SeverityEnum_MEDIUM,
+		inventory.SeverityHigh:        spb.SeverityEnum_HIGH,
+		inventory.SeverityCritical:    spb.SeverityEnum_CRITICAL,
+		inventory.SeverityUnspecified: spb.SeverityEnum_SEVERITY_UNSPECIFIED,
+	}
+
+	genericFindingSeverityEnumToStruct = func() map[spb.SeverityEnum]inventory.SeverityEnum {
+		m := make(map[spb.SeverityEnum]inventory.SeverityEnum)
+		for k, v := range genericFindingSeverityEnumToProto {
+			m[v] = k
+		}
+		if len(m) != len(genericFindingSeverityEnumToProto) {
+			panic("genericFindingSeverityEnumToProto does not contain all values from genericFindingSeverityEnumToStruct")
+		}
+		return m
+	}()
 )
 
 // --- Struct to Proto
 
-func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, error) {
+// GenericFindingToProto converts a GenericFinding go struct into the equivalent proto.
+func GenericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, error) {
+	if f == nil {
+		return nil, nil
+	}
 	if f.Adv == nil {
 		return nil, ErrAdvisoryMissing
 	}
+	if f.Adv.ID == nil {
+		return nil, ErrAdvisoryIDMissing
+	}
+
 	var target *spb.GenericFindingTargetDetails
 	if f.Target != nil {
 		target = &spb.GenericFindingTargetDetails{
 			Extra: f.Target.Extra,
 		}
-	}
-	if f.Adv.ID == nil {
-		return nil, ErrAdvisoryIDMissing
 	}
 	return &spb.GenericFinding{
 		Adv: &spb.GenericFindingAdvisory{
@@ -54,7 +81,7 @@ func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, er
 			Title:          f.Adv.Title,
 			Description:    f.Adv.Description,
 			Recommendation: f.Adv.Recommendation,
-			Sev:            severityEnumToProto(f.Adv.Sev),
+			Sev:            genericFindingSeverityEnumToProto[f.Adv.Sev],
 		},
 		Target:                target,
 		Plugins:               f.Plugins,
@@ -62,21 +89,37 @@ func genericFindingToProto(f *inventory.GenericFinding) (*spb.GenericFinding, er
 	}, nil
 }
 
-func severityEnumToProto(severity inventory.SeverityEnum) spb.SeverityEnum {
-	switch severity {
-	case inventory.SeverityMinimal:
-		return spb.SeverityEnum_MINIMAL
-	case inventory.SeverityLow:
-		return spb.SeverityEnum_LOW
-	case inventory.SeverityMedium:
-		return spb.SeverityEnum_MEDIUM
-	case inventory.SeverityHigh:
-		return spb.SeverityEnum_HIGH
-	case inventory.SeverityCritical:
-		return spb.SeverityEnum_CRITICAL
-	default:
-		return spb.SeverityEnum_SEVERITY_UNSPECIFIED
-	}
-}
-
 // --- Proto to Struct
+
+// GenericFindingToStruct converts a GenericFinding proto into the equivalent go struct.
+func GenericFindingToStruct(f *spb.GenericFinding) (*inventory.GenericFinding, error) {
+	if f == nil {
+		return nil, nil
+	}
+	if f.Adv == nil {
+		return nil, ErrAdvisoryMissing
+	}
+	if f.Adv.Id == nil {
+		return nil, ErrAdvisoryIDMissing
+	}
+
+	target := &inventory.GenericFindingTargetDetails{
+		Extra: f.Target.GetExtra(),
+	}
+
+	return &inventory.GenericFinding{
+		Adv: &inventory.GenericFindingAdvisory{
+			ID: &inventory.AdvisoryID{
+				Publisher: f.Adv.Id.GetPublisher(),
+				Reference: f.Adv.Id.GetReference(),
+			},
+			Title:          f.Adv.GetTitle(),
+			Description:    f.Adv.GetDescription(),
+			Recommendation: f.Adv.GetRecommendation(),
+			Sev:            genericFindingSeverityEnumToStruct[f.Adv.GetSev()],
+		},
+		Target:                target,
+		Plugins:               f.GetPlugins(),
+		ExploitabilitySignals: findingVEXToStruct(f.GetExploitabilitySignals()),
+	}, nil
+}

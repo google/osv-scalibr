@@ -94,3 +94,14 @@ func packageVEXToStruct(ps []*spb.PackageExploitabilitySignal) []*vex.PackageExp
 	}
 	return vs
 }
+
+func findingVEXToStruct(ps []*spb.FindingExploitabilitySignal) []*vex.FindingExploitabilitySignal {
+	var vs []*vex.FindingExploitabilitySignal
+	for _, p := range ps {
+		vs = append(vs, &vex.FindingExploitabilitySignal{
+			Plugin:        p.Plugin,
+			Justification: protoToStructVEX[p.Justification],
+		})
+	}
+	return vs
+}
