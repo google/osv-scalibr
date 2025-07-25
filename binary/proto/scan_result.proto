@@ -622,7 +622,8 @@ message SecretStatus {
   google.protobuf.Timestamp last_updated = 2;
 
   enum SecretStatusEnum {
-    // The default value for SecretStatusEnum. Should not be returned.
+    // The default value for SecretStatusEnum. Set when no validation was
+    // attempted.
     UNSPECIFIED = 0;
     // Deprecated. Use UNSPECIFIED instead.
     UNKNOWN = 1 [deprecated = true];

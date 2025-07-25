@@ -28,10 +28,6 @@ import (
 )
 
 var (
-	copier = cpy.New(
-		cpy.IgnoreAllUnexported(),
-	)
-
 	genericFindingStruct1 = &inventory.GenericFinding{
 		Adv: &inventory.GenericFindingAdvisory{
 			ID: &inventory.AdvisoryID{
@@ -76,6 +72,10 @@ var (
 )
 
 func TestGenericFindingToProto(t *testing.T) {
+	copier := cpy.New(
+		cpy.IgnoreAllUnexported(),
+	)
+
 	testCases := []struct {
 		desc    string
 		finding *inventory.GenericFinding
@@ -142,6 +142,10 @@ func TestGenericFindingToProto(t *testing.T) {
 }
 
 func TestGenericFindingToStruct(t *testing.T) {
+	copier := cpy.New(
+		cpy.IgnoreAllUnexported(),
+	)
+
 	testCases := []struct {
 		desc    string
 		finding *spb.GenericFinding

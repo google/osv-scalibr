@@ -44,7 +44,7 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 
 	secrets := make([]*spb.Secret, 0, len(inv.Secrets))
 	for _, s := range inv.Secrets {
-		p, err := secretToProto(s)
+		p, err := SecretToProto(s)
 		if err != nil {
 			return nil, err
 		}
