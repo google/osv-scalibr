@@ -79,6 +79,11 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		exps = append(exps, expProto)
 	}
 
+	var annotations []spb.Package_AnnotationEnum
+	for _, a := range pkg.AnnotationsDeprecated {
+		annotations = append(annotations, AnnotationToProto(a))
+	}
+
 	packageProto := &spb.Package{
 		Name:       pkg.Name,
 		Version:    pkg.Version,
@@ -90,7 +95,7 @@ func packageToProto(pkg *extractor.Package) *spb.Package {
 		// once integrators no longer read them.
 		ExtractorDeprecated:   firstPluginName,
 		Plugins:               pkg.Plugins,
-		AnnotationsDeprecated: annotationsToProto(pkg.AnnotationsDeprecated),
+		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
 		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
 	}
@@ -515,15 +520,20 @@ func packageToStruct(pkgProto *spb.Package) *extractor.Package {
 		exps = append(exps, expStruct)
 	}
 
+	var annotations []extractor.Annotation
+	//nolint:staticcheck
+	for _, a := range pkgProto.GetAnnotationsDeprecated() {
+		annotations = append(annotations, AnnotationToStruct(a))
+	}
+
 	pkg := &extractor.Package{
-		Name:       pkgProto.GetName(),
-		Version:    pkgProto.GetVersion(),
-		SourceCode: sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
-		Locations:  locations,
-		PURLType:   ptype,
-		Plugins:    pkgProto.GetPlugins(),
-		//nolint:staticcheck
-		AnnotationsDeprecated: annotationsToStruct(pkgProto.GetAnnotationsDeprecated()),
+		Name:                  pkgProto.GetName(),
+		Version:               pkgProto.GetVersion(),
+		SourceCode:            sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
+		Locations:             locations,
+		PURLType:              ptype,
+		Plugins:               pkgProto.GetPlugins(),
+		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
 		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
 		Metadata:              metadataToStruct(pkgProto),
