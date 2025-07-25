@@ -20,4 +20,4 @@ layers:
   - files:
       foo.txt:
         - foo
-        - foo
+        - foo2

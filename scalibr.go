@@ -28,7 +28,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
+	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
@@ -278,7 +278,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 // provided scan config. It populates the LayerDetails field of the packages with the origin layer
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
-func (s Scanner) ScanContainer(ctx context.Context, img *image.Image, config *ScanConfig) (sr *ScanResult, err error) {
+func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *ScanConfig) (sr *ScanResult, err error) {
 	if len(config.ScanRoots) > 0 {
 		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
 	}
