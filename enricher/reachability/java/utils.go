@@ -17,7 +17,6 @@ package java
 import (
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -79,8 +78,7 @@ func mkdirAll(jarRoot *os.Root, path string, perm os.FileMode) error {
 }
 
 func openFromRoot(root *scalibrfs.ScanRoot, fullPath string) (fs.File, error) {
-	rootPath := filepath.Clean(root.Path)
-	fullPath = filepath.Clean(fullPath)
+	rootPath := root.Path
 
 	relPath := fullPath
 	if strings.HasPrefix(fullPath, rootPath) {
