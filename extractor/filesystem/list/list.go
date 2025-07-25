@@ -51,7 +51,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirementsnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -123,14 +122,13 @@ var (
 	// Python source extractors.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name:    {requirements.NewDefault},
-		requirementsnet.Name: {requirementsnet.NewDefault},
-		setup.Name:           {setup.NewDefault},
-		pipfilelock.Name:     {pipfilelock.New},
-		pdmlock.Name:         {pdmlock.New},
-		poetrylock.Name:      {poetrylock.New},
-		condameta.Name:       {condameta.NewDefault},
-		uvlock.Name:          {uvlock.New},
+		requirements.Name: {requirements.NewDefault},
+		setup.Name:        {setup.NewDefault},
+		pipfilelock.Name:  {pipfilelock.New},
+		pdmlock.Name:      {pdmlock.New},
+		poetrylock.Name:   {poetrylock.New},
+		condameta.Name:    {condameta.NewDefault},
+		uvlock.Name:       {uvlock.New},
 	}
 	// Python artifact extractors.
 	PythonArtifact = InitMap{
