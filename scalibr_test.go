@@ -17,6 +17,9 @@ package scalibr_test
 import (
 	"context"
 	"errors"
+	"github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakeimage"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -290,6 +293,290 @@ func TestScan(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
+			}
+		})
+	}
+}
+
+func TestScanContainer(t *testing.T) {
+	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(),
+		"artifact/image/layerscanning/trace/testdata/populatelayers.yml")
+
+	testCases := []struct {
+		desc        string
+		chainLayers []image.ChainLayer
+		want        *scalibr.ScanResult
+		wantErr     error
+	}{
+		{
+			desc: "Successful scan with 1 layer, 2 packages",
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+			},
+			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
+				Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "fake/layerextractor",
+						Version: 0,
+						Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						{
+							Name:      "bar",
+							Locations: []string{"bar.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+						{
+							Name:      "foo",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "Successful scan with 2 layers, 1 package deleted in last layer",
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+			},
+			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
+				Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "fake/layerextractor",
+						Version: 0,
+						Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						{
+							Name:      "foo",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "Successful scan with 3 layers, package readded in last layer",
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
+			},
+			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
+				Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "fake/layerextractor",
+						Version: 0,
+						Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						{
+							Name:      "baz",
+							Locations: []string{"baz.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   2,
+								DiffID:  "diff-id-2",
+								Command: "command-2",
+							},
+						},
+						{
+							Name:      "foo",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "Successful scan with 4 layers",
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
+				fakeChainLayers[3],
+			},
+			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
+				Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "fake/layerextractor",
+						Version: 0,
+						Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						{
+							Name:      "bar",
+							Locations: []string{"bar.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   3,
+								DiffID:  "diff-id-3",
+								Command: "command-3",
+							},
+						},
+						{
+							Name:      "baz",
+							Locations: []string{"baz.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   2,
+								DiffID:  "diff-id-2",
+								Command: "command-2",
+							},
+						},
+						{
+							Name:      "foo",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "Successful scan with 5 layers",
+			chainLayers: []image.ChainLayer{
+				fakeChainLayers[0],
+				fakeChainLayers[1],
+				fakeChainLayers[2],
+				fakeChainLayers[3],
+				fakeChainLayers[4],
+			},
+			want: &scalibr.ScanResult{
+				Version: scalibr.ScannerVersion,
+				Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "fake/layerextractor",
+						Version: 0,
+						Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{
+						{
+							Name:      "bar",
+							Locations: []string{"bar.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   3,
+								DiffID:  "diff-id-3",
+								Command: "command-3",
+							},
+						},
+						{
+							Name:      "baz",
+							Locations: []string{"baz.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   2,
+								DiffID:  "diff-id-2",
+								Command: "command-2",
+							},
+						},
+						{
+							Name:      "foo",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   0,
+								DiffID:  "diff-id-0",
+								Command: "command-0",
+							},
+						},
+						{
+							Name:      "foo2",
+							Locations: []string{"foo.txt"},
+							PURLType:  "generic",
+							Plugins:   []string{"fake/layerextractor"},
+							LayerDetails: &extractor.LayerDetails{
+								Index:   4,
+								DiffID:  "diff-id-4",
+								Command: "command-4",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			scanConfig := scalibr.ScanConfig{Plugins: []plugin.Plugin{
+				fakelayerbuilder.FakeTestLayersExtractor{},
+			}}
+
+			fi := fakeimage.New(tc.chainLayers)
+			got, err := scalibr.New().ScanContainer(context.Background(), fi, &scanConfig)
+
+			if tc.wantErr != nil {
+				if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("scalibr.New().ScanContainer(): unexpected error diff (-want +got):\n%s", diff)
+				}
+			}
+			// We can't mock the time from here so we skip it in the comparison.
+			tc.want.StartTime = got.StartTime
+			tc.want.EndTime = got.EndTime
+
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
+				t.Errorf("scalibr.New().Scan(): unexpected diff (-want +got):\n%s", diff)
 			}
 		})
 	}
