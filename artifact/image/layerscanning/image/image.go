@@ -408,9 +408,19 @@ func addRootDirectoryToChainLayers(chainLayers []*chainLayer) error {
 			isWhiteout:  false,
 			mode:        fs.ModeDir,
 		})
-
 		if err != nil {
-			return fmt.Errorf("failed to insert root node in path tree: %w", err)
+			return fmt.Errorf("failed to insert root node in path tree for chain layer: %w", err)
+		}
+		// Also add root node to the latest layer.
+		if layer, ok := chainLayer.latestLayer.(*Layer); layer != nil && ok {
+			err = layer.fileNodeTree.Insert("/", &virtualFile{
+				virtualPath: "/",
+				isWhiteout:  false,
+				mode:        fs.ModeDir,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to insert root node in path tree for the latest layer: %w", err)
+			}
 		}
 	}
 	return nil
