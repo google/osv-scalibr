@@ -17,6 +17,7 @@ package apkfilter
 
 import (
 	"context"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
@@ -55,23 +56,26 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 
 	s := apkutil.NewScanner(reader)
 	for s.Scan() {
-		record := s.RecordMultiValue()
-		files, ok := record["F"]
-		if !ok {
-			continue
-		}
-
-		for _, f := range files {
-			// SCALIBR fs paths don't include a leading "/". The paths in the apk db also don't.
-			delete(unknownBinariesSet, f)
-
-			if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
-				// EvalSymlink expects an absolute path from the root of the image.
-				evalPath, err := evalFS.EvalSymlink("/" + f)
-				if err != nil {
+		var currentDir string
+		for _, kv := range s.FullRecord() {
+			switch kv.Key {
+			case "F":
+				currentDir = kv.Value
+			case "R":
+				if currentDir == "" {
 					continue
 				}
-				delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
+				filePath := path.Join(currentDir, kv.Value)
+				delete(unknownBinariesSet, filePath)
+
+				if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
+					// EvalSymlink expects an absolute path from the root of the image.
+					evalPath, err := evalFS.EvalSymlink("/" + filePath)
+					if err != nil {
+						continue
+					}
+					delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
+				}
 			}
 		}
 	}

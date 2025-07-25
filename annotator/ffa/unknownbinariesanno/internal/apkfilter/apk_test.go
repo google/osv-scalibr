@@ -17,6 +17,8 @@ package apkfilter
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,6 +87,23 @@ func (fs *mockEvalSymlinksFS) EvalSymlink(name string) (string, error) {
 var _ image.EvalSymlinksFS = &mockEvalSymlinksFS{}
 
 func TestHashSetFilter(t *testing.T) {
+	installed, err := os.ReadFile(filepath.Join("testdata", "installed"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/installed: %v", err)
+	}
+	single, err := os.ReadFile(filepath.Join("testdata", "single"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/single: %v", err)
+	}
+	invalid, err := os.ReadFile(filepath.Join("testdata", "invalid"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/invalid: %v", err)
+	}
+	empty, err := os.ReadFile(filepath.Join("testdata", "empty"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/empty: %v", err)
+	}
+
 	testCases := []struct {
 		name               string
 		files              map[string]string
@@ -99,25 +118,26 @@ func TestHashSetFilter(t *testing.T) {
 				"lib/apk/db/installed": `C:Q1...
 P:package1
 V:1.0
-F:usr/bin/binary1
-F:usr/lib/library1
+F:usr/bin
+R:binary1
+F:usr/lib
+R:library1
 
 C:Q2...
 P:package2
 V:1.0
-F:bin/binary2
+F:bin
+R:binary2
 `,
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1":   {Name: "binary1"},
-				"usr/lib/library1":  {Name: "library1"},
-				"bin/binary2":       {Name: "binary2"},
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/binary1":  {Name: "binary1"},
+				"usr/lib/library1": {Name: "library1"},
+				"bin/binary2":      {Name: "binary2"},
+				"usr/bin/unknown1": {Name: "unknown1"},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/unknown1": {Name: "unknown1"},
 			},
 		},
 		{
@@ -149,8 +169,10 @@ F:bin/binary2
 				"lib/apk/db/installed": `C:Q3...
 P:package3
 V:1.0
-F:usr/bin/symlink1
-F:path/to/another/symlink
+F:usr/bin
+R:symlink1
+F:path/to/another
+R:symlink
 `,
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
@@ -164,10 +186,11 @@ F:path/to/another/symlink
 				}
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink1":       {Name: "symlink1"},
-				"usr/bin/actual_binary":  {Name: "actual_binary"},
-				"path/to/another/actual": {Name: "another_actual"},
-				"usr/bin/not_in_db":      {Name: "not_in_db"},
+				"usr/bin/symlink1":        {Name: "symlink1"},
+				"usr/bin/actual_binary":   {Name: "actual_binary"},
+				"path/to/another/symlink": {Name: "symlink"},
+				"path/to/another/actual":  {Name: "another_actual"},
+				"usr/bin/not_in_db":       {Name: "not_in_db"},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/not_in_db": {Name: "not_in_db"},
@@ -179,7 +202,8 @@ F:path/to/another/symlink
 				"lib/apk/db/installed": `C:Q4...
 P:package4
 V:1.0
-F:usr/bin/symlink2
+F:usr/bin
+R:symlink2
 `,
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
@@ -206,6 +230,60 @@ F:usr/bin/symlink2
 P:package5
 V:1.0
 `,
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			want: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+		},
+		{
+			name: "installed file from testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(installed),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"etc/motd":           {Name: "motd"},
+				"usr/bin/scanelf":    {Name: "scanelf"},
+				"usr/bin/ssl_client": {Name: "ssl_client"},
+				"lib/libz.so.1":      {Name: "libz.so.1"},
+				"unknown/binary":     {Name: "unknown"},
+			},
+			want: map[string]*extractor.Package{
+				"unknown/binary": {Name: "unknown"},
+			},
+		},
+		{
+			name: "single file from testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(single),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"etc/fstab":      {Name: "fstab"},
+				"unknown/binary": {Name: "unknown"},
+			},
+			want: map[string]*extractor.Package{
+				"unknown/binary": {Name: "unknown"},
+			},
+		},
+		{
+			name: "invalid file from testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(invalid),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			want: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty file from testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(empty),
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
