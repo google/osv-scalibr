@@ -15,6 +15,8 @@
 package proto
 
 import (
+	"reflect"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -23,13 +25,10 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
@@ -57,12 +56,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// MetadataProtoSetter is an interface for metadata structs that can set themselves on a Package proto.
+type MetadataProtoSetter interface {
+	SetProto(p *spb.Package)
+}
+
 // --- Struct to Proto
 
-func packageToProto(pkg *extractor.Package) *spb.Package {
+// PackageToProto converts a Package struct to a Package proto.
+func PackageToProto(pkg *extractor.Package) *spb.Package {
 	if pkg == nil {
 		return nil
 	}
+
 	p := converter.ToPURL(pkg)
 	firstPluginName := ""
 	if len(pkg.Plugins) > 0 {
@@ -122,31 +128,17 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 }
 
 func setProtoMetadata(meta any, p *spb.Package) {
+	if meta == nil {
+		return
+	}
+
+	if m, ok := meta.(MetadataProtoSetter); ok {
+		m.SetProto(p)
+		return
+	}
+
+	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	switch m := meta.(type) {
-	case *wheelegg.PythonPackageMetadata:
-		p.Metadata = &spb.Package_PythonMetadata{
-			PythonMetadata: &spb.PythonPackageMetadata{
-				Author:      m.Author,
-				AuthorEmail: m.AuthorEmail,
-			},
-		}
-	case *javascriptmeta.JavascriptPackageJSONMetadata:
-		p.Metadata = &spb.Package_JavascriptMetadata{
-			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
-				Author:            m.Author.PersonString(),
-				Contributors:      personsToProto(m.Contributors),
-				Maintainers:       personsToProto(m.Maintainers),
-				FromNpmRepository: m.FromNPMRepository,
-			},
-		}
-	case *depsjson.Metadata:
-		p.Metadata = &spb.Package_DepsjsonMetadata{
-			DepsjsonMetadata: &spb.DEPSJSONMetadata{
-				PackageName:    m.PackageName,
-				PackageVersion: m.PackageVersion,
-				Type:           m.Type,
-			},
-		}
 	case *apkmeta.Metadata:
 		p.Metadata = &spb.Package_ApkMetadata{
 			ApkMetadata: &spb.APKPackageMetadata{
@@ -458,14 +450,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	}
 }
 
-func personsToProto(persons []*javascriptmeta.Person) []string {
-	var personStrings []string
-	for _, p := range persons {
-		personStrings = append(personStrings, p.PersonString())
-	}
-	return personStrings
-}
-
 func purlToProto(p *purl.PackageURL) *spb.Purl {
 	if p == nil {
 		return nil
@@ -491,7 +475,8 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 
 // --- Proto to Struct
 
-func packageToStruct(pkgProto *spb.Package) *extractor.Package {
+// PackageToStruct converts a Package proto to a Package struct.
+func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 	if pkgProto == nil {
 		return nil
 	}
@@ -555,30 +540,16 @@ func layerDetailsToStruct(ld *spb.LayerDetails) *extractor.LayerDetails {
 }
 
 func metadataToStruct(md *spb.Package) any {
+	if md.GetMetadata() == nil {
+		return nil
+	}
+
+	t := reflect.TypeOf(md.GetMetadata())
+	if converter, ok := metadataTypeToStructConverter[t]; ok {
+		return converter(md)
+	}
+
 	switch md.GetMetadata().(type) {
-	case *spb.Package_PythonMetadata:
-		return &wheelegg.PythonPackageMetadata{
-			Author:      md.GetPythonMetadata().GetAuthor(),
-			AuthorEmail: md.GetPythonMetadata().GetAuthorEmail(),
-		}
-	case *spb.Package_JavascriptMetadata:
-		var author *javascriptmeta.Person
-		if md.GetJavascriptMetadata().GetAuthor() != "" {
-			author = &javascriptmeta.Person{
-				Name: md.GetJavascriptMetadata().GetAuthor(),
-			}
-		}
-		return &javascriptmeta.JavascriptPackageJSONMetadata{
-			Author:       author,
-			Contributors: personsToStruct(md.GetJavascriptMetadata().GetContributors()),
-			Maintainers:  personsToStruct(md.GetJavascriptMetadata().GetMaintainers()),
-		}
-	case *spb.Package_DepsjsonMetadata:
-		return &depsjson.Metadata{
-			PackageName:    md.GetDepsjsonMetadata().GetPackageName(),
-			PackageVersion: md.GetDepsjsonMetadata().GetPackageVersion(),
-			Type:           md.GetDepsjsonMetadata().GetType(),
-		}
 	case *spb.Package_ApkMetadata:
 		return &apkmeta.Metadata{
 			PackageName:  md.GetApkMetadata().GetPackageName(),
@@ -839,14 +810,6 @@ func metadataToStruct(md *spb.Package) any {
 	}
 
 	return nil
-}
-
-func personsToStruct(personStrings []string) []*javascriptmeta.Person {
-	var persons []*javascriptmeta.Person
-	for _, p := range personStrings {
-		persons = append(persons, javascriptmeta.PersonFromString(p))
-	}
-	return persons
 }
 
 func purlToStruct(p *spb.Purl) *purl.PackageURL {
