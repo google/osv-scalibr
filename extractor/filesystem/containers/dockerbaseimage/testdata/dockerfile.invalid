@@ -1,0 +1,1 @@
+RUN yarn install --production

@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -196,8 +197,9 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name: {containerd.NewDefault},
-		podman.Name:     {podman.NewDefault},
+		containerd.Name:      {containerd.NewDefault},
+		podman.Name:          {podman.NewDefault},
+		dockerbaseimage.Name: {dockerbaseimage.NewDefault},
 	}
 
 	// OS extractors.
