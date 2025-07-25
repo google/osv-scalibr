@@ -14,8 +14,35 @@
 
 package wheelegg
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // PythonPackageMetadata holds parsing information from a python egg or wheel package.
 type PythonPackageMetadata struct {
 	Author      string `json:"author"`
 	AuthorEmail string `json:"authorEmail"`
+}
+
+// ToProto converts the Metadata struct to a PythonPackageMetadata proto.
+func (m *PythonPackageMetadata) ToProto() *pb.PythonPackageMetadata {
+	return &pb.PythonPackageMetadata{
+		Author:      m.Author,
+		AuthorEmail: m.AuthorEmail,
+	}
+}
+
+// SetProto sets the PythonMetadata field in the Package proto.
+func (m *PythonPackageMetadata) SetProto(p *pb.Package) {
+	p.Metadata = &pb.Package_PythonMetadata{
+		PythonMetadata: m.ToProto(),
+	}
+}
+
+// ToStruct converts the PythonPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.PythonPackageMetadata) *PythonPackageMetadata {
+	return &PythonPackageMetadata{
+		Author:      m.GetAuthor(),
+		AuthorEmail: m.GetAuthorEmail(),
+	}
 }
