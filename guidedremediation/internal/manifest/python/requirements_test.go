@@ -51,7 +51,7 @@ func checkManifest(t *testing.T, name string, got manifest.Manifest, want testMa
 
 func TestRead(t *testing.T) {
 	fsys := fs.DirFS("./testdata")
-	pypiRW := GetReadWriter()
+	pypiRW, _ := GetReadWriter()
 	got, err := pypiRW.Read("requirements.txt", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -156,7 +156,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	rw := GetReadWriter()
+	rw, _ := GetReadWriter()
 	fsys := fs.DirFS("./testdata")
 	manif, err := rw.Read("requirements.txt", fsys)
 	if err != nil {
