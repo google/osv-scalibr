@@ -22,6 +22,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // Person represents a person field in a javascript package.json file.
@@ -108,6 +110,59 @@ type JavascriptPackageJSONMetadata struct {
 	// was either installed from a local path, a git repository, or another private registry.
 	// This is to identify name collisions between locally published packages and official NPM packages.
 	FromNPMRepository bool
+}
+
+// SetProto sets the JavascriptMetadata field in the Package proto.
+func (m *JavascriptPackageJSONMetadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_JavascriptMetadata{
+		JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+			Author:            m.Author.PersonString(),
+			Contributors:      personsToProto(m.Contributors),
+			Maintainers:       personsToProto(m.Maintainers),
+			FromNpmRepository: m.FromNPMRepository,
+		},
+	}
+}
+
+// ToStruct converts the JavascriptPackageJSONMetadata proto to a Metadata struct.
+func ToStruct(m *pb.JavascriptPackageJSONMetadata) *JavascriptPackageJSONMetadata {
+	if m == nil {
+		return nil
+	}
+
+	var author *Person
+	if m.GetAuthor() != "" {
+		author = PersonFromString(m.GetAuthor())
+	}
+	return &JavascriptPackageJSONMetadata{
+		Author:            author,
+		Maintainers:       personsToStruct(m.GetMaintainers()),
+		Contributors:      personsToStruct(m.GetContributors()),
+		FromNPMRepository: m.GetFromNpmRepository(),
+	}
+}
+
+func personsToProto(persons []*Person) []string {
+	var personStrings []string
+	for _, p := range persons {
+		personStrings = append(personStrings, p.PersonString())
+	}
+	return personStrings
+}
+
+func personsToStruct(personStrings []string) []*Person {
+	var persons []*Person
+	for _, s := range personStrings {
+		persons = append(persons, PersonFromString(s))
+	}
+	return persons
 }
 
 func rawToPerson(rawJSON map[string]any) map[string]string {

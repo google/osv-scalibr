@@ -126,14 +126,18 @@ extractor as an example.
     matches a file you need to parse. For example, the JavaScript `package.json`
     extractor returns true for any file named `package.json`.
 1.  Implement `Extract` to extract inventory inside the file.
-1.  If you introduced any new metadata type, be sure to add them to the scan_results.proto
-    as well and re-generate the go_proto:
+1.  If you introduced any new metadata type, be sure to:
+    1. Add them to the scan_results.proto.
+    1. Re-generate the go_proto:
 
-    ```
-    $ `make protos`
-    ```
+        ```
+        $ `make protos`
+        ```
 
-1.  If you added new dependencies, regenerate the go.mod file by running
+    1. Implement `func (m *Metadata) SetProto(p *pb.Package)` and `ToStruct(m *pb.MyMetadata) *Metadata`.
+    1. Add the `ToStruct` function to the metadata map in `binary/proto/package_metadata.go`.
+
+1.  If you added new dependencies, regenerate the go.mod file by running:
 
     ```sh
     $ `go mod tidy`

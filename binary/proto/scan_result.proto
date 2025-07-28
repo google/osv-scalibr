@@ -90,6 +90,7 @@ message Package {
   // core library.
   repeated string plugins = 49;
   // The additional data found in the package.
+  // LINT.IfChange
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
@@ -123,6 +124,7 @@ message Package {
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
   }
+  // LINT.ThenChange(/binary/proto/package_metadata.go)
 
   // Deprecated - use exploitability_signals instead
   // TODO(b/400910349): Remove once integrators stop using this.

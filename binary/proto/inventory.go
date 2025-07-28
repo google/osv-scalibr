@@ -27,7 +27,7 @@ import (
 func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 	packages := make([]*spb.Package, 0, len(inv.Packages))
 	for _, p := range inv.Packages {
-		p := packageToProto(p)
+		p := PackageToProto(p)
 		packages = append(packages, p)
 	}
 
@@ -64,7 +64,7 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 	var packages []*extractor.Package
 	for _, pProto := range invProto.GetPackages() {
-		p := packageToStruct(pProto)
+		p := PackageToStruct(pProto)
 		packages = append(packages, p)
 	}
 	// TODO - b/421456154: implement conversion or remaining types.
