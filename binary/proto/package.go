@@ -15,6 +15,8 @@
 package proto
 
 import (
+	"reflect"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -23,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
@@ -51,6 +52,7 @@ import (
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/internal/proto/packagemetadata"
 	"github.com/google/osv-scalibr/purl"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -127,6 +129,10 @@ func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
 }
 
 func setProtoMetadata(meta any, p *spb.Package) {
+	// TODO: b/421456154 - Remove if statement once all metadata is migrated to the new format.
+	if packagemetadata.SupportsStruct(reflect.TypeOf(meta)) {
+		packagemetadata.SetProto(p, meta)
+	}
 	switch m := meta.(type) {
 	case *wheelegg.PythonPackageMetadata:
 		p.Metadata = &spb.Package_PythonMetadata{
@@ -142,14 +148,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Contributors:      personsToProto(m.Contributors),
 				Maintainers:       personsToProto(m.Maintainers),
 				FromNpmRepository: m.FromNPMRepository,
-			},
-		}
-	case *depsjson.Metadata:
-		p.Metadata = &spb.Package_DepsjsonMetadata{
-			DepsjsonMetadata: &spb.DEPSJSONMetadata{
-				PackageName:    m.PackageName,
-				PackageVersion: m.PackageVersion,
-				Type:           m.Type,
 			},
 		}
 	case *apkmeta.Metadata:
@@ -565,6 +563,10 @@ func layerDetailsToStruct(ld *spb.LayerDetails) *extractor.LayerDetails {
 }
 
 func metadataToStruct(md *spb.Package) any {
+	// TODO: b/421456154 - Remove if statement once all metadata is migrated to the new format.
+	if packagemetadata.SupportsProto(reflect.TypeOf(md.GetMetadata())) {
+		return packagemetadata.ToStruct(md)
+	}
 	switch md.GetMetadata().(type) {
 	case *spb.Package_PythonMetadata:
 		return &wheelegg.PythonPackageMetadata{
@@ -582,12 +584,6 @@ func metadataToStruct(md *spb.Package) any {
 			Author:       author,
 			Contributors: personsToStruct(md.GetJavascriptMetadata().GetContributors()),
 			Maintainers:  personsToStruct(md.GetJavascriptMetadata().GetMaintainers()),
-		}
-	case *spb.Package_DepsjsonMetadata:
-		return &depsjson.Metadata{
-			PackageName:    md.GetDepsjsonMetadata().GetPackageName(),
-			PackageVersion: md.GetDepsjsonMetadata().GetPackageVersion(),
-			Type:           md.GetDepsjsonMetadata().GetType(),
 		}
 	case *spb.Package_ApkMetadata:
 		return &apkmeta.Metadata{
