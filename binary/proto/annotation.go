@@ -42,20 +42,14 @@ var (
 
 // --- Struct to Proto
 
-func annotationsToProto(as []extractor.Annotation) []spb.Package_AnnotationEnum {
-	var ps []spb.Package_AnnotationEnum
-	for _, a := range as {
-		ps = append(ps, structToProtoAnnotations[a])
-	}
-	return ps
+// AnnotationToProto converts an extractor.Annotation to a Package_AnnotationEnum.
+func AnnotationToProto(a extractor.Annotation) spb.Package_AnnotationEnum {
+	return structToProtoAnnotations[a]
 }
 
 // --- Proto to Struct
 
-func annotationsToStruct(ps []spb.Package_AnnotationEnum) []extractor.Annotation {
-	var as []extractor.Annotation
-	for _, p := range ps {
-		as = append(as, protoToStructAnnotations[p])
-	}
-	return as
+// AnnotationToStruct converts a Package_AnnotationEnum to an extractor.Annotation.
+func AnnotationToStruct(a spb.Package_AnnotationEnum) extractor.Annotation {
+	return protoToStructAnnotations[a]
 }
