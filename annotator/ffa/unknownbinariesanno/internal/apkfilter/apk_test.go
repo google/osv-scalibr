@@ -16,16 +16,15 @@ package apkfilter
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestShouldExclude(t *testing.T) {
@@ -71,20 +70,6 @@ func TestShouldExclude(t *testing.T) {
 		})
 	}
 }
-
-type mockEvalSymlinksFS struct {
-	scalibrfs.FS
-	symlinks map[string]string
-}
-
-func (fs *mockEvalSymlinksFS) EvalSymlink(name string) (string, error) {
-	if dest, ok := fs.symlinks[name]; ok {
-		return dest, nil
-	}
-	return "", errors.New("not a symlink")
-}
-
-var _ image.EvalSymlinksFS = &mockEvalSymlinksFS{}
 
 func TestHashSetFilter(t *testing.T) {
 	installed, err := os.ReadFile(filepath.Join("testdata", "installed"))
@@ -177,13 +162,10 @@ R:symlink
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
 				t.Helper()
-				return &mockEvalSymlinksFS{
-					FS: fl,
-					symlinks: map[string]string{
-						"/usr/bin/symlink1":        "/usr/bin/actual_binary",
-						"/path/to/another/symlink": "/path/to/another/actual",
-					},
-				}
+				return fakefs.NewMockEvalSymlinksFS(fl, map[string]string{
+					"/usr/bin/symlink1":        "/usr/bin/actual_binary",
+					"/path/to/another/symlink": "/path/to/another/actual",
+				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink1":        {Name: "symlink1"},
@@ -208,12 +190,9 @@ R:symlink2
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
 				t.Helper()
-				return &mockEvalSymlinksFS{
-					FS: fl,
-					symlinks: map[string]string{
-						"/usr/bin/symlink2": "/usr/bin/actual_binary2",
-					},
-				}
+				return fakefs.NewMockEvalSymlinksFS(fl, map[string]string{
+					"/usr/bin/symlink2": "/usr/bin/actual_binary2",
+				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink2": {Name: "symlink2"},
