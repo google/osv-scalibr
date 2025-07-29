@@ -39,6 +39,7 @@ type composerPackage struct {
 	Version string `json:"version"`
 	Dist    struct {
 		Reference string `json:"reference"`
+		Shasum    string `json:"shasum"`
 	} `json:"dist"`
 }
 
@@ -70,13 +71,19 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
+	commit := pkg.Dist.Shasum
+
+	if commit == "" {
+		commit = pkg.Dist.Reference
+	}
+
 	return &extractor.Package{
 		Name:      pkg.Name,
 		Version:   pkg.Version,
 		PURLType:  purl.TypeComposer,
 		Locations: []string{input.Path},
 		SourceCode: &extractor.SourceCodeIdentifier{
-			Commit: pkg.Dist.Reference,
+			Commit: commit,
 		},
 		Metadata: osv.DepGroupMetadata{
 			DepGroupVals: groups,
@@ -102,7 +109,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	)
 
 	for _, pkg := range parsedLockfile.Packages {
-		packages = append(packages, buildPackage(input, pkg, []string{""}))
+		packages = append(packages, buildPackage(input, pkg, []string{}))
 	}
 
 	for _, pkg := range parsedLockfile.PackagesDev {
