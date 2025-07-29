@@ -138,7 +138,7 @@ func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithI
 			continue
 		}
 		if len(pkg.Locations) == 0 {
-			// This should not happen.
+			log.Warnf("package %s has no locations", pkg.Name)
 			continue
 		}
 		// Use the path where this package is first found.
