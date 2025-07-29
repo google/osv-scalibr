@@ -23,8 +23,8 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
-	"github.com/google/osv-scalibr/enricher/resolution/requirements"
 	"github.com/google/osv-scalibr/enricher/secrets"
+	"github.com/google/osv-scalibr/enricher/transitivescanning/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 )
 
@@ -61,8 +61,8 @@ var (
 		java.Name: {java.NewDefault},
 	}
 
-	// Resolution enrichers.
-	Resolution = InitMap{
+	// Transitive scanning enrichers.
+	TransitiveScanning = InitMap{
 		requirements.Name: {requirements.NewDefault},
 	}
 
@@ -76,16 +76,16 @@ var (
 	)
 
 	enricherNames = concat(All, InitMap{
-		"vex":               vals(VEX),
-		"vulnmatch":         vals(VulnMatching),
-		"layerdetails":      vals(LayerDetails),
-		"secrets":           vals(Secrets),
-		"reachability":      vals(Reachability),
-		"resolution":        vals(Resolution),
-		"enrichers/default": vals(Default),
-		"default":           vals(Default),
-		"enrichers/all":     vals(All),
-		"all":               vals(All),
+		"vex":                vals(VEX),
+		"vulnmatch":          vals(VulnMatching),
+		"layerdetails":       vals(LayerDetails),
+		"secrets":            vals(Secrets),
+		"reachability":       vals(Reachability),
+		"transitivescanning": vals(TransitiveScanning),
+		"enrichers/default":  vals(Default),
+		"default":            vals(Default),
+		"enrichers/all":      vals(All),
+		"all":                vals(All),
 	})
 )
 

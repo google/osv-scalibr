@@ -36,7 +36,7 @@ import (
 
 const (
 	// Name is the unique name of this enricher.
-	Name = "resolution/requirements"
+	Name = "transitivescanning/requirements"
 )
 
 // Enricher performs dependency resolution for requirements.txt.
