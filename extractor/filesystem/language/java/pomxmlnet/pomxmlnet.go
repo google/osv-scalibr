@@ -207,8 +207,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
-	copy(g.Edges, g.Edges)
-
 	details := map[string]*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.

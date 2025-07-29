@@ -17,6 +17,7 @@ package python
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -103,8 +104,8 @@ func (m *pythonManifest) Clone() manifest.Manifest {
 type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for requirements.txt manifest files.
-func GetReadWriter() manifest.ReadWriter {
-	return readWriter{}
+func GetReadWriter() (manifest.ReadWriter, error) {
+	return readWriter{}, nil
 }
 
 // System returns the ecosystem of this ReadWriter.
@@ -139,6 +140,9 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	var reqs []resolve.RequirementVersion
 	for _, pkg := range inv.Packages {
 		m := pkg.Metadata.(*requirements.Metadata)
+		if len(m.HashCheckingModeValues) > 0 {
+			return nil, errors.New("requirements file in hash checking mode not supported as manifest")
+		}
 		d, err := pypi.ParseDependency(m.Requirement)
 		if err != nil {
 			return nil, err
@@ -161,7 +165,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
-					Name:   "myproject",
+					Name:   "rootproject",
 				},
 				VersionType: resolve.Concrete,
 				Version:     "1.0.0",

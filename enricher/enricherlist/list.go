@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
+	"github.com/google/osv-scalibr/enricher/resolution/requirements"
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 )
@@ -66,14 +67,23 @@ var (
 		java.Name: {java.NewDefault},
 	}
 
+	// Resolution enrichers.
+	Resolution = InitMap{
+		requirements.Name: {requirements.NewDefault},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
 	// All enrichers.
 	All = concat(
 		LayerDetails,
+		VulnMatching,
+		VEX,
 		Secrets,
 		License,
+		Reachability,
+		Resolution,
 	)
 
 	enricherNames = concat(All, InitMap{
@@ -83,6 +93,7 @@ var (
 		"layerdetails":      vals(LayerDetails),
 		"secrets":           vals(Secrets),
 		"reachability":      vals(Reachability),
+		"resolution":        vals(Resolution),
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),
 		"enrichers/all":     vals(All),

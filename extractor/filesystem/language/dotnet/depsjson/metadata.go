@@ -14,6 +14,10 @@
 
 package depsjson
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata holds parsing information for a deps.json package.
 type Metadata struct {
 	PackageName    string // The name of the package.
@@ -22,4 +26,35 @@ type Metadata struct {
 	// - "package": Represents an external dependency, such as a NuGet package.
 	// - "project": Represents an internal dependency, such as the main application
 	Type string
+}
+
+// SetProto sets the DEPSJSONMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_DepsjsonMetadata{
+		DepsjsonMetadata: &pb.DEPSJSONMetadata{
+			PackageName:    m.PackageName,
+			PackageVersion: m.PackageVersion,
+			Type:           m.Type,
+		},
+	}
+}
+
+// ToStruct converts the DEPSJSONMetadata proto to a Metadata struct.
+func ToStruct(m *pb.DEPSJSONMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:    m.GetPackageName(),
+		PackageVersion: m.GetPackageVersion(),
+		Type:           m.GetType(),
+	}
 }

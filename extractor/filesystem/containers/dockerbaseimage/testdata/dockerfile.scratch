@@ -1,0 +1,3 @@
+FROM scratch
+
+RUN echo "scratch isn't a real image"

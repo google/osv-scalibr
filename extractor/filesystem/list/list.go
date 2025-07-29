@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -51,7 +52,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirementsnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -123,14 +123,13 @@ var (
 	// Python source extractors.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name:    {requirements.NewDefault},
-		requirementsnet.Name: {requirementsnet.NewDefault},
-		setup.Name:           {setup.NewDefault},
-		pipfilelock.Name:     {pipfilelock.New},
-		pdmlock.Name:         {pdmlock.New},
-		poetrylock.Name:      {poetrylock.New},
-		condameta.Name:       {condameta.NewDefault},
-		uvlock.Name:          {uvlock.New},
+		requirements.Name: {requirements.NewDefault},
+		setup.Name:        {setup.NewDefault},
+		pipfilelock.Name:  {pipfilelock.New},
+		pdmlock.Name:      {pdmlock.New},
+		poetrylock.Name:   {poetrylock.New},
+		condameta.Name:    {condameta.NewDefault},
+		uvlock.Name:       {uvlock.New},
 	}
 	// Python artifact extractors.
 	PythonArtifact = InitMap{
@@ -164,9 +163,12 @@ var (
 	}
 	// Rust source extractors.
 	RustSource = InitMap{
-		cargolock.Name:      {cargolock.New},
+		cargolock.Name: {cargolock.New},
+		cargotoml.Name: {cargotoml.New},
+	}
+	// Rust artifact extractors.
+	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.NewDefault},
-		cargotoml.Name:      {cargotoml.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -193,8 +195,9 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name: {containerd.NewDefault},
-		podman.Name:     {podman.NewDefault},
+		containerd.Name:      {containerd.NewDefault},
+		podman.Name:          {podman.NewDefault},
+		dockerbaseimage.Name: {dockerbaseimage.NewDefault},
 	}
 
 	// OS extractors.
@@ -256,6 +259,7 @@ var (
 		PythonArtifact,
 		GoArtifact,
 		DotnetArtifact,
+		RustArtifact,
 		SBOM,
 		OS,
 		Misc,
@@ -293,7 +297,7 @@ var (
 		"ruby":       vals(RubySource),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
-		"rust":       vals(RustSource),
+		"rust":       vals(concat(RustSource, RustArtifact)),
 		"swift":      vals(SwiftSource),
 
 		"sbom":       vals(SBOM),
