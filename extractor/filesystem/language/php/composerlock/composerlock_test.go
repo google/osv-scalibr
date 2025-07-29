@@ -219,7 +219,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "drupal/tfa",
 					Version:   "2.0.0-alpha4",
-					PURLType:  purl.TypeComposer,
+					PURLType:  purl.TypeDrupal,
 					Locations: []string{"testdata/drupal-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
@@ -231,7 +231,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "drupal/field_time",
 					Version:   "1.0.0-beta5",
-					PURLType:  purl.TypeComposer,
+					PURLType:  purl.TypeDrupal,
 					Locations: []string{"testdata/drupal-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
