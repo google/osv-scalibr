@@ -105,11 +105,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 
 		for _, pkg := range pkgs {
-			if len(pkg.Locations) == 0 {
-				log.Warnf("package %s has no locations", pkg.Name)
-				continue
-			}
-			indexPkg, ok := pkgGroups[pkg.Locations[0]][pkg.Name]
+			indexPkg, ok := pkgMap[pkg.Name]
 			if ok {
 				// This dependency is in manifest, update the version and plugins.
 				i := indexPkg.index
@@ -130,7 +126,8 @@ type packageWithIndex struct {
 	index int
 }
 
-// groupPackages groups packages found in requirements.txt by the first location that they are found.
+// groupPackages groups packages found in requirements.txt by the first location that they are found
+// and returns a map of location -> package name -> package with index.
 func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithIndex {
 	result := make(map[string]map[string]packageWithIndex)
 	for i, pkg := range pkgs {
