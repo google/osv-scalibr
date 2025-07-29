@@ -229,6 +229,18 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
+					Name:      "drupal/field_time",
+					Version:   "1.0.0-beta5",
+					PURLType:  purl.TypeComposer,
+					Locations: []string{"testdata/drupal-packages.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "7ceaa18c1b0d42d12aafe5fcc0b5fe22a2ab3096",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
 					Name:      "theseer/tokenizer",
 					Version:   "1.1.3",
 					PURLType:  purl.TypeComposer,
