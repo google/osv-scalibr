@@ -106,6 +106,8 @@ func toEcosystem(p *Package) string {
 		return "Hackage"
 	case purl.TypeHex:
 		return "Hex"
+	case purl.TypeDrupal:
+		return "Drupal"
 	case purl.TypeComposer:
 		return "Packagist"
 	case purl.TypeCargo:
