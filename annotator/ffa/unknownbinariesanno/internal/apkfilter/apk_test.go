@@ -34,27 +34,27 @@ func TestShouldExclude(t *testing.T) {
 		isExcluded bool
 	}{
 		{
-			name:       "file in apk db dir",
+			name:       "file_in_apk_db_dir",
 			path:       "lib/apk/db/somefile",
 			isExcluded: true,
 		},
 		{
-			name:       "apk db dir itself",
+			name:       "apk_db_dir_itself",
 			path:       "lib/apk/db",
 			isExcluded: true,
 		},
 		{
-			name:       "some other binary",
+			name:       "some_other_binary",
 			path:       "usr/bin/some-other-file",
 			isExcluded: false,
 		},
 		{
-			name:       "path with db as prefix but not the full directory",
+			name:       "path_with_db_as_prefix_but_not_the_full_directory",
 			path:       "lib/apk/d",
 			isExcluded: false,
 		},
 		{
-			name:       "empty path",
+			name:       "empty_path",
 			path:       "",
 			isExcluded: false,
 		},
@@ -98,7 +98,7 @@ func TestHashSetFilter(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "basic case",
+			name: "basic_case",
 			files: map[string]string{
 				"lib/apk/db/installed": `C:Q1...
 P:package1
@@ -126,7 +126,7 @@ R:binary2
 			},
 		},
 		{
-			name:  "apk db does not exist",
+			name:  "apk_db_does_not_exist",
 			files: map[string]string{},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
@@ -137,7 +137,7 @@ R:binary2
 			wantErr: true,
 		},
 		{
-			name: "empty installed file",
+			name: "empty_installed_file",
 			files: map[string]string{
 				"lib/apk/db/installed": "",
 			},
@@ -149,7 +149,7 @@ R:binary2
 			},
 		},
 		{
-			name: "with symlinks",
+			name: "with_symlinks",
 			files: map[string]string{
 				"lib/apk/db/installed": `C:Q3...
 P:package3
@@ -179,7 +179,7 @@ R:symlink
 			},
 		},
 		{
-			name: "symlink in db but target not in set",
+			name: "symlink_in_db_but_target_not_in_set",
 			files: map[string]string{
 				"lib/apk/db/installed": `C:Q4...
 P:package4
@@ -203,7 +203,7 @@ R:symlink2
 			},
 		},
 		{
-			name: "package with no files",
+			name: "package_with_no_files",
 			files: map[string]string{
 				"lib/apk/db/installed": `C:Q5...
 P:package5
@@ -218,7 +218,7 @@ V:1.0
 			},
 		},
 		{
-			name: "installed file from testdata",
+			name: "installed_file_from_testdata",
 			files: map[string]string{
 				"lib/apk/db/installed": string(installed),
 			},
@@ -234,7 +234,7 @@ V:1.0
 			},
 		},
 		{
-			name: "single file from testdata",
+			name: "single_file_from_testdata",
 			files: map[string]string{
 				"lib/apk/db/installed": string(single),
 			},
@@ -247,7 +247,7 @@ V:1.0
 			},
 		},
 		{
-			name: "invalid file from testdata",
+			name: "invalid_file_from_testdata",
 			files: map[string]string{
 				"lib/apk/db/installed": string(invalid),
 			},
@@ -260,7 +260,7 @@ V:1.0
 			wantErr: true,
 		},
 		{
-			name: "empty file from testdata",
+			name: "empty_file_from_testdata",
 			files: map[string]string{
 				"lib/apk/db/installed": string(empty),
 			},

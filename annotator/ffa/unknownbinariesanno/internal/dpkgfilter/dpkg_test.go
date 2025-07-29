@@ -32,32 +32,32 @@ func TestShouldExclude(t *testing.T) {
 		isExcluded bool
 	}{
 		{
-			name:       "file in dpkg info dir",
+			name:       "file_in_dpkg_info_dir",
 			path:       "var/lib/dpkg/info/somefile",
 			isExcluded: true,
 		},
 		{
-			name:       "policy-rc.d file",
+			name:       "policy-rc.d_file",
 			path:       "usr/sbin/policy-rc.d",
 			isExcluded: true,
 		},
 		{
-			name:       "some other binary",
+			name:       "some_other_binary",
 			path:       "usr/bin/some-other-file",
 			isExcluded: false,
 		},
 		{
-			name:       "dpkg info dir itself",
+			name:       "dpkg_info_dir_itself",
 			path:       "var/lib/dpkg/info",
 			isExcluded: true,
 		},
 		{
-			name:       "path with info as prefix but not the full directory",
+			name:       "path_with_info_as_prefix_but_not_the_full_directory",
 			path:       "var/lib/dpkg/inf",
 			isExcluded: false,
 		},
 		{
-			name:       "empty path",
+			name:       "empty_path",
 			path:       "",
 			isExcluded: false,
 		},
@@ -84,7 +84,7 @@ func TestHashSetFilter(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "basic case",
+			name: "basic_case",
 			files: map[string]string{
 				"var/lib/dpkg/info/package1.list":  "/usr/bin/binary1\n/usr/lib/library1\n",
 				"var/lib/dpkg/info/package2.list":  "/bin/binary2\n",
@@ -103,7 +103,7 @@ func TestHashSetFilter(t *testing.T) {
 			},
 		},
 		{
-			name:  "dpkg info dir does not exist",
+			name:  "dpkg_info_dir_does_not_exist",
 			files: map[string]string{},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
@@ -114,7 +114,7 @@ func TestHashSetFilter(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty list file",
+			name: "empty_list_file",
 			files: map[string]string{
 				"var/lib/dpkg/info/empty.list": "",
 			},
@@ -126,7 +126,7 @@ func TestHashSetFilter(t *testing.T) {
 			},
 		},
 		{
-			name: "with symlinks",
+			name: "with_symlinks",
 			files: map[string]string{
 				"var/lib/dpkg/info/package3.list": "/usr/bin/symlink1\n/path/to/another/symlink\n",
 			},
@@ -148,7 +148,7 @@ func TestHashSetFilter(t *testing.T) {
 			},
 		},
 		{
-			name: "symlink in list but target not in set",
+			name: "symlink_in_list_but_target_not_in_set",
 			files: map[string]string{
 				"var/lib/dpkg/info/package4.list": "/usr/bin/symlink2\n",
 			},
