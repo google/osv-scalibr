@@ -72,7 +72,11 @@ var (
 	// All enrichers.
 	All = concat(
 		LayerDetails,
+		VulnMatching,
+		VEX,
 		Secrets,
+		Reachability,
+		Resolution,
 	)
 
 	enricherNames = concat(All, InitMap{
