@@ -61,7 +61,7 @@ var (
 		java.Name: {java.NewDefault},
 	}
 
-	// Transitive scanning enrichers.
+	// TransitiveScanning enrichers.
 	TransitiveScanning = InitMap{
 		requirements.Name: {requirements.NewDefault},
 	}
