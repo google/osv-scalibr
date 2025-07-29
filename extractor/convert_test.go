@@ -224,6 +224,15 @@ func TestToEcosystem(t *testing.T) {
 			want: "Go",
 		},
 		{
+			name: "drupal_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeDrupal,
+			},
+			want: "Drupal",
+		},
+		{
 			name: "os_ecosystem",
 			pkg: &extractor.Package{
 				Name:     "Name",
