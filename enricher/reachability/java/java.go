@@ -328,6 +328,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 
 	log.Debug("finished analysis", "reachable", len(reachableDeps), "unreachable", len(allDeps)-len(reachableDeps), "all", len(allDeps))
 
+	totalUnreachable := 0
 	for i := range inv.Packages {
 		if inv.Packages[i].Locations[0] != jarPath {
 			continue
@@ -341,8 +342,13 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 				VulnIdentifiers: nil,
 				MatchesAllVulns: true,
 			})
-			log.Infof("Added a unreachable signal to package '%s' with: %v", artifactName, inv.Packages[i].ExploitabilitySignals)
+			log.Debugf("Added a unreachable signal to package '%s'", artifactName)
+			totalUnreachable++
 		}
+	}
+
+	if totalUnreachable > 0 {
+		log.Infof("Java reachability enricher marked %d packages as unreachable", totalUnreachable)
 	}
 
 	return nil
