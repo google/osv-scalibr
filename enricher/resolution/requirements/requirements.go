@@ -85,7 +85,7 @@ func NewEnricher(client resolve.Client) *Enricher {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := groupPackages(inv.Packages)
 	for path, pkgMap := range pkgGroups {
-		var list []*extractor.Package
+		list := make([]*extractor.Package, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			list = append(list, indexPkg.pkg)
 		}
