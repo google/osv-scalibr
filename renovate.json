@@ -19,7 +19,7 @@
       "groupName": "workflows"
     },
     {
-      "matchLanguages": ["golang"],
+      "matchCategories": ["golang"],
       "enabled": false
     }
   ],
