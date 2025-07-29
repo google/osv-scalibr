@@ -17,6 +17,8 @@ package metadata
 
 import (
 	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // Metadata holds parsing information for a dpkg package.
@@ -56,4 +58,49 @@ func (m *Metadata) ToDistro() string {
 	}
 	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
 	return ""
+}
+
+// SetProto sets the DPKGPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_DpkgMetadata{
+		DpkgMetadata: &pb.DPKGPackageMetadata{
+			PackageName:       m.PackageName,
+			Status:            m.Status,
+			SourceName:        m.SourceName,
+			SourceVersion:     m.SourceVersion,
+			PackageVersion:    m.PackageVersion,
+			OsId:              m.OSID,
+			OsVersionCodename: m.OSVersionCodename,
+			OsVersionId:       m.OSVersionID,
+			Maintainer:        m.Maintainer,
+			Architecture:      m.Architecture,
+		},
+	}
+}
+
+// ToStruct converts the NetportsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:       m.GetPackageName(),
+		Status:            m.GetStatus(),
+		SourceName:        m.GetSourceName(),
+		SourceVersion:     m.GetSourceVersion(),
+		PackageVersion:    m.GetPackageVersion(),
+		OSID:              m.GetOsId(),
+		OSVersionCodename: m.GetOsVersionCodename(),
+		OSVersionID:       m.GetOsVersionId(),
+		Maintainer:        m.GetMaintainer(),
+		Architecture:      m.GetArchitecture(),
+	}
 }

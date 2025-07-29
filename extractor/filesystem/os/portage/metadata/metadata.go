@@ -15,7 +15,11 @@
 // Package metadata defines a metadata struct for portage packages.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
 
 // Metadata holds parsing information for a portage package.
 type Metadata struct {
@@ -41,4 +45,37 @@ func (m *Metadata) ToDistro() string {
 	}
 	log.Errorf("VERSION_ID not set in os-release")
 	return ""
+}
+
+// SetProto sets the PortagePackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_PortageMetadata{
+		PortageMetadata: &pb.PortagePackageMetadata{
+			PackageName:    m.PackageName,
+			PackageVersion: m.PackageVersion,
+			OsId:           m.OSID,
+			OsVersionId:    m.OSVersionID,
+		},
+	}
+}
+
+// ToStruct converts the PortagePackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.PortagePackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:    m.GetPackageName(),
+		PackageVersion: m.GetPackageVersion(),
+		OSID:           m.GetOsId(),
+		OSVersionID:    m.GetOsVersionId(),
+	}
 }
