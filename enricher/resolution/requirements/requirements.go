@@ -84,7 +84,11 @@ func NewEnricher(client resolve.Client) *Enricher {
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := groupPackages(inv.Packages)
-	for path, list := range pkgGroups {
+	for path, pkgMap := range pkgGroups {
+		var list []*extractor.Package
+		for _, indexPkg := range pkgMap {
+			list = append(list, indexPkg.pkg)
+		}
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {
 			// Do not perform transitive extraction with hash-checking mode.
 			// Hash-checking is an all-or-nothing proposition so we can assume the
@@ -101,31 +105,35 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 
 		for _, pkg := range pkgs {
-			i := slices.IndexFunc(inv.Packages, func(p *extractor.Package) bool {
-				if len(p.Locations) == 0 || len(pkg.Locations) == 0 {
-					// This should not happen.
-					log.Warnf("package %s has no locations", p.Name)
-					return false
-				}
-				return slices.Contains(p.Plugins, requirements.Name) && p.Locations[0] == pkg.Locations[0] && p.Name == pkg.Name
-			})
-			if i < 0 {
-				// This dependency is not found in manifest, so it's a transitive dependency.
-				inv.Packages = append(inv.Packages, pkg)
-			} else {
+			if len(pkg.Locations) == 0 {
+				log.Warnf("package %s has no locations", pkg.Name)
+				continue
+			}
+			indexPkg, ok := pkgGroups[pkg.Locations[0]][pkg.Name]
+			if ok {
 				// This dependency is in manifest, update the version and plugins.
+				i := indexPkg.index
 				inv.Packages[i].Version = pkg.Version
 				inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, Name)
+			} else {
+				// This dependency is not found in manifest, so it's a transitive dependency.
+				inv.Packages = append(inv.Packages, pkg)
 			}
 		}
 	}
 	return nil
 }
 
+// packageWithIndex holds the package with its index in inv.Packages
+type packageWithIndex struct {
+	pkg   *extractor.Package
+	index int
+}
+
 // groupPackages groups packages found in requirements.txt by the first location that they are found.
-func groupPackages(pkgs []*extractor.Package) map[string][]*extractor.Package {
-	result := make(map[string][]*extractor.Package)
-	for _, pkg := range pkgs {
+func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithIndex {
+	result := make(map[string]map[string]packageWithIndex)
+	for i, pkg := range pkgs {
 		if !slices.Contains(pkg.Plugins, requirements.Name) {
 			continue
 		}
@@ -135,7 +143,10 @@ func groupPackages(pkgs []*extractor.Package) map[string][]*extractor.Package {
 		}
 		// Use the path where this package is first found.
 		path := pkg.Locations[0]
-		result[path] = append(result[path], pkg)
+		if _, ok := result[path]; !ok {
+			result[path] = make(map[string]packageWithIndex)
+		}
+		result[path][pkg.Name] = packageWithIndex{pkg, i}
 	}
 	return result
 }
