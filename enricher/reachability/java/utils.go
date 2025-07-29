@@ -15,8 +15,12 @@
 package java
 
 import (
+	"io/fs"
 	"os"
+	"strings"
 	"syscall"
+
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // mkdirAll simulates the same logic as os.MkdirAll but uses os.Root as input.
@@ -71,4 +75,15 @@ func mkdirAll(jarRoot *os.Root, path string, perm os.FileMode) error {
 	}
 
 	return nil
+}
+
+func openFromRoot(root *scalibrfs.ScanRoot, fullPath string) (fs.File, error) {
+	rootPath := root.Path
+
+	relPath := fullPath
+	if strings.HasPrefix(fullPath, rootPath) {
+		relPath = fullPath[len(rootPath):]
+	}
+
+	return root.FS.Open(relPath)
 }

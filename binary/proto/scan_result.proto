@@ -90,6 +90,7 @@ message Package {
   // core library.
   repeated string plugins = 49;
   // The additional data found in the package.
+  // LINT.IfChange
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
@@ -123,6 +124,7 @@ message Package {
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
   }
+  // LINT.ThenChange(/binary/proto/package_metadata.go)
 
   // Deprecated - use exploitability_signals instead
   // TODO(b/400910349): Remove once integrators stop using this.
@@ -622,10 +624,19 @@ message SecretStatus {
   google.protobuf.Timestamp last_updated = 2;
 
   enum SecretStatusEnum {
+    // The default value for SecretStatusEnum. Set when no validation was
+    // attempted.
     UNSPECIFIED = 0;
-    UNKNOWN = 1;
+    // Deprecated. Use UNSPECIFIED instead.
+    UNKNOWN = 1 [deprecated = true];
+    // The secret is confirmed to be invalid.
     INVALID = 2;
+    // The secret is confirmed to be valid.
     VALID = 3;
+    // Validating the secret is not supported by the scanner.
+    UNSUPPORTED = 4;
+    // Validation is supported but the validation failed.
+    FAILED = 5;
   }
 }
 

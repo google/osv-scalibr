@@ -268,10 +268,20 @@ func (Package_AnnotationEnum) EnumDescriptor() ([]byte, []int) {
 type SecretStatus_SecretStatusEnum int32
 
 const (
+	// The default value for SecretStatusEnum. Should not be returned.
 	SecretStatus_UNSPECIFIED SecretStatus_SecretStatusEnum = 0
-	SecretStatus_UNKNOWN     SecretStatus_SecretStatusEnum = 1
-	SecretStatus_INVALID     SecretStatus_SecretStatusEnum = 2
-	SecretStatus_VALID       SecretStatus_SecretStatusEnum = 3
+	// Deprecated. Use UNSPECIFIED instead.
+	//
+	// Deprecated: Marked as deprecated in proto/scan_result.proto.
+	SecretStatus_UNKNOWN SecretStatus_SecretStatusEnum = 1
+	// The secret is confirmed to be invalid.
+	SecretStatus_INVALID SecretStatus_SecretStatusEnum = 2
+	// The secret is confirmed to be valid.
+	SecretStatus_VALID SecretStatus_SecretStatusEnum = 3
+	// Validating the secret is not supported by the scanner.
+	SecretStatus_UNSUPPORTED SecretStatus_SecretStatusEnum = 4
+	// Validation is supported but the validation failed.
+	SecretStatus_FAILED SecretStatus_SecretStatusEnum = 5
 )
 
 // Enum value maps for SecretStatus_SecretStatusEnum.
@@ -281,12 +291,16 @@ var (
 		1: "UNKNOWN",
 		2: "INVALID",
 		3: "VALID",
+		4: "UNSUPPORTED",
+		5: "FAILED",
 	}
 	SecretStatus_SecretStatusEnum_value = map[string]int32{
 		"UNSPECIFIED": 0,
 		"UNKNOWN":     1,
 		"INVALID":     2,
 		"VALID":       3,
+		"UNSUPPORTED": 4,
+		"FAILED":      5,
 	}
 )
 
@@ -5610,15 +5624,18 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0funiverse_domain\x18\v \x01(\tR\x0euniverseDomain\x12\x1f\n" +
 	"\vprivate_key\x18\f \x01(\tR\n" +
 	"privateKeyB\b\n" +
-	"\x06secret\"\xd7\x01\n" +
+	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
-	"\flast_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\"H\n" +
+	"\flast_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\"i\n" +
 	"\x10SecretStatusEnum\x12\x0f\n" +
-	"\vUNSPECIFIED\x10\x00\x12\v\n" +
-	"\aUNKNOWN\x10\x01\x12\v\n" +
+	"\vUNSPECIFIED\x10\x00\x12\x0f\n" +
+	"\aUNKNOWN\x10\x01\x1a\x02\b\x01\x12\v\n" +
 	"\aINVALID\x10\x02\x12\t\n" +
-	"\x05VALID\x10\x03\"\xc8\x02\n" +
+	"\x05VALID\x10\x03\x12\x0f\n" +
+	"\vUNSUPPORTED\x10\x04\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x05\"\xc8\x02\n" +
 	"\bLocation\x12/\n" +
 	"\bfilepath\x18\x01 \x01(\v2\x11.scalibr.FilepathH\x00R\bfilepath\x12b\n" +
 	"\x1bfilepath_with_layer_details\x18\x02 \x01(\v2!.scalibr.FilepathWithLayerDetailsH\x00R\x18filepathWithLayerDetails\x12Q\n" +

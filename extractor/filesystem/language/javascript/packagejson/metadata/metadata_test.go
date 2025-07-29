@@ -20,6 +20,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 func TestUnmarshalJSON_Person(t *testing.T) {
@@ -226,6 +230,244 @@ func TestPersonFromString(t *testing.T) {
 			got := metadata.PersonFromString(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("metadata.PersonFromString(%+v) diff (-want +got):\n%s", tc.input, diff)
+			}
+		})
+	}
+}
+
+func TestSetProto(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *metadata.JavascriptPackageJSONMetadata
+		p    *pb.Package
+		want *pb.Package
+	}{
+		{
+			desc: "nil metadata",
+			m:    nil,
+			p:    &pb.Package{Name: "some-package"},
+			want: &pb.Package{Name: "some-package"},
+		},
+		{
+			desc: "nil package",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+			},
+			p:    nil,
+			want: nil,
+		},
+		{
+			desc: "set metadata",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+			},
+			p: &pb.Package{Name: "some-package"},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+					},
+				},
+			},
+		},
+		{
+			desc: "override metadata",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-other-author",
+					Email: "some-other-author@google.com",
+				},
+			},
+			p: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+					},
+				},
+			},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-other-author <some-other-author@google.com>",
+					},
+				},
+			},
+		},
+		{
+			desc: "set all fields",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Maintainers: []*metadata.Person{
+					{
+						Name:  "first-maintainer",
+						Email: "first-maintainer@google.com",
+					},
+					{
+						Name:  "second-maintainer",
+						Email: "second-maintainer@google.com",
+					},
+				},
+				Contributors: []*metadata.Person{
+					{
+						Name:  "first-contributor",
+						Email: "first-contributor@google.com",
+					},
+					{
+						Name:  "second-contributor",
+						Email: "second-contributor@google.com",
+					},
+				},
+				FromNPMRepository: true,
+			},
+			p: &pb.Package{Name: "some-package"},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+						Maintainers: []string{
+							"first-maintainer <first-maintainer@google.com>",
+							"second-maintainer <second-maintainer@google.com>",
+						},
+						Contributors: []string{
+							"first-contributor <first-contributor@google.com>",
+							"second-contributor <second-contributor@google.com>",
+						},
+						FromNpmRepository: true,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			p := proto.Clone(tc.p).(*pb.Package)
+			tc.m.SetProto(p)
+			opts := []cmp.Option{
+				protocmp.Transform(),
+			}
+			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
+				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+
+			if tc.p == nil && tc.want == nil {
+				return
+			}
+
+			got := metadata.ToStruct(p.GetJavascriptMetadata())
+			if diff := cmp.Diff(tc.m, got); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetJavascriptMetadata(), diff)
+			}
+		})
+	}
+}
+
+func TestToStruct(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *pb.JavascriptPackageJSONMetadata
+		want *metadata.JavascriptPackageJSONMetadata
+	}{
+		{
+			desc: "nil",
+			m:    nil,
+			want: nil,
+		},
+		{
+			desc: "some fields",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author",
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name: "some-author",
+				},
+			},
+		},
+		{
+			desc: "all fields",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Maintainers: []string{
+					"first-maintainer <first-maintainer@google.com>",
+					"second-maintainer <second-maintainer@google.com>",
+				},
+				Contributors: []string{
+					"first-contributor <first-contributor@google.com>",
+					"second-contributor <second-contributor@google.com>",
+				},
+				FromNpmRepository: true,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Contributors: []*metadata.Person{
+					{
+						Name:  "first-contributor",
+						Email: "first-contributor@google.com",
+					},
+					{
+						Name:  "second-contributor",
+						Email: "second-contributor@google.com",
+					},
+				},
+				Maintainers: []*metadata.Person{
+					{
+						Name:  "first-maintainer",
+						Email: "first-maintainer@google.com",
+					},
+					{
+						Name:  "second-maintainer",
+						Email: "second-maintainer@google.com",
+					},
+				},
+				FromNPMRepository: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.ToStruct(tc.m)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
+			}
+
+			if tc.m == nil {
+				return
+			}
+
+			// Test the reverse conversion for completeness.
+
+			gotP := &pb.Package{}
+			wantP := &pb.Package{
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: tc.m,
+				},
+			}
+			got.SetProto(gotP)
+			opts := []cmp.Option{
+				protocmp.Transform(),
+			}
+			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
+				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
 			}
 		})
 	}

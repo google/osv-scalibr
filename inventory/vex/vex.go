@@ -15,6 +15,8 @@
 // Package vex stores data structures used to represent exploitability signals in SCALIBR scan results.
 package vex
 
+import "slices"
+
 // PackageExploitabilitySignal is used to indicate that specific vulnerabilities
 // are not applicable to a given package.
 type PackageExploitabilitySignal struct {
@@ -62,3 +64,18 @@ const (
 	// executed but additional mitigations prevent exploitation.
 	InlineMitigationAlreadyExists
 )
+
+// FindingVEXFromPackageVEX converts package VEXes to finding VEXes if they're
+// applicable to a finding with the given ID.
+func FindingVEXFromPackageVEX(vulnID string, pkgVEXes []*PackageExploitabilitySignal) []*FindingExploitabilitySignal {
+	var result []*FindingExploitabilitySignal
+	for _, pkgVEX := range pkgVEXes {
+		if pkgVEX.MatchesAllVulns || slices.Contains(pkgVEX.VulnIdentifiers, vulnID) {
+			result = append(result, &FindingExploitabilitySignal{
+				Plugin:        pkgVEX.Plugin,
+				Justification: pkgVEX.Justification,
+			})
+		}
+	}
+	return result
+}

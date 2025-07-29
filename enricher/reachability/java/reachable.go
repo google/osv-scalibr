@@ -283,7 +283,7 @@ func (r *ReachabilityEnumerator) handleDynamicCode(jarRoot *os.Root, q *UniqueQu
 					log.Debug("assuming all package classes are reachable", "class", class, "pkg", pkg)
 					q.Push(class, cf)
 				} else {
-					log.Error("failed to find class", "class", class, "from", pkg, "err", err)
+					log.Debug("failed to find class", "class", class, "from", pkg, "err", err)
 				}
 			}
 		}
@@ -320,7 +320,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 						codeLoading[thisClass] = struct{}{}
 						err := r.handleDynamicCode(jarRoot, q, thisClass, r.CodeLoadingStrategy)
 						if err != nil {
-							log.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
+							log.Debug("failed to handle dynamic code", "thisClass", thisClass, "err", err)
 						}
 					}
 				}
@@ -336,7 +336,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 						depInjection[thisClass] = struct{}{}
 						err := r.handleDynamicCode(jarRoot, q, thisClass, r.DependencyInjectionStrategy)
 						if err != nil {
-							log.Error("failed to handle dynamic code", "thisClass", thisClass, "err", err)
+							log.Debug("failed to handle dynamic code", "thisClass", thisClass, "err", err)
 						}
 					}
 				}
@@ -403,7 +403,7 @@ func (r *ReachabilityEnumerator) enumerateReachability(
 			depcf, err := r.findClass(jarRoot, r.ClassPaths, class)
 			if err != nil {
 				// Dependencies can be optional, so this is not a fatal error.
-				log.Error("failed to find class", "class", class, "from", thisClass, "cp idx", i, "error", err)
+				log.Debug("failed to find class", "class", class, "from", thisClass, "cp idx", i, "error", err)
 				continue
 			}
 

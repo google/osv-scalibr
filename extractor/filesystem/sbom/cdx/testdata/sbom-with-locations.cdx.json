@@ -14,7 +14,10 @@
              "occurrences": [
                  {
                      "location": "home/test/.vscode-server/bin/node_modules/@gar/promisify/package.json"
-                 }
+                 },
+                 {
+                    "location": "usr/lib/node_modules/@gar/promisify/package.json"
+                }
              ]
          }
      }]
