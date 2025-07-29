@@ -69,6 +69,7 @@ func (Enricher) RequiredPlugins() []string {
 // NewDefault returns a new enricher with the default configuration.
 func NewDefault() enricher.Enricher {
 	return &Enricher{
+		// Empty string indicates using default registry.
 		Client: resolution.NewPyPIRegistryClient(""),
 	}
 }
@@ -82,8 +83,8 @@ func NewEnricher(client resolve.Client) *Enricher {
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	fromReqs := groupPackages(inv.Packages)
-	for path, list := range fromReqs {
+	pkgGroups := groupPackages(inv.Packages)
+	for path, list := range pkgGroups {
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {
 			// Do not perform transitive extraction with hash-checking mode.
 			// Hash-checking is an all-or-nothing proposition so we can assume the
@@ -103,6 +104,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			i := slices.IndexFunc(inv.Packages, func(p *extractor.Package) bool {
 				if len(p.Locations) == 0 || len(pkg.Locations) == 0 {
 					// This should not happen.
+					log.Warnf("package %s has no locations", p.Name)
 					return false
 				}
 				return slices.Contains(p.Plugins, requirements.Name) && p.Locations[0] == pkg.Locations[0] && p.Name == pkg.Name
