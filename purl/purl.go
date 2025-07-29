@@ -53,6 +53,8 @@ const (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
+	// TypeDrupal is a pkg:drupal purl.
+	TypeDrupal = "drupal"
 	// TypeFlatpak is a pkg:flatpak purl.
 	TypeFlatpak = "flatpak"
 	// TypeGem is a pkg:gem purl.
