@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -39,7 +40,6 @@ type composerPackage struct {
 	Version string `json:"version"`
 	Dist    struct {
 		Reference string `json:"reference"`
-		Shasum    string `json:"shasum"`
 	} `json:"dist"`
 }
 
@@ -71,10 +71,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
-	commit := pkg.Dist.Shasum
+	commit := pkg.Dist.Reference
 
-	if commit == "" {
-		commit = pkg.Dist.Reference
+	// a dot means the reference is likely a tag, rather than a commit
+	if strings.Contains(commit, ".") {
+		commit = ""
 	}
 
 	return &extractor.Package{

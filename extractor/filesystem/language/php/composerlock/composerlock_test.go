@@ -222,7 +222,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/drupal-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "70b03b6c7868ced71ed0b3ca596ad83e76c2adc0",
+						Commit: "",
 					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -234,7 +234,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:  purl.TypeComposer,
 					Locations: []string{"testdata/drupal-packages.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "7ceaa18c1b0d42d12aafe5fcc0b5fe22a2ab3096",
+						Commit: "",
 					},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
