@@ -242,7 +242,9 @@ func TestNode_Walk(t *testing.T) {
 		{
 			name: "empty tree",
 			tree: NewNode(DefaultMaxSymlinkDepth),
-			want: []keyValue{},
+			want: []keyValue{
+				{"", "/"},
+			},
 		},
 		{
 			name: "single node",
@@ -253,6 +255,7 @@ func TestNode_Walk(t *testing.T) {
 				return tree
 			}(),
 			want: []keyValue{
+				{"", "/"},
 				{"/a", "/a"},
 			},
 		},
