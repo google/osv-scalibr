@@ -613,18 +613,21 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
+		layer := currentChainLayer.latestLayer.(*Layer)
+
 		// If the virtual path has any directories and those directories have not been populated, then
 		// populate them with file nodes.
-		populateEmptyDirectoryNodes(virtualPath, chainLayersToFill)
+		populateEmptyDirectoryNodes(virtualPath, layer, chainLayersToFill)
+
+		// Add the fileNode to the node tree of the underlying layer.
+		if err := layer.fileNodeTree.Insert(virtualPath, newVirtualFile); err != nil {
+			log.Warnf("failed to insert virtual file %q into layer: %v", virtualPath, err)
+		}
 
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithVirtualFile(chainLayersToFill, newVirtualFile)
-
-		// Add the fileNode to the node tree of the underlying layer.
-		layer := currentChainLayer.latestLayer.(*Layer)
-		_ = layer.fileNodeTree.Insert(virtualPath, newVirtualFile)
 	}
 	return nil
 }
@@ -632,7 +635,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 // populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths
 // that do not have an associated file node. This is done by creating a file node for each directory
 // in the virtual path and then filling the chain layers with that file node.
-func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainLayer) {
+func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersToFill []*chainLayer) {
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
@@ -651,6 +654,13 @@ func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainL
 			isWhiteout:  false,
 			mode:        fs.ModeDir,
 		}
+
+		// Add the fileNode to the node tree of the underlying layer.
+		if err := layer.fileNodeTree.Insert(runningDir, node); err != nil {
+			log.Warnf("failed to insert virtual file %q into layer: %v", runningDir, err)
+		}
+
+		// Add the fileNode to the node tree of the underlying chain layers.q
 		fillChainLayersWithVirtualFile(chainLayersToFill, node)
 	}
 }
