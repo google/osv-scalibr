@@ -21,12 +21,16 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/osv-scalibr/clients/internal/pypi"
+	"github.com/google/osv-scalibr/log"
 )
 
 // pyPIAPI holds the base of the URL of PyPI Index API.
@@ -35,7 +39,8 @@ const pyPIAPI = "https://pypi.org/simple"
 // PyPIRegistryAPIClient defines a client to fetch metadata from a PyPI registry.
 // TODO(#541): support multiple registries and authentication
 type PyPIRegistryAPIClient struct {
-	registry string
+	registry      string
+	localRegistry string
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -44,31 +49,37 @@ type PyPIRegistryAPIClient struct {
 }
 
 // NewPyPIRegistryAPIClient returns a new PyPIRegistryAPIClient.
-func NewPyPIRegistryAPIClient(registry string) *PyPIRegistryAPIClient {
+func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegistryAPIClient {
 	if registry == "" {
 		registry = pyPIAPI
 	}
 	return &PyPIRegistryAPIClient{
-		registry:  registry,
-		mu:        &sync.Mutex{},
-		responses: NewRequestCache[string, response](),
+		registry:      registry,
+		localRegistry: localRegistry,
+		mu:            &sync.Mutex{},
+		responses:     NewRequestCache[string, response](),
 	}
+}
+
+// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
+func (p *PyPIRegistryAPIClient) SetLocalRegistry(localRegistry string) {
+	p.localRegistry = localRegistry
 }
 
 // GetIndex queries the simple API index for a given project.
 func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
-	path, err := url.JoinPath(p.registry, project)
+	reqPath, err := url.JoinPath(p.registry, project)
 	if err != nil {
 		return pypi.IndexResponse{}, err
 	}
 
 	// The Index API requires an ending slash.
-	if !strings.HasSuffix(path, "/") {
-		path += "/"
+	if !strings.HasSuffix(reqPath, "/") {
+		reqPath += "/"
 	}
 
 	var indexResp pypi.IndexResponse
-	resp, err := p.get(ctx, path, true)
+	resp, err := p.get(ctx, reqPath, true)
 	if err != nil {
 		return pypi.IndexResponse{}, err
 	}
@@ -81,7 +92,27 @@ func (p *PyPIRegistryAPIClient) GetFile(ctx context.Context, url string) ([]byte
 	return p.get(ctx, url, false)
 }
 
+// urlToPath converts a URL to a file path.
+func urlToPath(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		log.Warnf("Error parsing URL %s: %s", rawURL, err)
+		return ""
+	}
+	return path.Join(parsedURL.Host, parsedURL.Path)
+}
+
 func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
+	file := ""
+	urlPath := urlToPath(url)
+	if urlPath != "" && p.localRegistry != "" {
+		file = filepath.Join(p.localRegistry, urlPath)
+		if bs, err := os.ReadFile(file); err == nil {
+			// We can still fetch the file from upstream if error is not nil.
+			return bs, nil
+		}
+	}
+
 	resp, err := p.responses.Get(url, func() (response, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -102,11 +133,18 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 			return response{}, fmt.Errorf("%w: PyPI registry query status: %d", errAPIFailed, resp.StatusCode)
 		}
 
-		if b, err := io.ReadAll(resp.Body); err == nil {
-			return response{StatusCode: resp.StatusCode, Body: b}, nil
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		return response{}, fmt.Errorf("failed to read body: %w", err)
+		if file != "" {
+			if err := writeFile(file, b); err != nil {
+				log.Infof("failed to write response of %s: %v", url, err)
+			}
+		}
+
+		return response{StatusCode: resp.StatusCode, Body: b}, nil
 	})
 	if err != nil {
 		return nil, err
