@@ -474,7 +474,7 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 			if p.Name() == gobinary.Name {
 				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
 			}
-			if p.Name() == pomxmlnet.Name {
+			if p.Name() == pomxmlnet.Name && f.LocalRegistry != "" {
 				p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
 			}
 			if p.Name() == binary.Name {

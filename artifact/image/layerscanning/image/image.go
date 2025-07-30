@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package image provides functionality to scan a container image by layers for software
-// inventory.
+// Package image provides functionality to scan a linux container image by layers for software
+// inventory. Note that this package does not support Windows images as they are not as widely used
+// as linux images.
 package image
 
 import (
@@ -50,16 +51,16 @@ const (
 	// since that is the maximum number of symlinks the os.Root API will handle. From the os.Root API,
 	// "8 is __POSIX_SYMLOOP_MAX (the minimum allowed value for SYMLOOP_MAX), and a common limit".
 	DefaultMaxSymlinkDepth = 6
-
-	dockerImageNameSeparator = ":"
-	tarFileNameSeparator     = "_"
-
 	// filePermission represents the permission bits for a file, which are minimal since files in the
 	// layer scanning use case are read-only.
 	filePermission = 0600
 	// dirPermission represents the permission bits for a directory, which are minimal since
 	// directories in the layer scanning use case are read-only.
 	dirPermission = 0700
+
+	dockerImageNameSeparator = ":"
+	tarFileNameSeparator     = "_"
+	tarFileExtension         = ".tar"
 )
 
 var (
@@ -192,17 +193,21 @@ func createTarBallFromImage(imageName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker client to untar image  %s: %w", imageName, err)
 	}
+
 	inputStream, err := dockerClient.ImageSave(context.Background(), []string{imageName})
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker stream to untar image %s: %w", imageName, err)
 	}
 	defer inputStream.Close()
-	tarFileName := strings.ReplaceAll(imageName, dockerImageNameSeparator, tarFileNameSeparator) + ".tar"
-	log.Infof("Tarfile  name is %s", tarFileName)
+
+	tarFileName := strings.ReplaceAll(imageName, dockerImageNameSeparator, tarFileNameSeparator) + tarFileExtension
+	log.Infof("Tarfile name is %s", tarFileName)
+
 	fileFd, err := os.CreateTemp("", tarFileName)
 	if err != nil {
 		return "", fmt.Errorf("unable to create file to untar image %s: %w", imageName, err)
 	}
+
 	_, err = io.Copy(fileFd, inputStream)
 	if err != nil {
 		fileFd.Close()
@@ -212,6 +217,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 		}
 		return "", fmt.Errorf("unable to write to tarfile for image %s: %w", imageName, err)
 	}
+
 	fileFd.Close()
 	return fileFd.Name(), nil
 }
@@ -343,12 +349,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		log.Warnf("%q failed to be removed through GC cleanup function: %v", file.Name(), err)
 	}, imageContentBlob)
 
-	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
-	// be rooted, and traversal in the virtual filesystem will be broken.
-	if err := addRootDirectoryToChainLayers(outputImage.chainLayers); err != nil {
-		return nil, handleImageError(outputImage, fmt.Errorf("failed to add root directory to chain layers: %w", err))
-	}
-
 	// Since the layers are in reverse order, the v1LayerIndex starts at the last layer and works
 	// its way to the first layer.
 	v1LayerIndex := len(v1Layers) - 1
@@ -399,22 +399,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // ========================================================
 // Helper functions
 // ========================================================
-
-// addRootDirectoryToChainLayers adds the root ("/") directory to each chain layer.
-func addRootDirectoryToChainLayers(chainLayers []*chainLayer) error {
-	for _, chainLayer := range chainLayers {
-		err := chainLayer.fileNodeTree.Insert("/", &virtualFile{
-			virtualPath: "/",
-			isWhiteout:  false,
-			mode:        fs.ModeDir,
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to insert root node in path tree: %w", err)
-		}
-	}
-	return nil
-}
 
 // handleImageError cleans up the image and returns the provided error. The image is cleaned up
 // regardless of the error, as the image is in an invalid state if an error is returned.
@@ -630,18 +614,21 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
+		layer := currentChainLayer.latestLayer.(*Layer)
+
 		// If the virtual path has any directories and those directories have not been populated, then
 		// populate them with file nodes.
-		populateEmptyDirectoryNodes(virtualPath, chainLayersToFill)
+		populateEmptyDirectoryNodes(virtualPath, layer, chainLayersToFill)
+
+		// Add the fileNode to the node tree of the underlying layer.
+		if err := layer.fileNodeTree.Insert(virtualPath, newVirtualFile); err != nil {
+			log.Warnf("failed to insert virtual file %q into layer: %v", virtualPath, err)
+		}
 
 		// In each outer loop, a layer is added to each relevant output chainLayer slice. Because the
 		// outer loop is looping backwards (latest layer first), we ignore any files that are already in
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithVirtualFile(chainLayersToFill, newVirtualFile)
-
-		// Add the fileNode to the node tree of the underlying layer.
-		layer := currentChainLayer.latestLayer.(*Layer)
-		_ = layer.fileNodeTree.Insert(virtualPath, newVirtualFile)
 	}
 	return nil
 }
@@ -649,7 +636,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 // populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths
 // that do not have an associated file node. This is done by creating a file node for each directory
 // in the virtual path and then filling the chain layers with that file node.
-func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainLayer) {
+func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersToFill []*chainLayer) {
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
@@ -668,6 +655,13 @@ func populateEmptyDirectoryNodes(virtualPath string, chainLayersToFill []*chainL
 			isWhiteout:  false,
 			mode:        fs.ModeDir,
 		}
+
+		// Add the fileNode to the node tree of the underlying layer.
+		if err := layer.fileNodeTree.Insert(runningDir, node); err != nil {
+			log.Warnf("failed to insert virtual file %q into layer: %v", runningDir, err)
+		}
+
+		// Add the fileNode to the node tree of the underlying chain layers.q
 		fillChainLayersWithVirtualFile(chainLayersToFill, node)
 	}
 }

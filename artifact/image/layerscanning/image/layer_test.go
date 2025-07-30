@@ -475,10 +475,10 @@ func TestChainFSReadDir(t *testing.T) {
 			wantErr: fs.ErrNotExist,
 		},
 		{
-			name:    "root directory",
-			chainfs: setUpEmptyChainFS(t),
-			path:    "/",
-			wantErr: fs.ErrNotExist,
+			name:             "root directory",
+			chainfs:          setUpEmptyChainFS(t),
+			path:             "/",
+			wantVirtualFiles: []*virtualFile{},
 		},
 		{
 			name:    "non-root directory in empty tree",

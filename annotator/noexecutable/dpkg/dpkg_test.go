@@ -23,9 +23,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
+	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
 	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
+	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -46,8 +47,10 @@ func TestAnnotate(t *testing.T) {
 	)
 
 	tests := []struct {
-		desc         string
-		packages     []*extractor.Package
+		desc     string
+		packages []*extractor.Package
+		// the .list file content has been modified adding a trailing "/" at
+		// the end of each folder to simplify the setupDPKGInfo logic
 		infoContents map[string]string
 		//nolint:containedctx
 		ctx          context.Context
@@ -63,97 +66,80 @@ func TestAnnotate(t *testing.T) {
 			desc:         "empty_info_dir",
 			infoContents: map[string]string{},
 			packages: []*extractor.Package{
-				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-				},
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
-				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-				},
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
 			},
-		},
-		{
-			desc: "some_pkgs_found_in_info",
-			infoContents: map[string]string{
-				"some.list":       "/some/path\n/path/to/file-in-info\n/some/other/path",
-				"some.other.list": "/some/other/path",
-			},
-			packages: []*extractor.Package{
-				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
-				},
-				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
-				},
-			},
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
-					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
-						Plugin:          dpkg.Name,
-						Justification:   vex.ComponentNotPresent,
-						MatchesAllVulns: true,
-					}},
-				},
-				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
-				},
-			},
-		},
-		{
-			desc: "pkg_found_in_file_with_wrong_extension",
-			infoContents: map[string]string{
-				"some.notlist": "/path/to/file",
-			},
-			packages: []*extractor.Package{
-				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-				},
-			},
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-					// No exploitability signals
-				},
-			},
-		},
-		{
-			desc: "pkg_has_no_location",
-			infoContents: map[string]string{
-				"some.list": "/path/to/file",
-			},
-			packages:     []*extractor.Package{{Name: "file"}},
-			wantPackages: []*extractor.Package{{Name: "file"}},
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			desc: "ctx_cancelled",
 			ctx:  cancelledContext,
 			infoContents: map[string]string{
-				"some.list": "/path/to/file",
+				"curl.list": "/usr/\n/usr/bin/\n/usr/bin/curl\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
 			},
 			packages: []*extractor.Package{
-				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-				},
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "contains_binary",
+			infoContents: map[string]string{
+				"curl.list": "/usr/\n/usr/bin/\n/usr/bin/curl\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
+			},
+			packages: []*extractor.Package{
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+			},
+		},
+		{
+			desc: "does_not_contain_binary",
+			infoContents: map[string]string{
+				"curl.list": "/usr/\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
+			},
+			packages: []*extractor.Package{
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
-					// No exploitability signals
-				},
+					Name:     "curl",
+					Metadata: dpkgmetadata.Metadata{},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{
+						{
+							Plugin:          dpkg.Name,
+							Justification:   vex.ComponentNotPresent,
+							MatchesAllVulns: true,
+						},
+					}},
 			},
-			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "arch_specific_path",
+			infoContents: map[string]string{
+				"curl:arm64.list": "/usr/\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
+			},
+			packages: []*extractor.Package{
+				{Name: "curl", Metadata: dpkgmetadata.Metadata{Architecture: "arm64"}},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "curl",
+					Metadata: dpkgmetadata.Metadata{Architecture: "arm64"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{
+						{
+							Plugin:          dpkg.Name,
+							Justification:   vex.ComponentNotPresent,
+							MatchesAllVulns: true,
+						},
+					}},
+			},
 		},
 	}
 
@@ -161,7 +147,7 @@ func TestAnnotate(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			root := ""
 			if tt.infoContents != nil {
-				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, false)
+				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
 			if tt.ctx == nil {
 				tt.ctx = context.Background()
@@ -175,7 +161,7 @@ func TestAnnotate(t *testing.T) {
 
 			err := dpkg.New().Annotate(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
-				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, tt.wantErr, err)
+				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}
 
 			want := &inventory.Inventory{Packages: tt.wantPackages}
