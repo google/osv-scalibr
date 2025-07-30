@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dpkgfilter
+package apkfilter
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -32,13 +34,13 @@ func TestShouldExclude(t *testing.T) {
 		isExcluded bool
 	}{
 		{
-			name:       "file_in_dpkg_info_dir",
-			path:       "var/lib/dpkg/info/somefile",
+			name:       "file_in_apk_db_dir",
+			path:       "lib/apk/db/somefile",
 			isExcluded: true,
 		},
 		{
-			name:       "policy-rc.d_file",
-			path:       "usr/sbin/policy-rc.d",
+			name:       "apk_db_dir_itself",
+			path:       "lib/apk/db",
 			isExcluded: true,
 		},
 		{
@@ -47,13 +49,8 @@ func TestShouldExclude(t *testing.T) {
 			isExcluded: false,
 		},
 		{
-			name:       "dpkg_info_dir_itself",
-			path:       "var/lib/dpkg/info",
-			isExcluded: true,
-		},
-		{
-			name:       "path_with_info_as_prefix_but_not_the_full_directory",
-			path:       "var/lib/dpkg/inf",
+			name:       "path_with_db_as_prefix_but_not_the_full_directory",
+			path:       "lib/apk/d",
 			isExcluded: false,
 		},
 		{
@@ -65,7 +62,7 @@ func TestShouldExclude(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter := DpkgFilter{}
+			filter := ApkFilter{}
 			got := filter.ShouldExclude(context.Background(), nil, tc.path)
 			if got != tc.isExcluded {
 				t.Errorf("ShouldExclude(%q): got %v, want %v", tc.path, got, tc.isExcluded)
@@ -75,6 +72,23 @@ func TestShouldExclude(t *testing.T) {
 }
 
 func TestHashSetFilter(t *testing.T) {
+	installed, err := os.ReadFile(filepath.Join("testdata", "installed"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/installed: %v", err)
+	}
+	single, err := os.ReadFile(filepath.Join("testdata", "single"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/single: %v", err)
+	}
+	invalid, err := os.ReadFile(filepath.Join("testdata", "invalid"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/invalid: %v", err)
+	}
+	empty, err := os.ReadFile(filepath.Join("testdata", "empty"))
+	if err != nil {
+		t.Fatalf("failed to read testdata/empty: %v", err)
+	}
+
 	testCases := []struct {
 		name               string
 		files              map[string]string
@@ -86,24 +100,33 @@ func TestHashSetFilter(t *testing.T) {
 		{
 			name: "basic_case",
 			files: map[string]string{
-				"var/lib/dpkg/info/package1.list":  "/usr/bin/binary1\n/usr/lib/library1\n",
-				"var/lib/dpkg/info/package2.list":  "/bin/binary2\n",
-				"var/lib/dpkg/info/not-a-list.txt": "/usr/bin/ignored",
+				"lib/apk/db/installed": `C:Q1...
+P:package1
+V:1.0
+F:usr/bin
+R:binary1
+F:usr/lib
+R:library1
+
+C:Q2...
+P:package2
+V:1.0
+F:bin
+R:binary2
+`,
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1":   {Name: "binary1"},
-				"usr/lib/library1":  {Name: "library1"},
-				"bin/binary2":       {Name: "binary2"},
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/binary1":  {Name: "binary1"},
+				"usr/lib/library1": {Name: "library1"},
+				"bin/binary2":      {Name: "binary2"},
+				"usr/bin/unknown1": {Name: "unknown1"},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/unknown1": {Name: "unknown1"},
 			},
 		},
 		{
-			name:  "dpkg_info_dir_does_not_exist",
+			name:  "apk_db_does_not_exist",
 			files: map[string]string{},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
@@ -114,9 +137,9 @@ func TestHashSetFilter(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty_list_file",
+			name: "empty_installed_file",
 			files: map[string]string{
-				"var/lib/dpkg/info/empty.list": "",
+				"lib/apk/db/installed": "",
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
@@ -128,7 +151,14 @@ func TestHashSetFilter(t *testing.T) {
 		{
 			name: "with_symlinks",
 			files: map[string]string{
-				"var/lib/dpkg/info/package3.list": "/usr/bin/symlink1\n/path/to/another/symlink\n",
+				"lib/apk/db/installed": `C:Q3...
+P:package3
+V:1.0
+F:usr/bin
+R:symlink1
+F:path/to/another
+R:symlink
+`,
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
 				t.Helper()
@@ -138,19 +168,25 @@ func TestHashSetFilter(t *testing.T) {
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink1":       {Name: "symlink1"},
-				"usr/bin/actual_binary":  {Name: "actual_binary"},
-				"path/to/another/actual": {Name: "another_actual"},
-				"usr/bin/not_in_list":    {Name: "not_in_list"},
+				"usr/bin/symlink1":        {Name: "symlink1"},
+				"usr/bin/actual_binary":   {Name: "actual_binary"},
+				"path/to/another/symlink": {Name: "symlink"},
+				"path/to/another/actual":  {Name: "another_actual"},
+				"usr/bin/not_in_db":       {Name: "not_in_db"},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/not_in_list": {Name: "not_in_list"},
+				"usr/bin/not_in_db": {Name: "not_in_db"},
 			},
 		},
 		{
-			name: "symlink_in_list_but_target_not_in_set",
+			name: "symlink_in_db_but_target_not_in_set",
 			files: map[string]string{
-				"var/lib/dpkg/info/package4.list": "/usr/bin/symlink2\n",
+				"lib/apk/db/installed": `C:Q4...
+P:package4
+V:1.0
+F:usr/bin
+R:symlink2
+`,
 			},
 			specialFSFn: func(t *testing.T, fl *fakelayer.FakeLayer) scalibrfs.FS {
 				t.Helper()
@@ -166,6 +202,75 @@ func TestHashSetFilter(t *testing.T) {
 				"usr/bin/unknown2": {Name: "unknown2"},
 			},
 		},
+		{
+			name: "package_with_no_files",
+			files: map[string]string{
+				"lib/apk/db/installed": `C:Q5...
+P:package5
+V:1.0
+`,
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			want: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+		},
+		{
+			name: "installed_file_from_testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(installed),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"etc/motd":           {Name: "motd"},
+				"usr/bin/scanelf":    {Name: "scanelf"},
+				"usr/bin/ssl_client": {Name: "ssl_client"},
+				"lib/libz.so.1":      {Name: "libz.so.1"},
+				"unknown/binary":     {Name: "unknown"},
+			},
+			want: map[string]*extractor.Package{
+				"unknown/binary": {Name: "unknown"},
+			},
+		},
+		{
+			name: "single_file_from_testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(single),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"etc/fstab":      {Name: "fstab"},
+				"unknown/binary": {Name: "unknown"},
+			},
+			want: map[string]*extractor.Package{
+				"unknown/binary": {Name: "unknown"},
+			},
+		},
+		{
+			name: "invalid_file_from_testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(invalid),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			want: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty_file_from_testdata",
+			files: map[string]string{
+				"lib/apk/db/installed": string(empty),
+			},
+			unknownBinariesSet: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+			want: map[string]*extractor.Package{
+				"usr/bin/binary1": {Name: "binary1"},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -179,7 +284,7 @@ func TestHashSetFilter(t *testing.T) {
 				fs = tc.specialFSFn(t, fl)
 			}
 
-			filter := DpkgFilter{}
+			filter := ApkFilter{}
 			err = filter.HashSetFilter(t.Context(), fs, tc.unknownBinariesSet)
 
 			if (err != nil) != tc.wantErr {

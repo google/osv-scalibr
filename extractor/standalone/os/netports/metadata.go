@@ -14,6 +14,10 @@
 
 package netports
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata contains metadata about a given open port.
 type Metadata struct {
 	// The port number.
@@ -22,4 +26,35 @@ type Metadata struct {
 	Protocol string
 	// The command line of the process listening on the port, if available.
 	Cmdline string
+}
+
+// SetProto sets the NetportsMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_NetportsMetadata{
+		NetportsMetadata: &pb.NetportsMetadata{
+			Port:        m.Port,
+			Protocol:    m.Protocol,
+			CommandLine: m.Cmdline,
+		},
+	}
+}
+
+// ToStruct converts the NetportsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.NetportsMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		Port:     m.GetPort(),
+		Protocol: m.GetProtocol(),
+		Cmdline:  m.GetCommandLine(),
+	}
 }

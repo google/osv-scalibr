@@ -15,7 +15,11 @@
 // Package metadata defines a metadata struct for COS packages.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
 
 // Metadata holds parsing information for a COS package.
 type Metadata struct {
@@ -39,4 +43,41 @@ func (m *Metadata) ToDistro() string {
 	}
 	log.Errorf("VERSION and VERSION_ID not set in os-release")
 	return ""
+}
+
+// SetProto sets the COSPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_CosMetadata{
+		CosMetadata: &pb.COSPackageMetadata{
+			Name:          m.Name,
+			Version:       m.Version,
+			Category:      m.Category,
+			OsVersion:     m.OSVersion,
+			OsVersionId:   m.OSVersionID,
+			EbuildVersion: m.EbuildVersion,
+		},
+	}
+}
+
+// ToStruct converts the COSPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.COSPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		Name:          m.GetName(),
+		Version:       m.GetVersion(),
+		Category:      m.GetCategory(),
+		OSVersion:     m.GetOsVersion(),
+		OSVersionID:   m.GetOsVersionId(),
+		EbuildVersion: m.GetEbuildVersion(),
+	}
 }
