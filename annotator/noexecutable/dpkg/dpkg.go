@@ -77,7 +77,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 
 		// check if the pkg files contains at least one executable file
-		containsExecutable, err := pkgContainsExecutable(input, pkg.Name, metadata.Architecture)
+		containsExecutable, err := pkgContainsExecutable(ctx, input, pkg.Name, metadata.Architecture)
 		// if the pkg contains an executable or there was an error checking the files, skip the pkg
 		// here, false positives are better then false negatives
 		if containsExecutable || err != nil {
@@ -96,7 +96,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 }
 
 // pkgContainsExecutable opens a pkg related .list file and check if at least one of the listed file IsInterestingExecutable
-func pkgContainsExecutable(input *annotator.ScanInput, pkgName, pkgArchitecture string) (bool, error) {
+func pkgContainsExecutable(ctx context.Context, input *annotator.ScanInput, pkgName, pkgArchitecture string) (bool, error) {
 	listF, err := getListFile(input, pkgName, pkgArchitecture)
 	if err != nil {
 		return false, err
@@ -106,6 +106,10 @@ func pkgContainsExecutable(input *annotator.ScanInput, pkgName, pkgArchitecture 
 	s := bufio.NewScanner(listF)
 	errs := []error{}
 	for s.Scan() {
+		if err := ctx.Err(); err != nil {
+			return false, fmt.Errorf("%s halted at %q because of context error: %w", pkgName, input.ScanRoot.Path, err)
+		}
+
 		// Remove leading '/' since SCALIBR fs paths don't include that.
 		filePath := strings.TrimPrefix(s.Text(), "/")
 

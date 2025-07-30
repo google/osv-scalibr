@@ -16,10 +16,7 @@ package dpkg_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,6 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
+	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -34,53 +32,6 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/proto"
 )
-
-// Sets up the DPKG info directory based on the supplied filename->content map.
-// also create the provided files, making them binary if no extension is provides
-func setupDPKGInfo(t *testing.T, contents map[string]string) string {
-	t.Helper()
-
-	dir := t.TempDir()
-
-	infoDir := filepath.Join(dir, "var/lib/dpkg/info")
-	if err := os.MkdirAll(infoDir, 0777); err != nil {
-		t.Fatalf("error creating directory %q: %v", infoDir, err)
-	}
-
-	for name, content := range contents {
-		listPath := filepath.Join(infoDir, name)
-
-		listFile, err := os.Create(listPath)
-		if err != nil {
-			t.Fatalf("Error while creating file %q: %v", listPath, err)
-		}
-
-		for path := range strings.SplitSeq(content, "\n") {
-			path, isFolder := strings.CutSuffix(path, "/")
-
-			if _, err := listFile.WriteString(path + "\n"); err != nil {
-				t.Fatalf("Error writing creating file %q: %v", listPath, err)
-			}
-
-			fullPath := filepath.Join(dir, path)
-
-			if isFolder {
-				if err := os.Mkdir(fullPath, 0777); err != nil {
-					t.Fatalf("Error creating directory %q: %v", infoDir, err)
-				}
-				continue
-			}
-			perm := os.FileMode(0666)
-			if !strings.Contains(fullPath, ".") {
-				perm = 0755
-			}
-			if err := os.WriteFile(fullPath, []byte{}, perm); err != nil {
-				t.Fatalf("Error creating file %q: %v", fullPath, err)
-			}
-		}
-	}
-	return dir
-}
 
 func TestAnnotate(t *testing.T) {
 	if runtime.GOOS != "linux" {
@@ -196,7 +147,7 @@ func TestAnnotate(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			root := ""
 			if tt.infoContents != nil {
-				root = setupDPKGInfo(t, tt.infoContents)
+				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
 			if tt.ctx == nil {
 				tt.ctx = context.Background()
