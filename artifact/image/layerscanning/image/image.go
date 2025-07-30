@@ -50,16 +50,16 @@ const (
 	// since that is the maximum number of symlinks the os.Root API will handle. From the os.Root API,
 	// "8 is __POSIX_SYMLOOP_MAX (the minimum allowed value for SYMLOOP_MAX), and a common limit".
 	DefaultMaxSymlinkDepth = 6
-
-	dockerImageNameSeparator = ":"
-	tarFileNameSeparator     = "_"
-
 	// filePermission represents the permission bits for a file, which are minimal since files in the
 	// layer scanning use case are read-only.
 	filePermission = 0600
 	// dirPermission represents the permission bits for a directory, which are minimal since
 	// directories in the layer scanning use case are read-only.
 	dirPermission = 0700
+
+	dockerImageNameSeparator = ":"
+	tarFileNameSeparator     = "_"
+	tarFileExtension         = ".tar"
 )
 
 var (
@@ -192,17 +192,21 @@ func createTarBallFromImage(imageName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker client to untar image  %s: %w", imageName, err)
 	}
+
 	inputStream, err := dockerClient.ImageSave(context.Background(), []string{imageName})
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker stream to untar image %s: %w", imageName, err)
 	}
 	defer inputStream.Close()
-	tarFileName := strings.ReplaceAll(imageName, dockerImageNameSeparator, tarFileNameSeparator) + ".tar"
-	log.Infof("Tarfile  name is %s", tarFileName)
+
+	tarFileName := strings.ReplaceAll(imageName, dockerImageNameSeparator, tarFileNameSeparator) + tarFileExtension
+	log.Infof("Tarfile name is %s", tarFileName)
+
 	fileFd, err := os.CreateTemp("", tarFileName)
 	if err != nil {
 		return "", fmt.Errorf("unable to create file to untar image %s: %w", imageName, err)
 	}
+
 	_, err = io.Copy(fileFd, inputStream)
 	if err != nil {
 		fileFd.Close()
@@ -212,6 +216,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 		}
 		return "", fmt.Errorf("unable to write to tarfile for image %s: %w", imageName, err)
 	}
+
 	fileFd.Close()
 	return fileFd.Name(), nil
 }
@@ -343,12 +348,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		log.Warnf("%q failed to be removed through GC cleanup function: %v", file.Name(), err)
 	}, imageContentBlob)
 
-	// Add the root directory to each chain layer. If this is not done, then the virtual paths won't
-	// be rooted, and traversal in the virtual filesystem will be broken.
-	if err := addRootDirectoryToChainLayers(outputImage.chainLayers); err != nil {
-		return nil, handleImageError(outputImage, fmt.Errorf("failed to add root directory to chain layers: %w", err))
-	}
-
 	// Since the layers are in reverse order, the v1LayerIndex starts at the last layer and works
 	// its way to the first layer.
 	v1LayerIndex := len(v1Layers) - 1
@@ -399,22 +398,6 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 // ========================================================
 // Helper functions
 // ========================================================
-
-// addRootDirectoryToChainLayers adds the root ("/") directory to each chain layer.
-func addRootDirectoryToChainLayers(chainLayers []*chainLayer) error {
-	for _, chainLayer := range chainLayers {
-		err := chainLayer.fileNodeTree.Insert("/", &virtualFile{
-			virtualPath: "/",
-			isWhiteout:  false,
-			mode:        fs.ModeDir,
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to insert root node in path tree: %w", err)
-		}
-	}
-	return nil
-}
 
 // handleImageError cleans up the image and returns the provided error. The image is cleaned up
 // regardless of the error, as the image is in an invalid state if an error is returned.
