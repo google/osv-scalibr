@@ -14,7 +14,7 @@ See the
 - And more!
 
 This can be used as a library with a custom wrapper to perform scans on e.g.
-container images or remote hosts, or via the
+container images (only linux-based currently) or remote hosts, or via the
 [OSV-Scanner CLI](https://github.com/google/osv-scanner). It comes with built-in
 plugins for inventory extraction and vulnerability detection and it also allows
 users to run their custom plugins.
@@ -70,6 +70,10 @@ produced with `docker save my-image > my-image.tar`. Example:
 ```
 scalibr --result=result.textproto --image-tarball=my-image.tar
 ```
+
+Note: As mentioned previously only linux-based container images are supported
+currently. Follow issue [#953](https://github.com/google/osv-scalibr/issues/953)
+for tracking Windows image container scanning support.
 
 ### SPDX generation
 

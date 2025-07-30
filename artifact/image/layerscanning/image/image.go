@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package image provides functionality to scan a container image by layers for software
-// inventory.
+// Package image provides functionality to scan a linux container image by layers for software
+// inventory. Note that this package does not support Windows images as they are not as widely used
+// as linux images.
 package image
 
 import (
