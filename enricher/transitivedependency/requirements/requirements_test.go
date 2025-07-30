@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/transitivescanning/requirements"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor"
 	requirementsextractor "github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -122,7 +122,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
 				Metadata:  &requirementsextractor.Metadata{Requirement: "alice"},
-				Plugins:   []string{"python/requirements", "transitivescanning/requirements"},
+				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
 			},
 			{
 				Name:      "bob",
@@ -130,35 +130,35 @@ func TestEnricher_Enrich(t *testing.T) {
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
 				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
-				Plugins:   []string{"python/requirements", "transitivescanning/requirements"},
+				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
 			},
 			{
 				Name:      "chuck",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
-				Plugins:   []string{"transitivescanning/requirements"},
+				Plugins:   []string{"transitivedependency/requirements"},
 			},
 			{
 				Name:      "dave",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
-				Plugins:   []string{"transitivescanning/requirements"},
+				Plugins:   []string{"transitivedependency/requirements"},
 			},
 			{
 				Name:      "eve",
 				Version:   "1.5.0",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
-				Plugins:   []string{"transitivescanning/requirements"},
+				Plugins:   []string{"transitivedependency/requirements"},
 			},
 			{
 				Name:      "frank",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
 				Locations: []string{"testdata/requirements.txt"},
-				Plugins:   []string{"transitivescanning/requirements"},
+				Plugins:   []string{"transitivedependency/requirements"},
 			},
 			{
 				// Hash checking mode.
