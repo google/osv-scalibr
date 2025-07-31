@@ -105,11 +105,12 @@ func urlToPath(rawURL string) string {
 func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
 	file := ""
 	urlPath := urlToPath(url)
+	fmt.Println(urlPath)
 	if urlPath != "" && p.localRegistry != "" {
 		file = filepath.Join(p.localRegistry, urlPath)
-		if bs, err := os.ReadFile(file); err == nil {
+		if content, err := os.ReadFile(file); err == nil {
 			// We can still fetch the file from upstream if error is not nil.
-			return bs, nil
+			return content, nil
 		}
 	}
 

@@ -16,6 +16,9 @@ package datasource_test
 
 import (
 	"context"
+	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,11 +27,7 @@ import (
 	"github.com/google/osv-scalibr/clients/internal/pypi"
 )
 
-func TestGetVersions(t *testing.T) {
-	srv := clienttest.NewMockHTTPServer(t)
-	client := datasource.NewPyPIRegistryAPIClient(srv.URL, "")
-	srv.SetResponse(t, "/beautifulsoup4/", []byte(`
-	{
+const jsonResp = `{
 		"files": [
 		  {
 			"core-metadata": false,
@@ -133,8 +132,12 @@ func TestGetVersions(t *testing.T) {
 		  "4.13.0b2",
 		  "4.14"
 		]
-  }
-	`))
+}`
+
+func TestGetVersions(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	client := datasource.NewPyPIRegistryAPIClient(srv.URL, "")
+	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
 	got, err := client.GetIndex(context.Background(), "beautifulsoup4")
 	if err != nil {
@@ -182,5 +185,36 @@ func TestGetVersions(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("GetIndex(%s) mismatch (-want +got):\n%s", "beautifulsoup4", diff)
+	}
+}
+
+func TestPyPILocalRegistry(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "pypi")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	srv := clienttest.NewMockHTTPServer(t)
+	client := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir)
+	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
+
+	_, err = client.GetIndex(context.Background(), "beautifulsoup4")
+	if err != nil {
+		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
+	}
+
+	// Check that the JSON response is stored locally.
+	parsed, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatalf("failed to parse URL %s: %v", srv.URL, err)
+	}
+	filePath := filepath.Join(tempDir, parsed.Host, "beautifulsoup4")
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(content) != jsonResp {
+		t.Errorf("unexpected file content: got %s, want %s", string(content), jsonResp)
 	}
 }
