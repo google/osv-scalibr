@@ -21,30 +21,25 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-// knownEcosystems returns a list of ecosystems that `lockfile` supports
-// automatically inferring an extractor for based on a file path.
-func knownEcosystems() []string {
-	return []string{
-		"npm",
-		"NuGet",
-		"crates.io",
-		"RubyGems",
-		"Packagist",
-		"Go",
-		"Hex",
-		"Maven",
-		"PyPI",
-		"Pub",
-		"ConanCenter",
-		"CRAN",
-	}
+var ecosystems = []string{
+	"Alpine",
+	"ConanCenter",
+	"CRAN",
+	"crates.io",
+	"Debian",
+	"Go",
+	"Hex",
+	"Maven",
+	"npm",
+	"NuGet",
+	"Packagist",
+	"Pub",
+	"PyPI",
+	"RubyGems",
+	"Ubuntu",
 }
 
 func TestParse(t *testing.T) {
-	ecosystems := knownEcosystems()
-
-	ecosystems = append(ecosystems, "Alpine", "Debian", "Ubuntu")
-
 	for _, ecosystem := range ecosystems {
 		_, err := semantic.Parse("", ecosystem)
 
@@ -72,10 +67,6 @@ func TestMustParse(t *testing.T) {
 			t.Errorf("unexpected panic - '%s'", r)
 		}
 	}()
-
-	ecosystems := knownEcosystems()
-
-	ecosystems = append(ecosystems, "Alpine", "Debian", "Ubuntu")
 
 	for _, ecosystem := range ecosystems {
 		semantic.MustParse("", ecosystem)
