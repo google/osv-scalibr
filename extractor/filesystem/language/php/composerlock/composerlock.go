@@ -74,6 +74,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
 	purlType := purl.TypeComposer
 
+	// the presence of extra.drupal means the package probably came from
+	// the Drupal composer repository, rather than packagist.org
 	if _, ok := pkg.Extra["drupal"]; ok {
 		purlType = purl.TypeDrupal
 	}
