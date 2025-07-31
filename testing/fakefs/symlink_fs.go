@@ -45,4 +45,4 @@ func (fs *MockEvalSymlinksFS) EvalSymlink(name string) (string, error) {
 
 // The following should be true, but can't be uncommented because it would cause an import cycle
 // (image_test.go is in the package image, rather than image_test because it uses the private chainLayer field.)
-//var _ image.EvalSymlinksFS = &MockEvalSymlinksFS{}
+// var _ image.EvalSymlinksFS = &MockEvalSymlinksFS{}
