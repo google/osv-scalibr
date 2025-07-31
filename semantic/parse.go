@@ -45,6 +45,10 @@ func Parse(str string, ecosystem string) (Version, error) {
 	switch ecosystem {
 	case "Alpine":
 		return parseAlpineVersion(str)
+	case "Bitnami":
+		return parseSemverVersion(str), nil
+	case "Chainguard":
+		return parseAlpineVersion(str)
 	case "ConanCenter":
 		return parseSemverVersion(str), nil
 	case "CRAN":
@@ -73,8 +77,12 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parseRedHatVersion(str), nil
 	case "RubyGems":
 		return parseRubyGemsVersion(str), nil
+	case "SwiftURL":
+		return parseSemverVersion(str), nil
 	case "Ubuntu":
 		return parseDebianVersion(str)
+	case "Wolfi":
+		return parseAlpineVersion(str)
 	}
 
 	return nil, fmt.Errorf("%w %s", ErrUnsupportedEcosystem, ecosystem)
