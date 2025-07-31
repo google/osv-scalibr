@@ -37,6 +37,7 @@ func knownEcosystems() []string {
 		"Pub",
 		"ConanCenter",
 		"CRAN",
+		"Drupal",
 	}
 }
 
