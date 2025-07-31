@@ -38,6 +38,7 @@ import (
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
 	fen "github.com/google/osv-scalibr/testing/fakeenricher"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/google/osv-scalibr/version"
 	"github.com/mohae/deepcopy"
 )
 
@@ -154,7 +155,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
@@ -182,7 +183,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "multiple non-identical advisories with ID &{ CVE-1234}",
@@ -203,7 +204,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
@@ -227,7 +228,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: detFailure},
@@ -249,7 +250,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: tmpRoot,
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status:  success,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector2", Version: 2, Status: success},
@@ -271,7 +272,7 @@ func TestScan(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{},
 			},
 			want: &scalibr.ScanResult{
-				Version: scalibr.ScannerVersion,
+				Version: version.ScannerVersion,
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "no scan root specified",

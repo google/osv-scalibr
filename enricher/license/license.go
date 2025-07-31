@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	scalibrversion "github.com/google/osv-scalibr/version"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,9 +85,7 @@ func (Enricher) RequiredPlugins() []string {
 // Enrich adds license data to all the packages using deps.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	if e.client == nil {
-		// TODO: cannot use scalibr.ScannerVersion in the user agent due to an import cycle.
-		// To fix move the ScannerVersion inside a `version package`
-		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr")
+		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr/"+scalibrversion.ScannerVersion)
 		if err != nil {
 			return fmt.Errorf("cannot connect with deps.dev %w", err)
 		}
@@ -109,7 +108,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 	licenses, err := e.makeVersionRequest(ctx, queries)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get version information %w", err)
 	}
 
 	for i, license := range licenses {

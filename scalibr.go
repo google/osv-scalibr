@@ -43,6 +43,7 @@ import (
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -369,7 +370,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 	r := &ScanResult{
 		StartTime:    o.StartTime,
 		EndTime:      o.EndTime,
-		Version:      ScannerVersion,
+		Version:      version.ScannerVersion,
 		Status:       status,
 		PluginStatus: o.PluginStatus,
 		Inventory:    o.Inventory,
