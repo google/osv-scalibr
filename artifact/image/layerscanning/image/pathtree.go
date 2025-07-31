@@ -44,12 +44,19 @@ type Node struct {
 
 // NewNode creates a new node with the given value.
 func NewNode(maxSymlinkDepth int) *RootNode {
-	return &RootNode{
+	root := &RootNode{
 		Node: Node{
 			children: make(map[string]*Node),
 		},
 		MaxSymlinkDepth: maxSymlinkDepth,
 	}
+
+	// Initialize the virtual file of the root node.
+	if err := root.Insert("/", &virtualFile{virtualPath: "/", mode: fs.ModeDir}); err != nil {
+		// This should not happen unless there is a bug with the Insert method.
+		log.Warnf("Failed to insert root node: %v", err)
+	}
+	return root
 }
 
 // cleanPath returns a path for use in the tree. An error is returned if path is not formatted as
@@ -110,7 +117,7 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 func (rootNode *RootNode) getNode(rawNodePath string, resolveFinalSymlink bool, depth int) (*Node, error) {
 	nodePath, err := cleanPath(rawNodePath)
 	if err != nil {
-		log.Warnf("cleanPath(%q) error: %v", nodePath, err)
+		log.Warnf("CleanPath(%q) error: %v", nodePath, err)
 		return nil, err
 	}
 

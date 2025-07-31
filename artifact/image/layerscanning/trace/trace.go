@@ -62,28 +62,7 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		return
 	}
 
-	chainLayerDetailsList := []*extractor.LayerDetails{}
-
-	// Create list of layer details struct to be referenced by inventory.
-	for i, chainLayer := range chainLayers {
-		// Get the string representation of the diffID, and remove the algorithm prefix if it exists.
-		// TODO: b/406537132 - Determine if diffIDs should be validated via the Validate function in
-		// golang/opencontainers/digest/algorithm.go. Just getting the string representation of the
-		// diffID acts as failing open, but perhaps we should consider validating the diffID and logging
-		// a warning if it isn't.
-		diffID := chainLayer.Layer().DiffID().String()
-		if i := strings.Index(diffID, ":"); i >= 0 {
-			diffID = diffID[i+1:]
-		}
-
-		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
-			Index:       i,
-			DiffID:      diffID,
-			ChainID:     chainLayer.ChainID().String(),
-			Command:     chainLayer.Layer().Command(),
-			InBaseImage: false,
-		})
-	}
+	chainLayerDetailsList := extractLayerDetailsFromChainLayers(chainLayers)
 
 	// Helper function to update the extractor config.
 	updateExtractorConfig := func(pathsToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
@@ -233,6 +212,32 @@ func getLayerFSFromChainLayer(chainLayer scalibrimage.ChainLayer) (scalibrfs.FS,
 	}
 
 	return fs, nil
+}
+
+func extractLayerDetailsFromChainLayers(chainLayers []scalibrimage.ChainLayer) []*extractor.LayerDetails {
+	chainLayerDetailsList := []*extractor.LayerDetails{}
+
+	// Create list of layer details struct to be referenced by inventory.
+	for i, chainLayer := range chainLayers {
+		// Get the string representation of the diffID, and remove the algorithm prefix if it exists.
+		// TODO: b/406537132 - Determine if diffIDs should be validated via the Validate function in
+		// golang/opencontainers/digest/algorithm.go. Just getting the string representation of the
+		// diffID acts as failing open, but perhaps we should consider validating the diffID and logging
+		// a warning if it isn't.
+		diffID := chainLayer.Layer().DiffID().String()
+		if i := strings.Index(diffID, ":"); i >= 0 {
+			diffID = diffID[i+1:]
+		}
+
+		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
+			Index:       i,
+			DiffID:      diffID,
+			ChainID:     chainLayer.ChainID().String(),
+			Command:     chainLayer.Layer().Command(),
+			InBaseImage: false,
+		})
+	}
+	return chainLayerDetailsList
 }
 
 // filesExistInLayer checks if any of the provided files are present in the underlying layer of the
