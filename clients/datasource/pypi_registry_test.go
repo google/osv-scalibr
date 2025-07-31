@@ -204,7 +204,7 @@ func TestPyPILocalRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse URL %s: %v", srv.URL, err)
 	}
-	filePath := filepath.Join(tempDir, parsed.Host, "beautifulsoup4")
+	filePath := filepath.Join(tempDir, parsed.Hostname(), "beautifulsoup4")
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)

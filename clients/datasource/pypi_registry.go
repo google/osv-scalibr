@@ -99,13 +99,12 @@ func urlToPath(rawURL string) string {
 		log.Warnf("Error parsing URL %s: %s", rawURL, err)
 		return ""
 	}
-	return path.Join(parsedURL.Host, parsedURL.Path)
+	return path.Join(parsedURL.Hostname(), parsedURL.Path)
 }
 
 func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
 	file := ""
 	urlPath := urlToPath(url)
-	fmt.Println(urlPath)
 	if urlPath != "" && p.localRegistry != "" {
 		file = filepath.Join(p.localRegistry, urlPath)
 		if content, err := os.ReadFile(file); err == nil {
