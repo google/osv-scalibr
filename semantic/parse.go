@@ -47,6 +47,8 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parseAlpineVersion(str)
 	case "Bitnami":
 		return parseSemverVersion(str), nil
+	case "Bioconductor":
+		return parseSemverVersion(str), nil
 	case "Chainguard":
 		return parseAlpineVersion(str)
 	case "ConanCenter":
@@ -63,6 +65,8 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parseSemverVersion(str), nil
 	case "Maven":
 		return parseMavenVersion(str), nil
+	case "MinimOS":
+		return parseAlpineVersion(str)
 	case "npm":
 		return parseSemverVersion(str), nil
 	case "NuGet":
