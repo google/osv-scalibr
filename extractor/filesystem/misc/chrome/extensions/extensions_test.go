@@ -112,7 +112,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/nolocaleoekpmoecnnnilnnbdlolhkhi/1.89.1/manifest.json",
 			},
-			WantErr: extracttest.ContainsErrStr{Str: "could not extract locale info from"},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract locale info"},
 		},
 		{
 			Name: "locale specified",

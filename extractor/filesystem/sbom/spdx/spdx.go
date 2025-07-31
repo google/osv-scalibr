@@ -17,7 +17,7 @@ package spdx
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"path/filepath"
 	"strings"
@@ -79,7 +79,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var parseSbom, isSupported = findExtractor(input.Path)
 
 	if !isSupported {
-		return inventory.Inventory{}, fmt.Errorf("sbom/spdx extractor: Invalid file format %s, only JSON, YAML, RDF, and TagValue are supported", input.Path)
+		return inventory.Inventory{}, errors.New("sbom/spdx extractor: Invalid file format, only JSON, YAML, RDF, and TagValue are supported")
 	}
 
 	spdxDoc, err := parseSbom(input.Reader)

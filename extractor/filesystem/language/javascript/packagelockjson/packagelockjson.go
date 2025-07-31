@@ -307,7 +307,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		return nil, fmt.Errorf("could not extract: %w", err)
 	}
 
 	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))
