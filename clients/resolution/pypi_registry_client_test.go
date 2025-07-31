@@ -152,7 +152,7 @@ func TestVersions(t *testing.T) {
 		System: resolve.PyPI,
 		Name:   "beautifulsoup4",
 	}
-	client := resolution.NewPyPIRegistryClient(srv.URL)
+	client := resolution.NewPyPIRegistryClient(srv.URL, "")
 	got, err := client.Versions(context.Background(), pk)
 	if err != nil {
 		t.Fatalf("failed to get versions %v: %v", pk, err)
@@ -349,7 +349,7 @@ func TestRequirements(t *testing.T) {
 		Version:     "4.12.3",
 		VersionType: resolve.Concrete,
 	}
-	client := resolution.NewPyPIRegistryClient(srv.URL)
+	client := resolution.NewPyPIRegistryClient(srv.URL, "")
 	got, err := client.Requirements(context.Background(), vk)
 	if err != nil {
 		t.Fatalf("failed to get requirements %v: %v", vk, err)
