@@ -89,7 +89,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-yaml.txt",
 			},
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 			WantPackages: nil,
 		},
 		{

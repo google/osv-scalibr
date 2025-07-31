@@ -110,7 +110,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	secrets, err := e.e.Detect(ctx, input.Reader)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("unable to scan %q for secrets: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("unable to scan for secrets: %w", err)
 	}
 	i := inventory.Inventory{}
 	for _, s := range secrets {

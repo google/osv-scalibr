@@ -191,7 +191,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInput, depth int, openedBytes int64) ([]*extractor.Package, int64, error) {
 	// Return early if any max/min thresholds are hit.
 	if depth > e.maxZipDepth {
-		return nil, openedBytes, fmt.Errorf("%s reached max zip depth %d at %q", e.Name(), depth, input.Path)
+		return nil, openedBytes, fmt.Errorf("%s reached max zip depth %d", e.Name(), depth)
 	}
 	if oBytes := openedBytes + input.Info.Size(); oBytes > e.maxOpenedBytes {
 		return nil, oBytes, fmt.Errorf(
@@ -211,7 +211,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		log.Debugf("Reader of %s does not implement ReaderAt. Fall back to read to memory.", input.Path)
 		b, err := io.ReadAll(input.Reader)
 		if err != nil {
-			return nil, openedBytes, fmt.Errorf("%s failed to read file at %q: %w", e.Name(), input.Path, err)
+			return nil, openedBytes, fmt.Errorf("%s failed to read file: %w", e.Name(), err)
 		}
 		openedBytes += int64(len(b))
 		// Check size again in case input.Info.Size() was not accurate. Return early if hit max.
@@ -241,7 +241,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	// Unzip Jar
 	zipReader, err := zip.NewReader(r, l)
 	if err != nil {
-		return nil, openedBytes, fmt.Errorf("%s invalid archive at %q: %w", e.Name(), input.Path, err)
+		return nil, openedBytes, fmt.Errorf("%s invalid archive: %w", e.Name(), err)
 	}
 
 	log.Debugf("extract jar archive: %s", input.Path)
@@ -256,11 +256,11 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		// Return if canceled or exceeding deadline.
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return pkgs, openedBytes, fmt.Errorf("%s halted at %q because context deadline exceeded", e.Name(), input.Path)
+			return pkgs, openedBytes, fmt.Errorf("%s halted due to context deadline exceeded", e.Name())
 		}
 		if errors.Is(ctx.Err(), context.Canceled) {
 			// Ignore local findings from pom and manifest, as they are incomplete.
-			return pkgs, openedBytes, fmt.Errorf("%s halted at %q because context was canceled", e.Name(), input.Path)
+			return pkgs, openedBytes, fmt.Errorf("%s halted due to context was canceled", e.Name())
 		}
 
 		path := filepath.Join(input.Path, file.Name)

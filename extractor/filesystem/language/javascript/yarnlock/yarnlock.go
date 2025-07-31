@@ -207,7 +207,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	packageGroups, err := groupYarnPackageDescriptions(ctx, scanner)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error while scanning %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error while scanning: %w", err)
 	}
 
 	packages := make([]*extractor.Package, 0, len(packageGroups))

@@ -91,7 +91,7 @@ func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) 
 	}
 
 	if err := scanner.Err(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error while scanning %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error while scanning: %w", err)
 	}
 
 	return inventory.Inventory{Packages: packages}, nil

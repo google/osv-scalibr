@@ -84,13 +84,13 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var exts []*extension
 	if err := json.NewDecoder(input.Reader).Decode(&exts); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	pkgs := make([]*extractor.Package, 0, len(exts))
 	for _, ext := range exts {
 		if err := ext.validate(); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("bad format in %s: %w", input.Path, err)
+			return inventory.Inventory{}, fmt.Errorf("bad format: %w", err)
 		}
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      ext.Identifier.ID,

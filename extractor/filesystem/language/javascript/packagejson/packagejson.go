@@ -144,7 +144,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	p, err := parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
-		return inventory.Inventory{}, fmt.Errorf("packagejson.parse(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
 	}
 
 	pkgs := []*extractor.Package{}

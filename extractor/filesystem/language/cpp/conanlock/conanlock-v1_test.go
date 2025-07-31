@@ -36,7 +36,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 				Path: "testdata/not-json.txt",
 			},
 			WantPackages: nil,
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "no packages",

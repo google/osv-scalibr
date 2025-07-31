@@ -86,7 +86,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/not-pom.txt",
 			},
 			WantPackages: nil,
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "invalid syntax",
@@ -94,7 +94,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/invalid-syntax.xml",
 			},
 			WantPackages: nil,
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "no packages",

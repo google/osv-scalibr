@@ -183,7 +183,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	for eof := false; !eof; {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return pkgs, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+			return pkgs, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
 		h, err := rd.ReadMIMEHeader()

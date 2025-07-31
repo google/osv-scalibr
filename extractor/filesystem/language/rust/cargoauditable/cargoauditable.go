@@ -141,7 +141,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			return inventory.Inventory{}, nil
 		}
 		log.Debugf("error getting dependency information from binary (%s) for extraction: %v", input.Path, err)
-		return inventory.Inventory{}, fmt.Errorf("rustaudit.GetDependencyInfo(%q): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("rustaudit.GetDependencyInfo: %w", err)
 	}
 
 	pkgs := []*extractor.Package{}

@@ -181,7 +181,7 @@ var ErrSizeNotSet = errors.New("input.Info is nil, but should have Size set")
 func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("newReaderAt(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("newReaderAt: %w", err)
 	}
 
 	if input.Info == nil {
@@ -190,7 +190,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 	s := input.Info.Size()
 	zr, err := zip.NewReader(r, s)
 	if err != nil {
-		return nil, fmt.Errorf("zip.NewReader(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("zip.NewReader: %w", err)
 	}
 	pkgs := []*extractor.Package{}
 	for _, f := range zr.File {
@@ -213,7 +213,7 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*extractor.Package, error) {
 	r, err := f.Open()
 	if err != nil {
-		return nil, fmt.Errorf("on %q: Open(%s): %w", input.Path, f.Name, err)
+		return nil, fmt.Errorf("f.Open(%s): %w", f.Name, err)
 	}
 	defer r.Close()
 
@@ -229,7 +229,7 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
 	p, err := parse(r)
 	if err != nil {
-		return nil, fmt.Errorf("wheelegg.parse(%s): %w", path, err)
+		return nil, fmt.Errorf("wheelegg.parse: %w", err)
 	}
 
 	p.Locations = []string{path}

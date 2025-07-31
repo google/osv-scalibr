@@ -18,6 +18,7 @@ package gemfilelock
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -75,7 +76,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 	scanner := bufio.NewScanner(input.Reader)
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil {
-			return nil, fmt.Errorf("error while scanning %s: %w", input.Path, err)
+			return nil, fmt.Errorf("error while scanning: %w", err)
 		}
 		line := scanner.Text()
 		if len(line) == 0 {
@@ -91,13 +92,13 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 		} else if len(m[0]) == 4 {
 			// Indented with 4 spaces: This line contains a top-level spec for the current section.
 			if currentSection == nil {
-				return nil, fmt.Errorf("%s: invalid lockfile: specs entry before a section declaration", input.Path)
+				return nil, errors.New("invalid lockfile: specs entry before a section declaration")
 			}
 			currentSection.specs = append(currentSection.specs, strings.TrimPrefix(line, "    "))
 		} else if strings.HasPrefix(line, "  revision: ") {
 			// The commit for the given section. Always stored at an indentation level of 2.
 			if currentSection == nil {
-				return nil, fmt.Errorf("%s: invalid lockfile: revision entry before a section declaration", input.Path)
+				return nil, errors.New("invalid lockfile: revision entry before a section declaration")
 			}
 			currentSection.revision = strings.TrimPrefix(line, "  revision: ")
 		}
@@ -114,7 +115,7 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	sections, err := parseLockfileSections(input)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error parsing %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("error parsing: %w", err)
 	}
 
 	pkgs := []*extractor.Package{}

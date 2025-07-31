@@ -146,7 +146,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	for scanner.Scan() {
 		if err := ctx.Err(); err != nil {
-			return nil, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+			return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
 		record := scanner.Record()
@@ -184,7 +184,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error while parsing apk status file %q: %w", input.Path, err)
+		return nil, fmt.Errorf("error while parsing apk status file: %w", err)
 	}
 
 	return packages, nil

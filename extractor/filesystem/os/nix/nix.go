@@ -99,7 +99,7 @@ var packageStoreUnstableRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Check for cancellation or timeout.
 	if err := ctx.Err(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 	}
 
 	m, err := osrelease.GetOSRelease(input.FS)

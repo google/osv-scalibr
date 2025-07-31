@@ -85,7 +85,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/not-toml.txt",
 			},
 			WantPackages: nil,
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "Invalid dependency toml",
@@ -93,7 +93,7 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/invalid-dependency.toml",
 			},
 			WantPackages: nil,
-			WantErr:      extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "no dependencies",

@@ -108,7 +108,7 @@ func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 	// Empty JDK and ActivationOS indicates merging the default profiles.
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {

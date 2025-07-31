@@ -77,7 +77,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-go-mod.mod",
 			},
-			WantErr: extracttest.ContainsErrStr{Str: "could not extract from"},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
 			Name: "no packages",

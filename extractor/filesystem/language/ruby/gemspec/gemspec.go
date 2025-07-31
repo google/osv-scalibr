@@ -130,7 +130,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	p, err := extract(input.Path, input.Reader)
 	e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("gemspec.parse(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("gemspec.parse: %w", err)
 	}
 	if p == nil {
 		return inventory.Inventory{}, nil
