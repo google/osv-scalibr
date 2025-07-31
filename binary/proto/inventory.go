@@ -17,6 +17,7 @@ package proto
 import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -25,6 +26,10 @@ import (
 
 // InventoryToProto converts a Inventory go struct into the equivalent proto.
 func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
+	if inv == nil {
+		return nil, nil
+	}
+
 	packages := make([]*spb.Package, 0, len(inv.Packages))
 	for _, p := range inv.Packages {
 		p := PackageToProto(p)
@@ -62,14 +67,41 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 
 // InventoryToStruct converts a ScanResult proto into the equivalent go struct.
 func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
+	if invProto == nil {
+		return nil
+	}
+
 	var packages []*extractor.Package
 	for _, pProto := range invProto.GetPackages() {
 		p := PackageToStruct(pProto)
 		packages = append(packages, p)
 	}
-	// TODO - b/421456154: implement conversion or remaining types.
+
+	// TODO(b/400910349): Add PackageVulns to the struct too.
+
+	var genericFindings []*inventory.GenericFinding
+	for _, fProto := range invProto.GetGenericFindings() {
+		f, err := GenericFindingToStruct(fProto)
+		if err != nil {
+			log.Errorf("Failed to convert GenericFinding to struct: %v", err)
+			continue
+		}
+		genericFindings = append(genericFindings, f)
+	}
+
+	var secrets []*inventory.Secret
+	for _, sProto := range invProto.GetSecrets() {
+		s, err := SecretToStruct(sProto)
+		if err != nil {
+			log.Errorf("Failed to convert Secret to struct: %v", err)
+			continue
+		}
+		secrets = append(secrets, s)
+	}
 
 	return &inventory.Inventory{
-		Packages: packages,
+		Packages:        packages,
+		GenericFindings: genericFindings,
+		Secrets:         secrets,
 	}
 }
