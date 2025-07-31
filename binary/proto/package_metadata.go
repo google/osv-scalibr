@@ -25,6 +25,9 @@ import (
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -68,12 +71,22 @@ var (
 		reflect.TypeOf(&spb.Package_PortageMetadata{}): func(p *spb.Package) any {
 			return portagemeta.ToStruct(p.GetPortageMetadata())
 		},
+		reflect.TypeOf(&spb.Package_FlatpakMetadata{}): func(p *spb.Package) any {
+			return flatpakmeta.ToStruct(p.GetFlatpakMetadata())
+		},
+		reflect.TypeOf(&spb.Package_NixMetadata{}): func(p *spb.Package) any {
+			return nixmeta.ToStruct(p.GetNixMetadata())
+		},
+		reflect.TypeOf(&spb.Package_MacAppsMetadata{}): func(p *spb.Package) any {
+			return macapps.ToStruct(p.GetMacAppsMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
 		(*wheelegg.PythonPackageMetadata)(nil),
 		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
 		(*depsjson.Metadata)(nil),
+		(*netports.Metadata)(nil),
 		(*apkmeta.Metadata)(nil),
 		(*dpkgmeta.Metadata)(nil),
 		(*snapmeta.Metadata)(nil),
@@ -81,5 +94,8 @@ var (
 		(*cosmeta.Metadata)(nil),
 		(*pacmanmeta.Metadata)(nil),
 		(*portagemeta.Metadata)(nil),
+		(*flatpakmeta.Metadata)(nil),
+		(*nixmeta.Metadata)(nil),
+		(*macapps.Metadata)(nil),
 	}
 )
