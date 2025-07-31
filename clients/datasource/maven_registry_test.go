@@ -251,12 +251,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 }
 
 func TestMavenLocalRegistry(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "maven")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
+	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
@@ -268,7 +263,7 @@ func TestMavenLocalRegistry(t *testing.T) {
 	</project>`)
 	srv.SetResponse(t, path, resp)
 
-	_, err = client.GetProject(context.Background(), "org.example", "x.y.z", "1.0.0")
+	_, err := client.GetProject(context.Background(), "org.example", "x.y.z", "1.0.0")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
 	}

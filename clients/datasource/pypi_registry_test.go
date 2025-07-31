@@ -189,17 +189,12 @@ func TestGetVersions(t *testing.T) {
 }
 
 func TestPyPILocalRegistry(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "pypi")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
+	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir)
 	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
-	_, err = client.GetIndex(context.Background(), "beautifulsoup4")
+	_, err := client.GetIndex(context.Background(), "beautifulsoup4")
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}
