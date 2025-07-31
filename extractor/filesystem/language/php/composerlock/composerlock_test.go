@@ -198,6 +198,62 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "drupal_packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/drupal-packages.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "drupal/core",
+					Version:   "10.4.5",
+					PURLType:  purl.TypeComposer,
+					Locations: []string{"testdata/drupal-packages.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "5247dbaa65b42b601058555f4a8b2bd541f5611f",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "drupal/tfa",
+					Version:   "2.0.0-alpha4",
+					PURLType:  purl.TypeComposer,
+					Locations: []string{"testdata/drupal-packages.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "drupal/field_time",
+					Version:   "1.0.0-beta5",
+					PURLType:  purl.TypeComposer,
+					Locations: []string{"testdata/drupal-packages.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:      "theseer/tokenizer",
+					Version:   "1.1.3",
+					PURLType:  purl.TypeComposer,
+					Locations: []string{"testdata/drupal-packages.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

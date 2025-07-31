@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -69,6 +70,28 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "composer.lock"
 }
 
+func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
+	commit := pkg.Dist.Reference
+
+	// a dot means the reference is likely a tag, rather than a commit
+	if strings.Contains(commit, ".") {
+		commit = ""
+	}
+
+	return &extractor.Package{
+		Name:      pkg.Name,
+		Version:   pkg.Version,
+		PURLType:  purl.TypeComposer,
+		Locations: []string{input.Path},
+		SourceCode: &extractor.SourceCodeIdentifier{
+			Commit: commit,
+		},
+		Metadata: osv.DepGroupMetadata{
+			DepGroupVals: groups,
+		},
+	}
+}
+
 // Extract extracts packages from a composer.lock file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *composerLock
@@ -86,34 +109,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		uint64(len(parsedLockfile.Packages))+uint64(len(parsedLockfile.PackagesDev)),
 	)
 
-	for _, composerPackage := range parsedLockfile.Packages {
-		packages = append(packages, &extractor.Package{
-			Name:      composerPackage.Name,
-			Version:   composerPackage.Version,
-			PURLType:  purl.TypeComposer,
-			Locations: []string{input.Path},
-			SourceCode: &extractor.SourceCodeIdentifier{
-				Commit: composerPackage.Dist.Reference,
-			},
-			Metadata: osv.DepGroupMetadata{
-				DepGroupVals: []string{},
-			},
-		})
+	for _, pkg := range parsedLockfile.Packages {
+		packages = append(packages, buildPackage(input, pkg, []string{}))
 	}
 
-	for _, composerPackage := range parsedLockfile.PackagesDev {
-		packages = append(packages, &extractor.Package{
-			Name:      composerPackage.Name,
-			Version:   composerPackage.Version,
-			PURLType:  purl.TypeComposer,
-			Locations: []string{input.Path},
-			SourceCode: &extractor.SourceCodeIdentifier{
-				Commit: composerPackage.Dist.Reference,
-			},
-			Metadata: osv.DepGroupMetadata{
-				DepGroupVals: []string{"dev"},
-			},
-		})
+	for _, pkg := range parsedLockfile.PackagesDev {
+		packages = append(packages, buildPackage(input, pkg, []string{"dev"}))
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
