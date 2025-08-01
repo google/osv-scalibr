@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/resolution/requirements"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor"
 	requirementsextractor "github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	scalibrfs "github.com/google/osv-scalibr/fs"

@@ -38,7 +38,7 @@ import (
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
-	"github.com/google/osv-scalibr/enricher/resolution/requirements"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	scalibrfs "github.com/google/osv-scalibr/fs"
