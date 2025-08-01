@@ -217,12 +217,12 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 // This method is for testing, use Run() to avoid confusion with scanRoot vs fsys.
 func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inventory, []*plugin.Status, error) {
 	start := time.Now()
-	if wc == nil || wc.fs == nil {
+	if wc == nil || wc.scanRoot.FS == nil {
 		return inventory.Inventory{}, nil, errors.New("walk context is nil")
 	}
 
 	var err error
-	log.Infof("Starting filesystem walk for root: %v", wc.scanRoot)
+	log.Infof("Starting filesystem walk for root: %v", wc.scanRoot.Path)
 	if len(wc.pathsToExtract) > 0 {
 		err = walkIndividualPaths(wc)
 	} else {
@@ -240,7 +240,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inve
 			}
 		}()
 
-		err = internal.WalkDirUnsorted(wc.fs, ".", wc.handleFile, wc.postHandleFile)
+		err = internal.WalkDirUnsorted(wc.scanRoot.FS, ".", wc.handleFile, wc.postHandleFile)
 
 		close(quit)
 	}
@@ -258,8 +258,7 @@ type walkContext struct {
 	ctx               context.Context
 	stats             stats.Collector
 	extractors        []Extractor
-	fs                scalibrfs.FS
-	scanRoot          string
+	scanRoot          *scalibrfs.ScanRoot
 	pathsToExtract    []string
 	ignoreSubDirs     bool
 	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
@@ -297,7 +296,7 @@ type walkContext struct {
 func walkIndividualPaths(wc *walkContext) error {
 	for _, p := range wc.pathsToExtract {
 		p := filepath.ToSlash(p)
-		info, err := fs.Stat(wc.fs, p)
+		info, err := fs.Stat(wc.scanRoot.FS, p)
 		if err != nil {
 			err = wc.handleFile(p, nil, err)
 		} else {
@@ -305,13 +304,13 @@ func walkIndividualPaths(wc *walkContext) error {
 				// Recursively scan the contents of the directory.
 				if wc.useGitignore {
 					// Parse parent dir .gitignore files up to the scan root.
-					gitignores, err := internal.ParseParentGitignores(wc.fs, p)
+					gitignores, err := internal.ParseParentGitignores(wc.scanRoot.FS, p)
 					if err != nil {
 						return err
 					}
 					wc.gitignores = gitignores
 				}
-				err = internal.WalkDirUnsorted(wc.fs, p, wc.handleFile, wc.postHandleFile)
+				err = internal.WalkDirUnsorted(wc.scanRoot.FS, p, wc.handleFile, wc.postHandleFile)
 				wc.gitignores = nil
 				if err != nil {
 					return err
@@ -361,7 +360,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			gitignores := internal.EmptyGitignore()
 			var err error
 			if !wc.shouldSkipDir(path) {
-				gitignores, err = internal.ParseDirForGitignore(wc.fs, path)
+				gitignores, err = internal.ParseDirForGitignore(wc.scanRoot.FS, path)
 				if err != nil {
 					return err
 				}
@@ -471,7 +470,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	var info fs.FileInfo
 	var err error
 	if !isDir {
-		rc, err = wc.fs.Open(path)
+		rc, err = wc.scanRoot.FS.Open(path)
 		if err != nil {
 			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
 			return
@@ -489,15 +488,15 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 
 	start := time.Now()
 	results, err := ex.Extract(wc.ctx, &ScanInput{
-		FS:     wc.fs,
+		FS:     wc.scanRoot.FS,
 		Path:   path,
-		Root:   wc.scanRoot,
+		Root:   wc.scanRoot.Path,
 		Info:   info,
 		Reader: rc,
 	})
 	wc.stats.AfterExtractorRun(ex.Name(), &stats.AfterExtractorStats{
 		Path:      path,
-		Root:      wc.scanRoot,
+		Root:      wc.scanRoot.Path,
 		Runtime:   time.Since(start),
 		Inventory: &results,
 		Error:     err,
@@ -511,8 +510,9 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results.Packages {
 			r.Plugins = append(r.Plugins, ex.Name())
+			r.ScanRoot = wc.scanRoot
 			if wc.storeAbsolutePath {
-				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
+				r.Locations = expandAbsolutePath(wc.scanRoot.Path, r.Locations)
 			}
 		}
 		wc.inventory.Append(results)
@@ -522,8 +522,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 // UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
 // currentRoot is expected to be an absolute path.
 func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
-	wc.scanRoot = absRoot
-	wc.fs = fs
+	wc.scanRoot = &scalibrfs.ScanRoot{FS: fs, Path: absRoot}
 	wc.fileAPI.fs = fs
 	return nil
 }

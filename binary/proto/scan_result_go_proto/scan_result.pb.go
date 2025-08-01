@@ -630,6 +630,8 @@ type Package struct {
 	// Ecosystem - For software packages this corresponds to an OSV ecosystem
 	// value, e.g. PyPI.
 	Ecosystem string `protobuf:"bytes,27,opt,name=ecosystem,proto3" json:"ecosystem,omitempty"`
+	// ScanRoot that the package was extracted from (just the Path)
+	ScanRootPath string `protobuf:"bytes,52,opt,name=scan_root_path,json=scanRootPath,proto3" json:"scan_root_path,omitempty"`
 	// Paths or source of files related to the package.
 	Locations []string `protobuf:"bytes,2,rep,name=locations,proto3" json:"locations,omitempty"`
 	// TODO(b/400910349): Remove once integrators stop using these fields.
@@ -752,6 +754,13 @@ func (x *Package) GetPurl() *Purl {
 func (x *Package) GetEcosystem() string {
 	if x != nil {
 		return x.Ecosystem
+	}
+	return ""
+}
+
+func (x *Package) GetScanRootPath() string {
+	if x != nil {
+		return x.ScanRootPath
 	}
 	return ""
 }
@@ -5342,14 +5351,15 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\fPluginStatus\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\x12+\n" +
-	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\xe9\x18\n" +
+	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\x8f\x19\n" +
 	"\aPackage\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\f \x01(\tR\aversion\x12>\n" +
 	"\vsource_code\x18\x1a \x01(\v2\x1d.scalibr.SourceCodeIdentifierR\n" +
 	"sourceCode\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x1c\n" +
-	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12\x1c\n" +
+	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12$\n" +
+	"\x0escan_root_path\x184 \x01(\tR\fscanRootPath\x12\x1c\n" +
 	"\tlocations\x18\x02 \x03(\tR\tlocations\x125\n" +
 	"\x14extractor_deprecated\x18\n" +
 	" \x01(\tB\x02\x18\x01R\x13extractorDeprecated\x12\x18\n" +

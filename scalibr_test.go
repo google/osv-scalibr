@@ -27,6 +27,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakechainlayer"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakeimage"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/enricher"
@@ -74,6 +75,7 @@ func TestScan(t *testing.T) {
 		Name:      pkgName,
 		Locations: []string{"file.txt"},
 		Plugins:   []string{fakeExtractor.Name()},
+		ScanRoot:  tmpRoot[0],
 	}
 	withLayerDetails := func(pkg *extractor.Package, ld *extractor.LayerDetails) *extractor.Package {
 		pkg = deepcopy.Copy(pkg).(*extractor.Package)
@@ -92,10 +94,7 @@ func TestScan(t *testing.T) {
 			fen.MustHash(
 				t,
 				&enricher.ScanInput{
-					ScanRoot: &scalibrfs.ScanRoot{
-						FS:   fs,
-						Path: tmp,
-					},
+					ScanRoot: tmpRoot[0],
 				},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
@@ -121,7 +120,7 @@ func TestScan(t *testing.T) {
 		Capabilities: &plugin.Capabilities{Network: plugin.NetworkOnline},
 		WantEnrich: map[uint64]fen.InventoryAndErr{
 			fen.MustHash(
-				t, &enricher.ScanInput{ScanRoot: &scalibrfs.ScanRoot{FS: fs, Path: tmp}},
+				t, &enricher.ScanInput{ScanRoot: tmpRoot[0]},
 				&inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
 					GenericFindings: []*inventory.GenericFinding{
@@ -564,6 +563,16 @@ func TestScanContainer(t *testing.T) {
 			}}
 
 			fi := fakeimage.New(tc.chainLayers)
+
+			imageScanRoot := &scalibrfs.ScanRoot{
+				FS:   fi.FS(),
+				Path: "",
+			}
+
+			for _, pkg := range tc.want.Inventory.Packages {
+				pkg.ScanRoot = imageScanRoot
+			}
+
 			got, err := scalibr.New().ScanContainer(context.Background(), fi, &scanConfig)
 
 			if tc.wantErr != nil {
@@ -575,7 +584,7 @@ func TestScanContainer(t *testing.T) {
 			tc.want.StartTime = got.StartTime
 			tc.want.EndTime = got.EndTime
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, cmpopts.IgnoreUnexported(fakechainlayer.FakeChainLayer{})); diff != "" {
 				t.Errorf("scalibr.New().Scan(): unexpected diff (-want +got):\n%s", diff)
 			}
 		})
@@ -859,6 +868,7 @@ func TestAnnotator(t *testing.T) {
 			Justification:   vex.ComponentNotPresent,
 			MatchesAllVulns: true,
 		}},
+		ScanRoot: tmpRoot[0],
 	}}
 
 	got := scalibr.New().Scan(context.Background(), cfg)

@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -74,6 +75,8 @@ type Package struct {
 	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
 	LayerDetails *LayerDetails
+	// ScanRoot that the package was extracted from
+	ScanRoot *fs.ScanRoot `hash:"ignore"`
 	// The additional data found in the package.
 	Metadata any
 }
