@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // Metadata holds parsing information for an rpm package.
@@ -61,4 +63,47 @@ func (m *Metadata) ToDistro() string {
 		return v
 	}
 	return fmt.Sprintf("%s-%s", id, v)
+}
+
+// SetProto sets the RPMPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_RpmMetadata{
+		RpmMetadata: &pb.RPMPackageMetadata{
+			PackageName:  m.PackageName,
+			SourceRpm:    m.SourceRPM,
+			Epoch:        int32(m.Epoch),
+			OsName:       m.OSName,
+			OsId:         m.OSID,
+			OsVersionId:  m.OSVersionID,
+			OsBuildId:    m.OSBuildID,
+			Vendor:       m.Vendor,
+			Architecture: m.Architecture,
+		},
+	}
+}
+
+// ToStruct converts the RPMPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:  m.GetPackageName(),
+		SourceRPM:    m.GetSourceRpm(),
+		Epoch:        int(m.GetEpoch()),
+		OSName:       m.GetOsName(),
+		OSID:         m.GetOsId(),
+		OSVersionID:  m.GetOsVersionId(),
+		OSBuildID:    m.GetOsBuildId(),
+		Vendor:       m.GetVendor(),
+		Architecture: m.GetArchitecture(),
+	}
 }

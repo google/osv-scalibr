@@ -24,8 +24,8 @@ import (
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
-	"github.com/google/osv-scalibr/enricher/resolution/requirements"
 	"github.com/google/osv-scalibr/enricher/secrets"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 )
 
@@ -67,8 +67,8 @@ var (
 		java.Name: {java.NewDefault},
 	}
 
-	// Resolution enrichers.
-	Resolution = InitMap{
+	// TransitiveDependency enrichers.
+	TransitiveDependency = InitMap{
 		requirements.Name: {requirements.NewDefault},
 	}
 
@@ -83,21 +83,21 @@ var (
 		Secrets,
 		License,
 		Reachability,
-		Resolution,
+		TransitiveDependency,
 	)
 
 	enricherNames = concat(All, InitMap{
-		"license":           vals(License),
-		"vex":               vals(VEX),
-		"vulnmatch":         vals(VulnMatching),
-		"layerdetails":      vals(LayerDetails),
-		"secrets":           vals(Secrets),
-		"reachability":      vals(Reachability),
-		"resolution":        vals(Resolution),
-		"enrichers/default": vals(Default),
-		"default":           vals(Default),
-		"enrichers/all":     vals(All),
-		"all":               vals(All),
+		"license":              vals(License),
+		"vex":                  vals(VEX),
+		"vulnmatch":            vals(VulnMatching),
+		"layerdetails":         vals(LayerDetails),
+		"secrets":              vals(Secrets),
+		"reachability":         vals(Reachability),
+		"transitivedependency": vals(TransitiveDependency),
+		"enrichers/default":    vals(Default),
+		"default":              vals(Default),
+		"enrichers/all":        vals(All),
+		"all":                  vals(All),
 	})
 )
 

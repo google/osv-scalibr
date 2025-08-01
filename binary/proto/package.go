@@ -31,19 +31,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
-	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
-	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
-	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
-	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
-	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
-	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
-	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
-	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
-	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
@@ -138,6 +128,10 @@ func setProtoMetadata(meta any, p *spb.Package) {
 		return
 	}
 
+	if p == nil {
+		return
+	}
+
 	if m, ok := meta.(MetadataProtoSetter); ok {
 		m.SetProto(p)
 		return
@@ -146,129 +140,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch m := meta.(type) {
-	case *apkmeta.Metadata:
-		p.Metadata = &spb.Package_ApkMetadata{
-			ApkMetadata: &spb.APKPackageMetadata{
-				PackageName:  m.PackageName,
-				OriginName:   m.OriginName,
-				OsId:         m.OSID,
-				OsVersionId:  m.OSVersionID,
-				Maintainer:   m.Maintainer,
-				Architecture: m.Architecture,
-			},
-		}
-	case *dpkgmeta.Metadata:
-		p.Metadata = &spb.Package_DpkgMetadata{
-			DpkgMetadata: &spb.DPKGPackageMetadata{
-				PackageName:       m.PackageName,
-				SourceName:        m.SourceName,
-				Status:            m.Status,
-				SourceVersion:     m.SourceVersion,
-				PackageVersion:    m.PackageVersion,
-				OsId:              m.OSID,
-				OsVersionCodename: m.OSVersionCodename,
-				OsVersionId:       m.OSVersionID,
-				Maintainer:        m.Maintainer,
-				Architecture:      m.Architecture,
-			},
-		}
-	case *snapmeta.Metadata:
-		p.Metadata = &spb.Package_SnapMetadata{
-			SnapMetadata: &spb.SNAPPackageMetadata{
-				Name:              m.Name,
-				Version:           m.Version,
-				Grade:             m.Grade,
-				Type:              m.Type,
-				Architectures:     m.Architectures,
-				OsId:              m.OSID,
-				OsVersionCodename: m.OSVersionCodename,
-				OsVersionId:       m.OSVersionID,
-			},
-		}
-	case *rpmmeta.Metadata:
-		p.Metadata = &spb.Package_RpmMetadata{
-			RpmMetadata: &spb.RPMPackageMetadata{
-				PackageName:  m.PackageName,
-				SourceRpm:    m.SourceRPM,
-				Epoch:        int32(m.Epoch),
-				OsName:       m.OSName,
-				OsId:         m.OSID,
-				OsVersionId:  m.OSVersionID,
-				OsBuildId:    m.OSBuildID,
-				Vendor:       m.Vendor,
-				Architecture: m.Architecture,
-			},
-		}
-	case *cosmeta.Metadata:
-		p.Metadata = &spb.Package_CosMetadata{
-			CosMetadata: &spb.COSPackageMetadata{
-				Name:        m.Name,
-				Version:     m.Version,
-				Category:    m.Category,
-				OsVersion:   m.OSVersion,
-				OsVersionId: m.OSVersionID,
-			},
-		}
-	case *pacmanmeta.Metadata:
-		p.Metadata = &spb.Package_PacmanMetadata{
-			PacmanMetadata: &spb.PACMANPackageMetadata{
-				PackageName:         m.PackageName,
-				PackageVersion:      m.PackageVersion,
-				OsId:                m.OSID,
-				OsVersionId:         m.OSVersionID,
-				PackageDependencies: m.PackageDependencies,
-			},
-		}
-	case *portagemeta.Metadata:
-		p.Metadata = &spb.Package_PortageMetadata{
-			PortageMetadata: &spb.PortagePackageMetadata{
-				PackageName:    m.PackageName,
-				PackageVersion: m.PackageVersion,
-				OsId:           m.OSID,
-				OsVersionId:    m.OSVersionID,
-			},
-		}
-	case *flatpakmeta.Metadata:
-		p.Metadata = &spb.Package_FlatpakMetadata{
-			FlatpakMetadata: &spb.FlatpakPackageMetadata{
-				PackageName:    m.PackageName,
-				PackageId:      m.PackageID,
-				PackageVersion: m.PackageVersion,
-				ReleaseDate:    m.ReleaseDate,
-				OsName:         m.OSName,
-				OsId:           m.OSID,
-				OsVersionId:    m.OSVersionID,
-				OsBuildId:      m.OSBuildID,
-				Developer:      m.Developer,
-			},
-		}
-	case *nixmeta.Metadata:
-		p.Metadata = &spb.Package_NixMetadata{
-			NixMetadata: &spb.NixPackageMetadata{
-				PackageName:       m.PackageName,
-				PackageVersion:    m.PackageVersion,
-				PackageHash:       m.PackageHash,
-				PackageOutput:     m.PackageOutput,
-				OsId:              m.OSID,
-				OsVersionCodename: m.OSVersionCodename,
-				OsVersionId:       m.OSVersionID,
-			},
-		}
-	case *macapps.Metadata:
-		p.Metadata = &spb.Package_MacAppsMetadata{
-			MacAppsMetadata: &spb.MacAppsMetadata{
-				BundleDisplayName:        m.CFBundleDisplayName,
-				BundleIdentifier:         m.CFBundleIdentifier,
-				BundleShortVersionString: m.CFBundleShortVersionString,
-				BundleExecutable:         m.CFBundleExecutable,
-				BundleName:               m.CFBundleName,
-				BundlePackageType:        m.CFBundlePackageType,
-				BundleSignature:          m.CFBundleSignature,
-				BundleVersion:            m.CFBundleVersion,
-				ProductId:                m.KSProductID,
-				UpdateUrl:                m.KSUpdateURL,
-			},
-		}
 	case *homebrew.Metadata:
 		p.Metadata = &spb.Package_HomebrewMetadata{
 			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
@@ -562,109 +433,6 @@ func metadataToStruct(md *spb.Package) any {
 
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch md.GetMetadata().(type) {
-	case *spb.Package_ApkMetadata:
-		return &apkmeta.Metadata{
-			PackageName:  md.GetApkMetadata().GetPackageName(),
-			OriginName:   md.GetApkMetadata().GetOriginName(),
-			OSID:         md.GetApkMetadata().GetOsId(),
-			OSVersionID:  md.GetApkMetadata().GetOsVersionId(),
-			Maintainer:   md.GetApkMetadata().GetMaintainer(),
-			Architecture: md.GetApkMetadata().GetArchitecture(),
-		}
-	case *spb.Package_DpkgMetadata:
-		return &dpkgmeta.Metadata{
-			PackageName:       md.GetDpkgMetadata().GetPackageName(),
-			SourceName:        md.GetDpkgMetadata().GetSourceName(),
-			Status:            md.GetDpkgMetadata().GetStatus(),
-			SourceVersion:     md.GetDpkgMetadata().GetSourceVersion(),
-			PackageVersion:    md.GetDpkgMetadata().GetPackageVersion(),
-			OSID:              md.GetDpkgMetadata().GetOsId(),
-			OSVersionCodename: md.GetDpkgMetadata().GetOsVersionCodename(),
-			OSVersionID:       md.GetDpkgMetadata().GetOsVersionId(),
-			Maintainer:        md.GetDpkgMetadata().GetMaintainer(),
-			Architecture:      md.GetDpkgMetadata().GetArchitecture(),
-		}
-	case *spb.Package_SnapMetadata:
-		return &snapmeta.Metadata{
-			Name:              md.GetSnapMetadata().GetName(),
-			Version:           md.GetSnapMetadata().GetVersion(),
-			Grade:             md.GetSnapMetadata().GetGrade(),
-			Type:              md.GetSnapMetadata().GetType(),
-			Architectures:     md.GetSnapMetadata().GetArchitectures(),
-			OSID:              md.GetSnapMetadata().GetOsId(),
-			OSVersionCodename: md.GetSnapMetadata().GetOsVersionCodename(),
-			OSVersionID:       md.GetSnapMetadata().GetOsVersionId(),
-		}
-	case *spb.Package_RpmMetadata:
-		return &rpmmeta.Metadata{
-			PackageName:  md.GetRpmMetadata().GetPackageName(),
-			SourceRPM:    md.GetRpmMetadata().GetSourceRpm(),
-			Epoch:        int(md.GetRpmMetadata().GetEpoch()),
-			OSName:       md.GetRpmMetadata().GetOsName(),
-			OSID:         md.GetRpmMetadata().GetOsId(),
-			OSVersionID:  md.GetRpmMetadata().GetOsVersionId(),
-			OSBuildID:    md.GetRpmMetadata().GetOsBuildId(),
-			Vendor:       md.GetRpmMetadata().GetVendor(),
-			Architecture: md.GetRpmMetadata().GetArchitecture(),
-		}
-	case *spb.Package_CosMetadata:
-		return &cosmeta.Metadata{
-			Name:        md.GetCosMetadata().GetName(),
-			Version:     md.GetCosMetadata().GetVersion(),
-			Category:    md.GetCosMetadata().GetCategory(),
-			OSVersion:   md.GetCosMetadata().GetOsVersion(),
-			OSVersionID: md.GetCosMetadata().GetOsVersionId(),
-		}
-	case *spb.Package_PacmanMetadata:
-		return &pacmanmeta.Metadata{
-			PackageName:         md.GetPacmanMetadata().GetPackageName(),
-			PackageVersion:      md.GetPacmanMetadata().GetPackageVersion(),
-			OSID:                md.GetPacmanMetadata().GetOsId(),
-			OSVersionID:         md.GetPacmanMetadata().GetOsVersionId(),
-			PackageDependencies: md.GetPacmanMetadata().GetPackageDependencies(),
-		}
-	case *spb.Package_PortageMetadata:
-		return &portagemeta.Metadata{
-			PackageName:    md.GetPortageMetadata().GetPackageName(),
-			PackageVersion: md.GetPortageMetadata().GetPackageVersion(),
-			OSID:           md.GetPortageMetadata().GetOsId(),
-			OSVersionID:    md.GetPortageMetadata().GetOsVersionId(),
-		}
-	case *spb.Package_FlatpakMetadata:
-		return &flatpakmeta.Metadata{
-			PackageName:    md.GetFlatpakMetadata().GetPackageName(),
-			PackageID:      md.GetFlatpakMetadata().GetPackageId(),
-			PackageVersion: md.GetFlatpakMetadata().GetPackageVersion(),
-			ReleaseDate:    md.GetFlatpakMetadata().GetReleaseDate(),
-			OSName:         md.GetFlatpakMetadata().GetOsName(),
-			OSID:           md.GetFlatpakMetadata().GetOsId(),
-			OSVersionID:    md.GetFlatpakMetadata().GetOsVersionId(),
-			OSBuildID:      md.GetFlatpakMetadata().GetOsBuildId(),
-			Developer:      md.GetFlatpakMetadata().GetDeveloper(),
-		}
-	case *spb.Package_NixMetadata:
-		return &nixmeta.Metadata{
-			PackageName:       md.GetNixMetadata().GetPackageName(),
-			PackageVersion:    md.GetNixMetadata().GetPackageVersion(),
-			PackageHash:       md.GetNixMetadata().GetPackageHash(),
-			PackageOutput:     md.GetNixMetadata().GetPackageOutput(),
-			OSID:              md.GetNixMetadata().GetOsId(),
-			OSVersionCodename: md.GetNixMetadata().GetOsVersionCodename(),
-			OSVersionID:       md.GetNixMetadata().GetOsVersionId(),
-		}
-	case *spb.Package_MacAppsMetadata:
-		return &macapps.Metadata{
-			CFBundleDisplayName:        md.GetMacAppsMetadata().GetBundleDisplayName(),
-			CFBundleIdentifier:         md.GetMacAppsMetadata().GetBundleIdentifier(),
-			CFBundleShortVersionString: md.GetMacAppsMetadata().GetBundleShortVersionString(),
-			CFBundleExecutable:         md.GetMacAppsMetadata().GetBundleExecutable(),
-			CFBundleName:               md.GetMacAppsMetadata().GetBundleName(),
-			CFBundlePackageType:        md.GetMacAppsMetadata().GetBundlePackageType(),
-			CFBundleSignature:          md.GetMacAppsMetadata().GetBundleSignature(),
-			CFBundleVersion:            md.GetMacAppsMetadata().GetBundleVersion(),
-			KSProductID:                md.GetMacAppsMetadata().GetProductId(),
-			KSUpdateURL:                md.GetMacAppsMetadata().GetUpdateUrl(),
-		}
 	case *spb.Package_HomebrewMetadata:
 		return &homebrew.Metadata{}
 	case *spb.Package_KernelModuleMetadata:

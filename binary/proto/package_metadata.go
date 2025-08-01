@@ -17,9 +17,21 @@ package proto
 import (
 	"reflect"
 
+	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
+
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
+	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
+	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -35,5 +47,55 @@ var (
 		reflect.TypeOf(&spb.Package_DepsjsonMetadata{}): func(p *spb.Package) any {
 			return depsjson.ToStruct(p.GetDepsjsonMetadata())
 		},
+		reflect.TypeOf(&spb.Package_NetportsMetadata{}): func(p *spb.Package) any {
+			return netports.ToStruct(p.GetNetportsMetadata())
+		},
+		reflect.TypeOf(&spb.Package_ApkMetadata{}): func(p *spb.Package) any {
+			return apkmeta.ToStruct(p.GetApkMetadata())
+		},
+		reflect.TypeOf(&spb.Package_DpkgMetadata{}): func(p *spb.Package) any {
+			return dpkgmeta.ToStruct(p.GetDpkgMetadata())
+		},
+		reflect.TypeOf(&spb.Package_SnapMetadata{}): func(p *spb.Package) any {
+			return snapmeta.ToStruct(p.GetSnapMetadata())
+		},
+		reflect.TypeOf(&spb.Package_RpmMetadata{}): func(p *spb.Package) any {
+			return rpmmeta.ToStruct(p.GetRpmMetadata())
+		},
+		reflect.TypeOf(&spb.Package_CosMetadata{}): func(p *spb.Package) any {
+			return cosmeta.ToStruct(p.GetCosMetadata())
+		},
+		reflect.TypeOf(&spb.Package_PacmanMetadata{}): func(p *spb.Package) any {
+			return pacmanmeta.ToStruct(p.GetPacmanMetadata())
+		},
+		reflect.TypeOf(&spb.Package_PortageMetadata{}): func(p *spb.Package) any {
+			return portagemeta.ToStruct(p.GetPortageMetadata())
+		},
+		reflect.TypeOf(&spb.Package_FlatpakMetadata{}): func(p *spb.Package) any {
+			return flatpakmeta.ToStruct(p.GetFlatpakMetadata())
+		},
+		reflect.TypeOf(&spb.Package_NixMetadata{}): func(p *spb.Package) any {
+			return nixmeta.ToStruct(p.GetNixMetadata())
+		},
+		reflect.TypeOf(&spb.Package_MacAppsMetadata{}): func(p *spb.Package) any {
+			return macapps.ToStruct(p.GetMacAppsMetadata())
+		},
+	}
+
+	_ = []MetadataProtoSetter{
+		(*wheelegg.PythonPackageMetadata)(nil),
+		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
+		(*depsjson.Metadata)(nil),
+		(*netports.Metadata)(nil),
+		(*apkmeta.Metadata)(nil),
+		(*dpkgmeta.Metadata)(nil),
+		(*snapmeta.Metadata)(nil),
+		(*rpmmeta.Metadata)(nil),
+		(*cosmeta.Metadata)(nil),
+		(*pacmanmeta.Metadata)(nil),
+		(*portagemeta.Metadata)(nil),
+		(*flatpakmeta.Metadata)(nil),
+		(*nixmeta.Metadata)(nil),
+		(*macapps.Metadata)(nil),
 	}
 )

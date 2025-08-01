@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // Metadata holds parsing information for an apk package.
@@ -61,4 +63,41 @@ func (Metadata) TrimDistroVersion(distro string) string {
 		return "v" + distro
 	}
 	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
+}
+
+// SetProto sets the ApkMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_ApkMetadata{
+		ApkMetadata: &pb.APKPackageMetadata{
+			PackageName:  m.PackageName,
+			OriginName:   m.OriginName,
+			OsId:         m.OSID,
+			OsVersionId:  m.OSVersionID,
+			Maintainer:   m.Maintainer,
+			Architecture: m.Architecture,
+		},
+	}
+}
+
+// ToStruct converts the APKPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.APKPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:  m.GetPackageName(),
+		OriginName:   m.GetOriginName(),
+		OSID:         m.GetOsId(),
+		OSVersionID:  m.GetOsVersionId(),
+		Maintainer:   m.GetMaintainer(),
+		Architecture: m.GetArchitecture(),
+	}
 }

@@ -108,6 +108,7 @@ message Package {
     VmlinuzMetadata vmlinuz_metadata = 39;
     PortagePackageMetadata portage_metadata = 41;
     OSVPackageMetadata osv_metadata = 16;
+    NetportsMetadata netports_metadata = 45;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     PythonSetupMetadata python_setup_metadata = 44;
     ContainerdContainerMetadata containerd_container_metadata = 22;
@@ -355,6 +356,7 @@ message COSPackageMetadata {
   string category = 3;
   string os_version = 4;
   string os_version_id = 5;
+  string ebuild_version = 6;
 }
 
 // The additional data found in PACMAN packages.
@@ -503,6 +505,13 @@ message PythonRequirementsMetadata {
 
 message PythonSetupMetadata {
   string version_comparator = 2;
+}
+
+// Used to report open ports on a system.
+message NetportsMetadata {
+  uint32 port = 1;
+  string protocol = 2;
+  string command_line = 3;
 }
 
 message ContainerdContainerMetadata {

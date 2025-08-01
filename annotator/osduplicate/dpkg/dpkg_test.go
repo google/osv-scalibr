@@ -16,8 +16,6 @@ package dpkg_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -26,30 +24,13 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
+	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/proto"
 )
-
-// Sets up the DPKG info directory based on the supplied filename->content map.
-func setupDPKGInfo(t *testing.T, contents map[string]string) string {
-	t.Helper()
-	dir := t.TempDir()
-	infoDir := filepath.Join(dir, "var/lib/dpkg/info")
-	if err := os.MkdirAll(infoDir, 0777); err != nil {
-		t.Fatalf("error creating directory %q: %v", infoDir, err)
-	}
-
-	for name, content := range contents {
-		infoFile := filepath.Join(infoDir, name)
-		if err := os.WriteFile(infoFile, []byte(content), 0644); err != nil {
-			t.Fatalf("Error while creating file %q: %v", infoFile, err)
-		}
-	}
-	return dir
-}
 
 func TestAnnotate(t *testing.T) {
 	if runtime.GOOS != "linux" {
@@ -180,7 +161,7 @@ func TestAnnotate(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			root := ""
 			if tt.infoContents != nil {
-				root = setupDPKGInfo(t, tt.infoContents)
+				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, false)
 			}
 			if tt.ctx == nil {
 				tt.ctx = context.Background()

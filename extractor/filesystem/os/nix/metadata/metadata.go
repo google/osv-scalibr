@@ -15,7 +15,11 @@
 // Package metadata defines a metadata struct for nix packages.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
 
 // Metadata holds parsing information for a nix package.
 type Metadata struct {
@@ -41,4 +45,43 @@ func (m *Metadata) ToDistro() string {
 	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
 
 	return ""
+}
+
+// SetProto sets the NixPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_NixMetadata{
+		NixMetadata: &pb.NixPackageMetadata{
+			PackageName:       m.PackageName,
+			PackageVersion:    m.PackageVersion,
+			PackageHash:       m.PackageHash,
+			PackageOutput:     m.PackageOutput,
+			OsId:              m.OSID,
+			OsVersionCodename: m.OSVersionCodename,
+			OsVersionId:       m.OSVersionID,
+		},
+	}
+}
+
+// ToStruct converts the NixPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.NixPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:       m.GetPackageName(),
+		PackageVersion:    m.GetPackageVersion(),
+		PackageHash:       m.GetPackageHash(),
+		PackageOutput:     m.GetPackageOutput(),
+		OSID:              m.GetOsId(),
+		OSVersionCodename: m.GetOsVersionCodename(),
+		OSVersionID:       m.GetOsVersionId(),
+	}
 }
