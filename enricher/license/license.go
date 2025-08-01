@@ -92,9 +92,9 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		e.client = depsDevAPIClient
 	}
 
-	queries := make([]*depsdevpb.GetVersionRequest, 0, len(inv.Packages))
+	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
 
-	for _, pkg := range inv.Packages {
+	for i, pkg := range inv.Packages {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		if !ok {
 			continue
 		}
-		queries = append(queries, versionQuery(ecoSystem, pkg.Name, pkg.Version))
+		queries[i] = versionQuery(ecoSystem, pkg.Name, pkg.Version)
 	}
 
 	licenses, err := e.makeVersionRequest(ctx, queries)

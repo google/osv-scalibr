@@ -92,8 +92,7 @@ func TestEnrich(t *testing.T) {
 				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew},
 			},
 			wantPackages: []*extractor.Package{
-				// No license data
-				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew},
+				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew, License: []string{"UNKNOWN"}},
 			},
 		},
 		{
