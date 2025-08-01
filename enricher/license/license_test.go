@@ -92,6 +92,7 @@ func TestEnrich(t *testing.T) {
 				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew},
 			},
 			wantPackages: []*extractor.Package{
+				// UNKNOWN license
 				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew, License: []string{"UNKNOWN"}},
 			},
 		},
@@ -103,6 +104,48 @@ func TestEnrich(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				// UNKNOWN license
 				{Name: "unknown", Version: "1.8.1", PURLType: purl.TypeGolang, License: []string{"UNKNOWN"}},
+			},
+		},
+		{
+			name: "not_covered_pkg_with_already_a_license",
+			packages: []*extractor.Package{
+				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew, License: []string{"Apache-2.0"}},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew, License: []string{"Apache-2.0"}},
+			},
+		},
+		{
+			name: "covered_pkg_with_already_a_license",
+			packages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"MIT"}},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"MIT"}},
+			},
+		},
+		{
+			name: "covered_pkg_with_wrong_license",
+			packages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"Apache-2.0"}},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"MIT"}},
+			},
+		},
+		{
+			name: "not_covered_purl_type_between_covered_pkgs",
+			packages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM},
+				{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang},
+				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew},
+				{Name: "requests", Version: "2.26.0", PURLType: purl.TypePyPi},
+			},
+			wantPackages: []*extractor.Package{
+				{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM, License: []string{"MIT"}},
+				{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang, License: []string{"MIT"}},
+				{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew, License: []string{"UNKNOWN"}},
+				{Name: "requests", Version: "2.26.0", PURLType: purl.TypePyPi, License: []string{"Apache-2.0"}},
 			},
 		},
 	}

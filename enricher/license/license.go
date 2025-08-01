@@ -93,7 +93,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
-
 	for i, pkg := range inv.Packages {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -112,7 +111,19 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	for i, license := range licenses {
-		inv.Packages[i].License = license
+		// use license information from deps.dev if available (preferred source of truth)
+		if len(license) > 0 {
+			inv.Packages[i].License = license
+			continue
+		}
+
+		// if deps.dev has no info, but the package already has license data, retain it
+		if len(inv.Packages[i].License) > 0 {
+			continue
+		}
+
+		// if no license info is available from any source, mark as "UNKNOWN"
+		inv.Packages[i].License = []string{"UNKNOWN"}
 	}
 
 	return nil
@@ -128,33 +139,19 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 	g.SetLimit(maxConcurrentRequests)
 
 	for i := range queries {
+		// if the query is not set, skip the pkg
 		if queries[i] == nil {
-			// This may be a private package.
-			licenses[i] = []string{"UNKNOWN"}
 			continue
 		}
 		g.Go(func() error {
 			resp, err := e.client.GetVersion(ctx, queries[i])
 			if err != nil {
 				if status.Code(err) == codes.NotFound {
-					licenses[i] = append(licenses[i], "UNKNOWN")
 					return nil
 				}
-
 				return err
 			}
-			ls := make([]string, len(resp.GetLicenses()))
-			for j, license := range resp.GetLicenses() {
-				ls[j] = license
-			}
-			if len(ls) == 0 {
-				// The deps.dev API will return an
-				// empty slice if the license is
-				// unknown.
-				ls = []string{"UNKNOWN"}
-			}
-			licenses[i] = ls
-
+			licenses[i] = resp.GetLicenses()
 			return nil
 		})
 	}
