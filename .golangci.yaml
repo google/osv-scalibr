@@ -18,7 +18,6 @@ linters:
     - gochecknoglobals #
     - gocognit         #
     - goconst          #
-    - gocritic         # TODO(#274): work on enabling this
     - gocyclo          #
     - godot            #
     - godox            #
@@ -51,6 +50,9 @@ linters:
         - pattern: ^testing.T.Parallel$
           pkg: ^testing$
       analyze-types: true
+    gocritic:
+      disabled-checks:
+        - ifElseChain
     usetesting:
       # TODO(#274): work on enabling this
       os-chdir: false

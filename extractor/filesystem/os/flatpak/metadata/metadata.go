@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // Metadata holds parsing information for a flatpak package.
@@ -61,4 +63,47 @@ func (m *Metadata) ToDistro() string {
 		return v
 	}
 	return fmt.Sprintf("%s-%s", id, v)
+}
+
+// SetProto sets the FlatpakPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_FlatpakMetadata{
+		FlatpakMetadata: &pb.FlatpakPackageMetadata{
+			PackageName:    m.PackageName,
+			PackageId:      m.PackageID,
+			PackageVersion: m.PackageVersion,
+			ReleaseDate:    m.ReleaseDate,
+			OsName:         m.OSName,
+			OsId:           m.OSID,
+			OsVersionId:    m.OSVersionID,
+			OsBuildId:      m.OSBuildID,
+			Developer:      m.Developer,
+		},
+	}
+}
+
+// ToStruct converts the FlatpakPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.FlatpakPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:    m.GetPackageName(),
+		PackageID:      m.GetPackageId(),
+		PackageVersion: m.GetPackageVersion(),
+		ReleaseDate:    m.GetReleaseDate(),
+		OSName:         m.GetOsName(),
+		OSID:           m.GetOsId(),
+		OSVersionID:    m.GetOsVersionId(),
+		OSBuildID:      m.GetOsBuildId(),
+		Developer:      m.GetDeveloper(),
+	}
 }

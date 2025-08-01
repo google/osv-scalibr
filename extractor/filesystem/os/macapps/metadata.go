@@ -14,6 +14,10 @@
 
 package macapps
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata is the metadata struct for information parsed from the Info.plist file of a Mac App.
 type Metadata struct {
 	CFBundleDisplayName        string
@@ -26,4 +30,49 @@ type Metadata struct {
 	CFBundleVersion            string
 	KSProductID                string
 	KSUpdateURL                string
+}
+
+// SetProto sets the MacAppsMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_MacAppsMetadata{
+		MacAppsMetadata: &pb.MacAppsMetadata{
+			BundleDisplayName:        m.CFBundleDisplayName,
+			BundleIdentifier:         m.CFBundleIdentifier,
+			BundleShortVersionString: m.CFBundleShortVersionString,
+			BundleExecutable:         m.CFBundleExecutable,
+			BundleName:               m.CFBundleName,
+			BundlePackageType:        m.CFBundlePackageType,
+			BundleSignature:          m.CFBundleSignature,
+			BundleVersion:            m.CFBundleVersion,
+			ProductId:                m.KSProductID,
+			UpdateUrl:                m.KSUpdateURL,
+		},
+	}
+}
+
+// ToStruct converts the MacAppsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.MacAppsMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		CFBundleDisplayName:        m.GetBundleDisplayName(),
+		CFBundleIdentifier:         m.GetBundleIdentifier(),
+		CFBundleShortVersionString: m.GetBundleShortVersionString(),
+		CFBundleExecutable:         m.GetBundleExecutable(),
+		CFBundleName:               m.GetBundleName(),
+		CFBundlePackageType:        m.GetBundlePackageType(),
+		CFBundleSignature:          m.GetBundleSignature(),
+		CFBundleVersion:            m.GetBundleVersion(),
+		KSProductID:                m.GetProductId(),
+		KSUpdateURL:                m.GetUpdateUrl(),
+	}
 }
