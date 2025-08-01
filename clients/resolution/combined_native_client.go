@@ -132,6 +132,8 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry)
 		}
 		return c.pypiRegistryClient, nil
+	case resolve.UnknownSystem:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("unsupported system: %v", sys)
 	}

@@ -238,6 +238,8 @@ func (st stateRelockResult) currentInfoView() (view components.ViewModel, canFoc
 		return components.TextView("Shell out to write manifest & lockfile"), false
 	case relockQuit:
 		return components.TextView("Exit Guided Remediation"), false
+	case relockEnd:
+		fallthrough
 	default:
 		return components.TextView(""), false // invalid (panic?)
 	}
@@ -305,6 +307,7 @@ func (st stateRelockResult) parseInput(m Model) (tea.Model, tea.Cmd) {
 		cmd = func() tea.Msg { return st.write(m) }
 	case relockQuit: // quit
 		cmd = tea.Quit
+	case relockErrors, relockEnd:
 	}
 
 	m.st = st

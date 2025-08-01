@@ -431,6 +431,8 @@ func ParseClass(r io.Reader) (*ClassFile, error) {
 				return nil, err
 			}
 			cp = constant
+		case ConstantKindPlaceholder:
+			fallthrough
 		default:
 			return nil, fmt.Errorf("invalid cp_info type %d at index %d", kind, i+1)
 		}
