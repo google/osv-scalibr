@@ -23,13 +23,14 @@ import (
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/version"
 )
 
 // RunScan executes the scan with the given CLI flags
 // and returns the exit code passed to os.Exit() in the main binary.
 func RunScan(flags *cli.Flags) int {
 	if flags.PrintVersion {
-		log.Infof("OSV-SCALIBR v%s", scalibr.ScannerVersion)
+		log.Infof("OSV-SCALIBR v%s", version.ScannerVersion)
 		return 0
 	}
 
