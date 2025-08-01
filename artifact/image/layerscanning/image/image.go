@@ -25,7 +25,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -545,7 +544,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		// Some tools prepend everything with "./", so if we don't path.Clean the name, we may have
 		// duplicate entries, which angers tar-split. Using path instead of filepath to keep `/` and
 		// deterministic behavior.
-		cleanedFilePath := path.Clean(filepath.ToSlash(header.Name))
+		cleanedFilePath := path.Clean(header.Name)
 
 		// Prevent "Zip Slip"
 		if strings.HasPrefix(cleanedFilePath, "../") {
@@ -583,7 +582,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			basename = whiteout.ToPath(basename)
 		}
 
-		// If we're checking a directory, don't filepath.Join names.
+		// If we're checking a directory, don't path.Join names.
 		var virtualPath string
 		if header.Typeflag == tar.TypeDir {
 			virtualPath = "/" + cleanedFilePath
@@ -669,7 +668,7 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a virtual file
 // with the symlink mode with additional metadata.
 func (img *Image) handleSymlink(virtualPath string, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
-	targetPath := filepath.ToSlash(header.Linkname)
+	targetPath := header.Linkname
 	if targetPath == "" {
 		return nil, errors.New("symlink header has no target path")
 	}
