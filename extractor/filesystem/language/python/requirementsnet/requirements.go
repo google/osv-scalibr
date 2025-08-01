@@ -49,7 +49,7 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		Extractor: requirements.NewDefault().(*requirements.Extractor),
-		Client:    resolution.NewPyPIRegistryClient(""),
+		Client:    resolution.NewPyPIRegistryClient("", ""),
 	}
 }
 

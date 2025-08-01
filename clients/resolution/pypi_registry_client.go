@@ -38,8 +38,13 @@ type PyPIRegistryClient struct {
 }
 
 // NewPyPIRegistryClient makes a new PyPIRegistryClient.
-func NewPyPIRegistryClient(registry string) *PyPIRegistryClient {
-	return &PyPIRegistryClient{api: datasource.NewPyPIRegistryAPIClient(registry)}
+func NewPyPIRegistryClient(registry string, localRegistry string) *PyPIRegistryClient {
+	return &PyPIRegistryClient{api: datasource.NewPyPIRegistryAPIClient(registry, localRegistry)}
+}
+
+// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
+func (c *PyPIRegistryClient) SetLocalRegistry(localRegistry string) {
+	c.api.SetLocalRegistry(localRegistry)
 }
 
 // Version returns metadata of a version specified by the VersionKey.
