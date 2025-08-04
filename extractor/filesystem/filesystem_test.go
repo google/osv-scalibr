@@ -667,25 +667,26 @@ func TestRunFS(t *testing.T) {
 			if tc.skipDirGlob != "" {
 				skipDirGlob = glob.MustCompile(tc.skipDirGlob)
 			}
+
+			scanRoot := &scalibrfs.ScanRoot{
+				FS: fsys, Path: cwd,
+			}
+
 			config := &filesystem.Config{
-				Extractors:     tc.ex,
-				PathsToExtract: tc.pathsToExtract,
-				IgnoreSubDirs:  tc.ignoreSubDirs,
-				DirsToSkip:     tc.dirsToSkip,
-				SkipDirRegex:   skipDirRegex,
-				SkipDirGlob:    skipDirGlob,
-				MaxInodes:      tc.maxInodes,
-				MaxFileSize:    tc.maxFileSizeBytes,
-				ScanRoots: []*scalibrfs.ScanRoot{{
-					FS: fsys, Path: ".",
-				}},
+				Extractors:        tc.ex,
+				PathsToExtract:    tc.pathsToExtract,
+				IgnoreSubDirs:     tc.ignoreSubDirs,
+				DirsToSkip:        tc.dirsToSkip,
+				SkipDirRegex:      skipDirRegex,
+				SkipDirGlob:       skipDirGlob,
+				MaxInodes:         tc.maxInodes,
+				MaxFileSize:       tc.maxFileSizeBytes,
+				ScanRoots:         []*scalibrfs.ScanRoot{scanRoot},
 				Stats:             fc,
 				StoreAbsolutePath: tc.storeAbsPath,
 			}
 			wc, err := filesystem.InitWalkContext(
-				context.Background(), config, []*scalibrfs.ScanRoot{{
-					FS: fsys, Path: cwd,
-				}},
+				context.Background(), config, []*scalibrfs.ScanRoot{scanRoot},
 			)
 			if err != nil {
 				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
@@ -705,6 +706,11 @@ func TestRunFS(t *testing.T) {
 			// The order of the locations doesn't matter.
 			for _, p := range gotInv.Packages {
 				sort.Strings(p.Locations)
+			}
+
+			// Set scan root to the passed in scanRoot
+			for _, p := range tc.wantPkg.Packages {
+				p.ScanRoot = scanRoot
 			}
 
 			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {

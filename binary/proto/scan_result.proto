@@ -82,6 +82,8 @@ message Package {
   // Ecosystem - For software packages this corresponds to an OSV ecosystem
   // value, e.g. PyPI.
   string ecosystem = 27;
+  // ScanRoot that the package was extracted from (just the Path)
+  string scan_root_path = 52;
   // Paths or source of files related to the package.
   repeated string locations = 2;
   // TODO(b/400910349): Remove once integrators stop using these fields.

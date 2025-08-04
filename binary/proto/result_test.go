@@ -53,6 +53,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -74,6 +75,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	successProto := &spb.ScanStatus{Status: spb.ScanStatus_SUCCEEDED}
 	failure := &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"}
 	failureProto := &spb.ScanStatus{Status: spb.ScanStatus_FAILED, FailureReason: "failure"}
+	scanRoot := &scalibrfs.ScanRoot{Path: "/"}
 	purlDPKGPackage := &extractor.Package{
 		Name:     "software",
 		Version:  "1.0.0",
@@ -88,6 +90,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{dpkg.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlDPKGAnnotationPackage := &extractor.Package{
 		Name:     "software",
@@ -109,6 +112,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Justification:   vex.ComponentNotPresent,
 			MatchesAllVulns: true,
 		}},
+		ScanRoot: scanRoot,
 	}
 	purlPythonPackage := &extractor.Package{
 		Name:      "software",
@@ -120,6 +124,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Author:      "author",
 			AuthorEmail: "author@corp.com",
 		},
+		ScanRoot: scanRoot,
 	}
 	pythonRequirementsPackage := &extractor.Package{
 		Name:      "foo",
@@ -132,6 +137,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			VersionComparator:      ">=",
 			Requirement:            "foo>=1.0",
 		},
+		ScanRoot: scanRoot,
 	}
 	purlJavascriptPackage := &extractor.Package{
 		Name:     "software",
@@ -153,6 +159,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{packagejson.Name},
+		ScanRoot:  scanRoot,
 	}
 
 	purlDotnetDepsJSONPackage := &extractor.Package{
@@ -166,6 +173,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{depsjson.Name},
+		ScanRoot:  scanRoot,
 	}
 
 	purlDotnetDepsJSONPackageProto := &spb.Package{
@@ -187,6 +195,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Type:           "type",
 			},
 		},
+		ScanRootPath: "/",
 	}
 
 	windowsPackage := &extractor.Package{
@@ -197,7 +206,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Product:     "windows_server_2019",
 			FullVersion: "10.0.17763.3406",
 		},
-		Plugins: []string{dismpatch.Name},
+		Plugins:  []string{dismpatch.Name},
+		ScanRoot: scanRoot,
 	}
 
 	purlDPKGPackageProto := &spb.Package{
@@ -225,8 +235,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Architecture:      "amd64",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/dpkg"},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/dpkg"},
+		ScanRootPath: "/",
 	}
 	purlDPKGAnnotationPackageProto := &spb.Package{
 		Name:    "software",
@@ -261,6 +272,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
 			VulnFilter:    &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true},
 		}},
+		ScanRootPath: "/",
 	}
 	purlPythonPackageProto := &spb.Package{
 		Name:    "software",
@@ -280,6 +292,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				AuthorEmail: "author@corp.com",
 			},
 		},
+		ScanRootPath: "/",
 	}
 	pythonRequirementsPackageProto := &spb.Package{
 		Name:    "foo",
@@ -300,6 +313,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Requirement:            "foo>=1.0",
 			},
 		},
+		ScanRootPath: "/",
 	}
 	purlJavascriptPackageProto := &spb.Package{
 		Name:    "software",
@@ -322,6 +336,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
+		ScanRootPath: "/",
 	}
 	cdxPackage := &extractor.Package{
 		Name:     "openssl",
@@ -336,6 +351,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/openssl"},
 		Plugins:   []string{cdx.Name},
+		ScanRoot:  scanRoot,
 	}
 	cdxPackageProto := &spb.Package{
 		Name:      "openssl",
@@ -357,8 +373,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
-		Locations: []string{"/openssl"},
-		Plugins:   []string{"sbom/cdx"},
+		Locations:    []string{"/openssl"},
+		Plugins:      []string{"sbom/cdx"},
+		ScanRootPath: "/",
 	}
 	purlRPMPackage := &extractor.Package{
 		Name:     "openssh-clients",
@@ -378,6 +395,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{rpm.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlRPMPackageProto := &spb.Package{
 		Name:    "openssh-clients",
@@ -410,8 +428,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				License:      "BSD",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/rpm"},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/rpm"},
+		ScanRootPath: "/",
 	}
 	purlPACMANPackage := &extractor.Package{
 		Name:     "zstd",
@@ -425,6 +444,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{pacman.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlPACMANPackageProto := &spb.Package{
 		Name:    "zstd",
@@ -448,8 +468,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:    "20241201.0.284684",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/pacman"},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/pacman"},
+		ScanRootPath: "/",
 	}
 	purlPORTAGEPackage := &extractor.Package{
 		Name:     "Capture-Tiny",
@@ -463,6 +484,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{portage.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlPORTAGEPackageProto := &spb.Package{
 		Name:    "Capture-Tiny",
@@ -486,8 +508,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:    "2.17",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/portage"},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/portage"},
+		ScanRootPath: "/",
 	}
 	purlNixPackage := &extractor.Package{
 		Name:     "attr",
@@ -502,6 +525,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{nix.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlNixPackageProto := &spb.Package{
 		Name:    "attr",
@@ -525,8 +549,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:       "24.11",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/nix"},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/nix"},
+		ScanRootPath: "/",
 	}
 	purlHomebrewPackage := &extractor.Package{
 		Name:      "rclone",
@@ -535,6 +560,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Metadata:  &homebrew.Metadata{},
 		Locations: []string{"/file1"},
 		Plugins:   []string{homebrew.Name},
+		ScanRoot:  scanRoot,
 	}
 	purlHomebrewPackageProto := &spb.Package{
 		Name:    "rclone",
@@ -545,9 +571,10 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "rclone",
 			Version: "1.67.0",
 		},
-		Metadata:  &spb.Package_HomebrewMetadata{},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/homebrew"},
+		Metadata:     &spb.Package_HomebrewMetadata{},
+		Locations:    []string{"/file1"},
+		Plugins:      []string{"os/homebrew"},
+		ScanRootPath: "/",
 	}
 	containerdPackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
@@ -566,6 +593,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file4"},
 		Plugins:   []string{ctrdfs.Name},
+		ScanRoot:  scanRoot,
 	}
 	containerdPackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
@@ -585,8 +613,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				WorkDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
 			},
 		},
-		Locations: []string{"/file4"},
-		Plugins:   []string{"containers/containerd"},
+		Locations:    []string{"/file4"},
+		Plugins:      []string{"containers/containerd"},
+		ScanRootPath: "/",
 	}
 	containerdRuntimePackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
@@ -602,6 +631,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file7"},
 		Plugins:   []string{ctrdruntime.Name},
+		ScanRoot:  scanRoot,
 	}
 	containerdRuntimePackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
@@ -618,8 +648,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				RootfsPath:    "/run/containerd/io.containerd.runtime.v2.task/default/1234567890/rootfs",
 			},
 		},
-		Locations: []string{"/file7"},
-		Plugins:   []string{"containers/containerd-runtime"},
+		Locations:    []string{"/file7"},
+		Plugins:      []string{"containers/containerd-runtime"},
+		ScanRootPath: "/",
 	}
 	windowsPackageProto := &spb.Package{
 		Name:    "windows_server_2019",
@@ -643,7 +674,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
-		Plugins: []string{"windows/dismpatch"},
+		Plugins:      []string{"windows/dismpatch"},
+		ScanRootPath: "/",
 	}
 	purlPythonPackageWithLayerDetails := &extractor.Package{
 		Name:      "software",
@@ -662,6 +694,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Command:     "command1",
 			InBaseImage: true,
 		},
+		ScanRoot: scanRoot,
 	}
 	purlPythonPackageWithLayerDetailsProto := &spb.Package{
 		Name:    "software",
@@ -688,6 +721,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Command:     "command1",
 			InBaseImage: true,
 		},
+		ScanRootPath: "/",
 	}
 	mavenPackage := &extractor.Package{
 		Name:      "abc:xyz",
@@ -700,6 +734,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ArtifactID:   "xyz",
 			IsTransitive: true,
 		},
+		ScanRoot: scanRoot,
 	}
 	mavenPackageProto := &spb.Package{
 		Name:      "abc:xyz",
@@ -721,6 +756,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				IsTransitive: true,
 			},
 		},
+		ScanRootPath: "/",
 	}
 
 	podmanPackage := &extractor.Package{
@@ -736,7 +772,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ExitCode:     0,
 			Exited:       false,
 		},
-		Plugins: []string{podman.Name},
+		Plugins:  []string{podman.Name},
+		ScanRoot: scanRoot,
 	}
 	podmanPackageProto := &spb.Package{
 		Name:    "docker.io/redis",
@@ -753,7 +790,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Exited:        false,
 			},
 		},
-		Plugins: []string{"containers/podman"},
+		Plugins:      []string{"containers/podman"},
+		ScanRootPath: "/",
 	}
 
 	gcpsakSecret := &inventory.Secret{
@@ -858,7 +896,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
 			Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 		},
-		Plugins: []string{docker.Name},
+		Plugins:  []string{docker.Name},
+		ScanRoot: scanRoot,
 	}
 
 	dockerPackageProto := &spb.Package{
@@ -874,7 +913,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
-		Plugins: []string{"containers/docker"},
+		Plugins:      []string{"containers/docker"},
+		ScanRootPath: "/",
 	}
 
 	testCases := []struct {

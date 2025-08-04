@@ -19,6 +19,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
+	"github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 
@@ -80,6 +81,13 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		annotations = append(annotations, AnnotationToProto(a))
 	}
 
+	scanRootPath := ""
+	if pkg.ScanRoot != nil {
+		scanRootPath = pkg.ScanRoot.Path
+	} else {
+		log.Warnf("ScanRoot is nil, ScanRoot should always be filled.")
+	}
+
 	packageProto := &spb.Package{
 		Name:       pkg.Name,
 		Version:    pkg.Version,
@@ -94,6 +102,7 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
 		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
+		ScanRootPath:          scanRootPath,
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto
@@ -386,6 +395,7 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Version:               pkgProto.GetVersion(),
 		SourceCode:            sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
 		Locations:             locations,
+		ScanRoot:              &fs.ScanRoot{Path: pkgProto.GetScanRootPath()},
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
 		AnnotationsDeprecated: annotations,
