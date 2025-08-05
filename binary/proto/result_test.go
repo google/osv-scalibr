@@ -67,6 +67,66 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var (
+	purlDPKGAnnotationPackage = &extractor.Package{
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
+			PackageName:       "software",
+			PackageVersion:    "1.0.0",
+			OSID:              "debian",
+			OSVersionCodename: "jammy",
+			Maintainer:        "maintainer",
+			Architecture:      "amd64",
+		},
+		Locations:             []string{"/file1"},
+		Plugins:               []string{dpkg.Name},
+		AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+			Plugin:          dpkg.Name,
+			Justification:   vex.ComponentNotPresent,
+			MatchesAllVulns: true,
+		}},
+	}
+	purlDPKGAnnotationPackageProto = &spb.Package{
+		Name:    "software",
+		Version: "1.0.0",
+		Purl: &spb.Purl{
+			Purl:      "pkg:deb/debian/software@1.0.0?arch=amd64&distro=jammy",
+			Type:      purl.TypeDebian,
+			Namespace: "debian",
+			Name:      "software",
+			Version:   "1.0.0",
+			Qualifiers: []*spb.Qualifier{
+				{Key: "arch", Value: "amd64"},
+				{Key: "distro", Value: "jammy"},
+			},
+		},
+		Ecosystem: "Debian",
+		Metadata: &spb.Package_DpkgMetadata{
+			DpkgMetadata: &spb.DPKGPackageMetadata{
+				PackageName:       "software",
+				PackageVersion:    "1.0.0",
+				OsId:              "debian",
+				OsVersionCodename: "jammy",
+				Maintainer:        "maintainer",
+				Architecture:      "amd64",
+			},
+		},
+		Locations: []string{"/file1"},
+		// TODO(b/400910349): Remove once integrators stop using these fields.
+		ExtractorDeprecated:   "os/dpkg",
+		Plugins:               []string{"os/dpkg"},
+		AnnotationsDeprecated: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
+		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
+			Plugin:        dpkg.Name,
+			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
+			VulnFilter:    &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true},
+		}},
+	}
+)
+
 func TestScanResultToProtoAndBack(t *testing.T) {
 	endTime := time.Now()
 	startTime := endTime.Add(time.Second * -10)
@@ -88,27 +148,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{dpkg.Name},
-	}
-	purlDPKGAnnotationPackage := &extractor.Package{
-		Name:     "software",
-		Version:  "1.0.0",
-		PURLType: purl.TypeDebian,
-		Metadata: &dpkgmeta.Metadata{
-			PackageName:       "software",
-			PackageVersion:    "1.0.0",
-			OSID:              "debian",
-			OSVersionCodename: "jammy",
-			Maintainer:        "maintainer",
-			Architecture:      "amd64",
-		},
-		Locations:             []string{"/file1"},
-		Plugins:               []string{dpkg.Name},
-		AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
-		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
-			Plugin:          dpkg.Name,
-			Justification:   vex.ComponentNotPresent,
-			MatchesAllVulns: true,
-		}},
 	}
 	purlPythonPackage := &extractor.Package{
 		Name:      "software",
@@ -227,40 +266,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/dpkg"},
-	}
-	purlDPKGAnnotationPackageProto := &spb.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Purl: &spb.Purl{
-			Purl:      "pkg:deb/debian/software@1.0.0?arch=amd64&distro=jammy",
-			Type:      purl.TypeDebian,
-			Namespace: "debian",
-			Name:      "software",
-			Version:   "1.0.0",
-			Qualifiers: []*spb.Qualifier{
-				{Key: "arch", Value: "amd64"},
-				{Key: "distro", Value: "jammy"},
-			},
-		},
-		Ecosystem: "Debian",
-		Metadata: &spb.Package_DpkgMetadata{
-			DpkgMetadata: &spb.DPKGPackageMetadata{
-				PackageName:       "software",
-				PackageVersion:    "1.0.0",
-				OsId:              "debian",
-				OsVersionCodename: "jammy",
-				Maintainer:        "maintainer",
-				Architecture:      "amd64",
-			},
-		},
-		Locations:             []string{"/file1"},
-		Plugins:               []string{"os/dpkg"},
-		AnnotationsDeprecated: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
-		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
-			Plugin:        dpkg.Name,
-			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
-			VulnFilter:    &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true},
-		}},
 	}
 	purlPythonPackageProto := &spb.Package{
 		Name:    "software",
@@ -1518,21 +1523,17 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
 			}
 
-			// Ignore deprecated fields in the comparison.
-			// TODO(b/400910349): Stop setting the deprecated fields
-			// once integrators no longer read them.
-			if got != nil {
-				//nolint:staticcheck
-				got.InventoriesDeprecated = nil
-				//nolint:staticcheck
-				got.FindingsDeprecated = nil
-				for _, p := range got.Inventory.Packages {
-					//nolint:staticcheck
-					p.ExtractorDeprecated = ""
-				}
+			opts := []cmp.Option{
+				protocmp.Transform(),
+				// Ignore deprecated fields in the comparison.
+				// TODO(b/400910349): Stop setting the deprecated fields
+				// once integrators no longer read them.
+				protocmp.IgnoreFields(&spb.Package{}, "extractor_deprecated"),
+				protocmp.IgnoreFields(&spb.ScanResult{}, "inventories_deprecated"),
+				protocmp.IgnoreFields(&spb.ScanResult{}, "findings_deprecated"),
 			}
 
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)
 			}
 
