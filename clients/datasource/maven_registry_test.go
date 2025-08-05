@@ -15,7 +15,10 @@
 package datasource_test
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -244,5 +247,34 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	wantVersions = []maven.String{"2.0.0"}
 	if !reflect.DeepEqual(gotVersions, wantVersions) {
 		t.Errorf("GetVersions(%s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", gotVersions, wantVersions)
+	}
+}
+
+func TestMavenLocalRegistry(t *testing.T) {
+	tempDir := t.TempDir()
+	srv := clienttest.NewMockHTTPServer(t)
+	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir)
+	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
+	resp := []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>`)
+	srv.SetResponse(t, path, resp)
+
+	_, err := client.GetProject(context.Background(), "org.example", "x.y.z", "1.0.0")
+	if err != nil {
+		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
+	}
+
+	// Check that the pom file is stored locally.
+	filePath := filepath.Join(tempDir, path)
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if !bytes.Equal(content, resp) {
+		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
 	}
 }

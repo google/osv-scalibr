@@ -69,8 +69,8 @@ func (Enricher) RequiredPlugins() []string {
 // NewDefault returns a new enricher with the default configuration.
 func NewDefault() enricher.Enricher {
 	return &Enricher{
-		// Empty string indicates using default registry.
-		Client: resolution.NewPyPIRegistryClient(""),
+		// Empty string indicates using default registry and no local registry.
+		Client: resolution.NewPyPIRegistryClient("", ""),
 	}
 }
 

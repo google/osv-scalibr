@@ -105,11 +105,12 @@ func (c *CombinedNativeClient) AddRegistries(registries []Registry) error {
 func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Client, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	localRegistry := c.opts.LocalRegistry
 	var err error
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			localRegistry := c.opts.LocalRegistry
 			if localRegistry != "" {
 				localRegistry = filepath.Join(c.opts.LocalRegistry, "maven")
 			}
@@ -128,8 +129,11 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 		}
 		return c.npmRegistryClient, nil
 	case resolve.PyPI:
+		if localRegistry != "" {
+			localRegistry = filepath.Join(c.opts.LocalRegistry, "pypi")
+		}
 		if c.pypiRegistryClient == nil {
-			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry)
+			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, localRegistry)
 		}
 		return c.pypiRegistryClient, nil
 	default:
