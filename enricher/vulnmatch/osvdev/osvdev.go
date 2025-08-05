@@ -44,11 +44,15 @@ const (
 	maxConcurrentRequests = 1000
 )
 
+// InitialQueryTimeoutErr is returned if the initial query to OSV.dev partially fails due to timeout
+var InitialQueryTimeoutErr = errors.New("initialQueryTimeout reached")
+
 var _ enricher.Enricher = &Enricher{}
 
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
-	client *osvdev.OSVClient
+	client              *osvdev.OSVClient
+	initialQueryTimeout time.Duration
 }
 
 // NewWithClient returns an Enricher which uses a specified deps.dev client.
@@ -91,7 +95,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	if e.client == nil {
 		client := osvdev.DefaultClient()
 		// TODO: add better user agent
-		// TODO: handle initialQueryTimeout
 		// client.Config.UserAgent = "osv-scanner_scan/"+version.OSVVersion
 		e.client = client
 	}
@@ -101,14 +104,12 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		queries[i] = pkgToQuery(pkg)
 	}
 
-	// todo: do this better
-	clause := errors.New("test")
-	deadlineCtx, cancel := context.WithDeadlineCause(ctx, time.Now().Add(5*time.Minute), clause)
-	batchResp, err := osvdevexperimental.BatchQueryPaging(deadlineCtx, e.client, queries)
+	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, InitialQueryTimeoutErr)
+	batchResp, initialQueryTimeoutErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
 	cancel()
 
-	if err != nil && !errors.Is(err, clause) {
-		return err
+	if initialQueryTimeoutErr != nil && !errors.Is(initialQueryTimeoutErr, InitialQueryTimeoutErr) {
+		return initialQueryTimeoutErr
 	}
 
 	vulnToPkg := map[string][]*extractor.Package{}
@@ -143,7 +144,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		})
 	}
 
-	return nil
+	return initialQueryTimeoutErr
 }
 
 func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvschema.Vulnerability, error) {
@@ -196,4 +197,13 @@ func pkgToQuery(pkg *extractor.Package) *osvdev.Query {
 	log.Errorf("invalid query element: %#v", pkg)
 
 	return nil
+}
+
+// withOptionalTimeoutCause creates a context that may time out after d.
+// If d == 0, it just returns the original context.
+func withOptionalTimeoutCause(ctx context.Context, d time.Duration, clause error) (context.Context, context.CancelFunc) {
+	if d == 0 {
+		return ctx, func() {}
+	}
+	return context.WithTimeoutCause(ctx, d, clause)
 }
