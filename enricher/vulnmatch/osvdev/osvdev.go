@@ -1,0 +1,199 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package osvdev queries the OSV.dev API to find vulnerabilities in the inventory packages
+package osvdev
+
+import (
+	"context"
+	"errors"
+	"maps"
+	"slices"
+	"time"
+
+	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"golang.org/x/sync/errgroup"
+	"osv.dev/bindings/go/osvdev"
+	"osv.dev/bindings/go/osvdevexperimental"
+)
+
+const (
+	// Name is the unique name of this Enricher.
+	Name    = "vulnmatch/osvdev"
+	version = 1
+)
+
+const (
+	maxConcurrentRequests = 1000
+)
+
+var _ enricher.Enricher = &Enricher{}
+
+// Enricher adds license data to software packages by querying deps.dev
+type Enricher struct {
+	client *osvdev.OSVClient
+}
+
+// NewWithClient returns an Enricher which uses a specified deps.dev client.
+func NewWithClient(c *osvdev.OSVClient) enricher.Enricher {
+	return &Enricher{client: c}
+}
+
+// New creates a new Enricher
+func New() enricher.Enricher {
+	return &Enricher{}
+}
+
+// Name of the Enricher.
+func (Enricher) Name() string {
+	return Name
+}
+
+// Version of the Enricher.
+func (Enricher) Version() int {
+	return version
+}
+
+// Requirements of the Enricher.
+// Needs network access so it can validate Secrets.
+func (Enricher) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		Network: plugin.NetworkOnline,
+	}
+}
+
+// RequiredPlugins returns the plugins that are required to be enabled for this
+// Enricher to run. While it works on the results of other extractors,
+// the Enricher itself can run independently.
+func (Enricher) RequiredPlugins() []string {
+	return []string{}
+}
+
+// Enrich queries the OSV.dev API to find vulnerabilities in the inventory packages
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	if e.client == nil {
+		client := osvdev.DefaultClient()
+		// TODO: add better user agent
+		// TODO: handle initialQueryTimeout
+		// client.Config.UserAgent = "osv-scanner_scan/"+version.OSVVersion
+		e.client = client
+	}
+
+	queries := make([]*osvdev.Query, len(inv.Packages))
+	for i, pkg := range inv.Packages {
+		queries[i] = pkgToQuery(pkg)
+	}
+
+	// todo: do this better
+	clause := errors.New("test")
+	deadlineCtx, cancel := context.WithDeadlineCause(ctx, time.Now().Add(5*time.Minute), clause)
+	batchResp, err := osvdevexperimental.BatchQueryPaging(deadlineCtx, e.client, queries)
+	cancel()
+
+	if err != nil && !errors.Is(err, clause) {
+		return err
+	}
+
+	vulnToPkg := map[string][]*extractor.Package{}
+	for i, batch := range batchResp.Results {
+		for _, vv := range batch.Vulns {
+			vulnToPkg[vv.ID] = append(vulnToPkg[vv.ID], inv.Packages[i])
+		}
+	}
+
+	vulnIDs := slices.Collect(maps.Keys(vulnToPkg))
+	vulnerabilities, err := e.makeVulnerabilitiesRequest(ctx, vulnIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, vuln := range vulnerabilities {
+		pkgs := vulnToPkg[vuln.ID]
+
+		var signals []*vex.FindingExploitabilitySignal
+		for _, pkg := range pkgs {
+			signals = append(signals, vex.FindingVEXFromPackageVEX(vuln.ID, pkg.ExploitabilitySignals)...)
+			// TODO: Check if this is necessary
+			// vuln.Affected = append(vuln.Affected, inventory.PackageToAffected(pkg, vuln., vuln.Severity)...)
+		}
+
+		// TODO: dedup inv.PackageVulns in case some were already present
+		inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
+			Vulnerability:         *vuln,
+			Packages:              pkgs,
+			ExploitabilitySignals: signals,
+			Plugins:               []string{Name},
+		})
+	}
+
+	return nil
+}
+
+func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvschema.Vulnerability, error) {
+	vulnerabilities := make([]*osvschema.Vulnerability, len(vulnIDs))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxConcurrentRequests)
+
+	for i, vulnID := range vulnIDs {
+		g.Go(func() error {
+			// exit early if another hydration request has already failed
+			// results are thrown away later, so avoid needless work
+			if ctx.Err() != nil {
+				return nil //nolint:nilerr // this value doesn't matter to errgroup.Wait()
+			}
+			vuln, err := e.client.GetVulnByID(ctx, vulnID)
+			if err != nil {
+				return err
+			}
+			vulnerabilities[i] = vuln
+
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return vulnerabilities, nil
+}
+
+func pkgToQuery(pkg *extractor.Package) *osvdev.Query {
+	if pkg.Name != "" && pkg.Ecosystem() != "" && pkg.Version != "" {
+		return &osvdev.Query{
+			Package: osvdev.Package{
+				Name:      pkg.Name,
+				Ecosystem: pkg.Ecosystem(),
+			},
+			Version: pkg.Version,
+		}
+	}
+
+	if pkg.SourceCode != nil && pkg.SourceCode.Commit != "" {
+		return &osvdev.Query{
+			Commit: pkg.SourceCode.Commit,
+		}
+	}
+
+	// TODO: this comment is not true
+	// This should have be filtered out before reaching this point
+	log.Errorf("invalid query element: %#v", pkg)
+
+	return nil
+}
