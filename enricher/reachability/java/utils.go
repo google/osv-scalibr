@@ -17,6 +17,7 @@ package java
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -85,5 +86,5 @@ func openFromRoot(root *scalibrfs.ScanRoot, fullPath string) (fs.File, error) {
 		relPath = fullPath[len(rootPath):]
 	}
 
-	return root.FS.Open(relPath)
+	return root.FS.Open(filepath.ToSlash(relPath))
 }
