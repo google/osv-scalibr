@@ -476,17 +476,19 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 			if p.Name() == gobinary.Name {
 				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
 			}
-			if p.Name() == pomxmlnet.Name && f.LocalRegistry != "" {
-				p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
-			}
-			if p.Name() == requirements.Name && f.LocalRegistry != "" {
-				if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
-					// The resolution client is the native PyPI registry client.
-					client.SetLocalRegistry(filepath.Join(f.LocalRegistry, "pypi"))
-				}
-			}
 			if p.Name() == binary.Name {
 				p.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
+			}
+			if f.LocalRegistry != "" {
+				switch p.Name() {
+				case pomxmlnet.Name:
+					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
+				case requirements.Name:
+					if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
+						// The resolution client is the native PyPI registry client.
+						client.SetLocalRegistry(filepath.Join(f.LocalRegistry, "pypi"))
+					}
+				}
 			}
 		}
 

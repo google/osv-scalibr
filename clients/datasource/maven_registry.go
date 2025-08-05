@@ -286,7 +286,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 		if filePath != "" {
 			if err := writeFile(filePath, b); err != nil {
-				log.Infof("failed to write response to %s: %v", u, err)
+				log.Warnf("failed to write response to %s: %v", u, err)
 			}
 		}
 

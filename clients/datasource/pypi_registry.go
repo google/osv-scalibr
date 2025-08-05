@@ -140,7 +140,7 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 
 		if file != "" {
 			if err := writeFile(file, b); err != nil {
-				log.Infof("failed to write response of %s: %v", url, err)
+				log.Warnf("failed to write response of %s: %v", url, err)
 			}
 		}
 
