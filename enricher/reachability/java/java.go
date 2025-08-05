@@ -27,7 +27,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -357,7 +356,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 // unzipJAR unzips a JAR to a target directory. It also returns a list of paths
 // to all the nested JARs found while unzipping.
 func unzipJAR(jarPath string, input *enricher.ScanInput, jarRoot *os.Root) (nestedJARs []string, err error) {
-	file, err := openFromRoot(input.ScanRoot, filepath.ToSlash(jarPath))
+	file, err := openFromRoot(input.ScanRoot, jarPath)
 	if err != nil {
 		return nil, err
 	}
