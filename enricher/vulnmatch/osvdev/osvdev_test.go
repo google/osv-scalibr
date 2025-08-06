@@ -244,6 +244,14 @@ func TestEnrich(t *testing.T) {
 				"severity":           "MODERATE",
 			},
 		}
+
+		fzfVuln = osvschema.Vulnerability{
+			ID: "mockID",
+			Affected: inventory.PackageToAffected(fzfPkg, "3002.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+		}
 	)
 
 	tests := []struct {
@@ -303,19 +311,11 @@ func TestEnrich(t *testing.T) {
 		{
 			name: "not_empty_local_inventory_vulns",
 			packageVulns: []*inventory.PackageVuln{
-				{
-					Vulnerability: osvschema.Vulnerability{ID: "mockID"},
-					Packages:      []*extractor.Package{fzfPkg},
-					Plugins:       []string{"mock/plugin"},
-				},
+				{Vulnerability: fzfVuln, Packages: []*extractor.Package{fzfPkg}, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{
-					Vulnerability: osvschema.Vulnerability{ID: "mockID"},
-					Packages:      []*extractor.Package{fzfPkg},
-					Plugins:       []string{"mock/plugin"},
-				},
+				{Vulnerability: fzfVuln, Packages: []*extractor.Package{fzfPkg}, Plugins: []string{"mock/plugin"}},
 				{Vulnerability: jsVuln1, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
 				{Vulnerability: jsVuln2, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
 			},

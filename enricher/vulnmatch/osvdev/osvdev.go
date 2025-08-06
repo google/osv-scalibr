@@ -120,21 +120,21 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		return initialQueryErr
 	}
 
-	vulnToPkg := map[string][]*extractor.Package{}
+	vulnToPkgs := map[string][]*extractor.Package{}
 	for i, batch := range batchResp.Results {
 		for _, vv := range batch.Vulns {
-			vulnToPkg[vv.ID] = append(vulnToPkg[vv.ID], pkgs[i])
+			vulnToPkgs[vv.ID] = append(vulnToPkgs[vv.ID], pkgs[i])
 		}
 	}
 
-	vulnIDs := slices.Collect(maps.Keys(vulnToPkg))
+	vulnIDs := slices.Collect(maps.Keys(vulnToPkgs))
 	vulnerabilities, err := e.makeVulnerabilitiesRequest(ctx, vulnIDs)
 	if err != nil {
 		return err
 	}
 
 	for _, vuln := range vulnerabilities {
-		pkgs := vulnToPkg[vuln.ID]
+		pkgs := vulnToPkgs[vuln.ID]
 
 		var signals []*vex.FindingExploitabilitySignal
 		for _, pkg := range pkgs {
