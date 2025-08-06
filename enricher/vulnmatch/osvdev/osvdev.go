@@ -99,23 +99,29 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		e.client = client
 	}
 
-	queries := make([]*osvdev.Query, len(inv.Packages))
-	for i, pkg := range inv.Packages {
-		queries[i] = pkgToQuery(pkg)
+	pkgs := make([]*extractor.Package, 0, len(inv.Packages))
+	queries := make([]*osvdev.Query, 0, len(inv.Packages))
+	for _, pkg := range inv.Packages {
+		query := pkgToQuery(pkg)
+		if query == nil {
+			continue
+		}
+		pkgs = append(pkgs, pkg)
+		queries = append(queries, query)
 	}
 
 	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, InitialQueryTimeoutErr)
-	batchResp, initialQueryTimeoutErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
+	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
 	cancel()
 
-	if initialQueryTimeoutErr != nil && !errors.Is(initialQueryTimeoutErr, InitialQueryTimeoutErr) {
-		return initialQueryTimeoutErr
+	if initialQueryErr != nil && !errors.Is(initialQueryErr, InitialQueryTimeoutErr) {
+		return initialQueryErr
 	}
 
 	vulnToPkg := map[string][]*extractor.Package{}
 	for i, batch := range batchResp.Results {
 		for _, vv := range batch.Vulns {
-			vulnToPkg[vv.ID] = append(vulnToPkg[vv.ID], inv.Packages[i])
+			vulnToPkg[vv.ID] = append(vulnToPkg[vv.ID], pkgs[i])
 		}
 	}
 
@@ -144,7 +150,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		})
 	}
 
-	return initialQueryTimeoutErr
+	return initialQueryErr
 }
 
 func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvschema.Vulnerability, error) {

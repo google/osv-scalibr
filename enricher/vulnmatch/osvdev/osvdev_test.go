@@ -21,24 +21,17 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestEnrich(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(context.Background())
 	cancel()
-
-	copier := cpy.New(
-		cpy.Func(proto.Clone),
-		cpy.IgnoreAllUnexported(),
-	)
 
 	var (
 		jsPkg      = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
@@ -328,8 +321,7 @@ func TestEnrich(t *testing.T) {
 
 			var input *enricher.ScanInput
 
-			packages := copier.Copy(tt.packages).([]*extractor.Package)
-			inv := &inventory.Inventory{Packages: packages}
+			inv := &inventory.Inventory{Packages: tt.packages}
 
 			err := e.Enrich(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
