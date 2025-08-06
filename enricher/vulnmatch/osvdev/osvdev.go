@@ -26,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
@@ -56,13 +55,18 @@ type Enricher struct {
 }
 
 // NewWithClient returns an Enricher which uses a specified deps.dev client.
-func NewWithClient(c *osvdev.OSVClient) enricher.Enricher {
-	return &Enricher{client: c}
+func NewWithClient(c *osvdev.OSVClient, initialQueryTimeout time.Duration) enricher.Enricher {
+	return &Enricher{
+		client:              c,
+		initialQueryTimeout: initialQueryTimeout,
+	}
 }
 
 // New creates a new Enricher
-func New() enricher.Enricher {
-	return &Enricher{}
+func New(initialQueryTimeout time.Duration) enricher.Enricher {
+	return &Enricher{
+		initialQueryTimeout: initialQueryTimeout,
+	}
 }
 
 // Name of the Enricher.
@@ -102,19 +106,17 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	pkgs := make([]*extractor.Package, 0, len(inv.Packages))
 	queries := make([]*osvdev.Query, 0, len(inv.Packages))
 	for _, pkg := range inv.Packages {
-		query := pkgToQuery(pkg)
-		if query == nil {
-			continue
+		if query := pkgToQuery(pkg); query != nil {
+			pkgs = append(pkgs, pkg)
+			queries = append(queries, query)
 		}
-		pkgs = append(pkgs, pkg)
-		queries = append(queries, query)
 	}
 
 	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, InitialQueryTimeoutErr)
 	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
 	cancel()
 
-	if initialQueryErr != nil && !errors.Is(initialQueryErr, InitialQueryTimeoutErr) {
+	if initialQueryErr != nil && !errors.Is(InitialQueryTimeoutErr, initialQueryErr) {
 		return initialQueryErr
 	}
 
@@ -197,10 +199,6 @@ func pkgToQuery(pkg *extractor.Package) *osvdev.Query {
 			Commit: pkg.SourceCode.Commit,
 		}
 	}
-
-	// TODO: this comment is not true
-	// This should have be filtered out before reaching this point
-	log.Errorf("invalid query element: %#v", pkg)
 
 	return nil
 }

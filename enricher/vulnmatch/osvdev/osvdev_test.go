@@ -247,8 +247,9 @@ func TestEnrich(t *testing.T) {
 	)
 
 	tests := []struct {
-		name     string
-		packages []*extractor.Package
+		name         string
+		packageVulns []*inventory.PackageVuln
+		packages     []*extractor.Package
 		//nolint:containedctx
 		ctx                 context.Context
 		wantErr             error
@@ -256,14 +257,18 @@ func TestEnrich(t *testing.T) {
 		wantPackageVulns    []*inventory.PackageVuln
 	}{
 		{
-			name:     "ctx_cancelled",
-			ctx:      cancelledContext,
-			wantErr:  cmpopts.AnyError,
-			packages: []*extractor.Package{jsPkg, goPkg},
+			name:             "ctx_cancelled",
+			ctx:              cancelledContext,
+			packages:         []*extractor.Package{jsPkg, goPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
+			wantErr:          cmpopts.AnyError,
 		},
 		{
-			name: "initial_query_timeout",
-			// TODO: test
+			name:                "initial_query_timeout",
+			initialQueryTimeout: 1 * time.Microsecond,
+			packages:            []*extractor.Package{jsPkg, goPkg},
+			wantPackageVulns:    []*inventory.PackageVuln{},
+			wantErr:             osvdev.InitialQueryTimeoutErr,
 		},
 		{
 			name:     "simple_test",
@@ -275,12 +280,14 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
-			name:     "not_covered_purl_type",
-			packages: []*extractor.Package{fzfPkg},
+			name:             "not_covered_purl_type",
+			packages:         []*extractor.Package{fzfPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
 		},
 		{
-			name:     "unknown_package",
-			packages: []*extractor.Package{unknownPkg},
+			name:             "unknown_package",
+			packages:         []*extractor.Package{unknownPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
 		},
 		{
 			name:     "interleaving_covered_not_covered",
@@ -295,7 +302,23 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			name: "not_empty_local_inventory_vulns",
-			// TODO: implement
+			packageVulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: osvschema.Vulnerability{ID: "mockID"},
+					Packages:      []*extractor.Package{fzfPkg},
+					Plugins:       []string{"mock/plugin"},
+				},
+			},
+			packages: []*extractor.Package{fzfPkg, jsPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: osvschema.Vulnerability{ID: "mockID"},
+					Packages:      []*extractor.Package{fzfPkg},
+					Plugins:       []string{"mock/plugin"},
+				},
+				{Vulnerability: jsVuln1, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln2, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
+			},
 		},
 		{
 			name: "one_local_one_remote__same_pkg_same_cve",
@@ -317,11 +340,18 @@ func TestEnrich(t *testing.T) {
 				tt.ctx = context.Background()
 			}
 
-			e := osvdev.New()
+			e := osvdev.New(tt.initialQueryTimeout)
 
 			var input *enricher.ScanInput
 
-			inv := &inventory.Inventory{Packages: tt.packages}
+			if tt.packageVulns == nil {
+				tt.packageVulns = []*inventory.PackageVuln{}
+			}
+
+			inv := &inventory.Inventory{
+				PackageVulns: tt.packageVulns,
+				Packages:     tt.packages,
+			}
 
 			err := e.Enrich(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
