@@ -138,6 +138,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 		var signals []*vex.FindingExploitabilitySignal
 		for _, pkg := range pkgs {
+			// TODO: attention, two packages with different signal will be treated as equal
 			signals = append(signals, vex.FindingVEXFromPackageVEX(vuln.ID, pkg.ExploitabilitySignals)...)
 			// TODO: Check if this is necessary
 			// vuln.Affected = append(vuln.Affected, inventory.PackageToAffected(pkg, vuln., vuln.Severity)...)
