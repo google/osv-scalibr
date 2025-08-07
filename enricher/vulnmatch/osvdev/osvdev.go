@@ -134,23 +134,15 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	for _, vuln := range vulnerabilities {
-		pkgs := vulnToPkgs[vuln.ID]
-
-		var signals []*vex.FindingExploitabilitySignal
-		for _, pkg := range pkgs {
-			// TODO: attention, two packages with different signal will be treated as equal
-			signals = append(signals, vex.FindingVEXFromPackageVEX(vuln.ID, pkg.ExploitabilitySignals)...)
-			// TODO: Check if this is necessary
-			// vuln.Affected = append(vuln.Affected, inventory.PackageToAffected(pkg, vuln., vuln.Severity)...)
+		for _, pkg := range vulnToPkgs[vuln.ID] {
+			// TODO: dedup inv.PackageVulns in case some were already present
+			inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
+				Vulnerability:         *vuln,
+				Package:               pkg,
+				ExploitabilitySignals: vex.FindingVEXFromPackageVEX(vuln.ID, pkg.ExploitabilitySignals),
+				Plugins:               []string{Name},
+			})
 		}
-
-		// TODO: dedup inv.PackageVulns in case some were already present
-		inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
-			Vulnerability:         *vuln,
-			Packages:              pkgs,
-			ExploitabilitySignals: signals,
-			Plugins:               []string{Name},
-		})
 	}
 
 	return initialQueryErr

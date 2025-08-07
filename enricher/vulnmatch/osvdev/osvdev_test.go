@@ -282,9 +282,9 @@ func TestEnrich(t *testing.T) {
 			name:     "simple_test",
 			packages: []*extractor.Package{goPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: goVuln1, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln2, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln3, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
@@ -301,23 +301,23 @@ func TestEnrich(t *testing.T) {
 			name:     "interleaving_covered_not_covered",
 			packages: []*extractor.Package{goPkg, fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: goVuln1, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln2, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln3, Packages: []*extractor.Package{goPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln1, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln2, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
 			name: "not_empty_local_inventory_vulns",
 			packageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVuln, Packages: []*extractor.Package{fzfPkg}, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: fzfVuln, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVuln, Packages: []*extractor.Package{fzfPkg}, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: jsVuln1, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln2, Packages: []*extractor.Package{jsPkg}, Plugins: []string{osvdev.Name}},
+				{Vulnerability: fzfVuln, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
