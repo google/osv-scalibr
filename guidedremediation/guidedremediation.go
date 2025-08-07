@@ -632,7 +632,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	case "package.json":
 		return npm.GetReadWriter(registry)
 	case "requirements.in", "requirements.txt":
-		return python.GetReadWriter()
+		return python.GetRequirementsReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }

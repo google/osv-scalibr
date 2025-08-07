@@ -1,0 +1,16 @@
+[project]
+name = "my-project"
+version = "1.2.3"
+dependencies = [
+  "requests>=2.26.0,<3.0.0",
+  "numpy==1.22.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=6.2.5",
+  "black==23.0.0"
+]
+
+[tool.poetry]
+python = "^3.9"
