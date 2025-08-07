@@ -113,10 +113,18 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, InitialQueryTimeoutErr)
-	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
-	cancel()
+	defer cancel()
 
-	if initialQueryErr != nil && (!errors.Is(initialQueryErr, InitialQueryTimeoutErr) || batchResp == nil) {
+	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
+	initialQueryErr = errors.Join(initialQueryErr, context.Cause(queryCtx))
+
+	// if an error happened and is not caused by the initialQueryTimeout return it
+	if initialQueryErr != nil && !errors.Is(initialQueryErr, InitialQueryTimeoutErr) {
+		return initialQueryErr
+	}
+
+	// if batchResp is not usable return the initial error anyway
+	if batchResp == nil {
 		return initialQueryErr
 	}
 
@@ -144,6 +152,8 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		}
 	}
 
+	// return the the caller the initialQueryErr, which if not nil indicates that
+	// that the list of vulnerabilities is not complete
 	return initialQueryErr
 }
 

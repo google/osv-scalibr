@@ -323,7 +323,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			name:                "initial_query_timeout",
-			initialQueryTimeout: 1 * time.Microsecond,
+			initialQueryTimeout: -1 * time.Second,
 			packages:            []*extractor.Package{jsPkg, goPkg},
 			wantPackageVulns:    []*inventory.PackageVuln{},
 			wantErr:             osvdev.InitialQueryTimeoutErr,
