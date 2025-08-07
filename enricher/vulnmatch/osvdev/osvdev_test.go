@@ -377,9 +377,7 @@ func TestEnrich(t *testing.T) {
 			},
 			packages: []*extractor.Package{jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				// TODO: jsVuln1Local and jsVuln1 should be merged
-				{Vulnerability: jsVuln1Local, Package: jsPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name, "mock/plugin"}},
 				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},

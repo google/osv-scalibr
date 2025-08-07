@@ -152,9 +152,36 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		}
 	}
 
+	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
+
 	// return the the caller the initialQueryErr, which if not nil indicates that
 	// that the list of vulnerabilities is not complete
 	return initialQueryErr
+}
+
+// dedupPackageVulns deduplicate package vulnerabilities that have the same pkg and vulnID
+func dedupPackageVulns(vulns []*inventory.PackageVuln) []*inventory.PackageVuln {
+	if len(vulns) == 0 {
+		return vulns
+	}
+
+	type key struct {
+		pkg    *extractor.Package
+		vulnID string
+	}
+	dedupVulns := map[key]*inventory.PackageVuln{}
+
+	for _, vv := range vulns {
+		if vuln, ok := dedupVulns[key{vv.Package, vv.ID}]; !ok {
+			dedupVulns[key{vv.Package, vv.ID}] = vv
+		} else {
+			// use the latest (from OSV.dev) as source of truth
+			dedupVulns[key{vv.Package, vv.ID}] = vv
+			dedupVulns[key{vv.Package, vv.ID}].Plugins = append(dedupVulns[key{vv.Package, vv.ID}].Plugins, vuln.Plugins...)
+		}
+	}
+
+	return slices.Collect(maps.Values(dedupVulns))
 }
 
 func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvschema.Vulnerability, error) {
