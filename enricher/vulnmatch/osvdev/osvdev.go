@@ -116,7 +116,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
 	cancel()
 
-	if initialQueryErr != nil && !errors.Is(InitialQueryTimeoutErr, initialQueryErr) {
+	if initialQueryErr != nil && (!errors.Is(initialQueryErr, InitialQueryTimeoutErr) || batchResp == nil) {
 		return initialQueryErr
 	}
 
@@ -135,7 +135,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 	for _, vuln := range vulnerabilities {
 		for _, pkg := range vulnToPkgs[vuln.ID] {
-			// TODO: dedup inv.PackageVulns in case some were already present
 			inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
 				Vulnerability:         *vuln,
 				Package:               pkg,

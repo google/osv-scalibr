@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -34,10 +35,21 @@ func TestEnrich(t *testing.T) {
 	cancel()
 
 	var (
-		jsPkg      = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
-		goPkg      = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
-		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
+		jsPkg  = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
+		goPkg  = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
+		fzfPkg = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
+		// curlPkg    = &extractor.Package{Name: "curl", Version: "1.63.0", PURLType: purl.TypeDebian}
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+
+		goPkgWithSignals = &extractor.Package{
+			Name:     "github.com/gin-gonic/gin",
+			Version:  "1.8.1",
+			PURLType: purl.TypeGolang,
+			ExploitabilitySignals: []*vex.PackageExploitabilitySignal{
+				{
+					Plugin: "annotator/example", VulnIdentifiers: []string{"GHSA-2c4m-59x9-fr2g"},
+				},
+			}}
 	)
 
 	var (
@@ -204,6 +216,36 @@ func TestEnrich(t *testing.T) {
 			},
 		}
 
+		jsVuln1Local = osvschema.Vulnerability{
+			SchemaVersion: "1.7.0",
+			ID:            "GHSA-qw6h-vgh9-j6wx",
+			Modified:      time.Date(2024, 11, 18, 16, 27, 11, 0, time.UTC),
+			Published:     time.Date(2024, 9, 10, 19, 41, 4, 0, time.UTC),
+			Aliases:       []string{"CVE-2024-43796"},
+			Related:       []string{"CGA-7rmh-796c-qmq8", "CGA-8w92-879x-f9wc", "CGA-jq8v-jx6x-3fpc"},
+			Summary:       "express vulnerable to XSS via response.redirect()",
+			Details:       "In express <4.20.0, passing untrusted user input ...",
+			Severity: []osvschema.Severity{
+				{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:L"},
+			},
+			Affected: []osvschema.Affected{
+				{
+					Package: osvschema.Package{Ecosystem: "npm", Name: "express", Purl: "pkg:npm/express"},
+					Ranges: []osvschema.Range{
+						{Type: "SEMVER", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "4.20.0"}}},
+					},
+					DatabaseSpecific: map[string]any{"source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2024/09/GHSA-qw6h-vgh9-j6wx/GHSA-qw6h-vgh9-j6wx.json"},
+				},
+				{
+					Package: osvschema.Package{Ecosystem: "npm", Name: "express", Purl: "pkg:npm/express"},
+					Ranges: []osvschema.Range{
+						{Type: "SEMVER", Events: []osvschema.Event{{Introduced: "5.0.0-alpha.1"}, {Fixed: "5.0.0"}}},
+					},
+					DatabaseSpecific: map[string]any{"source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2024/09/GHSA-qw6h-vgh9-j6wx/GHSA-qw6h-vgh9-j6wx.json"},
+				},
+			},
+		}
+
 		jsVuln2 = osvschema.Vulnerability{
 			SchemaVersion: "1.7.0",
 			ID:            "GHSA-rv95-896h-c2vc",
@@ -245,13 +287,21 @@ func TestEnrich(t *testing.T) {
 			},
 		}
 
-		fzfVuln = osvschema.Vulnerability{
+		fzfVulnLocal = osvschema.Vulnerability{
 			ID: "mockID",
 			Affected: inventory.PackageToAffected(fzfPkg, "3002.1", &osvschema.Severity{
 				Type:  osvschema.SeverityCVSSV3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
+
+		// curlVuln_SameIdAsFzfVuln = osvschema.Vulnerability{
+		// 	ID: "mockID",
+		// 	Affected: inventory.PackageToAffected(curlPkg, "3.002.1", &osvschema.Severity{
+		// 		Type:  osvschema.SeverityCVSSV3,
+		// 		Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+		// 	}),
+		// }
 	)
 
 	tests := []struct {
@@ -311,27 +361,53 @@ func TestEnrich(t *testing.T) {
 		{
 			name: "not_empty_local_inventory_vulns",
 			packageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVuln, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVuln, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
 				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
 			name: "one_local_one_remote__same_pkg_same_cve",
-			// TODO: implement
+			packageVulns: []*inventory.PackageVuln{
+				{Vulnerability: jsVuln1Local, Package: jsPkg, Plugins: []string{"mock/plugin"}},
+			},
+			packages: []*extractor.Package{jsPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				// TODO: jsVuln1Local and jsVuln1 should be merged
+				{Vulnerability: jsVuln1Local, Package: jsPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
+			},
 		},
+		// TODO: add these back after a mock client is built
+		// {
+		// 	name: "one_local_one_remote__different_pkg_same_cve",
+		// 	packageVulns: []*inventory.PackageVuln{
+		// 		{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+		// 	},
+		// 	packages: []*extractor.Package{fzfPkg, curlPkg},
+		// 	wantPackageVulns: []*inventory.PackageVuln{
+		// 		{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+		// 		{Vulnerability: curlVuln_SameIdAsFzfVuln, Package: curlPkg, Plugins: []string{osvdev.Name}},
+		// 	},
+		// },
 		{
-			name: "one_local_one_remote__different_pkg_same_cve",
-			// TODO: implement
-		},
-		{
-			name: "exploitability_signals",
-			// TODO: implement
-		},
+			name:     "exploitability_signals",
+			packages: []*extractor.Package{goPkgWithSignals},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{
+					Vulnerability:         goVuln1,
+					Package:               goPkgWithSignals,
+					Plugins:               []string{osvdev.Name},
+					ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Plugin: "annotator/example", Justification: vex.Unspecified}},
+				},
+				{Vulnerability: goVuln2, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
+				{Vulnerability: goVuln3, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
+			}},
 	}
 
 	for _, tt := range tests {
@@ -340,6 +416,7 @@ func TestEnrich(t *testing.T) {
 				tt.ctx = context.Background()
 			}
 
+			// TODO: add fakeclient
 			e := osvdev.New(tt.initialQueryTimeout)
 
 			var input *enricher.ScanInput
