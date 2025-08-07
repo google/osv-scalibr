@@ -39,7 +39,7 @@ type PackageVuln struct {
 	osvschema.Vulnerability
 
 	// The extracted package associated with this vuln.
-	Packages []*extractor.Package
+	Package *extractor.Package
 	// The plugins (e.g. Detectors, Enrichers) that found this vuln.
 	Plugins []string
 	// Signals that indicate this finding is not exploitable.
