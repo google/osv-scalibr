@@ -297,7 +297,7 @@ func TestEnrich(t *testing.T) {
 			}),
 		}
 
-		pyPkg_SameVulnAsFzf = osvschema.Vulnerability{
+		pyPkgSameVulnAsFzf = osvschema.Vulnerability{
 			ID: "mockID",
 			Affected: inventory.PackageToAffected(pyPkg, "3.002.1", &osvschema.Severity{
 				Type:  osvschema.SeverityCVSSV3,
@@ -309,7 +309,7 @@ func TestEnrich(t *testing.T) {
 	client := fakeclient.New(map[string][]osvschema.Vulnerability{
 		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {goVuln1, goVuln2, goVuln3},
 		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {jsVuln1, jsVuln2},
-		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {pyPkg_SameVulnAsFzf},
+		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {pyPkgSameVulnAsFzf},
 	})
 
 	tests := []struct {
@@ -334,7 +334,7 @@ func TestEnrich(t *testing.T) {
 			initialQueryTimeout: -1 * time.Second,
 			packages:            []*extractor.Package{jsPkg, goPkg},
 			wantPackageVulns:    []*inventory.PackageVuln{},
-			wantErr:             osvdev.InitialQueryTimeoutErr,
+			wantErr:             osvdev.ErrInitialQueryTimeout,
 		},
 		{
 			name:     "simple_test",
@@ -397,7 +397,7 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{fzfPkg, pyPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: pyPkg_SameVulnAsFzf, Package: pyPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: pyPkgSameVulnAsFzf, Package: pyPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{

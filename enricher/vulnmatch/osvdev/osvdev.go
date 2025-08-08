@@ -43,8 +43,8 @@ const (
 	maxConcurrentRequests = 1000
 )
 
-// InitialQueryTimeoutErr is returned if the initial query to OSV.dev partially fails due to timeout
-var InitialQueryTimeoutErr = errors.New("initialQueryTimeout reached")
+// ErrInitialQueryTimeout is returned if the initial query to OSV.dev partially fails due to timeout
+var ErrInitialQueryTimeout = errors.New("initialQueryTimeout reached")
 
 var _ enricher.Enricher = &Enricher{}
 
@@ -109,14 +109,14 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		}
 	}
 
-	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, InitialQueryTimeoutErr)
+	queryCtx, cancel := withOptionalTimeoutCause(ctx, e.initialQueryTimeout, ErrInitialQueryTimeout)
 	defer cancel()
 
 	batchResp, initialQueryErr := osvdevexperimental.BatchQueryPaging(queryCtx, e.client, queries)
 	initialQueryErr = errors.Join(initialQueryErr, context.Cause(queryCtx))
 
 	// if an error happened and is not caused by the initialQueryTimeout return it
-	if initialQueryErr != nil && !errors.Is(initialQueryErr, InitialQueryTimeoutErr) {
+	if initialQueryErr != nil && !errors.Is(initialQueryErr, ErrInitialQueryTimeout) {
 		return initialQueryErr
 	}
 
@@ -151,8 +151,8 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
 
-	// return the the caller the initialQueryErr, which if not nil indicates that
-	// that the list of vulnerabilities is not complete
+	// return to the caller the initialQueryErr, which if not nil indicates that
+	// the list of vulnerabilities is not complete
 	return initialQueryErr
 }
 

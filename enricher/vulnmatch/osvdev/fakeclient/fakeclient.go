@@ -28,6 +28,7 @@ type client struct {
 	data map[string][]osvschema.Vulnerability
 }
 
+// New returns an OSV.dev fakeclient
 func New(data map[string][]osvschema.Vulnerability) osvdev.Client {
 	return &client{
 		data: data,
@@ -43,7 +44,7 @@ func (c *client) GetVulnByID(_ context.Context, id string) (*osvschema.Vulnerabi
 			}
 		}
 	}
-	return nil, fmt.Errorf("Vuln %q not found", id)
+	return nil, fmt.Errorf("vuln %q not found", id)
 }
 
 // Query implements osvdev.Client.
