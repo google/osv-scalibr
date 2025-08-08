@@ -2,8 +2,6 @@ module github.com/google/osv-scalibr
 
 go 1.24.4
 
-toolchain go1.24.5
-
 require (
 	deps.dev/api/v3 v3.0.0-20250616031631-419a06b41f9b
 	deps.dev/api/v3alpha v0.0.0-20250616031631-419a06b41f9b
