@@ -445,7 +445,10 @@ func TestEnrich(t *testing.T) {
 			}
 
 			sortPkgVulns := cmpopts.SortSlices(func(a, b *inventory.PackageVuln) bool {
-				return a.Vulnerability.ID < b.Vulnerability.ID
+				if a.Vulnerability.ID != b.Vulnerability.ID {
+					return a.Vulnerability.ID < b.Vulnerability.ID
+				}
+				return a.Package.Name < b.Package.Name
 			})
 
 			diff := cmp.Diff(
