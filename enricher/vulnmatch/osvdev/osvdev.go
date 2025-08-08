@@ -62,10 +62,14 @@ func NewWithClient(c Client, initialQueryTimeout time.Duration) enricher.Enriche
 	}
 }
 
-// New creates a new Enricher
-func New(initialQueryTimeout time.Duration) enricher.Enricher {
+// NewDefault creates a new Enricher with the default configuration and OSV.dev client
+func NewDefault() enricher.Enricher {
+	client := osvdev.DefaultClient()
+	// TODO: add better user agent
+	// client.Config.UserAgent = "osv-scanner_scan/"+version.OSVVersion
 	return &Enricher{
-		initialQueryTimeout: initialQueryTimeout,
+		initialQueryTimeout: 5 * time.Minute,
+		client:              client,
 	}
 }
 
@@ -96,13 +100,6 @@ func (Enricher) RequiredPlugins() []string {
 
 // Enrich queries the OSV.dev API to find vulnerabilities in the inventory packages
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if e.client == nil {
-		client := osvdev.DefaultClient()
-		// TODO: add better user agent
-		// client.Config.UserAgent = "osv-scanner_scan/"+version.OSVVersion
-		e.client = client
-	}
-
 	pkgs := make([]*extractor.Package, 0, len(inv.Packages))
 	queries := make([]*osvdev.Query, 0, len(inv.Packages))
 	for _, pkg := range inv.Packages {

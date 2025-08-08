@@ -21,6 +21,7 @@ import (
 	"osv.dev/bindings/go/osvdevexperimental"
 )
 
+// Client is an interface that provides an abstraction on top of the OSV.dev client.
 type Client interface {
 	osvdevexperimental.OSVClientInterface
 	GetVulnByID(ctx context.Context, id string) (*osvschema.Vulnerability, error)
