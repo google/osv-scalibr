@@ -16,6 +16,7 @@ package osvdev_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev/fakeclient"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -35,10 +37,10 @@ func TestEnrich(t *testing.T) {
 	cancel()
 
 	var (
-		jsPkg  = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
-		goPkg  = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
-		fzfPkg = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
-		// curlPkg    = &extractor.Package{Name: "curl", Version: "1.63.0", PURLType: purl.TypeDebian}
+		jsPkg      = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
+		goPkg      = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
+		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
+		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
 
 		goPkgWithSignals = &extractor.Package{
@@ -295,14 +297,20 @@ func TestEnrich(t *testing.T) {
 			}),
 		}
 
-		// curlVuln_SameIdAsFzfVuln = osvschema.Vulnerability{
-		// 	ID: "mockID",
-		// 	Affected: inventory.PackageToAffected(curlPkg, "3.002.1", &osvschema.Severity{
-		// 		Type:  osvschema.SeverityCVSSV3,
-		// 		Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-		// 	}),
-		// }
+		pyPkg_SameVulnAsFzf = osvschema.Vulnerability{
+			ID: "mockID",
+			Affected: inventory.PackageToAffected(pyPkg, "3.002.1", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+			}),
+		}
 	)
+
+	client := fakeclient.New(map[string][]osvschema.Vulnerability{
+		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {goVuln1, goVuln2, goVuln3},
+		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {jsVuln1, jsVuln2},
+		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {pyPkg_SameVulnAsFzf},
+	})
 
 	tests := []struct {
 		name         string
@@ -381,18 +389,17 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
-		// TODO: add these back after a mock client is built
-		// {
-		// 	name: "one_local_one_remote__different_pkg_same_cve",
-		// 	packageVulns: []*inventory.PackageVuln{
-		// 		{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-		// 	},
-		// 	packages: []*extractor.Package{fzfPkg, curlPkg},
-		// 	wantPackageVulns: []*inventory.PackageVuln{
-		// 		{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-		// 		{Vulnerability: curlVuln_SameIdAsFzfVuln, Package: curlPkg, Plugins: []string{osvdev.Name}},
-		// 	},
-		// },
+		{
+			name: "one_local_one_remote__different_pkg_same_cve",
+			packageVulns: []*inventory.PackageVuln{
+				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+			},
+			packages: []*extractor.Package{fzfPkg, pyPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: pyPkg_SameVulnAsFzf, Package: pyPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
 		{
 			name:     "exploitability_signals",
 			packages: []*extractor.Package{goPkgWithSignals},
@@ -414,8 +421,7 @@ func TestEnrich(t *testing.T) {
 				tt.ctx = context.Background()
 			}
 
-			// TODO: add fakeclient
-			e := osvdev.New(tt.initialQueryTimeout)
+			e := osvdev.NewWithClient(client, tt.initialQueryTimeout)
 
 			var input *enricher.ScanInput
 
@@ -445,8 +451,6 @@ func TestEnrich(t *testing.T) {
 			diff := cmp.Diff(
 				want, inv,
 				sortPkgVulns,
-				// TODO: add this back
-				cmpopts.IgnoreFields(osvschema.Vulnerability{}, "Details", "Summary"),
 			)
 
 			if diff != "" {

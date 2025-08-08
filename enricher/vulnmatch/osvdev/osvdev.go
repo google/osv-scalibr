@@ -50,12 +50,12 @@ var _ enricher.Enricher = &Enricher{}
 
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
-	client              *osvdev.OSVClient
+	client              Client
 	initialQueryTimeout time.Duration
 }
 
 // NewWithClient returns an Enricher which uses a specified deps.dev client.
-func NewWithClient(c *osvdev.OSVClient, initialQueryTimeout time.Duration) enricher.Enricher {
+func NewWithClient(c Client, initialQueryTimeout time.Duration) enricher.Enricher {
 	return &Enricher{
 		client:              c,
 		initialQueryTimeout: initialQueryTimeout,
