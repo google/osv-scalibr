@@ -64,8 +64,6 @@ func (c *client) QueryBatch(ctx context.Context, queries []*bindings.Query) (*bi
 		}
 
 		rsp, err := c.Query(ctx, qq)
-
-		// TODO: check if an empty result is appended in case of error
 		if err != nil {
 			return res, err
 		}
@@ -74,9 +72,6 @@ func (c *client) QueryBatch(ctx context.Context, queries []*bindings.Query) (*bi
 		for _, vv := range rsp.Vulns {
 			vulns = append(vulns, bindings.MinimalVulnerability{ID: vv.ID})
 		}
-
-		// TODO: check if the result is appended if len(vulns) == 0
-
 		res.Results = append(res.Results, bindings.MinimalResponse{Vulns: vulns})
 	}
 
