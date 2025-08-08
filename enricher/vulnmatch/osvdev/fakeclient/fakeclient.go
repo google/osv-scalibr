@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fakeclient contains a fake implementation of the OSV.dev client for testing purposes.
+// Package fakeclient contains a mock implementation of the OSV.dev client for testing purposes.
 package fakeclient
 
 import (
