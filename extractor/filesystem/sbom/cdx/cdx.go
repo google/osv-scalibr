@@ -17,7 +17,7 @@ package cdx
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"path/filepath"
 	"strings"
@@ -75,7 +75,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var cdxExtractor = findExtractor(input.Path)
 
 	if cdxExtractor == nil {
-		return inventory.Inventory{}, fmt.Errorf("sbom/cdx extractor: Invalid file format %s, only JSON and XML are supported", input.Path)
+		return inventory.Inventory{}, errors.New("sbom/cdx extractor: Invalid file format, only JSON and XML are supported")
 	}
 
 	cdxBOM, err := cdxExtractor(input.Reader)

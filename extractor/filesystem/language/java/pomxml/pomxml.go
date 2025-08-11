@@ -85,10 +85,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	err := xml.NewDecoder(input.Reader).Decode(&project)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 	if err := project.Interpolate(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to interpolate pom.xml %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to interpolate pom.xml: %w", err)
 	}
 
 	// Merging parents data by parsing local parent pom.xml.

@@ -161,7 +161,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("NewReaderAt(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("NewReaderAt: %w", err)
 	}
 
 	magicType, err := magic.GetType(r)

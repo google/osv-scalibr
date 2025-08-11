@@ -163,7 +163,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		})
 	}
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("flatpak.extract(%s): %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("flatpak.extract: %w", err)
 	}
 	if p == nil {
 		return inventory.Inventory{}, nil

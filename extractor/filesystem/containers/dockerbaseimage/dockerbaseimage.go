@@ -17,6 +17,7 @@ package dockerbaseimage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -108,7 +109,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract extracts base image urls from a Dockerfile.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if input.Info == nil {
-		return inventory.Inventory{}, fmt.Errorf("input.Info is nil for %q", input.Path)
+		return inventory.Inventory{}, errors.New("input.Info is nil")
 	}
 	if input.Info.Size() > e.maxFileSizeBytes {
 		// Skipping too large file.
