@@ -23,8 +23,6 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
-	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
-	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
@@ -120,18 +118,6 @@ func MakePackageURL(name string, version string, purlType string, metadata any) 
 		}
 
 	case *nixmeta.Metadata:
-		if distro := m.ToDistro(); distro != "" {
-			q[purl.Distro] = distro
-		}
-
-	case *vmlinuzmeta.Metadata:
-		namespace = m.ToNamespace()
-		if distro := m.ToDistro(); distro != "" {
-			q[purl.Distro] = distro
-		}
-
-	case *modulemeta.Metadata:
-		namespace = m.ToNamespace()
 		if distro := m.ToDistro(); distro != "" {
 			q[purl.Distro] = distro
 		}

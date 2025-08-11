@@ -69,7 +69,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix, purl.TypeKernelModule:
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
@@ -82,7 +82,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 func toEcosystem(p *Package) string {
 	switch p.PURLType {
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeKernelModule:
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage:
 		return osecosystem.MakeEcosystem(p.Metadata)
 	case purl.TypePyPi:
 		return "PyPI"
