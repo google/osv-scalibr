@@ -44,7 +44,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: go run golang.org/x/tools/cmd/goimports@latest
 
-      - run: go fmt veles/secret.go
+      - run: go fmt .
       - run: git diff
 
       - run: python check.py
