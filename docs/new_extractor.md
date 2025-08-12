@@ -150,6 +150,7 @@ extractor as an example.
     having to give test data specific file names).
 1.  Register your extractor in
     [list.go](/extractor/filesystem/list/list.go)
+1.  Update `docs/supported_inventory_types.md` to include your new extractor.
 1.  Optional: test locally, use the name of the extractor given by `Name()` to
     select your extractor. For the `packagejson` extractor it would look like
     this:
