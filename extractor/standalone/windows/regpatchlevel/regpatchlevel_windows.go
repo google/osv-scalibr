@@ -108,7 +108,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	for _, subkey := range subkeys {
 		entry, err := e.handleKey(reg, regPackagesRoot, subkey)
 		if err != nil {
-			if err == errSkipEntry {
+			if errors.Is(err, errSkipEntry) {
 				continue
 			}
 
