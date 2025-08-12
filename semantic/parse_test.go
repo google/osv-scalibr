@@ -23,6 +23,9 @@ import (
 
 var ecosystems = []string{
 	"Alpine",
+	"Bitnami",
+	"Bioconductor",
+	"Chainguard",
 	"ConanCenter",
 	"CRAN",
 	"crates.io",
@@ -30,13 +33,16 @@ var ecosystems = []string{
 	"Go",
 	"Hex",
 	"Maven",
+	"MinimOS",
 	"npm",
 	"NuGet",
 	"Packagist",
 	"Pub",
 	"PyPI",
 	"RubyGems",
+	"SwiftURL",
 	"Ubuntu",
+	"Wolfi",
 }
 
 func TestParse(t *testing.T) {
