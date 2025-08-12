@@ -1,10 +1,28 @@
-# Supported inventory types
+# Supported Plugins
 
-SCALIBR supports extracting software package information from a variety of OS and language package managers. See below
-for the comprehensive list. Some of these are supported by reusing extraction code from
+OSV-SCALIBR uses a plugin-based system for its scanning and vulnerability matching capabilities. During each run, a
+series of plugins are enabled to perform specific tasks.
+
+Plugins are grouped into the following categories:
+
+- **Extractors**: Identify software packages, dependencies, and other inventory.
+- **Detectors**: Detect security findings, such as misconfigurations or specific vulnerabilities.
+- **Enrichers**: Augment inventory with additional data from external sources.
+- **Annotators**: Add contextual information to the inventory.
+
+> [!TIP]
+> Learn how to contribute new plugins by reading the documentation
+> for [new extractors](/docs/new_extractor.md), [new detectors](/docs/new_detector.md),
+> and [new enrichers](/docs/new_enricher.md).
+
+The following sections list all available plugins.
+
+## Extractors
+
+OSV-SCALIBR extractors support a wide variety of OS and language package managers. Some reuse extraction logic from
 Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 
-## OS packages
+### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
 |-------------------|--------------------------------|----------------------------------------------|
@@ -28,7 +46,7 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
 | Windows           | Installed software             | `windows/ospackages`                         |
 
-## Language packages
+### Language packages
 
 | Language   | Details                                   | Extractor Plugin(s)                  |
 |------------|-------------------------------------------|--------------------------------------|
@@ -79,7 +97,7 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
 
-## Container inventory
+### Container inventory
 
 | Type                        | Extractor Plugin                                                                   |
 |-----------------------------|------------------------------------------------------------------------------------|
@@ -87,7 +105,7 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | Docker container images     | `containers/docker` (standalone)                                                   |
 | Podman container images     | `containers/podman` (filesystem)                                                   |
 
-## SBOM files
+### SBOM files
 
 | Type                       | Extractor Plugin |
 |----------------------------|------------------|
@@ -96,10 +114,6 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 
 If you're a SCALIBR user and are interested in having it support new inventory types we're happy to accept
 contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
-
-# Plugins
-
-SCALIBR's functionality is extended by a variety of plugins.
 
 ## Enrichers
 
