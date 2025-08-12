@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// go:build windows
+//go:build windows
 
 package winlocal
 
 import (
-	"fmt"
+	"errors"
 	"syscall"
 	"unsafe"
 
@@ -65,7 +65,7 @@ func securityAttributesFromSDDL(sddl string) (*windows.SecurityAttributes, error
 // );
 func RegSaveKey(key syscall.Handle, path string, sddl string) error {
 	if regSaveKeyEx == nil {
-		return fmt.Errorf("cannot find RegSaveKeyExW in Advapi32.dll")
+		return errors.New("cannot find RegSaveKeyExW in Advapi32.dll")
 	}
 
 	securityAttributes, err := securityAttributesFromSDDL(sddl)

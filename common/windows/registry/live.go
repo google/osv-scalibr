@@ -17,7 +17,9 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 
 	winregistry "golang.org/x/sys/windows/registry"
 )
@@ -86,7 +88,7 @@ func (o *LiveKey) Name() string {
 // presents itself. Please use a combination of SubkeyNames() and OpenKey() tailored to your use
 // case instead.
 func (o *LiveKey) Subkeys() ([]Key, error) {
-	return nil, fmt.Errorf("not implemented on live registry: this method would be too heavy")
+	return nil, errors.New("not implemented on live registry: this method would be too heavy")
 }
 
 // SubkeyNames returns the names of the subkeys of the key.
@@ -103,7 +105,7 @@ func (o *LiveKey) Close() error {
 // NOT SUPPORTED: This method is not supported on live registry as the library we use does not
 // provide this information and we do not have a use case for it.
 func (o *LiveKey) ClassName() ([]byte, error) {
-	return nil, fmt.Errorf("not supported: class name is not supported on live registry")
+	return nil, errors.New("not supported: class name is not supported on live registry")
 }
 
 // Value returns the value with the given name.
@@ -157,7 +159,6 @@ func (o *LiveKey) Values() ([]Value, error) {
 type LiveValue struct {
 	name string
 	key  *winregistry.Key
-	data *[]byte
 }
 
 // Name returns the name of the value.
@@ -190,7 +191,7 @@ func (o *LiveValue) DataString() (string, error) {
 	switch valtype {
 	case winregistry.DWORD, winregistry.DWORD_BIG_ENDIAN, winregistry.QWORD:
 		val, _, err := o.key.GetIntegerValue(o.name)
-		return fmt.Sprintf("%d", val), err
+		return strconv.FormatUint(val, 10), err
 	default:
 		return "", fmt.Errorf("unsupported value type: %v for value %q", valtype, o.name)
 	}
