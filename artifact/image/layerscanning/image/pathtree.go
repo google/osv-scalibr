@@ -38,7 +38,7 @@ type RootNode struct {
 
 // Node represents a directory with any number of files
 type Node struct {
-	virtualFile *virtualFile
+	virtualFile *VirtualFile
 	children    map[string]*Node
 }
 
@@ -52,7 +52,7 @@ func NewNode(maxSymlinkDepth int) *RootNode {
 	}
 
 	// Initialize the virtual file of the root node.
-	if err := root.Insert("/", &virtualFile{virtualPath: "/", mode: fs.ModeDir}); err != nil {
+	if err := root.Insert("/", &VirtualFile{virtualPath: "/", mode: fs.ModeDir}); err != nil {
 		// This should not happen unless there is a bug with the Insert method.
 		log.Warnf("Failed to insert root node: %v", err)
 	}
@@ -75,7 +75,7 @@ func cleanPath(inputPath string) (string, error) {
 //
 // If a file is inserted without also inserting the parent directory
 // the parent directory entry will have a nil value.
-func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
+func (rootNode *RootNode) Insert(path string, vf *VirtualFile) error {
 	path, err := cleanPath(path)
 	if err != nil {
 		return fmt.Errorf("Insert() error: %w", err)
@@ -102,7 +102,7 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 		cursor = next
 	}
 
-	// If the virtualFile is already set, throw an error.
+	// If the VirtualFile is already set, throw an error.
 	if cursor.virtualFile != nil {
 		return fmt.Errorf("Insert(%q):%w", divider+path, ErrNodeAlreadyExists)
 	}
@@ -169,8 +169,8 @@ func (rootNode *RootNode) getNode(rawNodePath string, resolveFinalSymlink bool, 
 // Get retrieves the value at the given path. If no node exists at the given path, nil is returned.
 // If there is a symlink node along the path, it's resolved.
 // By setting resolveFinalSymlink, if the final node is a symlink, you can choose to resolve the symlink
-// until you get a normal file or directory. Or to get the raw symlink virtualFile.
-func (rootNode *RootNode) Get(p string, resolveFinalSymlink bool) (*virtualFile, error) {
+// until you get a normal file or directory. Or to get the raw symlink VirtualFile.
+func (rootNode *RootNode) Get(p string, resolveFinalSymlink bool) (*VirtualFile, error) {
 	pathNode, err := rootNode.getNode(p, resolveFinalSymlink, 0)
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func (rootNode *RootNode) Get(p string, resolveFinalSymlink bool) (*virtualFile,
 }
 
 // GetChildren retrieves all the direct children of the given path.
-func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
+func (rootNode *RootNode) GetChildren(path string) ([]*VirtualFile, error) {
 	pathNode, err := rootNode.getNode(path, true, 0)
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
 		return nil, fs.ErrInvalid
 	}
 
-	children := []*virtualFile{}
+	children := []*VirtualFile{}
 	for _, child := range pathNode.children {
 		// Some entries could be nil if a file is inserted without inserting the
 		// parent directories.
@@ -210,12 +210,12 @@ func (rootNode *RootNode) GetChildren(path string) ([]*virtualFile, error) {
 }
 
 // Walk walks through all elements of this tree depths first, calling fn at every node.
-func (rootNode *RootNode) Walk(fn func(string, *virtualFile) error) error {
+func (rootNode *RootNode) Walk(fn func(string, *VirtualFile) error) error {
 	return rootNode.Node.walk("", fn)
 }
 
 // walk is a recursive function for walking through the tree and calling fn at every node.
-func (node *Node) walk(path string, fn func(string, *virtualFile) error) error {
+func (node *Node) walk(path string, fn func(string, *VirtualFile) error) error {
 	// Only call fn if the node has a value.
 	if node.virtualFile != nil {
 		if err := fn(path, node.virtualFile); err != nil {
