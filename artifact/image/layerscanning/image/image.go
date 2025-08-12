@@ -591,7 +591,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
-		var newVirtualFile *virtualFile
+		var newVirtualFile *VirtualFile
 		switch header.Typeflag {
 		case tar.TypeDir:
 			newVirtualFile = img.handleDir(virtualPath, header, isWhiteout)
@@ -650,7 +650,7 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 			continue
 		}
 
-		node := &virtualFile{
+		node := &VirtualFile{
 			virtualPath: runningDir,
 			isWhiteout:  false,
 			mode:        fs.ModeDir,
@@ -668,7 +668,7 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 
 // handleSymlink returns the symlink header mode. Symlinks are handled by creating a virtual file
 // with the symlink mode with additional metadata.
-func (img *Image) handleSymlink(virtualPath string, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
+func (img *Image) handleSymlink(virtualPath string, header *tar.Header, isWhiteout bool) (*VirtualFile, error) {
 	targetPath := filepath.ToSlash(header.Linkname)
 	if targetPath == "" {
 		return nil, errors.New("symlink header has no target path")
@@ -684,7 +684,7 @@ func (img *Image) handleSymlink(virtualPath string, header *tar.Header, isWhiteo
 		targetPath = path.Clean(path.Join(path.Dir(virtualPath), targetPath))
 	}
 
-	return &virtualFile{
+	return &VirtualFile{
 		virtualPath: virtualPath,
 		targetPath:  targetPath,
 		isWhiteout:  isWhiteout,
@@ -693,10 +693,10 @@ func (img *Image) handleSymlink(virtualPath string, header *tar.Header, isWhiteo
 }
 
 // handleDir creates the directory specified by path, if it doesn't exist.
-func (img *Image) handleDir(virtualPath string, header *tar.Header, isWhiteout bool) *virtualFile {
+func (img *Image) handleDir(virtualPath string, header *tar.Header, isWhiteout bool) *VirtualFile {
 	fileInfo := header.FileInfo()
 
-	return &virtualFile{
+	return &VirtualFile{
 		virtualPath: virtualPath,
 		isWhiteout:  isWhiteout,
 		mode:        fileInfo.Mode() | fs.ModeDir,
@@ -708,7 +708,7 @@ func (img *Image) handleDir(virtualPath string, header *tar.Header, isWhiteout b
 // handleFile creates the file specified by path, and then copies the contents of the tarReader into
 // the file. The function returns a virtual file, which is meant to represent the file in a virtual
 // filesystem.
-func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
+func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*VirtualFile, error) {
 	// Use LimitReader in case the header.Size is incorrect.
 	numBytes, err := img.contentBlob.ReadFrom(io.LimitReader(tarReader, img.config.MaxFileBytes))
 	if numBytes >= img.config.MaxFileBytes || errors.Is(err, io.EOF) {
@@ -726,7 +726,7 @@ func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *
 	img.size += numBytes
 	fileInfo := header.FileInfo()
 
-	return &virtualFile{
+	return &VirtualFile{
 		virtualPath: virtualPath,
 		isWhiteout:  isWhiteout,
 		mode:        fileInfo.Mode(),
@@ -737,7 +737,7 @@ func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *
 }
 
 // fillChainLayersWithVirtualFile fills the chain layers with a new fileNode.
-func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *virtualFile) {
+func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *VirtualFile) {
 	virtualPath := newNode.virtualPath
 	for _, chainLayer := range chainLayersToFill {
 		// We want the raw final symlink when checking for existence.

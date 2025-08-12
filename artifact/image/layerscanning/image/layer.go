@@ -195,9 +195,9 @@ func (chainfs *FS) EvalSymlink(path string) (string, error) {
 	return vf.virtualPath, nil
 }
 
-// getVirtualFile returns the virtualFile object for the given path. The virtualFile object stores
+// getVirtualFile returns the VirtualFile object for the given path. The VirtualFile object stores
 // metadata on the virtual file and where it is located on the real filesystem.
-func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
+func (chainfs *FS) getVirtualFile(path string) (*VirtualFile, error) {
 	if chainfs.tree == nil {
 		return nil, fs.ErrNotExist
 	}
@@ -207,7 +207,7 @@ func (chainfs *FS) getVirtualFile(path string) (*virtualFile, error) {
 
 // getVirtualFileChildren returns the direct virtual file children of the given path. This helper
 // function is used to implement the fs.ReadDirFS interface.
-func (chainfs *FS) getVirtualFileChildren(path string) ([]*virtualFile, error) {
+func (chainfs *FS) getVirtualFileChildren(path string) ([]*VirtualFile, error) {
 	if chainfs.tree == nil {
 		return nil, fs.ErrNotExist
 	}
