@@ -67,6 +67,18 @@ func TestParse_Debian_InvalidVersion(t *testing.T) {
 	}
 }
 
+func TestParse_Hackage_InvalidVersion(t *testing.T) {
+	_, err := semantic.Parse("1.2.3.4.5-notallowed", "Hackage")
+
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+
+	if !errors.Is(err, semantic.ErrInvalidVersion) {
+		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
+	}
+}
+
 func TestMustParse(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -96,6 +108,19 @@ func TestMustParse_Debian_InvalidVersion(t *testing.T) {
 	}()
 
 	semantic.MustParse("1.2.3-not-a-debian:version!@#$", "Debian")
+
+	// if we reached here, then we can't have panicked
+	t.Errorf("function did not panic when given an invalid version")
+}
+
+func TestMustParse_Hackage_InvalidVersion(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("expected panic, got nil")
+		}
+	}()
+
+	semantic.MustParse("1.2.3.4.5-notallowed", "Hackage")
 
 	// if we reached here, then we can't have panicked
 	t.Errorf("function did not panic when given an invalid version")
