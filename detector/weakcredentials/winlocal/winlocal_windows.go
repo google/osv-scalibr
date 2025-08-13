@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -241,7 +242,7 @@ func (d Detector) dumpSYSTEM(systemFile string) (*systemreg.SystemRegistry, erro
 //	hash;clearPass
 func (d Detector) loadDictionary(file string, dict map[string]string) error {
 	if dict == nil {
-		return fmt.Errorf("dictionary is nil")
+		return errors.New("dictionary is nil")
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(file))
