@@ -64,7 +64,7 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "Hex":
 		return parseSemverVersion(str), nil
 	case "Hackage":
-		return parseHackageVersion(str), nil
+		return parseHackageVersion(str)
 	case "Maven":
 		return parseMavenVersion(str), nil
 	case "MinimOS":

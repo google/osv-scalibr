@@ -14,7 +14,10 @@
 
 package semantic
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type hackageVersion struct {
 	semverLikeVersion
@@ -29,7 +32,11 @@ func (v hackageVersion) compare(w hackageVersion) int {
 }
 
 func (v hackageVersion) CompareStr(str string) (int, error) {
-	w := parseHackageVersion(str)
+	w, err := parseHackageVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
 
 	if diff := v.compare(w); diff != 0 {
 		return diff, nil
@@ -42,6 +49,13 @@ func (v hackageVersion) CompareStr(str string) (int, error) {
 	return -1, nil
 }
 
-func parseHackageVersion(str string) hackageVersion {
-	return hackageVersion{parseSemverLikeVersion(str, -1)}
+func parseHackageVersion(str string) (hackageVersion, error) {
+	v := hackageVersion{parseSemverLikeVersion(str, -1)}
+
+	// this is technically possible since we're using the "semver-like" parser
+	if v.Build != "" {
+		return hackageVersion{}, fmt.Errorf("%w: Hackage versions cannot contain a build version", ErrInvalidVersion)
+	}
+
+	return v, nil
 }
