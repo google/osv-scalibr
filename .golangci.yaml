@@ -10,7 +10,7 @@ linters:
     - cyclop           #
     - depguard         #
     - err113           #
-    - exhaustive       # TODO(#274): work on enabling this
+    # - exhaustive       # ✅ Enabled in Phase 1
     - exhaustruct      #
     - forcetypeassert  #
     - funcorder        #
@@ -21,21 +21,21 @@ linters:
     - gocyclo          #
     - godot            #
     - godox            #
-    - gosec            # TODO(#274): work on enabling this
+    # - gosec            # ✅ Enabled in Phase 5
     - ireturn          #
     - lll              #
     - maintidx         #
     - mnd              # Not every number is magic
     - nestif           #
-    - nilnesserr       # TODO(#274): work on enabling this
+    # - nilnesserr       # ✅ Enabled in Phase 2
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
     - noinlineerr      #
     - nonamedreturns   #
     - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
     - prealloc         # We don't want to preallocate all the time
-    - protogetter      # TODO(#274): work on enabling this
-    - recvcheck        # TODO(#274): work on enabling this
+    # - protogetter      # ✅ Enabled in Phase 3
+    # - recvcheck        # ✅ Enabled in Phase 4
     - tagliatelle      #
     - testpackage      #
     - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
