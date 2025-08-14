@@ -48,7 +48,7 @@ var ErrInitialQueryTimeout = errors.New("initialQueryTimeout reached")
 
 var _ enricher.Enricher = &Enricher{}
 
-// Enricher adds license data to software packages by querying deps.dev
+// Enricher queries the OSV.dev API to find vulnerabilities in the inventory packages
 type Enricher struct {
 	client              Client
 	initialQueryTimeout time.Duration
