@@ -22,6 +22,9 @@ The following sections list all available plugins.
 OSV-SCALIBR extractors support a wide variety of OS and language package managers. Some reuse extraction logic from
 Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 
+If you're an OSV-SCALIBR user and are interested in having it support new inventory types we're happy to accept
+contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
+
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
@@ -41,7 +44,7 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | SNAP              |                                | `os/snap`                                    |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
-| Applications      | Installed on OS X              | `os/macapps`                                 |
+| OS X Applications | OS X                           | `os/macapps`                                 |
 | Windows           | Build number                   | `windows/regosversion`                       |
 | Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
 | Windows           | Installed software             | `windows/ospackages`                         |
@@ -89,14 +92,6 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | Swift      | Podfile.lock                              | `swift/podfilelock`                  |
 |            | Package.resolved                          | `swift/packageresolved`              |
 
-## Misc
-
-| Type              | Extractor Plugin    |
-|-------------------|---------------------|
-| Wordpress plugins | `wordpress/plugins` |
-| VSCode extensions | `vscode/extensions` |
-| Chrome extensions | `chrome/extensions` |
-
 ### Container inventory
 
 | Type                        | Extractor Plugin                                                                   |
@@ -112,45 +107,51 @@ Google's [OSV-Scanner](https://github.com/google/osv-scanner).
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
 
-If you're a SCALIBR user and are interested in having it support new inventory types we're happy to accept
-contributions. See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
-## Enrichers
+### Misc
 
-| Description                                                        | Plugin Name                         |
-|--------------------------------------------------------------------|-------------------------------------|
-| Extracts details about the base image from container image layers. | `baseimage`                         |
-| Filters findings based on VEX statements.                          | `vex/filter`                        |
-| Enriches secret findings with additional details.                  | `secrets/velesvalidate`             |
-| Performs reachability analysis for Java code.                      | `reachability/java`                 |
-| Resolves transitive dependencies for Python pip packages.          | `transitivedependency/requirements` |
+| Type              | Extractor Plugin    |
+|-------------------|---------------------|
+| Wordpress plugins | `wordpress/plugins` |
+| VSCode extensions | `vscode/extensions` |
+| Chrome extensions | `chrome/extensions` |
 
 ## Detectors
 
-| Description                                              | Plugin Name                              |
-|----------------------------------------------------------|------------------------------------------|
-| Checks for overly permissive permissions on /etc/passwd. | `cis/generic-linux/etcpasswdpermissions` |
-| Runs govulncheck on Go binaries.                         | `govulncheck/binary`                     |
-| Checks if the Linux distribution is end-of-life.         | `endoflife/linuxdistro`                  |
-| Detects vulnerability CVE-2023-38408 in OpenSSH.         | `cve/cve-2023-38408`                     |
-| Detects vulnerability CVE-2022-33891 in Spark UI.        | `cve/cve-2022-33891`                     |
-| Detects vulnerability CVE-2020-16846 in Salt.            | `cve/cve-2020-16846`                     |
-| Detects vulnerability CVE-2023-6019 in Ray Dashboard.    | `cve/cve-2023-6019`                      |
-| Detects vulnerability CVE-2020-11978 in Apache Airflow.  | `cve/cve-2020-11978`                     |
-| Detects vulnerability CVE-2024-2912 in BentoML.          | `cve/cve-2024-2912`                      |
-| Checks for default credentials in code-server.           | `weakcredentials/codeserver`             |
-| Checks for weak passwords in /etc/shadow.                | `weakcredentials/etcshadow`              |
-| Checks for default credentials in File Browser.          | `weakcredentials/filebrowser`            |
-| Checks for weak passwords for local Windows accounts.    | `weakcredentials/winlocal`               |
+| Description                                                          | Plugin Name                              |
+|----------------------------------------------------------------------|------------------------------------------|
+| Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
+| Finds vulns in Go binaries with reachability data using govunlcheck. | `govulncheck/binary`                     |
+| Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
+| Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
+| Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
+| Detects vulnerability CVE-2020-16846 in Salt.                        | `cve/cve-2020-16846`                     |
+| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
+| Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
+| Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
+| Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
+| Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
+| Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
+| Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
 
 ## Annotators
 
-| Description                                                    | Plugin Name              |
-|----------------------------------------------------------------|--------------------------|
-| Annotates findings from APK packages for VEX generation.       | `vex/os-duplicate/apk`   |
-| Annotates findings from cached directories for VEX generation. | `vex/cachedir`           |
-| Annotates findings from COS packages for VEX generation.       | `vex/os-duplicate/cos`   |
-| Annotates findings from DPKG packages for VEX generation.      | `vex/os-duplicate/dpkg`  |
-| Annotates findings from RPM packages for VEX generation.       | `vex/os-duplicate/rpm`   |
-| Annotates DPKG findings where no executable is present.        | `vex/no-executable/dpkg` |
-| Misc annotations from NPM.                                     | `misc/from-npm`          |
+| Description                                                                       | Plugin Name              |
+|-----------------------------------------------------------------------------------|--------------------------|
+| Adds VEX statements for packages from cached directories                          | `vex/cachedir`           |
+| Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`   |
+| Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`   |
+| Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`  |
+| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
+| Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
+| Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
+
+## Enrichers
+
+| Description                                                                | Plugin Name                         |
+|----------------------------------------------------------------------------|-------------------------------------|
+| Extracts details about the base image a software package was added in      | `baseimage`                         |
+| Filters findings that have VEX statements.                                 | `vex/filter`                        |
+| Validates secrets, e.g. checking if a GCP service account key is active. | `secrets/velesvalidate`             |
+| Performs reachability analysis for Java code.                              | `reachability/java`                 |
+| Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
