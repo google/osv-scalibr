@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/winget"
 )
 
 // InitFn is the extractor initializer function.
@@ -46,6 +47,7 @@ var (
 		ospackages.Name:    {ospackages.NewDefault},
 		regosversion.Name:  {regosversion.NewDefault},
 		regpatchlevel.Name: {regpatchlevel.NewDefault},
+		winget.Name:        {winget.NewDefault},
 	}
 
 	// OSExperimental defines experimental OS extractors.
