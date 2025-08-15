@@ -59,9 +59,9 @@ func parseCRANVersion(str string) cranVersion {
 	comps := make(components, 0, len(parts))
 
 	for _, s := range parts {
-		v, _ := new(big.Int).SetString(s, 10)
-
-		comps = append(comps, v)
+		if v, ok := new(big.Int).SetString(s, 10); ok {
+			comps = append(comps, v)
+		}
 	}
 
 	return cranVersion{comps}
