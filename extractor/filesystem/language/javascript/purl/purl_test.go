@@ -42,12 +42,12 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			desc:    "mixed_case_gets_converted",
+			desc:    "respects_mixed_case",
 			name:    "Name",
 			version: "version",
 			want: &purl.PackageURL{
 				Type:    purl.TypeNPM,
-				Name:    "name",
+				Name:    "Name",
 				Version: "version",
 			},
 		},
@@ -60,7 +60,7 @@ func TestMakePackageURL(t *testing.T) {
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeNPM,
-				Name:    "name",
+				Name:    "Name",
 				Version: "version",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					"from-npm-repository": "true",
