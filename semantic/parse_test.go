@@ -64,7 +64,7 @@ func TestParse(t *testing.T) {
 
 func TestParse_InvalidVersions(t *testing.T) {
 	type args struct {
-		version   string
+		versions  []string
 		ecosystem string
 	}
 	tests := []struct {
@@ -72,30 +72,41 @@ func TestParse_InvalidVersions(t *testing.T) {
 		args args
 	}{
 		{
-			name: "invalid_debian_version",
+			name: "invalid_cran_versions",
 			args: args{
-				version:   "1.2.3-not-a-debian:version!@#$",
+				versions:  []string{"!", "?", "1.a.2", "z.c.3"},
+				ecosystem: "CRAN",
+			},
+		},
+		{
+			name: "invalid_debian_versions",
+			args: args{
+				versions:  []string{"1.2.3-not-a-debian:version!@#$"},
 				ecosystem: "Debian",
 			},
 		},
 		{
-			name: "invalid_hackage_version",
+			name: "invalid_hackage_versions",
 			args: args{
-				version:   "1.2.3.4.5-notallowed",
+				versions:  []string{"1.2.3.4.5-notallowed"},
 				ecosystem: "Hackage",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := semantic.Parse(tt.args.version, tt.args.ecosystem)
+			for _, version := range tt.args.versions {
+				_, err := semantic.Parse(version, tt.args.ecosystem)
 
-			if err == nil {
-				t.Fatalf("expected error, got nil")
-			}
+				if err == nil {
+					t.Errorf("expected error for '%s', got nil", version)
 
-			if !errors.Is(err, semantic.ErrInvalidVersion) {
-				t.Errorf("expected ErrInvalidVersion, got '%v'", err)
+					continue
+				}
+
+				if !errors.Is(err, semantic.ErrInvalidVersion) {
+					t.Errorf("expected ErrInvalidVersion for '%s', got '%v'", version, err)
+				}
 			}
 		})
 	}
@@ -115,7 +126,7 @@ func TestMustParse(t *testing.T) {
 
 func TestMustParse_InvalidVersions(t *testing.T) {
 	type args struct {
-		version   string
+		versions  []string
 		ecosystem string
 	}
 	tests := []struct {
@@ -125,21 +136,28 @@ func TestMustParse_InvalidVersions(t *testing.T) {
 		{
 			name: "invalid_ecosystem",
 			args: args{
-				version:   "",
+				versions:  []string{""},
 				ecosystem: "<unknown>",
 			},
 		},
 		{
-			name: "invalid_debian_version",
+			name: "invalid_cran_versions",
 			args: args{
-				version:   "1.2.3-not-a-debian:version!@#$",
+				versions:  []string{"!", "?", "1.a.2", "z.c.3"},
+				ecosystem: "CRAN",
+			},
+		},
+		{
+			name: "invalid_debian_versions",
+			args: args{
+				versions:  []string{"1.2.3-not-a-debian:version!@#$"},
 				ecosystem: "Debian",
 			},
 		},
 		{
-			name: "invalid_hackage_version",
+			name: "invalid_hackage_versions",
 			args: args{
-				version:   "1.2.3.4.5-notallowed",
+				versions:  []string{"1.2.3.4.5-notallowed"},
 				ecosystem: "Hackage",
 			},
 		},
@@ -152,10 +170,12 @@ func TestMustParse_InvalidVersions(t *testing.T) {
 				}
 			}()
 
-			semantic.MustParse(tt.args.version, tt.args.ecosystem)
+			for _, version := range tt.args.versions {
+				semantic.MustParse(version, tt.args.ecosystem)
 
-			// if we reached here, then we can't have panicked
-			t.Errorf("function did not panic when given an invalid version")
+				// if we reached here, then we can't have panicked
+				t.Errorf("function did not panic when given invalid version '%s'", version)
+			}
 		})
 	}
 }

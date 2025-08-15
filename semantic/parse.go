@@ -58,7 +58,7 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "ConanCenter":
 		return parseSemverVersion(str), nil
 	case "CRAN":
-		return parseCRANVersion(str), nil
+		return parseCRANVersion(str)
 	case "crates.io":
 		return parseSemverVersion(str), nil
 	case "Debian":
