@@ -26,6 +26,7 @@ as an example.
 1.  Register your detector in
     [list.go](/detector/list/list.go)
     so you can use it in the CLI.
+1.  Update `docs/supported_inventory_types.md` to include your new detector.
 1.  If you added new dependencies, regenerate the go.mod file by running
 
     ```sh
