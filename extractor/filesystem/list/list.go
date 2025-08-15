@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/kotlin/gradlekts"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
@@ -107,6 +108,10 @@ var (
 	// Java artifact extractors.
 	JavaArtifact = InitMap{
 		javaarchive.Name: {javaarchive.NewDefault},
+	}
+	// Kotlin source extractors.
+	KotlinSource = InitMap{
+		gradlekts.Name: {gradlekts.New},
 	}
 	// Javascript source extractors.
 	JavascriptSource = InitMap{
@@ -235,6 +240,7 @@ var (
 	SourceCode = concat(
 		CppSource,
 		JavaSource,
+		KotlinSource,
 		JavascriptSource,
 		PythonSource,
 		GoSource,
