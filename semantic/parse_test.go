@@ -32,6 +32,7 @@ var ecosystems = []string{
 	"CRAN",
 	"crates.io",
 	"Debian",
+	"GHC",
 	"Go",
 	"Hex",
 	"Mageia",
