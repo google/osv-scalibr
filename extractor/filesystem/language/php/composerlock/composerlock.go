@@ -41,6 +41,7 @@ type composerPackage struct {
 	Dist    struct {
 		Reference string `json:"reference"`
 	} `json:"dist"`
+	Extra map[string]any `json:"extra"`
 }
 
 type composerLock struct {
@@ -71,6 +72,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
+	purlType := purl.TypeComposer
+
+	// the presence of extra.drupal means the package probably came from
+	// the Drupal composer repository, rather than packagist.org
+	if _, ok := pkg.Extra["drupal"]; ok {
+		purlType = purl.TypeDrupal
+	}
+
 	commit := pkg.Dist.Reference
 
 	// a dot means the reference is likely a tag, rather than a commit
@@ -81,7 +90,7 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 	return &extractor.Package{
 		Name:      pkg.Name,
 		Version:   pkg.Version,
-		PURLType:  purl.TypeComposer,
+		PURLType:  purlType,
 		Locations: []string{input.Path},
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
