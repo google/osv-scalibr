@@ -31,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -185,9 +184,8 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "intel_oaktrail",
-					Version:  "0.4ac1",
-					PURLType: purl.TypeKernelModule,
+					Name:    "intel_oaktrail",
+					Version: "0.4ac1",
 					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
@@ -209,8 +207,7 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "intel_mrfld_pwrbtn",
-					PURLType: purl.TypeKernelModule,
+					Name: "intel_mrfld_pwrbtn",
 					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_mrfld_pwrbtn",
 						PackageVermagic:                "6.8.0-49-generic SMP preempt mod_unload modversions",
@@ -238,9 +235,8 @@ func TestExtract(t *testing.T) {
 			osrelease: `ID=ubuntu`,
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "intel_oaktrail",
-					Version:  "0.4ac1",
-					PURLType: purl.TypeKernelModule,
+					Name:    "intel_oaktrail",
+					Version: "0.4ac1",
 					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
@@ -259,9 +255,8 @@ func TestExtract(t *testing.T) {
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "intel_oaktrail",
-					Version:  "0.4ac1",
-					PURLType: purl.TypeKernelModule,
+					Name:    "intel_oaktrail",
+					Version: "0.4ac1",
 					Metadata: &modulemeta.Metadata{
 						PackageName:                    "intel_oaktrail",
 						PackageVersion:                 "0.4ac1",
