@@ -168,9 +168,9 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				PackageName:  record["P"],
 				OriginName:   record["o"],
 				Architecture: record["A"],
-				License:      record["L"],
 				Maintainer:   record["m"],
 			},
+			License:    []string{record["L"]},
 			SourceCode: sourceCode,
 			Locations:  []string{input.Path},
 		}

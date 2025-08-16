@@ -34,7 +34,6 @@ type Metadata struct {
 	OSBuildID    string
 	Vendor       string
 	Architecture string
-	License      string
 }
 
 // ToNamespace extracts the PURL namespace from the metadata.
@@ -86,7 +85,6 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			OsBuildId:    m.OSBuildID,
 			Vendor:       m.Vendor,
 			Architecture: m.Architecture,
-			License:      m.License,
 		},
 	}
 }
@@ -107,6 +105,5 @@ func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
 		OSBuildID:    m.GetOsBuildId(),
 		Vendor:       m.GetVendor(),
 		Architecture: m.GetArchitecture(),
-		License:      m.GetLicense(),
 	}
 }

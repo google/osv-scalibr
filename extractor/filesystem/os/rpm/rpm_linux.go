@@ -200,7 +200,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			OSBuildID:    m["BUILD_ID"],
 			Vendor:       p.Vendor,
 			Architecture: p.Architecture,
-			License:      p.License,
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
@@ -209,6 +208,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			PURLType:  purl.TypeRPM,
 			Locations: []string{input.Path},
 			Metadata:  metadata,
+			License:   []string{p.License},
 		})
 	}
 
