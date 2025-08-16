@@ -17,7 +17,6 @@ package purl
 
 import (
 	"strconv"
-	"strings"
 
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/purl"
@@ -35,7 +34,7 @@ func MakePackageURL(name string, version string, metadata any) *purl.PackageURL 
 	}
 	return &purl.PackageURL{
 		Type:       purl.TypeNPM,
-		Name:       strings.ToLower(name),
+		Name:       name,
 		Version:    version,
 		Qualifiers: qualifiers,
 	}
