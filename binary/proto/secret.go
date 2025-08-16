@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -84,6 +85,8 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 
 func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
+	case velesanthropicapikey.AnthropicAPIKey:
+		return anthropicAPIKeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
 	default:
@@ -111,6 +114,16 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func anthropicAPIKeyToProto(key velesanthropicapikey.AnthropicAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AnthropicApiKey{
+			AnthropicApiKey: &spb.SecretData_AnthropicAPIKey{
+				Key: key.Key,
+			},
 		},
 	}
 }
@@ -191,6 +204,8 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 
 func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
+	case *spb.SecretData_AnthropicApiKey:
+		return anthropicAPIKeyToStruct(s.GetAnthropicApiKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	default:
@@ -218,6 +233,12 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func anthropicAPIKeyToStruct(keyPB *spb.SecretData_AnthropicAPIKey) velesanthropicapikey.AnthropicAPIKey {
+	return velesanthropicapikey.AnthropicAPIKey{
+		Key: keyPB.GetKey(),
+	}
 }
 
 func validationResultToStruct(r *spb.SecretStatus) (inventory.SecretValidationResult, error) {

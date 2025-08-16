@@ -604,6 +604,7 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
+    AnthropicAPIKey anthropic_api_key = 2;
   }
 
   message GCPSAK {
@@ -625,6 +626,11 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message AnthropicAPIKey {
+    // The Anthropic API key.
+    string key = 1;
   }
 }
 
