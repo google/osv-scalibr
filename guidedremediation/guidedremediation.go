@@ -220,6 +220,8 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		computePatches = override.ComputePatches
 	case strategy.StrategyRelax:
 		computePatches = relax.ComputePatches
+	case strategy.StrategyInPlace:
+		fallthrough
 	default:
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}

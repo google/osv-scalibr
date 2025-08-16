@@ -52,6 +52,8 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts op
 		r = npmresolve.NewResolver(cl)
 	case resolve.PyPI:
 		r = pypiresolve.NewResolver(cl)
+	case resolve.UnknownSystem:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("no resolver for ecosystem %v", sys)
 	}
