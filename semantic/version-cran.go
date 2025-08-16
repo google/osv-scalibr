@@ -15,6 +15,7 @@
 package semantic
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 )
@@ -49,20 +50,35 @@ func (v cranVersion) compare(w cranVersion) int {
 }
 
 func (v cranVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseCRANVersion(str)), nil
+	w, err := parseCRANVersion(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return v.compare(w), nil
 }
 
-func parseCRANVersion(str string) cranVersion {
+func parseCRANVersion(str string) (cranVersion, error) {
+	// for now, treat an empty version string as valid
+	if str == "" {
+		return cranVersion{}, nil
+	}
+
 	// dashes and periods have the same weight, so we can just normalize to periods
 	parts := strings.Split(strings.ReplaceAll(str, "-", "."), ".")
 
 	comps := make(components, 0, len(parts))
 
 	for _, s := range parts {
-		v, _ := new(big.Int).SetString(s, 10)
+		v, ok := new(big.Int).SetString(s, 10)
+
+		if !ok {
+			return cranVersion{}, fmt.Errorf("%w: '%s' is not allowed", ErrInvalidVersion, str)
+		}
 
 		comps = append(comps, v)
 	}
 
-	return cranVersion{comps}
+	return cranVersion{comps}, nil
 }

@@ -22,9 +22,11 @@ import (
 )
 
 var ecosystems = []string{
+	"AlmaLinux",
+	"Alpaquita",
 	"Alpine",
-	"Bitnami",
 	"Bioconductor",
+	"Bitnami",
 	"Chainguard",
 	"ConanCenter",
 	"CRAN",
@@ -32,14 +34,19 @@ var ecosystems = []string{
 	"Debian",
 	"Go",
 	"Hex",
+	"Mageia",
 	"Maven",
 	"MinimOS",
 	"npm",
 	"NuGet",
+	"openEuler",
+	"openSUSE",
 	"Packagist",
 	"Pub",
 	"PyPI",
+	"Rocky Linux",
 	"RubyGems",
+	"SUSE",
 	"SwiftURL",
 	"Ubuntu",
 	"Wolfi",
@@ -55,27 +62,53 @@ func TestParse(t *testing.T) {
 	}
 }
 
-func TestParse_Debian_InvalidVersion(t *testing.T) {
-	_, err := semantic.Parse("1.2.3-not-a-debian:version!@#$", "Debian")
-
-	if err == nil {
-		t.Fatalf("expected error, got nil")
+func TestParse_InvalidVersions(t *testing.T) {
+	type args struct {
+		versions  []string
+		ecosystem string
 	}
-
-	if !errors.Is(err, semantic.ErrInvalidVersion) {
-		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "invalid_cran_versions",
+			args: args{
+				versions:  []string{"!", "?", "1.a.2", "z.c.3"},
+				ecosystem: "CRAN",
+			},
+		},
+		{
+			name: "invalid_debian_versions",
+			args: args{
+				versions:  []string{"1.2.3-not-a-debian:version!@#$"},
+				ecosystem: "Debian",
+			},
+		},
+		{
+			name: "invalid_hackage_versions",
+			args: args{
+				versions:  []string{"1.2.3.4.5-notallowed"},
+				ecosystem: "Hackage",
+			},
+		},
 	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, version := range tt.args.versions {
+				_, err := semantic.Parse(version, tt.args.ecosystem)
 
-func TestParse_Hackage_InvalidVersion(t *testing.T) {
-	_, err := semantic.Parse("1.2.3.4.5-notallowed", "Hackage")
+				if err == nil {
+					t.Errorf("expected error for '%s', got nil", version)
 
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
+					continue
+				}
 
-	if !errors.Is(err, semantic.ErrInvalidVersion) {
-		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
+				if !errors.Is(err, semantic.ErrInvalidVersion) {
+					t.Errorf("expected ErrInvalidVersion for '%s', got '%v'", version, err)
+				}
+			}
+		})
 	}
 }
 
@@ -91,37 +124,58 @@ func TestMustParse(t *testing.T) {
 	}
 }
 
-func TestMustParse_Panic(t *testing.T) {
-	defer func() { _ = recover() }()
+func TestMustParse_InvalidVersions(t *testing.T) {
+	type args struct {
+		versions  []string
+		ecosystem string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "invalid_ecosystem",
+			args: args{
+				versions:  []string{""},
+				ecosystem: "<unknown>",
+			},
+		},
+		{
+			name: "invalid_cran_versions",
+			args: args{
+				versions:  []string{"!", "?", "1.a.2", "z.c.3"},
+				ecosystem: "CRAN",
+			},
+		},
+		{
+			name: "invalid_debian_versions",
+			args: args{
+				versions:  []string{"1.2.3-not-a-debian:version!@#$"},
+				ecosystem: "Debian",
+			},
+		},
+		{
+			name: "invalid_hackage_versions",
+			args: args{
+				versions:  []string{"1.2.3.4.5-notallowed"},
+				ecosystem: "Hackage",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("expected panic, got nil")
+				}
+			}()
 
-	semantic.MustParse("", "<unknown>")
+			for _, version := range tt.args.versions {
+				semantic.MustParse(version, tt.args.ecosystem)
 
-	// if we reached here, then we can't have panicked
-	t.Errorf("function did not panic when given an unknown ecosystem")
-}
-
-func TestMustParse_Debian_InvalidVersion(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic, got nil")
-		}
-	}()
-
-	semantic.MustParse("1.2.3-not-a-debian:version!@#$", "Debian")
-
-	// if we reached here, then we can't have panicked
-	t.Errorf("function did not panic when given an invalid version")
-}
-
-func TestMustParse_Hackage_InvalidVersion(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic, got nil")
-		}
-	}()
-
-	semantic.MustParse("1.2.3.4.5-notallowed", "Hackage")
-
-	// if we reached here, then we can't have panicked
-	t.Errorf("function did not panic when given an invalid version")
+				// if we reached here, then we can't have panicked
+				t.Errorf("function did not panic when given invalid version '%s'", version)
+			}
+		})
+	}
 }
