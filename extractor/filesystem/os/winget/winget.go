@@ -8,54 +8,30 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite"
 )
 
 const (
-	Name = "windows/winget"
+	Name = "os/winget"
 )
 
-type Configuration struct {
-	DatabasePaths []string
+type Extractor struct{}
+
+func New() filesystem.Extractor {
+	return &Extractor{}
 }
 
-func DefaultConfiguration() Configuration {
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		username := os.Getenv("USERNAME")
-		userHome = filepath.Join("C:", "Users", username)
-	}
-	
-	return Configuration{
-		DatabasePaths: []string{
-			filepath.Join(userHome, "AppData", "Local", "Packages", "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", "LocalState", "Microsoft.Winget.Source_8wekyb3d8bbwe", "installed.db"),
-			filepath.Join(userHome, "AppData", "Local", "Packages", "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", "LocalState", "StoreEdgeFD", "installed.db"),
-			filepath.Join("C:", "ProgramData", "Microsoft", "Windows", "AppRepository", "StateRepository-Machine.srd"),
-		},
-	}
-}
-
-type Extractor struct {
-	config Configuration
-}
-
-func New(config Configuration) standalone.Extractor {
-	return &Extractor{
-		config: config,
-	}
-}
-
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfiguration())
+func NewDefault() filesystem.Extractor {
+	return New()
 }
 
 func (e Extractor) Name() string { return Name }
@@ -63,7 +39,27 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
+	return &plugin.Capabilities{OS: plugin.OSWindows}
+}
+
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+	normalized := filepath.ToSlash(path)
+
+	// Check if this is a Winget database file
+	if strings.HasSuffix(normalized, "/installed.db") &&
+		(strings.Contains(normalized, "/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/") ||
+			strings.Contains(normalized, "/StoreEdgeFD/")) {
+		return true
+	}
+
+	// Check for system-wide repository database
+	if strings.HasSuffix(normalized, "/StateRepository-Machine.srd") &&
+		strings.Contains(normalized, "/AppRepository/") {
+		return true
+	}
+
+	return false
 }
 
 type WingetPackage struct {
@@ -76,50 +72,39 @@ type WingetPackage struct {
 	Commands []string
 }
 
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
-	var db *sql.DB
-	var dbPath string
-	var lastErr error
-
-	for _, path := range e.config.DatabasePaths {
-		if _, statErr := os.Stat(path); statErr != nil {
-			continue
-		}
-
-		db, lastErr = sql.Open("sqlite", path)
-		if lastErr != nil {
-			continue
-		}
-
-		if err := e.validateDatabase(ctx, db); err != nil {
-			db.Close()
-			lastErr = err
-			continue
-		}
-
-		dbPath = path
-		break
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	absPath, err := input.GetRealPath()
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
 
-	if db == nil {
-		if lastErr != nil {
-			return inventory.Inventory{}, fmt.Errorf("failed to open any Winget database: %w", lastErr)
-		}
-		return inventory.Inventory{}, errors.New("no Winget database found")
+	db, err := sql.Open("sqlite", absPath)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to open Winget database %s: %w", absPath, err)
 	}
 	defer db.Close()
 
+	if err := e.validateDatabase(ctx, db); err != nil {
+		return inventory.Inventory{}, fmt.Errorf("invalid Winget database %s: %w", absPath, err)
+	}
+
 	packages, err := e.extractPackages(ctx, db)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to extract packages from %s: %w", dbPath, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to extract packages from %s: %w", absPath, err)
 	}
 
 	var extPackages []*extractor.Package
 	for _, pkg := range packages {
+		// Return if canceled or exceeding deadline
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
+
 		extPkg := &extractor.Package{
-			Name:     pkg.ID,
-			Version:  pkg.Version,
-			PURLType: "winget",
+			Name:      pkg.ID,
+			Version:   pkg.Version,
+			PURLType:  purl.TypeWinget,
+			Locations: []string{input.Path},
 			Metadata: &metadata.WingetPackage{
 				Name:     pkg.Name,
 				ID:       pkg.ID,
@@ -179,6 +164,11 @@ func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*WingetP
 
 	var packages []*WingetPackage
 	for rows.Next() {
+		// Return if canceled or exceeding deadline
+		if err := ctx.Err(); err != nil {
+			return packages, fmt.Errorf("winget extractor halted due to context error: %w", err)
+		}
+
 		var pkg WingetPackage
 		var tagsStr, commandsStr sql.NullString
 

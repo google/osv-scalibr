@@ -7,33 +7,25 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
 
 // Name of the Winget extractor
-const Name = "windows/winget"
-
-// Configuration for the extractor.
-type Configuration struct{}
-
-// DefaultConfiguration for the extractor. On non-windows, it contains nothing.
-func DefaultConfiguration() Configuration {
-	return Configuration{}
-}
+const Name = "os/winget"
 
 // Extractor provides a metadata extractor for Winget installed packages.
 type Extractor struct{}
 
-// New creates a new Extractor from a given configuration.
-func New(config Configuration) standalone.Extractor {
+// New creates a new Extractor.
+func New() filesystem.Extractor {
 	return &Extractor{}
 }
 
 // NewDefault returns an extractor with the default config settings.
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfiguration())
+func NewDefault() filesystem.Extractor {
+	return New()
 }
 
 // Name of the extractor.
@@ -47,7 +39,12 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 
+// FileRequired returns false on non-Windows platforms since Winget databases don't exist
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return false
+}
+
 // Extract is a no-op for non-Windows platforms.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, errors.New("only supported on Windows")
 }

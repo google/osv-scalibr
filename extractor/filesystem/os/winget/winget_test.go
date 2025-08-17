@@ -5,23 +5,70 @@ package winget
 import (
 	"context"
 	"database/sql"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite"
 )
+
+func TestFileRequired(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "WingetInstalledDB_ReturnsTrue",
+			path: "/Users/test/AppData/Local/Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/Microsoft.Winget.Source_8wekyb3d8bbwe/installed.db",
+			want: true,
+		},
+		{
+			name: "StoreEdgeFDInstalledDB_ReturnsTrue",
+			path: "/Users/test/AppData/Local/Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/StoreEdgeFD/installed.db",
+			want: true,
+		},
+		{
+			name: "StateRepositoryMachine_ReturnsTrue",
+			path: "/ProgramData/Microsoft/Windows/AppRepository/StateRepository-Machine.srd",
+			want: true,
+		},
+		{
+			name: "RandomSQLiteFile_ReturnsFalse",
+			path: "/some/random/path/database.db",
+			want: false,
+		},
+		{
+			name: "WingetDBWrongPath_ReturnsFalse",
+			path: "/wrong/path/installed.db",
+			want: false,
+		},
+	}
+
+	extractor := NewDefault()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := &mockFileAPI{path: tt.path}
+			got := extractor.FileRequired(api)
+			if got != tt.want {
+				t.Errorf("FileRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name    string
 		setupDB func(string) error
-		config  Configuration
 		want    []*extractor.Package
 		wantErr bool
 	}{
@@ -51,9 +98,10 @@ func TestExtract(t *testing.T) {
 			},
 			want: []*extractor.Package{
 				{
-					Name:     "Git.Git",
-					Version:  "2.50.1",
-					PURLType: "winget",
+					Name:      "Git.Git",
+					Version:   "2.50.1",
+					PURLType:  purl.TypeWinget,
+					Locations: []string{"test.db"},
 					Metadata: &metadata.WingetPackage{
 						Name:     "Git",
 						ID:       "Git.Git",
@@ -65,9 +113,10 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "Microsoft.VisualStudioCode",
-					Version:  "1.103.1",
-					PURLType: "winget",
+					Name:      "Microsoft.VisualStudioCode",
+					Version:   "1.103.1",
+					PURLType:  purl.TypeWinget,
+					Locations: []string{"test.db"},
 					Metadata: &metadata.WingetPackage{
 						Name:     "Microsoft Visual Studio Code",
 						ID:       "Microsoft.VisualStudioCode",
@@ -92,7 +141,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "InvalidDatabase_ReturnsError",
 			setupDB: func(dbPath string) error {
-				// Create a database without the manifest table
 				db, err := sql.Open("sqlite", dbPath)
 				if err != nil {
 					return err
@@ -115,15 +163,17 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to setup test database: %v", err)
 			}
 
-			config := Configuration{
-				DatabasePaths: []string{dbPath},
-			}
-			if len(tt.config.DatabasePaths) > 0 {
-				config = tt.config
+			extractor := NewDefault()
+			input := &filesystem.ScanInput{
+				Path:   "test.db",
+				Reader: strings.NewReader(""),
 			}
 
-			extractor := New(config)
-			input := &standalone.ScanInput{}
+			// Mock GetRealPath to return the test database path
+			input = &mockScanInput{
+				path:     "test.db",
+				realPath: dbPath,
+			}
 
 			got, err := extractor.Extract(context.Background(), input)
 			if (err != nil) != tt.wantErr {
@@ -140,23 +190,6 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func TestExtract_NoValidDatabase(t *testing.T) {
-	config := Configuration{
-		DatabasePaths: []string{
-			"/nonexistent/path1.db",
-			"/nonexistent/path2.db",
-		},
-	}
-
-	extractor := New(config)
-	input := &standalone.ScanInput{}
-
-	_, err := extractor.Extract(context.Background(), input)
-	if err == nil {
-		t.Error("Expected error when no valid database found")
-	}
-}
-
 func TestExtractorInterface(t *testing.T) {
 	extractor := NewDefault()
 
@@ -169,12 +202,12 @@ func TestExtractorInterface(t *testing.T) {
 	}
 
 	caps := extractor.Requirements()
-	if caps.OS.String() != "windows" {
-		t.Errorf("Requirements().OS = %v, want windows", caps.OS)
+	if caps.OS != 2 { // OSWindows = 2
+		t.Errorf("Requirements().OS = %v, want 2 (OSWindows)", caps.OS)
 	}
 
-	if !caps.RunningSystem {
-		t.Error("Requirements().RunningSystem should be true")
+	if caps.RunningSystem {
+		t.Error("Requirements().RunningSystem should be false for filesystem extractor")
 	}
 }
 
@@ -188,6 +221,24 @@ type TestPackage struct {
 	Tags     []string
 	Commands []string
 }
+
+// mockFileAPI implements filesystem.FileAPI for testing
+type mockFileAPI struct {
+	path string
+}
+
+func (m *mockFileAPI) Path() string               { return m.path }
+func (m *mockFileAPI) Stat() (os.FileInfo, error) { return nil, nil }
+
+// mockScanInput implements filesystem.ScanInput for testing
+type mockScanInput struct {
+	path     string
+	realPath string
+}
+
+func (m *mockScanInput) Path() string                 { return m.path }
+func (m *mockScanInput) Reader() io.Reader            { return strings.NewReader("") }
+func (m *mockScanInput) GetRealPath() (string, error) { return m.realPath, nil }
 
 // createTestDatabase creates a SQLite database with the Winget schema and test data
 func createTestDatabase(dbPath string, packages []TestPackage) error {

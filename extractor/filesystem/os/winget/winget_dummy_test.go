@@ -4,14 +4,29 @@ package winget
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 )
+
+func TestFileRequired_NonWindows(t *testing.T) {
+	extractor := NewDefault()
+	api := &mockFileAPI{path: "/some/path/installed.db"}
+
+	got := extractor.FileRequired(api)
+	if got != false {
+		t.Errorf("FileRequired() = %v, want false on non-Windows", got)
+	}
+}
 
 func TestExtract_NonWindows(t *testing.T) {
 	extractor := NewDefault()
-	input := &standalone.ScanInput{}
+	input := &filesystem.ScanInput{
+		Path:   "test.db",
+		Reader: strings.NewReader(""),
+	}
 
 	_, err := extractor.Extract(context.Background(), input)
 	if err == nil {
@@ -40,3 +55,11 @@ func TestExtractorInterface_NonWindows(t *testing.T) {
 		t.Errorf("Requirements().OS = %v, want Windows (2)", caps.OS)
 	}
 }
+
+// mockFileAPI implements filesystem.FileAPI for testing
+type mockFileAPI struct {
+	path string
+}
+
+func (m *mockFileAPI) Path() string               { return m.path }
+func (m *mockFileAPI) Stat() (os.FileInfo, error) { return nil, nil }
