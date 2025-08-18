@@ -123,22 +123,22 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var m manifest
 	if err := json.NewDecoder(input.Reader).Decode(&m); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract manifest from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract manifest: %w", err)
 	}
 	if err := m.validate(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("bad format in manifest %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("bad format in manifest: %w", err)
 	}
 
 	id, err := extractExtensionsIDFromPath(input)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract extension id from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract extension id: %w", err)
 	}
 
 	// if default locale is specified some fields of the manifest may be
 	// written inside the ./_locales/LOCALE_CODE/messages.json file
 	if m.DefaultLocale != "" {
 		if err := extractLocaleInfo(&m, input); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("could not extract locale info from %s: %w", input.Path, err)
+			return inventory.Inventory{}, fmt.Errorf("could not extract locale info: %w", err)
 		}
 	}
 

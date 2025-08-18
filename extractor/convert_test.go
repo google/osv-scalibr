@@ -80,7 +80,7 @@ func TestToPURL(t *testing.T) {
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeNPM,
-				Name:    "name",
+				Name:    "Name",
 				Version: "1.2.3",
 			},
 		},

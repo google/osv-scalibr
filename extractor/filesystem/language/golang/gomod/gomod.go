@@ -93,7 +93,7 @@ type pkgKey struct {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, goVersion, err := e.extractGoMod(input)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	// At go 1.17 and above, the go command adds an indirect requirement for each module that provides any

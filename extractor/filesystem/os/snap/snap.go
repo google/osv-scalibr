@@ -17,6 +17,7 @@ package snap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -165,15 +166,15 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	snap := snap{}
 	dec := yaml.NewDecoder(input.Reader)
 	if err := dec.Decode(&snap); err != nil {
-		return nil, fmt.Errorf("failed to yaml decode %q: %w", input.Path, err)
+		return nil, fmt.Errorf("failed to yaml decode: %w", err)
 	}
 
 	if snap.Name == "" {
-		return nil, fmt.Errorf("missing snap name from %q", input.Path)
+		return nil, errors.New("missing snap name")
 	}
 
 	if snap.Version == "" {
-		return nil, fmt.Errorf("missing snap version from %q", input.Path)
+		return nil, errors.New("missing snap version")
 	}
 
 	pkg := &extractor.Package{

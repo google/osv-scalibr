@@ -117,11 +117,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	b, err := io.ReadAll(input.Reader)
 
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	if err := json.Unmarshal(jsonc.ToJSON(b), &parsedLockfile); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %q: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract %w", err)
 	}
 
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
@@ -132,7 +132,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		name, version, commit, err := structurePackageDetails(pkg)
 
 		if err != nil {
-			errs = append(errs, fmt.Errorf("could not extract '%s' from %q: %w", key, input.Path, err))
+			errs = append(errs, fmt.Errorf("could not extract '%s': %w", key, err))
 
 			continue
 		}
