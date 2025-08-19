@@ -143,6 +143,9 @@ message Package {
   // Details about the layer a package was found in. This should be set only for
   // container image scanning.
   LayerDetails layer_details = 35;
+
+  // Software licenses information
+  repeated string licenses = 52;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
@@ -304,13 +307,16 @@ message JavascriptPackageJSONMetadata {
 
 // The additional data found in APK packages.
 message APKPackageMetadata {
+  reserved 7;
+
   string package_name = 1;
   string origin_name = 2;
   string os_id = 3;
   string os_version_id = 4;
   string maintainer = 5;
   string architecture = 6;
-  string license = 7;
+
+  reserved "license";
 }
 
 // The additional data found in DPKG packages.
@@ -330,6 +336,8 @@ message DPKGPackageMetadata {
 
 // The additional data found in RPM packages.
 message RPMPackageMetadata {
+  reserved 10;
+
   string package_name = 1;
   string source_rpm = 2;
   int32 epoch = 3;
@@ -339,7 +347,8 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
-  string license = 10;
+
+  reserved "license";
 }
 
 // The additional data found in COS packages.

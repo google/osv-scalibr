@@ -94,7 +94,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *pubspecLockfile
 	if err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))

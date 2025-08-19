@@ -43,26 +43,48 @@ func MustParse(str string, ecosystem string) Version {
 func Parse(str string, ecosystem string) (Version, error) {
 	// TODO(#457): support more ecosystems
 	switch ecosystem {
+	case "AlmaLinux":
+		return parseRedHatVersion(str), nil
+	case "Alpaquita":
+		return parseAlpineVersion(str)
 	case "Alpine":
+		return parseAlpineVersion(str)
+	case "Bitnami":
+		return parseSemverVersion(str), nil
+	case "Bioconductor":
+		return parseSemverVersion(str), nil
+	case "Chainguard":
 		return parseAlpineVersion(str)
 	case "ConanCenter":
 		return parseSemverVersion(str), nil
 	case "CRAN":
-		return parseCRANVersion(str), nil
+		return parseCRANVersion(str)
 	case "crates.io":
 		return parseSemverVersion(str), nil
 	case "Debian":
 		return parseDebianVersion(str)
+	case "GHC":
+		return parseSemverVersion(str), nil
 	case "Go":
 		return parseSemverVersion(str), nil
+	case "Hackage":
+		return parseHackageVersion(str)
 	case "Hex":
 		return parseSemverVersion(str), nil
+	case "Mageia":
+		return parseRedHatVersion(str), nil
 	case "Maven":
 		return parseMavenVersion(str), nil
+	case "MinimOS":
+		return parseAlpineVersion(str)
 	case "npm":
 		return parseSemverVersion(str), nil
 	case "NuGet":
 		return parseNuGetVersion(str), nil
+	case "openEuler":
+		return parseRedHatVersion(str), nil
+	case "openSUSE":
+		return parseRedHatVersion(str), nil
 	case "Packagist":
 		return parsePackagistVersion(str), nil
 	case "Pub":
@@ -71,10 +93,18 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parsePyPIVersion(str)
 	case "Red Hat":
 		return parseRedHatVersion(str), nil
+	case "Rocky Linux":
+		return parseRedHatVersion(str), nil
 	case "RubyGems":
 		return parseRubyGemsVersion(str), nil
+	case "SUSE":
+		return parseRedHatVersion(str), nil
+	case "SwiftURL":
+		return parseSemverVersion(str), nil
 	case "Ubuntu":
 		return parseDebianVersion(str)
+	case "Wolfi":
+		return parseAlpineVersion(str)
 	}
 
 	return nil, fmt.Errorf("%w %s", ErrUnsupportedEcosystem, ecosystem)

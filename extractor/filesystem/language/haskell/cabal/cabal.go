@@ -151,7 +151,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
-			return packages, fmt.Errorf("%s halted at %q because of context error: %w", e.Name(), input.Path, err)
+			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
 		line := s.Text()
@@ -177,7 +177,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		if s.Err() != nil {
-			return packages, fmt.Errorf("error while scanning cabal.project.freeze file from %v: %w", input.Path, s.Err())
+			return packages, fmt.Errorf("error while scanning cabal.project.freeze file: %w", s.Err())
 		}
 	}
 

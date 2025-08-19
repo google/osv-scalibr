@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scalibr
+package license
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.1"
+import (
+	"context"
+
+	depsdevpb "deps.dev/api/v3"
+	"google.golang.org/grpc"
+)
+
+// Client is an interface that provides an abstraction on top of the deps.dev client.
+type Client interface {
+	GetVersion(ctx context.Context, in *depsdevpb.GetVersionRequest, opts ...grpc.CallOption) (*depsdevpb.Version, error)
+}

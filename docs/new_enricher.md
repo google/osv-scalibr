@@ -33,6 +33,7 @@ as an example.
 1.  Register your enricher in
     [list.go](/enricher/enricherlist/list.go)
     so you can use it in the CLI.
+1.  Update `docs/supported_inventory_types.md` to include your new enricher.
 1.  If you added new dependencies, regenerate the go.mod file by running
 
     ```sh

@@ -33,7 +33,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
 
@@ -161,7 +160,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 	r, err := scalibrfs.NewReaderAt(input.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("NewReaderAt(%s): %w", input.Path, err)
+		return nil, fmt.Errorf("NewReaderAt: %w", err)
 	}
 
 	magicType, err := magic.GetType(r)
@@ -182,7 +181,6 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	p := &extractor.Package{
 		Name:      metadata.Name,
 		Version:   metadata.Version,
-		PURLType:  purl.TypeKernelModule,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}

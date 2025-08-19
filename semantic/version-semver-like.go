@@ -36,7 +36,7 @@ type semverLikeVersion struct {
 }
 
 func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (components, string) {
-	if len(v.Components) <= maxComponents {
+	if maxComponents == -1 || len(v.Components) <= maxComponents {
 		return v.Components, v.Build
 	}
 

@@ -30,7 +30,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -210,9 +209,8 @@ func TestExtract(t *testing.T) {
 			osrelease: UbuntuJammy,
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "Linux Kernel",
-					Version:  "6.8.0-49-generic",
-					PURLType: purl.TypeKernelModule,
+					Name:    "Linux Kernel",
+					Version: "6.8.0-49-generic",
 					Metadata: &vmlinuzmeta.Metadata{
 						Name:              "Linux Kernel",
 						Version:           "6.8.0-49-generic",

@@ -55,7 +55,7 @@ func retrieveAllDrives() ([]string, error) {
 
 	var drives []string
 	var drive string
-	var i uint32 = 0
+	var i uint32
 
 	// parse the output (null separated strings)
 	for ; i < n; i++ {
