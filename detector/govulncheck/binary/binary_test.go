@@ -87,14 +87,14 @@ func TestScan(t *testing.T) {
 	}
 
 	// Remove some fields that might change between govulncheck versions.
-	got.Vulnerability.SchemaVersion = ""
-	got.Vulnerability.Modified = time.Time{}
-	got.Vulnerability.Published = time.Time{}
-	got.Vulnerability.Withdrawn = time.Time{}
-	got.Vulnerability.Affected = []osvschema.Affected{got.Vulnerability.Affected[0]}
+	got.SchemaVersion = ""
+	got.Modified = time.Time{}
+	got.Published = time.Time{}
+	got.Withdrawn = time.Time{}
+	got.Affected = []osvschema.Affected{got.Affected[0]}
 	got.Vulnerability.Affected[0].Ranges = nil
 	got.Vulnerability.Affected[0].EcosystemSpecific = nil
-	got.Vulnerability.DatabaseSpecific = nil
+	got.DatabaseSpecific = nil
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("detector.Scan(%v): unexpected findings (-want +got):\n%s", px, diff)

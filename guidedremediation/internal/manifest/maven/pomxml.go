@@ -150,7 +150,7 @@ func (m *mavenManifest) Clone() manifest.Manifest {
 			Repositories:           slices.Clone(m.specific.Repositories),
 		},
 	}
-	clone.root.AttrSet = m.root.AttrSet.Clone()
+	clone.root.AttrSet = m.root.Clone()
 
 	return clone
 }
@@ -232,7 +232,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.Maven,
-					Name:   project.Parent.ProjectKey.Name(),
+					Name:   project.Parent.Name(),
 				},
 				// Parent version is a concrete version, but we model parent as dependency here.
 				VersionType: resolve.Requirement,
@@ -249,7 +249,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 
 	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
 	for _, repo := range project.Repositories {
-		if err := r.MavenRegistryAPIClient.AddRegistry(datasource.MavenRegistry{
+		if err := r.AddRegistry(datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -406,7 +406,7 @@ func buildOriginalRequirements(project maven.Project, originPrefix string) []Dep
 		for _, d := range plugin.Dependencies {
 			dependencies = append(dependencies, DependencyWithOrigin{
 				Dependency: d,
-				Origin:     mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.ProjectKey.Name()),
+				Origin:     mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.Name()),
 			})
 		}
 	}
@@ -999,7 +999,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 				if err := dec.DecodeElement(&rawPlugin, &tt); err != nil {
 					return err
 				}
-				if err := writeProject(w, enc, "<plugin>"+rawPlugin.InnerXML+"</plugin>", mavenutil.OriginPlugin, rawPlugin.ProjectKey.Name(), patches, properties, updated); err != nil {
+				if err := writeProject(w, enc, "<plugin>"+rawPlugin.InnerXML+"</plugin>", mavenutil.OriginPlugin, rawPlugin.Name(), patches, properties, updated); err != nil {
 					return fmt.Errorf("updating profile: %w", err)
 				}
 
