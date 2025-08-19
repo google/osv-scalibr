@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+	scalibrversion "github.com/google/osv-scalibr/version"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
 	"osv.dev/bindings/go/osvdev"
@@ -65,8 +66,7 @@ func NewWithClient(c Client, initialQueryTimeout time.Duration) enricher.Enriche
 // NewDefault creates a new Enricher with the default configuration and OSV.dev client
 func NewDefault() enricher.Enricher {
 	client := osvdev.DefaultClient()
-	// TODO: add better user agent
-	// client.Config.UserAgent = "osv-scanner_scan/"+version.OSVVersion
+	client.Config.UserAgent = "osv-scanner_scan/" + scalibrversion.ScannerVersion
 	return &Enricher{
 		initialQueryTimeout: 5 * time.Minute,
 		client:              client,
