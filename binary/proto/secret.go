@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexity"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -86,6 +87,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case velesperplexity.PerplexityAPIKey:
+		return perplexityToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -111,6 +114,16 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func perplexityToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Perplexity{
+			Perplexity: &spb.SecretData_PerplexityAPIKey{
+				Key: s.Key,
+			},
 		},
 	}
 }
@@ -193,6 +206,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_Perplexity:
+		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -218,6 +233,12 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
+	return velesperplexity.PerplexityAPIKey{
+		Key: kPB.GetKey(),
+	}
 }
 
 func validationResultToStruct(r *spb.SecretStatus) (inventory.SecretValidationResult, error) {
