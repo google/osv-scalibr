@@ -103,17 +103,7 @@ func mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clearErr bo
 }
 
 func TestWalkDir(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal("finding working dir:", err)
-	}
-	if err = os.Chdir(tmpDir); err != nil {
-		t.Fatal("entering temp dir:", err)
-	}
-	//nolint:errcheck
-	defer os.Chdir(origDir)
+	t.Chdir(t.TempDir())
 
 	fsys := makeTree()
 	errors := make([]error, 0, 10)
@@ -122,7 +112,7 @@ func TestWalkDir(t *testing.T) {
 		return mark(tree, entry, err, &errors, clearErr)
 	}
 	// Expect no errors.
-	err = WalkDirUnsorted(fsys, ".", markFn, nil)
+	err := WalkDirUnsorted(fsys, ".", markFn, nil)
 	if err != nil {
 		t.Fatalf("no error expected, found: %s", err)
 	}

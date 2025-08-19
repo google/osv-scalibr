@@ -55,7 +55,6 @@ linters:
         - ifElseChain
     usetesting:
       # TODO(#274): work on enabling this
-      os-chdir: false
       context-background: false
     revive:
       rules:
