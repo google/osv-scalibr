@@ -67,7 +67,7 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 		}
 		for _, r := range affected.Ranges {
 			if r.Type != "ECOSYSTEM" &&
-				!(r.Type == "SEMVER" && affected.Package.Ecosystem == "npm") {
+				(r.Type != "SEMVER" || affected.Package.Ecosystem != "npm") {
 				continue
 			}
 			events := slices.Clone(r.Events)

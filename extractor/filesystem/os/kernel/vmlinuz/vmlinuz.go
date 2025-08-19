@@ -104,7 +104,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
-	if !(filepath.Base(path) == "vmlinuz" || strings.HasPrefix(filepath.Base(path), "vmlinuz-")) {
+	if filepath.Base(path) != "vmlinuz" && !strings.HasPrefix(filepath.Base(path), "vmlinuz-") {
 		return false
 	}
 

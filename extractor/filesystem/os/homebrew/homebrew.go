@@ -86,7 +86,7 @@ func isCaskroom(filePath string) bool {
 	// ../Caskroom/${appName}/${version}/${appName}.wrapper.sh
 	// or ../Caskroom/${appName}/${version}/${folder/source.properties|source.properties}
 	// or ../Caskroom/${appName}/${version}/${appName}.app
-	if !(strings.HasSuffix(filePath, caskFileName1) || strings.HasSuffix(filePath, caskFileName2) || strings.HasSuffix(filePath, caskFileName3)) {
+	if !strings.HasSuffix(filePath, caskFileName1) && !strings.HasSuffix(filePath, caskFileName2) && !strings.HasSuffix(filePath, caskFileName3) {
 		return false
 	}
 
