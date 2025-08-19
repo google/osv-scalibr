@@ -15,7 +15,6 @@
 package gobinary_test
 
 import (
-	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -279,7 +278,7 @@ func TestExtract(t *testing.T) {
 			cfg.Stats = collector
 
 			e := gobinary.New(cfg)
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}

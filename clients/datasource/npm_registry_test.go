@@ -16,7 +16,6 @@ package datasource_test
 
 import (
 	"cmp"
-	"context"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -66,7 +65,7 @@ func TestNpmRegistryClient(t *testing.T) {
 				"version2": "2.2.2",
 			},
 		}
-		got, err := cl.Versions(context.Background(), pkg)
+		got, err := cl.Versions(t.Context(), pkg)
 		if err != nil {
 			t.Fatalf("failed getting versions: %v", err)
 		}
@@ -80,7 +79,7 @@ func TestNpmRegistryClient(t *testing.T) {
 			Versions: []string{"1.2.3", "2.3.4"},
 			Tags:     map[string]string{"latest": "2.3.4"},
 		}
-		got, err := cl.Versions(context.Background(), pkg)
+		got, err := cl.Versions(t.Context(), pkg)
 		if err != nil {
 			t.Fatalf("failed getting versions: %v", err)
 		}
@@ -114,7 +113,7 @@ func TestNpmRegistryClient(t *testing.T) {
 				"a",
 			},
 		}
-		got, err := cl.Dependencies(context.Background(), pkg, ver)
+		got, err := cl.Dependencies(t.Context(), pkg, ver)
 		if err != nil {
 			t.Fatalf("failed getting dependencies: %v", err)
 		}
@@ -164,7 +163,7 @@ func TestNpmRegistryClient(t *testing.T) {
 			},
 			"contributors": []
 		}`)
-		got, err := cl.FullJSON(context.Background(), pkg, ver)
+		got, err := cl.FullJSON(t.Context(), pkg, ver)
 		if err != nil {
 			t.Fatalf("failed getting full json: %v", err)
 		}

@@ -32,7 +32,7 @@ import (
 )
 
 func TestEnrich(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	copier := cpy.New(
@@ -153,7 +153,7 @@ func TestEnrich(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = context.Background()
+				tt.ctx = t.Context() //nolint:fatcontext
 			}
 
 			var input *enricher.ScanInput

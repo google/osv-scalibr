@@ -15,7 +15,6 @@
 package resolution_test
 
 import (
-	"context"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -175,7 +174,7 @@ func TestResolveNPM(t *testing.T) {
 	}
 	cl := clienttest.NewMockResolutionClient(t, "testdata/universe/npm.yaml")
 
-	got, err := resolution.Resolve(context.Background(), cl, m, options.ResolutionOptions{})
+	got, err := resolution.Resolve(t.Context(), cl, m, options.ResolutionOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +262,7 @@ func TestResolveMaven(t *testing.T) {
 	}
 	cl := clienttest.NewMockResolutionClient(t, "testdata/universe/maven.yaml")
 
-	got, err := resolution.Resolve(context.Background(), cl, m, options.ResolutionOptions{MavenManagement: true})
+	got, err := resolution.Resolve(t.Context(), cl, m, options.ResolutionOptions{MavenManagement: true})
 	if err != nil {
 		t.Fatal(err)
 	}

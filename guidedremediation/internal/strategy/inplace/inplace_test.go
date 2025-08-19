@@ -15,7 +15,6 @@
 package inplace_test
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -78,12 +77,12 @@ func TestComputePatches(t *testing.T) {
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
 			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolvedGraph, err := remediation.ResolveGraphVulns(context.Background(), cl, vm, g, nil, &tt.opts)
+			resolvedGraph, err := remediation.ResolveGraphVulns(t.Context(), cl, vm, g, nil, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving vulns from graph: %v", err)
 			}
 
-			got, err := inplace.ComputePatches(context.Background(), cl, resolvedGraph, &tt.opts)
+			got, err := inplace.ComputePatches(t.Context(), cl, resolvedGraph, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}
