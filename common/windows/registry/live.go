@@ -157,7 +157,6 @@ func (o *LiveKey) Values() ([]Value, error) {
 type LiveValue struct {
 	name string
 	key  *winregistry.Key
-	data *[]byte
 }
 
 // Name returns the name of the value.
