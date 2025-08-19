@@ -112,8 +112,6 @@ linters:
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
         - -QF1008 # remove embedded field from selector
-        - -QF1011 # omit type from declaration; it will be inferred from the right-hand side
-        - -ST1023 # omit type from declaration; it will be inferred from the right-hand side
   exclusions:
     generated: lax
     presets:
