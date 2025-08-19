@@ -58,7 +58,7 @@ func TestReadPoetry(t *testing.T) {
 						System: resolve.PyPI,
 						Name:   "requests",
 					},
-					Version:     ">=2.25.1",
+					Version:     "~=2.25.1",
 					VersionType: resolve.Requirement,
 				},
 			},
@@ -116,7 +116,7 @@ func TestWritePoetry(t *testing.T) {
 			PackageUpdates: []result.PackageUpdate{
 				{
 					Name:        "requests",
-					VersionFrom: ">=2.25.1",
+					VersionFrom: "~=2.25.1",
 					VersionTo:   ">=2.26.0,<3.0.0",
 				},
 			},

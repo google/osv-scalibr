@@ -2,7 +2,7 @@
 name = "my-project"
 version = "1.2.3"
 dependencies = [
-  "requests>=2.25.1",
+  "requests~=2.25.1",
   "numpy==1.22.0"
 ]
 

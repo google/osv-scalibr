@@ -46,7 +46,7 @@ type project struct {
 
 type poetryReadWriter struct{}
 
-// GetPoetryReadWriter returns a ReadWriter for requirements.txt manifest files.
+// GetPoetryReadWriter returns a ReadWriter for pyproject.toml manifest files.
 func GetPoetryReadWriter() (manifest.ReadWriter, error) {
 	return poetryReadWriter{}, nil
 }
