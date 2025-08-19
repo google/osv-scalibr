@@ -42,7 +42,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 	if len(graph.Graph.Nodes) == 0 {
 		return nil, nil
 	}
-	sys := graph.Graph.Nodes[0].Version.System.Semver()
+	sys := graph.Graph.Nodes[0].Version.Semver()
 	requiredVersions := computeAllVersionConstraints(graph.Vulns, sys)
 	type patch struct {
 		vk    resolve.VersionKey
@@ -219,7 +219,7 @@ func findLatestMatching(ctx context.Context, cl resolve.Client, graph remediatio
 	requiredVersions map[resolve.VersionKey]semver.Set,
 	opts *options.RemediationOptions) (bool, resolve.VersionKey) {
 	vk := sg.Nodes[sg.Dependency].Version
-	sys := vk.System.Semver()
+	sys := vk.Semver()
 	vers, err := cl.Versions(ctx, vk.PackageKey)
 	if err != nil {
 		log.Errorf("failed to get versions for package %s: %v", vk.PackageKey, err)

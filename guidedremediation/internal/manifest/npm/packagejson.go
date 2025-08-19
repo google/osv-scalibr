@@ -113,7 +113,7 @@ func (m *npmManifest) Clone() manifest.Manifest {
 		requirements: slices.Clone(m.requirements),
 		groups:       maps.Clone(m.groups),
 	}
-	clone.root.AttrSet = m.root.AttrSet.Clone()
+	clone.root.AttrSet = m.root.Clone()
 	clone.localManifests = make([]*npmManifest, len(m.localManifests))
 	for i, local := range m.localManifests {
 		clone.localManifests[i] = local.Clone().(*npmManifest)
