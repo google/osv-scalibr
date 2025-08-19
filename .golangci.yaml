@@ -54,9 +54,6 @@ linters:
     gocritic:
       disabled-checks:
         - ifElseChain
-    usetesting:
-      # TODO(#274): work on enabling this
-      os-chdir: false
     revive:
       rules:
         - name: blank-imports
