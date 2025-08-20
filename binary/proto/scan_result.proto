@@ -613,6 +613,7 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
+    PrivateKey private_key = 2;
   }
 
   message GCPSAK {
@@ -634,6 +635,11 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message PrivateKey {
+    string block = 1;  // PEM/OpenSSH private key block
+    bytes der = 2;   // DER-encoded key material
   }
 }
 

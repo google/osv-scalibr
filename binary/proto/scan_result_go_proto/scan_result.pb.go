@@ -4755,6 +4755,7 @@ type SecretData struct {
 	// Types that are valid to be assigned to Secret:
 	//
 	//	*SecretData_Gcpsak
+	//	*SecretData_PrivateKey_
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4806,6 +4807,15 @@ func (x *SecretData) GetGcpsak() *SecretData_GCPSAK {
 	return nil
 }
 
+func (x *SecretData) GetPrivateKey() *SecretData_PrivateKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PrivateKey_); ok {
+			return x.PrivateKey
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -4814,7 +4824,13 @@ type SecretData_Gcpsak struct {
 	Gcpsak *SecretData_GCPSAK `protobuf:"bytes,1,opt,name=gcpsak,proto3,oneof"`
 }
 
+type SecretData_PrivateKey_ struct {
+	PrivateKey *SecretData_PrivateKey `protobuf:"bytes,2,opt,name=private_key,json=privateKey,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
+
+func (*SecretData_PrivateKey_) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -5302,6 +5318,58 @@ func (x *SecretData_GCPSAK) GetPrivateKey() string {
 	return ""
 }
 
+type SecretData_PrivateKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Block         string                 `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty"` // PEM/OpenSSH private key block
+	Der           []byte                 `protobuf:"bytes,2,opt,name=der,proto3" json:"der,omitempty"`     // DER-encoded key material
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PrivateKey) Reset() {
+	*x = SecretData_PrivateKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PrivateKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PrivateKey) ProtoMessage() {}
+
+func (x *SecretData_PrivateKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PrivateKey.ProtoReflect.Descriptor instead.
+func (*SecretData_PrivateKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{50, 1}
+}
+
+func (x *SecretData_PrivateKey) GetBlock() string {
+	if x != nil {
+		return x.Block
+	}
+	return ""
+}
+
+func (x *SecretData_PrivateKey) GetDer() []byte {
+	if x != nil {
+		return x.Der
+	}
+	return nil
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -5689,10 +5757,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xff\x03\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf8\x04\n" +
 	"\n" +
 	"SecretData\x124\n" +
-	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x1a\xb0\x03\n" +
+	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12A\n" +
+	"\vprivate_key\x18\x02 \x01(\v2\x1e.scalibr.SecretData.PrivateKeyH\x00R\n" +
+	"privateKey\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -5708,7 +5778,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	" \x01(\tR\x11clientX509CertUrl\x12'\n" +
 	"\x0funiverse_domain\x18\v \x01(\tR\x0euniverseDomain\x12\x1f\n" +
 	"\vprivate_key\x18\f \x01(\tR\n" +
-	"privateKeyB\b\n" +
+	"privateKey\x1a4\n" +
+	"\n" +
+	"PrivateKey\x12\x14\n" +
+	"\x05block\x18\x01 \x01(\tR\x05block\x12\x10\n" +
+	"\x03der\x18\x02 \x01(\fR\x03derB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -5766,7 +5840,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                      // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                          // 1: scalibr.SeverityEnum
@@ -5832,11 +5906,12 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*ContainerCommand)(nil),                   // 61: scalibr.ContainerCommand
 	nil,                                        // 62: scalibr.PodmanMetadata.ExposedPortsEntry
 	(*SecretData_GCPSAK)(nil),                  // 63: scalibr.SecretData.GCPSAK
-	(*timestamppb.Timestamp)(nil),              // 64: google.protobuf.Timestamp
+	(*SecretData_PrivateKey)(nil),              // 64: scalibr.SecretData.PrivateKey
+	(*timestamppb.Timestamp)(nil),              // 65: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	64, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	64, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	65, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	65, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -5895,26 +5970,27 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15, // 57: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15, // 58: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	62, // 59: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	64, // 60: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	64, // 61: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	65, // 60: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	65, // 61: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	53, // 62: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	55, // 63: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	56, // 64: scalibr.Secret.status:type_name -> scalibr.SecretStatus
 	57, // 65: scalibr.Secret.locations:type_name -> scalibr.Location
 	63, // 66: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	4,  // 67: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	64, // 68: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	58, // 69: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	59, // 70: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	60, // 71: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	61, // 72: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11, // 73: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	51, // 74: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	75, // [75:75] is the sub-list for method output_type
-	75, // [75:75] is the sub-list for method input_type
-	75, // [75:75] is the sub-list for extension type_name
-	75, // [75:75] is the sub-list for extension extendee
-	0,  // [0:75] is the sub-list for field type_name
+	64, // 67: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
+	4,  // 68: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	65, // 69: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	58, // 70: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	59, // 71: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	60, // 72: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	61, // 73: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11, // 74: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	51, // 75: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	76, // [76:76] is the sub-list for method output_type
+	76, // [76:76] is the sub-list for method input_type
+	76, // [76:76] is the sub-list for extension type_name
+	76, // [76:76] is the sub-list for extension extendee
+	0,  // [0:76] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -5961,6 +6037,7 @@ func file_proto_scan_result_proto_init() {
 	}
 	file_proto_scan_result_proto_msgTypes[50].OneofWrappers = []any{
 		(*SecretData_Gcpsak)(nil),
+		(*SecretData_PrivateKey_)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[52].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
@@ -5974,7 +6051,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   59,
+			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
