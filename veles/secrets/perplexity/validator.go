@@ -62,7 +62,7 @@ func (v *Validator) Validate(ctx context.Context, key PerplexityAPIKey) (veles.V
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
-	req.Header.Set("Authorization", "***"+key.Key)
+	req.Header.Set("Authorization", "Bearer "+key.Key)
 
 	res, err := v.httpC.Do(req)
 	if err != nil {
