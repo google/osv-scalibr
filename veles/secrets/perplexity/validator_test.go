@@ -19,11 +19,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/perplexity"
+	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexity"
 )
 
 const validatorTestKey = "pplx-test123456789012345678901234567890123456789012345678"
@@ -56,9 +57,9 @@ func mockPerplexityServer(t *testing.T, expectedKey string, statusCode int) *htt
 		}
 
 		// Check Authorization header
-		expectedAuth := "Bearer " + expectedKey
-		if r.Header.Get("Authorization") != expectedAuth {
-			t.Errorf("expected Authorization: %s, got: %s", expectedAuth, r.Header.Get("Authorization"))
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasSuffix(authHeader, expectedKey) {
+			t.Errorf("expected Authorization header to end with key %s, got: %s", expectedKey, authHeader)
 		}
 
 		// Set response

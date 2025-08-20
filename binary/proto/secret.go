@@ -88,7 +88,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
 	case velesperplexity.PerplexityAPIKey:
-		return perplexityToProto(t), nil
+		return perplexityAPIKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -118,7 +118,7 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	}
 }
 
-func perplexityToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData {
+func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Perplexity{
 			Perplexity: &spb.SecretData_PerplexityAPIKey{

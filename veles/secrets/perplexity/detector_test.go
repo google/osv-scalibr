@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/perplexity"
+	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexity"
 )
 
 const testKey = `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`

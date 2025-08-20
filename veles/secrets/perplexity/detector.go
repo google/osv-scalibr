@@ -17,9 +17,10 @@
 package perplexityapikey
 
 import (
+	"regexp"
+
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
-	"regexp"
 )
 
 // maxTokenLength is the maximum size of a Perplexity API key.

@@ -17,8 +17,7 @@ package perplexityapikey
 
 // PerplexityAPIKey is a Veles Secret that holds relevant information for a
 // Perplexity API key (prefix `pplx-`).
-//
-
+// PerplexityAPIKey represents an API key used to authenticate requests
 type PerplexityAPIKey struct {
 	Key string
 }

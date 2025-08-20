@@ -28,7 +28,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	"github.com/google/osv-scalibr/veles/secrets/perplexity"
+	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexity"
 )
 
 const (
