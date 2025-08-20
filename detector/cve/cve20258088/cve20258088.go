@@ -20,24 +20,35 @@ import (
 )
 
 const (
+	// Name of the detector.
 	Name = "cve/cve-2025-8088"
 )
 
+// Detector is a SCALIBR Detector for CVE-2025-8088.
 type Detector struct{}
 
+// New returns a detector.
 func New() detector.Detector {
 	return &Detector{}
 }
 
+// Name of the detector.
 func (Detector) Name() string { return Name }
+
+// Version of the detector.
 func (Detector) Version() int { return 0 }
+
+// Requirements of the detector.
 func (Detector) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows, DirectFS: true, RunningSystem: true}
 }
+
+// RequiredExtractors of the detector.
 func (Detector) RequiredExtractors() []string {
 	return []string{"windows/ospackages"}
 }
 
+// DetectedFinding returns generic vulnerability information about what is detected.
 func (Detector) DetectedFinding() inventory.Finding {
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
 		Vulnerability: osvschema.Vulnerability{
@@ -48,6 +59,7 @@ func (Detector) DetectedFinding() inventory.Finding {
 	}}}
 }
 
+// Scan checks for the presence of the BentoML CVE-2025-8088 vulnerability on the filesystem.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	var findings []*inventory.PackageVuln
 	// Match any PE file that could be WinRAR, RAR, UnRAR, UnRAR.dll, including renamed and portable versions
@@ -303,8 +315,10 @@ func isAffectedVersion(ver string) bool {
 }
 
 func atoi(s string) int {
-	n := 0
-	fmt.Sscanf(s, "%d", &n)
+	var n int
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+		return 0
+	}
 	return n
 }
 
