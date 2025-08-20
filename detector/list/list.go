@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/cve/cve20258088"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -70,6 +71,8 @@ var Untested = InitMap{
 	cve202011978.Name: {cve202011978.New},
 	// CVE-2024-2912 BentoML detector.
 	cve20242912.Name: {cve20242912.New},
+	// CVE-2025-8088 WinRAR RCE detector
+	cve20258088.Name: {cve20258088.New},
 }
 
 // Weakcredentials detectors for weak credentials.
