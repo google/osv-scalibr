@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexity"
+	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
 const validatorTestKey = "pplx-test123456789012345678901234567890123456789012345678"

@@ -22,7 +22,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexity"
+	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
