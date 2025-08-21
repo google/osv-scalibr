@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -86,6 +87,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case huggingfaceapikey.HuggingfaceAPIKey:
+		return huggingfaceAPIKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -111,6 +114,16 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func huggingfaceAPIKeyToProto(s huggingfaceapikey.HuggingfaceAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Hugginface{
+			Hugginface: &spb.SecretData_HuggingfaceAPIKey{
+				Key: s.Key,
+			},
 		},
 	}
 }
@@ -193,8 +206,16 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_Hugginface:
+		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
+	}
+}
+
+func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfaceapikey.HuggingfaceAPIKey {
+	return huggingfaceapikey.HuggingfaceAPIKey{
+		Key: kPB.GetKey(),
 	}
 }
 
