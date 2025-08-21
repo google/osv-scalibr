@@ -124,6 +124,7 @@ message Package {
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
+    MacportsPackageMetadata macports_metadata = 53;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -462,6 +463,13 @@ message MacAppsMetadata {
   string bundle_version = 8;
   string product_id = 9;
   string update_url = 10;
+}
+
+// The additional data found in Macports packages.
+message MacportsPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string package_revision = 3;
 }
 
 // The additional data for packages extracted from SPDX files.
