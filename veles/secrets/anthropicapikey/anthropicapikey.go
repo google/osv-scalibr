@@ -12,10 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package anthropicapikey contains a Veles Secret type and a Detector for Anthropic API keys.
+// Package anthropicapikey contains Veles Secret types and Detectors for Anthropic API keys.
 package anthropicapikey
 
-// AnthropicAPIKey is a Veles Secret that holds relevant information for an Anthropic API key.
-type AnthropicAPIKey struct {
+import (
+	"strings"
+)
+
+// WorkspaceAPIKey is a Veles Secret that holds relevant information for an Anthropic Workspace API key.
+// These keys contain "admin01" and are used for workspace management.
+type WorkspaceAPIKey struct {
 	Key string
+}
+
+// ModelAPIKey is a Veles Secret that holds relevant information for an Anthropic Model API key.
+// These are regular API keys used for model access.
+type ModelAPIKey struct {
+	Key string
+}
+
+// IsWorkspaceKey checks if the given key string is a workspace key (contains "admin01").
+func IsWorkspaceKey(key string) bool {
+	return strings.Contains(key, "admin01")
 }

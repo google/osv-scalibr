@@ -45,7 +45,8 @@ type Enricher struct {
 // New creates a new Enricher using the default Veles Validators.
 func New() enricher.Enricher {
 	engine := veles.NewValidationEngine(
-		veles.WithValidator(anthropicapikey.NewValidator()),
+		veles.WithValidator(anthropicapikey.NewWorkspaceValidator()),
+		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
 	)
 	return &Enricher{engine: engine}

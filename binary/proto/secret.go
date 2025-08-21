@@ -85,8 +85,10 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 
 func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
-	case velesanthropicapikey.AnthropicAPIKey:
-		return anthropicAPIKeyToProto(t), nil
+	case velesanthropicapikey.WorkspaceAPIKey:
+		return anthropicAPIKeyToProto(t.Key), nil
+	case velesanthropicapikey.ModelAPIKey:
+		return anthropicAPIKeyToProto(t.Key), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
 	default:
@@ -118,11 +120,11 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	}
 }
 
-func anthropicAPIKeyToProto(key velesanthropicapikey.AnthropicAPIKey) *spb.SecretData {
+func anthropicAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AnthropicApiKey{
 			AnthropicApiKey: &spb.SecretData_AnthropicAPIKey{
-				Key: key.Key,
+				Key: key,
 			},
 		},
 	}
@@ -235,10 +237,12 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	return sak
 }
 
-func anthropicAPIKeyToStruct(keyPB *spb.SecretData_AnthropicAPIKey) velesanthropicapikey.AnthropicAPIKey {
-	return velesanthropicapikey.AnthropicAPIKey{
-		Key: keyPB.GetKey(),
+func anthropicAPIKeyToStruct(keyPB *spb.SecretData_AnthropicAPIKey) veles.Secret {
+	// Determine the key type based on the key content
+	if velesanthropicapikey.IsWorkspaceKey(keyPB.GetKey()) {
+		return velesanthropicapikey.WorkspaceAPIKey{Key: keyPB.GetKey()}
 	}
+	return velesanthropicapikey.ModelAPIKey{Key: keyPB.GetKey()}
 }
 
 func validationResultToStruct(r *spb.SecretStatus) (inventory.SecretValidationResult, error) {

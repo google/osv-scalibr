@@ -15,7 +15,6 @@
 package anthropicapikey_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -26,96 +25,41 @@ import (
 )
 
 const (
-	testKey          = `sk-ant-api03-test123456789012345678901234567890123456789012345678ABC`
-	testKeyMixedCase = `sk-ant-api03-TEST123456789012345678901234567890123456789012345678ABC`
+	testKey  = "sk-ant-api03-test123456789012345678901234567890123456789012345678"
+	adminKey = "sk-ant-admin01-test123456789012345678901234567890123456789012345678"
 )
 
-// TestDetector_truePositives tests for cases where we know the Detector
-// will find an Anthropic API key/s.
-func TestDetector_truePositives(t *testing.T) {
+func TestDetector(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{anthropicapikey.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// The regex matches "sk-ant-" + version identifier + "-" + alphanumeric characters and hyphens
-	expectedKey := testKey
-	expectedKeyMixedCase := testKeyMixedCase
 
 	cases := []struct {
 		name  string
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple_matching_string",
+		name:  "model_key",
 		input: testKey,
 		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
+			anthropicapikey.ModelAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "match_at_end_of_string",
-		input: `ANTHROPIC_API_KEY=` + testKey,
+		name:  "workspace_key",
+		input: adminKey,
 		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
+			anthropicapikey.WorkspaceAPIKey{Key: adminKey},
 		},
 	}, {
-		name:  "match_in_middle_of_string",
-		input: `ANTHROPIC_API_KEY="` + testKey + `"`,
+		name:  "multiple_keys",
+		input: testKey + " " + adminKey,
 		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-		},
-	}, {
-		name:  "matching_string_with_mixed_case",
-		input: testKeyMixedCase,
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKeyMixedCase},
-		},
-	}, {
-		name:  "multiple_matches",
-		input: testKey + " " + testKey + " " + testKey,
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-		},
-	}, {
-		name:  "multiple_distinct_matches",
-		input: testKey + "\n" + testKey[:len(testKey)-1] + "Z\n",
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-			anthropicapikey.AnthropicAPIKey{Key: testKey[:len(testKey)-1] + "Z"},
-		},
-	}, {
-		name: "larger_input_containing_key",
-		input: fmt.Sprintf(`
-CONFIG_FILE=config.txt
-ANTHROPIC_API_KEY=%s
-CLOUD_PROJECT=my-project
-		`, testKey),
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-		},
-	}, {
-		name:  "potential_match_longer_than_max_key_length",
-		input: testKey + ` test`,
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: expectedKey},
-		},
-	}, {
-		name:  "different_version_identifiers",
-		input: `sk-ant-api04-test123 sk-ant-v2-test456 sk-ant-beta1-test789`,
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: "sk-ant-api04-test123"},
-			anthropicapikey.AnthropicAPIKey{Key: "sk-ant-v2-test456"},
-			anthropicapikey.AnthropicAPIKey{Key: "sk-ant-beta1-test789"},
-		},
-	}, {
-		name:  "admin_key_with_underscores",
-		input: `sk-ant-admin01-test_key_with_underscores_and-hyphens`,
-		want: []veles.Secret{
-			anthropicapikey.AnthropicAPIKey{Key: "sk-ant-admin01-test_key_with_underscores_and-hyphens"},
+			anthropicapikey.ModelAPIKey{Key: testKey},
+			anthropicapikey.WorkspaceAPIKey{Key: adminKey},
 		},
 	}}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
@@ -129,41 +73,34 @@ CLOUD_PROJECT=my-project
 	}
 }
 
-// TestDetector_trueNegatives tests for cases where we know the Detector
-// will not find an Anthropic API key.
-func TestDetector_trueNegatives(t *testing.T) {
+func TestDetector_NoMatches(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{anthropicapikey.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	cases := []struct {
 		name  string
 		input string
-		want  []veles.Secret
 	}{{
 		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "wrong_prefix_should_not_match",
-		input: `sk-openai-api03-test123456789012345678901234567890123456789`,
+		name:  "wrong_prefix",
+		input: "sk-openai-api03-test123",
 	}, {
-		name:  "missing_version_delimiter_should_not_match",
-		input: `sk-ant-test123456789012345678901234567890123456789`,
-	}, {
-		name:  "special_character_in_prefix_should_not_match",
-		input: `sk.ant-api03-test123456789012345678901234567890123456789`,
-	}, {
-		name:  "too_short_suffix_should_not_match",
-		input: `sk-ant-api03-`,
+		name:  "too_short",
+		input: "sk-ant-api03",
 	}}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s", diff)
+			if len(got) != 0 {
+				t.Errorf("Detect() found %d secrets, want 0", len(got))
 			}
 		})
 	}

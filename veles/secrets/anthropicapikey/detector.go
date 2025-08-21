@@ -25,16 +25,23 @@ import (
 const maxTokenLength = 200
 
 // keyRe is a regular expression that matches an Anthropic API key.
-// Anthropic API keys start with "sk-ant-" followed by a version identifier and base64-like characters with hyphens and underscores.
+// Anthropic API keys start with "sk-ant-" followed by an identifier
+// (valid identifiers such as: api03, admin01, etc.)
+// and base64-like characters with hyphens and underscores.
 var keyRe = regexp.MustCompile(`sk-ant-[a-zA-Z0-9]+-[A-Za-z0-9_-]+`)
 
-// NewDetector returns a new simpletoken.Detector that matches Anthropic API keys.
+// NewDetector returns a new simpletoken.Detector that matches Anthropic API keys
+// and returns the appropriate key type (WorkspaceAPIKey or ModelAPIKey) based on the key content.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) veles.Secret {
-			return AnthropicAPIKey{Key: string(b)}
+			key := string(b)
+			if IsWorkspaceKey(key) {
+				return WorkspaceAPIKey{Key: key}
+			}
+			return ModelAPIKey{Key: key}
 		},
 	}
 }
