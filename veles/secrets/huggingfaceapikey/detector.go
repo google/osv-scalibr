@@ -24,10 +24,10 @@ import (
 )
 
 // maxTokenLength is the maximum size of a Huggingface API key.
-const maxTokenLength = 53
+const maxTokenLength = 37
 
 // keyRe is a regular expression that matches a Huggingface API key.
-// Huggingface API keys have the form: `hf_` followed by 48
+// Huggingface API keys have the form: `hf_` followed by 34
 // alphanumeric characters.
 var keyRe = regexp.MustCompile(`hf_[A-Za-z]{34}`)
 
