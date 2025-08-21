@@ -45,8 +45,11 @@ func (v hackageVersion) CompareStr(str string) (int, error) {
 	if len(v.Components) > len(w.Components) {
 		return +1, nil
 	}
+	if len(v.Components) < len(w.Components) {
+		return -1, nil
+	}
 
-	return -1, nil
+	return 0, nil
 }
 
 func parseHackageVersion(str string) (hackageVersion, error) {

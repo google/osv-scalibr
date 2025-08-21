@@ -764,10 +764,7 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 // inWhiteoutDir returns whether the file is in a whiteout directory.
 // TODO: b/379094217 - Verify that this works for opaque whiteouts.
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
-	for {
-		if filePath == "" {
-			break
-		}
+	for filePath != "" {
 		dirname := path.Dir(filePath)
 		if filePath == dirname {
 			break

@@ -686,7 +686,9 @@ type Package struct {
 	ExploitabilitySignals []*PackageExploitabilitySignal `protobuf:"bytes,51,rep,name=exploitability_signals,json=exploitabilitySignals,proto3" json:"exploitability_signals,omitempty"`
 	// Details about the layer a package was found in. This should be set only for
 	// container image scanning.
-	LayerDetails  *LayerDetails `protobuf:"bytes,35,opt,name=layer_details,json=layerDetails,proto3" json:"layer_details,omitempty"`
+	LayerDetails *LayerDetails `protobuf:"bytes,35,opt,name=layer_details,json=layerDetails,proto3" json:"layer_details,omitempty"`
+	// Software licenses information
+	Licenses      []string `protobuf:"bytes,52,rep,name=licenses,proto3" json:"licenses,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1082,6 +1084,13 @@ func (x *Package) GetExploitabilitySignals() []*PackageExploitabilitySignal {
 func (x *Package) GetLayerDetails() *LayerDetails {
 	if x != nil {
 		return x.LayerDetails
+	}
+	return nil
+}
+
+func (x *Package) GetLicenses() []string {
+	if x != nil {
+		return x.Licenses
 	}
 	return nil
 }
@@ -2157,7 +2166,6 @@ type APKPackageMetadata struct {
 	OsVersionId   string                 `protobuf:"bytes,4,opt,name=os_version_id,json=osVersionId,proto3" json:"os_version_id,omitempty"`
 	Maintainer    string                 `protobuf:"bytes,5,opt,name=maintainer,proto3" json:"maintainer,omitempty"`
 	Architecture  string                 `protobuf:"bytes,6,opt,name=architecture,proto3" json:"architecture,omitempty"`
-	License       string                 `protobuf:"bytes,7,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2230,13 +2238,6 @@ func (x *APKPackageMetadata) GetMaintainer() string {
 func (x *APKPackageMetadata) GetArchitecture() string {
 	if x != nil {
 		return x.Architecture
-	}
-	return ""
-}
-
-func (x *APKPackageMetadata) GetLicense() string {
-	if x != nil {
-		return x.License
 	}
 	return ""
 }
@@ -2371,7 +2372,6 @@ type RPMPackageMetadata struct {
 	OsName        string                 `protobuf:"bytes,7,opt,name=os_name,json=osName,proto3" json:"os_name,omitempty"`
 	Vendor        string                 `protobuf:"bytes,8,opt,name=vendor,proto3" json:"vendor,omitempty"`
 	Architecture  string                 `protobuf:"bytes,9,opt,name=architecture,proto3" json:"architecture,omitempty"`
-	License       string                 `protobuf:"bytes,10,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2465,13 +2465,6 @@ func (x *RPMPackageMetadata) GetVendor() string {
 func (x *RPMPackageMetadata) GetArchitecture() string {
 	if x != nil {
 		return x.Architecture
-	}
-	return ""
-}
-
-func (x *RPMPackageMetadata) GetLicense() string {
-	if x != nil {
-		return x.License
 	}
 	return ""
 }
@@ -5403,7 +5396,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\fPluginStatus\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\x12+\n" +
-	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\xe9\x18\n" +
+	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"\x85\x19\n" +
 	"\aPackage\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\f \x01(\tR\aversion\x12>\n" +
@@ -5448,7 +5441,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x1adocker_containers_metadata\x180 \x01(\v2!.scalibr.DockerContainersMetadataH\x00R\x18dockerContainersMetadata\x12Z\n" +
 	"\x16annotations_deprecated\x18\x1c \x03(\x0e2\x1f.scalibr.Package.AnnotationEnumB\x02\x18\x01R\x15annotationsDeprecated\x12[\n" +
 	"\x16exploitability_signals\x183 \x03(\v2$.scalibr.PackageExploitabilitySignalR\x15exploitabilitySignals\x12:\n" +
-	"\rlayer_details\x18# \x01(\v2\x15.scalibr.LayerDetailsR\flayerDetails\"`\n" +
+	"\rlayer_details\x18# \x01(\v2\x15.scalibr.LayerDetailsR\flayerDetails\x12\x1a\n" +
+	"\blicenses\x184 \x03(\tR\blicenses\"`\n" +
 	"\x0eAnnotationEnum\x12\x0f\n" +
 	"\vUNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fTRANSITIONAL\x10\x01\x12\x15\n" +
@@ -5513,7 +5507,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06author\x18\x01 \x01(\tR\x06author\x12 \n" +
 	"\vmaintainers\x18\x02 \x03(\tR\vmaintainers\x12\"\n" +
 	"\fcontributors\x18\x03 \x03(\tR\fcontributors\x12.\n" +
-	"\x13from_npm_repository\x18\x04 \x01(\bR\x11fromNpmRepository\"\xef\x01\n" +
+	"\x13from_npm_repository\x18\x04 \x01(\bR\x11fromNpmRepository\"\xe4\x01\n" +
 	"\x12APKPackageMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x1f\n" +
 	"\vorigin_name\x18\x02 \x01(\tR\n" +
@@ -5523,8 +5517,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\n" +
 	"maintainer\x18\x05 \x01(\tR\n" +
 	"maintainer\x12\"\n" +
-	"\farchitecture\x18\x06 \x01(\tR\farchitecture\x12\x18\n" +
-	"\alicense\x18\a \x01(\tR\alicense\"\xee\x02\n" +
+	"\farchitecture\x18\x06 \x01(\tR\farchitectureJ\x04\b\a\x10\bR\alicense\"\xee\x02\n" +
 	"\x13DPKGPackageMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x1f\n" +
 	"\vsource_name\x18\x02 \x01(\tR\n" +
@@ -5539,7 +5532,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"maintainer\x12\"\n" +
 	"\farchitecture\x18\t \x01(\tR\farchitecture\x12\x16\n" +
 	"\x06status\x18\n" +
-	" \x01(\tR\x06status\"\xb4\x02\n" +
+	" \x01(\tR\x06status\"\xa9\x02\n" +
 	"\x12RPMPackageMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x1d\n" +
 	"\n" +
@@ -5550,9 +5543,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\vos_build_id\x18\x06 \x01(\tR\tosBuildId\x12\x17\n" +
 	"\aos_name\x18\a \x01(\tR\x06osName\x12\x16\n" +
 	"\x06vendor\x18\b \x01(\tR\x06vendor\x12\"\n" +
-	"\farchitecture\x18\t \x01(\tR\farchitecture\x12\x18\n" +
-	"\alicense\x18\n" +
-	" \x01(\tR\alicense\"\xc8\x01\n" +
+	"\farchitecture\x18\t \x01(\tR\farchitectureJ\x04\b\n" +
+	"\x10\vR\alicense\"\xc8\x01\n" +
 	"\x12COSPackageMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1a\n" +
