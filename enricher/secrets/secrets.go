@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 )
 
@@ -45,6 +46,7 @@ type Enricher struct {
 func New() enricher.Enricher {
 	engine := veles.NewValidationEngine(
 		veles.WithValidator(gcpsak.NewValidator()),
+		veles.WithValidator(digitaloceanapikey.NewValidator()),
 	)
 	return &Enricher{engine: engine}
 }

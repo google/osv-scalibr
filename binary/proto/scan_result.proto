@@ -613,8 +613,13 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
+    DigitalOceanAPIToken digitalocean = 2;
   }
 
+  message DigitalOceanAPIToken {
+    string key = 1;
+  }
+  
   message GCPSAK {
     // Always filled.
     string private_key_id = 1;
