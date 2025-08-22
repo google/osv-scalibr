@@ -77,7 +77,7 @@ func (v *Validator) Validate(ctx context.Context, key DigitaloceanAPIToken) (vel
 	}
 	fmt.Printf("HTTP GET response: %s\n", string(bodyBytes))
 	switch res.StatusCode {
-	case http.StatusOK:
+	case http.StatusOK | http.StatusForbidden:
 		return veles.ValidationValid, nil
 	case http.StatusUnauthorized:
 		return veles.ValidationInvalid, nil
