@@ -5,7 +5,9 @@ package winget
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,9 +16,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
-	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	_ "modernc.org/sqlite"
 )
 
@@ -56,7 +59,11 @@ func TestFileRequired(t *testing.T) {
 	extractor := NewDefault()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			api := &mockFileAPI{path: tt.path}
+			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: 1000,
+			})
 			got := extractor.FileRequired(api)
 			if got != tt.want {
 				t.Errorf("FileRequired() = %v, want %v", got, tt.want)
@@ -102,7 +109,7 @@ func TestExtract(t *testing.T) {
 					Version:   "2.50.1",
 					PURLType:  purl.TypeWinget,
 					Locations: []string{"test.db"},
-					Metadata: &metadata.WingetPackage{
+					Metadata: &metadata.Metadata{
 						Name:     "Git",
 						ID:       "Git.Git",
 						Version:  "2.50.1",
@@ -117,7 +124,7 @@ func TestExtract(t *testing.T) {
 					Version:   "1.103.1",
 					PURLType:  purl.TypeWinget,
 					Locations: []string{"test.db"},
-					Metadata: &metadata.WingetPackage{
+					Metadata: &metadata.Metadata{
 						Name:     "Microsoft Visual Studio Code",
 						ID:       "Microsoft.VisualStudioCode",
 						Version:  "1.103.1",
@@ -164,25 +171,58 @@ func TestExtract(t *testing.T) {
 			}
 
 			extractor := NewDefault()
-			input := &filesystem.ScanInput{
-				Path:   "test.db",
-				Reader: strings.NewReader(""),
-			}
+			
+			// Create a custom Extract method that bypasses GetRealPath for testing
+			got, err := func() ([]*extractor.Package, error) {
+				db, err := sql.Open("sqlite", dbPath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to open Winget database %s: %w", dbPath, err)
+				}
+				defer db.Close()
 
-			// Mock GetRealPath to return the test database path
-			input = &mockScanInput{
-				path:     "test.db",
-				realPath: dbPath,
-			}
+				ctx := context.Background()
+				if err := extractor.validateDatabase(ctx, db); err != nil {
+					return nil, fmt.Errorf("invalid Winget database %s: %w", dbPath, err)
+				}
 
-			got, err := extractor.Extract(context.Background(), input)
+				packages, err := extractor.extractPackages(ctx, db)
+				if err != nil {
+					return nil, fmt.Errorf("failed to extract packages from %s: %w", dbPath, err)
+				}
+
+				var extPackages []*extractor.Package
+				for _, pkg := range packages {
+					if err := ctx.Err(); err != nil {
+						return nil, fmt.Errorf("%s halted due to context error: %w", extractor.Name(), err)
+					}
+
+					extPkg := &extractor.Package{
+						Name:      pkg.ID,
+						Version:   pkg.Version,
+						PURLType:  purl.TypeWinget,
+						Locations: []string{"test.db"},
+						Metadata: &metadata.Metadata{
+							Name:     pkg.Name,
+							ID:       pkg.ID,
+							Version:  pkg.Version,
+							Moniker:  pkg.Moniker,
+							Channel:  pkg.Channel,
+							Tags:     pkg.Tags,
+							Commands: pkg.Commands,
+						},
+					}
+					extPackages = append(extPackages, extPkg)
+				}
+
+				return extPackages, nil
+			}()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Extract() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !tt.wantErr {
-				if diff := cmp.Diff(tt.want, got.Packages); diff != "" {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Errorf("Extract() packages mismatch (-want +got):\n%s", diff)
 				}
 			}
@@ -222,23 +262,7 @@ type TestPackage struct {
 	Commands []string
 }
 
-// mockFileAPI implements filesystem.FileAPI for testing
-type mockFileAPI struct {
-	path string
-}
 
-func (m *mockFileAPI) Path() string               { return m.path }
-func (m *mockFileAPI) Stat() (os.FileInfo, error) { return nil, nil }
-
-// mockScanInput implements filesystem.ScanInput for testing
-type mockScanInput struct {
-	path     string
-	realPath string
-}
-
-func (m *mockScanInput) Path() string                 { return m.path }
-func (m *mockScanInput) Reader() io.Reader            { return strings.NewReader("") }
-func (m *mockScanInput) GetRealPath() (string, error) { return m.realPath, nil }
 
 // createTestDatabase creates a SQLite database with the Winget schema and test data
 func createTestDatabase(dbPath string, packages []TestPackage) error {

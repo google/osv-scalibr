@@ -8,12 +8,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -78,6 +79,16 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
 
+	if input.Root == "" {
+		// The file got copied to a temporary dir, remove it at the end.
+		defer func() {
+			dir := filepath.Dir(absPath)
+			if err := os.RemoveAll(dir); err != nil {
+				fmt.Printf("Warning: failed to clean up temporary directory %s: %v\n", dir, err)
+			}
+		}()
+	}
+
 	db, err := sql.Open("sqlite", absPath)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to open Winget database %s: %w", absPath, err)
@@ -105,7 +116,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 			Version:   pkg.Version,
 			PURLType:  purl.TypeWinget,
 			Locations: []string{input.Path},
-			Metadata: &metadata.WingetPackage{
+			Metadata: &metadata.Metadata{
 				Name:     pkg.Name,
 				ID:       pkg.ID,
 				Version:  pkg.Version,

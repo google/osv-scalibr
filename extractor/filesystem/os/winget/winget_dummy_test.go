@@ -4,16 +4,23 @@ package winget
 
 import (
 	"context"
-	"os"
-	"strings"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired_NonWindows(t *testing.T) {
 	extractor := NewDefault()
-	api := &mockFileAPI{path: "/some/path/installed.db"}
+	testPath := "/some/path/installed.db"
+	api := simplefileapi.New(testPath, fakefs.FakeFileInfo{
+		FileName: filepath.Base(testPath),
+		FileMode: fs.ModePerm,
+		FileSize: 1000,
+	})
 
 	got := extractor.FileRequired(api)
 	if got != false {
@@ -23,9 +30,10 @@ func TestFileRequired_NonWindows(t *testing.T) {
 
 func TestExtract_NonWindows(t *testing.T) {
 	extractor := NewDefault()
+	
+	// Use a dummy input since Extract should fail immediately with platform error
 	input := &filesystem.ScanInput{
-		Path:   "test.db",
-		Reader: strings.NewReader(""),
+		Path: "test.db",
 	}
 
 	_, err := extractor.Extract(context.Background(), input)
@@ -56,10 +64,3 @@ func TestExtractorInterface_NonWindows(t *testing.T) {
 	}
 }
 
-// mockFileAPI implements filesystem.FileAPI for testing
-type mockFileAPI struct {
-	path string
-}
-
-func (m *mockFileAPI) Path() string               { return m.path }
-func (m *mockFileAPI) Stat() (os.FileInfo, error) { return nil, nil }
