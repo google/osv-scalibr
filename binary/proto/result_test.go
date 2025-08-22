@@ -46,6 +46,8 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
+	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -553,6 +555,45 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Metadata:  &spb.Package_HomebrewMetadata{},
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/homebrew"},
+	}
+	purlWingetPackage := &extractor.Package{
+		Name:     "Git.Git",
+		Version:  "2.50.1",
+		PURLType: purl.TypeWinget,
+		Metadata: &wingetmeta.Metadata{
+			Name:     "Git",
+			ID:       "Git.Git",
+			Version:  "2.50.1",
+			Moniker:  "git",
+			Channel:  "",
+			Tags:     []string{"git", "vcs"},
+			Commands: []string{"git"},
+		},
+		Locations: []string{"/file1"},
+		Plugins:   []string{winget.Name},
+	}
+	purlWingetPackageProto := &spb.Package{
+		Name:    "Git.Git",
+		Version: "2.50.1",
+		Purl: &spb.Purl{
+			Purl:    "pkg:winget/Git.Git@2.50.1",
+			Type:    purl.TypeWinget,
+			Name:    "Git.Git",
+			Version: "2.50.1",
+		},
+		Metadata: &spb.Package_WingetMetadata{
+			WingetMetadata: &spb.WingetPackageMetadata{
+				Name:     "Git",
+				Id:       "Git.Git",
+				Version:  "2.50.1",
+				Moniker:  "git",
+				Channel:  "",
+				Tags:     []string{"git", "vcs"},
+				Commands: []string{"git"},
+			},
+		},
+		Locations: []string{"/file1"},
+		Plugins:   []string{"os/winget"},
 	}
 	containerdPackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
@@ -1195,6 +1236,43 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 			excludeForOS: []string{"windows", "linux"},
+		},
+		{
+			desc: "Successful winget scan windows-only",
+			res: &scalibr.ScanResult{
+				Version:   "1.0.0",
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    success,
+				PluginStatus: []*plugin.Status{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  success,
+					},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{purlWingetPackage},
+				},
+			},
+			want: &spb.ScanResult{
+				Version:   "1.0.0",
+				StartTime: timestamppb.New(startTime),
+				EndTime:   timestamppb.New(endTime),
+				Status:    successProto,
+				PluginStatus: []*spb.PluginStatus{
+					{
+						Name:    "ext",
+						Version: 2,
+						Status:  successProto,
+					},
+				},
+				Inventory: &spb.Inventory{
+					Packages:        []*spb.Package{purlWingetPackageProto},
+					GenericFindings: []*spb.GenericFinding{},
+				},
+			},
+			excludeForOS: []string{"darwin", "linux"},
 		},
 		{
 			desc: "Successful containerd scan linux-only",
