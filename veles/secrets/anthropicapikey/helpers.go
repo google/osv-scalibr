@@ -94,7 +94,9 @@ func validateAPIKey(ctx context.Context, config *ValidationConfig, key string, e
 		// Key is invalid
 		return veles.ValidationInvalid, nil
 	case http.StatusTooManyRequests:
-		// Rate limited - key is likely valid but we're being throttled
+		// Rate limited - key is likely valid but we're being throttled.
+		// StatusTooManyRequests indicates that the key successfully authenticates
+		// against the Anthropic API and that this account is rate limited.
 		return veles.ValidationValid, nil
 	default:
 		// Other status codes indicate an error in our validation process

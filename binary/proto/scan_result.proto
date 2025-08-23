@@ -613,7 +613,8 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
-    AnthropicAPIKey anthropic_api_key = 2;
+    AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
+    AnthropicModelAPIKey anthropic_model_api_key = 3;
   }
 
   message GCPSAK {
@@ -637,8 +638,13 @@ message SecretData {
     string private_key = 12;
   }
 
-  message AnthropicAPIKey {
-    // The Anthropic API key.
+  message AnthropicWorkspaceAPIKey {
+    // The Anthropic Workspace API key (contains "admin01").
+    string key = 1;
+  }
+
+  message AnthropicModelAPIKey {
+    // The Anthropic Model API key (regular API key for model access).
     string key = 1;
   }
 }
