@@ -613,6 +613,7 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
+    PerplexityAPIKey perplexity = 2;
   }
 
   message GCPSAK {
@@ -635,6 +636,11 @@ message SecretData {
     // risk that this might accidentally leak the key.
     string private_key = 12;
   }
+
+  message PerplexityAPIKey {
+    string key = 1;
+  }
+
 }
 
 message SecretStatus {
