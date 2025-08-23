@@ -175,18 +175,50 @@ func TestValidator_ContextCancellation(t *testing.T) {
 }
 
 func TestValidator_InvalidRequest(t *testing.T) {
-	validator := perplexityapikey.NewValidator()
+	// Create mock server that returns 401 Unauthorized
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
 
-	// Test with empty key
-	key := perplexityapikey.PerplexityAPIKey{Key: ""}
-
-	got, err := validator.Validate(context.Background(), key)
-
-	// Empty key should be treated as invalid, not failed
-	if err != nil {
-		t.Errorf("Validate() unexpected error for empty key: %v", err)
+	// Create client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
 	}
-	if got != veles.ValidationInvalid {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationInvalid)
+
+	validator := perplexityapikey.NewValidator(
+		perplexityapikey.WithClient(client),
+	)
+
+	testCases := []struct {
+		name     string
+		key      string
+		expected veles.ValidationStatus
+	}{
+		{
+			name:     "empty_key",
+			key:      "",
+			expected: veles.ValidationInvalid,
+		},
+		{
+			name:     "invalid_key_format",
+			key:      "invalid-key-format",
+			expected: veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			key := perplexityapikey.PerplexityAPIKey{Key: tc.key}
+
+			got, err := validator.Validate(context.Background(), key)
+
+			if err != nil {
+				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			}
+		})
 	}
 }
