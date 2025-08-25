@@ -98,11 +98,7 @@ func compareDebianVersions(a, b string) (int, error) {
 	var err error
 
 	// based off: https://man7.org/linux/man-pages/man7/deb-version.7.html
-	for {
-		if a == "" && b == "" {
-			break
-		}
-
+	for a != "" || b != "" {
 		ap, a = splitDebianNonDigitPrefix(a)
 		bp, b = splitDebianNonDigitPrefix(b)
 

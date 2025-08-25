@@ -32,7 +32,6 @@ type Metadata struct {
 	OSVersionID  string
 	Maintainer   string
 	Architecture string
-	License      string
 }
 
 // ToNamespace extracts the PURL namespace from the metadata.
@@ -83,7 +82,6 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			OsVersionId:  m.OSVersionID,
 			Maintainer:   m.Maintainer,
 			Architecture: m.Architecture,
-			License:      m.License,
 		},
 	}
 }
@@ -101,6 +99,5 @@ func ToStruct(m *pb.APKPackageMetadata) *Metadata {
 		OSVersionID:  m.GetOsVersionId(),
 		Maintainer:   m.GetMaintainer(),
 		Architecture: m.GetArchitecture(),
-		License:      m.GetLicense(),
 	}
 }

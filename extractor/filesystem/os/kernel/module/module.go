@@ -33,7 +33,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 )
 
@@ -221,7 +220,6 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	p := &extractor.Package{
 		Name:      metadata.PackageName,
 		Version:   metadata.PackageVersion,
-		PURLType:  purl.TypeKernelModule,
 		Metadata:  &metadata,
 		Locations: []string{input.Path},
 	}

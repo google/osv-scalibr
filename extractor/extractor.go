@@ -76,6 +76,8 @@ type Package struct {
 	LayerDetails *LayerDetails
 	// The additional data found in the package.
 	Metadata any
+	// Licenses information of this package
+	Licenses []string
 }
 
 // Annotation are additional information about the package.

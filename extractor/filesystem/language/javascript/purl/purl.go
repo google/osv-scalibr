@@ -22,7 +22,9 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// MakePackageURL returns a package URL following the purl NPM spec with lowercase package names.
+// MakePackageURL returns a package URL for NPM PURLs. Technically they spec requires that package names be lowercase,
+// but that'd make us not be able to disambiguate between some packages in the wild that still use uppercase.
+// See https://github.com/package-url/purl-spec/issues/136
 func MakePackageURL(name string, version string, metadata any) *purl.PackageURL {
 	q := make(map[string]string)
 	if m, ok := metadata.(*javascriptmeta.JavascriptPackageJSONMetadata); ok && m.FromNPMRepository {
