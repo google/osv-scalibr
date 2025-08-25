@@ -88,7 +88,7 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "Packagist":
 		return parsePackagistVersion(str), nil
 	case "Pub":
-		return parseSemverVersion(str), nil
+		return parsePubVersion(str), nil
 	case "PyPI":
 		return parsePyPIVersion(str)
 	case "Red Hat":
