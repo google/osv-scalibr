@@ -177,7 +177,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 // Update overwrites the manifest on disk with the updated dependencies.
 func Update(opts options.UpdateOptions) (result.Result, error) {
 	var (
-		hasManifest bool = (opts.Manifest != "")
+		hasManifest = (opts.Manifest != "")
 		manifestRW  manifest.ReadWriter
 	)
 	if !hasManifest {
