@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 )
 
@@ -60,6 +61,7 @@ var (
 func init() { //nolint:gochecknoinits
 	var err error
 	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
+		anthropicapikey.NewDetector(),
 		gcpsak.NewDetector(),
 	})
 	if err != nil {

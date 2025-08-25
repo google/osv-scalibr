@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 )
 
@@ -44,6 +45,8 @@ type Enricher struct {
 // New creates a new Enricher using the default Veles Validators.
 func New() enricher.Enricher {
 	engine := veles.NewValidationEngine(
+		veles.WithValidator(anthropicapikey.NewWorkspaceValidator()),
+		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
 	)
 	return &Enricher{engine: engine}
