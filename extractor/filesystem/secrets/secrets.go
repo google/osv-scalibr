@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 )
 
@@ -61,6 +62,7 @@ func init() { //nolint:gochecknoinits
 	var err error
 	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
 		gcpsak.NewDetector(),
+		digitaloceanapikey.NewDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
