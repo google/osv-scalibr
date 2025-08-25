@@ -101,6 +101,8 @@ const (
 	TypeGooget = "googet"
 	// TypeWordpress is pkg:wordpress purl
 	TypeWordpress = "wordpress"
+	// Macports is pkg:macports purl
+	TypeMacports = "macports"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -203,6 +205,7 @@ func validType(t string) bool {
 		TypeSwift:     true,
 		TypeGooget:    true,
 		TypeWordpress: true,
+		TypeMacports:  true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
