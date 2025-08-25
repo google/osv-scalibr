@@ -32,6 +32,7 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -80,6 +81,9 @@ var (
 		reflect.TypeOf(&spb.Package_MacAppsMetadata{}): func(p *spb.Package) any {
 			return macapps.ToStruct(p.GetMacAppsMetadata())
 		},
+		reflect.TypeOf(&spb.Package_WingetMetadata{}): func(p *spb.Package) any {
+			return wingetmeta.ToStruct(p.GetWingetMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -97,5 +101,6 @@ var (
 		(*flatpakmeta.Metadata)(nil),
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
+		(*wingetmeta.Metadata)(nil),
 	}
 )

@@ -1,0 +1,369 @@
+//go:build windows
+
+package winget
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
+	_ "modernc.org/sqlite"
+)
+
+func TestFileRequired(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "WingetInstalledDB_ReturnsTrue",
+			path: "/Users/test/AppData/Local/Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/Microsoft.Winget.Source_8wekyb3d8bbwe/installed.db",
+			want: true,
+		},
+		{
+			name: "StoreEdgeFDInstalledDB_ReturnsTrue",
+			path: "/Users/test/AppData/Local/Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/StoreEdgeFD/installed.db",
+			want: true,
+		},
+		{
+			name: "StateRepositoryMachine_ReturnsTrue",
+			path: "/ProgramData/Microsoft/Windows/AppRepository/StateRepository-Machine.srd",
+			want: true,
+		},
+		{
+			name: "RandomSQLiteFile_ReturnsFalse",
+			path: "/some/random/path/database.db",
+			want: false,
+		},
+		{
+			name: "WingetDBWrongPath_ReturnsFalse",
+			path: "/wrong/path/installed.db",
+			want: false,
+		},
+	}
+
+	extractor := NewDefault()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: 1000,
+			})
+			got := extractor.FileRequired(api)
+			if got != tt.want {
+				t.Errorf("FileRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtract(t *testing.T) {
+	tests := []struct {
+		name    string
+		setupDB func(string) error
+		want    []*extractor.Package
+		wantErr bool
+	}{
+		{
+			name: "ValidDatabase_ReturnsPackages",
+			setupDB: func(dbPath string) error {
+				return createTestDatabase(dbPath, []TestPackage{
+					{
+						ID:       "Git.Git",
+						Name:     "Git",
+						Version:  "2.50.1",
+						Moniker:  "git",
+						Channel:  "",
+						Tags:     []string{"git", "vcs"},
+						Commands: []string{"git"},
+					},
+					{
+						ID:       "Microsoft.VisualStudioCode",
+						Name:     "Microsoft Visual Studio Code",
+						Version:  "1.103.1",
+						Moniker:  "vscode",
+						Channel:  "",
+						Tags:     []string{"developer-tools", "editor"},
+						Commands: []string{"code"},
+					},
+				})
+			},
+			want: []*extractor.Package{
+				{
+					Name:      "Git.Git",
+					Version:   "2.50.1",
+					PURLType:  purl.TypeWinget,
+					Locations: []string{"test.db"},
+					Metadata: &metadata.Metadata{
+						Name:     "Git",
+						ID:       "Git.Git",
+						Version:  "2.50.1",
+						Moniker:  "git",
+						Channel:  "",
+						Tags:     []string{"git", "vcs"},
+						Commands: []string{"git"},
+					},
+				},
+				{
+					Name:      "Microsoft.VisualStudioCode",
+					Version:   "1.103.1",
+					PURLType:  purl.TypeWinget,
+					Locations: []string{"test.db"},
+					Metadata: &metadata.Metadata{
+						Name:     "Microsoft Visual Studio Code",
+						ID:       "Microsoft.VisualStudioCode",
+						Version:  "1.103.1",
+						Moniker:  "vscode",
+						Channel:  "",
+						Tags:     []string{"developer-tools", "editor"},
+						Commands: []string{"code"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "EmptyDatabase_ReturnsEmpty",
+			setupDB: func(dbPath string) error {
+				return createTestDatabase(dbPath, []TestPackage{})
+			},
+			want:    []*extractor.Package{},
+			wantErr: false,
+		},
+		{
+			name: "InvalidDatabase_ReturnsError",
+			setupDB: func(dbPath string) error {
+				db, err := sql.Open("sqlite", dbPath)
+				if err != nil {
+					return err
+				}
+				defer db.Close()
+				_, err = db.Exec("CREATE TABLE test (id INTEGER)")
+				return err
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			dbPath := filepath.Join(tmpDir, "test.db")
+
+			if err := tt.setupDB(dbPath); err != nil {
+				t.Fatalf("Failed to setup test database: %v", err)
+			}
+
+			extractor := NewDefault()
+			
+			// Create a custom Extract method that bypasses GetRealPath for testing
+			got, err := func() ([]*extractor.Package, error) {
+				db, err := sql.Open("sqlite", dbPath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to open Winget database %s: %w", dbPath, err)
+				}
+				defer db.Close()
+
+				ctx := context.Background()
+				if err := extractor.validateDatabase(ctx, db); err != nil {
+					return nil, fmt.Errorf("invalid Winget database %s: %w", dbPath, err)
+				}
+
+				packages, err := extractor.extractPackages(ctx, db)
+				if err != nil {
+					return nil, fmt.Errorf("failed to extract packages from %s: %w", dbPath, err)
+				}
+
+				var extPackages []*extractor.Package
+				for _, pkg := range packages {
+					if err := ctx.Err(); err != nil {
+						return nil, fmt.Errorf("%s halted due to context error: %w", extractor.Name(), err)
+					}
+
+					extPkg := &extractor.Package{
+						Name:      pkg.ID,
+						Version:   pkg.Version,
+						PURLType:  purl.TypeWinget,
+						Locations: []string{"test.db"},
+						Metadata: &metadata.Metadata{
+							Name:     pkg.Name,
+							ID:       pkg.ID,
+							Version:  pkg.Version,
+							Moniker:  pkg.Moniker,
+							Channel:  pkg.Channel,
+							Tags:     pkg.Tags,
+							Commands: pkg.Commands,
+						},
+					}
+					extPackages = append(extPackages, extPkg)
+				}
+
+				return extPackages, nil
+			}()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Extract() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("Extract() packages mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestExtractorInterface(t *testing.T) {
+	extractor := NewDefault()
+
+	if extractor.Name() != Name {
+		t.Errorf("Name() = %v, want %v", extractor.Name(), Name)
+	}
+
+	if extractor.Version() != 0 {
+		t.Errorf("Version() = %v, want %v", extractor.Version(), 0)
+	}
+
+	caps := extractor.Requirements()
+	if caps.OS != 2 { // OSWindows = 2
+		t.Errorf("Requirements().OS = %v, want 2 (OSWindows)", caps.OS)
+	}
+
+	if caps.RunningSystem {
+		t.Error("Requirements().RunningSystem should be false for filesystem extractor")
+	}
+}
+
+// TestPackage represents a test package for database creation
+type TestPackage struct {
+	ID       string
+	Name     string
+	Version  string
+	Moniker  string
+	Channel  string
+	Tags     []string
+	Commands []string
+}
+
+
+
+// createTestDatabase creates a SQLite database with the Winget schema and test data
+func createTestDatabase(dbPath string, packages []TestPackage) error {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Create schema
+	schema := `
+	CREATE TABLE [metadata](
+		[name] TEXT PRIMARY KEY NOT NULL,
+		[value] TEXT NOT NULL);
+	CREATE TABLE [ids](rowid INTEGER PRIMARY KEY, [id] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [ids_pkindex] ON [ids]([id]);
+	CREATE TABLE [names](rowid INTEGER PRIMARY KEY, [name] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [names_pkindex] ON [names]([name]);
+	CREATE TABLE [monikers](rowid INTEGER PRIMARY KEY, [moniker] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [monikers_pkindex] ON [monikers]([moniker]);
+	CREATE TABLE [versions](rowid INTEGER PRIMARY KEY, [version] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [versions_pkindex] ON [versions]([version]);
+	CREATE TABLE [channels](rowid INTEGER PRIMARY KEY, [channel] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [channels_pkindex] ON [channels]([channel]);
+	CREATE TABLE [manifest](rowid INTEGER PRIMARY KEY, [id] INT64 NOT NULL, [name] INT64 NOT NULL, [moniker] INT64 NOT NULL, [version] INT64 NOT NULL, [channel] INT64 NOT NULL, [pathpart] INT64 NOT NULL, hash BLOB, arp_min_version INT64, arp_max_version INT64);
+	CREATE TABLE [tags](rowid INTEGER PRIMARY KEY, [tag] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [tags_pkindex] ON [tags]([tag]);
+	CREATE TABLE [tags_map]([manifest] INT64 NOT NULL, [tag] INT64 NOT NULL, PRIMARY KEY([tag], [manifest])) WITHOUT ROWID;
+	CREATE TABLE [commands](rowid INTEGER PRIMARY KEY, [command] TEXT NOT NULL);
+	CREATE UNIQUE INDEX [commands_pkindex] ON [commands]([command]);
+	CREATE TABLE [commands_map]([manifest] INT64 NOT NULL, [command] INT64 NOT NULL, PRIMARY KEY([command], [manifest])) WITHOUT ROWID;
+	`
+
+	_, err = db.Exec(schema)
+	if err != nil {
+		return err
+	}
+
+	// Insert test data
+	for i, pkg := range packages {
+		manifestID := i + 1
+
+		// Insert lookup table values
+		_, err = db.Exec("INSERT INTO ids (rowid, id) VALUES (?, ?)", manifestID, pkg.ID)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec("INSERT INTO names (rowid, name) VALUES (?, ?)", manifestID, pkg.Name)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec("INSERT INTO monikers (rowid, moniker) VALUES (?, ?)", manifestID, pkg.Moniker)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec("INSERT INTO versions (rowid, version) VALUES (?, ?)", manifestID, pkg.Version)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec("INSERT INTO channels (rowid, channel) VALUES (?, ?)", manifestID, pkg.Channel)
+		if err != nil {
+			return err
+		}
+
+		// Insert manifest
+		_, err = db.Exec("INSERT INTO manifest (rowid, id, name, moniker, version, channel, pathpart) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			manifestID, manifestID, manifestID, manifestID, manifestID, manifestID, -1)
+		if err != nil {
+			return err
+		}
+
+		// Insert tags
+		for j, tag := range pkg.Tags {
+			tagID := i*100 + j + 1
+			_, err = db.Exec("INSERT INTO tags (rowid, tag) VALUES (?, ?)", tagID, tag)
+			if err != nil {
+				return err
+			}
+			_, err = db.Exec("INSERT INTO tags_map (manifest, tag) VALUES (?, ?)", manifestID, tagID)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Insert commands
+		for j, command := range pkg.Commands {
+			commandID := i*100 + j + 1
+			_, err = db.Exec("INSERT INTO commands (rowid, command) VALUES (?, ?)", commandID, command)
+			if err != nil {
+				return err
+			}
+			_, err = db.Exec("INSERT INTO commands_map (manifest, command) VALUES (?, ?)", manifestID, commandID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

@@ -124,6 +124,7 @@ message Package {
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
+    WingetPackageMetadata winget_metadata = 52;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -601,6 +602,17 @@ message DockerPort {
   uint32 private_port = 2;
   uint32 public_port = 3;
   string type = 4;
+}
+
+// The additional data found in Windows Package Manager (Winget) packages.
+message WingetPackageMetadata {
+  string name = 1;
+  string id = 2;
+  string version = 3;
+  string moniker = 4;
+  string channel = 5;
+  repeated string tags = 6;
+  repeated string commands = 7;
 }
 
 // A secret (i.e. credential) found by Veles secret scanning.
