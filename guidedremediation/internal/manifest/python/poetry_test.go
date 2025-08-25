@@ -76,6 +76,26 @@ func TestReadPoetry(t *testing.T) {
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
+						Name:   "django",
+					},
+					Version:     ">2.1,<3.0",
+					VersionType: resolve.Requirement,
+				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "django",
+					},
+					Version:     ">2.0,<3.0",
+					VersionType: resolve.Requirement,
+				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
 						Name:   "pytest",
 					},
 					Version:     ">=6.2.5",
@@ -127,6 +147,24 @@ func TestWritePoetry(t *testing.T) {
 					Name:        "black",
 					VersionFrom: "==22.3.0",
 					VersionTo:   "==23.0.0",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "django",
+					VersionFrom: ">2.1,<3.0",
+					VersionTo:   ">=3.1,<4.0",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "django",
+					VersionFrom: ">2.0,<3.0",
+					VersionTo:   ">=3.0,<4.0",
 				},
 			},
 		},

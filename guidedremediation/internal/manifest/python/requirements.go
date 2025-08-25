@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"deps.dev/util/pypi"
@@ -117,7 +116,7 @@ func (r requirementsReadWriter) Write(original manifest.Manifest, fsys scalibrfs
 // updateRequirements takes an io.Reader representing the requirements.txt file
 // and a map of package names to their new version constraints, returns the
 // file with the updated requirements as a string.
-func updateRequirements(reader io.Reader, requirements map[string]TokenizedPatch) (string, error) {
+func updateRequirements(reader io.Reader, requirements []TokenizedRequirements) (string, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", fmt.Errorf("error reading requirements: %w", err)
@@ -147,17 +146,13 @@ func updateRequirements(reader io.Reader, requirements map[string]TokenizedPatch
 			continue
 		}
 
-		newReq, ok := requirements[d.Name]
+		newReq, ok := findTokenizedRequirement(requirements, d.Name, tokenizeRequirement(d.Constraint))
 		if !ok {
 			// We don't need to update the requirement of this dependency.
 			sb.WriteString(line)
 			continue
 		}
-		if !slices.Equal(tokenizeRequirement(d.Constraint), newReq.VersionFrom) {
-			// If the original requirement does not match, do not update.
-			continue
-		}
-		sb.WriteString(replaceRequirement(line, newReq.VersionTo))
+		sb.WriteString(replaceRequirement(line, newReq))
 	}
 
 	return sb.String(), nil

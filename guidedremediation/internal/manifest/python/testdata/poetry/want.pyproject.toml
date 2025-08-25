@@ -3,7 +3,9 @@ name = "my-project"
 version = "1.2.3"
 dependencies = [
   "requests>=2.26.0,<3.0.0", # This is a comment
-  "numpy==1.22.0"
+  "numpy==1.22.0",
+  "django>=3.1,<4.0; os_name != 'nt'",
+  "django>=3.0,<4.0; os_name == 'nt'"
 ]
 
 # Optional dependencies

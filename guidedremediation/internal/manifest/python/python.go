@@ -230,31 +230,44 @@ func replaceRequirement(req string, newReq []VersionConstraint) string {
 	return sb.String()
 }
 
-// TokenizedPatch represents a change from one version constraint to another,
+// TokenizedRequirements represents a change from one version constraint to another,
 // with each constraint broken down into a slice of VersionConstraint structs.
-type TokenizedPatch struct {
+type TokenizedRequirements struct {
+	Name        string
 	VersionFrom []VersionConstraint
 	VersionTo   []VersionConstraint
+}
+
+// findTokenizedRequirement searches for a requirement in a slice of TokenizedRequirements
+// that matches the given package name and original version constraints.
+func findTokenizedRequirement(requirements []TokenizedRequirements, name string, from []VersionConstraint) ([]VersionConstraint, bool) {
+	for _, req := range requirements {
+		if name == req.Name && slices.Equal(req.VersionFrom, from) {
+			return req.VersionTo, true
+		}
+	}
+	return nil, false
 }
 
 // write is a generic helper function that orchestrates the patching of a manifest file.
 // It reads the original manifest from inputPath, processes the required changes from patches,
 // and delegates the content modification to the provided update function. The resulting
 // patched content is then written to outputPath.
-func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements map[string]TokenizedPatch) (string, error)) error {
+func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements []TokenizedRequirements) (string, error)) error {
 	f, err := fsys.Open(inputPath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	requirements := make(map[string]TokenizedPatch)
+	requirements := []TokenizedRequirements{}
 	for _, patch := range patches {
 		for _, req := range patch.PackageUpdates {
-			requirements[req.Name] = TokenizedPatch{
+			requirements = append(requirements, TokenizedRequirements{
+				Name:        req.Name,
 				VersionFrom: tokenizeRequirement(req.VersionFrom),
 				VersionTo:   tokenizeRequirement(req.VersionTo),
-			}
+			})
 		}
 	}
 

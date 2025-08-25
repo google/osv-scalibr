@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"deps.dev/util/pypi"
@@ -151,7 +150,7 @@ func (r poetryReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, p
 // updatePyproject takes an io.Reader representing the pyproject.toml file
 // and a map of package names to their new version constraints, returns the
 // file with the updated requirements as a string.
-func updatePyproject(reader io.Reader, requirements map[string]TokenizedPatch) (string, error) {
+func updatePyproject(reader io.Reader, requirements []TokenizedRequirements) (string, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", fmt.Errorf("error reading requirements: %w", err)
@@ -170,12 +169,11 @@ func updatePyproject(reader io.Reader, requirements map[string]TokenizedPatch) (
 				log.Warnf("failed to parse Python dependency %s: %v", req, err)
 				continue
 			}
-			if newReq, ok := requirements[d.Name]; ok {
-				if !slices.Equal(tokenizeRequirement(d.Constraint), newReq.VersionFrom) {
-					// If the original requirement does not match, do not update.
-					continue
-				}
-				content = strings.Replace(content, req, replaceRequirement(req, newReq.VersionTo), 1)
+
+			newReq, ok := findTokenizedRequirement(requirements, d.Name, tokenizeRequirement(d.Constraint))
+			if ok {
+				updatedReq := replaceRequirement(req, newReq)
+				content = strings.Replace(content, `"`+req+`"`, `"`+updatedReq+`"`, 1)
 			}
 		}
 	}
