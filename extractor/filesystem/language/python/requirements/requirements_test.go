@@ -15,7 +15,6 @@
 package requirements_test
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -518,7 +517,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
 			}

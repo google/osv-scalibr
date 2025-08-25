@@ -15,7 +15,6 @@
 package fakeenricher_test
 
 import (
-	"context"
 	"io/fs"
 	"testing"
 	"testing/fstest"
@@ -240,7 +239,7 @@ func TestEnrich(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			e := fakeenricher.MustNew(t, tc.cfg)
-			gotErr := e.Enrich(context.Background(), tc.input, tc.inv)
+			gotErr := e.Enrich(t.Context(), tc.input, tc.inv)
 			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Enricher{%+v}.Enrich(%+v, %+v) error: got %v, want %v\n", tc.cfg, tc.input, tc.inv, gotErr, tc.wantErr)
 			}

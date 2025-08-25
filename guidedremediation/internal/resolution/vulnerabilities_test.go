@@ -15,7 +15,6 @@
 package resolution_test
 
 import (
-	"context"
 	"testing"
 
 	"deps.dev/util/resolve"
@@ -114,7 +113,7 @@ test 1.0.0
 		},
 	}
 
-	vulns, err := resolution.FindVulnerabilities(context.Background(), vulnMatcher, m.Groups(), g)
+	vulns, err := resolution.FindVulnerabilities(t.Context(), vulnMatcher, m.Groups(), g)
 	if err != nil {
 		t.Fatal(err)
 	}

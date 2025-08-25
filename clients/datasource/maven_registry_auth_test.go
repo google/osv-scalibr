@@ -16,7 +16,6 @@
 package datasource
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"testing"
@@ -90,7 +89,7 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	}
 
 	// Test that authenticated calls still work with default registry
-	GetVersions, err := clientWithoutReg.GetVersions(context.Background(), "org.example", "x.y.z")
+	GetVersions, err := clientWithoutReg.GetVersions(t.Context(), "org.example", "x.y.z")
 	if err != nil {
 		t.Fatalf("failed to get versions for Maven package %s:%s: %v", "org.example", "x.y.z", err)
 	}

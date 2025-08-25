@@ -15,7 +15,6 @@
 package codeserver
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,7 +59,7 @@ func TestScan(t *testing.T) {
 			cfg.Remote = srv.URL
 
 			d := New(cfg)
-			invs, _ := d.Scan(context.Background(), nil, nil)
+			invs, _ := d.Scan(t.Context(), nil, nil)
 
 			gotVulns := len(invs.GenericFindings) > 0
 			if gotVulns != tc.wantVulns {
@@ -100,7 +99,7 @@ func TestScanWithTimeouts(t *testing.T) {
 
 			d := New(cfg)
 			start := time.Now()
-			invs, err := d.Scan(context.Background(), nil, nil)
+			invs, err := d.Scan(t.Context(), nil, nil)
 			end := time.Now()
 
 			if tc.expectFails != (err != nil) {

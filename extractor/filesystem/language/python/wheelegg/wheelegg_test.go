@@ -16,7 +16,6 @@ package wheelegg_test
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -291,7 +290,7 @@ func TestExtract(t *testing.T) {
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}
@@ -390,7 +389,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: noReadAt}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
 			}
@@ -436,7 +435,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 			e := wheelegg.New(defaultConfigWith(cfg))
-			_, err := e.Extract(context.Background(), input)
+			_, err := e.Extract(t.Context(), input)
 			if err == nil {
 				t.Fatalf("Extract(%+v) succeeded, want error: %v", tt.name, tt.wantErr)
 			}
@@ -493,7 +492,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 
 	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
-	_, gotErr := e.Extract(context.Background(), input)
+	_, gotErr := e.Extract(t.Context(), input)
 	wantErr := wheelegg.ErrSizeNotSet
 	if !errors.Is(gotErr, wantErr) {
 		t.Fatalf("Extract(%s) got err: '%v', want err: '%v'", path, gotErr, wantErr)

@@ -163,7 +163,7 @@ func TestRun(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Deep copy the inventory to avoid modifying the original inventory that is used in other tests.
 			inv := copier.Copy(tc.inv).(*inventory.Inventory)
-			got, err := enricher.Run(context.Background(), tc.cfg, inv)
+			got, err := enricher.Run(t.Context(), tc.cfg, inv)
 			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Run(%+v) error: got %v, want %v\n", tc.cfg, err, tc.wantErr)
 			}
@@ -237,7 +237,7 @@ func TestRunEnricherOrdering(t *testing.T) {
 		{Name: "fake-package-adder", Version: 0, Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}},
 	}
 
-	gotStatus, err := enricher.Run(context.Background(), cfg, inv)
+	gotStatus, err := enricher.Run(t.Context(), cfg, inv)
 	if err != nil {
 		t.Errorf("Run(%+v) error: %v", cfg, err)
 	}

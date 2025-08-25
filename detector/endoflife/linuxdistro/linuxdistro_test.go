@@ -15,7 +15,6 @@
 package linuxdistro
 
 import (
-	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -125,7 +124,7 @@ func TestEOLLinuxDistro(t *testing.T) {
 				return n
 			}
 			d := Detector{}
-			finding, err := d.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, nil)
+			finding, err := d.Scan(t.Context(), &scalibrfs.ScanRoot{FS: tc.fsys}, nil)
 			if err != nil {
 				t.Errorf("detector.Scan(%v) unexpected error: %v", tc.fsys, err)
 			}

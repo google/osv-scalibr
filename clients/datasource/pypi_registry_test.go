@@ -15,7 +15,6 @@
 package datasource_test
 
 import (
-	"context"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -139,7 +138,7 @@ func TestGetVersions(t *testing.T) {
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL, "")
 	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
-	got, err := client.GetIndex(context.Background(), "beautifulsoup4")
+	got, err := client.GetIndex(t.Context(), "beautifulsoup4")
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}
@@ -194,7 +193,7 @@ func TestPyPILocalRegistry(t *testing.T) {
 	client := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir)
 	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
-	_, err := client.GetIndex(context.Background(), "beautifulsoup4")
+	_, err := client.GetIndex(t.Context(), "beautifulsoup4")
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}

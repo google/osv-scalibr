@@ -15,7 +15,6 @@
 package filter_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -76,7 +75,7 @@ func TestEnrich(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			inv := deepcopy.Copy(tc.inv).(*inventory.Inventory)
-			if err := filter.New().Enrich(context.Background(), nil, inv); err != nil {
+			if err := filter.New().Enrich(t.Context(), nil, inv); err != nil {
 				t.Errorf("Enrich(%v) returned error: %v", tc.inv, err)
 			}
 			if diff := cmp.Diff(tc.want, inv); diff != "" {

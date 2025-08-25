@@ -286,7 +286,7 @@ func TestScan(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := scalibr.New().Scan(context.Background(), tc.cfg)
+			got := scalibr.New().Scan(t.Context(), tc.cfg)
 
 			// We can't mock the time from here so we skip it in the comparison.
 			tc.want.StartTime = got.StartTime
@@ -565,7 +565,7 @@ func TestScanContainer(t *testing.T) {
 			}}
 
 			fi := fakeimage.New(tc.chainLayers)
-			got, err := scalibr.New().ScanContainer(context.Background(), fi, &scanConfig)
+			got, err := scalibr.New().ScanContainer(t.Context(), fi, &scanConfig)
 
 			if tc.wantErr != nil {
 				if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
@@ -822,7 +822,7 @@ func TestErrorOnFSErrors(t *testing.T) {
 				ErrorOnFSErrors: tc.ErrorOnFSErrors,
 			}
 
-			got := scalibr.New().Scan(context.Background(), cfg)
+			got := scalibr.New().Scan(t.Context(), cfg)
 
 			if got.Status.Status != tc.wantstatus {
 				t.Errorf("Scan() status: %v, want %v", got.Status.Status, tc.wantstatus)
@@ -862,7 +862,7 @@ func TestAnnotator(t *testing.T) {
 		}},
 	}}
 
-	got := scalibr.New().Scan(context.Background(), cfg)
+	got := scalibr.New().Scan(t.Context(), cfg)
 
 	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
 		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)

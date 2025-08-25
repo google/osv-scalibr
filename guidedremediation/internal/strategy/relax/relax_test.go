@@ -15,7 +15,6 @@
 package relax_test
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -215,11 +214,11 @@ func TestComputePatches(t *testing.T) {
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
 			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolved, err := remediation.ResolveManifest(context.Background(), cl, vm, m, &tt.opts)
+			resolved, err := remediation.ResolveManifest(t.Context(), cl, vm, m, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			gotFull, err := relax.ComputePatches(context.Background(), cl, vm, resolved, &tt.opts)
+			gotFull, err := relax.ComputePatches(t.Context(), cl, vm, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}

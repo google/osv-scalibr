@@ -15,7 +15,6 @@
 package detectorrunner_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -183,7 +182,7 @@ func TestRun(t *testing.T) {
 			px, _ := packageindex.New([]*extractor.Package{})
 			tmp := t.TempDir()
 			gotFindings, gotStatus, err := detectorrunner.Run(
-				context.Background(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
+				t.Context(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)

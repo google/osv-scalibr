@@ -15,7 +15,6 @@
 package dpkgfilter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -66,7 +65,7 @@ func TestShouldExclude(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			filter := DpkgFilter{}
-			got := filter.ShouldExclude(context.Background(), nil, tc.path)
+			got := filter.ShouldExclude(t.Context(), nil, tc.path)
 			if got != tc.isExcluded {
 				t.Errorf("ShouldExclude(%q): got %v, want %v", tc.path, got, tc.isExcluded)
 			}

@@ -31,7 +31,7 @@ import (
 )
 
 func TestAnnotate(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	copier := cpy.New(
@@ -103,7 +103,7 @@ func TestAnnotate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = context.Background()
+				tt.ctx = t.Context() //nolint:fatcontext
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(""),

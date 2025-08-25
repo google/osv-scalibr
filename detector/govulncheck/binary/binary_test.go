@@ -15,7 +15,6 @@
 package binary_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -48,7 +47,7 @@ func TestScan(t *testing.T) {
 		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 	}
 	px := setupPackageIndex([]string{binaryName})
-	findings, err := det.Scan(context.Background(), scalibrfs.RealFSScanRoot("."), px)
+	findings, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err != nil {
 		t.Fatalf("detector.Scan(%v): %v", px, err)
 	}
@@ -115,7 +114,7 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 	}
 	px := setupPackageIndex([]string{"nonexistent", binaryName})
-	result, err := det.Scan(context.Background(), scalibrfs.RealFSScanRoot("."), px)
+	result, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err == nil {
 		t.Fatalf("detector.Scan(%v): Expected an error, got none", px)
 	}

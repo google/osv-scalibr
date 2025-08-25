@@ -15,7 +15,6 @@
 package baseimage_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -354,7 +353,7 @@ func TestEnrich(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			e := mustNew(t, tc.cfg)
 			inv := deepcopy.Copy(tc.inv).(*inventory.Inventory)
-			if err := e.Enrich(context.Background(), nil, inv); !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
+			if err := e.Enrich(t.Context(), nil, inv); !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Enrich(%v) returned error: %v, want error: %v\n", tc.inv, err, tc.wantErr)
 			}
 			opts := []cmp.Option{
