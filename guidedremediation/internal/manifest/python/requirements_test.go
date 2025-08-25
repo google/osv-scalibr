@@ -155,7 +155,7 @@ func TestWriteRequirements(t *testing.T) {
 			PackageUpdates: []result.PackageUpdate{
 				{
 					Name:        "requests",
-					VersionFrom: ">=2.8.1,== 2.8.*",
+					VersionFrom: ">=2.8.1,==2.8.*",
 					VersionTo:   ">=2.32.4,<3.0.0",
 				},
 			},

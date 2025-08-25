@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"deps.dev/util/pypi"
@@ -150,81 +151,39 @@ func (r poetryReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, p
 // updatePyproject takes an io.Reader representing the pyproject.toml file
 // and a map of package names to their new version constraints, returns the
 // file with the updated requirements as a string.
-func updatePyproject(reader io.Reader, requirements map[string][]VersionConstraint) (string, error) {
+func updatePyproject(reader io.Reader, requirements map[string]TokenizedPatch) (string, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", fmt.Errorf("error reading requirements: %w", err)
 	}
+	content := string(data)
 
-	var sb strings.Builder
-	inProjectSection := false
-	inOptionalDepsSection := false
-	inDepArray := false
-	for _, line := range strings.SplitAfter(string(data), "\n") {
-		trimmedLine := strings.TrimSpace(line)
+	var proj pyProject
+	if _, err := toml.Decode(content, &proj); err != nil {
+		return "", fmt.Errorf("failed to unmarshal pyproject.toml: %w", err)
+	}
 
-		// Update current section.
-		if strings.HasPrefix(trimmedLine, "[") && strings.HasSuffix(trimmedLine, "]") {
-			inProjectSection = trimmedLine == "[project]"
-			inOptionalDepsSection = trimmedLine == "[project.optional-dependencies]"
-			inDepArray = false // Reset when section changes.
-		}
-
-		// Check if we are entering a dependency array.
-		if !inDepArray {
-			// `dependencies` in `[project]` or any key in `[project.optional-dependencies]`.
-			if (inProjectSection && strings.HasPrefix(trimmedLine, "dependencies =")) ||
-				(inOptionalDepsSection && strings.Contains(trimmedLine, "=")) {
-				if strings.Contains(line, "[") {
-					inDepArray = true
-				}
+	updateDeps := func(deps []string) {
+		for _, req := range deps {
+			d, err := pypi.ParseDependency(req)
+			if err != nil {
+				log.Warnf("failed to parse Python dependency %s: %v", req, err)
+				continue
 			}
-		}
-
-		if !inDepArray {
-			// We don't need to touch non-dependency lines.
-			sb.WriteString(line)
-			continue
-		}
-
-		start := strings.Index(line, `"`)
-		if start < 0 {
-			// Requirement not found
-			sb.WriteString(line)
-			continue
-		}
-
-		end := strings.Index(line[start+1:], `"`)
-		if end < 0 {
-			// Closing quote is not found
-			sb.WriteString(line)
-			continue
-		}
-
-		reqStr := line[start+1 : start+1+end]
-		d, err := pypi.ParseDependency(reqStr)
-		if err != nil {
-			log.Warnf("failed to parse Python dependency %s: %v", reqStr, err)
-			sb.WriteString(line)
-			continue
-		}
-
-		newReq, ok := requirements[d.Name]
-		if !ok {
-			// We don't need to update the requirement of this dependency.
-			sb.WriteString(line)
-			continue
-		}
-
-		sb.WriteString(line[:start+1])
-		sb.WriteString(replaceRequirement(reqStr, newReq))
-		sb.WriteString(line[start+end+1:])
-
-		// Check if we are exiting a dependency array.
-		if inDepArray && strings.Contains(line, "]") {
-			inDepArray = false
+			if newReq, ok := requirements[d.Name]; ok {
+				if !slices.Equal(tokenizeRequirement(d.Constraint), newReq.VersionFrom) {
+					// If the original requirement does not match, do not update.
+					continue
+				}
+				content = strings.Replace(content, req, replaceRequirement(req, newReq.VersionTo), 1)
+			}
 		}
 	}
 
-	return sb.String(), nil
+	updateDeps(proj.Project.Dependencies)
+	for _, deps := range proj.Project.OptionalDependencies {
+		updateDeps(deps)
+	}
+
+	return content, nil
 }

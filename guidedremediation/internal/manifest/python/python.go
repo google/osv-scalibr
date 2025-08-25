@@ -133,7 +133,7 @@ func tokenizeRequirement(requirement string) []VersionConstraint {
 			if strings.HasPrefix(constraint, op) {
 				tokenized = append(tokenized, VersionConstraint{
 					operator: op,
-					version:  constraint[len(op):],
+					version:  strings.TrimSpace(constraint[len(op):]),
 				})
 				break
 			}
@@ -230,21 +230,31 @@ func replaceRequirement(req string, newReq []VersionConstraint) string {
 	return sb.String()
 }
 
+// TokenizedPatch represents a change from one version constraint to another,
+// with each constraint broken down into a slice of VersionConstraint structs.
+type TokenizedPatch struct {
+	VersionFrom []VersionConstraint
+	VersionTo   []VersionConstraint
+}
+
 // write is a generic helper function that orchestrates the patching of a manifest file.
 // It reads the original manifest from inputPath, processes the required changes from patches,
 // and delegates the content modification to the provided update function. The resulting
 // patched content is then written to outputPath.
-func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements map[string][]VersionConstraint) (string, error)) error {
+func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements map[string]TokenizedPatch) (string, error)) error {
 	f, err := fsys.Open(inputPath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	requirements := make(map[string][]VersionConstraint)
+	requirements := make(map[string]TokenizedPatch)
 	for _, patch := range patches {
 		for _, req := range patch.PackageUpdates {
-			requirements[req.Name] = tokenizeRequirement(req.VersionTo)
+			requirements[req.Name] = TokenizedPatch{
+				VersionFrom: tokenizeRequirement(req.VersionFrom),
+				VersionTo:   tokenizeRequirement(req.VersionTo),
+			}
 		}
 	}
 

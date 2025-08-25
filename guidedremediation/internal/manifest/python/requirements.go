@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"deps.dev/util/pypi"
@@ -116,7 +117,7 @@ func (r requirementsReadWriter) Write(original manifest.Manifest, fsys scalibrfs
 // updateRequirements takes an io.Reader representing the requirements.txt file
 // and a map of package names to their new version constraints, returns the
 // file with the updated requirements as a string.
-func updateRequirements(reader io.Reader, requirements map[string][]VersionConstraint) (string, error) {
+func updateRequirements(reader io.Reader, requirements map[string]TokenizedPatch) (string, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", fmt.Errorf("error reading requirements: %w", err)
@@ -129,7 +130,17 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 			continue
 		}
 
-		d, err := pypi.ParseDependency(line)
+		reqLine := line
+		// We should trim the comments so they are not part of the requirement.
+		if i := strings.Index(reqLine, "#"); i != -1 {
+			reqLine = reqLine[:i]
+		}
+		if strings.TrimSpace(reqLine) == "" {
+			sb.WriteString(line)
+			continue
+		}
+
+		d, err := pypi.ParseDependency(reqLine)
 		if err != nil {
 			log.Warnf("failed to parse Python dependency %s: %v", line, err)
 			sb.WriteString(line)
@@ -142,7 +153,11 @@ func updateRequirements(reader io.Reader, requirements map[string][]VersionConst
 			sb.WriteString(line)
 			continue
 		}
-		sb.WriteString(replaceRequirement(line, newReq))
+		if !slices.Equal(tokenizeRequirement(d.Constraint), newReq.VersionFrom) {
+			// If the original requirement does not match, do not update.
+			continue
+		}
+		sb.WriteString(replaceRequirement(line, newReq.VersionTo))
 	}
 
 	return sb.String(), nil
