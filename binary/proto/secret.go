@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -86,8 +87,21 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case dockerhubpat.DockerHubPAT:
+		return dockerHubPATToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Docekrhubpat{
+			Docekrhubpat: &spb.SecretData_DockerHubPat{
+				Pat:      s.Pat,
+				Username: s.Username,
+			},
+		},
 	}
 }
 
@@ -193,11 +207,19 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_Docekrhubpat:
+		return dockerHubPATToStruct(s.GetDocekrhubpat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
 }
 
+func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerHubPAT {
+	return dockerhubpat.DockerHubPAT{
+		Pat:      kPB.GetPat(),
+		Username: kPB.GetUsername(),
+	}
+}
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	sak := velesgcpsak.GCPSAK{
 		PrivateKeyID:   sakPB.GetPrivateKeyId(),

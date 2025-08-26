@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 )
 
@@ -61,6 +62,7 @@ func init() { //nolint:gochecknoinits
 	var err error
 	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
 		gcpsak.NewDetector(),
+		dockerhubpat.NewDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
@@ -69,7 +71,7 @@ func init() { //nolint:gochecknoinits
 
 // Extractor extracts secrets from the filesystem using the Veles secret
 // scanning library.
-// Other than most extractors, it add Secrets to the Inventory, not Packages.
+// Other than most extractors, it adds Secrets to the Inventory, not Packages.
 type Extractor struct {
 	e *veles.DetectionEngine
 }
