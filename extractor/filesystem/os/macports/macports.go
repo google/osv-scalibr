@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	macportsmeta "github.com/google/osv-scalibr/extractor/filesystem/os/macports/metadata"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -54,11 +53,16 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // the Portfile file is found in /opt/local/var/macports/registry/portfiles/<packagename>-<version>_<revision>/<SHA256 hash of Portfile>-<index>/Portfile
 var filePathRegex = regexp.MustCompile(`macports/registry/portfiles/([^-]+(?:-[^-]+)*)-([0-9][^_]*)_([0-9]+)/[a-f0-9]{64}-\d+/Portfile$`)
+
+// This regex is used for extracting package name, version and revision from the directory name. Example directory name: autoconf-2.72_0
 var portfileParsingRegex = regexp.MustCompile(`^(.+)-([0-9][^_]*)_(\d+)$`)
 
 // FileRequired returns true if the specified file matches Portfile file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	filePath := api.Path()
+	if !strings.HasSuffix(filePath, "Portfile") {
+		return false
+	}
 	if match := filePathRegex.FindString(filePath); match == "" {
 		return false
 	}
@@ -72,7 +76,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromPath(path string) []*extractor.Package {
-	log.Infof("OSV-SCALIBR v%s", path)
 	// Get the first folder after "portfiles/"
 	dir := filepath.Base(filepath.Dir(filepath.Dir(path)))
 	dir = strings.ToLower(dir)

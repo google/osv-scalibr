@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata defines a metadata struct for arch packages.
+// Package metadata defines a metadata struct for Macports packages.
 package metadata
 
 import (
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-// Metadata holds parsing information for an arch package.
+// Metadata holds parsing information for an Macports package.
 type Metadata struct {
 	PackageName     string
 	PackageVersion  string
