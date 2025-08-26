@@ -88,7 +88,7 @@ func (l *pnpmLockfile) UnmarshalYAML(unmarshal func(any) error) error {
 var (
 	numberMatcher = regexp.MustCompile(`^\d`)
 	// Looks for the pattern "name@version", where name is allowed to contain zero or more "@"
-	nameVersionRegexp = regexp.MustCompile(`^(.+)@([\d.]+)$`)
+	nameVersionRegexp = regexp.MustCompile(`^(.+)@([\w.-]+)(?:\(|$)`)
 
 	codeLoadURLRegexp = regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+){2}/tar\.gz/(\w+)$`)
 )
