@@ -282,6 +282,64 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "peer_dependencies_v6",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/peer-dependencies-v6.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "js-tokens",
+					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "loose-envify",
+					Version:    "1.4.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react-dom",
+					Version:    "18.2.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react",
+					Version:    "18.2.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "scheduler",
+					Version:    "0.23.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "peer dependencies advanced",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-advanced.yaml",
@@ -372,6 +430,122 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:    "3.21.0",
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "peer_dependencies_advanced_v6",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/peer-dependencies-advanced-v6.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "js-tokens",
+					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "loose-envify",
+					Version:    "1.4.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react-dom",
+					Version:    "18.3.0-canary-ab31a9ed2-20230824",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react",
+					Version:    "18.3.0-canary-ab31a9ed2-20230824",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "scheduler",
+					Version:    "0.24.0-canary-ab31a9ed2-20230824",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "peer_dependencies_advanced_rc_v6",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/peer-dependencies-advanced-rc-v6.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "js-tokens",
+					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-rc-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "loose-envify",
+					Version:    "1.4.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-rc-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react-dom",
+					Version:    "18.0.0-rc.3",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-rc-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react",
+					Version:    "18.2.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-rc-v6.yaml"},
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "scheduler",
+					Version:    "0.21.0",
+					PURLType:   purl.TypeNPM,
+					Locations:  []string{"testdata/peer-dependencies-advanced-rc-v6.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
