@@ -118,6 +118,8 @@ func (ds *DependencySubgraph) IsDevOnly(groups map[manifest.RequirementKey][]str
 				return !slices.Contains(reqGroups, "dev")
 			case resolve.Maven:
 				return !slices.Contains(reqGroups, "test")
+			case resolve.PyPI, resolve.UnknownSystem:
+				fallthrough
 			default:
 				return true
 			}

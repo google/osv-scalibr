@@ -28,7 +28,7 @@ func MakeRequirementKey(requirement resolve.RequirementVersion) manifest.Require
 		return npm.MakeRequirementKey(requirement)
 	case resolve.Maven:
 		return maven.MakeRequirementKey(requirement)
-	case resolve.UnknownSystem:
+	case resolve.PyPI, resolve.UnknownSystem:
 		fallthrough
 	default:
 		return requirement.PackageKey

@@ -167,6 +167,8 @@ func (st stateInPlaceResult) currentInfoView() (view components.ViewModel, canFo
 		return st.relockFixVulns, st.canRelock
 	case inPlaceQuit: // quit
 		return components.TextView("Exit Guided Remediation"), false
+	case inPlaceEnd:
+		fallthrough
 	default:
 		return components.TextView(""), false
 	}
@@ -193,6 +195,7 @@ func (st stateInPlaceResult) parseInput(m Model) (tea.Model, tea.Cmd) {
 		}
 	case inPlaceQuit: // quit
 		cmd = tea.Quit
+	case inPlaceEnd:
 	}
 	m.st = st
 
