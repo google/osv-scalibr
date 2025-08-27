@@ -623,6 +623,7 @@ message SecretData {
     GCPSAK gcpsak = 1;
     AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
     AnthropicModelAPIKey anthropic_model_api_key = 3;
+    PerplexityAPIKey perplexity = 4;
   }
 
   message GCPSAK {
@@ -653,6 +654,10 @@ message SecretData {
 
   message AnthropicModelAPIKey {
     // The Anthropic Model API key (regular API key for model access).
+    string key = 1;
+  }
+
+  message PerplexityAPIKey {
     string key = 1;
   }
 }
