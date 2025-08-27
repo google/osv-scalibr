@@ -49,6 +49,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | SNAP              |                                | `os/snap`                                    |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
+| MacPorts          | OS X                           | `os/macports`                                |
 | OS X Applications | OS X                           | `os/macapps`                                 |
 | Windows           | Build number                   | `windows/regosversion`                       |
 | Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |

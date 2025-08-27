@@ -74,6 +74,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
@@ -215,6 +216,7 @@ var (
 		flatpak.Name:  {flatpak.NewDefault},
 		homebrew.Name: {homebrew.New},
 		macapps.Name:  {macapps.NewDefault},
+		macports.Name: {macports.New},
 	}
 
 	// Credential extractors.
