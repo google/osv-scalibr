@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 )
 
 // InitFn is the enricher initializer function.
@@ -49,7 +50,8 @@ var (
 
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
-		// TODO(https://github.com/google/osv-scalibr/issues/858): Add OSV.dev enricher.
+
+		osvdev.Name: {osvdev.NewDefault},
 	}
 
 	// VEX related enrichers.
