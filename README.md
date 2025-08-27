@@ -33,8 +33,8 @@ context, check out the
 [OSV-Scanner usage guide](https://google.github.io/osv-scanner/usage/).
 
 **Note:** Not all OSV-SCALIBR functionality is available via OSV-Scanner yet.
-Check out [this issue](https://github.com/google/osv-scanner/issues/1701) for
-the current status.
+Check out [this migration guide](https://google.github.io/osv-scanner/migrating-from-scalibr.html)
+for more information.
 
 ### Via the OSV-SCALIBR wrapper binary
 
