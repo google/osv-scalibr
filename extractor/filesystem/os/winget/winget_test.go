@@ -1,5 +1,3 @@
-//go:build windows
-
 package winget
 
 import (
@@ -171,7 +169,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			extractor := NewDefault()
-			
+
 			// Create a custom Extract method that bypasses GetRealPath for testing
 			got, err := func() ([]*extractor.Package, error) {
 				db, err := sql.Open("sqlite", dbPath)
@@ -261,8 +259,6 @@ type TestPackage struct {
 	Tags     []string
 	Commands []string
 }
-
-
 
 // createTestDatabase creates a SQLite database with the Winget schema and test data
 func createTestDatabase(dbPath string, packages []TestPackage) error {

@@ -1,5 +1,3 @@
-//go:build windows
-
 // Package winget extracts installed packages from Windows Package Manager (Winget) database.
 package winget
 
