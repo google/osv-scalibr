@@ -118,6 +118,39 @@ func TestScanWithTimeouts(t *testing.T) {
 	}
 }
 
+func TestDefaultConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		goos    string
+		wantURL string
+	}{
+		{
+			name:    "darwin",
+			goos:    "darwin",
+			wantURL: "http://localhost:49363",
+		},
+		{
+			name:    "linux",
+			goos:    "linux",
+			wantURL: "http://127.0.0.2:49363",
+		},
+		{
+			name:    "windows",
+			goos:    "windows",
+			wantURL: "http://127.0.0.2:49363",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := defaultConfigWithOS(tc.goos)
+			if cfg.Remote != tc.wantURL {
+				t.Errorf("defaultConfigWithOS(%q).Remote = %q, want %q", tc.goos, cfg.Remote, tc.wantURL)
+			}
+		})
+	}
+}
+
 // validHandler returns a valid handler that will emulate the Code-Server instance. Does not emulate
 // the redirection.
 func validHandler(t *testing.T, authEnabled bool) http.HandlerFunc {
