@@ -67,6 +67,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -215,6 +216,7 @@ var (
 		flatpak.Name:  {flatpak.NewDefault},
 		homebrew.Name: {homebrew.New},
 		macapps.Name:  {macapps.NewDefault},
+		asdf.Name:     {asdf.New},
 	}
 
 	// Credential extractors.

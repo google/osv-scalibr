@@ -124,6 +124,7 @@ message Package {
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
+    AsdfMetadata asdf_metadata = 53;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -594,6 +595,11 @@ message DockerContainersMetadata {
   string image_digest = 2;
   string id = 3;
   repeated DockerPort ports = 4;
+}
+
+message AsdfMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
 }
 
 message DockerPort {

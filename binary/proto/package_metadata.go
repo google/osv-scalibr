@@ -17,12 +17,12 @@ package proto
 import (
 	"reflect"
 
-	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
-
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/os/asdf/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
@@ -32,8 +32,7 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
-
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 )
 
 var (
@@ -80,6 +79,9 @@ var (
 		reflect.TypeOf(&spb.Package_MacAppsMetadata{}): func(p *spb.Package) any {
 			return macapps.ToStruct(p.GetMacAppsMetadata())
 		},
+		reflect.TypeOf(&spb.Package_AsdfMetadata{}): func(p *spb.Package) any {
+			return asdfmeta.ToStruct(p.GetAsdfMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -97,5 +99,6 @@ var (
 		(*flatpakmeta.Metadata)(nil),
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
+		(*asdfmeta.Metadata)(nil),
 	}
 )
