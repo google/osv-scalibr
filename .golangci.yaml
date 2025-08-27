@@ -9,8 +9,10 @@ linters:
   disable:
     - cyclop           #
     - depguard         #
+    - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
+    - exhaustive       # TODO(#1225): work on enabling this
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
@@ -119,9 +121,6 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - linters:
-          - dupl
-        path: _test\.go
       - path: veles/
         linters:
           - forbidigo  # Parallel tests are fine and in some places needed for Veles.
