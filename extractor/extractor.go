@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -103,7 +104,7 @@ func (p *Package) PURL() *purl.PackageURL {
 
 // Ecosystem returns the Ecosystem of the package. For software packages this corresponds
 // to an OSV ecosystem value, e.g. PyPI.
-func (p *Package) Ecosystem() string {
+func (p *Package) Ecosystem() osvecosystem.Parsed {
 	return toEcosystem(p)
 }
 

@@ -15,7 +15,6 @@
 package cachedir_test
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -72,7 +71,7 @@ func TestIsInsideCacheDir(t *testing.T) {
 					Locations: []string{tt.inputPath},
 				}},
 			}
-			if err := cachedir.New().Annotate(context.Background(), nil, inv); err != nil {
+			if err := cachedir.New().Annotate(t.Context(), nil, inv); err != nil {
 				t.Errorf("Annotate(%v): %v", inv, err)
 			}
 			var want []*vex.PackageExploitabilitySignal

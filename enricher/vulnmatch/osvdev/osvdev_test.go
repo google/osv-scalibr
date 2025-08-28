@@ -82,7 +82,7 @@ func TestEnrich(t *testing.T) {
 			Affected: []osvschema.Affected{
 				{
 					Package: osvschema.Package{
-						Ecosystem: goPkg.Ecosystem(),
+						Ecosystem: goPkg.Ecosystem().String(),
 						Name:      goPkg.Name,
 						Purl:      "pkg:golang/github.com/gin-gonic/gin",
 					},
@@ -108,7 +108,7 @@ func TestEnrich(t *testing.T) {
 			Affected: []osvschema.Affected{
 				{
 					Package: osvschema.Package{
-						Ecosystem: goPkg.Ecosystem(),
+						Ecosystem: goPkg.Ecosystem().String(),
 						Name:      goPkg.Name,
 						Purl:      "pkg:golang/github.com/gin-gonic/gin",
 					},
@@ -149,7 +149,7 @@ func TestEnrich(t *testing.T) {
 			Affected: []osvschema.Affected{
 				{
 					Package: osvschema.Package{
-						Ecosystem: goPkg.Ecosystem(),
+						Ecosystem: goPkg.Ecosystem().String(),
 						Name:      goPkg.Name,
 						Purl:      "pkg:golang/github.com/gin-gonic/gin",
 					},

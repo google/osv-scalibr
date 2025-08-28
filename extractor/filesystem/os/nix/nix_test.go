@@ -15,7 +15,6 @@
 package nix_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -213,7 +212,7 @@ func TestExtract(t *testing.T) {
 				Info:   nil,
 			}
 
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 
 			if err != nil {
 				t.Errorf("err = %v", err)

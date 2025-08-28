@@ -15,7 +15,6 @@
 package dotnetpe_test
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -191,7 +190,7 @@ func TestExtract(t *testing.T) {
 			input := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, input)
 
-			got, err := extr.Extract(context.Background(), &input)
+			got, err := extr.Extract(t.Context(), &input)
 			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 				return

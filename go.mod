@@ -23,7 +23,6 @@ require (
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gobwas/glob v0.2.3
 	github.com/gohugoio/hashstructure v0.5.0
-	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-cpy v0.0.0-20211218193943-a9c933c06932

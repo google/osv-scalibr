@@ -15,7 +15,6 @@
 package fromnpm_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,7 +66,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		},
 	}
 
-	err := fromnpm.New().Annotate(context.Background(), input, inv)
+	err := fromnpm.New().Annotate(t.Context(), input, inv)
 	if err != nil {
 		t.Errorf("Annotate(%v) error: %v; want error presence = false", inputPackage, err)
 	}
@@ -254,7 +253,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := fromnpm.New().Annotate(context.Background(), input, inv)
+			err := fromnpm.New().Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -463,7 +462,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := fromnpm.New().Annotate(context.Background(), input, inv)
+			err := fromnpm.New().Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)

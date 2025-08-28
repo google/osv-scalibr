@@ -23,7 +23,9 @@ import (
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestToPURL(t *testing.T) {
@@ -204,7 +206,7 @@ func TestToEcosystem(t *testing.T) {
 	tests := []struct {
 		name string
 		pkg  *extractor.Package
-		want string
+		want osvecosystem.Parsed
 	}{
 		{
 			name: "no_purl_type",
@@ -212,7 +214,7 @@ func TestToEcosystem(t *testing.T) {
 				Name:    "name",
 				Version: "version",
 			},
-			want: "",
+			want: osvecosystem.Parsed{},
 		},
 		{
 			name: "simple_ecosystem",
@@ -221,7 +223,7 @@ func TestToEcosystem(t *testing.T) {
 				Version:  "version",
 				PURLType: purl.TypeGolang,
 			},
-			want: "Go",
+			want: osvecosystem.FromEcosystem(osvschema.EcosystemGo),
 		},
 		{
 			name: "os_ecosystem",
@@ -232,9 +234,14 @@ func TestToEcosystem(t *testing.T) {
 				Metadata: &dpkgmeta.Metadata{
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
+					OSVersionID:       "11",
+					OSID:              "debian",
 				},
 			},
-			want: "Linux",
+			want: osvecosystem.Parsed{
+				Ecosystem: osvschema.EcosystemDebian,
+				Suffix:    "11",
+			},
 		},
 	}
 

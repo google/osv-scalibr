@@ -216,12 +216,12 @@ func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []str
 }
 
 func pkgToQuery(pkg *extractor.Package) *osvdev.Query {
-	if pkg.Name != "" && pkg.Ecosystem() != "" && pkg.Version != "" {
+	if pkg.Name != "" && !pkg.Ecosystem().IsEmpty() && pkg.Version != "" {
 		// TODO(#1222): Ecosystems could return ecosystems
 		return &osvdev.Query{
 			Package: osvdev.Package{
 				Name:      pkg.Name,
-				Ecosystem: pkg.Ecosystem(),
+				Ecosystem: pkg.Ecosystem().String(),
 			},
 			Version: pkg.Version,
 		}
