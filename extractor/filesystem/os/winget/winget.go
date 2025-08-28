@@ -16,31 +16,39 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // Import sqlite driver
 )
 
 const (
+	// Name is the unique identifier for the Winget extractor.
 	Name = "os/winget"
 )
 
+// Extractor extracts installed packages from Windows Package Manager databases.
 type Extractor struct{}
 
+// New creates a new Winget extractor instance.
 func New() filesystem.Extractor {
 	return &Extractor{}
 }
 
+// NewDefault creates a new Winget extractor with default configuration.
 func NewDefault() filesystem.Extractor {
 	return New()
 }
 
+// Name returns the unique identifier for this extractor.
 func (e Extractor) Name() string { return Name }
 
+// Version returns the version of this extractor.
 func (e Extractor) Version() int { return 0 }
 
+// Requirements returns the system requirements for this extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 
+// FileRequired determines if the given file should be processed by this extractor.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	normalized := filepath.ToSlash(path)
@@ -61,7 +69,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return false
 }
 
-type WingetPackage struct {
+// Package represents a package extracted from the Winget database.
+type Package struct {
 	ID       string
 	Name     string
 	Version  string
@@ -71,6 +80,7 @@ type WingetPackage struct {
 	Commands []string
 }
 
+// Extract extracts packages from a Winget database file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	absPath, err := input.GetRealPath()
 	if err != nil {
@@ -142,7 +152,7 @@ func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*WingetPackage, error) {
+func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
 	query := `
 	SELECT 
 		i.id as package_id,
@@ -150,8 +160,8 @@ func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*WingetP
 		v.version as package_version,
 		m.moniker as package_moniker,
 		c.channel as channel,
-		GROUP_CONCAT(t.tag) as tags,
-		GROUP_CONCAT(cmd.command) as commands
+		GROUP_CONCAT(DISTINCT t.tag) as tags,
+		GROUP_CONCAT(DISTINCT cmd.command) as commands
 	FROM manifest man
 	JOIN ids i ON man.id = i.rowid
 	JOIN names n ON man.name = n.rowid  
@@ -171,14 +181,14 @@ func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*WingetP
 	}
 	defer rows.Close()
 
-	var packages []*WingetPackage
+	var packages []*Package
 	for rows.Next() {
 		// Return if canceled or exceeding deadline
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("winget extractor halted due to context error: %w", err)
 		}
 
-		var pkg WingetPackage
+		var pkg Package
 		var tagsStr, commandsStr sql.NullString
 
 		err := rows.Scan(

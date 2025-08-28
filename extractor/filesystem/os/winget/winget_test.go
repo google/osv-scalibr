@@ -4,16 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/purl"
@@ -54,7 +50,7 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	extractor := NewDefault()
+	wingetExtractor := NewDefault()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
@@ -62,7 +58,7 @@ func TestFileRequired(t *testing.T) {
 				FileMode: fs.ModePerm,
 				FileSize: 1000,
 			})
-			got := extractor.FileRequired(api)
+			got := wingetExtractor.FileRequired(api)
 			if got != tt.want {
 				t.Errorf("FileRequired() = %v, want %v", got, tt.want)
 			}
@@ -95,7 +91,7 @@ func TestExtract(t *testing.T) {
 						Name:     "Microsoft Visual Studio Code",
 						Version:  "1.103.1",
 						Moniker:  "vscode",
-						Channel:  "",
+						Channel:  "stable",
 						Tags:     []string{"developer-tools", "editor"},
 						Commands: []string{"code"},
 					},
@@ -127,7 +123,7 @@ func TestExtract(t *testing.T) {
 						ID:       "Microsoft.VisualStudioCode",
 						Version:  "1.103.1",
 						Moniker:  "vscode",
-						Channel:  "",
+						Channel:  "stable",
 						Tags:     []string{"developer-tools", "editor"},
 						Commands: []string{"code"},
 					},
@@ -140,7 +136,7 @@ func TestExtract(t *testing.T) {
 			setupDB: func(dbPath string) error {
 				return createTestDatabase(dbPath, []TestPackage{})
 			},
-			want:    []*extractor.Package{},
+			want:    nil,
 			wantErr: false,
 		},
 		{
@@ -151,7 +147,8 @@ func TestExtract(t *testing.T) {
 					return err
 				}
 				defer db.Close()
-				_, err = db.Exec("CREATE TABLE test (id INTEGER)")
+				ctx := context.Background()
+				_, err = db.ExecContext(ctx, "CREATE TABLE test (id INTEGER)")
 				return err
 			},
 			want:    nil,
@@ -168,7 +165,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to setup test database: %v", err)
 			}
 
-			extractor := NewDefault()
+			wingetExtractor := NewDefault()
 
 			// Create a custom Extract method that bypasses GetRealPath for testing
 			got, err := func() ([]*extractor.Package, error) {
@@ -179,11 +176,12 @@ func TestExtract(t *testing.T) {
 				defer db.Close()
 
 				ctx := context.Background()
-				if err := extractor.validateDatabase(ctx, db); err != nil {
+				ext := wingetExtractor.(*Extractor)
+				if err := ext.validateDatabase(ctx, db); err != nil {
 					return nil, fmt.Errorf("invalid Winget database %s: %w", dbPath, err)
 				}
 
-				packages, err := extractor.extractPackages(ctx, db)
+				packages, err := ext.extractPackages(ctx, db)
 				if err != nil {
 					return nil, fmt.Errorf("failed to extract packages from %s: %w", dbPath, err)
 				}
@@ -191,7 +189,7 @@ func TestExtract(t *testing.T) {
 				var extPackages []*extractor.Package
 				for _, pkg := range packages {
 					if err := ctx.Err(); err != nil {
-						return nil, fmt.Errorf("%s halted due to context error: %w", extractor.Name(), err)
+						return nil, fmt.Errorf("%s halted due to context error: %w", wingetExtractor.Name(), err)
 					}
 
 					extPkg := &extractor.Package{
@@ -229,17 +227,17 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractorInterface(t *testing.T) {
-	extractor := NewDefault()
+	wingetExtractor := NewDefault()
 
-	if extractor.Name() != Name {
-		t.Errorf("Name() = %v, want %v", extractor.Name(), Name)
+	if wingetExtractor.Name() != Name {
+		t.Errorf("Name() = %v, want %v", wingetExtractor.Name(), Name)
 	}
 
-	if extractor.Version() != 0 {
-		t.Errorf("Version() = %v, want %v", extractor.Version(), 0)
+	if wingetExtractor.Version() != 0 {
+		t.Errorf("Version() = %v, want %v", wingetExtractor.Version(), 0)
 	}
 
-	caps := extractor.Requirements()
+	caps := wingetExtractor.Requirements()
 	if caps.OS != 2 { // OSWindows = 2
 		t.Errorf("Requirements().OS = %v, want 2 (OSWindows)", caps.OS)
 	}
@@ -268,6 +266,8 @@ func createTestDatabase(dbPath string, packages []TestPackage) error {
 	}
 	defer db.Close()
 
+	ctx := context.Background()
+
 	// Create schema
 	schema := `
 	CREATE TABLE [metadata](
@@ -292,7 +292,7 @@ func createTestDatabase(dbPath string, packages []TestPackage) error {
 	CREATE TABLE [commands_map]([manifest] INT64 NOT NULL, [command] INT64 NOT NULL, PRIMARY KEY([command], [manifest])) WITHOUT ROWID;
 	`
 
-	_, err = db.Exec(schema)
+	_, err = db.ExecContext(ctx, schema)
 	if err != nil {
 		return err
 	}
@@ -302,33 +302,33 @@ func createTestDatabase(dbPath string, packages []TestPackage) error {
 		manifestID := i + 1
 
 		// Insert lookup table values
-		_, err = db.Exec("INSERT INTO ids (rowid, id) VALUES (?, ?)", manifestID, pkg.ID)
+		_, err = db.ExecContext(ctx, "INSERT INTO ids (rowid, id) VALUES (?, ?)", manifestID, pkg.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = db.Exec("INSERT INTO names (rowid, name) VALUES (?, ?)", manifestID, pkg.Name)
+		_, err = db.ExecContext(ctx, "INSERT INTO names (rowid, name) VALUES (?, ?)", manifestID, pkg.Name)
 		if err != nil {
 			return err
 		}
 
-		_, err = db.Exec("INSERT INTO monikers (rowid, moniker) VALUES (?, ?)", manifestID, pkg.Moniker)
+		_, err = db.ExecContext(ctx, "INSERT INTO monikers (rowid, moniker) VALUES (?, ?)", manifestID, pkg.Moniker)
 		if err != nil {
 			return err
 		}
 
-		_, err = db.Exec("INSERT INTO versions (rowid, version) VALUES (?, ?)", manifestID, pkg.Version)
+		_, err = db.ExecContext(ctx, "INSERT INTO versions (rowid, version) VALUES (?, ?)", manifestID, pkg.Version)
 		if err != nil {
 			return err
 		}
 
-		_, err = db.Exec("INSERT INTO channels (rowid, channel) VALUES (?, ?)", manifestID, pkg.Channel)
+		_, err = db.ExecContext(ctx, "INSERT INTO channels (rowid, channel) VALUES (?, ?)", manifestID, pkg.Channel)
 		if err != nil {
 			return err
 		}
 
 		// Insert manifest
-		_, err = db.Exec("INSERT INTO manifest (rowid, id, name, moniker, version, channel, pathpart) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		_, err = db.ExecContext(ctx, "INSERT INTO manifest (rowid, id, name, moniker, version, channel, pathpart) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			manifestID, manifestID, manifestID, manifestID, manifestID, manifestID, -1)
 		if err != nil {
 			return err
@@ -337,11 +337,11 @@ func createTestDatabase(dbPath string, packages []TestPackage) error {
 		// Insert tags
 		for j, tag := range pkg.Tags {
 			tagID := i*100 + j + 1
-			_, err = db.Exec("INSERT INTO tags (rowid, tag) VALUES (?, ?)", tagID, tag)
+			_, err = db.ExecContext(ctx, "INSERT INTO tags (rowid, tag) VALUES (?, ?)", tagID, tag)
 			if err != nil {
 				return err
 			}
-			_, err = db.Exec("INSERT INTO tags_map (manifest, tag) VALUES (?, ?)", manifestID, tagID)
+			_, err = db.ExecContext(ctx, "INSERT INTO tags_map (manifest, tag) VALUES (?, ?)", manifestID, tagID)
 			if err != nil {
 				return err
 			}
@@ -350,11 +350,11 @@ func createTestDatabase(dbPath string, packages []TestPackage) error {
 		// Insert commands
 		for j, command := range pkg.Commands {
 			commandID := i*100 + j + 1
-			_, err = db.Exec("INSERT INTO commands (rowid, command) VALUES (?, ?)", commandID, command)
+			_, err = db.ExecContext(ctx, "INSERT INTO commands (rowid, command) VALUES (?, ?)", commandID, command)
 			if err != nil {
 				return err
 			}
-			_, err = db.Exec("INSERT INTO commands_map (manifest, command) VALUES (?, ?)", manifestID, commandID)
+			_, err = db.ExecContext(ctx, "INSERT INTO commands_map (manifest, command) VALUES (?, ?)", manifestID, commandID)
 			if err != nil {
 				return err
 			}
