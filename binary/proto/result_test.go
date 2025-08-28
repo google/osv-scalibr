@@ -444,7 +444,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				{Key: "distro", Value: "20241201.0.284684"},
 			},
 		},
-		Ecosystem: "Arch:20241201.0.284684",
+		Ecosystem: "",
 		Metadata: &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:    "zstd",
@@ -482,7 +482,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				{Key: "distro", Value: "2.17"},
 			},
 		},
-		Ecosystem: "Gentoo:2.17",
+		Ecosystem: "",
 		Metadata: &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    "Capture-Tiny",
