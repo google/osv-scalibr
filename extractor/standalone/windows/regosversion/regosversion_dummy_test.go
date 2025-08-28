@@ -17,13 +17,12 @@
 package regosversion
 
 import (
-	"context"
 	"testing"
 )
 
 func TestScan(t *testing.T) {
 	e := Extractor{}
-	if _, err := e.Extract(context.Background(), nil); err == nil {
+	if _, err := e.Extract(t.Context(), nil); err == nil {
 		t.Errorf("Extract() returned nil error, should not be supported on non-Windows")
 	}
 }

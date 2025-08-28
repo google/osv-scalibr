@@ -17,7 +17,6 @@
 package proc
 
 import (
-	"context"
 	"errors"
 	"io/fs"
 	"testing"
@@ -64,7 +63,7 @@ func TestReadProcessCmdline(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ReadProcessCmdline(context.Background(), tc.pid, tc.root, tc.fs)
+			got, err := ReadProcessCmdline(t.Context(), tc.pid, tc.root, tc.fs)
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("ReadProcessCmdline(%d, %q) returned an unexpected error: %v", tc.pid, tc.root, err)
 			}

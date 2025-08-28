@@ -38,7 +38,7 @@ func TestAnnotate(t *testing.T) {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
-	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	copier := cpy.New(
@@ -150,7 +150,7 @@ func TestAnnotate(t *testing.T) {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
 			if tt.ctx == nil {
-				tt.ctx = context.Background()
+				tt.ctx = t.Context() //nolint:fatcontext
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(root),

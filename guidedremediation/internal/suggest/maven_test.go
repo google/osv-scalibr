@@ -15,7 +15,6 @@
 package suggest
 
 import (
-	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -122,7 +121,7 @@ func (m testManifest) Clone() manifest.Manifest {
 }
 
 func TestMavenSuggester_Suggest(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	client := resolve.NewLocalClient()
 	addVersions := func(sys resolve.System, name string, versions []string) {
 		for _, version := range versions {
@@ -462,7 +461,7 @@ func TestMavenSuggester_Suggest(t *testing.T) {
 }
 
 func Test_suggestMavenVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lc := resolve.NewLocalClient()
 
 	pk := resolve.PackageKey{
@@ -523,7 +522,7 @@ func Test_suggestMavenVersion(t *testing.T) {
 }
 
 func TestSuggestVersion_Guava(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lc := resolve.NewLocalClient()
 
 	pk := resolve.PackageKey{
@@ -580,7 +579,7 @@ func TestSuggestVersion_Guava(t *testing.T) {
 }
 
 func TestSuggestVersion_Commons(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lc := resolve.NewLocalClient()
 
 	pk := resolve.PackageKey{
