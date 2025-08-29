@@ -110,7 +110,6 @@ linters:
     staticcheck:
       checks:
         - all
-        - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
         - -QF1008 # remove embedded field from selector
   exclusions:

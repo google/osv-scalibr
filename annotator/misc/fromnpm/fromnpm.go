@@ -247,7 +247,7 @@ func MapNPMProjectRootsToPackages(packages []*extractor.Package) map[string][]*e
 
 func npmProjectRootDirectory(path string) string {
 	// Only consider packages from root/node_modules/../package.json.
-	if !(filepath.Base(path) == "package.json" && strings.Contains(path, nodeModulesDirectory)) {
+	if filepath.Base(path) != "package.json" || !strings.Contains(path, nodeModulesDirectory) {
 		// We are silently dropping packages that are outside of root/node_modules/../package.json.
 		return ""
 	}

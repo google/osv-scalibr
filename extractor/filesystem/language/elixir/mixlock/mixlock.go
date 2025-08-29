@@ -93,7 +93,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the mix.lock pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !(filepath.Base(path) == "mix.lock") {
+	if filepath.Base(path) != "mix.lock" {
 		return false
 	}
 

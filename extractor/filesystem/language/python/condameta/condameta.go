@@ -94,7 +94,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path = filepath.ToSlash(path)
 
 	// Verify the path contains the `envs/` directory
-	if !(strings.HasPrefix(path, "envs/") || strings.Contains(path, "/envs/")) {
+	if !strings.HasPrefix(path, "envs/") && !strings.Contains(path, "/envs/") {
 		return false
 	}
 
