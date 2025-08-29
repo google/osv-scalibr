@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
-
 // Package dockersocket implements a detector for Docker socket exposure vulnerabilities.
 package dockersocket
 

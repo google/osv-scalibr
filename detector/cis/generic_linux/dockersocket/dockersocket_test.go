@@ -1,5 +1,3 @@
-//go:build linux
-
 // Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +36,7 @@ type fakeFileInfo struct {
 	mode    fs.FileMode
 	modTime time.Time
 	isDir   bool
-	sys     interface{}
+	sys     any
 }
 
 func (f fakeFileInfo) Name() string       { return f.name }
@@ -46,11 +44,12 @@ func (f fakeFileInfo) Size() int64        { return f.size }
 func (f fakeFileInfo) Mode() fs.FileMode  { return f.mode }
 func (f fakeFileInfo) ModTime() time.Time { return f.modTime }
 func (f fakeFileInfo) IsDir() bool        { return f.isDir }
-func (f fakeFileInfo) Sys() interface{}   { return f.sys }
+func (f fakeFileInfo) Sys() any           { return f.sys }
 
 // fakeFile implements fs.File for testing
 type fakeFile struct {
 	*fstest.MapFile
+
 	info   fakeFileInfo
 	offset int
 }
@@ -153,6 +152,7 @@ func TestDockerSocketPermissions(t *testing.T) {
 // testFS wraps fstest.MapFS to return our custom file for docker.sock
 type testFS struct {
 	fstest.MapFS
+
 	sockFile fakeFile
 }
 
