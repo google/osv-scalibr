@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/cis/generic_linux/dockersocket"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
@@ -43,7 +44,10 @@ type InitFn func() detector.Detector
 type InitMap map[string][]InitFn
 
 // CIS scanning related detectors.
-var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
+var CIS = InitMap{
+	dockersocket.Name:         {dockersocket.New},
+	etcpasswdpermissions.Name: {etcpasswdpermissions.New},
+}
 
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
