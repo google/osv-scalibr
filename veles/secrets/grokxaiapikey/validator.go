@@ -39,7 +39,7 @@ type ValidatorAPI struct {
 	httpC *http.Client
 }
 
-// ValidatorOptionAPI configures a ValidatorAPI when creating it via NewApiValidator.
+// ValidatorOptionAPI configures a ValidatorAPI when creating it via NewAPIValidator.
 type ValidatorOptionAPI func(*ValidatorAPI)
 
 // WithClientAPI configures the http.Client used by ValidatorAPI.
@@ -51,8 +51,8 @@ func WithClientAPI(c *http.Client) ValidatorOptionAPI {
 	}
 }
 
-// NewApiValidator creates a new ValidatorAPI with the given options.
-func NewApiValidator(opts ...ValidatorOptionAPI) *ValidatorAPI {
+// NewAPIValidator creates a new ValidatorAPI with the given options.
+func NewAPIValidator(opts ...ValidatorOptionAPI) *ValidatorAPI {
 	v := &ValidatorAPI{
 		httpC: http.DefaultClient,
 	}
@@ -111,7 +111,7 @@ type ValidatorManagement struct {
 	httpC *http.Client
 }
 
-// ValidatorOptionManagement configures a ValidatorManagement when creating it via NewManagementApiValidator.
+// ValidatorOptionManagement configures a ValidatorManagement when creating it via NewManagementAPIValidator.
 type ValidatorOptionManagement func(*ValidatorManagement)
 
 // WithClientManagement configures the http.Client used by ValidatorManagement.
@@ -123,8 +123,8 @@ func WithClientManagement(c *http.Client) ValidatorOptionManagement {
 	}
 }
 
-// NewManagementApiValidator creates a new ValidatorManagement with the given options.
-func NewManagementApiValidator(opts ...ValidatorOptionManagement) *ValidatorManagement {
+// NewManagementAPIValidator creates a new ValidatorManagement with the given options.
+func NewManagementAPIValidator(opts ...ValidatorOptionManagement) *ValidatorManagement {
 	v := &ValidatorManagement{
 		httpC: http.DefaultClient,
 	}

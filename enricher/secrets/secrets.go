@@ -51,8 +51,8 @@ func New() enricher.Enricher {
 		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
 		veles.WithValidator(perplexityapikey.NewValidator()),
-		veles.WithValidator(grokxaiapikey.NewApiValidator()),
-		veles.WithValidator(grokxaiapikey.NewManagementApiValidator()),
+		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
+		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
 	)
 	return &Enricher{engine: engine}
 }
