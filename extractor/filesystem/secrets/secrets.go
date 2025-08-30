@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
@@ -65,6 +66,8 @@ func init() { //nolint:gochecknoinits
 		anthropicapikey.NewDetector(),
 		gcpsak.NewDetector(),
 		perplexityapikey.NewDetector(),
+		grokxaiapikey.NewAPIKeyDetector(),
+		grokxaiapikey.NewManagementKeyDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
