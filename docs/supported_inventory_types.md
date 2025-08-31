@@ -35,7 +35,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Inventory Type    | Details                        | Extractor Plugin                             |
 |-------------------|--------------------------------|----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
-| asdf              | Linux, OS X                    | `os/asdf`                                    |
+| asdf              | .tool-versions                 | `lanuages/asdf`                              |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |

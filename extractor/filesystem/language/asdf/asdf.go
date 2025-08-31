@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package asdf extracts the tool name and version from asdf .tool-version files.
+// Package asdf extracts the installed language runtime names and versions from asdf .tool-version files.
 package asdf
 
 import (
 	"bufio"
 	"context"
+	"fmt"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/os/asdf/metadata"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -52,11 +54,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the file name is '.tool-versions'.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	info, err := api.Stat()
-	if err != nil {
-		return false
-	}
-	return info.Name() == ".tool-versions"
+	return path.Base(api.Path()) == ".tool-versions"
 }
 
 func parseToolLine(line string) (tool string, versions []string, ok bool) {
@@ -74,11 +72,15 @@ func parseToolLine(line string) (tool string, versions []string, ok bool) {
 // Extract extracts packages from the asdf .tool-versions file.
 //
 // Reference: https://asdf-vm.com/manage/configuration.html#tool-versions
-func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
 	var pkgs []*extractor.Package
 
 	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
+
 		tool, versions, ok := parseToolLine(scanner.Text())
 		if !ok {
 			continue

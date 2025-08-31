@@ -15,21 +15,20 @@
 package asdf_test
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/asdf"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/os/asdf/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -60,21 +59,17 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func pkgLess(i1, i2 *extractor.Package) bool {
-	return i1.Name < i2.Name
-}
-
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name         string
-		path         string
-		content      string
-		wantPackages []*extractor.Package
+		name            string
+		wantPackages    []*extractor.Package
+		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name:    "valid .tool-versions ",
-			path:    "/home/user/.tool-versions",
-			content: `nodejs 24.04`,
+			name: "valid .tool-versions ",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/simpleValid/.tool-versions",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nodejs",
@@ -84,13 +79,14 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/simpleValid/.tool-versions"},
 				},
 			},
 		}, {
-			name:    "valid .tool-versions multiple versions",
-			path:    "/home/user/.tool-versions",
-			content: `nodejs 24.04 21 19.0`,
+			name: "valid .tool-versions multiple versions",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/validMultiVersions/.tool-versions",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nodejs",
@@ -100,7 +96,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -109,7 +105,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -118,13 +114,14 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
 				},
 			},
 		}, {
-			name:    "valid .tool-versions multiple versions with skip values",
-			path:    "/home/user/.tool-versions",
-			content: `nodejs 24.04 21 system file:/dev/null 19.0`,
+			name: "valid .tool-versions multiple versions with skip values",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/validMultiVersionWithSkip/.tool-versions",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nodejs",
@@ -134,7 +131,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -143,7 +140,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -152,13 +149,14 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
 				},
 			},
 		}, {
-			name:    "valid .tool-versions multiple lines",
-			path:    "/home/user/.tool-versions",
-			content: "nodejs 24.04\nnodejs 20.0",
+			name: "valid .tool-versions multiple lines",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/validMultiLine/.tool-versions",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nodejs",
@@ -168,7 +166,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiLine/.tool-versions"},
 				}, {
 					Name:     "nodejs",
 					Version:  "20.0",
@@ -177,13 +175,14 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "20.0",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validMultiLine/.tool-versions"},
 				},
 			},
 		}, {
-			name:    "valid .tool-versions more whitespaces",
-			path:    "/home/user/.tool-versions",
-			content: `nodejs   24.04  `,
+			name: "valid .tool-versions more whitespaces",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/validWhiteSpaces/.tool-versions",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nodejs",
@@ -193,31 +192,31 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"/home/user/.tool-versions"},
+					Locations: []string{"testdata/validWhiteSpaces/.tool-versions"},
 				},
 			},
 		},
 		{
-			name:         "invalid .tool-versions ",
-			path:         "/home/user/.tool-versions",
-			content:      `nodejs24.04`,
+			name: "invalid .tool-versions ",
+			inputConfigFile: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid/.tool-versions",
+			},
 			wantPackages: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = asdf.Extractor{}
-			input := &filesystem.ScanInput{Path: tt.path, Reader: strings.NewReader(tt.content)}
-			got, err := e.Extract(context.Background(), input)
-			if err != nil {
-				t.Errorf("Extract(%s) unexpected error :\n%s", input, err.Error())
-			}
+			extr := asdf.Extractor{}
 
-			want := inventory.Inventory{Packages: tt.wantPackages}
+			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			got, _ := extr.Extract(t.Context(), &scanInput)
+
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.inputConfigFile.Path, diff)
 			}
 		})
 	}
