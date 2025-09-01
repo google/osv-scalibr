@@ -23,8 +23,14 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// maxTokenLength is the maximum size of a Docker Hub API key.
-const maxTokenLength = 36
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/dockerhubpat"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	// maxTokenLength is the maximum size of a Docker Hub API key.
+	maxTokenLength = 36
+)
 
 // patRe is a regular expression that matches a Docker Hub API key.
 // Docker Hub Personal Access Tokens have the form: `dckr_pat_` followed by 27

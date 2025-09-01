@@ -85,7 +85,16 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 )
 
 // InitFn is the extractor initializer function.
@@ -227,7 +236,16 @@ var (
 
 	// Credential extractors.
 	Secrets = InitMap{
-		secrets.Name: {secrets.New},
+		anthropicapikey.DetectorName:         {convert.FromVelesDetector(anthropicapikey.NewDetector(), anthropicapikey.DetectorName, anthropicapikey.DetectorVersion)},
+		dockerhubpat.DetectorName:            {convert.FromVelesDetector(dockerhubpat.NewDetector(), dockerhubpat.DetectorName, dockerhubpat.DetectorVersion)},
+		gcpapikey.DetectorName:               {convert.FromVelesDetector(gcpapikey.NewDetector(), gcpapikey.DetectorName, gcpapikey.DetectorVersion)},
+		gcpexpressmode.DetectorName:          {convert.FromVelesDetector(gcpexpressmode.NewDetector(), gcpexpressmode.DetectorName, gcpexpressmode.DetectorVersion)},
+		gcpsak.DetectorName:                  {convert.FromVelesDetector(gcpsak.NewDetector(), gcpsak.DetectorName, gcpsak.DetectorVersion)},
+		grokxaiapikey.APIDetectorName:        {convert.FromVelesDetector(grokxaiapikey.NewAPIKeyDetector(), grokxaiapikey.APIDetectorName, grokxaiapikey.APIDetectorVersion)},
+		grokxaiapikey.ManagementDetectorName: {convert.FromVelesDetector(grokxaiapikey.NewManagementKeyDetector(), grokxaiapikey.ManagementDetectorName, grokxaiapikey.ManagementDetectorVersion)},
+		perplexityapikey.DetectorName:        {convert.FromVelesDetector(perplexityapikey.NewDetector(), perplexityapikey.DetectorName, perplexityapikey.DetectorVersion)},
+		privatekey.DetectorName:              {convert.FromVelesDetector(privatekey.NewDetector(), privatekey.DetectorName, privatekey.DetectorVersion)},
+		rubygemsapikey.DetectorName:          {convert.FromVelesDetector(rubygemsapikey.NewDetector(), rubygemsapikey.DetectorName, rubygemsapikey.DetectorVersion)},
 	}
 
 	// Misc artifact extractors.

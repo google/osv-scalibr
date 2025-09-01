@@ -21,8 +21,14 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a GPC API key.
-const maxTokenLength = 39
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/gcpapikey"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	// maxTokenLength is the maximum size of a GPC API key.
+	maxTokenLength = 39
+)
 
 // keyRe is a regular expression that matches a GCP API key.
 var keyRe = regexp.MustCompile(`AIza[a-zA-Z0-9_-]{35}`)

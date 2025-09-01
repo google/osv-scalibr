@@ -38,6 +38,14 @@ import (
 )
 
 const (
+	// APIValidatorName is the name of the API key validator.
+	APIValidatorName = "secrets/grokxaiapikeyvalidate"
+	// APIValidatorVersion is the version of the API key validator.
+	APIValidatorVersion = 0
+	// ManagementValidatorName is the name of the Management key validator.
+	ManagementValidatorName = "secrets/grokxaimanagementkeyvalidate"
+	// ManagementValidatorVersion is the version of the Management key validator.
+	ManagementValidatorVersion = 0
 	// Used to validate standard API keys directly by checking blocked/disabled flags.
 	apiEndpoint = "https://api.x.ai/v1/api-key"
 	// Uses a dummy teamId since every management API request requires {teamId}.

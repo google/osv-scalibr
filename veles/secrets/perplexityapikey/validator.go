@@ -22,6 +22,13 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+const (
+	// ValidatorName is the name of this validator.
+	ValidatorName = "secrets/perplexityapikeyvalidate"
+	// ValidatorVersion is the version of this validator.
+	ValidatorVersion = 0
+)
+
 // Validator validates Perplexity API keys via the Perplexity API endpoint.
 type Validator struct {
 	httpC *http.Client

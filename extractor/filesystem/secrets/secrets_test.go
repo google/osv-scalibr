@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/velestest"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -99,7 +100,11 @@ func TestFileRequired(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			e := secrets.New()
+			engine, err := veles.NewDetectionEngine([]veles.Detector{gcpsak.NewDetector()})
+			if err != nil {
+				t.Fatalf("veles.NewDetectionEngine(gcpsak): %v", err)
+			}
+			e := secrets.NewWithEngine(engine)
 			if got := e.FileRequired(simplefileapi.New(tc.path, nil)); got != tc.want {
 				t.Errorf("FileRequired(%q) = %t, want %t", tc.path, got, tc.want)
 			}

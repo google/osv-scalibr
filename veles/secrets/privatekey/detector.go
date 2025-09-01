@@ -25,8 +25,14 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// PEM keys are typically a few KB
-const maxTokenLength = 1280 * 1024
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/privatekey"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	// PEM keys are typically a few KB
+	maxTokenLength = 1280 * 1024
+)
 
 // Regex to match PEM/OpenSSH key blocks
 var blockRe = regexp.MustCompile(`(?s)-----BEGIN (?:OPENSSH|RSA|DSA|EC|ED25519|ENCRYPTED)? ?PRIVATE KEY-----.*?-----END (?:OPENSSH|RSA|DSA|EC|ED25519|ENCRYPTED)? ?PRIVATE KEY-----`)

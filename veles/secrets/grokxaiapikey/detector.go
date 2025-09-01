@@ -41,8 +41,20 @@ var (
 	_ veles.Detector = NewManagementKeyDetector()
 )
 
-// API key: prefix `xai-` followed by 80 alphanumeric characters.
-const apiKeyMaxLen = 84
+const (
+	// There are two detectors: One for standard API keys and one for xAI Management keys.
+
+	// APIDetectorName is the name of the API key detector.
+	APIDetectorName = "secrets/grokxaiapikey"
+	// APIDetectorVersion is the version of the API key detector.
+	APIDetectorVersion = 0
+	// ManagementDetectorName is the name of the Management key detector.
+	ManagementDetectorName = "secrets/grokxaimanagementkey"
+	// ManagementDetectorVersion is the version of the Management key detector.
+	ManagementDetectorVersion = 0
+	// API key: prefix `xai-` followed by 80 alphanumeric characters.
+	apiKeyMaxLen = 84
+)
 
 var apiKeyRe = regexp.MustCompile(`xai-[A-Za-z0-9]{80}`)
 
