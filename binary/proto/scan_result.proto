@@ -636,6 +636,7 @@ message SecretData {
     AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
     AnthropicModelAPIKey anthropic_model_api_key = 3;
     PerplexityAPIKey perplexity = 4;
+    PrivateKey private_key = 5;
   }
 
   message GCPSAK {
@@ -671,6 +672,11 @@ message SecretData {
 
   message PerplexityAPIKey {
     string key = 1;
+  }
+
+  message PrivateKey {
+    string block = 1;  // PEM/OpenSSH private key block
+    bytes der = 2;     // DER-encoded key material
   }
 }
 
