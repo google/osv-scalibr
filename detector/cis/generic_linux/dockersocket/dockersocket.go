@@ -16,6 +16,7 @@
 package dockersocket
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -35,7 +36,7 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "cis/generic-linux/dockersocket"
+	Name = "dockersocket"
 )
 
 // Detector is a SCALIBR Detector for Docker socket exposure vulnerabilities.
@@ -56,7 +57,7 @@ func (Detector) Version() int { return 0 }
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Requirements of the Detector.
-func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSLinux} }
+func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSUnix} }
 
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
@@ -72,7 +73,7 @@ func (Detector) findingForTarget(target *inventory.GenericFindingTargetDetails) 
 	return inventory.Finding{GenericFindings: []*inventory.GenericFinding{{
 		Adv: &inventory.GenericFindingAdvisory{
 			ID: &inventory.AdvisoryID{
-				Publisher: "CIS",
+				Publisher: "SCALIBR",
 				Reference: "docker-socket-exposure",
 			},
 			Title: "Docker Socket Exposure Detection",
@@ -92,18 +93,33 @@ func (Detector) findingForTarget(target *inventory.GenericFindingTargetDetails) 
 func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	var issues []string
 
+	// Check for context timeout
+	if ctx.Err() != nil {
+		return inventory.Finding{}, ctx.Err()
+	}
+
 	// Check Docker socket file permissions
-	if socketIssues := d.checkDockerSocketPermissions(fsys); len(socketIssues) > 0 {
+	if socketIssues := d.checkDockerSocketPermissions(ctx, fsys); len(socketIssues) > 0 {
 		issues = append(issues, socketIssues...)
 	}
 
+	// Check for context timeout
+	if ctx.Err() != nil {
+		return inventory.Finding{}, ctx.Err()
+	}
+
 	// Check Docker daemon configuration
-	if daemonIssues := d.checkDockerDaemonConfig(fsys); len(daemonIssues) > 0 {
+	if daemonIssues := d.checkDockerDaemonConfig(ctx, fsys); len(daemonIssues) > 0 {
 		issues = append(issues, daemonIssues...)
 	}
 
+	// Check for context timeout
+	if ctx.Err() != nil {
+		return inventory.Finding{}, ctx.Err()
+	}
+
 	// Check systemd service configuration
-	if systemdIssues := d.checkSystemdServiceConfig(fsys); len(systemdIssues) > 0 {
+	if systemdIssues := d.checkSystemdServiceConfig(ctx, fsys); len(systemdIssues) > 0 {
 		issues = append(issues, systemdIssues...)
 	}
 
@@ -116,8 +132,13 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 }
 
 // checkDockerSocketPermissions checks /var/run/docker.sock for insecure permissions.
-func (d Detector) checkDockerSocketPermissions(fsys fs.FS) []string {
+func (d Detector) checkDockerSocketPermissions(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
+
+	// Check for context timeout
+	if ctx.Err() != nil {
+		return issues
+	}
 
 	f, err := fsys.Open("var/run/docker.sock")
 	if err != nil {
@@ -156,13 +177,13 @@ func (d Detector) checkDockerSocketPermissions(fsys fs.FS) []string {
 	return issues
 }
 
-// DockerDaemonConfig represents the structure of /etc/docker/daemon.json.
-type DockerDaemonConfig struct {
+// dockerDaemonConfig represents the structure of /etc/docker/daemon.json.
+type dockerDaemonConfig struct {
 	Hosts []string `json:"hosts"`
 }
 
 // checkDockerDaemonConfig checks /etc/docker/daemon.json for insecure host configurations.
-func (d Detector) checkDockerDaemonConfig(fsys fs.FS) []string {
+func (d Detector) checkDockerDaemonConfig(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	f, err := fsys.Open("etc/docker/daemon.json")
@@ -180,7 +201,7 @@ func (d Detector) checkDockerDaemonConfig(fsys fs.FS) []string {
 		return issues
 	}
 
-	var config DockerDaemonConfig
+	var config dockerDaemonConfig
 	if err := json.Unmarshal(content, &config); err != nil {
 		// Invalid JSON - potential issue but not our concern
 		return issues
@@ -188,9 +209,13 @@ func (d Detector) checkDockerDaemonConfig(fsys fs.FS) []string {
 
 	// Check for insecure host bindings
 	for _, host := range config.Hosts {
+		// Check for context timeout
+		if ctx.Err() != nil {
+			return issues
+		}
 		if strings.HasPrefix(host, "tcp://") {
 			// TCP binding without TLS - potential security issue
-			issues = append(issues, fmt.Sprintf("Insecure TCP binding in daemon.json: %s (consider using TLS)", host))
+			issues = append(issues, fmt.Sprintf("Insecure TCP binding in daemon.json: %q (consider using TLS)", host))
 		}
 	}
 
@@ -198,7 +223,7 @@ func (d Detector) checkDockerDaemonConfig(fsys fs.FS) []string {
 }
 
 // checkSystemdServiceConfig checks Docker systemd service files for insecure configurations.
-func (d Detector) checkSystemdServiceConfig(fsys fs.FS) []string {
+func (d Detector) checkSystemdServiceConfig(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	// Check common systemd service locations
@@ -209,7 +234,11 @@ func (d Detector) checkSystemdServiceConfig(fsys fs.FS) []string {
 	}
 
 	for _, path := range servicePaths {
-		if serviceIssues := d.checkSystemdServiceFile(fsys, path); len(serviceIssues) > 0 {
+		// Check for context timeout
+		if ctx.Err() != nil {
+			return issues
+		}
+		if serviceIssues := d.checkSystemdServiceFile(ctx, fsys, path); len(serviceIssues) > 0 {
 			issues = append(issues, serviceIssues...)
 		}
 	}
@@ -218,7 +247,7 @@ func (d Detector) checkSystemdServiceConfig(fsys fs.FS) []string {
 }
 
 // checkSystemdServiceFile checks a specific systemd service file for insecure Docker configurations.
-func (d Detector) checkSystemdServiceFile(fsys fs.FS, path string) []string {
+func (d Detector) checkSystemdServiceFile(ctx context.Context, fsys fs.FS, path string) []string {
 	var issues []string
 
 	f, err := fsys.Open(path)
@@ -231,20 +260,24 @@ func (d Detector) checkSystemdServiceFile(fsys fs.FS, path string) []string {
 	}
 	defer f.Close()
 
-	content, err := io.ReadAll(f)
-	if err != nil {
-		return issues
-	}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		// Check for context timeout
+		if ctx.Err() != nil {
+			return issues
+		}
 
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
+		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "ExecStart=") {
 			// Check for insecure -H tcp:// flags in ExecStart
 			if strings.Contains(line, "-H tcp://") && !strings.Contains(line, "--tls") {
-				issues = append(issues, fmt.Sprintf("Insecure TCP binding in %s: %s (missing TLS)", path, line))
+				issues = append(issues, fmt.Sprintf("Insecure TCP binding in %q: %q (missing TLS)", path, line))
 			}
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return issues
 	}
 
 	return issues

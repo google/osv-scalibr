@@ -16,8 +16,10 @@ package dockersocket
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/fs"
+	"strings"
 	"syscall"
 	"testing"
 	"testing/fstest"
@@ -28,6 +30,28 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
+
+// Helper functions for generating expected test issues
+
+func expectSocketWorldReadable(perms fs.FileMode) string {
+	return fmt.Sprintf("Docker socket is world-readable (permissions: %03o)", perms.Perm())
+}
+
+func expectSocketWorldWritable(perms fs.FileMode) string {
+	return fmt.Sprintf("Docker socket is world-writable (permissions: %03o)", perms.Perm())
+}
+
+func expectSocketNonRootOwner(uid uint32) string {
+	return fmt.Sprintf("Docker socket owner is not root (uid: %d)", uid)
+}
+
+func expectInsecureTCPBinding(host string) string {
+	return fmt.Sprintf("Insecure TCP binding in daemon.json: %q (consider using TLS)", host)
+}
+
+func expectInsecureSystemdBinding(path, line string) string {
+	return fmt.Sprintf("Insecure TCP binding in %q: %q (missing TLS)", path, line)
+}
 
 // fakeFileInfo implements fs.FileInfo for testing
 type fakeFileInfo struct {
@@ -77,35 +101,35 @@ func TestDockerSocketPermissions(t *testing.T) {
 		socketPerms fs.FileMode
 		uid         uint32
 		gid         uint32
-		wantIssues  int
+		wantIssues  []string
 	}{
 		{
 			name:        "secure socket permissions",
 			socketPerms: 0660, // rw-rw----
 			uid:         0,    // root
 			gid:         999,  // docker group
-			wantIssues:  0,
+			wantIssues:  nil,
 		},
 		{
 			name:        "world-readable socket",
 			socketPerms: 0664, // rw-rw-r--
 			uid:         0,
 			gid:         999,
-			wantIssues:  1,
+			wantIssues:  []string{expectSocketWorldReadable(0664)},
 		},
 		{
 			name:        "world-writable socket",
 			socketPerms: 0666, // rw-rw-rw-
 			uid:         0,
 			gid:         999,
-			wantIssues:  2, // both readable and writable
+			wantIssues:  []string{expectSocketWorldReadable(0666), expectSocketWorldWritable(0666)},
 		},
 		{
 			name:        "non-root owner",
 			socketPerms: 0660,
 			uid:         1000, // non-root
 			gid:         999,
-			wantIssues:  1,
+			wantIssues:  []string{expectSocketNonRootOwner(1000)},
 		},
 	}
 
@@ -140,10 +164,10 @@ func TestDockerSocketPermissions(t *testing.T) {
 			}
 
 			d := &Detector{}
-			issues := d.checkDockerSocketPermissions(customFS)
+			issues := d.checkDockerSocketPermissions(context.Background(), customFS)
 
-			if len(issues) != tt.wantIssues {
-				t.Errorf("checkDockerSocketPermissions() got %d issues, want %d: %v", len(issues), tt.wantIssues, issues)
+			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
+				t.Errorf("checkDockerSocketPermissions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -167,37 +191,37 @@ func TestDockerDaemonConfig(t *testing.T) {
 	tests := []struct {
 		name       string
 		config     string
-		wantIssues int
+		wantIssues []string
 	}{
 		{
 			name:       "secure config - no hosts",
 			config:     `{}`,
-			wantIssues: 0,
+			wantIssues: nil,
 		},
 		{
 			name:       "secure config - unix socket only",
 			config:     `{"hosts": ["unix:///var/run/docker.sock"]}`,
-			wantIssues: 0,
+			wantIssues: nil,
 		},
 		{
 			name:       "insecure config - tcp without tls",
 			config:     `{"hosts": ["tcp://0.0.0.0:2375"]}`,
-			wantIssues: 1,
+			wantIssues: []string{expectInsecureTCPBinding("tcp://0.0.0.0:2375")},
 		},
 		{
 			name:       "mixed config - both secure and insecure",
 			config:     `{"hosts": ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2375"]}`,
-			wantIssues: 1,
+			wantIssues: []string{expectInsecureTCPBinding("tcp://0.0.0.0:2375")},
 		},
 		{
 			name:       "multiple insecure hosts",
 			config:     `{"hosts": ["tcp://0.0.0.0:2375", "tcp://127.0.0.1:2376"]}`,
-			wantIssues: 2,
+			wantIssues: []string{expectInsecureTCPBinding("tcp://0.0.0.0:2375"), expectInsecureTCPBinding("tcp://127.0.0.1:2376")},
 		},
 		{
 			name:       "invalid json",
 			config:     `{invalid json}`,
-			wantIssues: 0, // Should not error on invalid JSON
+			wantIssues: nil, // Should not error on invalid JSON
 		},
 	}
 
@@ -210,10 +234,10 @@ func TestDockerDaemonConfig(t *testing.T) {
 			}
 
 			d := &Detector{}
-			issues := d.checkDockerDaemonConfig(fsys)
+			issues := d.checkDockerDaemonConfig(context.Background(), fsys)
 
-			if len(issues) != tt.wantIssues {
-				t.Errorf("checkDockerDaemonConfig() got %d issues, want %d: %v", len(issues), tt.wantIssues, issues)
+			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
+				t.Errorf("checkDockerDaemonConfig() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -223,7 +247,7 @@ func TestSystemdServiceConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		serviceFile string
-		wantIssues  int
+		wantIssues  []string
 	}{
 		{
 			name: "secure service - unix socket only",
@@ -235,7 +259,7 @@ ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock
 
 [Install]
 WantedBy=multi-user.target`,
-			wantIssues: 0,
+			wantIssues: nil,
 		},
 		{
 			name: "insecure service - tcp without tls",
@@ -247,7 +271,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375
 
 [Install]
 WantedBy=multi-user.target`,
-			wantIssues: 1,
+			wantIssues: []string{expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375")},
 		},
 		{
 			name: "secure service - tcp with tls",
@@ -259,7 +283,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2376 --tls --tlscert=/path/to/cert.p
 
 [Install]
 WantedBy=multi-user.target`,
-			wantIssues: 0,
+			wantIssues: nil,
 		},
 		{
 			name: "multiple ExecStart lines - some insecure",
@@ -272,7 +296,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375
 
 [Install]
 WantedBy=multi-user.target`,
-			wantIssues: 1,
+			wantIssues: []string{expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375")},
 		},
 	}
 
@@ -285,10 +309,80 @@ WantedBy=multi-user.target`,
 			}
 
 			d := &Detector{}
-			issues := d.checkSystemdServiceConfig(fsys)
+			issues := d.checkSystemdServiceConfig(context.Background(), fsys)
 
-			if len(issues) != tt.wantIssues {
-				t.Errorf("checkSystemdServiceConfig() got %d issues, want %d: %v", len(issues), tt.wantIssues, issues)
+			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
+				t.Errorf("checkSystemdServiceConfig() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSystemdServiceConfig_MultiplePaths(t *testing.T) {
+	// Test that the detector checks all possible systemd service paths
+	insecureService := `[Unit]
+Description=Docker Application Container Engine
+
+[Service]
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375
+
+[Install]
+WantedBy=multi-user.target`
+
+	tests := []struct {
+		name       string
+		files      map[string]string
+		wantIssues []string
+	}{
+		{
+			name: "service in /etc/systemd/system",
+			files: map[string]string{
+				"etc/systemd/system/docker.service": insecureService,
+			},
+			wantIssues: []string{expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375")},
+		},
+		{
+			name: "service in /lib/systemd/system",
+			files: map[string]string{
+				"lib/systemd/system/docker.service": `[Service]
+ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1:2376`,
+			},
+			wantIssues: []string{expectInsecureSystemdBinding("lib/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1:2376")},
+		},
+		{
+			name: "service in /usr/lib/systemd/system",
+			files: map[string]string{
+				"usr/lib/systemd/system/docker.service": `[Service]
+ExecStart=/usr/bin/dockerd -H tcp://192.168.1.1:2377`,
+			},
+			wantIssues: []string{expectInsecureSystemdBinding("usr/lib/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://192.168.1.1:2377")},
+		},
+		{
+			name: "multiple service files with issues",
+			files: map[string]string{
+				"etc/systemd/system/docker.service": insecureService,
+				"lib/systemd/system/docker.service": `[Service]
+ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378`,
+			},
+			wantIssues: []string{
+				expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375"),
+				expectInsecureSystemdBinding("lib/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fsys := fstest.MapFS{}
+			for path, content := range tt.files {
+				fsys[path] = &fstest.MapFile{Data: []byte(content)}
+			}
+
+			d := &Detector{}
+			issues := d.checkSystemdServiceConfig(context.Background(), fsys)
+
+			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
+				t.Errorf("checkSystemdServiceConfig() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -310,47 +404,132 @@ func TestScanFS_NoDocker(t *testing.T) {
 	}
 }
 
-func TestScanFS_WithIssues(t *testing.T) {
-	// Create filesystem with Docker socket and insecure daemon config
-	stat := &syscall.Stat_t{
-		Uid: 0,
-		Gid: 999,
-	}
-
-	fsys := fstest.MapFS{
-		"etc/docker/daemon.json": &fstest.MapFile{
-			Data: []byte(`{"hosts": ["tcp://0.0.0.0:2375"]}`),
+func TestScanFS_Integration(t *testing.T) {
+	tests := []struct {
+		name              string
+		setupFS           func() fs.FS
+		wantFindingCount  int
+		wantSeverity      inventory.SeverityEnum
+		wantIssuesContain []string
+	}{
+		{
+			name: "socket with world-readable and insecure daemon config",
+			setupFS: func() fs.FS {
+				stat := &syscall.Stat_t{Uid: 0, Gid: 999}
+				fsys := fstest.MapFS{
+					"etc/docker/daemon.json": &fstest.MapFile{
+						Data: []byte(`{"hosts": ["tcp://0.0.0.0:2375"]}`),
+					},
+				}
+				return &testFS{
+					MapFS: fsys,
+					sockFile: fakeFile{
+						MapFile: &fstest.MapFile{Data: []byte{}},
+						info: fakeFileInfo{
+							name:    "docker.sock",
+							mode:    0664, // world-readable
+							modTime: time.Now(),
+							sys:     stat,
+						},
+					},
+				}
+			},
+			wantFindingCount: 1,
+			wantSeverity:     inventory.SeverityHigh,
+			wantIssuesContain: []string{
+				"Docker socket is world-readable",
+				"Insecure TCP binding in daemon.json",
+			},
 		},
-	}
-
-	// Custom filesystem with insecure socket permissions
-	customFS := &testFS{
-		MapFS: fsys,
-		sockFile: fakeFile{
-			MapFile: &fstest.MapFile{Data: []byte{}},
-			info: fakeFileInfo{
-				name:    "docker.sock",
-				mode:    0666, // world-writable
-				modTime: time.Now(),
-				sys:     stat,
+		{
+			name: "multiple insecure systemd services",
+			setupFS: func() fs.FS {
+				insecureService := `[Service]
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375`
+				return fstest.MapFS{
+					"etc/systemd/system/docker.service": &fstest.MapFile{Data: []byte(insecureService)},
+					"lib/systemd/system/docker.service": &fstest.MapFile{Data: []byte(insecureService)},
+				}
+			},
+			wantFindingCount: 1,
+			wantSeverity:     inventory.SeverityHigh,
+			wantIssuesContain: []string{
+				"Insecure TCP binding in \"etc/systemd/system/docker.service\"",
+				"Insecure TCP binding in \"lib/systemd/system/docker.service\"",
+			},
+		},
+		{
+			name: "comprehensive security issues",
+			setupFS: func() fs.FS {
+				stat := &syscall.Stat_t{Uid: 1000, Gid: 999} // non-root owner
+				fsys := fstest.MapFS{
+					"etc/docker/daemon.json": &fstest.MapFile{
+						Data: []byte(`{"hosts": ["tcp://0.0.0.0:2375", "tcp://127.0.0.1:2376"]}`),
+					},
+					"etc/systemd/system/docker.service": &fstest.MapFile{
+						Data: []byte(`[Service]
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2377`),
+					},
+				}
+				return &testFS{
+					MapFS: fsys,
+					sockFile: fakeFile{
+						MapFile: &fstest.MapFile{Data: []byte{}},
+						info: fakeFileInfo{
+							name:    "docker.sock",
+							mode:    0666, // world-readable and writable
+							modTime: time.Now(),
+							sys:     stat,
+						},
+					},
+				}
+			},
+			wantFindingCount: 1,
+			wantSeverity:     inventory.SeverityHigh,
+			wantIssuesContain: []string{
+				"Docker socket is world-readable",
+				"Docker socket is world-writable",
+				"Docker socket owner is not root",
+				"tcp://0.0.0.0:2375",
+				"tcp://127.0.0.1:2376",
+				"tcp://0.0.0.0:2377",
 			},
 		},
 	}
 
-	d := &Detector{}
-	finding, err := d.ScanFS(context.Background(), customFS, &packageindex.PackageIndex{})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Detector{}
+			finding, err := d.ScanFS(context.Background(), tt.setupFS(), &packageindex.PackageIndex{})
 
-	if err != nil {
-		t.Errorf("ScanFS() returned error: %v", err)
-	}
+			if err != nil {
+				t.Errorf("ScanFS() returned error: %v", err)
+			}
 
-	if len(finding.GenericFindings) != 1 {
-		t.Errorf("ScanFS() expected 1 finding, got %d", len(finding.GenericFindings))
-	}
+			if len(finding.GenericFindings) != tt.wantFindingCount {
+				t.Errorf("ScanFS() expected %d findings, got %d", tt.wantFindingCount, len(finding.GenericFindings))
+			}
 
-	if finding.GenericFindings[0].Adv.Sev != inventory.SeverityHigh {
-		t.Errorf("ScanFS() expected SeverityHigh, got %v", finding.GenericFindings[0].Adv.Sev)
+			if tt.wantFindingCount > 0 && len(finding.GenericFindings) > 0 {
+				if finding.GenericFindings[0].Adv.Sev != tt.wantSeverity {
+					t.Errorf("ScanFS() expected %v severity, got %v", tt.wantSeverity, finding.GenericFindings[0].Adv.Sev)
+				}
+
+				// Check that all expected issue substrings are present in the target extra field
+				extra := finding.GenericFindings[0].Target.Extra
+				for _, expectedSubstring := range tt.wantIssuesContain {
+					if !contains(extra, expectedSubstring) {
+						t.Errorf("ScanFS() expected issues to contain %q, but got: %s", expectedSubstring, extra)
+					}
+				}
+			}
+		})
 	}
+}
+
+// Helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
 
 func TestDetectorInterface(t *testing.T) {
@@ -369,8 +548,8 @@ func TestDetectorInterface(t *testing.T) {
 	}
 
 	reqs := d.Requirements()
-	if reqs.OS != plugin.OSLinux {
-		t.Errorf("Requirements().OS = %q, want %q", reqs.OS, plugin.OSLinux)
+	if reqs.OS != plugin.OSUnix {
+		t.Errorf("Requirements().OS = %q, want %q", reqs.OS, plugin.OSUnix)
 	}
 
 	// Test DetectedFinding
@@ -380,7 +559,7 @@ func TestDetectorInterface(t *testing.T) {
 	}
 
 	expectedID := &inventory.AdvisoryID{
-		Publisher: "CIS",
+		Publisher: "SCALIBR",
 		Reference: "docker-socket-exposure",
 	}
 
