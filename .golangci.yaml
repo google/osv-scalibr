@@ -9,9 +9,10 @@ linters:
   disable:
     - cyclop           #
     - depguard         #
+    - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
-    - exhaustive       # TODO(#274): work on enabling this
     - exhaustruct      #
+    - exhaustive       # TODO(#1225): work on enabling this
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
@@ -53,10 +54,6 @@ linters:
     gocritic:
       disabled-checks:
         - ifElseChain
-    usetesting:
-      # TODO(#274): work on enabling this
-      os-chdir: false
-      context-background: false
     revive:
       rules:
         - name: blank-imports
@@ -113,8 +110,6 @@ linters:
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
         - -QF1008 # remove embedded field from selector
-        - -QF1011 # omit type from declaration; it will be inferred from the right-hand side
-        - -ST1023 # omit type from declaration; it will be inferred from the right-hand side
   exclusions:
     generated: lax
     presets:
@@ -122,9 +117,6 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - linters:
-          - dupl
-        path: _test\.go
       - path: veles/
         linters:
           - forbidigo  # Parallel tests are fine and in some places needed for Veles.

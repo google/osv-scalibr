@@ -18,7 +18,6 @@
 package containerd_test
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"slices"
@@ -174,12 +173,12 @@ func TestExtract(t *testing.T) {
 			}
 
 			var input *standalone.ScanInput
-			cli, err := fakeclient.NewFakeCtrdClient(context.Background(), tt.nssTaskIDs, tt.tsks, tt.ctrs)
+			cli, err := fakeclient.NewFakeCtrdClient(t.Context(), tt.nssTaskIDs, tt.tsks, tt.ctrs)
 			if err != nil {
 				t.Fatalf("NewFakeCtrdClient() error: %v", err)
 			}
 			e := plugin.NewWithClient(&cli, "test")
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}

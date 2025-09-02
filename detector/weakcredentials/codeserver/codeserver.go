@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -64,10 +65,12 @@ const (
 	// by the number of HTTP requests.
 	defaultClientTimeout = 1 * time.Second
 
-	// This target will specifically target a local instance of Code-Server. Note that we use the
-	// hostname to avoid dealing with IPv4 vs IPv6.
-	defaultAddress = "localhost"
-	defaultPort    = 49363
+	// This target will specifically target a local instance of Code-Server. Note that we use
+	// 127.0.0.2 to exclude instances only listening on localhost.
+	defaultAddress = "127.0.0.2"
+	// The default address for MacOS, as only 127.0.0.1 is enabled by default.
+	defaultMacOSAddress = "localhost"
+	defaultPort         = 49363
 )
 
 // Patterns to differentiate enabled authentication from disabled.
@@ -90,8 +93,16 @@ type Detector struct {
 
 // DefaultConfig returns the default config for this detector.
 func DefaultConfig() Config {
+	return defaultConfigWithOS(runtime.GOOS)
+}
+
+func defaultConfigWithOS(os string) Config {
+	address := defaultAddress
+	if os == "darwin" {
+		address = defaultMacOSAddress
+	}
 	return Config{
-		Remote:        "http://" + net.JoinHostPort(defaultAddress, strconv.Itoa(defaultPort)),
+		Remote:        "http://" + net.JoinHostPort(address, strconv.Itoa(defaultPort)),
 		ClientTimeout: defaultClientTimeout,
 	}
 }

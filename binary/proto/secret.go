@@ -21,7 +21,10 @@ import (
 
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
@@ -85,10 +88,18 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 
 func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
+	case velesprivatekey.PrivateKey:
+		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case velesanthropicapikey.WorkspaceAPIKey:
+		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
+	case velesanthropicapikey.ModelAPIKey:
+		return anthropicModelAPIKeyToProto(t.Key), nil
+	case velesperplexity.PerplexityAPIKey:
+		return perplexityAPIKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -123,6 +134,47 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func anthropicWorkspaceAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AnthropicWorkspaceApiKey{
+			AnthropicWorkspaceApiKey: &spb.SecretData_AnthropicWorkspaceAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
+func anthropicModelAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AnthropicModelApiKey{
+			AnthropicModelApiKey: &spb.SecretData_AnthropicModelAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
+func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Perplexity{
+			Perplexity: &spb.SecretData_PerplexityAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PrivateKey_{
+			PrivateKey: &spb.SecretData_PrivateKey{
+				Block: pk.Block,
+				Der:   pk.Der,
+			},
 		},
 	}
 }
@@ -203,10 +255,18 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 
 func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
+	case *spb.SecretData_PrivateKey_:
+		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_AnthropicWorkspaceApiKey:
+		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
+	case *spb.SecretData_AnthropicModelApiKey:
+		return velesanthropicapikey.ModelAPIKey{Key: s.GetAnthropicModelApiKey().GetKey()}, nil
+	case *spb.SecretData_Perplexity:
+		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -238,6 +298,19 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
+	return velesperplexity.PerplexityAPIKey{
+		Key: kPB.GetKey(),
+	}
+}
+
+func privatekeyToStruct(pkPB *spb.SecretData_PrivateKey) velesprivatekey.PrivateKey {
+	return velesprivatekey.PrivateKey{
+		Block: pkPB.GetBlock(),
+		Der:   pkPB.GetDer(),
+	}
 }
 
 func validationResultToStruct(r *spb.SecretStatus) (inventory.SecretValidationResult, error) {

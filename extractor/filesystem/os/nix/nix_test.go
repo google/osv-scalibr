@@ -15,7 +15,6 @@
 package nix_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -71,7 +70,7 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	var e filesystem.Extractor = nix.New()
+	var e = nix.New()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -200,7 +199,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nix.New()
+			var e = nix.New()
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
@@ -213,7 +212,7 @@ func TestExtract(t *testing.T) {
 				Info:   nil,
 			}
 
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 
 			if err != nil {
 				t.Errorf("err = %v", err)

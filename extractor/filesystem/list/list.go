@@ -74,11 +74,13 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
@@ -215,6 +217,8 @@ var (
 		flatpak.Name:  {flatpak.NewDefault},
 		homebrew.Name: {homebrew.New},
 		macapps.Name:  {macapps.NewDefault},
+		macports.Name: {macports.New},
+		winget.Name:   {winget.NewDefault},
 	}
 
 	// Credential extractors.
