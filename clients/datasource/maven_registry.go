@@ -225,6 +225,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	if snapshot == "" {
 		snapshot = version
 	}
+	log.Infof("Getting project %s:%s version %s (snapshot: %s) from registry %s", groupID, artifactID, version, snapshot, registry.ID)
 
 	var project maven.Project
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
@@ -236,6 +237,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 
 // getVersionMetadata fetches a version level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID, version string) (maven.Metadata, error) {
+	log.Infof("Getting version metadata for %s:%s@%s from registry %s", groupID, artifactID, version, registry.ID)
 	var metadata maven.Metadata
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
@@ -246,6 +248,7 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
+	log.Infof("Getting artifact metadata for %s:%s from registry %s", groupID, artifactID, registry.ID)
 	var metadata maven.Metadata
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
@@ -263,6 +266,9 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			defer file.Close()
 			// We can still fetch the file from upstream if error is not nil.
 			return NewMavenDecoder(file).Decode(dst)
+		}
+		if !os.IsNotExist(err) {
+			log.Warnf("Error reading from local cache %s: %v", filePath, err)
 		}
 	}
 
@@ -284,7 +290,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		if filePath != "" {
+		if filePath != "" && resp.StatusCode == http.StatusOK {
 			if err := writeFile(filePath, b); err != nil {
 				log.Warnf("failed to write response to %s: %v", u, err)
 			}
@@ -293,6 +299,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		return response{StatusCode: resp.StatusCode, Body: b}, nil
 	})
 	if err != nil {
+		log.Warnf("failed to get response from %s: %v", u, err)
 		return err
 	}
 
