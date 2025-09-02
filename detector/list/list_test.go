@@ -49,8 +49,14 @@ func TestDetectorsFromName(t *testing.T) {
 			desc: "Find all detectors of a type",
 			name: "cis",
 			wantDets: []string{
-				"cis/generic-linux/dockersocket",
 				"cis/generic-linux/etcpasswdpermissions",
+			},
+		},
+		{
+			desc: "Find misc detectors",
+			name: "misc",
+			wantDets: []string{
+				"dockersocket",
 			},
 		},
 		{
