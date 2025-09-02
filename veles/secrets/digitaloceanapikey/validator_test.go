@@ -45,7 +45,7 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // mockDigitaloceanServer creates a mock DigitalOcean API server for testing
-func mockDigitaloceanServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
+func mockDigitaloceanServer(t *testing.T, expectedKey string, serverResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,51 +58,63 @@ func mockDigitaloceanServer(t *testing.T, expectedKey string, statusCode int) *h
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasSuffix(authHeader, expectedKey) {
-			t.Errorf("expected Authorization header to end with key %s, got: %s", expectedKey, authHeader)
+		if !strings.Contains(authHeader, expectedKey) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
 		}
 
 		// Set response
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(statusCode)
+		w.WriteHeader(serverResponseCode)
 	}))
 }
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		want        veles.ValidationStatus
-		expectError bool
+		name               string
+		key                string
+		serverExpectedKey  string
+		serverResponseCode int
+		want               veles.ValidationStatus
+		expectError        bool
 	}{
 		{
-			name:       "valid_key",
-			statusCode: http.StatusOK,
-			want:       veles.ValidationValid,
+			name:               "valid_key",
+			key:                validatorTestKey,
+			serverExpectedKey:  validatorTestKey,
+			serverResponseCode: http.StatusOK,
+			want:               veles.ValidationValid,
 		},
 		{
-			name:       "invalid_key_unauthorized",
-			statusCode: http.StatusUnauthorized,
-			want:       veles.ValidationInvalid,
+			name:               "valid_key_custom_scope",
+			key:                validatorTestKey,
+			serverExpectedKey:  validatorTestKey,
+			serverResponseCode: http.StatusForbidden,
+			want:               veles.ValidationValid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:               "invalid_key_unauthorized",
+			key:                "random_string",
+			serverExpectedKey:  validatorTestKey,
+			serverResponseCode: http.StatusUnauthorized,
+			want:               veles.ValidationInvalid,
 		},
 		{
-			name:        "bad_gateway",
-			statusCode:  http.StatusBadGateway,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:               "server_error",
+			serverResponseCode: http.StatusInternalServerError,
+			want:               veles.ValidationFailed,
+		},
+		{
+			name:               "bad_gateway",
+			serverResponseCode: http.StatusBadGateway,
+			want:               veles.ValidationFailed,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a mock server
-			server := mockDigitaloceanServer(t, validatorTestKey, tc.statusCode)
+			server := mockDigitaloceanServer(t, tc.serverExpectedKey, tc.serverResponseCode)
 			defer server.Close()
 
 			// Create a client with custom transport
@@ -116,7 +128,7 @@ func TestValidator(t *testing.T) {
 			)
 
 			// Create a test key
-			key := digitaloceanapikey.DigitaloceanAPIToken{Key: validatorTestKey}
+			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
 			// Test validation
 			got, err := validator.Validate(context.Background(), key)

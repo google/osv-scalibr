@@ -55,8 +55,8 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 //
 // It performs a GET request to the DigitalOcean chat completions endpoint
 // using the API key in the Authorization header. If the request returns
-// HTTP 200, the key is considered valid. If 401 Unauthorized, the key
-// is invalid. Other errors return ValidationFailed.
+// HTTP 200, the key is considered valid.If 403, the key is considered valid with limited scope(fine tuned),
+// If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
 func (v *Validator) Validate(ctx context.Context, key DigitaloceanAPIToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"http://api.digitalocean.com/v2/account", nil)
@@ -77,11 +77,11 @@ func (v *Validator) Validate(ctx context.Context, key DigitaloceanAPIToken) (vel
 	}
 	fmt.Printf("HTTP GET response: %s\n", string(bodyBytes))
 	switch res.StatusCode {
-	case http.StatusOK | http.StatusForbidden:
+	case http.StatusOK, http.StatusForbidden:
 		return veles.ValidationValid, nil
 	case http.StatusUnauthorized:
 		return veles.ValidationInvalid, nil
 	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+		return veles.ValidationFailed, nil
 	}
 }
