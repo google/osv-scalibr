@@ -20,29 +20,34 @@ import (
 	"testing"
 
 	"deps.dev/util/resolve"
+	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
-func TestReadRequirements(t *testing.T) {
-	fsys := fs.DirFS("./testdata/requirements")
-	pypiRW, _ := GetRequirementsReadWriter()
-	got, err := pypiRW.Read("requirements.txt", fsys)
+func TestReadPoetry(t *testing.T) {
+	fsys := fs.DirFS("./testdata/poetry")
+	poetryRW, _ := GetPoetryReadWriter()
+	got, err := poetryRW.Read("pyproject.toml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
 	}
+
+	var optionalType dep.Type
+	optionalType.AddAttr(dep.Opt, "")
+
 	want := testManifest{
-		FilePath: "requirements.txt",
+		FilePath: "pyproject.toml",
 		Root: resolve.Version{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.PyPI,
-					Name:   "myproject",
+					Name:   "my-project",
 				},
 				VersionType: resolve.Concrete,
-				Version:     "1.0.0",
+				Version:     "1.2.3",
 			},
 		},
 		System: resolve.PyPI,
@@ -51,92 +56,77 @@ func TestReadRequirements(t *testing.T) {
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
-						Name:   "pytest",
-					},
-					VersionType: resolve.Requirement,
-				},
-			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.PyPI,
-						Name:   "pytest-cov",
-					},
-					VersionType: resolve.Requirement,
-				},
-			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.PyPI,
-						Name:   "beautifulsoup4",
-					},
-					VersionType: resolve.Requirement,
-				},
-			},
-
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.PyPI,
-						Name:   "docopt",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "== 0.6.1",
-				},
-			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.PyPI,
 						Name:   "requests",
 					},
+					Version:     "~=2.25.1",
 					VersionType: resolve.Requirement,
-					Version:     ">= 2.8.1, == 2.8.*",
-				},
-			},
-
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.PyPI,
-						Name:   "keyring",
-					},
-					VersionType: resolve.Requirement,
-					Version:     ">= 4.1.1",
 				},
 			},
 			{
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
-						Name:   "coverage",
+						Name:   "numpy",
 					},
+					Version:     "==1.22.0",
 					VersionType: resolve.Requirement,
-					Version:     "!= 3.5",
 				},
 			},
-
 			{
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
 						System: resolve.PyPI,
-						Name:   "Mopidy-Dirble",
+						Name:   "django",
 					},
+					Version:     ">2.1,<3.0",
 					VersionType: resolve.Requirement,
-					Version:     "~=1.1",
 				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "django",
+					},
+					Version:     ">2.0,<3.0",
+					VersionType: resolve.Requirement,
+				},
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "pytest",
+					},
+					Version:     ">=6.2.5",
+					VersionType: resolve.Requirement,
+				},
+				Type: optionalType,
+			},
+			{
+				VersionKey: resolve.VersionKey{
+					PackageKey: resolve.PackageKey{
+						System: resolve.PyPI,
+						Name:   "black",
+					},
+					Version:     "==22.3.0",
+					VersionType: resolve.Requirement,
+				},
+				Type: optionalType,
 			},
 		},
-		Groups: map[manifest.RequirementKey][]string{},
+		Groups: map[manifest.RequirementKey][]string{
+			manifest.RequirementKey(resolve.PackageKey{System: resolve.PyPI, Name: "pytest"}): {"dev"},
+			manifest.RequirementKey(resolve.PackageKey{System: resolve.PyPI, Name: "black"}):  {"dev"},
+		},
 	}
 	checkManifest(t, "Manifest", got, want)
 }
 
-func TestWriteRequirements(t *testing.T) {
-	rw, _ := GetRequirementsReadWriter()
-	fsys := fs.DirFS("./testdata/requirements")
-	manif, err := rw.Read("requirements.txt", fsys)
+func TestWritePoetry(t *testing.T) {
+	rw, _ := GetPoetryReadWriter()
+	fsys := fs.DirFS("./testdata/poetry")
+	manif, err := rw.Read("pyproject.toml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
 	}
@@ -145,47 +135,56 @@ func TestWriteRequirements(t *testing.T) {
 		{
 			PackageUpdates: []result.PackageUpdate{
 				{
-					Name:        "docopt",
-					VersionFrom: "==0.6.1",
-					VersionTo:   "==0.6.2",
-				},
-			},
-		},
-		{
-			PackageUpdates: []result.PackageUpdate{
-				{
 					Name:        "requests",
-					VersionFrom: ">=2.8.1,==2.8.*",
-					VersionTo:   ">=2.32.4,<3.0.0",
+					VersionFrom: "~=2.25.1",
+					VersionTo:   ">=2.26.0,<3.0.0",
 				},
 			},
 		},
 		{
 			PackageUpdates: []result.PackageUpdate{
 				{
-					Name:        "mopidy-dirble",
-					VersionFrom: "~=1.1",
-					VersionTo:   ">=1.3.0,<2.0.0",
+					Name:        "black",
+					VersionFrom: "==22.3.0",
+					VersionTo:   "==23.0.0",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "django",
+					VersionFrom: ">2.1,<3.0",
+					VersionTo:   ">=3.1,<4.0",
+				},
+			},
+		},
+		{
+			PackageUpdates: []result.PackageUpdate{
+				{
+					Name:        "django",
+					VersionFrom: ">2.0,<3.0",
+					VersionTo:   ">=3.0,<4.0",
 				},
 			},
 		},
 	}
 	outDir := t.TempDir()
-	outFile := filepath.Join(outDir, "requirements.txt")
+	outFile := filepath.Join(outDir, "pyproject.toml")
 
 	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
-		t.Fatalf("failed to write requirements.txt: %v", err)
+		t.Fatalf("failed to write manifest: %v", err)
 	}
 
 	got, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatalf("failed to read got requirements.txt: %v", err)
+		t.Fatalf("failed to read got pyproject.toml: %v", err)
 	}
-	want, err := os.ReadFile(filepath.Join("./testdata/requirements", "want.requirements.txt"))
+	want, err := os.ReadFile(filepath.Join("./testdata/poetry", "want.pyproject.toml"))
 	if err != nil {
-		t.Fatalf("failed to read want requirements.txt: %v", err)
+		t.Fatalf("failed to read want pyproject.toml: %v", err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("requirements.txt (-want +got):\n%s", diff)
+		t.Errorf("pyproject.toml (-want +got):\n%s", diff)
 	}
 }
