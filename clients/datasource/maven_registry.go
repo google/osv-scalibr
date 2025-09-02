@@ -193,6 +193,7 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 				break
 			}
 		}
+
 		project, err := m.getProject(ctx, registry, groupID, artifactID, version, snapshot)
 		if err == nil {
 			return project, nil
@@ -224,7 +225,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	if snapshot == "" {
 		snapshot = version
 	}
-	log.Infof("Getting project %s:%s version %s (snapshot: %s) from registry %s", groupID, artifactID, version, snapshot, registry.ID)
+	log.Infof("Getting project %s:%s version %s (snapshot: %s) from registry %s", groupID, artifactID, version, snapshot, registry.Parsed.String())
 
 	var project maven.Project
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
@@ -247,7 +248,7 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
-	log.Infof("Getting artifact metadata for %s:%s from registry %s", groupID, artifactID, registry.ID)
+	log.Infof("Getting artifact metadata for %s:%s from registry %s", groupID, artifactID, registry.Parsed.String())
 	var metadata maven.Metadata
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
