@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -65,6 +66,7 @@ func init() { //nolint:gochecknoinits
 	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
 		anthropicapikey.NewDetector(),
 		gcpsak.NewDetector(),
+		digitaloceanapikey.NewDetector(),
 		perplexityapikey.NewDetector(),
 		privatekey.NewDetector(),
 	})

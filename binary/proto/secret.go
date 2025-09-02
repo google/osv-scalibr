@@ -27,6 +27,7 @@ import (
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -91,6 +92,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case velesdigitalocean.DigitaloceanAPIToken:
+		return digitaloceanAPIKeyToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -99,6 +102,15 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return perplexityAPIKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Digitalocean{
+			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
+				Key: s.Key,
+			},
+		},
 	}
 }
 
@@ -247,6 +259,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_Digitalocean:
+		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -255,6 +269,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
+	}
+}
+
+func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
+	return velesdigitalocean.DigitaloceanAPIToken{
+		Key: kPB.GetKey(),
 	}
 }
 

@@ -637,8 +637,13 @@ message SecretData {
     AnthropicModelAPIKey anthropic_model_api_key = 3;
     PerplexityAPIKey perplexity = 4;
     PrivateKey private_key = 5;
+    DigitalOceanAPIToken digitalocean = 6;
   }
 
+  message DigitalOceanAPIToken {
+    string key = 1;
+  }
+  
   message GCPSAK {
     // Always filled.
     string private_key_id = 1;
