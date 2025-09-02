@@ -1,6 +1,6 @@
 module github.com/google/osv-scalibr
 
-go 1.24.0
+go 1.24.4
 
 require (
 	deps.dev/api/v3 v3.0.0-20250616031631-419a06b41f9b
@@ -35,7 +35,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20250527054414-66246866dc20
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20250805051309-c463400aa925
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
@@ -50,7 +50,7 @@ require (
 	golang.org/x/crypto v0.39.0
 	golang.org/x/mod v0.25.0
 	golang.org/x/net v0.41.0
-	golang.org/x/sync v0.15.0
+	golang.org/x/sync v0.16.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/term v0.32.0
 	golang.org/x/text v0.26.0
@@ -60,6 +60,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.38.0
+	osv.dev/bindings/go v0.0.0-20250808040635-c189436f8791
 	www.velocidex.com/golang/regparser v0.0.0-20250203141505-31e704a67ef7
 )
 

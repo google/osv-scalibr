@@ -61,7 +61,7 @@ func TestMakeEcosystemAPK(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
@@ -95,22 +95,22 @@ func TestMakeEcosystemDebian(t *testing.T) {
 			want: "Debian:12",
 		},
 		{
-			desc: "OS ID present (OpenWrt)",
+			desc: "OS ID present (OpenWrt), not valid ecosystem, so ecosystem should be empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID: "openwrt",
 			},
-			want: "Openwrt",
+			want: "",
 		},
 		{
-			desc: "OS version present (OpenWrt)",
+			desc: "OS version present (OpenWrt), not valid ecosystem, ecosystem should be empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID:        "openwrt",
 				OSVersionID: "22.03.5",
 			},
-			want: "Openwrt:22.03.5",
+			want: "",
 		},
 		{
-			desc: "OS version present (Generic Linux)",
+			desc: "OS version present (Generic Linux), not valid ecosystem, ecosystem should be empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID:        "linux",
 				OSVersionID: "5",
@@ -121,7 +121,7 @@ func TestMakeEcosystemDebian(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
@@ -139,7 +139,7 @@ func TestEcosystemPacman(t *testing.T) {
 			metadata: &pacmanmeta.Metadata{
 				OSID: "arch",
 			},
-			want: "Arch",
+			want: "",
 		},
 		{
 			desc:     "OS ID not present",
@@ -152,13 +152,13 @@ func TestEcosystemPacman(t *testing.T) {
 				OSID:        "arch",
 				OSVersionID: "20241201.0.284684",
 			},
-			want: "Arch:20241201.0.284684",
+			want: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
@@ -176,7 +176,7 @@ func TestEcosystemPortage(t *testing.T) {
 			metadata: &portagemeta.Metadata{
 				OSID: "gentoo",
 			},
-			want: "Gentoo",
+			want: "",
 		},
 		{
 			desc:     "OS ID not present",
@@ -189,13 +189,13 @@ func TestEcosystemPortage(t *testing.T) {
 				OSID:        "gentoo",
 				OSVersionID: "2.17",
 			},
-			want: "Gentoo:2.17",
+			want: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
@@ -231,7 +231,7 @@ func TestEcosystemRPM(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
@@ -260,7 +260,7 @@ func TestEcosystemSnap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := ecosystem.MakeEcosystem(tt.metadata)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
 				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
 			}
 		})

@@ -52,13 +52,13 @@ func toPURLType(ecosystem string) string {
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Package.
 func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
-	resolveSys := util.OSVToDepsDevEcosystem(osvschema.Ecosystem(pkg.Ecosystem()))
+	resolveSys := util.OSVToDepsDevEcosystem(pkg.Ecosystem().Ecosystem)
 	if resolveSys == resolve.UnknownSystem {
 		return false
 	}
 	sys := resolveSys.Semver()
 	for _, affected := range vuln.Affected {
-		if affected.Package.Ecosystem != pkg.Ecosystem() ||
+		if affected.Package.Ecosystem != pkg.Ecosystem().String() ||
 			affected.Package.Name != pkg.Name {
 			continue
 		}
