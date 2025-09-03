@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dockercomposeimage extracts base image urls from Dockerfiles.
+// Package dockercomposeimage extracts image urls from Docker Compose files.
 package dockercomposeimage
 
 import (
@@ -46,12 +46,6 @@ const (
 	DefaultMaxFileSizeBytes = 1 * units.MiB
 )
 
-var (
-	// dockerBaseContainers is a list of reserved terms/base containers that can be used within a
-	// Dockerfile (e.g. "scratch" is Docker's reserved, minimal image) and require special handling.
-	dockerBaseContainers = []string{"scratch"}
-)
-
 // Config is the configuration for the Extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
@@ -68,13 +62,13 @@ func DefaultConfig() Config {
 	}
 }
 
-// Extractor extracts repository URLs from Dockerfiles.
+// Extractor extracts repository URLs from Docker Compose files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a Dockerfile repository extractor.
+// New returns a Docker Compose repository extractor.
 //
 // For most use cases, initialize with:
 // ```
@@ -99,7 +93,7 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired returns true if the specified file matches Dockerfile.
+// FileRequired returns true if the specified file matches Docker Compose Configuration File.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	// Skip directories and oversized files
@@ -126,7 +120,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return ok
 }
 
-// Extract extracts base image urls from a Dockerfile.
+// Extract extracts image urls from a Docker Compose File.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
