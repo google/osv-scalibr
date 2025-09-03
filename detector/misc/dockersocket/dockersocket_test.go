@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -30,6 +31,12 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 )
+
+func init() {
+	if runtime.GOOS == "windows" {
+		fmt.Printf("Test skipped, OS unsupported: %v\n", runtime.GOOS)
+	}
+}
 
 // Helper functions for generating expected test issues
 
