@@ -140,15 +140,11 @@ func TestDockerSocketPermissions(t *testing.T) {
 				Gid: tt.gid,
 			}
 
-			fsys := fstest.MapFS{
-				"var/run/docker.sock": &fstest.MapFile{
-					Data: []byte{}, // Empty content, we're testing permissions
-				},
-			}
+			fsys := fstest.MapFS{}
 
 			// Override the file with our custom info
 			file := fakeFile{
-				MapFile: fsys["var/run/docker.sock"],
+				MapFile: &fstest.MapFile{Data: []byte{}},
 				info: fakeFileInfo{
 					name:    "docker.sock",
 					mode:    tt.socketPerms,
@@ -164,10 +160,31 @@ func TestDockerSocketPermissions(t *testing.T) {
 			}
 
 			d := &Detector{}
-			issues := d.checkDockerSocketPermissions(context.Background(), customFS)
+			finding, err := d.ScanFS(context.Background(), customFS, &packageindex.PackageIndex{})
 
-			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
-				t.Errorf("checkDockerSocketPermissions() mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("ScanFS() returned error: %v", err)
+			}
+
+			var actualIssues []string
+			if len(finding.GenericFindings) > 0 {
+				// Extract issues from the Extra field
+				extra := finding.GenericFindings[0].Target.Extra
+				if extra != "" {
+					actualIssues = strings.Split(extra, "; ")
+				}
+			}
+
+			// Filter to only socket-related issues for this test
+			var socketIssues []string
+			for _, issue := range actualIssues {
+				if strings.Contains(issue, "Docker socket") {
+					socketIssues = append(socketIssues, issue)
+				}
+			}
+
+			if diff := cmp.Diff(tt.wantIssues, socketIssues); diff != "" {
+				t.Errorf("Socket permissions test mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -234,10 +251,31 @@ func TestDockerDaemonConfig(t *testing.T) {
 			}
 
 			d := &Detector{}
-			issues := d.checkDockerDaemonConfig(context.Background(), fsys)
+			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
 
-			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
-				t.Errorf("checkDockerDaemonConfig() mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("ScanFS() returned error: %v", err)
+			}
+
+			var actualIssues []string
+			if len(finding.GenericFindings) > 0 {
+				// Extract issues from the Extra field
+				extra := finding.GenericFindings[0].Target.Extra
+				if extra != "" {
+					actualIssues = strings.Split(extra, "; ")
+				}
+			}
+
+			// Filter to only daemon config related issues for this test
+			var daemonIssues []string
+			for _, issue := range actualIssues {
+				if strings.Contains(issue, "daemon.json") {
+					daemonIssues = append(daemonIssues, issue)
+				}
+			}
+
+			if diff := cmp.Diff(tt.wantIssues, daemonIssues); diff != "" {
+				t.Errorf("Daemon config test mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -309,10 +347,31 @@ WantedBy=multi-user.target`,
 			}
 
 			d := &Detector{}
-			issues := d.checkSystemdServiceConfig(context.Background(), fsys)
+			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
 
-			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
-				t.Errorf("checkSystemdServiceConfig() mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("ScanFS() returned error: %v", err)
+			}
+
+			var actualIssues []string
+			if len(finding.GenericFindings) > 0 {
+				// Extract issues from the Extra field
+				extra := finding.GenericFindings[0].Target.Extra
+				if extra != "" {
+					actualIssues = strings.Split(extra, "; ")
+				}
+			}
+
+			// Filter to only systemd service related issues for this test
+			var systemdIssues []string
+			for _, issue := range actualIssues {
+				if strings.Contains(issue, "systemd") || strings.Contains(issue, ".service") {
+					systemdIssues = append(systemdIssues, issue)
+				}
+			}
+
+			if diff := cmp.Diff(tt.wantIssues, systemdIssues); diff != "" {
+				t.Errorf("Systemd service test mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -379,10 +438,31 @@ ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378`,
 			}
 
 			d := &Detector{}
-			issues := d.checkSystemdServiceConfig(context.Background(), fsys)
+			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
 
-			if diff := cmp.Diff(tt.wantIssues, issues); diff != "" {
-				t.Errorf("checkSystemdServiceConfig() mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("ScanFS() returned error: %v", err)
+			}
+
+			var actualIssues []string
+			if len(finding.GenericFindings) > 0 {
+				// Extract issues from the Extra field
+				extra := finding.GenericFindings[0].Target.Extra
+				if extra != "" {
+					actualIssues = strings.Split(extra, "; ")
+				}
+			}
+
+			// Filter to only systemd service related issues for this test
+			var systemdIssues []string
+			for _, issue := range actualIssues {
+				if strings.Contains(issue, "systemd") || strings.Contains(issue, ".service") {
+					systemdIssues = append(systemdIssues, issue)
+				}
+			}
+
+			if diff := cmp.Diff(tt.wantIssues, systemdIssues); diff != "" {
+				t.Errorf("Multiple paths test mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
