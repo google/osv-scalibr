@@ -90,11 +90,13 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // FileRequired returns true if the specified file looks like a Kubernetes YAML.
+// FileRequired determines if the specified file is a Kubernetes YAML file that should be processed.
+// It checks the file extension and looks for the presence of "apiVersion" and "kind" fields at the root level,
+// which are required for all Kubernetes resources.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	// Only consider YAML/YML files.
+	// Only consider YAML/YML files
 	path := api.Path()
-	fileName := filepath.Base(path)
-	ext := strings.ToLower(filepath.Ext(fileName))
+	ext := strings.ToLower(filepath.Ext(filepath.Base(path)))
 	if ext != ".yaml" && ext != ".yml" {
 		return false
 	}
@@ -105,32 +107,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 	defer f.Close()
 
+	// Process all YAML documents in the file
 	dec := yaml.NewDecoder(f)
-
-	var hasK8sKeys func(v any) bool
-	hasK8sKeys = func(v any) bool {
-		switch x := v.(type) {
-		case map[string]any:
-			_, hasAPIVersion := x["apiVersion"]
-			_, hasKind := x["kind"]
-			if hasAPIVersion && hasKind {
-				return true
-			}
-			for _, vv := range x {
-				if hasK8sKeys(vv) {
-					return true
-				}
-			}
-		case []any:
-			for _, it := range x {
-				if hasK8sKeys(it) {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
 	for {
 		var doc any
 		if err := dec.Decode(&doc); err != nil {
@@ -139,9 +117,23 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 			}
 			return false
 		}
-		if hasK8sKeys(doc) {
+
+		// In Kubernetes resources, apiVersion and kind are always at the root level
+		if isKubernetesResource(doc) {
 			return true
 		}
+	}
+	return false
+}
+
+// isKubernetesResource checks if a YAML document is a Kubernetes resource
+// by verifying it has both apiVersion and kind fields at the root level.
+func isKubernetesResource(doc any) bool {
+	// Check if it's a map with apiVersion and kind fields
+	if resourceMap, ok := doc.(map[string]any); ok {
+		_, hasAPIVersion := resourceMap["apiVersion"]
+		_, hasKind := resourceMap["kind"]
+		return hasAPIVersion && hasKind
 	}
 	return false
 }

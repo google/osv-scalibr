@@ -219,6 +219,12 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/web.yaml"},
 					PURLType:  purl.TypeDocker,
 				},
+				{
+					Name:      "registry.k8s.io/nginx2-slim",
+					Version:   "0.21",
+					Locations: []string{"testdata/web.yaml"},
+					PURLType:  purl.TypeDocker,
+				},
 			},
 		},
 		{
