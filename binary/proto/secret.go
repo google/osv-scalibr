@@ -96,8 +96,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 
 func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_Docekrhubpat{
-			Docekrhubpat: &spb.SecretData_DockerHubPat{
+		Secret: &spb.SecretData_DockerHubPat_{
+			DockerHubPat: &spb.SecretData_DockerHubPat{
 				Pat:      s.Pat,
 				Username: s.Username,
 			},
@@ -207,8 +207,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
-	case *spb.SecretData_Docekrhubpat:
-		return dockerHubPATToStruct(s.GetDocekrhubpat()), nil
+	case *spb.SecretData_DockerHubPat_:
+		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

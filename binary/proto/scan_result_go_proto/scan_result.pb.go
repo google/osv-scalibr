@@ -4755,7 +4755,7 @@ type SecretData struct {
 	// Types that are valid to be assigned to Secret:
 	//
 	//	*SecretData_Gcpsak
-	//	*SecretData_Docekrhubpat
+	//	*SecretData_DockerHubPat_
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4807,10 +4807,10 @@ func (x *SecretData) GetGcpsak() *SecretData_GCPSAK {
 	return nil
 }
 
-func (x *SecretData) GetDocekrhubpat() *SecretData_DockerHubPat {
+func (x *SecretData) GetDockerHubPat() *SecretData_DockerHubPat {
 	if x != nil {
-		if x, ok := x.Secret.(*SecretData_Docekrhubpat); ok {
-			return x.Docekrhubpat
+		if x, ok := x.Secret.(*SecretData_DockerHubPat_); ok {
+			return x.DockerHubPat
 		}
 	}
 	return nil
@@ -4824,13 +4824,13 @@ type SecretData_Gcpsak struct {
 	Gcpsak *SecretData_GCPSAK `protobuf:"bytes,1,opt,name=gcpsak,proto3,oneof"`
 }
 
-type SecretData_Docekrhubpat struct {
-	Docekrhubpat *SecretData_DockerHubPat `protobuf:"bytes,2,opt,name=docekrhubpat,proto3,oneof"`
+type SecretData_DockerHubPat_ struct {
+	DockerHubPat *SecretData_DockerHubPat `protobuf:"bytes,2,opt,name=docker_hub_pat,json=dockerHubPat,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
-func (*SecretData_Docekrhubpat) isSecretData_Secret() {}
+func (*SecretData_DockerHubPat_) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -5757,11 +5757,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x85\x05\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x87\x05\n" +
 	"\n" +
 	"SecretData\x124\n" +
-	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12F\n" +
-	"\fdocekrhubpat\x18\x02 \x01(\v2 .scalibr.SecretData.DockerHubPatH\x00R\fdocekrhubpat\x1a<\n" +
+	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12H\n" +
+	"\x0edocker_hub_pat\x18\x02 \x01(\v2 .scalibr.SecretData.DockerHubPatH\x00R\fdockerHubPat\x1a<\n" +
 	"\fDockerHubPat\x12\x10\n" +
 	"\x03pat\x18\x01 \x01(\tR\x03pat\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x1a\xb0\x03\n" +
@@ -5975,7 +5975,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	56, // 64: scalibr.Secret.status:type_name -> scalibr.SecretStatus
 	57, // 65: scalibr.Secret.locations:type_name -> scalibr.Location
 	64, // 66: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	63, // 67: scalibr.SecretData.docekrhubpat:type_name -> scalibr.SecretData.DockerHubPat
+	63, // 67: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
 	4,  // 68: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
 	65, // 69: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
 	58, // 70: scalibr.Location.filepath:type_name -> scalibr.Filepath
@@ -6035,7 +6035,7 @@ func file_proto_scan_result_proto_init() {
 	}
 	file_proto_scan_result_proto_msgTypes[50].OneofWrappers = []any{
 		(*SecretData_Gcpsak)(nil),
-		(*SecretData_Docekrhubpat)(nil),
+		(*SecretData_DockerHubPat_)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[52].OneofWrappers = []any{
 		(*Location_Filepath)(nil),

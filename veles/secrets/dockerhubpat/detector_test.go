@@ -38,61 +38,77 @@ func TestDetector_truePositives(t *testing.T) {
 		name  string
 		input string
 		want  []veles.Secret
-	}{{
-		name:  "simple matching string",
-		input: testKey,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
+	}{
+		{
+			name:  "simple matching string",
+			input: testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
 		},
-	}, {
-		name:  "match of docker login command 1",
-		input: `docker login -u username -p ` + testKey,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+		{
+			name:  "match of docker login command 1",
+			input: `docker login -u username -p ` + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+			},
 		},
-	}, {
-		name:  "match of docker login command 2",
-		input: `docker login -p ` + testKey + ` -u username `,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+		{
+			name:  "match of docker login command with duplicate 2",
+			input: `docker login -u username -p ` + testKey + "\n\n" + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+			},
 		},
-	}, {
-		name:  "match in middle of string",
-		input: `DOCKERHUBPAT="` + testKey + `"`,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
+		{
+			name:  "match of docker login command 2",
+			input: `docker login -p ` + testKey + ` -u username `,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+			},
 		},
-	}, {
-		name:  "multiple matches",
-		input: testKey + testKey + testKey,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
-			dockerhubpat.DockerHubPAT{Pat: testKey},
-			dockerhubpat.DockerHubPAT{Pat: testKey},
+		{
+			name:  "match in middle of string",
+			input: `DOCKERHUBPAT="` + testKey + `"`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
 		},
-	}, {
-		name:  "multiple distinct matches",
-		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
-			dockerhubpat.DockerHubPAT{Pat: testKey[:len(testKey)-1] + "a"},
+		{
+			name:  "multiple matches",
+			input: testKey + testKey + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
 		},
-	}, {
-		name: "larger input containing key",
-		input: fmt.Sprintf(`
+		{
+			name:  "multiple distinct matches",
+			input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+				dockerhubpat.DockerHubPAT{Pat: testKey[:len(testKey)-1] + "a"},
+			},
+		},
+		{
+			name: "larger input containing key",
+			input: fmt.Sprintf(`
 		:test_api_key: pat-test
 		:dockerhub_pat: %s
 				`, testKey),
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
 		},
-	}, {
-		name:  "potential match longer than max key length",
-		input: testKey + `extra`,
-		want: []veles.Secret{
-			dockerhubpat.DockerHubPAT{Pat: testKey},
+		{
+			name:  "potential match longer than max key length",
+			input: testKey + `extra`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
 		},
-	}}
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))

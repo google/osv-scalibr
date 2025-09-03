@@ -613,7 +613,7 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
-    DockerHubPat docekrhubpat = 2;
+    DockerHubPat docker_hub_pat = 2;
   }
 
   message DockerHubPat {

@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 )
@@ -79,11 +81,10 @@ func mockDockerHubServer(t *testing.T, expectedKey string, expectedUser string) 
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name        string
-		Username    string
-		Pat         string
-		want        veles.ValidationStatus
-		expectError bool
+		name     string
+		Username string
+		Pat      string
+		want     veles.ValidationStatus
 	}{
 		{
 			name:     "invalid key and username",
@@ -121,15 +122,8 @@ func TestValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(context.Background(), usernamePat)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if !cmp.Equal(err, nil, cmpopts.EquateErrors()) {
+				t.Fatalf("plugin.Validate(%v) got error: %v\n", usernamePat, err)
 			}
 
 			// Check validation status
@@ -139,51 +133,6 @@ func TestValidator(t *testing.T) {
 		})
 	}
 }
-
-func TestValidator_NoUsername(t *testing.T) {
-	testCases := []struct {
-		name     string
-		Pat      string
-		Username string
-		expected veles.ValidationStatus
-	}{
-		{
-			name:     "empty_username",
-			Pat:      validatorTestPat,
-			Username: "",
-			expected: veles.ValidationUnsupported,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock server
-			server := mockDockerHubServer(t, validatorTestPat, validatorTestUsername)
-			defer server.Close()
-
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
-			// Create a validator with a mock client
-			validator := dockerhubpat.NewValidator(
-				dockerhubpat.WithClient(client),
-			)
-			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.Pat, Username: tc.Username}
-
-			got, err := validator.Validate(context.Background(), usernamePat)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-			}
-		})
-	}
-}
-
 func TestValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -237,24 +186,33 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		key      string
+		Pat      string
+		Username string
 		expected veles.ValidationStatus
 	}{
 		{
 			name:     "empty_key",
-			key:      "",
+			Pat:      "",
+			Username: validatorTestUsername,
 			expected: veles.ValidationInvalid,
 		},
 		{
 			name:     "invalid_key_format",
-			key:      "invalid-key-format",
+			Pat:      "invalid-key-format",
+			Username: validatorTestUsername,
 			expected: veles.ValidationInvalid,
+		},
+		{
+			name:     "empty_username",
+			Pat:      validatorTestPat,
+			Username: "",
+			expected: veles.ValidationUnsupported,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.key, Username: validatorTestUsername}
+			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.Pat, Username: tc.Username}
 
 			got, err := validator.Validate(context.Background(), usernamePat)
 

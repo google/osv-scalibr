@@ -17,6 +17,7 @@
 package dockerhubpat
 
 import (
+	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
@@ -48,30 +49,43 @@ func NewDetector() veles.Detector {
 func (d *detector) MaxSecretLen() uint32 {
 	return maxTokenLength
 }
-
 func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	var secrets []veles.Secret
 	var offsets []int
 
 	// 1. docker login command username and pat detection
-	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatchIndex(content, -1)
+	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatch(content, -1)
 	for _, m := range dockerLoginCmdMatches {
-		if m[2] != -1 && m[8] != -1 {
-			secrets = append(secrets, DockerHubPAT{Username: string(content[m[2]:m[3]]), Pat: string(content[m[8]:m[9]])})
-			offsets = append(offsets, m[8])
+		// Case 1: Username in first position, PAT in second position
+		if len(m[1]) > 0 && len(m[4]) > 0 {
+			secrets = append(secrets, DockerHubPAT{
+				Username: string(m[1]),
+				Pat:      string(m[4]),
+			})
+			// Find the offset of this PAT in the content
+			patStart := bytes.Index(content, m[0]) + bytes.LastIndex(m[0], m[4])
+			offsets = append(offsets, patStart)
 		}
-		if m[6] != -1 && m[4] != -1 {
-			secrets = append(secrets, DockerHubPAT{Username: string(content[m[6]:m[7]]), Pat: string(content[m[4]:m[5]])})
-			offsets = append(offsets, m[4])
+
+		// Case 2: PAT in first position, Username in second position
+		if len(m[2]) > 0 && len(m[3]) > 0 {
+			secrets = append(secrets, DockerHubPAT{
+				Username: string(m[3]),
+				Pat:      string(m[2]),
+			})
+			// Find the offset of this PAT in the content
+			patStart := bytes.Index(content, m[0]) + bytes.Index(m[0], m[2])
+			offsets = append(offsets, patStart)
 		}
 	}
 
 	// 2. only pat detection, don't add duplicates from the docker login command
-	patReMatches := patRe.FindAllIndex(content, -1)
+	patReMatches := patRe.FindAll(content, -1)
 	for _, m := range patReMatches {
-		newPat := string(content[m[0]:m[1]])
+		newPat := string(m)
 		isDuplicate := false
-		// Check if this PAT already exists in the secret slice and mapped to an username
+
+		// Check if this PAT already exists in the secret slice and mapped to a username
 		for _, existingSecret := range secrets {
 			if dhPat, ok := existingSecret.(DockerHubPAT); ok {
 				if dhPat.Username != "" && dhPat.Pat == newPat {
@@ -80,10 +94,11 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 				}
 			}
 		}
+
 		// Only add if not a duplicate
 		if !isDuplicate {
 			secrets = append(secrets, DockerHubPAT{Username: "", Pat: newPat})
-			offsets = append(offsets, m[0])
+			offsets = append(offsets, bytes.Index(content, m))
 		}
 	}
 
