@@ -15,7 +15,6 @@
 package pacman_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -349,7 +348,7 @@ func TestExtract(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 
 			wantInv := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(wantInv, got); diff != "" {

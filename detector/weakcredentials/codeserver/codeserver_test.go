@@ -15,7 +15,6 @@
 package codeserver
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,7 +59,7 @@ func TestScan(t *testing.T) {
 			cfg.Remote = srv.URL
 
 			d := New(cfg)
-			invs, _ := d.Scan(context.Background(), nil, nil)
+			invs, _ := d.Scan(t.Context(), nil, nil)
 
 			gotVulns := len(invs.GenericFindings) > 0
 			if gotVulns != tc.wantVulns {
@@ -100,7 +99,7 @@ func TestScanWithTimeouts(t *testing.T) {
 
 			d := New(cfg)
 			start := time.Now()
-			invs, err := d.Scan(context.Background(), nil, nil)
+			invs, err := d.Scan(t.Context(), nil, nil)
 			end := time.Now()
 
 			if tc.expectFails != (err != nil) {
@@ -113,6 +112,39 @@ func TestScanWithTimeouts(t *testing.T) {
 
 			if end.Sub(start) > tc.maxDuration {
 				t.Errorf("Scan() took too long: %v", end.Sub(start))
+			}
+		})
+	}
+}
+
+func TestDefaultConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		goos    string
+		wantURL string
+	}{
+		{
+			name:    "darwin",
+			goos:    "darwin",
+			wantURL: "http://localhost:49363",
+		},
+		{
+			name:    "linux",
+			goos:    "linux",
+			wantURL: "http://127.0.0.2:49363",
+		},
+		{
+			name:    "windows",
+			goos:    "windows",
+			wantURL: "http://127.0.0.2:49363",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := defaultConfigWithOS(tc.goos)
+			if cfg.Remote != tc.wantURL {
+				t.Errorf("defaultConfigWithOS(%q).Remote = %q, want %q", tc.goos, cfg.Remote, tc.wantURL)
 			}
 		})
 	}

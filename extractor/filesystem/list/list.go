@@ -75,11 +75,13 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
@@ -216,7 +218,8 @@ var (
 		flatpak.Name:  {flatpak.NewDefault},
 		homebrew.Name: {homebrew.New},
 		macapps.Name:  {macapps.NewDefault},
-		asdf.Name:     {asdf.New},
+		macports.Name: {macports.New},
+		winget.Name:   {winget.NewDefault},
 	}
 
 	// Credential extractors.
@@ -224,11 +227,16 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
-	// Misc extractors.
+	// Misc artifact extractors.
 	Misc = InitMap{
 		vscodeextensions.Name: {vscodeextensions.New},
 		wordpressplugins.Name: {wordpressplugins.NewDefault},
 		chromeextensions.Name: {chromeextensions.New},
+	}
+  
+  // Misc source extractors.
+	MiscSource = InitMap{
+		asdf.Name:     {asdf.New},
 	}
 
 	// Collections of extractors.
@@ -251,6 +259,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		Secrets,
+    MiscSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -307,6 +316,7 @@ var (
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
+		"miscsource": vals(MiscSource),
 
 		// Collections.
 		"artifact":           vals(Artifact),

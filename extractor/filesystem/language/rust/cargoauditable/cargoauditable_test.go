@@ -15,7 +15,6 @@
 package cargoauditable_test
 
 import (
-	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -232,7 +231,7 @@ func TestExtract(t *testing.T) {
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
 
 			e := cargoauditable.New(cargoauditable.Config{Stats: collector})
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
 			}

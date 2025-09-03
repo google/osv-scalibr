@@ -22,3 +22,21 @@ type OSVersion struct {
 	// FullVersion is the full version of the OS version: Major.Minor.Build.Revision.
 	FullVersion string
 }
+
+// WingetPackage provides metadata about a package installed via Windows Package Manager.
+type WingetPackage struct {
+	// Name is the display name of the package.
+	Name string
+	// ID is the unique package identifier.
+	ID string
+	// Version is the installed version.
+	Version string
+	// Moniker is the short name/alias for the package.
+	Moniker string
+	// Channel is the release channel.
+	Channel string
+	// Tags are package categories/tags.
+	Tags []string
+	// Commands are executable commands provided by the package.
+	Commands []string
+}
