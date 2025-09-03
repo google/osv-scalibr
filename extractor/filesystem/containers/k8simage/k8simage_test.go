@@ -106,6 +106,12 @@ func TestExtract(t *testing.T) {
 			cfg:  k8simage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
+					Name:      "alpine",
+					Version:   "sha256:1ff6c18fbef2045af6b9c16bf034cc421a29027b800e4f9b68ae9b1cb3e9ae07",
+					Locations: []string{"testdata/deployment.yaml"},
+					PURLType:  "docker",
+				},
+				{
 					Name:      "postgres",
 					Version:   "8",
 					Locations: []string{"testdata/deployment.yaml"},

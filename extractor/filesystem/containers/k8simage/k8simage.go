@@ -181,6 +181,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 func parseName(name string) (string, string) {
+	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	if strings.Contains(name, "@") {
 		parts := strings.SplitN(name, "@", 2)
 		return parts[0], parts[1]
