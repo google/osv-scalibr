@@ -202,7 +202,7 @@ func parseK8sYAML(r io.Reader) ([]string, error) {
 
 	for {
 		// Parse each YAML document in the file
-		var doc map[string]interface{}
+		var doc map[string]any
 		if err := decoder.Decode(&doc); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -219,10 +219,10 @@ func parseK8sYAML(r io.Reader) ([]string, error) {
 }
 
 // extractImagesFromK8sDoc recursively extracts container images from a K8s resource
-func extractImagesFromK8sDoc(doc map[string]interface{}) []string {
+func extractImagesFromK8sDoc(doc map[string]any) []string {
 	var images []string
 
-	if spec, ok := doc["spec"].(map[string]interface{}); ok {
+	if spec, ok := doc["spec"].(map[string]any); ok {
 		// Check for direct containers at spec.containers
 		// Handle containers
 		images = append(images, getImagesFromContainers(spec, "containers")...)
@@ -230,18 +230,18 @@ func extractImagesFromK8sDoc(doc map[string]interface{}) []string {
 		images = append(images, getImagesFromContainers(spec, "initContainers")...)
 
 		// Check for template-based resources (Deployments, StatefulSets, etc.)
-		if template, ok := spec["template"].(map[string]interface{}); ok {
-			if templateSpec, ok := template["spec"].(map[string]interface{}); ok {
+		if template, ok := spec["template"].(map[string]any); ok {
+			if templateSpec, ok := template["spec"].(map[string]any); ok {
 				images = append(images, getImagesFromContainers(templateSpec, "containers")...)
 				images = append(images, getImagesFromContainers(templateSpec, "initContainers")...)
 			}
 		}
 
 		// Handle CronJob/Job templates
-		if jobTemplate, ok := spec["jobTemplate"].(map[string]interface{}); ok {
-			if jobSpec, ok := jobTemplate["spec"].(map[string]interface{}); ok {
-				if template, ok := jobSpec["template"].(map[string]interface{}); ok {
-					if templateSpec, ok := template["spec"].(map[string]interface{}); ok {
+		if jobTemplate, ok := spec["jobTemplate"].(map[string]any); ok {
+			if jobSpec, ok := jobTemplate["spec"].(map[string]any); ok {
+				if template, ok := jobSpec["template"].(map[string]any); ok {
+					if templateSpec, ok := template["spec"].(map[string]any); ok {
 						images = append(images, getImagesFromContainers(templateSpec, "containers")...)
 						images = append(images, getImagesFromContainers(templateSpec, "initContainers")...)
 					}
@@ -254,11 +254,11 @@ func extractImagesFromK8sDoc(doc map[string]interface{}) []string {
 }
 
 // getImagesFromContainers extracts image references from a container list
-func getImagesFromContainers(spec map[string]interface{}, containerType string) []string {
+func getImagesFromContainers(spec map[string]any, containerType string) []string {
 	var images []string
-	if containers, ok := spec[containerType].([]interface{}); ok {
+	if containers, ok := spec[containerType].([]any); ok {
 		for _, c := range containers {
-			if container, ok := c.(map[string]interface{}); ok {
+			if container, ok := c.(map[string]any); ok {
 				if image, ok := container["image"].(string); ok && image != "" {
 					images = append(images, image)
 				}
