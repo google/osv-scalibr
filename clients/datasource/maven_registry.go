@@ -264,10 +264,14 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			// We can still fetch the file from upstream if error is not nil.
 			return NewMavenDecoder(file).Decode(dst)
 		}
+		if !os.IsNotExist(err) {
+			log.Warnf("Error reading from local cache %s: %v", filePath, err)
+		}
 	}
 
 	u := registry.Parsed.JoinPath(paths...).String()
 	resp, err := m.responses.Get(u, func() (response, error) {
+		log.Infof("Fetching response from: %s", u)
 		resp, err := auth.Get(ctx, http.DefaultClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
@@ -284,7 +288,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		if filePath != "" {
+		if filePath != "" && resp.StatusCode == http.StatusOK {
 			if err := writeFile(filePath, b); err != nil {
 				log.Warnf("failed to write response to %s: %v", u, err)
 			}
@@ -293,6 +297,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		return response{StatusCode: resp.StatusCode, Body: b}, nil
 	})
 	if err != nil {
+		log.Warnf("failed to get response from %s: %v", u, err)
 		return err
 	}
 

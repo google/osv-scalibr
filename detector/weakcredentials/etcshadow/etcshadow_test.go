@@ -146,7 +146,7 @@ func TestScan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			detector := etcshadow.Detector{}
-			finding, err := detector.Scan(context.Background(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
+			finding, err := detector.Scan(t.Context(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("detector.Scan(%v): unexpected error (-want +got):\n%s", tc.fsys, diff)
 			}
@@ -163,7 +163,7 @@ func TestScanCancelled(t *testing.T) {
 	px, _ := packageindex.New([]*extractor.Package{})
 	detector := etcshadow.Detector{}
 	fsys := &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	cancelFunc()
 	finding, err := detector.Scan(ctx, &scalibrfs.ScanRoot{FS: fsys}, px)
 	if finding.GenericFindings != nil || !errors.Is(err, ctx.Err()) {

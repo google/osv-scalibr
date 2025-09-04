@@ -17,7 +17,6 @@
 package podman_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -215,7 +214,7 @@ func TestExtractor_Extract(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: filepath.Base(tt.Path), Reader: nil, Root: d, Info: nil,
 			}
 
-			got, err := extr.Extract(context.Background(), scanInput)
+			got, err := extr.Extract(t.Context(), scanInput)
 			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.Path, diff)
 				return

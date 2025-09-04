@@ -15,7 +15,6 @@
 package docker_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
@@ -172,7 +171,7 @@ func TestExtract(t *testing.T) {
 			cli := fakeclient.New(tt.ctrs)
 			e := plugin.NewWithClient(cli)
 
-			got, _ := e.Extract(context.Background(), input)
+			got, _ := e.Extract(t.Context(), input)
 
 			ignoreOrder := cmpopts.SortSlices(func(a, b *extractor.Package) bool {
 				return a.Name < b.Name

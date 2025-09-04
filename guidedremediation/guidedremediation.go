@@ -177,7 +177,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 // Update overwrites the manifest on disk with the updated dependencies.
 func Update(opts options.UpdateOptions) (result.Result, error) {
 	var (
-		hasManifest bool = (opts.Manifest != "")
+		hasManifest = (opts.Manifest != "")
 		manifestRW  manifest.ReadWriter
 	)
 	if !hasManifest {
@@ -220,6 +220,8 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		computePatches = override.ComputePatches
 	case strategy.StrategyRelax:
 		computePatches = relax.ComputePatches
+	case strategy.StrategyInPlace:
+		fallthrough
 	default:
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
@@ -632,7 +634,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	case "package.json":
 		return npm.GetReadWriter(registry)
 	case "requirements.in", "requirements.txt":
-		return python.GetReadWriter()
+		return python.GetRequirementsReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }

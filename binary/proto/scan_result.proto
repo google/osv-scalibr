@@ -124,6 +124,9 @@ message Package {
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
+    MacportsPackageMetadata macports_metadata = 53;
+    WingetPackageMetadata winget_metadata = 54;
+    AsdfMetadata asdf_metadata = 55;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -464,6 +467,13 @@ message MacAppsMetadata {
   string update_url = 10;
 }
 
+// The additional data found in Macports packages.
+message MacportsPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string package_revision = 3;
+}
+
 // The additional data for packages extracted from SPDX files.
 message SPDXPackageMetadata {
   Purl purl = 1;
@@ -596,11 +606,27 @@ message DockerContainersMetadata {
   repeated DockerPort ports = 4;
 }
 
+message AsdfMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
+}
+
 message DockerPort {
   string ip = 1;
   uint32 private_port = 2;
   uint32 public_port = 3;
   string type = 4;
+}
+
+// The additional data found in Windows Package Manager (Winget) packages.
+message WingetPackageMetadata {
+  string name = 1;
+  string id = 2;
+  string version = 3;
+  string moniker = 4;
+  string channel = 5;
+  repeated string tags = 6;
+  repeated string commands = 7;
 }
 
 // A secret (i.e. credential) found by Veles secret scanning.
@@ -613,9 +639,13 @@ message Secret {
 message SecretData {
   oneof secret {
     GCPSAK gcpsak = 1;
-    DockerHubPat docker_hub_pat = 2;
+    AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
+    AnthropicModelAPIKey anthropic_model_api_key = 3;
+    PerplexityAPIKey perplexity = 4;
+    PrivateKey private_key = 5;
+    DockerHubPat docker_hub_pat = 6;
   }
-
+  
   message DockerHubPat {
     string pat = 1;
     string username = 2;
@@ -640,6 +670,25 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message AnthropicWorkspaceAPIKey {
+    // The Anthropic Workspace API key (contains "admin01").
+    string key = 1;
+  }
+
+  message AnthropicModelAPIKey {
+    // The Anthropic Model API key (regular API key for model access).
+    string key = 1;
+  }
+
+  message PerplexityAPIKey {
+    string key = 1;
+  }
+
+  message PrivateKey {
+    string block = 1;  // PEM/OpenSSH private key block
+    bytes der = 2;     // DER-encoded key material
   }
 }
 
