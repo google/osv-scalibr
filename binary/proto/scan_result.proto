@@ -126,6 +126,7 @@ message Package {
     DockerContainersMetadata docker_containers_metadata = 48;
     MacportsPackageMetadata macports_metadata = 53;
     WingetPackageMetadata winget_metadata = 54;
+    AsdfMetadata asdf_metadata = 55;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -605,6 +606,11 @@ message DockerContainersMetadata {
   repeated DockerPort ports = 4;
 }
 
+message AsdfMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
+}
+
 message DockerPort {
   string ip = 1;
   uint32 private_port = 2;
@@ -636,6 +642,7 @@ message SecretData {
     AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
     AnthropicModelAPIKey anthropic_model_api_key = 3;
     PerplexityAPIKey perplexity = 4;
+    PrivateKey private_key = 5;
   }
 
   message GCPSAK {
@@ -671,6 +678,11 @@ message SecretData {
 
   message PerplexityAPIKey {
     string key = 1;
+  }
+
+  message PrivateKey {
+    string block = 1;  // PEM/OpenSSH private key block
+    bytes der = 2;     // DER-encoded key material
   }
 }
 

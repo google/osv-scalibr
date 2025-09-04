@@ -24,6 +24,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -86,6 +87,8 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 
 func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	switch t := s.(type) {
+	case velesprivatekey.PrivateKey:
+		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
@@ -148,6 +151,17 @@ func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData
 		Secret: &spb.SecretData_Perplexity{
 			Perplexity: &spb.SecretData_PerplexityAPIKey{
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PrivateKey_{
+			PrivateKey: &spb.SecretData_PrivateKey{
+				Block: pk.Block,
+				Der:   pk.Der,
 			},
 		},
 	}
@@ -229,6 +243,8 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 
 func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
+	case *spb.SecretData_PrivateKey_:
+		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
@@ -267,6 +283,13 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
 	return velesperplexity.PerplexityAPIKey{
 		Key: kPB.GetKey(),
+	}
+}
+
+func privatekeyToStruct(pkPB *spb.SecretData_PrivateKey) velesprivatekey.PrivateKey {
+	return velesprivatekey.PrivateKey{
+		Block: pkPB.GetBlock(),
+		Der:   pkPB.GetDer(),
 	}
 }
 
