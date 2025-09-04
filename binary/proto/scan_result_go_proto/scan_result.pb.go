@@ -4944,8 +4944,8 @@ type SecretData struct {
 	//	*SecretData_AnthropicWorkspaceApiKey
 	//	*SecretData_AnthropicModelApiKey
 	//	*SecretData_Perplexity
-	//	*SecretData_GrokxaiApiKey
-	//	*SecretData_GrokxaiManagementApiKey
+	//	*SecretData_GrokXaiApiKey
+	//	*SecretData_GrokXaiManagementApiKey
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5024,19 +5024,19 @@ func (x *SecretData) GetPerplexity() *SecretData_PerplexityAPIKey {
 	return nil
 }
 
-func (x *SecretData) GetGrokxaiApiKey() *SecretData_GrokXAIAPIKey {
+func (x *SecretData) GetGrokXaiApiKey() *SecretData_GrokXAIAPIKey {
 	if x != nil {
-		if x, ok := x.Secret.(*SecretData_GrokxaiApiKey); ok {
-			return x.GrokxaiApiKey
+		if x, ok := x.Secret.(*SecretData_GrokXaiApiKey); ok {
+			return x.GrokXaiApiKey
 		}
 	}
 	return nil
 }
 
-func (x *SecretData) GetGrokxaiManagementApiKey() *SecretData_GrokXAIManagementAPIKey {
+func (x *SecretData) GetGrokXaiManagementApiKey() *SecretData_GrokXAIManagementAPIKey {
 	if x != nil {
-		if x, ok := x.Secret.(*SecretData_GrokxaiManagementApiKey); ok {
-			return x.GrokxaiManagementApiKey
+		if x, ok := x.Secret.(*SecretData_GrokXaiManagementApiKey); ok {
+			return x.GrokXaiManagementApiKey
 		}
 	}
 	return nil
@@ -5062,12 +5062,12 @@ type SecretData_Perplexity struct {
 	Perplexity *SecretData_PerplexityAPIKey `protobuf:"bytes,4,opt,name=perplexity,proto3,oneof"`
 }
 
-type SecretData_GrokxaiApiKey struct {
-	GrokxaiApiKey *SecretData_GrokXAIAPIKey `protobuf:"bytes,5,opt,name=grokxai_api_key,json=grokxaiApiKey,proto3,oneof"`
+type SecretData_GrokXaiApiKey struct {
+	GrokXaiApiKey *SecretData_GrokXAIAPIKey `protobuf:"bytes,5,opt,name=grok_xai_api_key,json=grokXaiApiKey,proto3,oneof"`
 }
 
-type SecretData_GrokxaiManagementApiKey struct {
-	GrokxaiManagementApiKey *SecretData_GrokXAIManagementAPIKey `protobuf:"bytes,6,opt,name=grokxai_management_api_key,json=grokxaiManagementApiKey,proto3,oneof"`
+type SecretData_GrokXaiManagementApiKey struct {
+	GrokXaiManagementApiKey *SecretData_GrokXAIManagementAPIKey `protobuf:"bytes,6,opt,name=grok_xai_management_api_key,json=grokXaiManagementApiKey,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5078,9 +5078,9 @@ func (*SecretData_AnthropicModelApiKey) isSecretData_Secret() {}
 
 func (*SecretData_Perplexity) isSecretData_Secret() {}
 
-func (*SecretData_GrokxaiApiKey) isSecretData_Secret() {}
+func (*SecretData_GrokXaiApiKey) isSecretData_Secret() {}
 
-func (*SecretData_GrokxaiManagementApiKey) isSecretData_Secret() {}
+func (*SecretData_GrokXaiManagementApiKey) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -6191,7 +6191,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xa0\t\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xa2\t\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -6199,9 +6199,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x17anthropic_model_api_key\x18\x03 \x01(\v2(.scalibr.SecretData.AnthropicModelAPIKeyH\x00R\x14anthropicModelApiKey\x12F\n" +
 	"\n" +
 	"perplexity\x18\x04 \x01(\v2$.scalibr.SecretData.PerplexityAPIKeyH\x00R\n" +
-	"perplexity\x12K\n" +
-	"\x0fgrokxai_api_key\x18\x05 \x01(\v2!.scalibr.SecretData.GrokXAIAPIKeyH\x00R\rgrokxaiApiKey\x12j\n" +
-	"\x1agrokxai_management_api_key\x18\x06 \x01(\v2+.scalibr.SecretData.GrokXAIManagementAPIKeyH\x00R\x17grokxaiManagementApiKey\x1a\xb0\x03\n" +
+	"perplexity\x12L\n" +
+	"\x10grok_xai_api_key\x18\x05 \x01(\v2!.scalibr.SecretData.GrokXAIAPIKeyH\x00R\rgrokXaiApiKey\x12k\n" +
+	"\x1bgrok_xai_management_api_key\x18\x06 \x01(\v2+.scalibr.SecretData.GrokXAIManagementAPIKeyH\x00R\x17grokXaiManagementApiKey\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -6433,8 +6433,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	66, // 69: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
 	67, // 70: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
 	68, // 71: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
-	69, // 72: scalibr.SecretData.grokxai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
-	70, // 73: scalibr.SecretData.grokxai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
+	69, // 72: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
+	70, // 73: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
 	4,  // 74: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
 	71, // 75: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
 	60, // 76: scalibr.Location.filepath:type_name -> scalibr.Filepath
@@ -6499,8 +6499,8 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_AnthropicWorkspaceApiKey)(nil),
 		(*SecretData_AnthropicModelApiKey)(nil),
 		(*SecretData_Perplexity)(nil),
-		(*SecretData_GrokxaiApiKey)(nil),
-		(*SecretData_GrokxaiManagementApiKey)(nil),
+		(*SecretData_GrokXaiApiKey)(nil),
+		(*SecretData_GrokXaiManagementApiKey)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[54].OneofWrappers = []any{
 		(*Location_Filepath)(nil),

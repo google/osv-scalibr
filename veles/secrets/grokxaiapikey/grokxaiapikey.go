@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package grokxaiapikey contains a detector and validator
+// for Grok XAI API keys
 package grokxaiapikey
 
 // GrokXAIAPIKey is a Veles Secret that holds a standard xAI API key.

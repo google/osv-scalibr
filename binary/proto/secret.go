@@ -160,8 +160,8 @@ func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData
 
 func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_GrokxaiApiKey{
-			GrokxaiApiKey: &spb.SecretData_GrokXAIAPIKey{
+		Secret: &spb.SecretData_GrokXaiApiKey{
+			GrokXaiApiKey: &spb.SecretData_GrokXAIAPIKey{
 				Key: s.Key,
 			},
 		},
@@ -170,8 +170,8 @@ func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 
 func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_GrokxaiManagementApiKey{
-			GrokxaiManagementApiKey: &spb.SecretData_GrokXAIManagementAPIKey{
+		Secret: &spb.SecretData_GrokXaiManagementApiKey{
+			GrokXaiManagementApiKey: &spb.SecretData_GrokXAIManagementAPIKey{
 				Key: s.Key,
 			},
 		},
@@ -262,11 +262,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesanthropicapikey.ModelAPIKey{Key: s.GetAnthropicModelApiKey().GetKey()}, nil
 	case *spb.SecretData_Perplexity:
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
-	case *spb.SecretData_GrokxaiApiKey:
-		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokxaiApiKey().GetKey()}, nil
-	case *spb.SecretData_GrokxaiManagementApiKey:
-		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokxaiManagementApiKey().GetKey()}, nil
-
+	case *spb.SecretData_GrokXaiApiKey:
+		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
+	case *spb.SecretData_GrokXaiManagementApiKey:
+		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

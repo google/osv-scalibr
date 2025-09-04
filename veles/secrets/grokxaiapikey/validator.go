@@ -24,8 +24,11 @@ import (
 )
 
 const (
-	apiEndpoint        = "https://api.x.ai/v1/api-key"
-	managementEndpoint = "https://management-api.x.ai/auth/teams/c93fc649-6965-42b4-8ca3-c3413ae1c5d1/api-keys"
+	// Used to validate standard API keys directly by checking blocked/disabled flags.
+	apiEndpoint = "https://api.x.ai/v1/api-key"
+	// Uses a dummy teamId since every management API request requires {teamId}.
+	// This forces predictable error patterns that allow indirect validation of management keys.
+	managementEndpoint = "https://management-api.x.ai/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
 )
 
 //
@@ -143,8 +146,6 @@ type managementErrorResponse struct {
 // Validate checks whether the given GrokXAIManagementKey is valid.
 //
 // It calls the management endpoint with the key as a Bearer token.
-// A 403 status with JSON {"code":7,...} indicates a valid key.
-// A 401 status with code 16 indicates an invalid key.
 func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagementKey) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, managementEndpoint, nil)
 	if err != nil {
@@ -160,6 +161,8 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 
 	if res.StatusCode == http.StatusUnauthorized {
 		// Invalid bearer token.
+		// The API rejects the token entirely (code 16 "Invalid bearer token"),
+		// which means the key is malformed, expired, or simply does not exist.
 		return veles.ValidationInvalid, nil
 	}
 
@@ -170,8 +173,13 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 		}
 		if resp.Code == 7 {
 			// Team mismatch error → means the key itself is valid.
+			//Every management API call requires a {teamId}, but we don't know the real one.
+			// By using a fake teamId, a valid key passes authentication but fails authorization,
+			// producing code 7 ("team mismatch"). This reliably distinguishes valid keys from invalid ones.
 			return veles.ValidationValid, nil
 		}
+		// Other 403 codes → the key was authenticated but failed authorization for reasons other than team mismatch.
+		// This indicates the key is not valid for use.
 		return veles.ValidationInvalid, nil
 	}
 
