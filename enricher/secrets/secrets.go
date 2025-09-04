@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
@@ -50,6 +51,7 @@ func New() enricher.Enricher {
 		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
 		veles.WithValidator(perplexityapikey.NewValidator()),
+		veles.WithValidator(openai.NewProjectValidator()),
 	)
 	return &Enricher{engine: engine}
 }
