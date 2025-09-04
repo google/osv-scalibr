@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -46,6 +47,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -149,6 +151,8 @@ var (
 	DartSource = InitMap{pubspec.Name: {pubspec.New}}
 	// Erlang source extractors.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
+	// Nim source extractors.
+	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// Elixir source extractors.
 	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
 	// Haskell source extractors.
@@ -226,11 +230,16 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
-	// Misc extractors.
+	// Misc artifact extractors.
 	Misc = InitMap{
 		vscodeextensions.Name: {vscodeextensions.New},
 		wordpressplugins.Name: {wordpressplugins.NewDefault},
 		chromeextensions.Name: {chromeextensions.New},
+	}
+
+	// Misc source extractors.
+	MiscSource = InitMap{
+		asdf.Name: {asdf.New},
 	}
 
 	// Collections of extractors.
@@ -252,7 +261,9 @@ var (
 		RustSource,
 		DotnetSource,
 		SwiftSource,
+		NimSource,
 		Secrets,
+		MiscSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -295,6 +306,7 @@ var (
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
 		"erlang":     vals(ErlangSource),
+		"nim":        vals(NimSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
@@ -309,6 +321,7 @@ var (
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
+		"miscsource": vals(MiscSource),
 
 		// Collections.
 		"artifact":           vals(Artifact),
