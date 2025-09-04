@@ -643,10 +643,11 @@ message SecretData {
     AnthropicModelAPIKey anthropic_model_api_key = 3;
     PerplexityAPIKey perplexity = 4;
     PrivateKey private_key = 5;
-    GrokXAIAPIKey grok_xai_api_key = 6;
-    GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
-    DockerHubPat docker_hub_pat = 8;
-    DigitalOceanAPIToken digitalocean = 9;
+    OpenAIProjectAPIKey openai_project_api_key = 6;
+    GrokXAIAPIKey grok_xai_api_key = 7;
+    GrokXAIManagementAPIKey grok_xai_management_api_key = 8;
+    DockerHubPat docker_hub_pat = 9;
+    DigitalOceanAPIToken digitalocean = 10;
   }
 
   message GCPSAK {
@@ -695,6 +696,10 @@ message SecretData {
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
+  }
+
+  message OpenAIProjectAPIKey {
+    string key = 1;
   }
 
   message DockerHubPat {
