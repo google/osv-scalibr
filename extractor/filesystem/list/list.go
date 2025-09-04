@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -233,6 +234,11 @@ var (
 		chromeextensions.Name: {chromeextensions.New},
 	}
 
+	// Embeddedfs extractors.
+	Embeddedfs = InitMap{
+		ova.Name: {ova.NewDefault},
+	}
+
 	// Collections of extractors.
 
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
@@ -269,6 +275,7 @@ var (
 		Misc,
 		Containers,
 		Secrets,
+		Embeddedfs,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -309,6 +316,7 @@ var (
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
+		"embeddedfs": vals(Embeddedfs),
 
 		// Collections.
 		"artifact":           vals(Artifact),

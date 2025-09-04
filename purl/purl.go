@@ -105,6 +105,8 @@ const (
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
 	TypeWinget = "winget"
+	// TypeOva is pkg:ova purl
+	TypeOva = "ova"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -209,6 +211,7 @@ func validType(t string) bool {
 		TypeWordpress: true,
 		TypeMacports:  true,
 		TypeWinget:    true,
+		TypeOva:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
