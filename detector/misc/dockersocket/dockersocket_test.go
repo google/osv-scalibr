@@ -32,12 +32,6 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
-func init() {
-	if runtime.GOOS == "windows" {
-		fmt.Printf("Test skipped, OS unsupported: %v\n", runtime.GOOS)
-	}
-}
-
 // Helper functions for generating expected test issues
 
 func expectSocketWorldReadable(perms fs.FileMode) string {
@@ -212,6 +206,10 @@ func (t *testFS) Open(name string) (fs.File, error) {
 }
 
 func TestDockerDaemonConfig(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name       string
 		config     string
@@ -289,6 +287,10 @@ func TestDockerDaemonConfig(t *testing.T) {
 }
 
 func TestSystemdServiceConfig(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name        string
 		serviceFile string
@@ -385,6 +387,10 @@ WantedBy=multi-user.target`,
 }
 
 func TestSystemdServiceConfig_MultiplePaths(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	// Test that the detector checks all possible systemd service paths
 	insecureService := `[Unit]
 Description=Docker Application Container Engine
@@ -476,6 +482,10 @@ ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378`,
 }
 
 func TestScanFS_NoDocker(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	// Test with no Docker installation (no socket, no config files)
 	fsys := fstest.MapFS{}
 
@@ -492,6 +502,10 @@ func TestScanFS_NoDocker(t *testing.T) {
 }
 
 func TestScanFS_Integration(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name              string
 		setupFS           func() fs.FS
@@ -620,6 +634,10 @@ func contains(s, substr string) bool {
 }
 
 func TestDetectorInterface(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	d := New()
 
 	if d.Name() != Name {
