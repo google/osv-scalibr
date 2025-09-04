@@ -32,8 +32,8 @@ const (
 	// Name is the unique name of this extractor.
 	Name = "nim/nimble"
 	// These two path slices can be used to determine Nimble package paths.
-	pkgsPath  = ".nimble/pkgs/"
-	pkgs2Path = ".nimble/pkgs2/"
+	pkgsPath  = "/pkgs/"
+	pkgs2Path = "/pkgs2/"
 )
 
 // Extractor extracts nimble package info from .nimble files.
@@ -63,10 +63,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-// This regexp is used to extract packageName and version from the folder name for both newer and versions ex: /root/.nimble/pkgs2/json_serialization-0.4.2-2b26a9e0fc79638dbb9272fb4ab5a1d79264f938 or /root/.nimble/pkgs/gura-0.1.1",
+// This regexp is used to extract packageName and version from the folder name for both new and old versioning ex: /root/.nimble/pkgs2/json_serialization-0.4.2-2b26a9e0fc79638dbb9272fb4ab5a1d79264f938 or /root/.nimble/pkgs/gura-0.1.1"
 var reFolder = regexp.MustCompile(`^(.*?)-([0-9]+(?:\.[0-9]+)*)(?:-[a-f0-9]+)?$`)
 
-// Extract extracts Port info from Portfile file passed through the scan input.
+// Extract extracts Package info from .Nimble file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs := e.extractFromPath(input.Path)
 	return inventory.Inventory{Packages: pkgs}, nil

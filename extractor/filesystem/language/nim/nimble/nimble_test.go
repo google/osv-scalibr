@@ -45,12 +45,17 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: true,
 		},
 		{
-			name:         "not required",
+			name:         "nimble file under the pkgs2 directory with non-default installation",
+			path:         "test/nimblefolder/pkgs2/stew-0.4.1-996d9c058ee078d0209a5f539424a0235683918c/stew.nimble",
+			wantRequired: true,
+		},
+		{
+			name:         "arbitrary file under the pkgs2 directory with no extension",
 			path:         "test/.nimble/pkgs2/arrayutils-0.2.0/foo",
 			wantRequired: false,
 		},
 		{
-			name:         "not required",
+			name:         "nimble file under the wrong director",
 			path:         "test/test-01/test.nimble",
 			wantRequired: false,
 		},
