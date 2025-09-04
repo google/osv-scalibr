@@ -126,6 +126,7 @@ message Package {
     DockerContainersMetadata docker_containers_metadata = 48;
     MacportsPackageMetadata macports_metadata = 53;
     WingetPackageMetadata winget_metadata = 54;
+    AsdfMetadata asdf_metadata = 55;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -603,6 +604,11 @@ message DockerContainersMetadata {
   string image_digest = 2;
   string id = 3;
   repeated DockerPort ports = 4;
+}
+
+message AsdfMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
 }
 
 message DockerPort {

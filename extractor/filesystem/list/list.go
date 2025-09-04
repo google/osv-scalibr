@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -226,11 +227,16 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
-	// Misc extractors.
+	// Misc artifact extractors.
 	Misc = InitMap{
 		vscodeextensions.Name: {vscodeextensions.New},
 		wordpressplugins.Name: {wordpressplugins.NewDefault},
 		chromeextensions.Name: {chromeextensions.New},
+	}
+
+	// Misc source extractors.
+	MiscSource = InitMap{
+		asdf.Name: {asdf.New},
 	}
 
 	// Collections of extractors.
@@ -253,6 +259,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		Secrets,
+		MiscSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -309,6 +316,7 @@ var (
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
+		"miscsource": vals(MiscSource),
 
 		// Collections.
 		"artifact":           vals(Artifact),
