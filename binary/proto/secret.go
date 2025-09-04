@@ -21,8 +21,8 @@ import (
 
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"

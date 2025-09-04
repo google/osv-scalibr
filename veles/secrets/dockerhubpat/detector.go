@@ -56,7 +56,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	// 1. docker login command username and pat detection
 	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatch(content, -1)
 	for _, m := range dockerLoginCmdMatches {
-		// Case 1: Username in first position, PAT in second position
+		// Case 1: Username in the first position, PAT in the second position
 		if len(m[1]) > 0 && len(m[4]) > 0 {
 			secrets = append(secrets, DockerHubPAT{
 				Username: string(m[1]),
