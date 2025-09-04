@@ -225,7 +225,6 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	if snapshot == "" {
 		snapshot = version
 	}
-	log.Infof("Getting project %s:%s version %s (snapshot: %s) from registry %s", groupID, artifactID, version, snapshot, registry.ID)
 
 	var project maven.Project
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
@@ -237,7 +236,6 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 
 // getVersionMetadata fetches a version level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID, version string) (maven.Metadata, error) {
-	log.Infof("Getting version metadata for %s:%s@%s from registry %s", groupID, artifactID, version, registry.ID)
 	var metadata maven.Metadata
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
@@ -248,7 +246,6 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
-	log.Infof("Getting artifact metadata for %s:%s from registry %s", groupID, artifactID, registry.ID)
 	var metadata maven.Metadata
 	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
@@ -274,6 +271,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 	u := registry.Parsed.JoinPath(paths...).String()
 	resp, err := m.responses.Get(u, func() (response, error) {
+		log.Infof("Fetching response from: %s", u)
 		resp, err := auth.Get(ctx, http.DefaultClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
