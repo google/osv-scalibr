@@ -688,7 +688,8 @@ message SecretData {
 
   message GrokXAIManagementAPIKey {
     string key = 1;
-    
+  }
+
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material

@@ -76,8 +76,8 @@ func mockManagementServer(t *testing.T, expectedKey string, statusCode int, body
 	t.Helper()
 
 	// The managementEndpoint path in the validator is:
-	// /auth/teams/c93fc649-6965-42b4-8ca3-c3413ae1c5d1/api-keys
-	expectedPath := "/auth/teams/c93fc649-6965-42b4-8ca3-c3413ae1c5d1/api-keys"
+	// /auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys
+	expectedPath := "/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Expect a GET to the management path

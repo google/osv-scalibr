@@ -173,7 +173,7 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 		}
 		if resp.Code == 7 {
 			// Team mismatch error → means the key itself is valid.
-			//Every management API call requires a {teamId}, but we don't know the real one.
+			// Every management API call requires a {teamId}, but we don't know the real one.
 			// By using a fake teamId, a valid key passes authentication but fails authorization,
 			// producing code 7 ("team mismatch"). This reliably distinguishes valid keys from invalid ones.
 			return veles.ValidationValid, nil

@@ -176,6 +176,10 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		Secret: &spb.SecretData_GrokXaiManagementApiKey{
 			GrokXaiManagementApiKey: &spb.SecretData_GrokXAIManagementAPIKey{
 				Key: s.Key,
+			},
+		},
+	}
+}
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
