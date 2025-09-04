@@ -75,6 +75,10 @@ func (v *Validator) Validate(ctx context.Context, key HuggingfaceAPIKey) (veles.
 		return veles.ValidationValid, nil
 	case http.StatusUnauthorized:
 		return veles.ValidationInvalid, nil
+	case http.StatusTooManyRequests:
+		return veles.ValidationValid, nil
+	case http.StatusInternalServerError:
+		return veles.ValidationFailed, fmt.Errorf("unexpected server-side error: %d", res.StatusCode)
 	default:
 		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
 	}
