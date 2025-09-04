@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -86,5 +87,7 @@ func (e Extractor) extractFromPath(path string) []*extractor.Package {
 		}
 		return []*extractor.Package{pkg}
 	}
+
+	log.Errorf("failed to extract package version from the following path : %s", path)
 	return nil
 }
