@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
@@ -97,6 +98,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return anthropicModelAPIKeyToProto(t.Key), nil
 	case velesperplexity.PerplexityAPIKey:
 		return perplexityAPIKeyToProto(t), nil
+	case velesopenai.ProjectAPIKey:
+		return openaiProjectAPIKeyToProto(t.Key), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -162,6 +165,16 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 			PrivateKey: &spb.SecretData_PrivateKey{
 				Block: pk.Block,
 				Der:   pk.Der,
+			},
+		},
+	}
+}
+
+func openaiProjectAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenaiProjectApiKey{
+			OpenaiProjectApiKey: &spb.SecretData_OpenAIProjectAPIKey{
+				Key: key,
 			},
 		},
 	}
