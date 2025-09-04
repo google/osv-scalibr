@@ -642,9 +642,9 @@ message SecretData {
     AnthropicWorkspaceAPIKey anthropic_workspace_api_key = 2;
     AnthropicModelAPIKey anthropic_model_api_key = 3;
     PerplexityAPIKey perplexity = 4;
-    GrokXAIAPIKey grok_xai_api_key = 5;
-    GrokXAIManagementAPIKey grok_xai_management_api_key = 6;
     PrivateKey private_key = 5;
+    GrokXAIAPIKey grok_xai_api_key = 6;
+    GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
   }
 
   message GCPSAK {
