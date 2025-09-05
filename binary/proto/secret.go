@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -92,6 +93,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case dockerhubpat.DockerHubPAT:
+		return dockerHubPATToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -104,6 +107,17 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DockerHubPat_{
+			DockerHubPat: &spb.SecretData_DockerHubPat{
+				Pat:      s.Pat,
+				Username: s.Username,
+			},
+		},
 	}
 }
 
@@ -271,6 +285,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_DockerHubPat_:
+		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -286,6 +302,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	}
 }
 
+func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerHubPAT {
+	return dockerhubpat.DockerHubPAT{
+		Pat:      kPB.GetPat(),
+		Username: kPB.GetUsername(),
+	}
+}
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	sak := velesgcpsak.GCPSAK{
 		PrivateKeyID:   sakPB.GetPrivateKeyId(),
