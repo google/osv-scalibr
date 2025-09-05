@@ -639,6 +639,8 @@ message SecretData {
 
   message HuggingfaceAPIKey {
     string key = 1;
+    string role = 2;
+    repeated string fine_grained_scope = 3;
   }
 }
 

@@ -56,9 +56,10 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 // using the API key in the Authorization header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, key HuggingfaceAPIKey) (veles.ValidationStatus, error) {
+func (v *Validator) Validate(ctx context.Context, key *HuggingfaceAPIKey) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://huggingface.co/api/whoami-v2", nil)
+	key.FineGrainedScope = []string{"TestScope1", "TestScope2"}
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}

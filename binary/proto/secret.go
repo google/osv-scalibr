@@ -122,7 +122,9 @@ func huggingfaceAPIKeyToProto(s huggingfaceapikey.HuggingfaceAPIKey) *spb.Secret
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Hugginface{
 			Hugginface: &spb.SecretData_HuggingfaceAPIKey{
-				Key: s.Key,
+				Key:              s.Key,
+				Role:             s.Role,
+				FineGrainedScope: s.FineGrainedScope,
 			},
 		},
 	}
@@ -215,7 +217,9 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 
 func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfaceapikey.HuggingfaceAPIKey {
 	return huggingfaceapikey.HuggingfaceAPIKey{
-		Key: kPB.GetKey(),
+		Key:              kPB.GetKey(),
+		Role:             kPB.GetRole(),
+		FineGrainedScope: kPB.GetFineGrainedScope(),
 	}
 }
 

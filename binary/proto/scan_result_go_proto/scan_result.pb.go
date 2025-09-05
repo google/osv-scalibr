@@ -5319,10 +5319,12 @@ func (x *SecretData_GCPSAK) GetPrivateKey() string {
 }
 
 type SecretData_HuggingfaceAPIKey struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Key              string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Role             string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	FineGrainedScope []string               `protobuf:"bytes,3,rep,name=fine_grained_scope,json=fineGrainedScope,proto3" json:"fine_grained_scope,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *SecretData_HuggingfaceAPIKey) Reset() {
@@ -5360,6 +5362,20 @@ func (x *SecretData_HuggingfaceAPIKey) GetKey() string {
 		return x.Key
 	}
 	return ""
+}
+
+func (x *SecretData_HuggingfaceAPIKey) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *SecretData_HuggingfaceAPIKey) GetFineGrainedScope() []string {
+	if x != nil {
+		return x.FineGrainedScope
+	}
+	return nil
 }
 
 var File_proto_scan_result_proto protoreflect.FileDescriptor
@@ -5749,7 +5765,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xef\x04\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xb1\x05\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12G\n" +
@@ -5771,9 +5787,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	" \x01(\tR\x11clientX509CertUrl\x12'\n" +
 	"\x0funiverse_domain\x18\v \x01(\tR\x0euniverseDomain\x12\x1f\n" +
 	"\vprivate_key\x18\f \x01(\tR\n" +
-	"privateKey\x1a%\n" +
+	"privateKey\x1ag\n" +
 	"\x11HuggingfaceAPIKey\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12,\n" +
+	"\x12fine_grained_scope\x18\x03 \x03(\tR\x10fineGrainedScopeB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +

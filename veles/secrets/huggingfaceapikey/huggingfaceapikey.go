@@ -19,5 +19,7 @@ package huggingfaceapikey
 // Huggingface API key (prefix `hf_`).
 // HuggingfaceAPIKey represents an API key used to authenticate requests
 type HuggingfaceAPIKey struct {
-	Key string
+	Key              string
+	Role             string
+	FineGrainedScope []string
 }

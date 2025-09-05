@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package secrets contains an Enricher that uses Veles Validators to validate
+// Package huggingfacesecrets contains an Enricher that uses Veles Validators to validate
 // Secrets found by the Veles Extractor.
-package secrets
+package huggingfacesecrets
 
 import (
 	"context"
@@ -24,12 +24,12 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 )
 
 const (
 	// Name is the unique name of this Enricher.
-	Name = "secrets/velesvalidate"
+	Name = "huggingfacesecrets/velesvalidate"
 
 	version = 1
 )
@@ -44,7 +44,7 @@ type Enricher struct {
 // New creates a new Enricher using the default Veles Validators.
 func New() enricher.Enricher {
 	engine := veles.NewValidationEngine(
-		veles.WithValidator(gcpsak.NewValidator()),
+		veles.WithValidator(huggingfaceapikey.NewValidator()),
 	)
 	return &Enricher{engine: engine}
 }
