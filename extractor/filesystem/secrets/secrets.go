@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
@@ -66,6 +67,8 @@ func init() { //nolint:gochecknoinits
 		anthropicapikey.NewDetector(),
 		gcpsak.NewDetector(),
 		perplexityapikey.NewDetector(),
+		grokxaiapikey.NewAPIKeyDetector(),
+		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
 	})
 	if err != nil {
