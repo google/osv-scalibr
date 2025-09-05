@@ -288,6 +288,12 @@ func TestValidatorManagement(t *testing.T) {
 		expectError bool
 	}{
 		{
+			name:       "valid_key_status_ok",
+			statusCode: http.StatusOK,
+			body:       nil,
+			want:       veles.ValidationValid,
+		},
+		{
 			name:       "valid_key_team_mismatch",
 			statusCode: http.StatusForbidden,
 			body: map[string]any{

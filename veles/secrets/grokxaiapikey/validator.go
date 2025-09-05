@@ -159,14 +159,18 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusUnauthorized {
+	switch res.StatusCode {
+	case http.StatusOK:
+		// A 200 OK from the management API does not indicate a valid key.
+		return veles.ValidationValid, nil
+
+	case http.StatusUnauthorized:
 		// Invalid bearer token.
 		// The API rejects the token entirely (code 16 "Invalid bearer token"),
 		// which means the key is malformed, expired, or simply does not exist.
 		return veles.ValidationInvalid, nil
-	}
 
-	if res.StatusCode == http.StatusForbidden {
+	case http.StatusForbidden:
 		var resp managementErrorResponse
 		if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
 			return veles.ValidationFailed, fmt.Errorf("unable to parse response from %q: %w", managementEndpoint, err)
@@ -181,7 +185,8 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 		// Other 403 codes → the key was authenticated but failed authorization for reasons other than team mismatch.
 		// This indicates the key is not valid for use.
 		return veles.ValidationInvalid, nil
-	}
 
-	return veles.ValidationFailed, fmt.Errorf("unexpected status %q from %q", res.Status, managementEndpoint)
+	default:
+		return veles.ValidationFailed, fmt.Errorf("unexpected status %q from %q", res.Status, managementEndpoint)
+	}
 }
