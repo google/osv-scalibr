@@ -26,6 +26,7 @@ import (
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -105,6 +106,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velespostmanapikey.PostmanAPIKey:
+		return postmanAPIKeyToProto(t), nil
+	case velespostmanapikey.PostmanCollectionToken:
+		return postmanCollectionTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -194,6 +199,27 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+
+func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanApiKey{
+			PostmanApiKey: &spb.SecretData_PostmanAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func postmanCollectionTokenToProto(s velespostmanapikey.PostmanCollectionToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanCollectionAccessToken_{ // wrapper type has trailing underscore
+			PostmanCollectionAccessToken: &spb.SecretData_PostmanCollectionAccessToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
@@ -297,6 +323,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_PostmanApiKey:
+		return velespostmanapikey.PostmanAPIKey{
+			Key: s.GetPostmanApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_PostmanCollectionAccessToken_:
+		return velespostmanapikey.PostmanCollectionToken{
+			Key: s.GetPostmanCollectionAccessToken().GetKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
