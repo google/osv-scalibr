@@ -175,7 +175,7 @@ func (v *ValidatorManagement) Validate(ctx context.Context, key GrokXAIManagemen
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		// A 200 OK from the management API does not indicate a valid key.
+		// A 200 OK from the management API does indicate a valid key.
 		return veles.ValidationValid, nil
 
 	case http.StatusUnauthorized:
