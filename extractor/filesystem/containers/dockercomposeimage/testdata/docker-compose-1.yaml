@@ -1,0 +1,16 @@
+name: myproject
+services:
+  web:
+    image: nginx:1.27-alpine
+  api:
+    image: registry-1.docker.io/library/redis:7.2
+  svc:
+    image: ghcr.io/acme/cool-service:2.3.4
+  worker:
+    image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:2025-09-01
+  envvar:
+    image: ${SERVICE_IMAGE:-ghcr.io/acme/svc:1.2.3}
+  workervar:
+    image: ghcr.io/acme/worker:${TAG}
+  workervar2:
+    image: ghcr.io/acme/worker:1.${version_minor}.0

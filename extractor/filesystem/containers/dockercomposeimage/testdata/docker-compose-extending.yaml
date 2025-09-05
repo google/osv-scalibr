@@ -1,0 +1,21 @@
+name: myApp
+
+x-base: &base
+  restart: unless-stopped
+  environment:
+    LOG_LEVEL: info
+  ports:
+    - "8080:8080"
+
+services:
+  api-stable:
+    <<: *base
+    image: ghcr.io/acme/api:1.2.0
+
+  api-next:
+    <<: *base
+    image: ghcr.io/acme/api:1.3.0-rc
+
+  api-canary:
+    <<: *base
+    image: ghcr.io/acme/api:1.3.0-canary
