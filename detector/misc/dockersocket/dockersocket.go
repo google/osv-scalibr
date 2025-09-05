@@ -101,7 +101,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 	}
 
 	// Check Docker socket file permissions
-	if socketIssues := d.checkDockerSocketPermissions(ctx, fsys); len(socketIssues) > 0 {
+	if socketIssues := d.checkDockerSocketPermissions(fsys); len(socketIssues) > 0 {
 		issues = append(issues, socketIssues...)
 	}
 
@@ -134,7 +134,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 }
 
 // checkDockerSocketPermissions checks /var/run/docker.sock for insecure permissions.
-func (d Detector) checkDockerSocketPermissions(ctx context.Context, fsys fs.FS) []string {
+func (d Detector) checkDockerSocketPermissions(fsys fs.FS) []string {
 	var issues []string
 
 	f, err := fsys.Open("var/run/docker.sock")
