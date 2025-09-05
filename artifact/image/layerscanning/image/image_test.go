@@ -1294,12 +1294,12 @@ func TestFS(t *testing.T) {
 					{
 						fileNodeTree: func() *RootNode {
 							root := NewNode(DefaultMaxSymlinkDepth)
-							_ = root.Insert("/", &virtualFile{
+							_ = root.Insert("/", &VirtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &virtualFile{
+							_ = root.Insert("/foo.txt", &VirtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
@@ -1323,12 +1323,12 @@ func TestFS(t *testing.T) {
 					{
 						fileNodeTree: func() *RootNode {
 							root := NewNode(DefaultMaxSymlinkDepth)
-							_ = root.Insert("/", &virtualFile{
+							_ = root.Insert("/", &VirtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &virtualFile{
+							_ = root.Insert("/foo.txt", &VirtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
@@ -1343,16 +1343,16 @@ func TestFS(t *testing.T) {
 					{
 						fileNodeTree: func() *RootNode {
 							root := NewNode(DefaultMaxSymlinkDepth)
-							_ = root.Insert("/", &virtualFile{
+							_ = root.Insert("/", &VirtualFile{
 								virtualPath: "/",
 								isWhiteout:  false,
 								mode:        fs.ModeDir | dirPermission,
 							})
-							_ = root.Insert("/foo.txt", &virtualFile{
+							_ = root.Insert("/foo.txt", &VirtualFile{
 								virtualPath: "/foo.txt",
 								mode:        filePermission,
 							})
-							_ = root.Insert("/bar.txt", &virtualFile{
+							_ = root.Insert("/bar.txt", &VirtualFile{
 								virtualPath: "/bar.txt",
 								mode:        filePermission,
 							})

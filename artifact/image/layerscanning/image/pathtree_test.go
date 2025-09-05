@@ -35,16 +35,16 @@ func testTree(t *testing.T) *RootNode {
 	t.Helper()
 
 	tree := NewNode(DefaultMaxSymlinkDepth)
-	assertNoError(t, tree.Insert("/", &virtualFile{virtualPath: "/", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/b", &virtualFile{virtualPath: "/a/b", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/b/c", &virtualFile{virtualPath: "/a/b/c", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/b/d", &virtualFile{virtualPath: "/a/b/d", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/b/d/f", &virtualFile{virtualPath: "/a/b/d/f", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/e", &virtualFile{virtualPath: "/a/e", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/e/f", &virtualFile{virtualPath: "/a/e/f", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/a/g", &virtualFile{virtualPath: "/a/g", mode: fs.ModeDir}))
-	assertNoError(t, tree.Insert("/x/y/z", &virtualFile{virtualPath: "/x/y/z", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/", &VirtualFile{virtualPath: "/", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/b", &VirtualFile{virtualPath: "/a/b", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/b/c", &VirtualFile{virtualPath: "/a/b/c", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/b/d", &VirtualFile{virtualPath: "/a/b/d", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/b/d/f", &VirtualFile{virtualPath: "/a/b/d/f", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/e", &VirtualFile{virtualPath: "/a/e", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/e/f", &VirtualFile{virtualPath: "/a/e/f", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/a/g", &VirtualFile{virtualPath: "/a/g", mode: fs.ModeDir}))
+	assertNoError(t, tree.Insert("/x/y/z", &VirtualFile{virtualPath: "/x/y/z", mode: fs.ModeDir}))
 
 	return tree
 }
@@ -54,30 +54,30 @@ func TestNode_Insert_Error(t *testing.T) {
 		name string
 		tree *RootNode
 		key  string
-		val  *virtualFile
+		val  *VirtualFile
 	}{
 		{
 			name: "duplicate node",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
 				return tree
 			}(),
 			key: "/a",
-			val: &virtualFile{virtualPath: "/a", mode: fs.ModeDir},
+			val: &VirtualFile{virtualPath: "/a", mode: fs.ModeDir},
 		},
 		{
 			name: "duplicate node in subtree",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
-				_ = tree.Insert("/a/b", &virtualFile{virtualPath: "/a/b", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a/b", &VirtualFile{virtualPath: "/a/b", mode: fs.ModeDir})
 
 				return tree
 			}(),
 			key: "/a/b",
-			val: &virtualFile{virtualPath: "/a/b", mode: fs.ModeDir},
+			val: &VirtualFile{virtualPath: "/a/b", mode: fs.ModeDir},
 		},
 	}
 	for _, tt := range tests {
@@ -95,7 +95,7 @@ func TestNode_Get(t *testing.T) {
 		name    string
 		tree    *RootNode
 		key     string
-		want    *virtualFile
+		want    *VirtualFile
 		wantErr error
 	}{
 		{
@@ -109,18 +109,18 @@ func TestNode_Get(t *testing.T) {
 			name: "single node",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
 				return tree
 			}(),
 			key:  "/a",
-			want: &virtualFile{virtualPath: "/a", mode: fs.ModeDir},
+			want: &VirtualFile{virtualPath: "/a", mode: fs.ModeDir},
 		},
 		{
 			name: "nonexistent node in single node tree",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
 				return tree
 			}(),
@@ -132,13 +132,13 @@ func TestNode_Get(t *testing.T) {
 			name: "root node",
 			tree: testTree(t),
 			key:  "/",
-			want: &virtualFile{virtualPath: "/", mode: fs.ModeDir},
+			want: &VirtualFile{virtualPath: "/", mode: fs.ModeDir},
 		},
 		{
 			name: "multiple nodes",
 			tree: testTree(t),
 			key:  "/a/b/c",
-			want: &virtualFile{virtualPath: "/a/b/c", mode: fs.ModeDir},
+			want: &VirtualFile{virtualPath: "/a/b/c", mode: fs.ModeDir},
 		},
 		{
 			name:    "nonexistent node",
@@ -154,7 +154,7 @@ func TestNode_Get(t *testing.T) {
 			if errDiff := cmp.Diff(err, tt.wantErr, cmpopts.EquateErrors()); errDiff != "" {
 				t.Errorf("Node.Get() err diff (-want +got):\n%s", errDiff)
 			}
-			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(virtualFile{})); diff != "" {
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(VirtualFile{})); diff != "" {
 				t.Errorf("Node.Get() (-want +got): %v", diff)
 			}
 		})
@@ -166,7 +166,7 @@ func TestNode_GetChildren(t *testing.T) {
 		name    string
 		tree    *RootNode
 		key     string
-		want    []*virtualFile
+		want    []*VirtualFile
 		wantErr error
 	}{
 		{
@@ -180,19 +180,19 @@ func TestNode_GetChildren(t *testing.T) {
 			name: "single node no children",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
 				return tree
 			}(),
 			key:  "/a",
-			want: []*virtualFile{},
+			want: []*VirtualFile{},
 		},
 		{
 			name: "root node",
 			tree: testTree(t),
 			key:  "/",
 			// /x is not included since value is nil.
-			want: []*virtualFile{
+			want: []*VirtualFile{
 				{virtualPath: "/a", mode: fs.ModeDir},
 			},
 		},
@@ -200,7 +200,7 @@ func TestNode_GetChildren(t *testing.T) {
 			name: "multiple nodes with children",
 			tree: testTree(t),
 			key:  "/a/b",
-			want: []*virtualFile{
+			want: []*VirtualFile{
 				{virtualPath: "/a/b/c", mode: fs.ModeDir},
 				{virtualPath: "/a/b/d", mode: fs.ModeDir},
 			},
@@ -219,7 +219,7 @@ func TestNode_GetChildren(t *testing.T) {
 			if errDiff := cmp.Diff(err, tt.wantErr, cmpopts.EquateErrors()); errDiff != "" {
 				t.Errorf("Node.Get() err diff (-want +got):\n%s", errDiff)
 			}
-			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(virtualFile{}), cmpopts.SortSlices(func(a, b *virtualFile) bool {
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(VirtualFile{}), cmpopts.SortSlices(func(a, b *VirtualFile) bool {
 				return strings.Compare(a.virtualPath, b.virtualPath) < 0
 			})); diff != "" {
 				t.Errorf("Node.GetChildren() (-want +got): %v", diff)
@@ -250,7 +250,7 @@ func TestNode_Walk(t *testing.T) {
 			name: "single node",
 			tree: func() *RootNode {
 				tree := NewNode(DefaultMaxSymlinkDepth)
-				_ = tree.Insert("/a", &virtualFile{virtualPath: "/a", mode: fs.ModeDir})
+				_ = tree.Insert("/a", &VirtualFile{virtualPath: "/a", mode: fs.ModeDir})
 
 				return tree
 			}(),
@@ -279,7 +279,7 @@ func TestNode_Walk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := []keyValue{}
-			err := tt.tree.Walk(func(p string, vf *virtualFile) error {
+			err := tt.tree.Walk(func(p string, vf *VirtualFile) error {
 				got = append(got, keyValue{key: p, val: vf.virtualPath})
 				return nil
 			})
