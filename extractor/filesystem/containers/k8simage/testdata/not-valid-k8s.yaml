@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  template:
+    spec:
+      containers:
+        - name: mypostgresdb
+          image: postgres:8
+        - name: nginxapp
+          image: nginx:1.7.9
+        - name: myapp
+          image: my-demo-app:latest
+        - name: alpine-app
+          image: alpine:3.7
+
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
