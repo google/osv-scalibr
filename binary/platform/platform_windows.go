@@ -14,6 +14,7 @@
 
 //go:build windows
 
+// Package platform provides platform-specific functionality.
 package platform
 
 import (
