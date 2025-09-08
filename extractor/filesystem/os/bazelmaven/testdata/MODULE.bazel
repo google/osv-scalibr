@@ -11,18 +11,23 @@ bazel_dep(name = "rules_kotlin", version = "2.1.9")
 
 maven_custom_name = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 
+part0 = ":4"
 MAVEN_ADDITIONAL_DEPS1 = [
-      "group4:artifact4:4",
+      "group4:artifact4" + part0,
 ]
 
 MAVEN_ADDITIONAL_DEPS2 = [
       "group3:artifact3:3",
 ] + MAVEN_ADDITIONAL_DEPS1
 
+part1 = ":artifact2:"
+part2 = "group2" + part1 + "2"
+part3 = part2
+
 maven_custom_name.install(
     artifacts = [
         "group1:artifact1:1",
-        "group2:artifact2:2",
+        part3,
     ] + MAVEN_ADDITIONAL_DEPS2,
     repositories = [
         "https://maven.google.com",
@@ -31,10 +36,10 @@ maven_custom_name.install(
     ],
 )
 VAR1 = "fac"
-VAR2 = "arti" +VAR1 + "t5"
-GUAVA = VAR2
+VAR2 = "arti" + VAR1 + "t5"
+artifact5 = VAR2
 maven_custom_name.artifact(group = "group5",
-               artifact = GUAVA,
+               artifact = artifact5,
                version = "5")
 
 use_repo(maven_custom_name, "maven")

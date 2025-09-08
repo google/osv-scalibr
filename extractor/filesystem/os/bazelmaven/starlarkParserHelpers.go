@@ -121,7 +121,14 @@ func getAttributeValuesWithVisited(expr build.Expr, file *build.File, visited ma
 		// Direct list of items
 		for _, item := range e.List {
 			if str, ok := item.(*build.StringExpr); ok {
+				// Handle direct string literals
 				dependencies = append(dependencies, str.Value)
+			} else {
+				// Handle variables or expressions that might resolve to strings
+				stringValue := getStringValueWithVisited(item, file, visited)
+				if stringValue != "" {
+					dependencies = append(dependencies, stringValue)
+				}
 			}
 		}
 
