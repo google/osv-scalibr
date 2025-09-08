@@ -59,7 +59,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 
 	for _, a := range config.Annotators {
 		err := a.Annotate(ctx, input, inventory)
-		statuses = append(statuses, plugin.StatusFromErr(a, false, err))
+		statuses = append(statuses, plugin.StatusFromErr(a, false, err, nil))
 	}
 	return statuses, nil
 }

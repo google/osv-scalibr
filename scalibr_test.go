@@ -60,7 +60,10 @@ func TestScan(t *testing.T) {
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
-		FailureReason: "file.txt: " + pluginFailure,
+		FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+		FileErrors: []*plugin.FileErrors{
+			{FilePath: "file.txt", ErrorMessage: pluginFailure},
+		},
 	}
 	detFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
