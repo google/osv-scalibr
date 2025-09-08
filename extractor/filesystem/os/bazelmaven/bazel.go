@@ -36,6 +36,7 @@ const (
 	Name = "os/bazelmaven"
 )
 
+// Extractor extracts maven packages from bazel build files.
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
@@ -137,7 +138,6 @@ func FindAllMavenDependencies(input []byte) RuleDependencies {
 			r := &build.Rule{Call: rule}
 			// Check the type of rule.X to handle both direct rule names "rule_name(...)" and dot expressions ".rule_name(...)"
 			switch x := rule.X.(type) {
-
 			case *build.Ident:
 				ruleName := x.Name
 				switch ruleName {
@@ -158,7 +158,7 @@ func FindAllMavenDependencies(input []byte) RuleDependencies {
 
 			case *build.DotExpr:
 				// Check if this is a dot expression (like variable.install)
-				// and the "variable" is a assigned by an extension with known specs
+				// and the "variable" is assigned by an extension with known specs
 				ruleName := x.Name
 				if varName, ok := x.X.(*build.Ident); ok {
 					if _, exists := extensionVarsMapping[varName.Name]; exists {
