@@ -23,6 +23,7 @@ import (
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	bazelmeta "github.com/google/osv-scalibr/extractor/filesystem/os/bazelmaven/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
@@ -84,6 +85,9 @@ var (
 		reflect.TypeOf(&spb.Package_AsdfMetadata{}): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
 		},
+		reflect.TypeOf(&spb.Package_BazelMavenMetadata{}): func(p *spb.Package) any {
+			return bazelmeta.ToStruct(p.GetBazelMavenMetadata())
+		},
 		reflect.TypeOf(&spb.Package_MacportsMetadata{}): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
@@ -108,6 +112,7 @@ var (
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
+		(*bazelmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 	}

@@ -69,6 +69,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/bazelmaven"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -239,7 +240,8 @@ var (
 
 	// Misc source extractors.
 	MiscSource = InitMap{
-		asdf.Name: {asdf.New},
+		asdf.Name:       {asdf.New},
+		bazelmaven.Name: {bazelmaven.New},
 	}
 
 	// Collections of extractors.

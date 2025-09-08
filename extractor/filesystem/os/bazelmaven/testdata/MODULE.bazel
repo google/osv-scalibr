@@ -1,0 +1,53 @@
+module(
+    name = "bazel_examples",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_jvm_external", version = "6.3")
+bazel_dep(name = "rules_java", version = "8.14.0")
+bazel_dep(name = "rules_android", version = "0.1.1")
+bazel_dep(name = "rules_kotlin", version = "2.1.9")
+
+maven_custome_name = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+
+MAVEN_ADDITIONAL_DEPS1 = [
+      "group4:atifact4:4",
+]
+
+MAVEN_ADDITIONAL_DEPS2 = [
+      "group3:atifact3:3",
+] + MAVEN_ADDITIONAL_DEPS1
+
+maven_custome_name.install(
+    artifacts = [
+        "group1:atifact1:1",
+        "group2:atifact2:2",
+    ] + MAVEN_ADDITIONAL_DEPS2,
+    repositories = [
+        "https://maven.google.com",
+        "https://repo1.maven.org/maven2",
+        "https://maven-central.storage.googleapis.com/repos/central/data/",
+    ],
+)
+VAR1 = "fac"
+VAR2 = "ati" +VAR1 + "t5"
+GUAVA = VAR2
+maven_custome_name.artifact(group = "group5",
+               artifact = GUAVA,
+               version = "5")
+
+use_repo(maven_custome_name, "maven")
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+maven_install(
+    artifacts = [
+        "group6:atifact6:6",
+        "group7:atifact7:7",
+    ],
+    repositories = [
+        "https://maven.google.com",
+        "https://repo1.maven.org/maven2",
+    ],
+)
