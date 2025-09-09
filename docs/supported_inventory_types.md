@@ -8,7 +8,7 @@ Plugins are grouped into the following categories:
 
 - **Extractors**: Identify software packages, dependencies, and other inventory.
 - **Detectors**: Detect security findings, such as misconfigurations or
-                 specific vulnerabilities.
+  specific vulnerabilities.
 - **Enrichers**: Augment inventory with additional data from external sources.
 - **Annotators**: Add contextual information to the inventory.
 
@@ -36,6 +36,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |-------------------|--------------------------------|----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
 | asdf              | .tool-versions                 | `lanuages/asdf`                              |
+| Bazel             | Bazel Build Files              | `lanuages/bazel`                             |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
@@ -156,10 +157,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ## Enrichers
 
-| Description                                                                | Plugin Name                         |
-|----------------------------------------------------------------------------|-------------------------------------|
-| Extracts details about the base image a software package was added in      | `baseimage`                         |
-| Filters findings that have VEX statements.                                 | `vex/filter`                        |
-| Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
-| Performs reachability analysis for Java code.                              | `reachability/java`                 |
-| Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
+| Description                                                              | Plugin Name                         |
+|--------------------------------------------------------------------------|-------------------------------------|
+| Extracts details about the base image a software package was added in    | `baseimage`                         |
+| Filters findings that have VEX statements.                               | `vex/filter`                        |
+| Validates secrets, e.g. checking if a GCP service account key is active. | `secrets/velesvalidate`             |
+| Performs reachability analysis for Java code.                            | `reachability/java`                 |
+| Resolves transitive dependencies for Python pip packages.                | `transitivedependency/requirements` |
