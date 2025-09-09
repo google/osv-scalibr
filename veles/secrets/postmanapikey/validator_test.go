@@ -21,8 +21,9 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 )
@@ -104,11 +105,11 @@ func mockCollectionServer(t *testing.T, expectedKey string, statusCode int, body
 
 func TestValidatorAPI(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		body        any
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		body       any
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -133,18 +134,18 @@ func TestValidatorAPI(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "forbidden_error",
-			statusCode:  http.StatusForbidden,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "forbidden_error",
+			statusCode: http.StatusForbidden,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -170,15 +171,8 @@ func TestValidatorAPI(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(context.Background(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -190,13 +184,10 @@ func TestValidatorAPI(t *testing.T) {
 }
 
 func TestValidatorAPI_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"user": {"id": 12345, "name": "Test User"}}`))
-	}))
-	defer server.Close()
+	server := httptest.NewServer(nil)
+	t.Cleanup(func() {
+		server.Close()
+	})
 
 	// Create client with custom transport
 	client := &http.Client{
@@ -209,15 +200,15 @@ func TestValidatorAPI_ContextCancellation(t *testing.T) {
 
 	key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
 
-	// Create context with short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create context that is immediately cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
 
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
+	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
+		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
@@ -278,11 +269,11 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 
 func TestValidatorCollection(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		body        any
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		body       any
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key_with_access",
@@ -294,8 +285,7 @@ func TestValidatorCollection(t *testing.T) {
 			statusCode: http.StatusForbidden,
 			body: map[string]any{
 				"error": map[string]any{
-					"name":    "forbiddenError",
-					"message": "You are not authorized to perform this action.",
+					"name": "forbiddenError",
 				},
 			},
 			want: veles.ValidationValid,
@@ -323,18 +313,18 @@ func TestValidatorCollection(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "forbidden_bad_json",
-			statusCode:  http.StatusForbidden,
-			body:        "not-a-json", // this will be encoded as a string -> invalid JSON structure for decoding
-			expectError: true,
-			want:        veles.ValidationFailed,
+			name:       "forbidden_bad_json",
+			statusCode: http.StatusForbidden,
+			body:       "not-a-json", // this will be encoded as a string -> invalid JSON structure for decoding
+			wantErr:    cmpopts.AnyError,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -360,15 +350,8 @@ func TestValidatorCollection(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(context.Background(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -380,13 +363,10 @@ func TestValidatorCollection(t *testing.T) {
 }
 
 func TestValidatorCollection_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"error":{"name":"forbiddenError","message":"You are not authorized to perform this action."}}`))
-	}))
-	defer server.Close()
+	server := httptest.NewServer(nil)
+	t.Cleanup(func() {
+		server.Close()
+	})
 
 	// Create client with custom transport
 	client := &http.Client{
@@ -399,15 +379,15 @@ func TestValidatorCollection_ContextCancellation(t *testing.T) {
 
 	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
-	// Create context with short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create context that is immediately cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
 
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
+	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
+		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)

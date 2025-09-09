@@ -167,8 +167,7 @@ type collectionErrorResponse struct {
 
 const (
 	// Exact values observed for a valid-but-not-authorized response.
-	forbiddenErrorName    = "forbiddenError"
-	forbiddenErrorMessage = "You are not authorized to perform this action."
+	forbiddenErrorName = "forbiddenError"
 )
 
 // Validate checks whether the given PostmanCollectionToken is valid.
@@ -215,7 +214,7 @@ func (v *ValidatorCollection) Validate(ctx context.Context, key PostmanCollectio
 			// Decoding failed -> ambiguous response, treat as failed to validate.
 			return veles.ValidationFailed, fmt.Errorf("unable to parse response from %q: %w", url, err)
 		}
-		if resp.Error.Name == forbiddenErrorName && resp.Error.Message == forbiddenErrorMessage {
+		if resp.Error.Name == forbiddenErrorName {
 			// Exact match -> authenticated but not authorized for dummy
 			// collection, therefore token is valid.
 			return veles.ValidationValid, nil
