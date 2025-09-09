@@ -646,6 +646,7 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
+    GitlabPat gitlab_pat = 9;
   }
 
   message GCPSAK {
@@ -699,6 +700,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message GitlabPat {
+    string pat = 1;
   }
 }
 
