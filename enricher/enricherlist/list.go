@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
@@ -36,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -86,7 +88,14 @@ var (
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewAPIValidator(), "secrets/postmanapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewCollectionValidator(), "secrets/postmancollectiontokenvalidate", 0),
+		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),
+		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 	})
+
+	// HCPIdentity enricher.
+	HCPIdentity = InitMap{
+		hcpidentity.Name: {hcpidentity.New},
+	}
 
 	// HuggingfaceMeta enricher.
 	HuggingfaceMeta = InitMap{
@@ -112,6 +121,7 @@ var (
 		VulnMatching,
 		VEX,
 		Secrets,
+		HCPIdentity,
 		HuggingfaceMeta,
 		License,
 		Reachability,
@@ -124,6 +134,7 @@ var (
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(Secrets),
+		"hcpidentity":          vals(HCPIdentity),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"enrichers/default":    vals(Default),

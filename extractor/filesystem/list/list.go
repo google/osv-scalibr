@@ -99,6 +99,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -270,6 +271,8 @@ var (
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
+		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
+		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 	})
 
 	// Misc artifact extractors.
