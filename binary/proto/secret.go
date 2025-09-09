@@ -24,6 +24,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -105,6 +106,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case gitlabpat.GitlabPat:
+		return gitalbPatKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -190,6 +193,15 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		Secret: &spb.SecretData_GrokXaiManagementApiKey{
 			GrokXaiManagementApiKey: &spb.SecretData_GrokXAIManagementAPIKey{
 				Key: s.Key,
+			},
+		},
+	}
+}
+func gitalbPatKeyToProto(s gitlabpat.GitlabPat) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabPat_{
+			GitlabPat: &spb.SecretData_GitlabPat{
+				Pat: s.Pat,
 			},
 		},
 	}
@@ -287,6 +299,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
+	case *spb.SecretData_GitlabPat_:
+		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -306,6 +320,11 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 	return dockerhubpat.DockerHubPAT{
 		Pat:      kPB.GetPat(),
 		Username: kPB.GetUsername(),
+	}
+}
+func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPat {
+	return gitlabpat.GitlabPat{
+		Pat: kPB.GetPat(),
 	}
 }
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
