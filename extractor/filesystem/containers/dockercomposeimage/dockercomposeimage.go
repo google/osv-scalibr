@@ -18,8 +18,10 @@ package dockercomposeimage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -93,7 +95,7 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired returns true if the specified file matches Docker Compose Configuration File.
+// FileRequired returns true if the specified file could be a Docker Compose file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	// Skip directories and oversized files
@@ -104,20 +106,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if e.maxFileSizeBytes > 0 && fi.Size() > e.maxFileSizeBytes {
 		return false
 	}
-
-	// Parse YAML and look for top-level "services" field
-	f, err := os.Open(path)
-	if err != nil {
+	filename := filepath.Base(path)
+	if filepath.Ext(filename) != ".yml" && filepath.Ext(filename) != ".yaml" {
 		return false
 	}
-	defer f.Close()
-	dec := yaml.NewDecoder(io.LimitReader(f, e.maxFileSizeBytes))
-	var content map[string]interface{}
-	if err := dec.Decode(&content); err != nil {
-		return false
-	}
-	_, ok := content["services"]
-	return ok
+	return strings.Contains(filename, "compose") ||
+		strings.Contains(filename, "docker")
 }
 
 // Extract extracts image urls from a Docker Compose File.
@@ -125,16 +119,27 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
 	}
-	if input.Info.Size() > e.maxFileSizeBytes {
-		// Skipping too large file.
-		log.Infof("Skipping too large file: %s", input.Path)
+
+	data, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+
+	// Check for a top-level "services" field.
+	var content map[string]interface{}
+	if err := yaml.Unmarshal(data, &content); err != nil {
+		// Not a valid yaml file, not an error.
+		return inventory.Inventory{}, nil
+	}
+	if _, ok := content["services"]; !ok {
+		// Not a compose file, not an error.
 		return inventory.Inventory{}, nil
 	}
 
-	images, err := UniqueImagesFromReader(ctx, input.Reader)
+	images, err := uniqueImagesFromReader(ctx, input)
 	if err != nil {
-		log.Warnf("Parsing error: %v", err)
-		return inventory.Inventory{}, err
+		log.Warnf("Parsing docker-compose file %q failed: %v", input.Path, err)
+		return inventory.Inventory{}, nil
 	}
 	var pkgs []*extractor.Package
 	for _, image := range images {
@@ -152,19 +157,25 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func UniqueImagesFromReader(
-	ctx context.Context,
-	r io.Reader,
-) ([]string, error) {
-	data, err := io.ReadAll(r)
+func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([]string, error) {
+	absPath, err := input.GetRealPath()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
+	}
+	if input.Root == "" {
+		// The file got copied to a temporary dir, remove it at the end.
+		defer func() {
+			dir := filepath.Dir(absPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Errorf("os.RemoveAll(%q): %w", dir, err)
+			}
+		}()
 	}
 
 	details := types.ConfigDetails{
 		WorkingDir: "",
 		ConfigFiles: []types.ConfigFile{
-			{Filename: "in-memory.yaml", Content: data},
+			{Filename: absPath},
 		},
 	}
 

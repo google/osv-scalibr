@@ -36,22 +36,17 @@ func TestFileRequired(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "docker compose file",
-			path: "testdata/docker-compose-1.yaml",
+			name: "docker compose file with yml extension",
+			path: "testdata/docker-compose-1.yml",
 			want: true,
 		},
 		{
-			name: "docker compose file with extension",
+			name: "docker compose file with yaml extension",
 			path: "testdata/docker-compose-extending.yaml",
 			want: true,
 		},
 		{
-			name: "docker compose file extension",
-			path: "testdata/docker-compose-yaml-parse-error.yaml",
-			want: false,
-		},
-		{
-			name: "not docker compose file",
+			name: "not a docker compose file",
 			path: "testdata/docker.conf",
 			want: false,
 		},
@@ -101,48 +96,48 @@ func TestExtract(t *testing.T) {
 		},
 		{
 			name: "multi stage docker compose file",
-			path: "testdata/docker-compose-1.yaml",
+			path: "testdata/docker-compose-1.yml",
 			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
 					Version:   "1.27-alpine",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "registry-1.docker.io/library/redis",
 					Version:   "7.2",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "ghcr.io/acme/cool-service",
 					Version:   "2.3.4",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp",
 					Version:   "2025-09-01",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "ghcr.io/acme/svc",
 					Version:   "1.2.3",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "ghcr.io/acme/worker",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 				{
 					Name:      "ghcr.io/acme/worker",
 					Version:   "1..0",
-					Locations: []string{"testdata/docker-compose-1.yaml"},
+					Locations: []string{"testdata/docker-compose-1.yml"},
 					PURLType:  purl.TypeDocker,
 				},
 			},
@@ -191,9 +186,9 @@ func TestExtract_failures(t *testing.T) {
 			})
 			defer extracttest.CloseTestScanInput(t, input)
 
-			_, err := extr.Extract(t.Context(), &input)
-			if err == nil {
-				t.Fatalf("Extract(): got nil, want err")
+			got, _ := extr.Extract(t.Context(), &input)
+			if diff := cmp.Diff(inventory.Inventory{}, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tc.path, diff)
 			}
 		})
 	}
