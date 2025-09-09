@@ -60,7 +60,6 @@ func New() enricher.Enricher {
 		veles.WithValidator(stripeapikey.NewValidatorSKLive()),
 		veles.WithValidator(stripeapikey.NewValidatorRKTest()),
 		veles.WithValidator(stripeapikey.NewValidatorRKLive()),
-		
 	)
 	return &Enricher{engine: engine}
 }

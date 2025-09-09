@@ -29,7 +29,6 @@ import (
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	velesstripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 
-
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -218,7 +217,6 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	}
 }
 
-
 // stripeSKTestToProto converts a StripeSKTestKey to proto.
 func stripeSKTestToProto(s velesstripeapikey.StripeSKTestKey) *spb.SecretData {
 	return &spb.SecretData{
@@ -273,8 +271,6 @@ func stripeWebhookToProto(s velesstripeapikey.StripeWebhookSecret) *spb.SecretDa
 		},
 	}
 }
-
-
 
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)

@@ -30,21 +30,26 @@ const stripeEndpoint = "https://api.stripe.com/v1/accounts"
 // --- Core SK validator (shared logic) ---
 //
 
-// ValidatorSK validates Stripe SK keys (sk_test_, sk_live_).
-// Rule: Only HTTP 200 means valid.
+// ValidatorSK validates Stripe SK (Secret) keys (sk_test_, sk_live_).
+// Logic:
+//   - Send GET /v1/accounts using the provided key as Basic Auth.
+//   - A key is considered valid ONLY if Stripe responds with HTTP 200.
+//   - 5xx responses mean Stripe service issues → treat as "failed validation".
+//   - All other status codes (mainly 4xx) mean the key is invalid.
 type ValidatorSK struct {
 	httpC *http.Client
 }
 
-// ValidatorOptionSK configures ValidatorSK.
+// ValidatorOptionSK configures ValidatorSK (e.g., allows injecting custom http.Client).
 type ValidatorOptionSK func(*ValidatorSK)
 
-// WithClientSK allows injecting a custom http.Client.
+// WithClientSK allows injecting a custom http.Client into ValidatorSK.
+// Useful for mocking/testing or customizing transport.
 func WithClientSK(c *http.Client) ValidatorOptionSK {
 	return func(v *ValidatorSK) { v.httpC = c }
 }
 
-// NewValidatorSK creates a new ValidatorSK.
+// NewValidatorSK constructs a ValidatorSK with optional configuration.
 func NewValidatorSK(opts ...ValidatorOptionSK) *ValidatorSK {
 	v := &ValidatorSK{httpC: http.DefaultClient}
 	for _, opt := range opts {
@@ -53,10 +58,12 @@ func NewValidatorSK(opts ...ValidatorOptionSK) *ValidatorSK {
 	return v
 }
 
+// validateKey checks if a given SK key is valid against Stripe’s /accounts API.
 func (v *ValidatorSK) validateKey(
 	ctx context.Context,
 	key string,
 ) (veles.ValidationStatus, error) {
+	// Build request to Stripe API
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, stripeEndpoint, nil,
 	)
@@ -64,8 +71,9 @@ func (v *ValidatorSK) validateKey(
 		return veles.ValidationFailed,
 			fmt.Errorf("create request: %w", err)
 	}
-	req.SetBasicAuth(key, "")
+	req.SetBasicAuth(key, "") // Use key as Basic Auth
 
+	// Send request
 	res, err := v.httpC.Do(req)
 	if err != nil {
 		return veles.ValidationFailed,
@@ -73,15 +81,16 @@ func (v *ValidatorSK) validateKey(
 	}
 	defer res.Body.Close()
 
-	
+	// Decision logic based on response status
 	switch {
 	case res.StatusCode == http.StatusOK:
+		// Key is valid
 		return veles.ValidationValid, nil
 	case res.StatusCode >= 500:
-		// Stripe service/server error
+		// Server-side error on Stripe side → retry later
 		return veles.ValidationFailed, nil
 	default:
-		// 4xx → invalid
+		// 4xx errors (unauthorized, forbidden, etc.) → key invalid
 		return veles.ValidationInvalid, nil
 	}
 }
@@ -90,11 +99,13 @@ func (v *ValidatorSK) validateKey(
 // --- Core RK validator (shared logic) ---
 //
 
-// ValidatorRK validates Stripe RK keys (rk_test_, rk_live_).
-// Rule:
-//   200 → valid
-//   403 with "does not have the required permissions" → valid (scoped)
-//   else → invalid
+// ValidatorRK validates Stripe Restricted (RK) keys (rk_test_, rk_live_).
+// Logic:
+//   - HTTP 200 → valid (unrestricted access).
+//   - HTTP 403 with message "does not have the required permissions" → valid,
+//     because restricted keys can still be active but scoped.
+//   - HTTP 5xx → failed validation (Stripe service issue).
+//   - Anything else → invalid.
 type ValidatorRK struct {
 	httpC *http.Client
 }
@@ -107,7 +118,7 @@ func WithClientRK(c *http.Client) ValidatorOptionRK {
 	return func(v *ValidatorRK) { v.httpC = c }
 }
 
-// NewValidatorRK creates a new ValidatorRK.
+// NewValidatorRK constructs a ValidatorRK with optional configuration.
 func NewValidatorRK(opts ...ValidatorOptionRK) *ValidatorRK {
 	v := &ValidatorRK{httpC: http.DefaultClient}
 	for _, opt := range opts {
@@ -116,16 +127,19 @@ func NewValidatorRK(opts ...ValidatorOptionRK) *ValidatorRK {
 	return v
 }
 
+// rkErrorResponse represents the JSON error structure returned by Stripe.
 type rkErrorResponse struct {
 	Error struct {
 		Message string `json:"message"`
 	} `json:"error"`
 }
 
+// validateKey checks if a given RK key is valid against Stripe’s /accounts API.
 func (v *ValidatorRK) validateKey(
 	ctx context.Context,
 	key string,
 ) (veles.ValidationStatus, error) {
+	// Build request to Stripe API
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, stripeEndpoint, nil,
 	)
@@ -135,6 +149,7 @@ func (v *ValidatorRK) validateKey(
 	}
 	req.SetBasicAuth(key, "")
 
+	// Send request
 	res, err := v.httpC.Do(req)
 	if err != nil {
 		return veles.ValidationFailed,
@@ -142,32 +157,42 @@ func (v *ValidatorRK) validateKey(
 	}
 	defer res.Body.Close()
 
+	// Decision logic based on response
 	switch {
 	case res.StatusCode == http.StatusOK:
+		// Key is valid and unrestricted
 		return veles.ValidationValid, nil
 	case res.StatusCode == http.StatusForbidden:
+		// Could still be a valid restricted key
 		var resp rkErrorResponse
 		if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
 			return veles.ValidationFailed,
 				fmt.Errorf("parse 403: %w", err)
 		}
+		// Stripe explicitly indicates the key is valid but scoped
 		if strings.Contains(
 			resp.Error.Message,
 			"does not have the required permissions",
 		) {
 			return veles.ValidationValid, nil
 		}
+		// Other 403 → invalid key
 		return veles.ValidationInvalid, nil
 	case res.StatusCode >= 500:
-		// Stripe service/server error
+		// Stripe-side issue, not key-related
 		return veles.ValidationFailed, nil
 	default:
+		// Other 4xx → invalid
 		return veles.ValidationInvalid, nil
 	}
 }
 
 //
 // --- Typed Adapters (4 validators exposed) ---
+//
+// These adapters expose strongly typed validators for different
+// Stripe key categories (test/live, SK/RK).
+// Each wraps the shared core validator logic but enforces type safety.
 //
 
 // ValidatorSKTest validates StripeSKTestKey.
@@ -234,10 +259,10 @@ func NewValidatorRKLive(opts ...ValidatorOptionRK) *ValidatorRKLive {
 	return &ValidatorRKLive{core: NewValidatorRK(opts...)}
 }
 
-//
 // --- Compile-time assertions ---
 //
-
+// These ensure that all validators correctly implement the
+// veles.Validator<T> interface at compile time.
 var (
 	_ veles.Validator[StripeSKTestKey] = &ValidatorSKTest{}
 	_ veles.Validator[StripeSKLiveKey] = &ValidatorSKLive{}

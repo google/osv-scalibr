@@ -32,8 +32,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
-	stripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
+	stripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 )
 
 const (

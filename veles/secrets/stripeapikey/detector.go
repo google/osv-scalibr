@@ -33,9 +33,9 @@ var (
 // Approximate max lengths for stripe keys.
 const (
 	// Secret keys max length (prefix 8 + 99 payload)
-	skKeyMaxLen   = 107
+	skKeyMaxLen = 107
 	// Restricted keys max length (prefix 8 + 99 payload)
-	rkKeyMaxLen   = 107
+	rkKeyMaxLen = 107
 	// Webhook secret max length (prefix 6 + 32 payload)
 	webhookMaxLen = 38
 )
@@ -57,7 +57,6 @@ var (
 	// Stripe Webhook Secret: starts with "whsec_" followed by exactly 32 alphanumeric characters
 	webhookRe = regexp.MustCompile(`whsec_[A-Za-z0-9]{32}`)
 )
-
 
 // NewSKTestDetector returns a detector for Stripe test secret keys (sk_test_...).
 func NewSKTestDetector() veles.Detector {

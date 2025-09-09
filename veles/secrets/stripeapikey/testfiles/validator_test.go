@@ -70,8 +70,11 @@ func mockStripeServer(t *testing.T, expectedKey string, statusCode int, response
 		// Set response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
+		// Inside mockStripeServer
 		if responseBody != "" {
-			w.Write([]byte(responseBody))
+			if _, err := w.Write([]byte(responseBody)); err != nil {
+				t.Errorf("failed to write response body: %v", err)
+			}
 		}
 	}))
 }
@@ -105,9 +108,9 @@ func TestValidatorSKTest(t *testing.T) {
 			want:       veles.ValidationFailed,
 		},
 		{
-			name:        "bad_gateway",
-			statusCode:  http.StatusBadGateway,
-			want:        veles.ValidationFailed,
+			name:       "bad_gateway",
+			statusCode: http.StatusBadGateway,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -175,9 +178,9 @@ func TestValidatorSKLive(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -257,9 +260,9 @@ func TestValidatorRKTest(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -306,7 +309,7 @@ func TestValidatorRKTest(t *testing.T) {
 
 func TestValidatorRKLive(t *testing.T) {
 	permissionErrorResponse := `{"error":{"message":"This API key does not have the required permissions for this operation."}}`
-	
+
 	cases := []struct {
 		name         string
 		statusCode   int
@@ -331,9 +334,9 @@ func TestValidatorRKLive(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -553,7 +556,9 @@ func TestValidatorRK_JSONParsingError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("invalid json response"))
+		if _, err := w.Write([]byte("invalid json response")); err != nil {
+			t.Errorf("failed to write response body: %v", err)
+		}
 	}))
 	defer server.Close()
 
