@@ -42,29 +42,22 @@ const (
 
 // Regexes for Stripe keys and webhook secret. Initialized at startup.
 var (
-	// Secret Key (Test): sk_test_[A-Za-z0-9]{10,99}
-	skTestRe = regexp.MustCompile(`sk_test_[A-Za-z0-9]{10,99}`)
+	// Stripe Secret Key (Test): starts with "sk_test_" followed by 10-99 alphanumeric characters
+	skTestRe = regexp.MustCompile(`sk_test_[A-Za-z0-9]{10,99}\b`)
 
-	// Secret Key (Live): sk_live_[A-Za-z0-9]{10,99}
-	skLiveRe = regexp.MustCompile(`sk_live_[A-Za-z0-9]{10,99}`)
+	// Stripe Secret Key (Live): starts with "sk_live_" followed by 10-99 alphanumeric characters
+	skLiveRe = regexp.MustCompile(`sk_live_[A-Za-z0-9]{10,99}\b`)
 
-	// Restricted Key (Test): rk_test_[A-Za-z0-9]{10,99}
-	rkTestRe = regexp.MustCompile(`rk_test_[A-Za-z0-9]{10,99}`)
+	// Stripe Restricted Key (Test): starts with "rk_test_" followed by 10-99 alphanumeric characters
+	rkTestRe = regexp.MustCompile(`rk_test_[A-Za-z0-9]{10,99}\b`)
 
-	// Restricted Key (Live): rk_live_[A-Za-z0-9]{10,99}
-	rkLiveRe = regexp.MustCompile(`rk_live_[A-Za-z0-9]{10,99}`)
+	// Stripe Restricted Key (Live): starts with "rk_live_" followed by 10-99 alphanumeric characters
+	rkLiveRe = regexp.MustCompile(`rk_live_[A-Za-z0-9]{10,99}\b`)
 
-	// Webhook secret: whsec_[A-Za-z0-9]{32}
+	// Stripe Webhook Secret: starts with "whsec_" followed by exactly 32 alphanumeric characters
 	webhookRe = regexp.MustCompile(`whsec_[A-Za-z0-9]{32}`)
 )
 
-
-
-type StripeSKTestKey struct{ Key string }
-type StripeSKLiveKey struct{ Key string }
-type StripeRKTestKey struct{ Key string }
-type StripeRKLiveKey struct{ Key string }
-type StripeWebhookSecret struct{ Key string }
 
 // NewSKTestDetector returns a detector for Stripe test secret keys (sk_test_...).
 func NewSKTestDetector() veles.Detector {

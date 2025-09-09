@@ -646,6 +646,11 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
+    StripeSKTestApiKey stripe_sk_test_api_key = 9;
+    StripeSKLiveApiKey stripe_sk_live_api_key = 10;
+    StripeRKTestApiKey stripe_rk_test_api_key = 11;
+    StripeRKLiveApiKey stripe_rk_live_api_key = 12;
+    StripeWebhookSecret stripe_webhook_secret = 13;
   }
 
   message GCPSAK {
@@ -700,6 +705,27 @@ message SecretData {
     string pat = 1;
     string username = 2;
   }
+
+  message StripeSKTestApiKey {
+    string key = 1;
+  }
+
+  message StripeSKLiveApiKey {
+    string key = 1;
+  }
+
+  message StripeRKTestApiKey {
+    string key = 1;
+  }
+
+  message StripeRKLiveApiKey {
+    string key = 1;
+  }
+
+  message StripeWebhookSecret {
+    string key = 1;
+  }
+
 }
 
 message SecretStatus {

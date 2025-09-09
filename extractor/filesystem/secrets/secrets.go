@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	stripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
 
@@ -72,6 +73,11 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewAPIKeyDetector(),
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
+		stripeapikey.NewSKTestDetector(),
+		stripeapikey.NewSKLiveDetector(),
+		stripeapikey.NewRKTestDetector(),
+		stripeapikey.NewRKLiveDetector(),
+		stripeapikey.NewWebhookSecretDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
