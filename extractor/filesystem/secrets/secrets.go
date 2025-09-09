@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -80,6 +81,8 @@ func init() { //nolint:gochecknoinits
 		gcpsak.NewDetector(),
 		dockerhubpat.NewDetector(),
 		digitaloceanapikey.NewDetector(),
+		hashicorpvault.NewTokenDetector(),
+		hashicorpvault.NewAppRoleDetector(),
 		perplexityapikey.NewDetector(),
 		grokxaiapikey.NewAPIKeyDetector(),
 		grokxaiapikey.NewManagementKeyDetector(),
