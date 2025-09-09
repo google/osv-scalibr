@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	stripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 )
 
 const (
@@ -55,6 +56,10 @@ func New() enricher.Enricher {
 		veles.WithValidator(perplexityapikey.NewValidator()),
 		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
 		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
+		veles.WithValidator(stripeapikey.NewValidatorSKTest()),
+		veles.WithValidator(stripeapikey.NewValidatorSKLive()),
+		veles.WithValidator(stripeapikey.NewValidatorRKTest()),
+		veles.WithValidator(stripeapikey.NewValidatorRKLive()),
 	)
 	return &Enricher{engine: engine}
 }

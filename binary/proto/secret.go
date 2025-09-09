@@ -27,6 +27,7 @@ import (
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	velesstripeapikey "github.com/google/osv-scalibr/veles/secrets/stripeapikey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -105,6 +106,17 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesstripeapikey.StripeSKTestKey:
+		return stripeSKTestToProto(t), nil
+	case velesstripeapikey.StripeSKLiveKey:
+		return stripeSKLiveToProto(t), nil
+	case velesstripeapikey.StripeRKTestKey:
+		return stripeRKTestToProto(t), nil
+	case velesstripeapikey.StripeRKLiveKey:
+		return stripeRKLiveToProto(t), nil
+	case velesstripeapikey.StripeWebhookSecret:
+		return stripeWebhookToProto(t), nil
+
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -205,6 +217,61 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	}
 }
 
+// stripeSKTestToProto converts a StripeSKTestKey to proto.
+func stripeSKTestToProto(s velesstripeapikey.StripeSKTestKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeSkTestApiKey{
+			StripeSkTestApiKey: &spb.SecretData_StripeSKTestApiKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+// stripeSKLiveToProto converts a StripeSKLiveKey to proto.
+func stripeSKLiveToProto(s velesstripeapikey.StripeSKLiveKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeSkLiveApiKey{
+			StripeSkLiveApiKey: &spb.SecretData_StripeSKLiveApiKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+// stripeRKTestToProto converts a StripeRKTestKey to proto.
+func stripeRKTestToProto(s velesstripeapikey.StripeRKTestKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeRkTestApiKey{
+			StripeRkTestApiKey: &spb.SecretData_StripeRKTestApiKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+// stripeRKLiveToProto converts a StripeRKLiveKey to proto.
+func stripeRKLiveToProto(s velesstripeapikey.StripeRKLiveKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeRkLiveApiKey{
+			StripeRkLiveApiKey: &spb.SecretData_StripeRKLiveApiKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+// stripeWebhookToProto converts a StripeWebhookSecret to proto.
+func stripeWebhookToProto(s velesstripeapikey.StripeWebhookSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeWebhookSecret_{
+			StripeWebhookSecret: &spb.SecretData_StripeWebhookSecret{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -297,6 +364,31 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_StripeSkTestApiKey:
+		return velesstripeapikey.StripeSKTestKey{
+			Key: s.GetStripeSkTestApiKey().GetKey(),
+		}, nil
+
+	case *spb.SecretData_StripeSkLiveApiKey:
+		return velesstripeapikey.StripeSKLiveKey{
+			Key: s.GetStripeSkLiveApiKey().GetKey(),
+		}, nil
+
+	case *spb.SecretData_StripeRkTestApiKey:
+		return velesstripeapikey.StripeRKTestKey{
+			Key: s.GetStripeRkTestApiKey().GetKey(),
+		}, nil
+
+	case *spb.SecretData_StripeRkLiveApiKey:
+		return velesstripeapikey.StripeRKLiveKey{
+			Key: s.GetStripeRkLiveApiKey().GetKey(),
+		}, nil
+
+	case *spb.SecretData_StripeWebhookSecret_:
+		return velesstripeapikey.StripeWebhookSecret{
+			Key: s.GetStripeWebhookSecret().GetKey(),
+		}, nil
+
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
