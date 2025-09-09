@@ -18,7 +18,6 @@ package luarocks
 import (
 	"context"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -49,9 +48,6 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// check parents folder regular expression for the following path convention: ../rocks-5.x/../../x.rockspec
-var reParentFolder = regexp.MustCompile(`^rocks-5\.\d+$`)
-
 // FileRequired return true if the specified file matched the .rockspec file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
@@ -70,8 +66,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// 3rd parent from the file
 	rocksParent := parts[len(parts)-4]
 
-	if !reParentFolder.MatchString(rocksParent) {
-		// Path doesn't contain Luarocks tree folder convention /rocks-5.x/../../x.rockspec
+	// check parents folder for the following path convention: ../rocks-5.x/../../x.rockspec
+	if !strings.Contains(rocksParent, "rocks-") {
 		return false
 	}
 	return true
@@ -87,7 +83,7 @@ func (e Extractor) extractFromPath(path string) []*extractor.Package {
 	// Split path into components
 	parts := strings.Split(filepath.Clean(path), string(filepath.Separator))
 
-	if len(parts) >= 4 && reParentFolder.MatchString(parts[len(parts)-4]) {
+	if len(parts) >= 4 && strings.Contains(parts[len(parts)-4], "rocks-") {
 		// 2nd parent = module name, 1st parent = version
 		module := parts[len(parts)-3]
 		version := parts[len(parts)-2]
