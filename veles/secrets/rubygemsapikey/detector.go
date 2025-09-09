@@ -21,8 +21,14 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a RubyGems API key.
-const maxTokenLength = 57
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/rubygemsapikey"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	// maxTokenLength is the maximum size of a RubyGems API key.
+	maxTokenLength = 57
+)
 
 // keyRe is a regular expression that matches a RubyGems API key.
 var keyRe = regexp.MustCompile(`rubygems_[0-9a-f]{48}`)

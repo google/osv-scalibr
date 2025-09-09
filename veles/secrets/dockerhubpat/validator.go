@@ -23,6 +23,13 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+const (
+	// ValidatorName is the name of this validator.
+	ValidatorName = "secrets/dockerhubpatvalidate"
+	// ValidatorVersion is the version of this validator.
+	ValidatorVersion = 0
+)
+
 // Validator validates Docker Hub PATs via the Docker Hub API endpoint.
 type Validator struct {
 	httpC *http.Client

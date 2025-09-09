@@ -24,10 +24,15 @@ import (
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
-	"github.com/google/osv-scalibr/enricher/secrets"
+	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
+	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
 // InitFn is the enricher initializer function.
@@ -61,7 +66,13 @@ var (
 
 	// Secrets enrichers.
 	Secrets = InitMap{
-		secrets.Name: {secrets.New},
+		anthropicapikey.WorkspaceValidatorName: {convert.FromVelesValidator(anthropicapikey.NewWorkspaceValidator(), anthropicapikey.WorkspaceValidatorName, anthropicapikey.WorkspaceValidatorVersion)},
+		anthropicapikey.ModelValidatorName:     {convert.FromVelesValidator(anthropicapikey.NewModelValidator(), anthropicapikey.ModelValidatorName, anthropicapikey.ModelValidatorVersion)},
+		dockerhubpat.ValidatorName:             {convert.FromVelesValidator(dockerhubpat.NewValidator(), dockerhubpat.ValidatorName, dockerhubpat.ValidatorVersion)},
+		gcpsak.ValidatorName:                   {convert.FromVelesValidator(gcpsak.NewValidator(), gcpsak.ValidatorName, gcpsak.ValidatorVersion)},
+		grokxaiapikey.APIValidatorName:         {convert.FromVelesValidator(grokxaiapikey.NewAPIValidator(), grokxaiapikey.APIValidatorName, grokxaiapikey.APIValidatorVersion)},
+		grokxaiapikey.ManagementValidatorName:  {convert.FromVelesValidator(grokxaiapikey.NewManagementAPIValidator(), grokxaiapikey.ManagementValidatorName, grokxaiapikey.ManagementValidatorVersion)},
+		perplexityapikey.ValidatorName:         {convert.FromVelesValidator(perplexityapikey.NewValidator(), perplexityapikey.ValidatorName, perplexityapikey.ValidatorVersion)},
 	}
 
 	// Reachability enrichers.
@@ -93,7 +104,7 @@ var (
 		"vex":                  vals(VEX),
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
-		"secrets":              vals(Secrets),
+		"secretsvalidate":      vals(Secrets),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"enrichers/default":    vals(Default),

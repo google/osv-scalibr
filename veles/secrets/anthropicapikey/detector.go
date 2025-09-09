@@ -21,8 +21,14 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of an Anthropic API key.
-const maxTokenLength = 200
+const (
+	// DetectorName is the name of the detector.
+	DetectorName = "secrets/anthropicapikey"
+	// DetectorVersion is the version of the detector.
+	DetectorVersion = 0
+	// maxTokenLength is the maximum size of an Anthropic API key.
+	maxTokenLength = 200
+)
 
 // keyRe is a regular expression that matches an Anthropic API key.
 // Anthropic API keys start with "sk-ant-" followed by an identifier

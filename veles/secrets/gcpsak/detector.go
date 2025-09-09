@@ -22,6 +22,13 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/flatjson"
 )
 
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/gcpsak"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+)
+
 var (
 	// Matches on "auth_provider_x509_cert_url" somewhere between curly braces.
 	// This matches very broadly and gives us some vague "JSON context" that we

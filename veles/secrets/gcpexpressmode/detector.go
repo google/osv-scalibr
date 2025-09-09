@@ -26,7 +26,11 @@ var (
 )
 
 const (
-	maxKeyLen = 53
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/gcpexpressmode"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	maxKeyLen       = 53
 )
 
 // NewDetector creates a new Veles Detector that finds candidate GCP Express Mode API keys.

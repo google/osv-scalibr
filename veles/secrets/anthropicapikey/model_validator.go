@@ -21,6 +21,13 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+const (
+	// ModelValidatorName is the name of this validator.
+	ModelValidatorName = "secrets/anthropicapikeymodelvalidate"
+	// ModelValidatorVersion is the version of this validator.
+	ModelValidatorVersion = 0
+)
+
 var _ veles.Validator[ModelAPIKey] = &ModelValidator{}
 
 // ModelValidator is a Veles Validator for Anthropic Model API keys.

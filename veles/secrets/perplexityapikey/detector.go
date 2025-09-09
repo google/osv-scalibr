@@ -23,8 +23,14 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a Perplexity API key.
-const maxTokenLength = 53
+const (
+	// DetectorName is the name of this detector.
+	DetectorName = "secrets/perplexityapikey"
+	// DetectorVersion is the version of this detector.
+	DetectorVersion = 0
+	// maxTokenLength is the maximum size of a Perplexity API key.
+	maxTokenLength = 53
+)
 
 // keyRe is a regular expression that matches a Perplexity API key.
 // Perplexity API keys have the form: `pplx-` followed by 48

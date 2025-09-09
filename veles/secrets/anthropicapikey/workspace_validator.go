@@ -21,6 +21,13 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+const (
+	// WorkspaceValidatorName is the name of this validator.
+	WorkspaceValidatorName = "secrets/anthropicapikeyworkspacevalidate"
+	// WorkspaceValidatorVersion is the version of this validator.
+	WorkspaceValidatorVersion = 0
+)
+
 var _ veles.Validator[WorkspaceAPIKey] = &WorkspaceValidator{}
 
 // WorkspaceValidator is a Veles Validator for Anthropic Workspace API keys.

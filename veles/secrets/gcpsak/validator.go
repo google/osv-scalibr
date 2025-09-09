@@ -25,7 +25,11 @@ import (
 )
 
 const (
-	defaultUniverse = "www.googleapis.com"
+	// ValidatorName is the Name of this validator.
+	ValidatorName = "secrets/gcpsakvalidate"
+	// ValidatorVersion is the Version of this validator.
+	ValidatorVersion = 0
+	defaultUniverse  = "www.googleapis.com"
 )
 
 var _ veles.Validator[GCPSAK] = &Validator{}
