@@ -130,10 +130,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	// Check for a top-level "services" field.
-	var content map[string]interface{}
+	var content map[string]any
 	if err := yaml.Unmarshal(data, &content); err != nil {
 		// Not a valid yaml file, not an error.
-		return inventory.Inventory{}, nil
+		return inventory.Inventory{}, err
 	}
 	if _, ok := content["services"]; !ok {
 		// Not a compose file, not an error.
@@ -203,7 +203,7 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	customOpts := loader.Options{
 		Interpolate: &interpolation.Options{
 			Substitute:      Substitute,
-			LookupValue:     createImperfectLookupFunc(details.LookupEnv),
+			LookupValue:     details.LookupEnv,
 			TypeCastMapping: make(map[tree.Path]interpolation.Cast),
 		},
 		ResolvePaths: true,
@@ -248,20 +248,6 @@ func parseName(name string) (string, string) {
 	}
 
 	return name, "latest"
-}
-
-// createImperfectLookupFunc creates a lookup function that handles missing environment variables.
-// When a variable is not found or empty, it returns false to indicate the variable is unavailable.
-// This allows the template substitution to continue processing even with missing variables.
-func createImperfectLookupFunc(originalLookup func(string) (string, bool)) func(string) (string, bool) {
-	return func(key string) (string, bool) {
-		value, found := originalLookup(key)
-		if !found || value == "" {
-			// Return false for missing or empty variables to indicate unavailability
-			return "", false
-		}
-		return value, true
-	}
 }
 
 // Substitute replaces environment variables in template strings with their values.
