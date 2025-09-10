@@ -2,7 +2,7 @@
 name: Patch reward program - vulnerability detection
 about: Submit a vulnerability scanner suggestion for the PRP
 title: 'PRP: Detector for {Software name} {Vuln identifier}'
-labels: PRP:Request
+labels: ['PRP', 'PRP:Request']
 assignees: ''
 
 ---

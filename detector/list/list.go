@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20242912"
 	"github.com/google/osv-scalibr/detector/endoflife/linuxdistro"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/detector/misc/dockersocket"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
@@ -43,7 +44,9 @@ type InitFn func() detector.Detector
 type InitMap map[string][]InitFn
 
 // CIS scanning related detectors.
-var CIS = InitMap{etcpasswdpermissions.Name: {etcpasswdpermissions.New}}
+var CIS = InitMap{
+	etcpasswdpermissions.Name: {etcpasswdpermissions.New},
+}
 
 // Govulncheck detectors.
 var Govulncheck = InitMap{binary.Name: {binary.New}}
@@ -77,6 +80,11 @@ var Weakcredentials = InitMap{
 	winlocal.Name:    {winlocal.New},
 }
 
+// Misc detectors for miscellaneous security issues.
+var Misc = InitMap{
+	dockersocket.Name: {dockersocket.New},
+}
+
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{}
 
@@ -85,6 +93,7 @@ var All = concat(
 	CIS,
 	EndOfLife,
 	Govulncheck,
+	Misc,
 	Weakcredentials,
 	Untested,
 )
@@ -93,6 +102,7 @@ var detectorNames = concat(All, InitMap{
 	"cis":               vals(CIS),
 	"endoflife":         vals(EndOfLife),
 	"govulncheck":       vals(Govulncheck),
+	"misc":              vals(Misc),
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
 	"detectors/default": vals(Default),

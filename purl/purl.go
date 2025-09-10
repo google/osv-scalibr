@@ -103,10 +103,14 @@ const (
 	TypeGooget = "googet"
 	// TypeWordpress is pkg:wordpress purl
 	TypeWordpress = "wordpress"
+	// TypeAsdf is pkg:asdf purl
+	TypeAsdf = "asdf"
 	// Macports is pkg:macports purl
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
 	TypeWinget = "winget"
+	// TypeNim is pkg:nim purl
+	TypeNim = "nim"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -194,6 +198,7 @@ func validType(t string) bool {
 		TypeGolang:    true,
 		TypeHackage:   true,
 		TypeHaskell:   true,
+		TypeNim:       true,
 		TypeHex:       true,
 		TypeMacApps:   true,
 		TypeMaven:     true,
@@ -209,6 +214,7 @@ func validType(t string) bool {
 		TypeSwift:     true,
 		TypeGooget:    true,
 		TypeWordpress: true,
+		TypeAsdf:      true,
 		TypeMacports:  true,
 		TypeWinget:    true,
 	}

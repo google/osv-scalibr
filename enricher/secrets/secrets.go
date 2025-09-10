@@ -25,7 +25,10 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
@@ -49,7 +52,11 @@ func New() enricher.Enricher {
 		veles.WithValidator(anthropicapikey.NewWorkspaceValidator()),
 		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
+		veles.WithValidator(dockerhubpat.NewValidator()),
+		veles.WithValidator(digitaloceanapikey.NewValidator()),
 		veles.WithValidator(perplexityapikey.NewValidator()),
+		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
+		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
 	)
 	return &Enricher{engine: engine}
 }

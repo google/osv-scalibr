@@ -35,6 +35,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Inventory Type    | Details                        | Extractor Plugin                             |
 |-------------------|--------------------------------|----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
+| asdf              | .tool-versions                 | `lanuages/asdf`                              |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
@@ -98,6 +99,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Rust binaries                             | `rust/cargoauditable`                |
 | Swift      | Podfile.lock                              | `swift/podfilelock`                  |
 |            | Package.resolved                          | `swift/packageresolved`              |
+| Nim        | Nimble packages                           | `nim/nimble`                         |
 
 ### Container inventory
 
