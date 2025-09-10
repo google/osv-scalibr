@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -40,17 +39,58 @@ const (
 	Name = "containers/k8simage"
 
 	// DefaultMaxFileSizeBytes is the default maximum file size the extractor will
-	// attempt to extract. If a file is encountered that is larger than this
-	// limit, the file is ignored by `FileRequired`.
+	// attempt to process. If a file is encountered that is larger than this
+	// limit, the file is skipped during processing.
 	DefaultMaxFileSizeBytes = 1 * units.MiB
 )
+
+// K8sResource represents a Kubernetes resource with the fields needed for image extraction.
+type K8sResource struct {
+	APIVersion string   `yaml:"apiVersion"`
+	Kind       string   `yaml:"kind"`
+	Spec       *K8sSpec `yaml:"spec,omitempty"`
+}
+
+// K8sSpec represents the spec section of a Kubernetes resource.
+type K8sSpec struct {
+	Containers     []Container  `yaml:"containers,omitempty"`
+	InitContainers []Container  `yaml:"initContainers,omitempty"`
+	Template       *PodTemplate `yaml:"template,omitempty"`
+	JobTemplate    *JobTemplate `yaml:"jobTemplate,omitempty"`
+}
+
+// JobTemplate represents a job template in CronJob resources.
+type JobTemplate struct {
+	Spec *JobSpec `yaml:"spec,omitempty"`
+}
+
+// JobSpec represents the spec of a Job.
+type JobSpec struct {
+	Template *PodTemplate `yaml:"template,omitempty"`
+}
+
+// PodTemplate represents a pod template in Kubernetes resources.
+type PodTemplate struct {
+	Spec *PodSpec `yaml:"spec,omitempty"`
+}
+
+// PodSpec represents a pod specification.
+type PodSpec struct {
+	Containers     []Container `yaml:"containers,omitempty"`
+	InitContainers []Container `yaml:"initContainers,omitempty"`
+}
+
+// Container represents a container specification in Kubernetes.
+type Container struct {
+	Image string `yaml:"image"`
+}
 
 // Config is the configuration for the Extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
 	Stats stats.Collector
 	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
+	// `FileRequired` receives a larger file, it will return false.
 	MaxFileSizeBytes int64
 }
 
@@ -89,67 +129,38 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
-// FileRequired returns true if the specified file looks like a Kubernetes YAML.
-// FileRequired determines if the specified file is a Kubernetes YAML file that should be processed.
-// It checks the file extension and looks for the presence of "apiVersion" and "kind" fields at the root level,
-// which are required for all Kubernetes resources.
+// Requirements of the extractor.
+func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+
+// FileRequired returns true if the specified file looks like a Kubernetes YAML file.
+// It determines if the specified file is a Kubernetes YAML file that should be processed
+// by checking the file extension (.yaml or .yml).
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// Only consider YAML/YML files
 	path := api.Path()
 	ext := strings.ToLower(filepath.Ext(filepath.Base(path)))
-	if ext != ".yaml" && ext != ".yml" {
-		return false
-	}
-
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-	// Process all YAML documents in the file
-	dec := yaml.NewDecoder(f)
-	for {
-		var doc any
-		if err := dec.Decode(&doc); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return false
-		}
-
-		// In Kubernetes resources, apiVersion and kind are always at the root level
-		if isKubernetesResource(doc) {
-			return true
-		}
-	}
-	return false
-}
-
-// isKubernetesResource checks if a YAML document is a Kubernetes resource
-// by verifying it has both apiVersion and kind fields at the root level.
-func isKubernetesResource(doc any) bool {
-	// Check if it's a map with apiVersion and kind fields
-	if resourceMap, ok := doc.(map[string]any); ok {
-		_, hasAPIVersion := resourceMap["apiVersion"]
-		_, hasKind := resourceMap["kind"]
-		return hasAPIVersion && hasKind
-	}
-	return false
+	return ext == ".yaml" || ext == ".yml"
 }
 
 // Extract extracts container image references from a K8s configuration file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	// Defer context cancellation check
+	defer func() {
+		if err := ctx.Err(); err != nil {
+			log.Debugf("%s context canceled during extraction: %v", e.Name(), err)
+		}
+	}()
+
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
 	}
 	if input.Info.Size() > e.maxFileSizeBytes {
-		// Skipping a too large file.
+		// Skip file that exceeds size limit.
 		log.Infof("Skipping too large file: %s", input.Path)
 		return inventory.Inventory{}, nil
 	}
 
-	images, err := parseK8sYAML(input.Reader)
+	images, err := parseK8sYAML(ctx, input.Reader)
 	if err != nil {
 		log.Warnf("Parsing error: %v", err)
 		return inventory.Inventory{}, err
@@ -162,18 +173,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Locations: []string{input.Path},
 			Name:      name,
 			Version:   version,
-			PURLType:  purl.TypeDocker,
+			PURLType:  purl.TypeK8sDocker,
 		})
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-// Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
-
+// parseName parses a container image name to extract the name and version/digest.
+// It handles both digest (@sha256:...) and tag (:tag) formats.
+// See: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 func parseName(name string) (string, string) {
-	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	if strings.Contains(name, "@") {
 		parts := strings.SplitN(name, "@", 2)
 		return parts[0], parts[1]
@@ -187,74 +197,75 @@ func parseName(name string) (string, string) {
 	return name, "latest"
 }
 
-// parseK8sYAML extracts container images from Kubernetes YAML
-func parseK8sYAML(r io.Reader) ([]string, error) {
+// parseK8sYAML extracts container images from Kubernetes YAML documents.
+// It supports multi-document YAML files and validates that each document
+// contains the required apiVersion and kind fields.
+func parseK8sYAML(ctx context.Context, r io.Reader) ([]string, error) {
 	decoder := yaml.NewDecoder(r)
 	var images []string
-
 	for {
+		// Check for context cancellation during parsing
+		if err := ctx.Err(); err != nil {
+			return images, fmt.Errorf("parseK8sYAML halted due to context error: %w", err)
+		}
+
 		// Parse each YAML document in the file
-		var doc map[string]any
+		var doc K8sResource
 		if err := decoder.Decode(&doc); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, fmt.Errorf("failed to parse Kubernetes YAML: %w", err)
 		}
-
+		// Check if the document is a Kubernetes resource by checking for "apiVersion" and "kind" fields
+		if doc.APIVersion == "" || doc.Kind == "" {
+			return nil, errors.New("not a Kubernetes configuration file: missing 'apiVersion' or 'kind'")
+		}
 		// Extract images from the document
-		extractedImages := extractImagesFromK8sDoc(doc)
+		extractedImages := extractImagesFromK8sResource(&doc)
 		images = append(images, extractedImages...)
 	}
 
 	return images, nil
 }
 
-// extractImagesFromK8sDoc recursively extracts container images from a K8s resource
-func extractImagesFromK8sDoc(doc map[string]any) []string {
+// extractImagesFromK8sResource extracts container images from a Kubernetes resource.
+// It handles various resource types including Pods, Deployments, StatefulSets, Jobs, and CronJobs.
+func extractImagesFromK8sResource(doc *K8sResource) []string {
 	var images []string
 
-	if spec, ok := doc["spec"].(map[string]any); ok {
-		// Check for direct containers at spec.containers
-		// Handle containers
-		images = append(images, getImagesFromContainers(spec, "containers")...)
-		// Handle initContainers
-		images = append(images, getImagesFromContainers(spec, "initContainers")...)
+	if doc.Spec == nil {
+		return images
+	}
 
-		// Check for template-based resources (Deployments, StatefulSets, etc.)
-		if template, ok := spec["template"].(map[string]any); ok {
-			if templateSpec, ok := template["spec"].(map[string]any); ok {
-				images = append(images, getImagesFromContainers(templateSpec, "containers")...)
-				images = append(images, getImagesFromContainers(templateSpec, "initContainers")...)
-			}
-		}
+	// Check for direct containers at spec.containers
+	images = append(images, getImagesFromContainerList(doc.Spec.Containers)...)
+	// Handle initContainers
+	images = append(images, getImagesFromContainerList(doc.Spec.InitContainers)...)
 
-		// Handle CronJob/Job templates
-		if jobTemplate, ok := spec["jobTemplate"].(map[string]any); ok {
-			if jobSpec, ok := jobTemplate["spec"].(map[string]any); ok {
-				if template, ok := jobSpec["template"].(map[string]any); ok {
-					if templateSpec, ok := template["spec"].(map[string]any); ok {
-						images = append(images, getImagesFromContainers(templateSpec, "containers")...)
-						images = append(images, getImagesFromContainers(templateSpec, "initContainers")...)
-					}
-				}
-			}
-		}
+	// Check for template-based resources (Deployments, StatefulSets, etc.)
+	if doc.Spec.Template != nil && doc.Spec.Template.Spec != nil {
+		images = append(images, getImagesFromContainerList(doc.Spec.Template.Spec.Containers)...)
+		images = append(images, getImagesFromContainerList(doc.Spec.Template.Spec.InitContainers)...)
+	}
+
+	// Handle CronJob/Job templates
+	if doc.Spec.JobTemplate != nil && doc.Spec.JobTemplate.Spec != nil &&
+		doc.Spec.JobTemplate.Spec.Template != nil && doc.Spec.JobTemplate.Spec.Template.Spec != nil {
+		images = append(images, getImagesFromContainerList(doc.Spec.JobTemplate.Spec.Template.Spec.Containers)...)
+		images = append(images, getImagesFromContainerList(doc.Spec.JobTemplate.Spec.Template.Spec.InitContainers)...)
 	}
 
 	return images
 }
 
-// getImagesFromContainers extracts image references from a container list
-func getImagesFromContainers(spec map[string]any, containerType string) []string {
+// getImagesFromContainerList extracts image references from a list of containers,
+// filtering out any containers with empty image fields.
+func getImagesFromContainerList(containers []Container) []string {
 	var images []string
-	if containers, ok := spec[containerType].([]any); ok {
-		for _, c := range containers {
-			if container, ok := c.(map[string]any); ok {
-				if image, ok := container["image"].(string); ok && image != "" {
-					images = append(images, image)
-				}
-			}
+	for _, container := range containers {
+		if container.Image != "" {
+			images = append(images, container.Image)
 		}
 	}
 	return images
