@@ -44,7 +44,11 @@ func ReadDir(fsys scalibrfs.FS, name string) (*DirIterator, error) {
 		if err != nil {
 			return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
 		}
-		return &DirIterator{files: files, curr: 0}, nil
+		if len(files) == 0 {
+			return &DirIterator{dir: nil, files: nil, curr: 0}, nil
+		} else {
+			return &DirIterator{files: files, curr: 0}, nil
+		}
 	}
 	return &DirIterator{dir: dir}, nil
 }
@@ -63,7 +67,7 @@ type DirIterator struct {
 // Next returns the next fs.DirEntry from the directory. If error is nil, there will be a
 // fs.DirEntry returned.
 func (i *DirIterator) Next() (fs.DirEntry, error) {
-	if i.files != nil {
+	if len(i.files) != 0 {
 		if i.curr >= len(i.files) {
 			return nil, io.EOF
 		}
@@ -71,12 +75,14 @@ func (i *DirIterator) Next() (fs.DirEntry, error) {
 		return i.files[i.curr-1], nil
 	}
 
-	list, err := i.dir.ReadDir(1)
-	if err != nil {
-		return nil, err
+	if i.dir != nil {
+		list, err := i.dir.ReadDir(1)
+		if err != nil {
+			return nil, err
+		}
+		return list[0], nil
 	}
-
-	return list[0], nil
+	return nil, io.EOF
 }
 
 // Close closes the directory file.
