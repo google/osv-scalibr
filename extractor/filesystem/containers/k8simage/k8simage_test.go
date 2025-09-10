@@ -28,36 +28,6 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
-func TestFileRequired(t *testing.T) {
-	extr := k8simage.New(k8simage.DefaultConfig())
-
-	tests := []struct {
-		name string
-		path string
-		want bool
-	}{
-		{
-			name: "K8s Deployment",
-			path: "testdata/deployment.yaml",
-			want: true,
-		},
-		{
-			name: "K8s Deployment 2",
-			path: "testdata/deployment2.yml",
-			want: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			isRequired := extr.FileRequired(simplefileapi.New(tc.path, nil))
-			if isRequired != tc.want {
-				t.Fatalf("FileRequired(%s): got %v, want %v", tc.path, isRequired, tc.want)
-			}
-		})
-	}
-}
-
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -66,135 +36,63 @@ func TestExtract(t *testing.T) {
 		wantPackages []*extractor.Package
 	}{
 		{
-			name: "deployment with multiple containers",
-			path: "testdata/deployment.yaml",
+			name: "comprehensive multi-resource test file",
+			path: "testdata/comprehensive-test.yaml",
 			cfg:  k8simage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "alpine",
-					Version:   "sha256:1ff6c18fbef2045af6b9c16bf034cc421a29027b800e4f9b68ae9b1cb3e9ae07",
-					Locations: []string{"testdata/deployment.yaml"},
+					Name:      "tag1",
+					Version:   "sha256:b692a91e4e531d2a9cd8e8c3b1e6d5c7f9d2e5a3b1c8d7f4e6a9b2c5d8f1e4a7",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "postgres",
-					Version:   "8",
-					Locations: []string{"testdata/deployment.yaml"},
+					Name:      "tag2",
+					Version:   "2.0.0",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "nginx",
-					Version:   "1.7.9",
-					Locations: []string{"testdata/deployment.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-				{
-					Name:      "my-demo-app",
+					Name:      "tag3",
 					Version:   "latest",
-					Locations: []string{"testdata/deployment.yaml"},
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "alpine",
-					Version:   "3.7",
-					Locations: []string{"testdata/deployment.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "pod with multiple documents",
-			path: "testdata/pod.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "gcr.io/google-samples/hello-app",
-					Version:   "2.0",
-					Locations: []string{"testdata/pod.yaml"},
+					Name:      "tag4.io/prometheus/node-exporter",
+					Version:   "v4.0.0",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "gcr.io/google-samples/hello-app",
-					Version:   "1.0",
-					Locations: []string{"testdata/pod.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "job with single container",
-			path: "testdata/job.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "perl",
-					Version:   "5.34.0",
-					Locations: []string{"testdata/job.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "replicaset with single container",
-			path: "testdata/frontend.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "us-docker.pkg.dev/google-samples/containers/gke/gb-frontend",
-					Version:   "v5",
-					Locations: []string{"testdata/frontend.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "multi-document with StatefulSet and Service",
-			path: "testdata/service.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "registry.k8s.io/kubernetes-zookeeper",
-					Version:   "1.0-3.4.10",
-					Locations: []string{"testdata/service.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "StatefulSet with single container",
-			path: "testdata/StatefulSet.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "gcr.io/google-samples/cassandra",
-					Version:   "v13",
-					Locations: []string{"testdata/StatefulSet.yaml"},
-					PURLType:  purl.TypeK8sDocker,
-				},
-			},
-		},
-		{
-			name: "multi-document with Service and StatefulSet",
-			path: "testdata/web.yaml",
-			cfg:  k8simage.DefaultConfig(),
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "registry.k8s.io/nginx-slim",
-					Version:   "0.21",
-					Locations: []string{"testdata/web.yaml"},
+					Name:      "tag5",
+					Version:   "5.0.0",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "registry.k8s.io/nginx2-slim",
-					Version:   "0.21",
-					Locations: []string{"testdata/web.yaml"},
+					Name:      "tag6",
+					Version:   "6.0.0",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
+					PURLType:  purl.TypeK8sDocker,
+				},
+				{
+					Name:      "tag7",
+					Version:   "5000/my-app:dev",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
+					PURLType:  purl.TypeK8sDocker,
+				},
+				{
+					Name:      "centos",
+					Version:   "latest",
+					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
 			},
 		},
 		{
 			name:         "larger than size limit",
-			path:         "testdata/deployment.yaml",
+			path:         "testdata/comprehensive-test.yaml",
 			cfg:          k8simage.Config{MaxFileSizeBytes: 1},
 			wantPackages: nil,
 		},
@@ -222,14 +120,85 @@ func TestExtract(t *testing.T) {
 	}
 }
 
+func TestFileRequired(t *testing.T) {
+	extr := k8simage.New(k8simage.DefaultConfig())
+
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "yaml extension",
+			path: "deployment.yaml",
+			want: true,
+		},
+		{
+			name: "yml extension",
+			path: "service.yml",
+			want: true,
+		},
+		{
+			name: "other extension",
+			path: "config.json",
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			isRequired := extr.FileRequired(simplefileapi.New(tc.path, nil))
+			if isRequired != tc.want {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tc.path, isRequired, tc.want)
+			}
+		})
+	}
+}
+
+func TestExtract_empty_results(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		cfg  k8simage.Config
+	}{
+		{
+			name: "empty image fields should result in no packages",
+			path: "testdata/comprehensive-test-failures.yaml",
+			cfg:  k8simage.DefaultConfig(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			extr := k8simage.New(tc.cfg)
+
+			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+				Path: tc.path,
+			})
+			defer extracttest.CloseTestScanInput(t, input)
+
+			got, err := extr.Extract(context.Background(), &input)
+			if err != nil {
+				t.Fatalf("%s.Extract(%q) failed: %v", extr.Name(), tc.path, err)
+			}
+
+			// Should have no packages since all image fields are empty or with errors
+			if len(got.Packages) != 0 {
+				t.Errorf("%s.Extract(%q): got %d packages, want 0. Packages: %+v",
+					extr.Name(), tc.path, len(got.Packages), got.Packages)
+			}
+		})
+	}
+}
+
 func TestExtract_failures(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
 	}{
 		{
-			name: "invalid YAML",
-			path: "testdata/not-yaml.yaml",
+			name: "invalid YAML syntax",
+			path: "testdata/yaml-parsing-error.yaml",
 		},
 	}
 

@@ -1,0 +1,13 @@
+# Minimal K8s test file focusing on unique structural paths to container images
+# Only includes truly different YAML path structures
+
+# Pod - Direct spec paths
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  initContainers:
+    - name: init-container
+      # empty image name
+      image:
