@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -105,6 +106,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesazuretoken.AzureAccessToken:
+		return azureAccessTokenToProto(t), nil
+	case velesazuretoken.AzureIdentityToken:
+		return azureIdentityTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -194,12 +199,33 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
 			PrivateKey: &spb.SecretData_PrivateKey{
 				Block: pk.Block,
 				Der:   pk.Der,
+			},
+		},
+	}
+}
+
+func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureAccessToken_{
+			AzureAccessToken: &spb.SecretData_AzureAccessToken{
+				Token: pk.Token,
+			},
+		},
+	}
+}
+
+func azureIdentityTokenToProto(pk velesazuretoken.AzureIdentityToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureIdentityToken_{
+			AzureIdentityToken: &spb.SecretData_AzureIdentityToken{
+				Token: pk.Token,
 			},
 		},
 	}
@@ -297,6 +323,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_AzureAccessToken_:
+		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
+	case *spb.SecretData_AzureIdentityToken_:
+		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

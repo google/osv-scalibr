@@ -646,6 +646,8 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
+    AzureAccessToken azure_access_token = 9;
+    AzureIdentityToken azure_identity_token = 10;
   }
 
   message GCPSAK {
@@ -694,6 +696,14 @@ message SecretData {
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
+  }
+
+  message AzureAccessToken {
+    string token = 1;
+  }
+
+  message AzureIdentityToken {
+    string token = 1;
   }
 
   message DockerHubPat {

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -72,6 +73,7 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewAPIKeyDetector(),
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
+		azuretoken.NewDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
