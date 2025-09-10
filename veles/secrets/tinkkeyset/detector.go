@@ -33,25 +33,23 @@ var (
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
 	jsonPattern = regexp.MustCompile(`(?s)\s*\{\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
 
-	// tinkTypeUrl can be found in both binary and json tink keyset encodings
-	tinkTypeUrl = []byte("type.googleapis.com/google.crypto.tink")
+	// tinkTypeURL can be found in both binary and json tink keyset encodings
+	tinkTypeURL = []byte("type.googleapis.com/google.crypto.tink")
 
 	// minBase64Len is an estimate to reduce the number of blobs to decode
 	// note that: len(base64(tinkTypeUrl)) is roughly 50 chars
 	minBase64Len = 60
 )
 
-// Detector is a Veles Detector that finds Tink keysets.
-//
-// It can find Tink keysets in: plain (and escaped) JSON and format, base64 encoded binary and JSON format
+// Detector is a Veles Detector that finds Tink plaintext keysets.
 type Detector struct{}
 
-// NewDetector returns a tinkkeyset Detector
+// NewDetector returns a new Veles Detector that finds Tink plain text keysets
 func NewDetector() veles.Detector {
 	return &Detector{}
 }
 
-// Detect implements veles.Detector.
+// Detect finds Tink plain text keysets in the given data
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	res := []veles.Secret{}
 	for _, m := range base64Pattern.FindAllIndex(data, -1) {
@@ -65,12 +63,12 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(r-l))
 		n, err := base64.StdEncoding.Decode(decoded, data[l:r])
-		if err != nil || !bytes.Contains(decoded[:n], tinkTypeUrl) {
+		if err != nil || !bytes.Contains(decoded[:n], tinkTypeURL) {
 			continue
 		}
 		res = append(res, d.find(decoded[:n])...)
 	}
-	if !bytes.Contains(data, tinkTypeUrl) {
+	if !bytes.Contains(data, tinkTypeURL) {
 		return res, nil
 	}
 	res = append(res, d.find(data)...)
@@ -131,7 +129,7 @@ func (d *Detector) findBinaryKeyset(buf []byte) []veles.Secret {
 	return []veles.Secret{TinkKeySet{Keys: bufOut.String()}}
 }
 
-// MaxSecretLen implements veles.Detector.
+// MaxSecretLen returns the maximum length a secret from this Detector can have.
 func (d *Detector) MaxSecretLen() uint32 {
 	// TODO: since it's a keyset (multiple keys), I don't know if there is MaxSecretLen
 	return 0

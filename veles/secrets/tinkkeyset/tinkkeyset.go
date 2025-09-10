@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// tinkkeyset package implements the logic to detect tink keyset stored as plaintext
+// Package tinkkeyset package implements the logic to detect tink keyset stored as plaintext
 package tinkkeyset
 
 // TinkKeySet contains information of a TinkKeySet
