@@ -216,6 +216,10 @@ log.Info(results)
 
 Read how to [contribute to OSV-SCALIBR](CONTRIBUTING.md).
 
+Look for any [open issues](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20-label%3APRP)
+or [unowned Patch Reward work](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20label%3APRP%3AInactive)
+you'd like to contribute to.
+
 To build and test your local changes, run `make` and `make test`. A local
 `scalibr` binary will be generated in the repo base.
 

@@ -40,5 +40,17 @@ func (i *Inventory) Append(other ...Inventory) {
 
 // IsEmpty returns true if there are no packages, findings, etc. in this Inventory.
 func (i Inventory) IsEmpty() bool {
-	return len(i.Packages) == 0 && len(i.PackageVulns) == 0 && len(i.GenericFindings) == 0 && len(i.Secrets) == 0
+	if len(i.Packages) != 0 {
+		return false
+	}
+	if len(i.PackageVulns) != 0 {
+		return false
+	}
+	if len(i.GenericFindings) != 0 {
+		return false
+	}
+	if len(i.Secrets) != 0 {
+		return false
+	}
+	return true
 }

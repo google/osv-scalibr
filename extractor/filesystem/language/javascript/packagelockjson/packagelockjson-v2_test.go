@@ -588,6 +588,50 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "bundled_dependencies_are_grouped",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bundled-dependencies.v3.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "ansi-regex",
+					Version:   "6.2.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"bundled"},
+					},
+				},
+				{
+					Name:      "semver",
+					Version:   "7.7.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"bundled", "dev"},
+					},
+				},
+				{
+					Name:      "strip-ansi",
+					Version:   "7.1.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
