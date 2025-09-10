@@ -16,7 +16,10 @@
 package inventory
 
 import (
+	"context"
+
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // Inventory stores the artifacts (e.g. software packages, security findings)
@@ -26,6 +29,15 @@ type Inventory struct {
 	PackageVulns    []*PackageVuln
 	GenericFindings []*GenericFinding
 	Secrets         []*Secret
+	EmbeddedFSs     []*EmbeddedFS
+}
+
+// EmbeddedFS stores artifacts containing embedded filesystems.
+// This is not proto serialized since it's only used as temporary
+// storage to traverse embedded filesystems during extraction.
+type EmbeddedFS struct {
+	Path          string
+	GetEmbeddedFS func(context.Context) (scalibrfs.FS, error)
 }
 
 // Append adds one or more inventories to the current one.
@@ -35,6 +47,7 @@ func (i *Inventory) Append(other ...Inventory) {
 		i.PackageVulns = append(i.PackageVulns, o.PackageVulns...)
 		i.GenericFindings = append(i.GenericFindings, o.GenericFindings...)
 		i.Secrets = append(i.Secrets, o.Secrets...)
+		i.EmbeddedFSs = append(i.EmbeddedFSs, o.EmbeddedFSs...)
 	}
 }
 
@@ -50,6 +63,9 @@ func (i Inventory) IsEmpty() bool {
 		return false
 	}
 	if len(i.Secrets) != 0 {
+		return false
+	}
+	if len(i.EmbeddedFSs) != 0 {
 		return false
 	}
 	return true
