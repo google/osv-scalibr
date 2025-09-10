@@ -16,7 +16,10 @@
 package inventory
 
 import (
+	"context"
+
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 // Inventory stores the artifacts (e.g. software packages, security findings)
@@ -26,6 +29,13 @@ type Inventory struct {
 	PackageVulns    []*PackageVuln
 	GenericFindings []*GenericFinding
 	Secrets         []*Secret
+	DiskImages      []*DiskImage
+}
+
+// DiskImage stores artifacts related to the scanned disk image
+type DiskImage struct {
+	Path      string
+	GetDiskFS func(context.Context) (scalibrfs.FS, error)
 }
 
 // Append adds one or more inventories to the current one.
@@ -35,6 +45,7 @@ func (i *Inventory) Append(other ...Inventory) {
 		i.PackageVulns = append(i.PackageVulns, o.PackageVulns...)
 		i.GenericFindings = append(i.GenericFindings, o.GenericFindings...)
 		i.Secrets = append(i.Secrets, o.Secrets...)
+		i.DiskImages = append(i.DiskImages, o.DiskImages...)
 	}
 }
 
@@ -50,6 +61,9 @@ func (i Inventory) IsEmpty() bool {
 		return false
 	}
 	if len(i.Secrets) != 0 {
+		return false
+	}
+	if len(i.DiskImages) != 0 {
 		return false
 	}
 	return true
