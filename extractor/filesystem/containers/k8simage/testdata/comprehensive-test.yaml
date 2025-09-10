@@ -15,7 +15,6 @@ spec:
       image: tag2:2.0.0
 
 ---
-
 # Deployment - Template-based spec paths (covers Deployment, StatefulSet, ReplicaSet, DaemonSet)
 apiVersion: apps/v1
 kind: Deployment
@@ -33,13 +32,12 @@ spec:
     spec:
       initContainers:
         - name: template-init
-          image: tag3
+          image: tag3:3.0.0
       containers:
         - name: template-container
           image: tag4.io/prometheus/node-exporter:v4.0.0
 
 ---
-
 # CronJob - JobTemplate-based spec paths
 apiVersion: batch/v1
 kind: CronJob
@@ -60,7 +58,6 @@ spec:
           restartPolicy: OnFailure
 
 ---
-
 # Edge cases pod with various image formats
 apiVersion: v1
 kind: Pod
@@ -68,9 +65,6 @@ metadata:
   name: edge-cases-pod
 spec:
   containers:
-    # Empty image (should be filtered out)
-    - name: empty-image
-      image: ""
     # Registry with port
     - name: registry-port
       image: tag7:5000/my-app:dev

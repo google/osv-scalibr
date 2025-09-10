@@ -54,7 +54,7 @@ func TestExtract(t *testing.T) {
 				},
 				{
 					Name:      "tag3",
-					Version:   "latest",
+					Version:   "3.0.0",
 					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},
@@ -77,8 +77,8 @@ func TestExtract(t *testing.T) {
 					PURLType:  purl.TypeK8sDocker,
 				},
 				{
-					Name:      "tag7",
-					Version:   "5000/my-app:dev",
+					Name:      "tag7:5000/my-app",
+					Version:   "dev",
 					Locations: []string{"testdata/comprehensive-test.yaml"},
 					PURLType:  purl.TypeK8sDocker,
 				},

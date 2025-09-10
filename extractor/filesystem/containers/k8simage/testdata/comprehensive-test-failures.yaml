@@ -9,5 +9,5 @@ metadata:
 spec:
   initContainers:
     - name: init-container
-      # empty image name
+      # Empty image (should be filtered out)
       image:

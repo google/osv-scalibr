@@ -184,15 +184,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 // It handles both digest (@sha256:...) and tag (:tag) formats.
 // See: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 func parseName(name string) (string, string) {
-	// tag:version
+	// Handle digest format (tag@HashType:HashValue)
 	if strings.Contains(name, "@") {
 		parts := strings.SplitN(name, "@", 2)
 		return parts[0], parts[1]
 	}
-	// tag@HashType:HashValue
-	if strings.Contains(name, ":") {
-		parts := strings.SplitN(name, ":", 2)
-		return parts[0], parts[1]
+	// Handle tag format (registry:port/namespace/image:tag)
+	// Use LastIndex to find the rightmost colon which separates the tag
+	if lastColonIndex := strings.LastIndex(name, ":"); lastColonIndex != -1 {
+		return name[:lastColonIndex], name[lastColonIndex+1:]
 	}
 
 	return name, "latest"
