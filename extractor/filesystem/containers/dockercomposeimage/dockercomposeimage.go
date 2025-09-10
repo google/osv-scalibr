@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dockercomposeimage extracts image urls from Docker Compose files.
+// Package dockercomposeimage extracts image URLs from Docker Compose files.
 package dockercomposeimage
 
 import (
@@ -25,7 +25,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/compose-spec/compose-go/v2/dotenv"
+	"github.com/compose-spec/compose-go/v2/interpolation"
 	"github.com/compose-spec/compose-go/v2/loader"
+	"github.com/compose-spec/compose-go/v2/template"
+	"github.com/compose-spec/compose-go/v2/tree"
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -53,7 +57,7 @@ type Config struct {
 	// Stats is a stats collector for reporting metrics.
 	Stats stats.Collector
 	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
+	// `FileRequired` gets a bigger file, it will return false.
 	MaxFileSizeBytes int64
 }
 
@@ -64,13 +68,13 @@ func DefaultConfig() Config {
 	}
 }
 
-// Extractor extracts repository URLs from Docker Compose files.
+// Extractor extracts image URLs from Docker Compose files.
 type Extractor struct {
 	stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
-// New returns a Docker Compose repository extractor.
+// New returns a Docker Compose image extractor.
 //
 // For most use cases, initialize with:
 // ```
@@ -114,7 +118,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		strings.Contains(filename, "docker")
 }
 
-// Extract extracts image urls from a Docker Compose File.
+// Extract extracts image URLs from a Docker Compose file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
@@ -143,9 +147,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 	var pkgs []*extractor.Package
 	for _, image := range images {
-
 		name, version := parseName(image)
-
 		pkgs = append(pkgs, &extractor.Package{
 			Locations: []string{input.Path},
 			Name:      name,
@@ -157,6 +159,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
+// uniqueImagesFromReader extracts unique image names from a Docker Compose file.
+// It handles environment variable interpolation and returns a sorted list of unique images.
 func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([]string, error) {
 	absPath, err := input.GetRealPath()
 	if err != nil {
@@ -167,29 +171,56 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 		defer func() {
 			dir := filepath.Dir(absPath)
 			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %w", dir, err)
+				log.Errorf("os.RemoveAll(%q): %v", dir, err)
 			}
 		}()
 	}
 
-	details := types.ConfigDetails{
-		WorkingDir: "",
-		ConfigFiles: []types.ConfigFile{
-			{Filename: absPath},
-		},
+	// Load environment variables from a sibling .env file if it exists
+	workingDir := filepath.Dir(absPath)
+	envPath := filepath.Join(workingDir, ".env")
+	environment := types.Mapping{}
+	if f, err := os.Open(envPath); err == nil {
+		defer f.Close()
+		if envVars, err := dotenv.Parse(f); err != nil {
+			log.Warnf("dotenv.Parse(%q): %v", envPath, err)
+		} else {
+			for k, v := range envVars {
+				environment[k] = v
+			}
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		log.Warnf("os.Open(%q): %v", envPath, err)
 	}
-
+	configFiles := []types.ConfigFile{
+		{Filename: absPath},
+	}
+	details := types.ConfigDetails{
+		WorkingDir:  workingDir,
+		ConfigFiles: configFiles,
+		Environment: environment,
+	}
+	customOpts := loader.Options{
+		Interpolate: &interpolation.Options{
+			Substitute:      Substitute,
+			LookupValue:     createImperfectLookupFunc(details.LookupEnv),
+			TypeCastMapping: make(map[tree.Path]interpolation.Cast),
+		},
+		ResolvePaths: true,
+	}
 	project, err := loader.LoadWithContext(
 		ctx,
 		details,
-	)
+		func(opts *loader.Options) {
+			*opts = customOpts
+		})
 	if err != nil {
 		return nil, err
 	}
 
 	uniq := map[string]struct{}{}
 	for _, s := range project.Services {
-		if s.Image != "" {
+		if s.Image != "" && !strings.Contains(s.Image, "<IMPERFECT_ENV_VAR_RESOLVING>") {
 			uniq[s.Image] = struct{}{}
 		}
 	}
@@ -202,6 +233,9 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	return out, nil
 }
 
+// parseName extracts the name and version from an image reference.
+// It handles both digest format (name@digest) and tag format (name:tag).
+// If no version is specified, it returns "latest" as the default version.
 func parseName(name string) (string, string) {
 	if strings.Contains(name, "@") {
 		parts := strings.SplitN(name, "@", 2)
@@ -214,4 +248,41 @@ func parseName(name string) (string, string) {
 	}
 
 	return name, "latest"
+}
+
+// createImperfectLookupFunc creates a lookup function that handles missing environment variables.
+// When a variable is not found or empty, it returns false to indicate the variable is unavailable.
+// This allows the template substitution to continue processing even with missing variables.
+func createImperfectLookupFunc(originalLookup func(string) (string, bool)) func(string) (string, bool) {
+	return func(key string) (string, bool) {
+		value, found := originalLookup(key)
+		if !found || value == "" {
+			// Return false for missing or empty variables to indicate unavailability
+			return "", false
+		}
+		return value, true
+	}
+}
+
+// Substitute replaces environment variables in template strings with their values.
+// For missing variables, it inserts a placeholder "<IMPERFECT_ENV_VAR_RESOLVING>" to indicate
+// that the substitution was incomplete, allowing processing to continue.
+func Substitute(inTemplate string, mapping template.Mapping) (string, error) {
+	options := []template.Option{
+		template.WithPattern(template.DefaultPattern),
+		template.WithReplacementFunction(
+			func(substring string, mapping template.Mapping, cfg *template.Config) (string, error) {
+				value, _, err := template.DefaultReplacementAppliedFunc(substring, mapping, cfg)
+				if err != nil {
+					return "", err
+				}
+				if value == "" {
+					// Use placeholder for unresolved variables
+					value = "<IMPERFECT_ENV_VAR_RESOLVING>"
+				}
+				return value, nil
+			}),
+	}
+
+	return template.SubstituteWithOptions(inTemplate, mapping, options...)
 }
