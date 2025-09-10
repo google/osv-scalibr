@@ -5018,6 +5018,7 @@ type SecretData struct {
 	//	*SecretData_DockerHubPat_
 	//	*SecretData_PostmanApiKey
 	//	*SecretData_PostmanCollectionAccessToken_
+	//	*SecretData_Digitalocean
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5150,6 +5151,15 @@ func (x *SecretData) GetPostmanCollectionAccessToken() *SecretData_PostmanCollec
 	return nil
 }
 
+func (x *SecretData) GetDigitalocean() *SecretData_DigitalOceanAPIToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_Digitalocean); ok {
+			return x.Digitalocean
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -5194,6 +5204,10 @@ type SecretData_PostmanCollectionAccessToken_ struct {
 	PostmanCollectionAccessToken *SecretData_PostmanCollectionAccessToken `protobuf:"bytes,10,opt,name=postman_collection_access_token,json=postmanCollectionAccessToken,proto3,oneof"`
 }
 
+type SecretData_Digitalocean struct {
+	Digitalocean *SecretData_DigitalOceanAPIToken `protobuf:"bytes,11,opt,name=digitalocean,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -5213,6 +5227,8 @@ func (*SecretData_DockerHubPat_) isSecretData_Secret() {}
 func (*SecretData_PostmanApiKey) isSecretData_Secret() {}
 
 func (*SecretData_PostmanCollectionAccessToken_) isSecretData_Secret() {}
+
+func (*SecretData_Digitalocean) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -6114,6 +6130,50 @@ func (x *SecretData_PostmanCollectionAccessToken) GetKey() string {
 	return ""
 }
 
+type SecretData_DigitalOceanAPIToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_DigitalOceanAPIToken) Reset() {
+	*x = SecretData_DigitalOceanAPIToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_DigitalOceanAPIToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_DigitalOceanAPIToken) ProtoMessage() {}
+
+func (x *SecretData_DigitalOceanAPIToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_DigitalOceanAPIToken.ProtoReflect.Descriptor instead.
+func (*SecretData_DigitalOceanAPIToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 10}
+}
+
+func (x *SecretData_DigitalOceanAPIToken) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -6519,7 +6579,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xc0\r\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xba\x0e\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -6535,7 +6595,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0edocker_hub_pat\x18\b \x01(\v2 .scalibr.SecretData.DockerHubPatH\x00R\fdockerHubPat\x12K\n" +
 	"\x0fpostman_api_key\x18\t \x01(\v2!.scalibr.SecretData.PostmanAPIKeyH\x00R\rpostmanApiKey\x12y\n" +
 	"\x1fpostman_collection_access_token\x18\n" +
-	" \x01(\v20.scalibr.SecretData.PostmanCollectionAccessTokenH\x00R\x1cpostmanCollectionAccessToken\x1a\xb0\x03\n" +
+	" \x01(\v20.scalibr.SecretData.PostmanCollectionAccessTokenH\x00R\x1cpostmanCollectionAccessToken\x12N\n" +
+	"\fdigitalocean\x18\v \x01(\v2(.scalibr.SecretData.DigitalOceanAPITokenH\x00R\fdigitalocean\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -6572,6 +6633,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\rPostmanAPIKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a0\n" +
 	"\x1cPostmanCollectionAccessToken\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
+	"\x14DigitalOceanAPIToken\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
@@ -6630,7 +6693,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 71)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 72)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                           // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                               // 1: scalibr.SeverityEnum
@@ -6708,11 +6771,12 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_DockerHubPat)(nil),                 // 73: scalibr.SecretData.DockerHubPat
 	(*SecretData_PostmanAPIKey)(nil),                // 74: scalibr.SecretData.PostmanAPIKey
 	(*SecretData_PostmanCollectionAccessToken)(nil), // 75: scalibr.SecretData.PostmanCollectionAccessToken
-	(*timestamppb.Timestamp)(nil),                   // 76: google.protobuf.Timestamp
+	(*SecretData_DigitalOceanAPIToken)(nil),         // 76: scalibr.SecretData.DigitalOceanAPIToken
+	(*timestamppb.Timestamp)(nil),                   // 77: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	76, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	76, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	77, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	77, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -6774,8 +6838,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15, // 60: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15, // 61: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	65, // 62: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	76, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	76, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	77, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	77, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	55, // 65: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	58, // 66: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	59, // 67: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -6790,19 +6854,20 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	73, // 76: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
 	74, // 77: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
 	75, // 78: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
-	4,  // 79: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	76, // 80: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	61, // 81: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	62, // 82: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	63, // 83: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	64, // 84: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11, // 85: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	52, // 86: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	87, // [87:87] is the sub-list for method output_type
-	87, // [87:87] is the sub-list for method input_type
-	87, // [87:87] is the sub-list for extension type_name
-	87, // [87:87] is the sub-list for extension extendee
-	0,  // [0:87] is the sub-list for field type_name
+	76, // 79: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	4,  // 80: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	77, // 81: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	61, // 82: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	62, // 83: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	63, // 84: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	64, // 85: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11, // 86: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	52, // 87: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	88, // [88:88] is the sub-list for method output_type
+	88, // [88:88] is the sub-list for method input_type
+	88, // [88:88] is the sub-list for extension type_name
+	88, // [88:88] is the sub-list for extension extendee
+	0,  // [0:88] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -6861,6 +6926,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_DockerHubPat_)(nil),
 		(*SecretData_PostmanApiKey)(nil),
 		(*SecretData_PostmanCollectionAccessToken_)(nil),
+		(*SecretData_Digitalocean)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[55].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
@@ -6874,7 +6940,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   71,
+			NumMessages:   72,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

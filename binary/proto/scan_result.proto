@@ -648,6 +648,7 @@ message SecretData {
     DockerHubPat docker_hub_pat = 8;
     PostmanAPIKey postman_api_key = 9;
     PostmanCollectionAccessToken postman_collection_access_token = 10;
+    DigitalOceanAPIToken digitalocean =11;
   }
 
   message GCPSAK {
@@ -708,6 +709,10 @@ message SecretData {
   }
   
   message PostmanCollectionAccessToken {
+    string key = 1;
+  }
+
+  message DigitalOceanAPIToken {
     string key = 1;
   }
 }
