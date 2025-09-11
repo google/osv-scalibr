@@ -139,7 +139,6 @@ func TestDetector_truePositives(t *testing.T) {
 		},
 	}
 
-	// TODO: shouldn't be necessary
 	cmpOpt := cmp.Comparer(func(x, y tinkkeyset.TinkKeySet) bool {
 		var xJSON, yJSON any
 		if err := json.Unmarshal([]byte(x.Content), &xJSON); err != nil {
