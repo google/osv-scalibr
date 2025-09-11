@@ -95,7 +95,7 @@ func TestDetector_truePositives(t *testing.T) {
 			name: "nested escaped json",
 			input: `{
 				"prop1": 1,
-				"key": "{\"primaryKeyId\":1976038263,\"key\":[{\"keyData\":{\"typeUrl\":\"type.googleapis.com/google.crypto.tink.AesGcmKey\",\"value\":\"GhBi7O0TErBM9eTl3UppUGZg\",\"keyMaterialType\":\"SYMMETRIC\"},\"status\":\"ENABLED\",\"keyId\":1976038263,\"outputPrefixType\":\"TINK\"}]}",
+				"key": "{\"primaryKeyId\":1976038263,\n\"key\":[{\"keyData\":{\"typeUrl\":\"type.googleapis.com/google.crypto.tink.AesGcmKey\",\"value\":\"GhBi7O0TErBM9eTl3UppUGZg\",\"keyMaterialType\":\"SYMMETRIC\"},\"status\":\"ENABLED\",\"keyId\":1976038263,\"outputPrefixType\":\"TINK\"}]}",
 				"prop2": "test"
 			}`,
 			want: []veles.Secret{tinkkeyset.TinkKeySet{

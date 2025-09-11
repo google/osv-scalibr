@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tinkkeyset package implements the logic to detect tink keyset stored as plaintext
+// Package tinkkeyset package implements the logic to detect [Tink keyset](https://developers.google.com/tink/design/keysets) stored as plaintext
 package tinkkeyset
 
-// TinkKeySet contains information of a TinkKeySet
+// TinkKeySet contains information of a [Tink keyset](https://developers.google.com/tink/design/keysets)
 type TinkKeySet struct {
 	Keys string
 }

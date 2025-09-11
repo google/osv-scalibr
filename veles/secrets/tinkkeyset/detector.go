@@ -58,9 +58,6 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 			continue
 		}
 
-		// TODO: ideally here I could check for the 3 transposition of `tinkTypeUrl` directly inside
-		// the base64 buf to reduce memory usage
-
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(r-l))
 		n, err := base64.StdEncoding.Decode(decoded, data[l:r])
 		if err != nil || !bytes.Contains(decoded[:n], tinkTypeURL) {
@@ -75,16 +72,35 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	return res, nil
 }
 
-func escape(s []byte) []byte {
-	result := s
-	for range 10 {
-		newResult := bytes.ReplaceAll(result, []byte(`\"`), []byte(`"`))
-		if len(newResult) == len(result) && bytes.Equal(newResult, result) {
-			break
-		}
-		result = newResult
+// clean removes all levels of escaping from a given buffer by eliminating every backslash character.
+//
+// This function is designed specifically for this detector's purpose and
+// should not be used if your output is expected to contain backslashes
+func clean(s []byte) []byte {
+	if len(s) == 0 {
+		return s
 	}
-	return result
+	var b bytes.Buffer
+	skip := false
+	for i := range len(s) - 1 {
+		if skip {
+			skip = false
+			continue
+		}
+		c := s[i]
+		if c == '\\' {
+			if s[i+1] == 'n' {
+				b.WriteByte('\n')
+				skip = true
+			}
+			continue
+		}
+		b.WriteByte(c)
+	}
+	if !skip && s[len(s)-1] != '\\' {
+		b.WriteByte(s[len(s)-1])
+	}
+	return b.Bytes()
 }
 
 func (d *Detector) find(buf []byte) []veles.Secret {
@@ -97,14 +113,13 @@ func (d *Detector) find(buf []byte) []veles.Secret {
 
 func (d *Detector) findJSONKeyset(buf []byte) []veles.Secret {
 	res := []veles.Secret{}
-	escaped := escape(buf)
-	for _, m := range jsonPattern.FindAllIndex(escaped, -1) {
+	cleaned := clean(buf)
+	for _, m := range jsonPattern.FindAllIndex(cleaned, -1) {
 		l, r := m[0], m[1]
-		jsonBuf := escaped[l:r]
-
+		jsonBuf := cleaned[l:r]
 		hnd, err := insecurecleartextkeyset.Read(keyset.NewJSONReader(bytes.NewBuffer(jsonBuf)))
 		if err != nil {
-			continue // Not a valid Tink keyset, continue to the next match
+			continue
 		}
 		// Valid keyset found, convert it back to a canonical JSON string for consistent output.
 		bufOut := new(bytes.Buffer)
