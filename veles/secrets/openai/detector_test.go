@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	validProjectKey = "sk-proj-12345678901234567890T3BlbkFJ" +
+	validAPIKey = "sk-proj-12345678901234567890T3BlbkFJ" +
 		"12345678901234567890123456"
 )
 
@@ -40,29 +40,29 @@ func TestDetector(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "project_key",
-		input: validProjectKey,
+		input: validAPIKey,
 		want: []veles.Secret{
-			ProjectAPIKey{Key: validProjectKey},
+			APIKey{Key: validAPIKey},
 		},
 	}, {
 		name:  "project_key_in_config",
-		input: "OPENAI_API_KEY=" + validProjectKey,
+		input: "OPENAI_API_KEY=" + validAPIKey,
 		want: []veles.Secret{
-			ProjectAPIKey{Key: validProjectKey},
+			APIKey{Key: validAPIKey},
 		},
 	}, {
 		name:  "project_key_in_env",
-		input: "export OPENAI_KEY=\"" + validProjectKey + "\"",
+		input: "export OPENAI_KEY=\"" + validAPIKey + "\"",
 		want: []veles.Secret{
-			ProjectAPIKey{Key: validProjectKey},
+			APIKey{Key: validAPIKey},
 		},
 	}, {
 		name: "multiple_project_keys",
-		input: validProjectKey + "\n" +
+		input: validAPIKey + "\n" +
 			"sk-proj-abcdefghij1234567890T3BlbkFJklmnopqrstuvwxyz098765432109876",
 		want: []veles.Secret{
-			ProjectAPIKey{Key: validProjectKey},
-			ProjectAPIKey{Key: "sk-proj-abcdefghij1234567890T3BlbkFJ" +
+			APIKey{Key: validAPIKey},
+			APIKey{Key: "sk-proj-abcdefghij1234567890T3BlbkFJ" +
 				"klmnopqrstuvwxyz098765432109876"},
 		},
 	}, {
@@ -70,8 +70,22 @@ func TestDetector(t *testing.T) {
 		input: "sk-proj-AbC_DeF-GhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGh" +
 			"T3BlbkFJXyZ-123_456-789_012-345_678-901_234-567_890-AbCdEfGhIjKlMnOpQrStUvWxYzZzZz",
 		want: []veles.Secret{
-			ProjectAPIKey{Key: "sk-proj-AbC_DeF-GhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGh" +
+			APIKey{Key: "sk-proj-AbC_DeF-GhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGh" +
 				"T3BlbkFJXyZ-123_456-789_012-345_678-901_234-567_890-AbCdEfGhIjKlMnOpQrStUvWxYzZzZz"},
+		},
+	}, {
+		name:  "legacy_openai_key_format",
+		input: "sk-FakeTest123456789T3BlbkFJAbCdEfGhIjKlMnOpQrStUvWxYz",
+		want: []veles.Secret{
+			APIKey{Key: "sk-FakeTest123456789T3BlbkFJAbCdEfGhIjKlMnOpQrStUvWxYz"},
+		},
+	}, {
+		name: "multiple_legacy_keys",
+		input: "sk-TestKey1234567890T3BlbkFJXyZaBcDeFgHiJkLmNoPqRsTuVw\n" +
+			"sk-AnotherFakeKey12T3BlbkFJMnOpQrStUvWxYzAbCdEfGhIjKl",
+		want: []veles.Secret{
+			APIKey{Key: "sk-TestKey1234567890T3BlbkFJXyZaBcDeFgHiJkLmNoPqRsTuVw"},
+			APIKey{Key: "sk-AnotherFakeKey12T3BlbkFJMnOpQrStUvWxYzAbCdEfGhIjKl"},
 		},
 	}}
 
@@ -140,7 +154,7 @@ func TestProjectKeyValidation(t *testing.T) {
 		isValid bool
 	}{{
 		name:    "valid_project_key",
-		key:     validProjectKey,
+		key:     validAPIKey,
 		isValid: true,
 	}, {
 		name:    "not_a_key",

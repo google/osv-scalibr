@@ -24,20 +24,25 @@ import (
 // maxTokenLength is the maximum size of an OpenAI Project API key.
 const maxTokenLength = 200
 
-// keyRe is a regular expression that matches OpenAI Project API keys.
-// Project-scoped keys have the format: sk-proj-[variable chars]T3BlbkFJ[variable chars]
+// keyRe is a regular expression that matches OpenAI API keys.
+// Supports legacy format: sk-[chars]T3BlbkFJ[chars]
+// and project and service account formats:
+//
+//	sk-proj-[chars]T3BlbkFJ[chars]
+//	sk-svcacct-[chars]T3BlbkFJ[chars]
+//
 // The regex is designed to be specific enough to avoid false positives.
 var keyRe = regexp.MustCompile(
-	`sk-proj-[A-Za-z0-9_-]+T3BlbkFJ[A-Za-z0-9_-]+`)
+	`sk-[A-Za-z0-9_-]*T3BlbkFJ[A-Za-z0-9_-]+`)
 
-// NewDetector returns a new simpletoken.Detector that matches OpenAI Project
-// API keys.
+// NewDetector returns a new simpletoken.Detector that matches OpenAI API keys
+// (both legacy and project-scoped formats).
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) veles.Secret {
-			return ProjectAPIKey{Key: string(b)}
+			return APIKey{Key: string(b)}
 		},
 	}
 }

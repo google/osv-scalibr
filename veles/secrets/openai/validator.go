@@ -60,10 +60,10 @@ func (c *ValidationConfig) WithAPIURL(url string) *ValidationConfig {
 	return c
 }
 
-var _ veles.Validator[ProjectAPIKey] = &ProjectValidator{}
+var _ veles.Validator[APIKey] = &ProjectValidator{}
 
-// ProjectValidator is a Veles Validator for OpenAI Project API keys.
-// It validates project API keys by making a test request to the OpenAI API.
+// ProjectValidator is a Veles Validator for OpenAI API keys.
+// It validates API keys by making a test request to the OpenAI API.
 type ProjectValidator struct {
 	config *ValidationConfig
 }
@@ -105,12 +105,12 @@ func NewProjectValidator(opts ...ProjectValidatorOption) *ProjectValidator {
 	return v
 }
 
-// Validate checks whether the given ProjectAPIKey is valid.
+// Validate checks whether the given APIKey is valid.
 //
 // It makes a request to the /v1/models endpoint which is lightweight and
 // doesn't consume tokens. This endpoint is used for validation purposes.
 func (v *ProjectValidator) Validate(ctx context.Context,
-	key ProjectAPIKey) (veles.ValidationStatus, error) {
+	key APIKey) (veles.ValidationStatus, error) {
 	// Check for empty key
 	if key.Key == "" {
 		return veles.ValidationFailed, errors.New("empty API key")

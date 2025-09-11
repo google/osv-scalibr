@@ -109,8 +109,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
-	case velesopenai.ProjectAPIKey:
-		return openaiProjectAPIKeyToProto(t.Key), nil
+	case velesopenai.APIKey:
+		return openaiAPIKeyToProto(t.Key), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -221,10 +221,10 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	}
 }
 
-func openaiProjectAPIKeyToProto(key string) *spb.SecretData {
+func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_OpenaiProjectApiKey{
-			OpenaiProjectApiKey: &spb.SecretData_OpenAIProjectAPIKey{
+		Secret: &spb.SecretData_OpenaiApiKey{
+			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
 				Key: key,
 			},
 		},

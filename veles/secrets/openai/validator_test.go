@@ -149,7 +149,7 @@ func TestProjectValidator(t *testing.T) {
 			)
 
 			// Create test key
-			key := openai.ProjectAPIKey{Key: projectValidatorTestKey}
+			key := openai.APIKey{Key: projectValidatorTestKey}
 
 			// Test validation
 			got, err := validator.Validate(context.Background(), key)
@@ -175,7 +175,7 @@ func TestProjectValidator(t *testing.T) {
 
 func TestProjectValidator_EmptyKey(t *testing.T) {
 	validator := openai.NewProjectValidator()
-	key := openai.ProjectAPIKey{Key: ""}
+	key := openai.APIKey{Key: ""}
 
 	got, err := validator.Validate(context.Background(), key)
 

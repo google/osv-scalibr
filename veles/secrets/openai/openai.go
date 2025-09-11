@@ -16,9 +16,8 @@
 // OpenAI Project API keys.
 package openai
 
-// ProjectAPIKey is a Veles Secret that holds relevant information for an
-// OpenAI Project API key.
-// These keys start with "sk-proj-" and are the project-scoped format.
-type ProjectAPIKey struct {
+// APIKey is a Veles Secret that holds relevant information for an
+// OpenAI API key.
+type APIKey struct {
 	Key string
 }
