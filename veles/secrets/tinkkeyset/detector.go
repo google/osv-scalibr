@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"regexp"
 
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/tink-crypto/tink-go/v2/insecurecleartextkeyset"
 	"github.com/tink-crypto/tink-go/v2/keyset"
@@ -49,9 +50,17 @@ func NewDetector() veles.Detector {
 	return &Detector{}
 }
 
+// MaxSecretLen returns 0 since a secret found by this detector may contain multiple keys
+func (d *Detector) MaxSecretLen() uint32 {
+	return 0
+}
+
 // Detect finds Tink plain text keysets in the given data
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	res := []veles.Secret{}
+	pos := []int{}
+
+	// search for secrets inside base64 blobs
 	for _, m := range base64Pattern.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
 		if (r - l) < minBase64Len {
@@ -63,13 +72,73 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 		if err != nil || !bytes.Contains(decoded[:n], tinkTypeURL) {
 			continue
 		}
-		res = append(res, d.find(decoded[:n])...)
+
+		b64Found, _ := d.find(decoded[:n])
+		if len(b64Found) == 0 {
+			continue
+		}
+		if len(b64Found) > 1 {
+			log.Warn("Tink keyset detector found multiple keyset inside a single base64 blob, only the first one will be selected")
+			b64Found = b64Found[:1]
+		}
+
+		res = append(res, b64Found...)
+		pos = append(pos, l)
 	}
+
+	// search for plain secrets
 	if !bytes.Contains(data, tinkTypeURL) {
 		return res, nil
 	}
-	res = append(res, d.find(data)...)
-	return res, nil
+
+	plainFound, plainPos := d.find(data)
+	res = append(res, plainFound...)
+	pos = append(pos, plainPos...)
+
+	return res, pos
+}
+
+func (d *Detector) find(buf []byte) ([]veles.Secret, []int) {
+	res, pos := d.findJSON(buf)
+	if len(res) != 0 {
+		return res, pos
+	}
+	return d.findBinary(buf)
+}
+
+func (d *Detector) findBinary(buf []byte) ([]veles.Secret, []int) {
+	hnd, err := insecurecleartextkeyset.Read(keyset.NewBinaryReader(bytes.NewBuffer(buf)))
+	if err != nil {
+		return nil, nil
+	}
+	// Valid binary keyset found, convert it to a JSON string for consistent output.
+	bufOut := new(bytes.Buffer)
+	if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
+		return nil, nil
+	}
+	return []veles.Secret{TinkKeySet{Content: bufOut.String()}}, []int{0}
+}
+
+func (d *Detector) findJSON(buf []byte) ([]veles.Secret, []int) {
+	res := []veles.Secret{}
+	pos := []int{}
+	cleaned := clean(buf)
+	for _, m := range jsonPattern.FindAllIndex(cleaned, -1) {
+		l, r := m[0], m[1]
+		jsonBuf := cleaned[l:r]
+		hnd, err := insecurecleartextkeyset.Read(keyset.NewJSONReader(bytes.NewBuffer(jsonBuf)))
+		if err != nil {
+			continue
+		}
+		// Valid keyset found, convert it back to a canonical JSON string for consistent output.
+		bufOut := new(bytes.Buffer)
+		if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
+			return nil, nil
+		}
+		res = append(res, TinkKeySet{Content: bufOut.String()})
+		pos = append(pos, l)
+	}
+	return res, pos
 }
 
 // clean removes all levels of escaping from a given buffer by eliminating every backslash character.
@@ -101,50 +170,4 @@ func clean(s []byte) []byte {
 		b.WriteByte(s[len(s)-1])
 	}
 	return b.Bytes()
-}
-
-func (d *Detector) find(buf []byte) []veles.Secret {
-	res := d.findJSON(buf)
-	if len(res) != 0 {
-		return res
-	}
-	return d.findBinary(buf)
-}
-
-func (d *Detector) findJSON(buf []byte) []veles.Secret {
-	res := []veles.Secret{}
-	cleaned := clean(buf)
-	for _, m := range jsonPattern.FindAllIndex(cleaned, -1) {
-		l, r := m[0], m[1]
-		jsonBuf := cleaned[l:r]
-		hnd, err := insecurecleartextkeyset.Read(keyset.NewJSONReader(bytes.NewBuffer(jsonBuf)))
-		if err != nil {
-			continue
-		}
-		// Valid keyset found, convert it back to a canonical JSON string for consistent output.
-		bufOut := new(bytes.Buffer)
-		if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
-			return nil
-		}
-		res = append(res, TinkKeySet{Content: bufOut.String()})
-	}
-	return res
-}
-
-func (d *Detector) findBinary(buf []byte) []veles.Secret {
-	hnd, err := insecurecleartextkeyset.Read(keyset.NewBinaryReader(bytes.NewBuffer(buf)))
-	if err != nil {
-		return nil
-	}
-	// Valid binary keyset found, convert it to a JSON string for consistent output.
-	bufOut := new(bytes.Buffer)
-	if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
-		return nil
-	}
-	return []veles.Secret{TinkKeySet{Content: bufOut.String()}}
-}
-
-// MaxSecretLen returns 0 since a secret found by this detector may contain multiple keys
-func (d *Detector) MaxSecretLen() uint32 {
-	return 0
 }
