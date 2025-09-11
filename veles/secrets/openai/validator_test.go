@@ -30,8 +30,7 @@ const (
 )
 
 // mockOpenAIServer creates a mock OpenAI API server for testing project keys
-func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int,
-	responseBody string) *httptest.Server {
+func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
@@ -54,11 +53,6 @@ func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int,
 		// Set response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		if responseBody != "" {
-			if _, err := w.Write([]byte(responseBody)); err != nil {
-				t.Errorf("unable to write response: %v", err)
-			}
-		}
 	}))
 
 	return server
@@ -66,70 +60,35 @@ func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int,
 
 func TestProjectValidator(t *testing.T) {
 	cases := []struct {
-		name         string
-		statusCode   int
-		responseBody string
-		want         veles.ValidationStatus
-		expectError  bool
+		name        string
+		statusCode  int
+		want        veles.ValidationStatus
+		expectError bool
 	}{
 		{
 			name:       "valid_key",
 			statusCode: http.StatusOK,
-			responseBody: `{
-				"data": [
-					{
-						"id": "gpt-4o",
-						"object": "model",
-						"created": 1715368132,
-						"owned_by": "system"
-					}
-				]
-			}`,
-			want: veles.ValidationValid,
+			want:       veles.ValidationValid,
 		},
 		{
 			name:       "invalid_key_unauthorized",
 			statusCode: http.StatusUnauthorized,
-			responseBody: `{
-				"error": {
-					"message": "Incorrect API key provided",
-					"type": "invalid_request_error"
-				}
-			}`,
-			want: veles.ValidationInvalid,
+			want:       veles.ValidationInvalid,
 		},
 		{
-			name:       "forbidden_but_likely_valid",
-			statusCode: http.StatusForbidden,
-			responseBody: `{
-				"error": {
-					"message": "Your account does not have permission to perform this action",
-					"type": "permission_error"
-				}
-			}`,
+			name:        "forbidden_but_likely_valid",
+			statusCode:  http.StatusForbidden,
 			want:        veles.ValidationFailed,
 			expectError: true,
 		},
 		{
 			name:       "rate_limited_but_likely_valid",
 			statusCode: http.StatusTooManyRequests,
-			responseBody: `{
-				"error": {
-					"message": "Rate limit exceeded",
-					"type": "rate_limit_error"
-				}
-			}`,
-			want: veles.ValidationValid,
+			want:       veles.ValidationValid,
 		},
 		{
-			name:       "server_error",
-			statusCode: http.StatusInternalServerError,
-			responseBody: `{
-				"error": {
-					"message": "Internal server error",
-					"type": "server_error"
-				}
-			}`,
+			name:        "server_error",
+			statusCode:  http.StatusInternalServerError,
 			want:        veles.ValidationFailed,
 			expectError: true,
 		},
@@ -139,7 +98,7 @@ func TestProjectValidator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mock server
 			server := mockOpenAIServer(t, projectValidatorTestKey,
-				tc.statusCode, tc.responseBody)
+				tc.statusCode)
 			defer server.Close()
 
 			// Create validator with mock client and server URL

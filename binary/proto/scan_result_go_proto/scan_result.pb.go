@@ -5013,11 +5013,11 @@ type SecretData struct {
 	//	*SecretData_AnthropicModelApiKey
 	//	*SecretData_Perplexity
 	//	*SecretData_PrivateKey_
-	//	*SecretData_OpenaiApiKey
 	//	*SecretData_GrokXaiApiKey
 	//	*SecretData_GrokXaiManagementApiKey
 	//	*SecretData_DockerHubPat_
 	//	*SecretData_Digitalocean
+	//	*SecretData_OpenaiApiKey
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5105,15 +5105,6 @@ func (x *SecretData) GetPrivateKey() *SecretData_PrivateKey {
 	return nil
 }
 
-func (x *SecretData) GetOpenaiApiKey() *SecretData_OpenAIAPIKey {
-	if x != nil {
-		if x, ok := x.Secret.(*SecretData_OpenaiApiKey); ok {
-			return x.OpenaiApiKey
-		}
-	}
-	return nil
-}
-
 func (x *SecretData) GetGrokXaiApiKey() *SecretData_GrokXAIAPIKey {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_GrokXaiApiKey); ok {
@@ -5150,6 +5141,15 @@ func (x *SecretData) GetDigitalocean() *SecretData_DigitalOceanAPIToken {
 	return nil
 }
 
+func (x *SecretData) GetOpenaiApiKey() *SecretData_OpenAIAPIKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_OpenaiApiKey); ok {
+			return x.OpenaiApiKey
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -5174,24 +5174,24 @@ type SecretData_PrivateKey_ struct {
 	PrivateKey *SecretData_PrivateKey `protobuf:"bytes,5,opt,name=private_key,json=privateKey,proto3,oneof"`
 }
 
-type SecretData_OpenaiApiKey struct {
-	OpenaiApiKey *SecretData_OpenAIAPIKey `protobuf:"bytes,6,opt,name=openai_api_key,json=openaiApiKey,proto3,oneof"`
-}
-
 type SecretData_GrokXaiApiKey struct {
-	GrokXaiApiKey *SecretData_GrokXAIAPIKey `protobuf:"bytes,7,opt,name=grok_xai_api_key,json=grokXaiApiKey,proto3,oneof"`
+	GrokXaiApiKey *SecretData_GrokXAIAPIKey `protobuf:"bytes,6,opt,name=grok_xai_api_key,json=grokXaiApiKey,proto3,oneof"`
 }
 
 type SecretData_GrokXaiManagementApiKey struct {
-	GrokXaiManagementApiKey *SecretData_GrokXAIManagementAPIKey `protobuf:"bytes,8,opt,name=grok_xai_management_api_key,json=grokXaiManagementApiKey,proto3,oneof"`
+	GrokXaiManagementApiKey *SecretData_GrokXAIManagementAPIKey `protobuf:"bytes,7,opt,name=grok_xai_management_api_key,json=grokXaiManagementApiKey,proto3,oneof"`
 }
 
 type SecretData_DockerHubPat_ struct {
-	DockerHubPat *SecretData_DockerHubPat `protobuf:"bytes,9,opt,name=docker_hub_pat,json=dockerHubPat,proto3,oneof"`
+	DockerHubPat *SecretData_DockerHubPat `protobuf:"bytes,8,opt,name=docker_hub_pat,json=dockerHubPat,proto3,oneof"`
 }
 
 type SecretData_Digitalocean struct {
-	Digitalocean *SecretData_DigitalOceanAPIToken `protobuf:"bytes,10,opt,name=digitalocean,proto3,oneof"`
+	Digitalocean *SecretData_DigitalOceanAPIToken `protobuf:"bytes,9,opt,name=digitalocean,proto3,oneof"`
+}
+
+type SecretData_OpenaiApiKey struct {
+	OpenaiApiKey *SecretData_OpenAIAPIKey `protobuf:"bytes,10,opt,name=openai_api_key,json=openaiApiKey,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5204,8 +5204,6 @@ func (*SecretData_Perplexity) isSecretData_Secret() {}
 
 func (*SecretData_PrivateKey_) isSecretData_Secret() {}
 
-func (*SecretData_OpenaiApiKey) isSecretData_Secret() {}
-
 func (*SecretData_GrokXaiApiKey) isSecretData_Secret() {}
 
 func (*SecretData_GrokXaiManagementApiKey) isSecretData_Secret() {}
@@ -5213,6 +5211,8 @@ func (*SecretData_GrokXaiManagementApiKey) isSecretData_Secret() {}
 func (*SecretData_DockerHubPat_) isSecretData_Secret() {}
 
 func (*SecretData_Digitalocean) isSecretData_Secret() {}
+
+func (*SecretData_OpenaiApiKey) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -6529,13 +6529,13 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"perplexity\x18\x04 \x01(\v2$.scalibr.SecretData.PerplexityAPIKeyH\x00R\n" +
 	"perplexity\x12A\n" +
 	"\vprivate_key\x18\x05 \x01(\v2\x1e.scalibr.SecretData.PrivateKeyH\x00R\n" +
-	"privateKey\x12H\n" +
-	"\x0eopenai_api_key\x18\x06 \x01(\v2 .scalibr.SecretData.OpenAIAPIKeyH\x00R\fopenaiApiKey\x12L\n" +
-	"\x10grok_xai_api_key\x18\a \x01(\v2!.scalibr.SecretData.GrokXAIAPIKeyH\x00R\rgrokXaiApiKey\x12k\n" +
-	"\x1bgrok_xai_management_api_key\x18\b \x01(\v2+.scalibr.SecretData.GrokXAIManagementAPIKeyH\x00R\x17grokXaiManagementApiKey\x12H\n" +
-	"\x0edocker_hub_pat\x18\t \x01(\v2 .scalibr.SecretData.DockerHubPatH\x00R\fdockerHubPat\x12N\n" +
-	"\fdigitalocean\x18\n" +
-	" \x01(\v2(.scalibr.SecretData.DigitalOceanAPITokenH\x00R\fdigitalocean\x1a\xb0\x03\n" +
+	"privateKey\x12L\n" +
+	"\x10grok_xai_api_key\x18\x06 \x01(\v2!.scalibr.SecretData.GrokXAIAPIKeyH\x00R\rgrokXaiApiKey\x12k\n" +
+	"\x1bgrok_xai_management_api_key\x18\a \x01(\v2+.scalibr.SecretData.GrokXAIManagementAPIKeyH\x00R\x17grokXaiManagementApiKey\x12H\n" +
+	"\x0edocker_hub_pat\x18\b \x01(\v2 .scalibr.SecretData.DockerHubPatH\x00R\fdockerHubPat\x12N\n" +
+	"\fdigitalocean\x18\t \x01(\v2(.scalibr.SecretData.DigitalOceanAPITokenH\x00R\fdigitalocean\x12H\n" +
+	"\x0eopenai_api_key\x18\n" +
+	" \x01(\v2 .scalibr.SecretData.OpenAIAPIKeyH\x00R\fopenaiApiKey\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -6785,11 +6785,11 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	68, // 71: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
 	69, // 72: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
 	72, // 73: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
-	73, // 74: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
-	70, // 75: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
-	71, // 76: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
-	74, // 77: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
-	75, // 78: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	70, // 74: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
+	71, // 75: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
+	74, // 76: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
+	75, // 77: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	73, // 78: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
 	4,  // 79: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
 	76, // 80: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
 	61, // 81: scalibr.Location.filepath:type_name -> scalibr.Filepath
@@ -6856,11 +6856,11 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_AnthropicModelApiKey)(nil),
 		(*SecretData_Perplexity)(nil),
 		(*SecretData_PrivateKey_)(nil),
-		(*SecretData_OpenaiApiKey)(nil),
 		(*SecretData_GrokXaiApiKey)(nil),
 		(*SecretData_GrokXaiManagementApiKey)(nil),
 		(*SecretData_DockerHubPat_)(nil),
 		(*SecretData_Digitalocean)(nil),
+		(*SecretData_OpenaiApiKey)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[55].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
