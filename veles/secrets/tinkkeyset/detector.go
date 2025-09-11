@@ -126,7 +126,7 @@ func (d *Detector) findJSONKeyset(buf []byte) []veles.Secret {
 		if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
 			return nil
 		}
-		res = append(res, TinkKeySet{Keys: bufOut.String()})
+		res = append(res, TinkKeySet{Content: bufOut.String()})
 	}
 	return res
 }
@@ -141,11 +141,10 @@ func (d *Detector) findBinaryKeyset(buf []byte) []veles.Secret {
 	if err := insecurecleartextkeyset.Write(hnd, keyset.NewJSONWriter(bufOut)); err != nil {
 		return nil
 	}
-	return []veles.Secret{TinkKeySet{Keys: bufOut.String()}}
+	return []veles.Secret{TinkKeySet{Content: bufOut.String()}}
 }
 
-// MaxSecretLen returns the maximum length a secret from this Detector can have.
+// MaxSecretLen returns 0 since a secret found by this detector may contain multiple keys
 func (d *Detector) MaxSecretLen() uint32 {
-	// TODO: since it's a keyset (multiple keys), I don't know if there is MaxSecretLen
 	return 0
 }
