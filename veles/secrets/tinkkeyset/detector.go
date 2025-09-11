@@ -104,14 +104,14 @@ func clean(s []byte) []byte {
 }
 
 func (d *Detector) find(buf []byte) []veles.Secret {
-	res := d.findJSONKeyset(buf)
+	res := d.findJSON(buf)
 	if len(res) != 0 {
 		return res
 	}
-	return d.findBinaryKeyset(buf)
+	return d.findBinary(buf)
 }
 
-func (d *Detector) findJSONKeyset(buf []byte) []veles.Secret {
+func (d *Detector) findJSON(buf []byte) []veles.Secret {
 	res := []veles.Secret{}
 	cleaned := clean(buf)
 	for _, m := range jsonPattern.FindAllIndex(cleaned, -1) {
@@ -131,7 +131,7 @@ func (d *Detector) findJSONKeyset(buf []byte) []veles.Secret {
 	return res
 }
 
-func (d *Detector) findBinaryKeyset(buf []byte) []veles.Secret {
+func (d *Detector) findBinary(buf []byte) []veles.Secret {
 	hnd, err := insecurecleartextkeyset.Read(keyset.NewBinaryReader(bytes.NewBuffer(buf)))
 	if err != nil {
 		return nil
