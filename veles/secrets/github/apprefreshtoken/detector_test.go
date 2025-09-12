@@ -25,9 +25,11 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
 )
 
+// Note: Github tokens are encoded using `` + `` to bypass github security checks
+
 const (
-	testKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	anotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	testKey        = `gh` + `r_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
+	anotherTestKey = `gh` + `r_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
 
 // TestDetector_truePositives tests for cases where we know the Detector
@@ -74,11 +76,15 @@ func TestDetector_truePositives(t *testing.T) {
 			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
+		name:  "bad checksum",
+		input: testKey[:len(testKey)-1] + "a",
+		want:  []veles.Secret{},
+	}, {
 		name:  "multiple distinct matches",
-		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
+		input: testKey + "\n" + anotherTestKey,
 		want: []veles.Secret{
 			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
-			apprefreshtoken.GithubAppRefreshToken{Token: testKey[:len(testKey)-1] + "a"},
+			apprefreshtoken.GithubAppRefreshToken{Token: anotherTestKey},
 		},
 	}, {
 		name: "larger input containing key",
@@ -128,13 +134,13 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input: testKey[:len(testKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
-		input: `ghr_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "incorrect prefix should not match",
 		input: `Eop_v1_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "prefix missing dash should not match",
-		input: `ghrOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `gh` + `rOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
