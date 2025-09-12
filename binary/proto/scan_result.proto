@@ -646,7 +646,9 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
-    DigitalOceanAPIToken digitalocean = 9;
+    PostmanAPIKey postman_api_key = 9;
+    PostmanCollectionAccessToken postman_collection_access_token = 10;
+    DigitalOceanAPIToken digitalocean =11;
   }
 
   message GCPSAK {
@@ -700,6 +702,14 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message PostmanAPIKey {
+    string key = 1;
+  }
+  
+  message PostmanCollectionAccessToken {
+    string key = 1;
   }
 
   message DigitalOceanAPIToken {
