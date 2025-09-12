@@ -71,6 +71,33 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
+			name:  "multiple keysets json",
+			input: `[{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] },{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}]`,
+			want: []veles.Secret{
+				tinkkeyset.TinkKeySet{
+					Content: `{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] }`,
+				},
+				tinkkeyset.TinkKeySet{
+					Content: `{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}`,
+				},
+			},
+		},
+		{
+			name: "multiple keysets pretty json",
+			input: `[
+				{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] },
+				{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}
+			]`,
+			want: []veles.Secret{
+				tinkkeyset.TinkKeySet{
+					Content: `{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] }`,
+				},
+				tinkkeyset.TinkKeySet{
+					Content: `{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}`,
+				},
+			},
+		},
+		{
 			name:  "base64 encoded binary",
 			input: "CPHv2PIDElQKSAowdHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbmsuQWVzR2NtS2V5EhIaEEL4HoapXqtkjiMgDxdcNUMYARABGPHv2PIDIAE=",
 			want: []veles.Secret{tinkkeyset.TinkKeySet{
@@ -83,6 +110,18 @@ func TestDetector_truePositives(t *testing.T) {
 			want: []veles.Secret{tinkkeyset.TinkKeySet{
 				Content: `{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}`,
 			}},
+		},
+		{
+			name:  "base64 encoded multiple keysets json",
+			input: "W3sgInByaW1hcnlLZXlJZCI6IDIwOTA3OTE2ODksICJrZXkiOiBbIHsgImtleURhdGEiOiB7ICJ0eXBlVXJsIjogInR5cGUuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmNyeXB0by50aW5rLkFlc0N0ckhtYWNBZWFkS2V5IiwgInZhbHVlIjogIkVoWVNBZ2dRR2hEV3pISXZmU25ScjVTMUpGRFRxYkJTR2lnU0JBZ0RFQkFhSUc1Mkt3dVduby84d04wbHF6TnBOLzNReFgwazVtR0RPR1RFQnkrOEo0eU8iLCAia2V5TWF0ZXJpYWxUeXBlIjogIlNZTU1FVFJJQyIgfSwgInN0YXR1cyI6ICJFTkFCTEVEIiwgImtleUlkIjogMjA5MDc5MTY4OSwgIm91dHB1dFByZWZpeFR5cGUiOiAiVElOSyIgfSBdIH0seyJwcmltYXJ5S2V5SWQiOjEwNDU4Mzc4MDksImtleSI6W3sia2V5RGF0YSI6eyJ0eXBlVXJsIjoidHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbmsuQWVzR2NtS2V5IiwidmFsdWUiOiJHaEJDK0I2R3FWNnJaSTRqSUE4WFhEVkQiLCJrZXlNYXRlcmlhbFR5cGUiOiJTWU1NRVRSSUMifSwic3RhdHVzIjoiRU5BQkxFRCIsImtleUlkIjoxMDQ1ODM3ODA5LCJvdXRwdXRQcmVmaXhUeXBlIjoiVElOSyJ9XX1dCg==",
+			want: []veles.Secret{
+				tinkkeyset.TinkKeySet{
+					Content: `{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] }`,
+				},
+				tinkkeyset.TinkKeySet{
+					Content: `{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}`,
+				},
+			},
 		},
 		{
 			name:  "base64 encoded pretty json",
@@ -136,6 +175,25 @@ func TestDetector_truePositives(t *testing.T) {
 			want: []veles.Secret{tinkkeyset.TinkKeySet{
 				Content: `{"primaryKeyId":487932234,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.EcdsaPrivateKey","value":"Em4SBggCEAMYAhoxAC7RJzXyzfXtjhFWHsHi49+Rff0869pFfmGVJleMEdpYGAU7uiQLozt/oib7YkIuRCIxABxcneuC+VKMdCDbuxS91hs+fwQVJjYRLLDKGhiUCmIrCJrl7uCl+o/t26Rz+C00exoxALNGcwnc5jcmh56hrWDcsL8PAL5Cb/c3prslyEZpiz4/3kflMM5/HF2rE68OXQ/hEg==","keyMaterialType":"ASYMMETRIC_PRIVATE"},"status":"ENABLED","keyId":487932234,"outputPrefixType":"RAW"}]}`,
 			}},
+		},
+		{
+			name: "nested base64 encoded binary and json yml",
+			input: `
+			something_else:
+				- 1
+				- 2
+			something:
+				key: CMqC1egBEu0BCuABCjZ0eXBlLmdvb2dsZWFwaXMuY29tL2dvb2dsZS5jcnlwdG8udGluay5FY2RzYVByaXZhdGVLZXkSowESbhIGCAIQAxgCGjEALtEnNfLN9e2OEVYeweLj35F9/Tzr2kV+YZUmV4wR2lgYBTu6JAujO3+iJvtiQi5EIjEAHFyd64L5Uox0INu7FL3WGz5/BBUmNhEssMoaGJQKYisImuXu4KX6j+3bpHP4LTR7GjEAs0ZzCdzmNyaHnqGtYNywvw8AvkJv9zemuyXIRmmLPj/eR+Uwzn8cXasTrw5dD+ESGAIQARjKgtXoASAD
+				key2: ewogICJwcmltYXJ5S2V5SWQiOiAyMDkwNzkxNjg5LAogICJrZXkiOiBbCiAgICB7CiAgICAgICJrZXlEYXRhIjogewogICAgICAgICJ0eXBlVXJsIjogInR5cGUuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmNyeXB0by50aW5rLkFlc0N0ckhtYWNBZWFkS2V5IiwKICAgICAgICAidmFsdWUiOiAiRWhZU0FnZ1FHaERXekhJdmZTblJyNVMxSkZEVHFiQlNHaWdTQkFnREVCQWFJRzUyS3d1V25vLzh3TjBscXpOcE4vM1F4WDBrNW1HRE9HVEVCeSs4SjR5TyIsCiAgICAgICAgImtleU1hdGVyaWFsVHlwZSI6ICJTWU1NRVRSSUMiCiAgICAgIH0sCiAgICAgICJzdGF0dXMiOiAiRU5BQkxFRCIsCiAgICAgICJrZXlJZCI6IDIwOTA3OTE2ODksCiAgICAgICJvdXRwdXRQcmVmaXhUeXBlIjogIlRJTksiCiAgICB9CiAgXQp9
+				`,
+			want: []veles.Secret{
+				tinkkeyset.TinkKeySet{
+					Content: `{"primaryKeyId":487932234,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.EcdsaPrivateKey","value":"Em4SBggCEAMYAhoxAC7RJzXyzfXtjhFWHsHi49+Rff0869pFfmGVJleMEdpYGAU7uiQLozt/oib7YkIuRCIxABxcneuC+VKMdCDbuxS91hs+fwQVJjYRLLDKGhiUCmIrCJrl7uCl+o/t26Rz+C00exoxALNGcwnc5jcmh56hrWDcsL8PAL5Cb/c3prslyEZpiz4/3kflMM5/HF2rE68OXQ/hEg==","keyMaterialType":"ASYMMETRIC_PRIVATE"},"status":"ENABLED","keyId":487932234,"outputPrefixType":"RAW"}]}`,
+				},
+				tinkkeyset.TinkKeySet{
+					Content: `{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] }`,
+				},
+			},
 		},
 	}
 
