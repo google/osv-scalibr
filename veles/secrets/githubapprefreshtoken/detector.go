@@ -21,9 +21,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-const tokenMaxLen = 300
+const tokenMaxLen = 80
 
-var tokenPattern = regexp.MustCompile("")
+var tokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
 
 // NewDetector returns a new Veles Detector that finds Github app refresh tokens
 func NewDetector() veles.Detector {
