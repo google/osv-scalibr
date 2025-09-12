@@ -57,12 +57,12 @@ func (t *Token) Payload() map[string]any {
 	return copyMap(t.payload)
 }
 
-// Signature returns a copy of the JWT signature.
+// Signature returns the JWT signature.
 func (t *Token) Signature() string {
 	return t.signature
 }
 
-// Raw returns a copy of the JWT string.
+// Raw returns the JWT string.
 func (t *Token) Raw() string {
 	return t.raw
 }
