@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package githubapprefreshtoken
+package apprefreshtoken
 
 import (
 	"regexp"
@@ -23,6 +23,7 @@ import (
 
 const tokenMaxLen = 80
 
+// TODO: check on this (not future proof)
 var tokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
 
 // NewDetector returns a new Veles Detector that finds Github app refresh tokens

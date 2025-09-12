@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package githubapprefreshtoken implements the logic to detect
-// [Github app refresh tokens](https://developers.google.com/tink/design/keysets)
-package githubapprefreshtoken
+package apprefreshtoken
 
-type GithubAppRefreshToken struct {
-	Token string
+import (
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/github/token"
+)
+
+func NewValidator() veles.Validator[GithubAppRefreshToken] {
+	return token.NewCheckSumValidator[GithubAppRefreshToken]()
 }

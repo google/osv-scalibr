@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package githubapprefreshtoken_test
+package apprefreshtoken_test
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/githubapprefreshtoken"
+	"github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Github app refresh tokens.
 func TestDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{githubapprefreshtoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{apprefreshtoken.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,55 +45,55 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: testKey,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
 		name:  "simple matching string another key",
 		input: anotherTestKey,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: anotherTestKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: anotherTestKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `DO_API_TOKEN=` + testKey,
+		input: `API_TOKEN=` + testKey,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `DO_API_TOKEN="` + testKey + `"`,
+		input: `API_TOKEN="` + testKey + `"`,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey[:len(testKey)-1] + "a"},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
-:DO_API_TOKEN: %s
+:API_TOKEN: %s
 		`, testKey),
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: testKey + `extra`,
 		want: []veles.Secret{
-			githubapprefreshtoken.GithubAppRefreshToken{Token: testKey},
+			apprefreshtoken.GithubAppRefreshToken{Token: testKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -112,7 +112,7 @@ func TestDetector_truePositives(t *testing.T) {
 // TestDetector_trueNegatives tests for cases where we know the Detector
 // will not find a Github app refresh tokens.
 func TestDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{githubapprefreshtoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{apprefreshtoken.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
