@@ -18,27 +18,116 @@ package jwt
 import (
 	"encoding/base64"
 	"encoding/json"
+	"regexp"
 	"strings"
 )
 
-// ExtractClaimsPayload returns the claims from the payload section of a JWT token
-func ExtractClaimsPayload(token string) map[string]any {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
+// MaxTokenLength defines the maximum allowed size of a JWT token.
+//
+// The JWT specification (RFC 7519) does not define an upper bound for token
+// length. However, in practice JWTs are typically transmitted in HTTP headers,
+// where very large values can cause interoperability issues. Exceeding 8 KB is
+// generally discouraged, as many servers, proxies, and libraries impose limits
+// around this size.
+const MaxTokenLength = 8192
+
+// jwtRe is a regular expression that matches the basic JWT structure (base64.base64.base64)
+var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+
+// Token represents a decoded JSON Web Token (JWT).
+// The JWT consists of three sections: header, payload, and signature.
+type Token struct {
+	// raw is the original JWT string
+	raw string
+	// header is the base64 decoded JWT header claims.
+	header map[string]any
+	// payload is the base64 decoded JWT header claims.
+	payload map[string]any
+	// signature is the raw signature section of the JWT.
+	signature string
+}
+
+func (t *Token) Header() map[string]any {
+	return copyMap(t.header)
+}
+
+func (t *Token) Payload() map[string]any {
+	return copyMap(t.payload)
+}
+
+func (t *Token) Signature() string {
+	return t.signature
+}
+
+func (t *Token) Raw() string {
+	return t.raw
+}
+
+func (t Token) isValid() bool {
+	return t.header != nil && t.payload != nil && t.signature != ""
+}
+
+// copyMap creates a shallow copy of a map[string]any.
+// Returns nil if the input map is nil.
+func copyMap(m map[string]any) map[string]any {
+	if m == nil {
 		return nil
 	}
 
-	// Decode the payload (second part)
-	payload, err := base64.RawStdEncoding.DecodeString(parts[1])
+	n := make(map[string]any, len(m))
+	for k, v := range m {
+		n[k] = v
+	}
+
+	return n
+}
+
+// ExtractTokens scans the input data for JWT substrings, parses them and
+// returns a slice of Token objects and their positions.
+func ExtractTokens(data []byte) ([]Token, []int) {
+	if len(data) > MaxTokenLength {
+		return nil, nil
+	}
+
+	var tokens []Token
+	var positions []int
+	jwtMatches := jwtRe.FindAllIndex(data, -1)
+	for _, m := range jwtMatches {
+		token := parseToken(string(data[m[0]:m[1]]))
+		if !token.isValid() {
+			continue
+		}
+		tokens = append(tokens, token)
+		positions = append(positions, m[0])
+	}
+	return tokens, positions
+}
+
+// parseToken splits and decode a JWT string into a Token.
+func parseToken(token string) Token {
+	sections := strings.Split(token, ".")
+	if len(sections) != 3 {
+		return Token{}
+	}
+
+	return Token{
+		header:    extractClaims(sections[0]),
+		payload:   extractClaims(sections[1]),
+		signature: sections[2],
+		raw:       token,
+	}
+}
+
+// extractClaims base64 decodes a JWT section and unmarshals it as JSON.
+func extractClaims(section string) map[string]any {
+	data, err := base64.RawURLEncoding.DecodeString(section)
 	if err != nil {
 		return nil
 	}
 
-	// Unmarshal the claims
 	var claims map[string]any
-	if err := json.Unmarshal(payload, &claims); err != nil {
+	if err := json.Unmarshal(data, &claims); err != nil {
 		return nil
 	}
-
 	return claims
 }

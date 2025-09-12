@@ -21,17 +21,15 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/jwt"
 )
 
-// maxTokenLength defines the maximum allowed size of a JWT token.
-//
-// The JWT specification (RFC 7519) does not define an upper bound for token
-// length. However, in practice JWTs are typically transmitted in HTTP headers,
-// where very large values can cause interoperability issues. Exceeding 8 KB is
-// generally discouraged, as many servers, proxies, and libraries impose limits
-// around this size.
-const maxTokenLength = 8192
+// JWT payload claim keys used to identify Azure tokens.
+// Reference: https://learn.microsoft.com/en-us/entra/identity-platform/access-token-claims-reference#payload-claims
+const (
+	// payloadIssuerKey represents the 'iss' (issuer) claim.
+	payloadIssuerKey = "iss"
 
-// jwtRe is a regular expression that matches the basic JWT structure (base64.base64.base64)
-var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+	// payloadScopeKey represents the 'scp' (scope) claim.
+	payloadScopeKey = "scp"
+)
 
 // detector is a Veles Detector.
 type detector struct{}
@@ -42,7 +40,7 @@ func NewDetector() veles.Detector {
 }
 
 func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
+	return jwt.MaxTokenLength
 }
 
 // Detect checks whether a JWT is a valid Azure token.
@@ -57,33 +55,29 @@ func (d *detector) MaxSecretLen() uint32 {
 //   - https://learn.microsoft.com/en-us/entra/identity-platform/access-tokens
 //   - https://learn.microsoft.com/en-us/entra/identity-platform/id-tokens
 func (d *detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
-	if len(data) > maxTokenLength {
+	if len(data) > jwt.MaxTokenLength {
 		return nil, nil
 	}
 
-	jwtMatches := jwtRe.FindAllIndex(data, -1)
-	for _, m := range jwtMatches {
-		token := string(data[m[0]:m[1]])
-		claims := jwt.ExtractClaimsPayload(token)
-		if claims == nil {
-			continue
-		}
+	tokens, positions := jwt.ExtractTokens(data)
+	for i, t := range tokens {
+		payloadClaims := t.Payload()
 
 		// Validate Azure issuer.
-		iss, ok := claims["iss"].(string)
+		iss, ok := payloadClaims[payloadIssuerKey].(string)
 		if !ok || !isValidAzureIssuer(iss) {
 			continue
 		}
 
-		// Differentiate between access token and ID token.
-		_, hasScope := claims["scp"]
+		// Differentiate between access token and id token.
+		_, hasScope := payloadClaims[payloadScopeKey]
 
 		if hasScope {
-			secrets = append(secrets, AzureAccessToken{Token: token})
-			positions = append(positions, m[0])
+			secrets = append(secrets, AzureAccessToken{Token: t.Raw()})
+			positions = append(positions, positions[i])
 		} else {
-			secrets = append(secrets, AzureIdentityToken{Token: token})
-			positions = append(positions, m[0])
+			secrets = append(secrets, AzureIdentityToken{Token: t.Raw()})
+			positions = append(positions, positions[i])
 		}
 	}
 
