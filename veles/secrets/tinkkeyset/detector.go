@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"regexp"
 
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/tink-crypto/tink-go/v2/insecurecleartextkeyset"
 	"github.com/tink-crypto/tink-go/v2/keyset"
@@ -30,7 +29,7 @@ var (
 	// base64Pattern is a generic pattern to detect base64 blobs
 	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{20,}=?=?`)
 
-	// jsonPattern matches correctly tink keyset json strings
+	// jsonPattern matches correctly Tink keyset json strings
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
 	jsonPattern = regexp.MustCompile(`(?s)\s*\{\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
 
@@ -50,9 +49,10 @@ func NewDetector() veles.Detector {
 	return &Detector{}
 }
 
-// MaxSecretLen returns 0 since a secret found by this detector may contain multiple keys
+// MaxSecretLen returns a conservative upper bound for the size of a secret in bytes.
+// An exact number cannot be returned because Tink keysets may have arbitrary lengths,
 func (d *Detector) MaxSecretLen() uint32 {
-	return 0
+	return 128 * 1 << 10 // 128 KiB
 }
 
 // Detect finds Tink plain text keysets in the given data
@@ -73,17 +73,12 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 			continue
 		}
 
-		b64Found, _ := d.find(decoded[:n])
-		if len(b64Found) == 0 {
-			continue
+		b64Found, _ := find(decoded[:n])
+		// use the start of the base
+		for _, found := range b64Found {
+			res = append(res, found)
+			pos = append(pos, l)
 		}
-		if len(b64Found) > 1 {
-			log.Warn("Tink keyset detector found multiple keyset inside a single base64 blob, only the first one will be selected")
-			b64Found = b64Found[:1]
-		}
-
-		res = append(res, b64Found...)
-		pos = append(pos, l)
 	}
 
 	// search for plain secrets
@@ -91,22 +86,25 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 		return res, nil
 	}
 
-	plainFound, plainPos := d.find(data)
+	plainFound, plainPos := find(data)
 	res = append(res, plainFound...)
 	pos = append(pos, plainPos...)
 
 	return res, pos
 }
 
-func (d *Detector) find(buf []byte) ([]veles.Secret, []int) {
-	res, pos := d.findJSON(buf)
+func find(buf []byte) ([]veles.Secret, []int) {
+	res, pos := findJSON(buf)
 	if len(res) != 0 {
 		return res, pos
 	}
-	return d.findBinary(buf)
+	return findBinary(buf)
 }
 
-func (d *Detector) findBinary(buf []byte) ([]veles.Secret, []int) {
+// findBinary extract at most one binary encoded Tink keyset inside the provided buffer
+//
+// this function works only if the input is exactly a binary encoded Tink keyset
+func findBinary(buf []byte) ([]veles.Secret, []int) {
 	hnd, err := insecurecleartextkeyset.Read(keyset.NewBinaryReader(bytes.NewBuffer(buf)))
 	if err != nil {
 		return nil, nil
@@ -119,7 +117,8 @@ func (d *Detector) findBinary(buf []byte) ([]veles.Secret, []int) {
 	return []veles.Secret{TinkKeySet{Content: bufOut.String()}}, []int{0}
 }
 
-func (d *Detector) findJSON(buf []byte) ([]veles.Secret, []int) {
+// findJSON searches for json encoded Tink keyset and extracts them
+func findJSON(buf []byte) ([]veles.Secret, []int) {
 	res := []veles.Secret{}
 	pos := []int{}
 	cleaned := clean(buf)

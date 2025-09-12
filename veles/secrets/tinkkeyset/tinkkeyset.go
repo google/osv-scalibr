@@ -17,5 +17,6 @@ package tinkkeyset
 
 // TinkKeySet contains information of a [Tink keyset](https://developers.google.com/tink/design/keysets)
 type TinkKeySet struct {
+	// Content is a JSON formatted Tink keyset.
 	Content string
 }
