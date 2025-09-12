@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -69,6 +70,7 @@ func init() { //nolint:gochecknoinits
 		anthropicapikey.NewDetector(),
 		gcpsak.NewDetector(),
 		dockerhubpat.NewDetector(),
+		digitaloceanapikey.NewDetector(),
 		perplexityapikey.NewDetector(),
 		grokxaiapikey.NewAPIKeyDetector(),
 		grokxaiapikey.NewManagementKeyDetector(),
