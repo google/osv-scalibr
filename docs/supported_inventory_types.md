@@ -81,6 +81,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                 | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                            | `javascript/pnpmlock`                |
 |            | bun.lock                                  | `javascript/bunlock`                 |
+| Lua        | Luarocks modules                          | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                              | `swift/podfilelock`                  |
 | PHP        | Composer                                  | `php/composerlock`                   |
 | Python     | Installed PyPI packages (global and venv) | `python/wheelegg`                    |

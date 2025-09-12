@@ -109,6 +109,8 @@ const (
 	TypeWinget = "winget"
 	// TypeNim is pkg:nim purl
 	TypeNim = "nim"
+	// TypeLua is pkg:lua purl
+	TypeLua = "lua"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -197,6 +199,7 @@ func validType(t string) bool {
 		TypeHackage:   true,
 		TypeHaskell:   true,
 		TypeNim:       true,
+		TypeLua:       true,
 		TypeHex:       true,
 		TypeMacApps:   true,
 		TypeMaven:     true,
