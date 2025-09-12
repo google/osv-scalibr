@@ -52,17 +52,17 @@ func (t *Token) Header() map[string]any {
 	return copyMap(t.header)
 }
 
-// Payload returns a copy of the JWT header claims.
+// Payload returns a copy of the JWT payload claims.
 func (t *Token) Payload() map[string]any {
 	return copyMap(t.payload)
 }
 
-// Signature returns a copy of the JWT header claims.
+// Signature returns a copy of the JWT signature.
 func (t *Token) Signature() string {
 	return t.signature
 }
 
-// Raw returns a copy of the JWT header claims.
+// Raw returns a copy of the JWT string.
 func (t *Token) Raw() string {
 	return t.raw
 }
