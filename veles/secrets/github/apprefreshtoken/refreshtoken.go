@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package refreshtoken implements the logic to detect
+// Package apprefreshtoken implements the logic to detect
 // [Github app refresh tokens](https://developers.google.com/tink/design/keysets)
 package apprefreshtoken
 
+// GithubAppRefreshToken contains a Github App refresh token
 type GithubAppRefreshToken struct {
 	Token string
 }
 
+// GetToken returns the token value
 func (g GithubAppRefreshToken) GetToken() string {
 	return g.Token
 }

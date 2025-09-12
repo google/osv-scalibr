@@ -26,8 +26,10 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+// CheckSumValidator validates that the given token has the expected checksum ref https://github.blog/engineering/behind-githubs-new-authentication-token-formats/
 type CheckSumValidator[T GithubToken] struct{}
 
+// NewCheckSumValidator returns a CheckSumValidator
 func NewCheckSumValidator[T GithubToken]() veles.Validator[T] {
 	return CheckSumValidator[T]{}
 }

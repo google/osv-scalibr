@@ -43,7 +43,8 @@ func TestValidator(t *testing.T) {
 		token   fakeToken
 		want    veles.ValidationStatus
 		wantErr error
-		ctx     context.Context
+		//nolint:containedctx
+		ctx context.Context
 	}{
 		{
 			name:    "context cancelled",

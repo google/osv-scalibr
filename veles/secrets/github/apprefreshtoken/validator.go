@@ -19,6 +19,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github/token"
 )
 
+// NewValidator return a GithubAppRefreshToken validator
 func NewValidator() veles.Validator[GithubAppRefreshToken] {
 	return token.NewCheckSumValidator[GithubAppRefreshToken]()
 }
