@@ -27,39 +27,39 @@ import (
 )
 
 var (
-	rootDirectory = &virtualFile{
+	rootDirectory = &VirtualFile{
 		virtualPath: "/",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	rootFile = &virtualFile{
+	rootFile = &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
-	nonRootDirectory = &virtualFile{
+	nonRootDirectory = &VirtualFile{
 		virtualPath: "/dir1/dir2",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	nonRootFile = &virtualFile{
+	nonRootFile = &VirtualFile{
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 	}
 )
 
-// TODO: b/377551664 - Add tests for the Stat method for the virtualFile type.
+// TODO: b/377551664 - Add tests for the Stat method for the VirtualFile type.
 func TestStat(t *testing.T) {
 	baseTime := time.Now()
-	regularVirtualFile := &virtualFile{
+	regularVirtualFile := &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        1,
 		modTime:     baseTime,
 	}
-	symlinkVirtualFile := &virtualFile{
+	symlinkVirtualFile := &VirtualFile{
 		virtualPath: "/symlink-to-bar",
 		targetPath:  "/bar",
 		isWhiteout:  false,
@@ -67,7 +67,7 @@ func TestStat(t *testing.T) {
 		size:        1,
 		modTime:     baseTime,
 	}
-	whiteoutVirtualFile := &virtualFile{
+	whiteoutVirtualFile := &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  true,
 		mode:        filePermission,
@@ -82,7 +82,7 @@ func TestStat(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		node     *virtualFile
+		node     *VirtualFile
 		wantInfo info
 		wantErr  error
 	}{
@@ -129,7 +129,7 @@ func TestStat(t *testing.T) {
 				modTime: gotVirtualFile.ModTime(),
 			}
 			if diff := cmp.Diff(tc.wantInfo, gotInfo, cmp.AllowUnexported(info{})); diff != "" {
-				t.Errorf("Stat(%v) returned unexpected virtualFile (-want +got): %v", tc.node, diff)
+				t.Errorf("Stat(%v) returned unexpected VirtualFile (-want +got): %v", tc.node, diff)
 			}
 		})
 	}
@@ -144,40 +144,40 @@ func TestRead(t *testing.T) {
 	fuzzSize := int64(len([]byte("fuzz")))
 	fooSize := int64(len([]byte("foo")))
 
-	barVirtualFile := &virtualFile{
+	barVirtualFile := &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        barSize,
 		reader:      io.NewSectionReader(contentBlob, 0, barSize),
 	}
-	fuzzVirtualFile := &virtualFile{
+	fuzzVirtualFile := &VirtualFile{
 		virtualPath: "/fuzz",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        fuzzSize,
 		reader:      io.NewSectionReader(contentBlob, barSize, fuzzSize),
 	}
-	nonRootFooVirtualFile := &virtualFile{
+	nonRootFooVirtualFile := &VirtualFile{
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        fooSize,
 		reader:      io.NewSectionReader(contentBlob, barSize+fuzzSize, fooSize),
 	}
-	whiteoutVirtualFile := &virtualFile{
+	whiteoutVirtualFile := &VirtualFile{
 		virtualPath: "/dir1/abc",
 		isWhiteout:  true,
 		mode:        filePermission,
 	}
-	dirVirtualFile := &virtualFile{
+	dirVirtualFile := &VirtualFile{
 		virtualPath: "/dir1",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
 	tests := []struct {
 		name     string
-		vf       *virtualFile
+		vf       *VirtualFile
 		want     string
 		wantSize int64
 		wantErr  bool
@@ -244,40 +244,40 @@ func TestReadAt(t *testing.T) {
 	fuzzSize := int64(len([]byte("fuzz")))
 	fooSize := int64(len([]byte("foo")))
 
-	barVirtualFile := &virtualFile{
+	barVirtualFile := &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        barSize,
 		reader:      io.NewSectionReader(contentBlob, 0, barSize),
 	}
-	fuzzVirtualFile := &virtualFile{
+	fuzzVirtualFile := &VirtualFile{
 		virtualPath: "/fuzz",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        fuzzSize,
 		reader:      io.NewSectionReader(contentBlob, barSize, fuzzSize),
 	}
-	nonRootFooVirtualFile := &virtualFile{
+	nonRootFooVirtualFile := &VirtualFile{
 		virtualPath: "/dir1/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        fooSize,
 		reader:      io.NewSectionReader(contentBlob, barSize+fuzzSize, fooSize),
 	}
-	whiteoutVirtualFile := &virtualFile{
+	whiteoutVirtualFile := &VirtualFile{
 		virtualPath: "/dir1/abc",
 		isWhiteout:  true,
 		mode:        filePermission,
 	}
-	dirVirtualFile := &virtualFile{
+	dirVirtualFile := &VirtualFile{
 		virtualPath: "/dir1",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
 	tests := []struct {
 		name    string
-		vf      *virtualFile
+		vf      *VirtualFile
 		offset  int64
 		want    string
 		wantErr error
@@ -367,7 +367,7 @@ func TestSeek(t *testing.T) {
 	defer os.Remove(contentBlob.Name())
 
 	fooSize := int64(len([]byte("foo")))
-	virtualFile := &virtualFile{
+	virtualFile := &VirtualFile{
 		virtualPath: "/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -441,7 +441,7 @@ func TestClose(t *testing.T) {
 
 	fooSize := int64(len([]byte("foo")))
 
-	vf := &virtualFile{
+	vf := &VirtualFile{
 		virtualPath: "/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -451,7 +451,7 @@ func TestClose(t *testing.T) {
 
 	tests := []struct {
 		name string
-		vf   *virtualFile
+		vf   *VirtualFile
 	}{
 		{
 			name: "close root file",
@@ -480,14 +480,14 @@ func TestReadingAfterClose(t *testing.T) {
 	fooSize := int64(len([]byte("foo")))
 	barSize := int64(len([]byte("bar")))
 
-	fooVirtualFile := &virtualFile{
+	fooVirtualFile := &VirtualFile{
 		virtualPath: "/foo",
 		isWhiteout:  false,
 		mode:        filePermission,
 		size:        fooSize,
 		reader:      io.NewSectionReader(contentBlob, 0, fooSize),
 	}
-	barVirtualFile := &virtualFile{
+	barVirtualFile := &VirtualFile{
 		virtualPath: "/bar",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -497,7 +497,7 @@ func TestReadingAfterClose(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		vf      *virtualFile
+		vf      *VirtualFile
 		want    string
 		wantErr bool
 	}{
@@ -542,7 +542,7 @@ func TestReadingAfterClose(t *testing.T) {
 func TestName(t *testing.T) {
 	tests := []struct {
 		name string
-		node *virtualFile
+		node *VirtualFile
 		want string
 	}{
 		{
@@ -580,7 +580,7 @@ func TestName(t *testing.T) {
 func TestIsDir(t *testing.T) {
 	tests := []struct {
 		name string
-		node *virtualFile
+		node *VirtualFile
 		want bool
 	}{
 		{
@@ -617,7 +617,7 @@ func TestIsDir(t *testing.T) {
 func TestType(t *testing.T) {
 	tests := []struct {
 		name string
-		node *virtualFile
+		node *VirtualFile
 		want fs.FileMode
 	}{
 		{
