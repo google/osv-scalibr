@@ -21,6 +21,7 @@ import (
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/language/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
@@ -84,6 +85,9 @@ var (
 		reflect.TypeOf(&spb.Package_AsdfMetadata{}): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
 		},
+		reflect.TypeOf(&spb.Package_NvmMetadata{}): func(p *spb.Package) any {
+			return nvmmeta.ToStruct(p.GetNvmMetadata())
+		},
 		reflect.TypeOf(&spb.Package_MacportsMetadata{}): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
@@ -108,6 +112,7 @@ var (
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
+		(*nvmmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 	}
