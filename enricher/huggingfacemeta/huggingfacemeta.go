@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package huggingfacesecrets contains an Enricher that uses Veles Validators to validate
+// Package huggingfacemeta contains an Enricher that uses Veles Validators to validate
 // Secrets found by the Veles Extractor.
-package huggingfacesecrets
+package huggingfacemeta
 
 import (
 	"context"
@@ -32,7 +32,7 @@ import (
 
 const (
 	// Name is the unique name of this Enricher.
-	Name = "huggingfacesecrets/velesvalidate"
+	Name = "huggingfacemeta/velesvalidate"
 
 	version        = 1
 	defaultBaseURL = "https://huggingface.co"

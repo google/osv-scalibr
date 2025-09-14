@@ -59,7 +59,6 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 func (v *Validator) Validate(ctx context.Context, key *HuggingfaceAPIKey) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://huggingface.co/api/whoami-v2", nil)
-	key.FineGrainedScope = []string{"TestScope1", "TestScope2"}
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}

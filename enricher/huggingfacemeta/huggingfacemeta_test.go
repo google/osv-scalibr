@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package huggingfacesecrets_test
+package huggingfacemeta_test
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/enricher/huggingfacesecrets"
+	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 )
@@ -102,7 +102,7 @@ func TestEnricher(t *testing.T) {
 					defer ts.Close()
 
 					// Use enricher configured against the mock server
-					enricher := huggingfacesecrets.NewWithBaseURL(ts.URL)
+					enricher := huggingfacemeta.NewWithBaseURL(ts.URL)
 
 					if err := enricher.Enrich(t.Context(), nil, &sc.input); err != nil {
 						t.Errorf("Enrich() error: %v, want nil", err)

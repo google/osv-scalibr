@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/secrets"
@@ -62,6 +63,11 @@ var (
 		secrets.Name: {secrets.New},
 	}
 
+	// HuggingfaceMeta enricher.
+	HuggingfaceMeta = InitMap{
+		huggingfacemeta.Name: {huggingfacemeta.New},
+	}
+
 	// Reachability enrichers.
 	Reachability = InitMap{
 		java.Name: {java.NewDefault},
@@ -81,6 +87,7 @@ var (
 		VulnMatching,
 		VEX,
 		Secrets,
+		HuggingfaceMeta,
 		License,
 		Reachability,
 		TransitiveDependency,
