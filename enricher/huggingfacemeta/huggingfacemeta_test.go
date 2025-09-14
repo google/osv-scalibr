@@ -76,7 +76,6 @@ func TestEnricher(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, sc := range tc.subs {
-				sc := sc // capture range variable for subtest closures
 				t.Run(sc.name, func(t *testing.T) {
 					// Mock Hugging Face API server responding with the desired Role and FineGrainedScope
 					ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
