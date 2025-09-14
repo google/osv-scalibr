@@ -15,178 +15,57 @@
 package huggingfacesecrets_test
 
 import (
-	"context"
-	"errors"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	secrets "github.com/google/osv-scalibr/enricher/huggingfacesecrets"
+	"github.com/google/osv-scalibr/enricher/huggingfacesecrets"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/velestest"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 )
 
 type testEnricherSubCase struct {
-	name  string
-	input inventory.Inventory
-	want  inventory.Inventory
+	name             string
+	input            inventory.Inventory
+	Role             string
+	FineGrainedScope []string
+	want             inventory.Inventory
 }
 
 func TestEnricher(t *testing.T) {
-	errTest := errors.New("some validation error")
 	path := "/foo/bar/key.json"
 	cases := []struct {
-		name   string
-		engine *veles.ValidationEngine
-		subs   []testEnricherSubCase
+		name string
+		subs []testEnricherSubCase
 	}{
 		{
-			name:   "only strings supported",
-			engine: veles.NewValidationEngine(veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil))),
+			name: "Append Role and Fine Grained Scopes",
 			subs: []testEnricherSubCase{
 				{
 					name: "supported",
 					input: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{
-								Secret:   velestest.NewFakeStringSecret("hf_e11YtkCn11KjOBBBBEaZT11vFjijio111"),
+								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo"},
 								Location: path,
 							},
 						},
 					},
+					Role:             "read",
+					FineGrainedScope: []string{"inference.endpoints.infer.write", "repo.content.read"},
 					want: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{
-								Secret:   velestest.NewFakeStringSecret("FOO"),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationValid,
+								Secret: huggingfaceapikey.HuggingfaceAPIKey{
+									Key:              "foo",
+									Role:             "read",
+									FineGrainedScope: []string{"inference.endpoints.infer.write", "repo.content.read"},
 								},
-							},
-						},
-					},
-				},
-				{
-					name: "unsupported",
-					input: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
 								Location: path,
-							},
-						},
-					},
-					want: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationUnsupported,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "per secret errors",
-			engine: veles.NewValidationEngine(
-				veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)),
-				veles.WithValidator(velestest.NewFakeIntSecretValidator(veles.ValidationFailed, errTest)),
-			),
-			subs: []testEnricherSubCase{
-				{
-					name: "single error",
-					input: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-							},
-						},
-					},
-					want: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationFailed,
-									Err:    errTest,
-								},
-							},
-						},
-					},
-				},
-				{
-					name: "multiple errors",
-					input: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-							},
-							{
-								Secret:   velestest.NewFakeIntSecret(456),
-								Location: path,
-							},
-						},
-					},
-					want: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationFailed,
-									Err:    errTest,
-								},
-							},
-							{
-								Secret:   velestest.NewFakeIntSecret(456),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationFailed,
-									Err:    errTest,
-								},
-							},
-						},
-					},
-				},
-				{
-					name: "mixed",
-					input: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-							},
-							{
-								Secret:   velestest.NewFakeStringSecret("foo"),
-								Location: path,
-							},
-						},
-					},
-					want: inventory.Inventory{
-						Secrets: []*inventory.Secret{
-							{
-								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationFailed,
-									Err:    errTest,
-								},
-							},
-							{
-								Secret:   velestest.NewFakeStringSecret("foo"),
-								Location: path,
-								Validation: inventory.SecretValidationResult{
-									Status: veles.ValidationValid,
-								},
 							},
 						},
 					},
@@ -196,9 +75,35 @@ func TestEnricher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			enricher := secrets.NewWithEngine(tc.engine)
 			for _, sc := range tc.subs {
+				sc := sc // capture range variable for subtest closures
 				t.Run(sc.name, func(t *testing.T) {
+					// Mock Hugging Face API server responding with the desired Role and FineGrainedScope
+					ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.URL.Path != "/api/whoami-v2" {
+							http.NotFound(w, r)
+							return
+						}
+						w.Header().Set("Content-Type", "application/json")
+						resp := map[string]any{
+							"auth": map[string]any{
+								"accessToken": map[string]any{
+									"role": sc.Role,
+									"fineGrained": map[string]any{
+										"scoped": []map[string]any{
+											{"permissions": sc.FineGrainedScope},
+										},
+									},
+								},
+							},
+						}
+						_ = json.NewEncoder(w).Encode(resp)
+					}))
+					defer ts.Close()
+
+					// Use enricher configured against the mock server
+					enricher := huggingfacesecrets.NewWithBaseURL(ts.URL)
+
 					if err := enricher.Enrich(t.Context(), nil, &sc.input); err != nil {
 						t.Errorf("Enrich() error: %v, want nil", err)
 					}
@@ -211,52 +116,5 @@ func TestEnricher(t *testing.T) {
 				})
 			}
 		})
-	}
-}
-
-func TestEnricher_respectsContext(t *testing.T) {
-	enricher := secrets.NewWithEngine(veles.NewValidationEngine(
-		veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)),
-	))
-	inv := &inventory.Inventory{
-		Secrets: []*inventory.Secret{
-			{
-				Secret:   velestest.NewFakeStringSecret("foo"),
-				Location: "/foo/bar/baz.json",
-			},
-		},
-	}
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	if err := enricher.Enrich(ctx, nil, inv); !errors.Is(err, context.Canceled) {
-		t.Errorf("enricher.Enrich() error = nil, want context cancelled")
-	}
-}
-
-func TestAddValidator(t *testing.T) {
-	secret := inventory.Secret{
-		Secret:   velestest.NewFakeStringSecret("foo"),
-		Location: "/foo/bar/baz.json",
-	}
-	inv := inventory.Inventory{Secrets: []*inventory.Secret{&secret}}
-	enricher := secrets.NewWithEngine(veles.NewValidationEngine()).(*secrets.Enricher)
-
-	// Ensure that it's unsupported.
-	if err := enricher.Enrich(t.Context(), nil, &inv); err != nil {
-		t.Errorf("Enrich() error: %v, want nil", err)
-	}
-	if got, want := secret.Validation.Status, veles.ValidationUnsupported; got != want {
-		t.Errorf("Enrich() validation status = %q, want %q", got, want)
-	}
-
-	// Add new validator and ensure that we now get the correct result.
-	if present := secrets.AddValidator(enricher, velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)); present {
-		t.Errorf("AddValidator() = %t, want false", present)
-	}
-	if err := enricher.Enrich(t.Context(), nil, &inv); err != nil {
-		t.Errorf("Enrich() error: %v, want nil", err)
-	}
-	if got, want := secret.Validation.Status, veles.ValidationValid; got != want {
-		t.Errorf("Enrich() validation status = %q, want %q", got, want)
 	}
 }

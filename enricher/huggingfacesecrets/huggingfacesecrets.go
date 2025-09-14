@@ -18,7 +18,10 @@ package huggingfacesecrets
 
 import (
 	"context"
-	"time"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
@@ -31,22 +34,34 @@ const (
 	// Name is the unique name of this Enricher.
 	Name = "huggingfacesecrets/velesvalidate"
 
-	version = 1
+	version        = 1
+	defaultBaseURL = "https://huggingface.co"
 )
 
 var _ enricher.Enricher = &Enricher{}
 
 // Enricher uses a Veles ValidationEngine to validate Secrets found by Veles.
 type Enricher struct {
-	engine *veles.ValidationEngine
+	engine     *veles.ValidationEngine
+	baseURL    string
+	httpClient *http.Client
 }
 
 // New creates a new Enricher using the default Veles Validators.
 func New() enricher.Enricher {
-	engine := veles.NewValidationEngine(
-		veles.WithValidator(huggingfaceapikey.NewValidator()),
-	)
-	return &Enricher{engine: engine}
+	return &Enricher{
+		baseURL:    defaultBaseURL,
+		httpClient: http.DefaultClient,
+	}
+}
+
+// NewWithBaseURL creates a new Enricher that uses the provided base URL for the Hugging Face API.
+// Useful for tests with an httptest.Server.
+func NewWithBaseURL(baseURL string) enricher.Enricher {
+	return &Enricher{
+		baseURL:    baseURL,
+		httpClient: http.DefaultClient,
+	}
 }
 
 // AddValidator adds a Validator for a specific type of Secret to the underlying validation engine.
@@ -54,11 +69,6 @@ func New() enricher.Enricher {
 // Returns whether there was already a Validator in place that now got replaced.
 func AddValidator[S veles.Secret](e *Enricher, v veles.Validator[S]) bool {
 	return veles.AddValidator(e.engine, v)
-}
-
-// NewWithEngine creates a new Enricher with a specified Veles ValidationEngine.
-func NewWithEngine(engine *veles.ValidationEngine) enricher.Enricher {
-	return &Enricher{engine: engine}
 }
 
 // Name of the Enricher.
@@ -86,20 +96,65 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
+// huggingfaceResponse represents the minimal structure needed from the Hugging Face API response
+type huggingfaceResponse struct {
+	Auth struct {
+		AccessToken struct {
+			Role        string `json:"role"`
+			FineGrained struct {
+				Scoped []struct {
+					Permissions []string `json:"permissions"`
+				} `json:"scoped"`
+			} `json:"fineGrained"`
+		} `json:"accessToken"`
+	} `json:"auth"`
+}
+
 // Enrich validates all the Secrets from the Inventory using a Veles
 // ValidationEngine.
-//
 // Each individual Secret maintains its own error in case the validation failed.
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	for _, s := range inv.Secrets {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		status, err := e.engine.Validate(ctx, s.Secret)
-		s.Validation = inventory.SecretValidationResult{
-			At:     time.Now(),
-			Status: status,
-			Err:    err,
+		if huggingSecret, ok := s.Secret.(huggingfaceapikey.HuggingfaceAPIKey); ok {
+			url := e.baseURL + "/api/whoami-v2"
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				return fmt.Errorf("creating HTTP GET request failed: %w", err)
+			}
+			req.Header.Set("Authorization", "Bearer "+huggingSecret.Key)
+			res, err := e.httpClient.Do(req)
+			if err != nil {
+				return fmt.Errorf("HTTP GET failed: %w", err)
+			}
+			defer res.Body.Close()
+
+			if res.StatusCode == http.StatusOK {
+				body, err := io.ReadAll(res.Body)
+				if err != nil {
+					return fmt.Errorf("reading response body failed: %w", err)
+				}
+
+				var apiResponse huggingfaceResponse
+				if err := json.Unmarshal(body, &apiResponse); err != nil {
+					return fmt.Errorf("parsing JSON response failed: %w", err)
+				}
+
+				// Extract all permissions from scoped entities
+				var permissions []string
+				for _, scopedItem := range apiResponse.Auth.AccessToken.FineGrained.Scoped {
+					permissions = append(permissions, scopedItem.Permissions...)
+				}
+
+				// Update the secret with the actual values from the response
+				s.Secret = huggingfaceapikey.HuggingfaceAPIKey{
+					Key:              huggingSecret.Key,
+					Role:             apiResponse.Auth.AccessToken.Role,
+					FineGrainedScope: permissions,
+				}
+			}
 		}
 	}
 	return nil
