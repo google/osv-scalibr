@@ -23,6 +23,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
@@ -61,7 +62,6 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	"github.com/mohae/deepcopy"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -691,50 +691,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Plugins: []string{"windows/dismpatch"},
 	}
-	purlPythonPackageWithLayerDetails := &extractor.Package{
-		Name:      "software",
-		Version:   "1.0.0",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"/file1"},
-		Plugins:   []string{wheelegg.Name},
-		Metadata: &wheelegg.PythonPackageMetadata{
-			Author:      "author",
-			AuthorEmail: "author@corp.com",
-		},
-		LayerDetails: &extractor.LayerDetails{
-			Index:       0,
-			DiffID:      "hash1",
-			ChainID:     "chainid1",
-			Command:     "command1",
-			InBaseImage: true,
-		},
-	}
-	purlPythonPackageWithLayerDetailsProto := &spb.Package{
-		Name:    "software",
-		Version: "1.0.0",
-		Purl: &spb.Purl{
-			Purl:    "pkg:pypi/software@1.0.0",
-			Type:    purl.TypePyPi,
-			Name:    "software",
-			Version: "1.0.0",
-		},
-		Ecosystem: "PyPI",
-		Locations: []string{"/file1"},
-		Plugins:   []string{"python/wheelegg"},
-		Metadata: &spb.Package_PythonMetadata{
-			PythonMetadata: &spb.PythonPackageMetadata{
-				Author:      "author",
-				AuthorEmail: "author@corp.com",
-			},
-		},
-		LayerDetails: &spb.LayerDetails{
-			Index:       0,
-			DiffId:      "hash1",
-			ChainId:     "chainid1",
-			Command:     "command1",
-			InBaseImage: true,
-		},
-	}
 	mavenPackage := &extractor.Package{
 		Name:      "abc:xyz",
 		Version:   "1.0.0",
@@ -970,8 +926,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 						purlDotnetDepsJSONPackage,
 						cdxPackage,
 						windowsPackage,
-						purlPythonPackageWithLayerDetails,
 						purlHomebrewPackage,
+						pkgWithLayerStruct,
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						cimStructForTest,
 					},
 					GenericFindings: []*inventory.GenericFinding{
 						{
@@ -1024,8 +983,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 						purlDotnetDepsJSONPackageProto,
 						cdxPackageProto,
 						windowsPackageProto,
-						purlPythonPackageWithLayerDetailsProto,
 						purlHomebrewPackageProto,
+						pkgWithLayerProto,
+					},
+					ContainerImageMetadata: []*spb.ContainerImageMetadata{
+						cimProtoForTest,
 					},
 					GenericFindings: []*spb.GenericFinding{
 						{
@@ -1635,6 +1597,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 
 			opts := []cmp.Option{
 				protocmp.Transform(),
+				cmpopts.EquateEmpty(),
 				// Ignore deprecated fields in the comparison.
 				// TODO(b/400910349): Stop setting the deprecated fields
 				// once integrators no longer read them.
@@ -1656,12 +1619,16 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			invProto.GenericFindings = nil
 			invProto.Secrets = nil
 
-			wantInv := deepcopy.Copy(tc.res.Inventory).(inventory.Inventory)
-			wantInv.GenericFindings = nil
-			wantInv.Secrets = nil
+			tc.res.Inventory.GenericFindings = nil
+			tc.res.Inventory.Secrets = nil
+
+			opts = []cmp.Option{
+				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.EquateEmpty(),
+			}
 
 			gotInv := proto.InventoryToStruct(invProto)
-			if diff := cmp.Diff(wantInv, *gotInv); diff != "" {
+			if diff := cmp.Diff(tc.res.Inventory, *gotInv, opts...); diff != "" {
 				t.Errorf("proto.InventoryToStruct(%v) returned unexpected diff (-want +got):\n%s", invProto, diff)
 			}
 		})

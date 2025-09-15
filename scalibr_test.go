@@ -17,6 +17,7 @@ package scalibr_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -43,6 +44,7 @@ import (
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
 	"github.com/google/osv-scalibr/version"
 	"github.com/mohae/deepcopy"
+	"github.com/opencontainers/go-digest"
 )
 
 func TestScan(t *testing.T) {
@@ -76,13 +78,13 @@ func TestScan(t *testing.T) {
 		Locations: []string{"file.txt"},
 		Plugins:   []string{fakeExtractor.Name()},
 	}
-	withLayerDetails := func(pkg *extractor.Package, ld *extractor.LayerDetails) *extractor.Package {
+	withLayerMetadata := func(pkg *extractor.Package, ld *extractor.LayerMetadata) *extractor.Package {
 		pkg = deepcopy.Copy(pkg).(*extractor.Package)
-		pkg.LayerDetails = ld
+		pkg.LayerMetadata = ld
 		return pkg
 	}
-	pkgWithLayerDetails := withLayerDetails(pkg, &extractor.LayerDetails{InBaseImage: true})
-	pkgWithLayerDetails.Plugins = []string{fakeExtractor.Name()}
+	pkgWithLayerMetadata := withLayerMetadata(pkg, &extractor.LayerMetadata{Index: 0, DiffID: "diff-id-0", Command: "command-0"})
+	pkgWithLayerMetadata.Plugins = []string{fakeExtractor.Name()}
 	finding := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-1234"}}}
 
 	fakeEnricherCfg := &fen.Config{
@@ -106,7 +108,7 @@ func TestScan(t *testing.T) {
 				},
 			): fen.InventoryAndErr{
 				Inventory: &inventory.Inventory{
-					Packages: []*extractor.Package{pkgWithLayerDetails},
+					Packages: []*extractor.Package{pkgWithLayerMetadata},
 					GenericFindings: []*inventory.GenericFinding{
 						withDetectorName(finding, "detector"),
 					},
@@ -166,7 +168,7 @@ func TestScan(t *testing.T) {
 					{Name: "python/wheelegg", Version: 1, Status: success},
 				},
 				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{pkgWithLayerDetails},
+					Packages: []*extractor.Package{pkgWithLayerMetadata},
 					GenericFindings: []*inventory.GenericFinding{
 						withDetectorName(finding, "detector"),
 					},
@@ -303,6 +305,15 @@ func TestScanContainer(t *testing.T) {
 	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(),
 		"testdata/populatelayers.yml")
 
+	lm := func(i int) *extractor.LayerMetadata {
+		return &extractor.LayerMetadata{
+			Index:   i,
+			DiffID:  digest.Digest(fmt.Sprintf("sha256:diff-id-%d", i)),
+			ChainID: digest.Digest(fmt.Sprintf("sha256:chain-id-%d", i)),
+			Command: fmt.Sprintf("command-%d", i),
+		}
+	}
+
 	testCases := []struct {
 		desc        string
 		chainLayers []image.ChainLayer
@@ -327,26 +338,23 @@ func TestScanContainer(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						{
-							Name:      "bar",
-							Locations: []string{"bar.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "bar",
+							Locations:     []string{"bar.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
 						},
 						{
-							Name:      "foo",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "foo",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
+						},
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						{
+							LayerMetadata: []*extractor.LayerMetadata{lm(0)},
 						},
 					},
 				},
@@ -371,15 +379,16 @@ func TestScanContainer(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						{
-							Name:      "foo",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "foo",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
+						},
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						{
+							LayerMetadata: []*extractor.LayerMetadata{lm(0), lm(1)},
 						},
 					},
 				},
@@ -405,26 +414,23 @@ func TestScanContainer(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						{
-							Name:      "baz",
-							Locations: []string{"baz.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   2,
-								DiffID:  "diff-id-2",
-								Command: "command-2",
-							},
+							Name:          "baz",
+							Locations:     []string{"baz.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(2),
 						},
 						{
-							Name:      "foo",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "foo",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
+						},
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						{
+							LayerMetadata: []*extractor.LayerMetadata{lm(0), lm(1), lm(2)},
 						},
 					},
 				},
@@ -451,37 +457,30 @@ func TestScanContainer(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						{
-							Name:      "bar",
-							Locations: []string{"bar.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   3,
-								DiffID:  "diff-id-3",
-								Command: "command-3",
-							},
+							Name:          "bar",
+							Locations:     []string{"bar.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(3),
 						},
 						{
-							Name:      "baz",
-							Locations: []string{"baz.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   2,
-								DiffID:  "diff-id-2",
-								Command: "command-2",
-							},
+							Name:          "baz",
+							Locations:     []string{"baz.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(2),
 						},
 						{
-							Name:      "foo",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "foo",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
+						},
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						{
+							LayerMetadata: []*extractor.LayerMetadata{lm(0), lm(1), lm(2), lm(3)},
 						},
 					},
 				},
@@ -509,48 +508,37 @@ func TestScanContainer(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						{
-							Name:      "bar",
-							Locations: []string{"bar.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   3,
-								DiffID:  "diff-id-3",
-								Command: "command-3",
-							},
+							Name:          "bar",
+							Locations:     []string{"bar.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(3),
 						},
 						{
-							Name:      "baz",
-							Locations: []string{"baz.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   2,
-								DiffID:  "diff-id-2",
-								Command: "command-2",
-							},
+							Name:          "baz",
+							Locations:     []string{"baz.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(2),
 						},
 						{
-							Name:      "foo",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   0,
-								DiffID:  "diff-id-0",
-								Command: "command-0",
-							},
+							Name:          "foo",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(0),
 						},
 						{
-							Name:      "foo2",
-							Locations: []string{"foo.txt"},
-							PURLType:  "generic",
-							Plugins:   []string{"fake/layerextractor"},
-							LayerDetails: &extractor.LayerDetails{
-								Index:   4,
-								DiffID:  "diff-id-4",
-								Command: "command-4",
-							},
+							Name:          "foo2",
+							Locations:     []string{"foo.txt"},
+							PURLType:      "generic",
+							Plugins:       []string{"fake/layerextractor"},
+							LayerMetadata: lm(4),
+						},
+					},
+					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+						{
+							LayerMetadata: []*extractor.LayerMetadata{lm(0), lm(1), lm(2), lm(3), lm(4)},
 						},
 					},
 				},
@@ -576,7 +564,7 @@ func TestScanContainer(t *testing.T) {
 			tc.want.StartTime = got.StartTime
 			tc.want.EndTime = got.EndTime
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
 				t.Errorf("scalibr.New().Scan(): unexpected diff (-want +got):\n%s", diff)
 			}
 		})
