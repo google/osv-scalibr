@@ -648,6 +648,7 @@ message SecretData {
     DockerHubPat docker_hub_pat = 8;
     DigitalOceanAPIToken digitalocean = 9;
     GithubAppRefreshToken github_app_refresh_token = 10;
+    GithubAppUserToServerToken github_app_user_to_server_token = 11;
   }
 
   message GCPSAK {
@@ -708,6 +709,10 @@ message SecretData {
   }
 
   message GithubAppRefreshToken {
+    string token = 1;
+  }
+
+  message GithubAppUserToServerToken {
     string token = 1;
   }
 }

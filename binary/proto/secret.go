@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
+	githubappusertoservertoken "github.com/google/osv-scalibr/veles/secrets/github/appusertoservertoken"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -111,6 +112,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	case githubapprefreshtoken.GithubAppRefreshToken:
 		return githubAppRefreshTokenToProto(t.Token), nil
+	case githubappusertoservertoken.GithubAppUserToServerToken:
+		return githubAppUserToServerTokenToProto(t.Token), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -231,6 +234,16 @@ func githubAppRefreshTokenToProto(token string) *spb.SecretData {
 	}
 }
 
+func githubAppUserToServerTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppUserToServerToken_{
+			GithubAppUserToServerToken: &spb.SecretData_GithubAppUserToServerToken{
+				Token: token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -327,6 +340,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_GithubAppRefreshToken_:
 		return githubapprefreshtoken.GithubAppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
+	case *spb.SecretData_GithubAppUserToServerToken_:
+		return githubappusertoservertoken.GithubAppUserToServerToken{
+			Token: s.GetGithubAppUserToServerToken().GetToken(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
