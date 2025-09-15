@@ -20,7 +20,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github/token"
 )
 
-func TestValidate(t *testing.T) {
+func TestValidateChecksum(t *testing.T) {
 	testcases := []struct {
 		name string
 		// Github tokens are encoded using `` + `` to bypass github security checks
@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 
 			got := token.ValidateChecksum(tc.token)
 			if got != tc.want {
-				t.Errorf("Validate() = %t, want %t", got, tc.want)
+				t.Errorf("ValidateChecksum() = %t, want %t", got, tc.want)
 			}
 		})
 	}
