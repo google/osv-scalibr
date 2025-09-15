@@ -2,7 +2,7 @@
 name: Patch reward program - software inventory extraction
 about: Submit a software inventory extractor suggestion for the PRP
 title: 'PRP: Extractor for {software type}'
-labels: PRP:Request
+labels: ['PRP', 'PRP:Request']
 assignees: ''
 
 ---

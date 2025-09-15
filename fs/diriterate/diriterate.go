@@ -63,12 +63,17 @@ type DirIterator struct {
 // Next returns the next fs.DirEntry from the directory. If error is nil, there will be a
 // fs.DirEntry returned.
 func (i *DirIterator) Next() (fs.DirEntry, error) {
-	if i.files != nil {
+	if len(i.files) > 0 {
 		if i.curr >= len(i.files) {
 			return nil, io.EOF
 		}
 		i.curr++
 		return i.files[i.curr-1], nil
+	}
+
+	if i.dir == nil {
+		// This is an iterator for an empty directory, so we return EOF immediately.
+		return nil, io.EOF
 	}
 
 	list, err := i.dir.ReadDir(1)
