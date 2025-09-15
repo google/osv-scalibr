@@ -34,6 +34,7 @@ import (
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
 
@@ -81,6 +82,8 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
 		openai.NewDetector(),
+		postmanapikey.NewAPIKeyDetector(),
+		postmanapikey.NewCollectionTokenDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
