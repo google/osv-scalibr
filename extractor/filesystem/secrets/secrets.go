@@ -58,6 +58,11 @@ var (
 		".txt":       true,
 		".xml":       true,
 		".yaml":      true,
+		".pem":       true,
+		".crt":       true,
+		".key":       true,
+		".der":       true,
+		".cer":       true,
 	}
 
 	defaultEngine *veles.DetectionEngine
