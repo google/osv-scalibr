@@ -33,7 +33,7 @@ const maxTokenLength = 319
 var (
 	reRoutableVersioned = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}\.[0-9a-z]{2}[0-9a-z]{7}`)
 	reRoutable          = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}[0-9a-z]{7}`)
-	reLegacy            = regexp.MustCompile(`(glpat-[0-9A-Za-z_-]{20})`)
+	reLegacy            = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{20}`)
 )
 
 var _ veles.Detector = NewDetector()
