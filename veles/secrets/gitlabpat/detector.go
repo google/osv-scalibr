@@ -177,7 +177,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	secrets := make([]veles.Secret, 0, len(pruned))
 	offsets := make([]int, 0, len(pruned))
 	for _, m := range pruned {
-		secrets = append(secrets, GitlabPat{Pat: m.token})
+		secrets = append(secrets, GitlabPAT{Pat: m.token})
 		offsets = append(offsets, m.start)
 	}
 	return secrets, offsets

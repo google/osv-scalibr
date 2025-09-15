@@ -106,7 +106,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
-	case gitlabpat.GitlabPat:
+	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
@@ -197,7 +197,7 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
-func gitalbPatKeyToProto(s gitlabpat.GitlabPat) *spb.SecretData {
+func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GitlabPat_{
 			GitlabPat: &spb.SecretData_GitlabPat{
@@ -322,8 +322,8 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 		Username: kPB.GetUsername(),
 	}
 }
-func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPat {
-	return gitlabpat.GitlabPat{
+func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
+	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
 	}
 }

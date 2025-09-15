@@ -113,7 +113,7 @@ func TestValidator(t *testing.T) {
 			v := gitlabpat.NewValidator(gitlabpat.WithClient(client))
 
 			ctx := context.Background()
-			pat := gitlabpat.GitlabPat{Pat: tc.pat}
+			pat := gitlabpat.GitlabPAT{Pat: tc.pat}
 			got, err := v.Validate(ctx, pat)
 
 			if (err != nil) != tc.wantErr {
@@ -143,7 +143,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		gitlabpat.WithClient(client),
 	)
 
-	usernamePat := gitlabpat.GitlabPat{Pat: validatorTestPat}
+	usernamePat := gitlabpat.GitlabPAT{Pat: validatorTestPat}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()

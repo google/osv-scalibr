@@ -14,9 +14,9 @@
 
 package gitlabpat
 
-// GitlabPat is a Veles Secret that holds relevant information for a
+// GitlabPAT is a Veles Secret that holds relevant information for a
 // Gitlab Personal Access Tokens (prefix `glpat-`).
-// GitlabPat represents PAT and used to authenticate requests
-type GitlabPat struct {
+// GitlabPAT represents PAT and used to authenticate requests
+type GitlabPAT struct {
 	Pat string
 }

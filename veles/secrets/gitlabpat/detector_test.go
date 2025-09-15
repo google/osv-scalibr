@@ -47,55 +47,55 @@ func TestDetector_truePositives(t *testing.T) {
 			name:  "routable versioned simple",
 			input: testKeyVersioned,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
 			},
 		},
 		{
 			name:  "routable simple",
 			input: testKeyRoutable,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyRoutable},
+				gitlabpat.GitlabPAT{Pat: testKeyRoutable},
 			},
 		},
 		{
 			name:  "Legacy simple",
 			input: testKeyLegacy,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyLegacy},
+				gitlabpat.GitlabPAT{Pat: testKeyLegacy},
 			},
 		},
 		{
 			name:  "match in middle of string (versioned)",
 			input: `GITLAB_PAT="` + testKeyVersioned + `"`,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
 			},
 		},
 		{
 			name:  "multiple matches (same token repeated)",
 			input: testKeyVersioned + " " + testKeyVersioned + " " + testKeyVersioned,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
 			},
 		},
 		{
 			name:  "multiple distinct matches",
 			input: testKeyVersioned + "\n" + testKeyRoutable + "\n" + testKeyLegacy,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
-				gitlabpat.GitlabPat{Pat: testKeyRoutable},
-				gitlabpat.GitlabPat{Pat: testKeyLegacy},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyRoutable},
+				gitlabpat.GitlabPAT{Pat: testKeyLegacy},
 			},
 		},
 		{
 			name:  "multiple distinct matches with extra dot",
 			input: testKeyVersioned + ".11aa" + "\n" + testKeyRoutable + ".11aa" + "\n" + testKeyLegacy + ".11aa",
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
-				gitlabpat.GitlabPat{Pat: testKeyRoutable},
-				gitlabpat.GitlabPat{Pat: testKeyLegacy},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyRoutable},
+				gitlabpat.GitlabPAT{Pat: testKeyLegacy},
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func TestDetector_truePositives(t *testing.T) {
 		:gitlab_pat: %s
 				`, testKeyVersioned),
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPAT{Pat: testKeyVersioned},
 			},
 		},
 	}

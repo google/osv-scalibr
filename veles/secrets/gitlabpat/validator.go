@@ -50,13 +50,13 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 	return v
 }
 
-// Validate checks whether the given GitlabPat is valid.
+// Validate checks whether the given GitlabPAT is valid.
 //
 // It performs a GET request to the gitlab.com access token endpoint
 // using the PAT in the PRIVATE-TOKEN header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, pat GitlabPat) (veles.ValidationStatus, error) {
+func (v *Validator) Validate(ctx context.Context, pat GitlabPAT) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://gitlab.com/api/v4/personal_access_tokens/self", nil)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
