@@ -74,7 +74,7 @@ func (v *Validator) Validate(ctx context.Context, key GithubAppUserToServerToken
 	}
 
 	switch res.StatusCode {
-	case http.StatusOK:
+	case http.StatusOK, http.StatusForbidden:
 		return veles.ValidationValid, nil
 	case http.StatusUnauthorized:
 		return veles.ValidationInvalid, nil
