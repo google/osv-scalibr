@@ -647,6 +647,7 @@ message SecretData {
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
     DigitalOceanAPIToken digitalocean = 9;
+    GithubAppRefreshToken github_app_refresh_token = 10;
   }
 
   message GCPSAK {
@@ -704,6 +705,10 @@ message SecretData {
 
   message DigitalOceanAPIToken {
     string key = 1;
+  }
+
+  message GithubAppRefreshToken {
+    string token = 1;
   }
 }
 

@@ -24,6 +24,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -108,6 +109,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case githubapprefreshtoken.GithubAppRefreshToken:
+		return githubAppRefreshTokenToProto(t.Token), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -218,6 +221,16 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	}
 }
 
+func githubAppRefreshTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppRefreshToken_{
+			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
+				Token: token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -312,6 +325,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_GithubAppRefreshToken_:
+		return githubapprefreshtoken.GithubAppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
