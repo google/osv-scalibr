@@ -14,6 +14,8 @@
 
 // Package appusertoservertoken contains a Veles Secret type, a Detector, and a Validator for
 // User to Server token detection.
+//
+// ref: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
 package appusertoservertoken
 
 // GithubAppUserToServerToken contains a user to server token

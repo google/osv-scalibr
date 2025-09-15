@@ -46,7 +46,7 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // mockGithubServer creates a mock Github API server for testing
-func mockGithubServer(t *testing.T, expectedKey string, code int) *httptest.Server {
+func mockGithubServer(t *testing.T, code int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func mockGithubServer(t *testing.T, expectedKey string, code int) *httptest.Serv
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if authHeader != "Bearer "+expectedKey {
+		if authHeader != "Bearer "+validatorTestKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -106,23 +106,23 @@ func TestValidator(t *testing.T) {
 		{
 			name:   "valid_key",
 			token:  validatorTestKey,
-			server: mockGithubServer(t, validatorTestKey, http.StatusOK),
+			server: mockGithubServer(t, http.StatusOK),
 			want:   veles.ValidationValid,
 		},
 		{
 			name:   "invalid_key_unauthorized",
 			token:  "random_string",
-			server: mockGithubServer(t, validatorTestKey, http.StatusUnauthorized),
+			server: mockGithubServer(t, http.StatusUnauthorized),
 			want:   veles.ValidationInvalid,
 		},
 		{
 			name:   "server_error",
-			server: mockGithubServer(t, validatorTestKey, http.StatusInternalServerError),
+			server: mockGithubServer(t, http.StatusInternalServerError),
 			want:   veles.ValidationFailed,
 		},
 		{
 			name:   "bad_gateway",
-			server: mockGithubServer(t, validatorTestKey, http.StatusBadGateway),
+			server: mockGithubServer(t, http.StatusBadGateway),
 			want:   veles.ValidationFailed,
 		},
 	}

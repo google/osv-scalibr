@@ -60,7 +60,8 @@ func (v *Validator) Validate(ctx context.Context, key GithubAppUserToServerToken
 	}
 	req.Header.Set("Authorization", "Bearer "+key.Token)
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	// This header is set with "X-GitHub-Api-Version" exactly as documented by GitHub.
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28") //nolint:canonicalheader
 
 	res, err := v.httpC.Do(req)
 	if err != nil {
