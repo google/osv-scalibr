@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
@@ -108,6 +109,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesopenai.APIKey:
+		return openaiAPIKeyToProto(t.Key), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -213,6 +216,16 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 			PrivateKey: &spb.SecretData_PrivateKey{
 				Block: pk.Block,
 				Der:   pk.Der,
+			},
+		},
+	}
+}
+
+func openaiAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenaiApiKey{
+			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
 			},
 		},
 	}

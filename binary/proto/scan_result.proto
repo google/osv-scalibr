@@ -647,6 +647,7 @@ message SecretData {
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
     DigitalOceanAPIToken digitalocean = 9;
+    OpenAIAPIKey openai_api_key = 10;
   }
 
   message GCPSAK {
@@ -695,6 +696,10 @@ message SecretData {
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
+  }
+
+  message OpenAIAPIKey {
+    string key = 1;
   }
 
   message DockerHubPat {
