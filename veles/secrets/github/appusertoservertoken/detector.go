@@ -18,35 +18,24 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletokenwithok"
+	"github.com/google/osv-scalibr/veles/secrets/github/token"
 )
 
 const tokenMaxLen = 40
 
 var tokenPattern = regexp.MustCompile(`ghu_[A-Za-z0-9]{36}`)
 
-// Detector detects Github app refresh tokens
-type Detector struct{}
-
-// NewDetector returns a new Veles Detector that finds Github app refresh tokens
+// NewDetector returns a new Veles Detector that finds Github app user to server tokens
 func NewDetector() veles.Detector {
-	return Detector{}
-}
-
-// Detect detects Github app refresh tokens
-func (d Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	secrets := []veles.Secret{}
-	positions := []int{}
-	for _, m := range tokenPattern.FindAllIndex(data, -1) {
-		l, r := m[0], m[1]
-		token := string(data[l:r])
-		// TODO: add checksum validation
-		secrets = append(secrets, GithubAppUserToServerToken{Token: token})
-		positions = append(positions, l)
+	return simpletokenwithok.Detector{
+		MaxLen: tokenMaxLen,
+		Re:     tokenPattern,
+		FromMatch: func(match []byte) (veles.Secret, bool) {
+			if !token.ValidateChecksum(match) {
+				return nil, false
+			}
+			return GithubAppUserToServerToken{Token: string(match)}, true
+		},
 	}
-	return secrets, positions
-}
-
-// MaxSecretLen return the Github App refresh token max length
-func (d Detector) MaxSecretLen() uint32 {
-	return tokenMaxLen
 }
