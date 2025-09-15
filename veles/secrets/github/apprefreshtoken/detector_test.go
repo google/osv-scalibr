@@ -139,6 +139,9 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "incorrect prefix should not match",
 		input: `Eop_v1_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
+		name:  "bad checksum should not match",
+		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7ziyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+	}, {
 		name:  "prefix missing dash should not match",
 		input: `gh` + `rOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}}
