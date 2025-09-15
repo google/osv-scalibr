@@ -25,7 +25,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
@@ -111,6 +113,12 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	case tinkkeyset.TinkKeySet:
 		return tinkKeysetToProto(t), nil
+	case velesopenai.APIKey:
+		return openaiAPIKeyToProto(t.Key), nil
+	case velespostmanapikey.PostmanAPIKey:
+		return postmanAPIKeyToProto(t), nil
+	case velespostmanapikey.PostmanCollectionToken:
+		return postmanCollectionTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -210,6 +218,27 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+
+func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanApiKey{
+			PostmanApiKey: &spb.SecretData_PostmanAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func postmanCollectionTokenToProto(s velespostmanapikey.PostmanCollectionToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanCollectionAccessToken_{ // wrapper type has trailing underscore
+			PostmanCollectionAccessToken: &spb.SecretData_PostmanCollectionAccessToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
@@ -226,6 +255,16 @@ func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
 		Secret: &spb.SecretData_TinkKeyset_{
 			TinkKeyset: &spb.SecretData_TinkKeyset{
 				Content: t.Content,
+			},
+		},
+	}
+}
+
+func openaiAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenaiApiKey{
+			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
 			},
 		},
 	}
@@ -327,6 +366,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_TinkKeyset_:
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
+	case *spb.SecretData_PostmanApiKey:
+		return velespostmanapikey.PostmanAPIKey{
+			Key: s.GetPostmanApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_PostmanCollectionAccessToken_:
+		return velespostmanapikey.PostmanCollectionToken{
+			Key: s.GetPostmanCollectionAccessToken().GetKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

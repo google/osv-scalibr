@@ -23,6 +23,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -55,7 +56,8 @@ type packageJSON struct {
 	Contributes *struct {
 	} `json:"contributes"`
 	// Not an NPM field but present for Unity package files.
-	Unity string `json:"unity"`
+	Unity        string            `json:"unity"`
+	Dependencies map[string]string `json:"dependencies"`
 }
 
 // Config is the configuration for the Extractor.
@@ -66,20 +68,24 @@ type Config struct {
 	// If this limit is greater than zero and a file is encountered that is larger
 	// than this limit, the file is ignored by returning false for `FileRequired`.
 	MaxFileSizeBytes int64
+	// IncludeDependencies specifies whether to extract dependencies.
+	IncludeDependencies bool
 }
 
 // DefaultConfig returns the default configuration for the package.json extractor.
 func DefaultConfig() Config {
 	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: defaultMaxFileSizeBytes,
+		Stats:               nil,
+		MaxFileSizeBytes:    defaultMaxFileSizeBytes,
+		IncludeDependencies: false,
 	}
 }
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	stats            stats.Collector
-	maxFileSizeBytes int64
+	stats               stats.Collector
+	maxFileSizeBytes    int64
+	includeDependencies bool
 }
 
 // New returns a package.json extractor.
@@ -90,8 +96,9 @@ type Extractor struct {
 // ```
 func New(cfg Config) *Extractor {
 	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		stats:               cfg.Stats,
+		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
+		includeDependencies: cfg.IncludeDependencies,
 	}
 }
 
@@ -141,15 +148,13 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	p, err := parse(input.Path, input.Reader)
+	pkgs, err := parse(input.Path, input.Reader, e.includeDependencies)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
 		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
 	}
 
-	pkgs := []*extractor.Package{}
-	if p != nil {
-		pkgs = append(pkgs, p)
+	for _, p := range pkgs {
 		p.Locations = []string{input.Path}
 	}
 
@@ -172,7 +177,7 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 	})
 }
 
-func parse(path string, r io.Reader) (*extractor.Package, error) {
+func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Package, error) {
 	dec := json.NewDecoder(r)
 
 	var p packageJSON
@@ -195,7 +200,8 @@ func parse(path string, r io.Reader) (*extractor.Package, error) {
 		return nil, nil
 	}
 
-	return &extractor.Package{
+	var pkgs []*extractor.Package
+	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
@@ -204,7 +210,33 @@ func parse(path string, r io.Reader) (*extractor.Package, error) {
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
 		},
-	}, nil
+	})
+
+	if includeDependencies {
+		for name, version := range p.Dependencies {
+			c, err := semver.NPM.ParseConstraint(version)
+			if err != nil {
+				log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", version, name, path, err)
+				continue
+			}
+			v, err := c.CalculateMinVersion()
+			if err != nil {
+				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
+				continue
+			}
+			pkgs = append(pkgs, &extractor.Package{
+				Name: name,
+				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
+				// Ignoring the build value, which isn't relevant for version comparison.
+				// TODO(b/444684673): Include the build value in the version string. Currently deps.dev
+				// does not parse out the build value, so that need to be fixed first.
+				Version:  v.Canon(false),
+				PURLType: purl.TypeNPM,
+			})
+		}
+	}
+
+	return pkgs, nil
 }
 
 func (p packageJSON) hasNameAndVersionValues() bool {
