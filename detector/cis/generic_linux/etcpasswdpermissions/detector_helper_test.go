@@ -24,6 +24,18 @@ import (
 	"time"
 )
 
+type fakeFile struct {
+	perms fs.FileMode
+	uid   uint32
+	gid   uint32
+}
+
+type fakeFileInfo struct {
+	perms fs.FileMode
+	uid   uint32
+	gid   uint32
+}
+
 func (f *fakeFS) Open(name string) (fs.File, error) {
 	if name == "etc/passwd" {
 		if f.exists {
