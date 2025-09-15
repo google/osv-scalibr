@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package huggingfaceapikey contains a Veles Secret type for Huggingface API keys.
 package huggingfaceapikey
 
 // HuggingfaceAPIKey is a Veles Secret that holds relevant information for a

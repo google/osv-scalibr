@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package huggingfacemeta contains an Enricher that uses Veles Validators to validate
-// Secrets found by the Veles Extractor.
+// Package huggingfacemeta contains an Enricher that adds additional metadata
+// to each Huggingface keys based on the API response
 package huggingfacemeta
 
 import (
@@ -26,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 )
 
@@ -42,7 +41,6 @@ var _ enricher.Enricher = &Enricher{}
 
 // Enricher uses a Veles ValidationEngine to validate Secrets found by Veles.
 type Enricher struct {
-	engine     *veles.ValidationEngine
 	baseURL    string
 	httpClient *http.Client
 }
@@ -56,19 +54,12 @@ func New() enricher.Enricher {
 }
 
 // NewWithBaseURL creates a new Enricher that uses the provided base URL for the Hugging Face API.
-// Useful for tests with an httptest.Server.
+// Useful for tests with a httptest.Server.
 func NewWithBaseURL(baseURL string) enricher.Enricher {
 	return &Enricher{
 		baseURL:    baseURL,
 		httpClient: http.DefaultClient,
 	}
-}
-
-// AddValidator adds a Validator for a specific type of Secret to the underlying validation engine.
-//
-// Returns whether there was already a Validator in place that now got replaced.
-func AddValidator[S veles.Secret](e *Enricher, v veles.Validator[S]) bool {
-	return veles.AddValidator(e.engine, v)
 }
 
 // Name of the Enricher.

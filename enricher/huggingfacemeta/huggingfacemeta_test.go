@@ -28,25 +28,40 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 )
 
-type testEnricherSubCase struct {
-	name             string
-	input            inventory.Inventory
-	Role             string
-	FineGrainedScope []string
-	want             inventory.Inventory
-}
-
 func TestEnricher(t *testing.T) {
+	type testEnricherSubCase struct {
+		name        string
+		respBody    any
+		statusCode  int
+		input       inventory.Inventory
+		want        inventory.Inventory
+		expectError bool
+	}
+	validRespBody := func(role string, fineGrainedScope []string) map[string]any {
+		return map[string]any{
+			"auth": map[string]any{
+				"accessToken": map[string]any{
+					"role": role,
+					"fineGrained": map[string]any{
+						"scoped": []map[string]any{
+							{"permissions": fineGrainedScope},
+						},
+					},
+				},
+			},
+		}
+	}
 	path := "/foo/bar/key.json"
 	cases := []struct {
 		name string
 		subs []testEnricherSubCase
 	}{
 		{
-			name: "Append Role and Fine Grained Scopes",
+			name: "Append role and Fine Grained Scopes",
 			subs: []testEnricherSubCase{
 				{
-					name: "supported",
+					name:       "supported",
+					statusCode: http.StatusOK,
 					input: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{
@@ -55,8 +70,8 @@ func TestEnricher(t *testing.T) {
 							},
 						},
 					},
-					Role:             "read",
-					FineGrainedScope: []string{"inference.endpoints.infer.write", "repo.content.read"},
+					respBody: validRespBody("read",
+						[]string{"inference.endpoints.infer.write", "repo.content.read"}),
 					want: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{
@@ -70,6 +85,52 @@ func TestEnricher(t *testing.T) {
 						},
 					},
 				},
+				{
+					name:        "no json response",
+					statusCode:  http.StatusOK,
+					expectError: true,
+					input: inventory.Inventory{
+						Secrets: []*inventory.Secret{
+							{
+								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo2"},
+								Location: path,
+							},
+						},
+					},
+					respBody: "response body is not json",
+					want: inventory.Inventory{
+						Secrets: []*inventory.Secret{
+							{
+								Secret: huggingfaceapikey.HuggingfaceAPIKey{
+									Key: "foo2",
+								},
+								Location: path,
+							},
+						},
+					},
+				},
+				{
+					name:       "non-200 status code",
+					statusCode: http.StatusUnauthorized, // 401 Unauthorized
+					input: inventory.Inventory{
+						Secrets: []*inventory.Secret{
+							{
+								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo3"},
+								Location: path,
+							},
+						},
+					},
+					want: inventory.Inventory{
+						Secrets: []*inventory.Secret{
+							{
+								Secret: huggingfaceapikey.HuggingfaceAPIKey{
+									Key: "foo3",
+								},
+								Location: path,
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -77,26 +138,27 @@ func TestEnricher(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, sc := range tc.subs {
 				t.Run(sc.name, func(t *testing.T) {
-					// Mock Hugging Face API server responding with the desired Role and FineGrainedScope
+					// Mock Hugging Face API server responding with the desired role and fineGrainedScope
 					ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if r.URL.Path != "/api/whoami-v2" {
 							http.NotFound(w, r)
 							return
 						}
-						w.Header().Set("Content-Type", "application/json")
-						resp := map[string]any{
-							"auth": map[string]any{
-								"accessToken": map[string]any{
-									"role": sc.Role,
-									"fineGrained": map[string]any{
-										"scoped": []map[string]any{
-											{"permissions": sc.FineGrainedScope},
-										},
-									},
-								},
-							},
+						// Return the status code defined in the test case
+						if sc.statusCode != 0 && sc.statusCode != http.StatusOK {
+							w.WriteHeader(sc.statusCode)
+							return
 						}
-						_ = json.NewEncoder(w).Encode(resp)
+
+						w.Header().Set("Content-Type", "application/json")
+						if _, ok := sc.respBody.(string); ok {
+							_, err := w.Write([]byte(sc.respBody.(string)))
+							if err != nil {
+								return
+							}
+							return
+						}
+						_ = json.NewEncoder(w).Encode(sc.respBody)
 					}))
 					defer ts.Close()
 
@@ -104,7 +166,16 @@ func TestEnricher(t *testing.T) {
 					enricher := huggingfacemeta.NewWithBaseURL(ts.URL)
 
 					if err := enricher.Enrich(t.Context(), nil, &sc.input); err != nil {
-						t.Errorf("Enrich() error: %v, want nil", err)
+						// Check error expectation
+						if sc.expectError {
+							if err == nil {
+								t.Errorf("Validate() expected error, got nil")
+							}
+						} else {
+							if err != nil {
+								t.Errorf("Validate() unexpected error: %v", err)
+							}
+						}
 					}
 					got := &sc.input
 					want := &sc.want
