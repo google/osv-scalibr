@@ -18,12 +18,11 @@ package token
 import (
 	"bytes"
 	"hash/crc32"
-	"strings"
 )
 
 // ValidateChecksum validates a GitHub token
-func ValidateChecksum(token string) bool {
-	_, suf, ok := strings.Cut(token, "_")
+func ValidateChecksum(token []byte) bool {
+	_, suf, ok := bytes.Cut(token, []byte("_"))
 	if !ok {
 		return false
 	}
@@ -37,12 +36,12 @@ func ValidateChecksum(token string) bool {
 	content, checksum := suf[:splitIdx], suf[splitIdx:]
 
 	// Compute CRC32 on ASCII bytes of the content (not decoded base62)
-	crc := crc32.ChecksumIEEE([]byte(content))
+	crc := crc32.ChecksumIEEE(content)
 
 	// Encode checksum in base62 (ignoring a possible overflow)
 	got := base62Encode(crc, 6)
 
-	return bytes.Equal(got, []byte(checksum))
+	return bytes.Equal(got, checksum)
 }
 
 const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

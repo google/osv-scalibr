@@ -53,7 +53,7 @@ func TestValidateChecksum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := token.ValidateChecksum(tc.token)
+			got := token.ValidateChecksum([]byte(tc.token))
 			if got != tc.want {
 				t.Errorf("ValidateChecksum() = %t, want %t", got, tc.want)
 			}
