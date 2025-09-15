@@ -25,10 +25,13 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 )
 
-const testKey = "glpat-f4eFH_HGFDSPljX2t2eWBm3h3bp1ORR5116d1w.01.120reoret"
+const (
+	testKeyVersioned = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7s"
+	testKeyRoutable  = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
+	testKeyLegacy    = "glpat-vzDNJu3Lvh4YCCekKsnx"
+)
 
-// TestDetector_truePositives tests for cases where we know the Detector
-// will find a Gitlab PAT/s.
+// TestDetector_truePositives tests cases where the Detector should find a GitLab PAT.
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gitlabpat.NewDetector()})
 	if err != nil {
@@ -40,51 +43,68 @@ func TestDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "simple matching string",
-			input: testKey,
+			name:  "routable versioned simple",
+			input: testKeyVersioned,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
 			},
 		},
 		{
-			name:  "match in middle of string",
-			input: `GITLAB_PAT="` + testKey + `"`,
+			name:  "routable simple",
+			input: testKeyRoutable,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
+				gitlabpat.GitlabPat{Pat: testKeyRoutable},
 			},
 		},
 		{
-			name:  "multiple matches",
-			input: testKey + testKey + testKey,
+			name:  "Legacy simple",
+			input: testKeyLegacy,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
-				gitlabpat.GitlabPat{Pat: testKey},
-				gitlabpat.GitlabPat{Pat: testKey},
+				gitlabpat.GitlabPat{Pat: testKeyLegacy},
+			},
+		},
+		{
+			name:  "match in middle of string (versioned)",
+			input: `GITLAB_PAT="` + testKeyVersioned + `"`,
+			want: []veles.Secret{
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+			},
+		},
+		{
+			name:  "multiple matches (same token repeated)",
+			input: testKeyVersioned + " " + testKeyVersioned + " " + testKeyVersioned,
+			want: []veles.Secret{
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
 			},
 		},
 		{
 			name:  "multiple distinct matches",
-			input: testKey + "\n" + "glpat-123456789012345678901234567890123456789012345678901",
+			input: testKeyVersioned + "\n" + testKeyRoutable + "\n" + testKeyLegacy,
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
-				gitlabpat.GitlabPat{Pat: "glpat-123456789012345678901234567890123456789012345678901"},
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPat{Pat: testKeyRoutable},
+				gitlabpat.GitlabPat{Pat: testKeyLegacy},
 			},
 		},
 		{
-			name: "larger input containing key",
+			name:  "multiple distinct matches with extra dot",
+			input: testKeyVersioned + ".11aa" + "\n" + testKeyRoutable + ".11aa" + "\n" + testKeyLegacy + ".11aa",
+			want: []veles.Secret{
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
+				gitlabpat.GitlabPat{Pat: testKeyRoutable},
+				gitlabpat.GitlabPat{Pat: testKeyLegacy},
+			},
+		},
+		{
+			name: "larger input containing versioned key",
 			input: fmt.Sprintf(`
 		:test_api_key: pat-test
 		:gitlab_pat: %s
-				`, testKey),
+				`, testKeyVersioned),
 			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
-			},
-		},
-		{
-			name:  "potential match longer than max key length",
-			input: testKey + `extra`,
-			want: []veles.Secret{
-				gitlabpat.GitlabPat{Pat: testKey},
+				gitlabpat.GitlabPat{Pat: testKeyVersioned},
 			},
 		},
 	}
@@ -101,8 +121,7 @@ func TestDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Gitlab PAT.
+// TestDetector_trueNegatives tests cases where the Detector should NOT find a GitLab PAT.
 func TestDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gitlabpat.NewDetector()})
 	if err != nil {
@@ -112,22 +131,28 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name  string
 		input string
 		want  []veles.Secret
-	}{{
-		name:  "empty input",
-		input: "",
-	}, {
-		name:  "short key should not match",
-		input: testKey[:len(testKey)-1],
-	}, {
-		name:  "invalid character in key should not match",
-		input: `glpat-` + strings.Repeat("a", 50) + "!",
-	}, {
-		name:  "incorrect prefix should not match",
-		input: `glpaa-` + strings.Repeat("a", 51),
-	}, {
-		name:  "prefix missing dash should not match",
-		input: `glpat` + strings.Repeat("a", 51),
-	}}
+	}{
+		{
+			name:  "empty input",
+			input: "",
+		},
+		{
+			name:  "short versioned key should not match",
+			input: testKeyVersioned[:len(testKeyLegacy)-10],
+		},
+		{
+			name:  "invalid character in key should not match",
+			input: `glpat-` + strings.Repeat("a", 10) + "!" + "aaaa",
+		},
+		{
+			name:  "incorrect prefix should not match",
+			input: `glpaa-` + strings.Repeat("a", 51),
+		},
+		{
+			name:  "prefix missing dash should not match",
+			input: `glpat` + strings.Repeat("a", 51),
+		},
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))

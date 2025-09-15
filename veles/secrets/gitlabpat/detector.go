@@ -17,18 +17,24 @@
 package gitlabpat
 
 import (
-	"bytes"
 	"regexp"
+	"sort"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 // maxTokenLength is the maximum size of a Gitlab personal access token.
-const maxTokenLength = 57
+const maxTokenLength = 319
 
-// patRe is a regular expression that matches a Gitlab PAT.
-// Gitlab PAT has the form: `glpat-` followed by 51 alphanumeric characters.
-var patRe = regexp.MustCompile(`glpat-[A-Za-z0-9._-]{51}`)
+// Regular expressions for GitLab Personal Access Tokens:
+//
+// Based on the specs at: https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/a5c49599bd88f1751616b40e4e32331aa2c8bf50/content/handbook/engineering/architecture/design-documents/cells/routable_tokens.md#L80
+var (
+	reRoutableVersioned = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}\.[0-9a-z]{2}[0-9a-z]{7}`)
+	reRoutable          = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}[0-9a-z]{7}`)
+	reLegacy            = regexp.MustCompile(`(glpat-[0-9A-Za-z_-]{20})`)
+)
 
 var _ veles.Detector = NewDetector()
 
@@ -45,13 +51,65 @@ func (d *detector) MaxSecretLen() uint32 {
 	return maxTokenLength
 }
 func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
+	type match struct {
+		start int
+		end   int
+		token string
+	}
+	var found []match
 
-	matches := patRe.FindAll(content, -1)
-	for _, match := range matches {
-		secrets = append(secrets, GitlabPat{Pat: string(match)})
-		offsets = append(offsets, bytes.Index(content, match))
+	// Collect routable versioned matches
+	for _, loc := range reRoutableVersioned.FindAllIndex(content, -1) {
+		found = append(found, match{
+			start: loc[0],
+			end:   loc[1],
+			token: string(content[loc[0]:loc[1]]),
+		})
+	}
+	// Collect routable matches
+	for _, loc := range reRoutable.FindAllIndex(content, -1) {
+		found = append(found, match{
+			start: loc[0],
+			end:   loc[1],
+			token: string(content[loc[0]:loc[1]]),
+		})
+	}
+	// Collect legacy matches
+	for _, loc := range reLegacy.FindAllIndex(content, -1) {
+		found = append(found, match{
+			start: loc[0],
+			end:   loc[1],
+			token: string(content[loc[0]:loc[1]]),
+		})
+	}
+
+	// Remove matches that are strictly contained within another match (e.g., legacy inside routable)
+	// here we check if 'm'(shorter string match) is inside 'n'
+	pruned := make([]match, 0, len(found))
+	for i, m := range found {
+		contained := false
+		for j, n := range found {
+			if i == j {
+				continue
+			}
+			if len(n.token) > len(m.token) && strings.Contains(n.token, m.token) {
+				contained = true
+				break
+			}
+		}
+		if !contained {
+			pruned = append(pruned, m)
+		}
+	}
+
+	// Sort by start offset to preserve document order
+	sort.Slice(pruned, func(i, j int) bool { return pruned[i].start < pruned[j].start })
+
+	secrets := make([]veles.Secret, 0, len(pruned))
+	offsets := make([]int, 0, len(pruned))
+	for _, m := range pruned {
+		secrets = append(secrets, GitlabPat{Pat: m.token})
+		offsets = append(offsets, m.start)
 	}
 	return secrets, offsets
 }
