@@ -33,7 +33,7 @@ const maxTokenLength = 319
 //
 // Based on the specs at: https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/a5c49599bd88f1751616b40e4e32331aa2c8bf50/content/handbook/engineering/architecture/design-documents/cells/routable_tokens.md#L80
 var (
-	reRoutableVersioned = regexp.MustCompile(`(?P<prefix>glpat-)(?P<payload>[0-9A-Za-z_-]{27,300})\.(?P<version>[0-9a-z]{2})\.(?P<length>[0-9a-z]{2})(?P<crc>[0-9a-z]{7})`)
+	reRoutableVersioned = regexp.MustCompile(`(?P<prefix>glpat-)(?P<payload>[0-9A-Za-z_-]{27,300})\.[0-9a-z]{2}\.(?P<length>[0-9a-z]{2})(?P<crc>[0-9a-z]{7})`)
 	reRoutable          = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}[0-9a-z]{7}`)
 	reLegacy            = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{20}`)
 )
@@ -43,7 +43,7 @@ var _ veles.Detector = NewDetector()
 // isValidCRC32 validates the CRC32 checksum of a GitLab PAT.
 // According to the documentation, the CRC32 is calculated on <prefix><base64-payload>.<base64-payload-length>
 // and encoded as base36 with leading zeros to make 7 characters.
-func isValidCRC32(prefix, payload, version, lengthHex, crcHex string) bool {
+func isValidCRC32(prefix, payload, lengthHex, crcHex string) bool {
 	// Construct the string to calculate CRC32 on
 	checksumTarget := prefix + payload + "." + lengthHex
 
@@ -57,7 +57,7 @@ func isValidCRC32(prefix, payload, version, lengthHex, crcHex string) bool {
 	}
 
 	// Compare calculated CRC with the provided CRC
-	return strings.ToLower(calculatedCRC) == strings.ToLower(crcHex)
+	return strings.EqualFold(calculatedCRC, crcHex)
 }
 
 // detector is a Veles Detector.
@@ -87,7 +87,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	contentStr := string(content)
 	for i, tokenMatch := range reRoutableVersioned.FindAllStringSubmatch(contentStr, -1) {
 		subexpNames := reRoutableVersioned.SubexpNames()
-		var prefixValue, payloadValue, versionValue, lengthValue, crcValue string
+		var prefixValue, payloadValue, lengthValue, crcValue string
 		for i, name := range subexpNames {
 			if i == 0 {
 				continue
@@ -97,8 +97,6 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 				prefixValue = tokenMatch[i]
 			case "payload":
 				payloadValue = tokenMatch[i]
-			case "version":
-				versionValue = tokenMatch[i]
 			case "length":
 				lengthValue = tokenMatch[i]
 			case "crc":
@@ -110,7 +108,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 		matchIndices := reRoutableVersioned.FindAllStringSubmatchIndex(contentStr, -1)[i]
 		start, end := matchIndices[0], matchIndices[1]
 
-		if isValidCRC32(prefixValue, payloadValue, versionValue, lengthValue, crcValue) {
+		if isValidCRC32(prefixValue, payloadValue, lengthValue, crcValue) {
 			found = append(found, match{
 				start: start,
 				end:   end,
