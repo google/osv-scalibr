@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	testKeyVersioned = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7s"
-	testKeyRoutable  = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
-	testKeyLegacy    = "glpat-vzDNJu3Lvh4YCCekKsnx"
+	testKeyVersioned             = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7s"
+	testKeyVersionedInvalidCrc20 = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7a"
+	testKeyRoutable              = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
+	testKeyLegacy                = "glpat-vzDNJu3Lvh4YCCekKsnx"
 )
 
 // TestDetector_truePositives tests cases where the Detector should find a GitLab PAT.
@@ -151,6 +152,10 @@ func TestDetector_trueNegatives(t *testing.T) {
 		{
 			name:  "prefix missing dash should not match",
 			input: `glpat` + strings.Repeat("a", 51),
+		},
+		{
+			name:  "prefix missing dash should not match",
+			input: testKeyVersionedInvalidCrc20,
 		},
 	}
 	for _, tc := range cases {
