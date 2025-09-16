@@ -650,7 +650,9 @@ message SecretData {
     OpenAIAPIKey openai_api_key = 10;
     PostmanAPIKey postman_api_key = 11;
     PostmanCollectionAccessToken postman_collection_access_token = 12;
-    TinkKeyset tink_keyset = 13;
+    AzureAccessToken azure_access_token = 13;
+    AzureIdentityToken azure_identity_token = 14;
+    TinkKeyset tink_keyset = 15;
   }
 
   message GCPSAK {
@@ -699,6 +701,14 @@ message SecretData {
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
+  }
+
+  message AzureAccessToken {
+    string token = 1;
+  }
+
+  message AzureIdentityToken {
+    string token = 1;
   }
 
   message OpenAIAPIKey {
