@@ -44,9 +44,9 @@ var _ veles.Detector = NewDetector()
 // According to the documentation, the CRC32 is calculated on
 // <prefix><base64-payload>.<token-version>.<base64-payload-length>
 // and encoded as base36 with leading zeros to make 7 characters.
-func isValidCRC32(prefix, payload, version, lengthHex, crcHex string) bool {
+func isValidCRC32(prefix, payload, version, length, crcToCheck string) bool {
 	// Construct the string to calculate CRC32 on
-	checksumTarget := prefix + payload + "." + version + "." + lengthHex
+	checksumTarget := prefix + payload + "." + version + "." + length
 
 	// Calculate CRC32 checksum
 	crc := crc32.ChecksumIEEE([]byte(checksumTarget))
@@ -58,7 +58,7 @@ func isValidCRC32(prefix, payload, version, lengthHex, crcHex string) bool {
 	}
 
 	// Compare calculated CRC with the provided CRC
-	return strings.EqualFold(calculatedCRC, crcHex)
+	return strings.EqualFold(calculatedCRC, crcToCheck)
 }
 
 // detector is a Veles Detector.
