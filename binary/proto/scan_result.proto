@@ -723,7 +723,7 @@ message SecretData {
   message GitlabPat {
     string pat = 1;
   }
-    
+
   message PostmanAPIKey {
     string key = 1;
   }
