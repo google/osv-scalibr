@@ -144,15 +144,15 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	pruned := make([]match, 0, len(found))
 	for i, m := range found {
 		contained := false
-		invalidCrc20 := false
-		// check if it is not contained in a longer match with invalid crc20 checksum
+		invalidCrc32 := false
+		// check if it is not contained in a longer match with invalid crc32 checksum
 		for _, bl := range blacklist {
 			if strings.Contains(bl, m.token) {
-				invalidCrc20 = true
+				invalidCrc32 = true
 				break
 			}
 		}
-		if invalidCrc20 {
+		if invalidCrc32 {
 			break
 		}
 		for j, n := range found {
