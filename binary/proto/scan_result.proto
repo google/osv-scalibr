@@ -653,6 +653,7 @@ message SecretData {
     AzureAccessToken azure_access_token = 13;
     AzureIdentityToken azure_identity_token = 14;
     TinkKeyset tink_keyset = 15;
+    GitlabPat gitlab_pat = 16;
   }
 
   message GCPSAK {
@@ -718,6 +719,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message GitlabPat {
+    string pat = 1;
   }
 
   message PostmanAPIKey {

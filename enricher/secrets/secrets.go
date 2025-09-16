@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -59,6 +60,7 @@ func New() enricher.Enricher {
 		veles.WithValidator(perplexityapikey.NewValidator()),
 		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
 		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
+		veles.WithValidator(gitlabpat.NewValidator()),
 		veles.WithValidator(openai.NewProjectValidator()),
 		veles.WithValidator(postmanapikey.NewAPIValidator()),
 		veles.WithValidator(postmanapikey.NewCollectionValidator()),
