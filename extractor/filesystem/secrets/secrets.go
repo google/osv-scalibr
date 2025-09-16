@@ -38,6 +38,7 @@ import (
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 )
 
 const (
@@ -85,6 +86,7 @@ func init() { //nolint:gochecknoinits
 		privatekey.NewDetector(),
 		gitlabpat.NewDetector(),
 		azuretoken.NewDetector(),
+		tinkkeyset.NewDetector(),
 		openai.NewDetector(),
 		postmanapikey.NewAPIKeyDetector(),
 		postmanapikey.NewCollectionTokenDetector(),
