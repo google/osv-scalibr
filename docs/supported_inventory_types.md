@@ -39,7 +39,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
-| NIX               |                                | `os/nix`                                     |
+| Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
 | RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
