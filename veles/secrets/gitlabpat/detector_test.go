@@ -154,7 +154,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 			input: `glpat` + strings.Repeat("a", 51),
 		},
 		{
-			name:  "prefix missing dash should not match",
+			name:  "invalid CRC32 should not match",
 			input: testKeyVersionedInvalidCrc32,
 		},
 	}

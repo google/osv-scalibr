@@ -107,7 +107,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 		})
 	}
 
-	pruned := make([]match, 0, len(versionedMatches)+len(routableMatches)+len(legacyMatches))
+	var pruned []match
 
 	// Always keep versioned tokens
 	pruned = append(pruned, versionedMatches...)
