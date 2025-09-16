@@ -5022,6 +5022,7 @@ type SecretData struct {
 	//	*SecretData_PostmanCollectionAccessToken_
 	//	*SecretData_AzureAccessToken_
 	//	*SecretData_AzureIdentityToken_
+	//	*SecretData_TinkKeyset_
 	//	*SecretData_GitlabPat_
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
@@ -5191,6 +5192,15 @@ func (x *SecretData) GetAzureIdentityToken() *SecretData_AzureIdentityToken {
 	return nil
 }
 
+func (x *SecretData) GetTinkKeyset() *SecretData_TinkKeyset {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_TinkKeyset_); ok {
+			return x.TinkKeyset
+		}
+	}
+	return nil
+}
+
 func (x *SecretData) GetGitlabPat() *SecretData_GitlabPat {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_GitlabPat_); ok {
@@ -5260,8 +5270,12 @@ type SecretData_AzureIdentityToken_ struct {
 	AzureIdentityToken *SecretData_AzureIdentityToken `protobuf:"bytes,14,opt,name=azure_identity_token,json=azureIdentityToken,proto3,oneof"`
 }
 
+type SecretData_TinkKeyset_ struct {
+	TinkKeyset *SecretData_TinkKeyset `protobuf:"bytes,15,opt,name=tink_keyset,json=tinkKeyset,proto3,oneof"`
+}
+
 type SecretData_GitlabPat_ struct {
-	GitlabPat *SecretData_GitlabPat `protobuf:"bytes,15,opt,name=gitlab_pat,json=gitlabPat,proto3,oneof"`
+	GitlabPat *SecretData_GitlabPat `protobuf:"bytes,16,opt,name=gitlab_pat,json=gitlabPat,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5291,6 +5305,8 @@ func (*SecretData_PostmanCollectionAccessToken_) isSecretData_Secret() {}
 func (*SecretData_AzureAccessToken_) isSecretData_Secret() {}
 
 func (*SecretData_AzureIdentityToken_) isSecretData_Secret() {}
+
+func (*SecretData_TinkKeyset_) isSecretData_Secret() {}
 
 func (*SecretData_GitlabPat_) isSecretData_Secret() {}
 
@@ -6414,6 +6430,50 @@ func (x *SecretData_DigitalOceanAPIToken) GetKey() string {
 	return ""
 }
 
+type SecretData_TinkKeyset struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"` // JSON encoded Tink keyset
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_TinkKeyset) Reset() {
+	*x = SecretData_TinkKeyset{}
+	mi := &file_proto_scan_result_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_TinkKeyset) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_TinkKeyset) ProtoMessage() {}
+
+func (x *SecretData_TinkKeyset) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_TinkKeyset.ProtoReflect.Descriptor instead.
+func (*SecretData_TinkKeyset) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 15}
+}
+
+func (x *SecretData_TinkKeyset) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -6819,7 +6879,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x8d\x12\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf8\x12\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -6839,9 +6899,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0fpostman_api_key\x18\v \x01(\v2!.scalibr.SecretData.PostmanAPIKeyH\x00R\rpostmanApiKey\x12y\n" +
 	"\x1fpostman_collection_access_token\x18\f \x01(\v20.scalibr.SecretData.PostmanCollectionAccessTokenH\x00R\x1cpostmanCollectionAccessToken\x12T\n" +
 	"\x12azure_access_token\x18\r \x01(\v2$.scalibr.SecretData.AzureAccessTokenH\x00R\x10azureAccessToken\x12Z\n" +
-	"\x14azure_identity_token\x18\x0e \x01(\v2&.scalibr.SecretData.AzureIdentityTokenH\x00R\x12azureIdentityToken\x12>\n" +
+	"\x14azure_identity_token\x18\x0e \x01(\v2&.scalibr.SecretData.AzureIdentityTokenH\x00R\x12azureIdentityToken\x12A\n" +
+	"\vtink_keyset\x18\x0f \x01(\v2\x1e.scalibr.SecretData.TinkKeysetH\x00R\n" +
+	"tinkKeyset\x12>\n" +
 	"\n" +
-	"gitlab_pat\x18\x0f \x01(\v2\x1d.scalibr.SecretData.GitlabPatH\x00R\tgitlabPat\x1a\xb0\x03\n" +
+	"gitlab_pat\x18\x10 \x01(\v2\x1d.scalibr.SecretData.GitlabPatH\x00R\tgitlabPat\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -6888,7 +6950,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x1cPostmanCollectionAccessToken\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
 	"\x14DigitalOceanAPIToken\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a&\n" +
+	"\n" +
+	"TinkKeyset\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontentB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -6946,7 +7011,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 76)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 77)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                           // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                               // 1: scalibr.SeverityEnum
@@ -7029,11 +7094,12 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_PostmanAPIKey)(nil),                // 78: scalibr.SecretData.PostmanAPIKey
 	(*SecretData_PostmanCollectionAccessToken)(nil), // 79: scalibr.SecretData.PostmanCollectionAccessToken
 	(*SecretData_DigitalOceanAPIToken)(nil),         // 80: scalibr.SecretData.DigitalOceanAPIToken
-	(*timestamppb.Timestamp)(nil),                   // 81: google.protobuf.Timestamp
+	(*SecretData_TinkKeyset)(nil),                   // 81: scalibr.SecretData.TinkKeyset
+	(*timestamppb.Timestamp)(nil),                   // 82: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	81, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	81, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	82, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	82, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -7095,8 +7161,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15, // 60: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15, // 61: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	65, // 62: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	81, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	81, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	82, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	82, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	55, // 65: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	58, // 66: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	59, // 67: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -7115,20 +7181,21 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	79, // 80: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
 	73, // 81: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
 	74, // 82: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
-	77, // 83: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
-	4,  // 84: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	81, // 85: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	61, // 86: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	62, // 87: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	63, // 88: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	64, // 89: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11, // 90: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	52, // 91: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	92, // [92:92] is the sub-list for method output_type
-	92, // [92:92] is the sub-list for method input_type
-	92, // [92:92] is the sub-list for extension type_name
-	92, // [92:92] is the sub-list for extension extendee
-	0,  // [0:92] is the sub-list for field type_name
+	81, // 83: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
+	77, // 84: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
+	4,  // 85: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	82, // 86: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	61, // 87: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	62, // 88: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	63, // 89: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	64, // 90: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11, // 91: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	52, // 92: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	93, // [93:93] is the sub-list for method output_type
+	93, // [93:93] is the sub-list for method input_type
+	93, // [93:93] is the sub-list for extension type_name
+	93, // [93:93] is the sub-list for extension extendee
+	0,  // [0:93] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -7191,6 +7258,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_PostmanCollectionAccessToken_)(nil),
 		(*SecretData_AzureAccessToken_)(nil),
 		(*SecretData_AzureIdentityToken_)(nil),
+		(*SecretData_TinkKeyset_)(nil),
 		(*SecretData_GitlabPat_)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[55].OneofWrappers = []any{
@@ -7205,7 +7273,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   76,
+			NumMessages:   77,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
