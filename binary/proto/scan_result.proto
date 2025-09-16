@@ -652,6 +652,7 @@ message SecretData {
     PostmanCollectionAccessToken postman_collection_access_token = 12;
     AzureAccessToken azure_access_token = 13;
     AzureIdentityToken azure_identity_token = 14;
+    TinkKeyset tink_keyset = 15;
   }
 
   message GCPSAK {
@@ -729,6 +730,10 @@ message SecretData {
 
   message DigitalOceanAPIToken {
     string key = 1;
+  }
+
+  message TinkKeyset {
+    string content = 1;  // JSON encoded Tink keyset
   }
 }
 
