@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux && !darwin
+package digitaloceanapikey
 
-package etcpasswdpermissions_test
-
-import (
-	"errors"
-	"io/fs"
-)
-
-func (fakeFS) Open(name string) (fs.File, error) { return nil, errors.New("unsupported system") }
-func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	return nil, errors.New("not implemented")
-}
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
-	return nil, errors.New("not implemented")
+// DigitaloceanAPIToken is a Veles Secret that holds relevant information for a
+// DigitalOcean API key (prefix `dop_v1_`).
+// DigitaloceanAPIToken represents an API key used to authenticate requests
+type DigitaloceanAPIToken struct {
+	Key string
 }

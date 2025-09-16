@@ -12,19 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux && !darwin
+// Package openai contains Veles Secret types and Detectors for
+// OpenAI Project API keys.
+package openai
 
-package etcpasswdpermissions_test
-
-import (
-	"errors"
-	"io/fs"
-)
-
-func (fakeFS) Open(name string) (fs.File, error) { return nil, errors.New("unsupported system") }
-func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	return nil, errors.New("not implemented")
-}
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
-	return nil, errors.New("not implemented")
+// APIKey is a Veles Secret that holds relevant information for an
+// OpenAI API key.
+type APIKey struct {
+	Key string
 }

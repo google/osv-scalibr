@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux && !darwin
+// Package postmanapikey contains detectors and validators for
+// Postman API credentials.
+package postmanapikey
 
-package etcpasswdpermissions_test
-
-import (
-	"errors"
-	"io/fs"
-)
-
-func (fakeFS) Open(name string) (fs.File, error) { return nil, errors.New("unsupported system") }
-func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	return nil, errors.New("not implemented")
+// PostmanAPIKey is a Veles Secret that holds a standard Postman API key.
+// These keys allow programmatic access to the Postman API.
+type PostmanAPIKey struct {
+	Key string
 }
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
-	return nil, errors.New("not implemented")
+
+// PostmanCollectionToken is a Veles Secret that holds a Postman Collection
+// access token. These tokens are used to access shared Postman collections.
+// Keeping this distinct from PostmanAPIKey makes reporting clearer.
+type PostmanCollectionToken struct {
+	Key string
 }
