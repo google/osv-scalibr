@@ -16,6 +16,7 @@ package hashicorpvault
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
@@ -28,12 +29,22 @@ const maxTokenLength = 200
 const maxUUIDLength = 36
 
 // vaultTokenRe is a regular expression that matches HashiCorp Vault tokens.
-// Vault tokens start with "hvs." or "hvp." followed by base64-like characters.
-var vaultTokenRe = regexp.MustCompile(`hv[sp]\.[A-Za-z0-9_-]{20,}`)
+// Vault tokens can start with older prefixes (s., b., r.) or newer prefixes (hvs., hvb.) followed by base64-like characters.
+var vaultTokenRe = regexp.MustCompile(`(?:hv[sb]|[sbr])\.[A-Za-z0-9_-]{24,}`)
 
 // appRoleCredentialRe is a regular expression that matches UUID v4 format used for AppRole credentials.
 // UUIDs have the format: 8-4-4-4-12 hexadecimal digits separated by hyphens.
 var appRoleCredentialRe = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+
+// appRoleContextRe matches potential AppRole credential pairs with context labels.
+// This matches patterns like "role_id: uuid", "ROLE_ID=uuid", "secret_id: uuid" etc.
+var appRoleContextRe = regexp.MustCompile(`(?i)(role_id|secret_id)\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`)
+
+// appRoleDetector implements context-aware AppRole credential detection.
+type appRoleDetector struct {
+	maxUUIDLen    uint32
+	maxContextLen uint32 // Maximum distance to look for context
+}
 
 // NewTokenDetector returns a new simpletoken.Detector that matches HashiCorp Vault tokens.
 func NewTokenDetector() veles.Detector {
@@ -46,19 +57,144 @@ func NewTokenDetector() veles.Detector {
 	}
 }
 
-// NewAppRoleDetector returns a new simpletoken.Detector that matches UUID-formatted AppRole credentials.
-// Note: This detector identifies potential AppRole credentials, but cannot distinguish between
-// role-id and secret-id without additional context. Both are returned as AppRoleCredentials
-// with the UUID in the RoleID field for simplicity.
+// NewAppRoleDetector returns a context-aware detector that matches UUID-formatted AppRole credentials.
+// This detector analyzes surrounding context to identify role_id and secret_id pairs when possible,
+// falling back to individual UUID detection when context is unclear.
 func NewAppRoleDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: maxUUIDLength,
-		Re:     appRoleCredentialRe,
-		FromMatch: func(b []byte) veles.Secret {
-			uuid := string(b)
-			// Since we can't distinguish role-id from secret-id in isolation,
-			// we store the UUID as a potential credential
-			return AppRoleCredentials{RoleID: uuid, SecretID: ""}
-		},
+	return &appRoleDetector{
+		maxUUIDLen:    maxUUIDLength,
+		maxContextLen: 500, // Look up to 500 bytes around each UUID for context
 	}
+}
+
+// MaxSecretLen returns the maximum length of secrets this detector can find.
+func (d *appRoleDetector) MaxSecretLen() uint32 {
+	return d.maxContextLen
+}
+
+// Detect implements context-aware AppRole credential detection.
+func (d *appRoleDetector) Detect(data []byte) ([]veles.Secret, []int) {
+	var secrets []veles.Secret
+	var positions []int
+
+	// First, try to find context-aware credential pairs
+	contextMatches := appRoleContextRe.FindAllSubmatchIndex(data, -1)
+	processedUUIDs := make(map[string]bool)
+
+	// Group matches by proximity to find potential pairs
+	credentialPairs := d.groupCredentialsByProximity(data, contextMatches, processedUUIDs)
+
+	for _, pair := range credentialPairs {
+		secrets = append(secrets, pair.credentials)
+		positions = append(positions, pair.position)
+	}
+
+	// Then find standalone UUIDs that weren't part of context matches
+	uuidMatches := appRoleCredentialRe.FindAllSubmatchIndex(data, -1)
+	for _, match := range uuidMatches {
+		start, end := match[0], match[1]
+		uuid := string(data[start:end])
+
+		if !processedUUIDs[uuid] {
+			secrets = append(secrets, AppRoleCredentials{ID: uuid})
+			positions = append(positions, start)
+		}
+	}
+
+	return secrets, positions
+}
+
+// credentialPair represents a detected AppRole credential pair with its position.
+type credentialPair struct {
+	credentials AppRoleCredentials
+	position    int
+}
+
+// groupCredentialsByProximity analyzes context matches to group role_id/secret_id pairs.
+func (d *appRoleDetector) groupCredentialsByProximity(data []byte, matches [][]int, processedUUIDs map[string]bool) []credentialPair {
+	var pairs []credentialPair
+
+	// Convert matches to a more workable format
+	type contextMatch struct {
+		fieldType string // "role_id" or "secret_id"
+		uuid      string
+		position  int
+	}
+
+	var contextMatches []contextMatch
+	for _, match := range matches {
+		if len(match) >= 6 { // Now we have 3 capture groups: full match, field type, UUID
+			fieldType := strings.ToLower(string(data[match[2]:match[3]]))
+			uuid := string(data[match[4]:match[5]])
+
+			contextMatches = append(contextMatches, contextMatch{
+				fieldType: fieldType,
+				uuid:      uuid,
+				position:  match[0],
+			})
+			processedUUIDs[uuid] = true
+		}
+	}
+
+	// Group nearby matches into credential pairs
+	for i, match1 := range contextMatches {
+		if match1.fieldType == "role_id" {
+			// Look for a nearby secret_id
+			for j, match2 := range contextMatches {
+				if i != j && match2.fieldType == "secret_id" {
+					// Check if they're within reasonable proximity (e.g., within 200 bytes)
+					distance := abs(match1.position - match2.position)
+					if distance < 200 {
+						pairs = append(pairs, credentialPair{
+							credentials: AppRoleCredentials{
+								RoleID:   match1.uuid,
+								SecretID: match2.uuid,
+							},
+							position: minInt(match1.position, match2.position),
+						})
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Add standalone context matches that didn't form pairs
+	usedInPairs := make(map[string]bool)
+	for _, pair := range pairs {
+		usedInPairs[pair.credentials.RoleID] = true
+		usedInPairs[pair.credentials.SecretID] = true
+	}
+
+	for _, match := range contextMatches {
+		if !usedInPairs[match.uuid] {
+			var creds AppRoleCredentials
+			if match.fieldType == "role_id" {
+				creds.RoleID = match.uuid
+			} else {
+				creds.SecretID = match.uuid
+			}
+			pairs = append(pairs, credentialPair{
+				credentials: creds,
+				position:    match.position,
+			})
+		}
+	}
+
+	return pairs
+}
+
+// Helper functions
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

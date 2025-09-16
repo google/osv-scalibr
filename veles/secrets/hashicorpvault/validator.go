@@ -144,7 +144,10 @@ func (v *AppRoleValidator) Validate(ctx context.Context, credentials AppRoleCred
 		return veles.ValidationFailed, fmt.Errorf("invalid vault URL: %w", err)
 	}
 
-	requestBody := AppRoleLoginRequest(credentials)
+	requestBody := AppRoleLoginRequest{
+		RoleID:   credentials.RoleID,
+		SecretID: credentials.SecretID,
+	}
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {

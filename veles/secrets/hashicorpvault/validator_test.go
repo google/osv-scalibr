@@ -27,42 +27,36 @@ func TestTokenValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name           string
 		statusCode     int
-		responseBody   string
 		expectedStatus veles.ValidationStatus
 		expectError    bool
 	}{
 		{
 			name:           "valid token",
 			statusCode:     http.StatusOK,
-			responseBody:   `{"data": {"display_name": "root", "policies": ["root"], "ttl": 3600}}`,
 			expectedStatus: veles.ValidationValid,
 			expectError:    false,
 		},
 		{
 			name:           "invalid token - unauthorized",
 			statusCode:     http.StatusUnauthorized,
-			responseBody:   `{"errors": ["invalid token"]}`,
 			expectedStatus: veles.ValidationInvalid,
 			expectError:    false,
 		},
 		{
 			name:           "invalid token - forbidden",
 			statusCode:     http.StatusForbidden,
-			responseBody:   `{"errors": ["permission denied"]}`,
 			expectedStatus: veles.ValidationInvalid,
 			expectError:    false,
 		},
 		{
 			name:           "server error",
 			statusCode:     http.StatusInternalServerError,
-			responseBody:   `{"errors": ["internal server error"]}`,
 			expectedStatus: veles.ValidationFailed,
 			expectError:    true,
 		},
 		{
 			name:           "bad gateway",
 			statusCode:     http.StatusBadGateway,
-			responseBody:   ``,
 			expectedStatus: veles.ValidationFailed,
 			expectError:    true,
 		},
@@ -83,7 +77,6 @@ func TestTokenValidator_Validate(t *testing.T) {
 				}
 
 				w.WriteHeader(test.statusCode)
-				_, _ = w.Write([]byte(test.responseBody))
 			}))
 			defer server.Close()
 
@@ -114,7 +107,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 		name           string
 		credentials    AppRoleCredentials
 		statusCode     int
-		responseBody   string
 		expectedStatus veles.ValidationStatus
 		expectError    bool
 	}{
@@ -125,7 +117,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusOK,
-			responseBody:   `{"auth": {"client_token": "hvs.generated-token"}}`,
 			expectedStatus: veles.ValidationValid,
 			expectError:    false,
 		},
@@ -136,7 +127,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "invalid-secret",
 			},
 			statusCode:     http.StatusUnauthorized,
-			responseBody:   `{"errors": ["invalid credentials"]}`,
 			expectedStatus: veles.ValidationInvalid,
 			expectError:    false,
 		},
@@ -147,7 +137,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusBadRequest,
-			responseBody:   `{"errors": ["invalid role_id format"]}`,
 			expectedStatus: veles.ValidationInvalid,
 			expectError:    false,
 		},
@@ -158,7 +147,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusInternalServerError,
-			responseBody:   `{"errors": ["internal server error"]}`,
 			expectedStatus: veles.ValidationFailed,
 			expectError:    true,
 		},
@@ -169,7 +157,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     0, // Won't make HTTP request
-			responseBody:   "",
 			expectedStatus: veles.ValidationFailed,
 			expectError:    true,
 		},
@@ -180,7 +167,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				SecretID: "",
 			},
 			statusCode:     0, // Won't make HTTP request
-			responseBody:   "",
 			expectedStatus: veles.ValidationFailed,
 			expectError:    true,
 		},
@@ -201,7 +187,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				}
 
 				w.WriteHeader(test.statusCode)
-				_, _ = w.Write([]byte(test.responseBody))
 			}))
 			defer server.Close()
 

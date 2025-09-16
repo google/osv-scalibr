@@ -30,8 +30,23 @@ func TestIsVaultToken(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "hvp token",
-			token:    "hvp.AAAAAQJz0zBvWUNOIKTkDhY",
+			name:     "hvb token",
+			token:    "hvb.AAAAAQJz0zBvWUNOIKTkDhY",
+			expected: true,
+		},
+		{
+			name:     "legacy s token",
+			token:    "s.VUFMJlFreGZNZOeQQPiSSviF",
+			expected: true,
+		},
+		{
+			name:     "legacy b token",
+			token:    "b.AUFMJlFreGZNZOeQQPiSSviF",
+			expected: true,
+		},
+		{
+			name:     "legacy r token",
+			token:    "r.VUFMJlFreGZNZOeQQPiSSviF",
 			expected: true,
 		},
 		{
@@ -50,8 +65,13 @@ func TestIsVaultToken(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "prefix only hvp",
-			token:    "hvp.",
+			name:     "prefix only hvb",
+			token:    "hvb.",
+			expected: true,
+		},
+		{
+			name:     "prefix only s",
+			token:    "s.",
 			expected: true,
 		},
 		{
@@ -60,17 +80,37 @@ func TestIsVaultToken(t *testing.T) {
 			expected: false,
 		},
 		{
+			name:     "wrong prefix hvp (should be hvb)",
+			token:    "hvp.CAESIB8KI2QJk0ePUYdOQXaxl0",
+			expected: false,
+		},
+		{
 			name:     "case sensitive - HVS",
 			token:    "HVS.CAESIB8KI2QJk0ePUYdOQXaxl0",
+			expected: false,
+		},
+		{
+			name:     "invalid format - missing dot",
+			token:    "hvs_CAESIB8KI2QJk0ePUYdOQXaxl0",
+			expected: false,
+		},
+		{
+			name:     "invalid format - wrong separator",
+			token:    "hvs-CAESIB8KI2QJk0ePUYdOQXaxl0",
+			expected: false,
+		},
+		{
+			name:     "invalid format - double prefix",
+			token:    "hvshvs.CAESIB8KI2QJk0ePUYdOQXaxl0",
 			expected: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := IsVaultToken(test.token)
+			result := isVaultToken(test.token)
 			if result != test.expected {
-				t.Errorf("IsVaultToken(%q) = %v, want %v", test.token, result, test.expected)
+				t.Errorf("isVaultToken(%q) = %v, want %v", test.token, result, test.expected)
 			}
 		})
 	}
@@ -132,13 +172,33 @@ func TestIsUUID(t *testing.T) {
 			uuid:     "12345678-1234-1234-1234-12345678901z",
 			expected: false,
 		},
+		{
+			name:     "all special characters",
+			uuid:     "!@#$%^&*-()_+-={}[]-\\|;':\",.<>?/~`",
+			expected: false,
+		},
+		{
+			name:     "numbers only",
+			uuid:     "123456789012345678901234567890123456",
+			expected: false,
+		},
+		{
+			name:     "letters only",
+			uuid:     "abcdefgh-ijkl-mnop-qrst-uvwxyzabcdef",
+			expected: false,
+		},
+		{
+			name:     "mixed valid and invalid hex",
+			uuid:     "12345678-abcd-xyzt-1234-123456789012",
+			expected: false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := IsUUID(test.uuid)
+			result := isUUID(test.uuid)
 			if result != test.expected {
-				t.Errorf("IsUUID(%q) = %v, want %v", test.uuid, result, test.expected)
+				t.Errorf("isUUID(%q) = %v, want %v", test.uuid, result, test.expected)
 			}
 		})
 	}
@@ -165,13 +225,33 @@ func TestIsAppRoleCredential(t *testing.T) {
 			s:        "",
 			expected: false,
 		},
+		{
+			name:     "almost valid UUID - wrong format",
+			s:        "12345678_1234_1234_1234_123456789012",
+			expected: false,
+		},
+		{
+			name:     "truncated UUID",
+			s:        "12345678-1234-1234-1234",
+			expected: false,
+		},
+		{
+			name:     "extended UUID",
+			s:        "12345678-1234-1234-1234-123456789012-extra",
+			expected: false,
+		},
+		{
+			name:     "mixed case valid UUID",
+			s:        "12345678-ABCD-1234-EFAB-123456789012",
+			expected: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := IsAppRoleCredential(test.s)
+			result := isAppRoleCredential(test.s)
 			if result != test.expected {
-				t.Errorf("IsAppRoleCredential(%q) = %v, want %v", test.s, result, test.expected)
+				t.Errorf("isAppRoleCredential(%q) = %v, want %v", test.s, result, test.expected)
 			}
 		})
 	}

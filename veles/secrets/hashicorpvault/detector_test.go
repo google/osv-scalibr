@@ -37,18 +37,18 @@ func TestNewTokenDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name:  "hvp token",
-			input: "export VAULT_TOKEN=hvp.AAAAAQJz0zBvWUNOIKTkDhY",
+			name:  "hvb token",
+			input: "export VAULT_TOKEN=hvb.AAAAAQJz0zBvWUNOIKTkDhYX",
 			expected: []veles.Secret{
-				Token{Token: "hvp.AAAAAQJz0zBvWUNOIKTkDhY"},
+				Token{Token: "hvb.AAAAAQJz0zBvWUNOIKTkDhYX"},
 			},
 		},
 		{
 			name:  "multiple tokens",
-			input: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0 and hvp.AAAAAQJz0zBvWUNOIKTkDhY",
+			input: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0 and hvb.AAAAAQJz0zBvWUNOIKTkDhYX",
 			expected: []veles.Secret{
 				Token{Token: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0"},
-				Token{Token: "hvp.AAAAAQJz0zBvWUNOIKTkDhY"},
+				Token{Token: "hvb.AAAAAQJz0zBvWUNOIKTkDhYX"},
 			},
 		},
 		{
@@ -101,18 +101,41 @@ func TestNewAppRoleDetector_Detect(t *testing.T) {
 		expected []veles.Secret
 	}{
 		{
-			name:  "single UUID",
+			name:  "single UUID with ROLE_ID context",
 			input: "ROLE_ID=12345678-1234-1234-1234-123456789012",
 			expected: []veles.Secret{
-				AppRoleCredentials{RoleID: "12345678-1234-1234-1234-123456789012", SecretID: ""},
+				AppRoleCredentials{RoleID: "12345678-1234-1234-1234-123456789012"},
 			},
 		},
 		{
-			name:  "multiple UUIDs",
+			name:  "context-aware credential pair",
 			input: "role_id: 87654321-4321-4321-4321-210987654321\nsecret_id: 11111111-2222-3333-4444-555555555555",
 			expected: []veles.Secret{
-				AppRoleCredentials{RoleID: "87654321-4321-4321-4321-210987654321", SecretID: ""},
-				AppRoleCredentials{RoleID: "11111111-2222-3333-4444-555555555555", SecretID: ""},
+				AppRoleCredentials{
+					RoleID:   "87654321-4321-4321-4321-210987654321",
+					SecretID: "11111111-2222-3333-4444-555555555555",
+				},
+			},
+		},
+		{
+			name:  "standalone role_id with context",
+			input: "role_id: 87654321-4321-4321-4321-210987654321",
+			expected: []veles.Secret{
+				AppRoleCredentials{RoleID: "87654321-4321-4321-4321-210987654321"},
+			},
+		},
+		{
+			name:  "standalone secret_id with context",
+			input: "secret_id: 11111111-2222-3333-4444-555555555555",
+			expected: []veles.Secret{
+				AppRoleCredentials{SecretID: "11111111-2222-3333-4444-555555555555"},
+			},
+		},
+		{
+			name:  "UUID without context",
+			input: "some random UUID: 12345678-1234-1234-1234-123456789012 in text",
+			expected: []veles.Secret{
+				AppRoleCredentials{ID: "12345678-1234-1234-1234-123456789012"},
 			},
 		},
 		{
@@ -134,7 +157,7 @@ func TestNewAppRoleDetector_Detect(t *testing.T) {
 			name:  "invalid UUID format with extra chars",
 			input: "12345678-1234-1234-1234-1234567890123", // too long
 			expected: []veles.Secret{
-				AppRoleCredentials{RoleID: "12345678-1234-1234-1234-123456789012", SecretID: ""},
+				AppRoleCredentials{ID: "12345678-1234-1234-1234-123456789012"},
 			}, // The regex will match the valid portion
 		},
 		{
@@ -206,3 +229,81 @@ func TestDetector_EmptyInput(t *testing.T) {
 
 // Note: TestDetector_ErrorReading was removed because the DetectionEngine
 // handles reader errors at a different level than individual detectors.
+
+func TestDetect_IncorrectFormat(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "invalid token prefix",
+			input: "hvx.CAESIB8KI2QJk0ePUYdOQXaxl0",
+		},
+		{
+			name:  "token too short",
+			input: "hvs.ABC",
+		},
+		{
+			name:  "wrong separator",
+			input: "hvs-CAESIB8KI2QJk0ePUYdOQXaxl0",
+		},
+		{
+			name:  "invalid UUID format - missing hyphens",
+			input: "role_id: 12345678123412341234123456789012",
+		},
+		{
+			name:  "invalid UUID format - wrong length",
+			input: "secret_id: 12345678-1234-1234-1234-12345678901",
+		},
+		{
+			name:  "invalid UUID format - invalid hex characters",
+			input: "role_id: 12345678-1234-1234-1234-12345678901G",
+		},
+		{
+			name:  "malformed token with valid prefix",
+			input: "hvs.",
+		},
+		{
+			name:  "legacy token too short",
+			input: "s.ABC",
+		},
+		{
+			name:  "mixed valid and invalid",
+			input: "hvx.invalid and role_id: invalid-uuid-format",
+		},
+	}
+
+	// Test both token and AppRole detectors
+	detectors := []struct {
+		name     string
+		detector veles.Detector
+	}{
+		{"TokenDetector", NewTokenDetector()},
+		{"AppRoleDetector", NewAppRoleDetector()},
+	}
+
+	for _, detectorTest := range detectors {
+		t.Run(detectorTest.name, func(t *testing.T) {
+			engine, err := veles.NewDetectionEngine([]veles.Detector{detectorTest.detector})
+			if err != nil {
+				t.Fatalf("Failed to create detection engine: %v", err)
+			}
+
+			for _, test := range tests {
+				t.Run(test.name, func(t *testing.T) {
+					reader := strings.NewReader(test.input)
+					secrets, err := engine.Detect(context.Background(), reader)
+					if err != nil {
+						t.Fatalf("Detect() returned error: %v", err)
+					}
+
+					// All these inputs should produce no valid secrets
+					if len(secrets) != 0 {
+						t.Errorf("Expected no secrets for invalid format '%s', but got %d secrets: %v",
+							test.input, len(secrets), secrets)
+					}
+				})
+			}
+		})
+	}
+}
