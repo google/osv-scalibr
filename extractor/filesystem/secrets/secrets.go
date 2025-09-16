@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
+	githubappservertoservertoken "github.com/google/osv-scalibr/veles/secrets/github/appservertoservertoken"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -76,6 +77,7 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
 		githubapprefreshtoken.NewDetector(),
+		githubappservertoservertoken.NewDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
