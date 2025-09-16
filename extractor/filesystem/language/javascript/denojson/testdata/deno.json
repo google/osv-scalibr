@@ -1,0 +1,15 @@
+{
+  "name": "my-deno-app",
+  "version": "0.1.0",
+  "tasks": {
+    "dev": "deno run -A main.ts",
+    "test": "deno test -A"
+  },
+  "imports": {
+    "chalk1": "npm:chalk@1",
+    "chalk2": "npm:chalk",
+    "@std1/path1": "jsr:@std1/path1@^1",
+    "@std2/path2": "jsr:@std2/path2"
+  }
+}
+

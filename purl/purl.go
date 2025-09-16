@@ -77,6 +77,10 @@ const (
 	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
+	// TypeDENO is a pkg:deno purl.
+	TypeDENO = "deno"
+	// TypeJSR is a pkg:jsr purl.
+	TypeJSR = "jsr"
 	// TypePacman is a pkg:pacman purl.
 	TypePacman = "pacman"
 	// TypeNuget is a pkg:nuget purl.
@@ -202,6 +206,7 @@ func validType(t string) bool {
 		TypeMaven:     true,
 		TypeNix:       true,
 		TypeNPM:       true,
+		TypeJSR:       true,
 		TypeNuget:     true,
 		TypeOCI:       true,
 		TypeOpkg:      true,

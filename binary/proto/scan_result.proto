@@ -94,6 +94,7 @@ message Package {
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
+    JavascriptDenoJSONMetadata deno_metadata = 56;
     APKPackageMetadata apk_metadata = 7;
     DPKGPackageMetadata dpkg_metadata = 8;
     RPMPackageMetadata rpm_metadata = 9;
@@ -306,6 +307,17 @@ message JavascriptPackageJSONMetadata {
   repeated string maintainers = 2;
   repeated string contributors = 3;
   bool from_npm_repository = 4;
+}
+
+// The additional data of a deno package.
+message JavascriptDenoJSONMetadata {
+  oneof cdn {
+    bool from_denoland_cdn = 1;
+    bool from_unpkg_cdn = 2;
+    bool from_esm_cdn = 3;
+  }
+
+  string url = 4 ;
 }
 
 // The additional data found in APK packages.

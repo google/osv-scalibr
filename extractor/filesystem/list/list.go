@@ -43,6 +43,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -115,6 +116,7 @@ var (
 	// Javascript source extractors.
 	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.NewDefault},
+		denojson.Name:        {denojson.NewDefault},
 		packagelockjson.Name: {packagelockjson.NewDefault},
 		pnpmlock.Name:        {pnpmlock.New},
 		yarnlock.Name:        {yarnlock.New},
@@ -123,6 +125,7 @@ var (
 	// Javascript artifact extractors.
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.NewDefault},
+		denojson.Name:    {denojson.NewDefault},
 	}
 	// Python source extractors.
 	PythonSource = InitMap{

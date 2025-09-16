@@ -20,6 +20,7 @@ import (
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	denometa "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
@@ -44,6 +45,9 @@ var (
 		},
 		reflect.TypeOf(&spb.Package_JavascriptMetadata{}): func(p *spb.Package) any {
 			return javascriptmeta.ToStruct(p.GetJavascriptMetadata())
+		},
+		reflect.TypeOf(&spb.Package_DenoMetadata{}): func(p *spb.Package) any {
+			return denometa.ToStruct(p.GetDenoMetadata())
 		},
 		reflect.TypeOf(&spb.Package_DepsjsonMetadata{}): func(p *spb.Package) any {
 			return depsjson.ToStruct(p.GetDepsjsonMetadata())
@@ -95,6 +99,7 @@ var (
 	_ = []MetadataProtoSetter{
 		(*wheelegg.PythonPackageMetadata)(nil),
 		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
+		(*denometa.JavascriptDenoJSONMetadata)(nil),
 		(*depsjson.Metadata)(nil),
 		(*netports.Metadata)(nil),
 		(*apkmeta.Metadata)(nil),
