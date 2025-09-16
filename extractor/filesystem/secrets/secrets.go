@@ -28,12 +28,15 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
 
@@ -59,6 +62,11 @@ var (
 		".txt":       true,
 		".xml":       true,
 		".yaml":      true,
+		".pem":       true,
+		".crt":       true,
+		".key":       true,
+		".der":       true,
+		".cer":       true,
 	}
 
 	defaultEngine *veles.DetectionEngine
@@ -76,6 +84,10 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
 		githubapprefreshtoken.NewDetector(),
+		azuretoken.NewDetector(),
+		openai.NewDetector(),
+		postmanapikey.NewAPIKeyDetector(),
+		postmanapikey.NewCollectionTokenDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))

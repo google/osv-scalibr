@@ -22,11 +22,14 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -111,6 +114,16 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	case githubapprefreshtoken.GithubAppRefreshToken:
 		return githubAppRefreshTokenToProto(t.Token), nil
+	case velesazuretoken.AzureAccessToken:
+		return azureAccessTokenToProto(t), nil
+	case velesazuretoken.AzureIdentityToken:
+		return azureIdentityTokenToProto(t), nil
+	case velesopenai.APIKey:
+		return openaiAPIKeyToProto(t.Key), nil
+	case velespostmanapikey.PostmanAPIKey:
+		return postmanAPIKeyToProto(t), nil
+	case velespostmanapikey.PostmanCollectionToken:
+		return postmanCollectionTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -210,6 +223,27 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+
+func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanApiKey{
+			PostmanApiKey: &spb.SecretData_PostmanAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func postmanCollectionTokenToProto(s velespostmanapikey.PostmanCollectionToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanCollectionAccessToken_{ // wrapper type has trailing underscore
+			PostmanCollectionAccessToken: &spb.SecretData_PostmanCollectionAccessToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
@@ -226,6 +260,36 @@ func githubAppRefreshTokenToProto(token string) *spb.SecretData {
 		Secret: &spb.SecretData_GithubAppRefreshToken_{
 			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
 				Token: token,
+			},
+		},
+	}
+}
+
+func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureAccessToken_{
+			AzureAccessToken: &spb.SecretData_AzureAccessToken{
+				Token: pk.Token,
+			},
+		},
+	}
+}
+
+func azureIdentityTokenToProto(pk velesazuretoken.AzureIdentityToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureIdentityToken_{
+			AzureIdentityToken: &spb.SecretData_AzureIdentityToken{
+				Token: pk.Token,
+			},
+		},
+	}
+}
+
+func openaiAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenaiApiKey{
+			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
 			},
 		},
 	}
@@ -327,6 +391,18 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_GithubAppRefreshToken_:
 		return githubapprefreshtoken.GithubAppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
+	case *spb.SecretData_AzureAccessToken_:
+		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
+	case *spb.SecretData_AzureIdentityToken_:
+		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
+	case *spb.SecretData_PostmanApiKey:
+		return velespostmanapikey.PostmanAPIKey{
+			Key: s.GetPostmanApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_PostmanCollectionAccessToken_:
+		return velespostmanapikey.PostmanCollectionToken{
+			Key: s.GetPostmanCollectionAccessToken().GetKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
