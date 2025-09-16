@@ -28,7 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 )
 
-const validatorTestPat = "glpat-f4eFH_HGFDSPljX2t2eWBm3h3bp1ORR5116d1w.01.120reoret"
+const validatorTestPat = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r0l8l6ir"
 
 type redirectTransport struct {
 	redirectTo     string

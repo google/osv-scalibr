@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	testKeyVersioned             = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7s"
+	testKeyVersioned             = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r0l8l6ir"
 	testKeyVersionedInvalidCrc20 = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7a"
 	testKeyRoutable              = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
 	testKeyLegacy                = "glpat-vzDNJu3Lvh4YCCekKsnx"
