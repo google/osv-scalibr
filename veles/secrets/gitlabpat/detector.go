@@ -40,8 +40,9 @@ var (
 
 var _ veles.Detector = NewDetector()
 
-// isValidCRC32 validates the CRC32 checksum of a GitLab PAT.
-// According to the documentation, the CRC32 is calculated on <prefix><base64-payload>.<base64-payload-length>
+// isValidCRC32 validates the CRC32 checksum of a GitLab Versioned Routable PAT.
+// According to the documentation, the CRC32 is calculated on
+// <prefix><base64-payload>.<token-version>.<base64-payload-length>
 // and encoded as base36 with leading zeros to make 7 characters.
 func isValidCRC32(prefix, payload, version, lengthHex, crcHex string) bool {
 	// Construct the string to calculate CRC32 on
@@ -154,30 +155,9 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	for _, m := range pruned {
 		if reRoutableVersioned.MatchString(m.token) {
 			submatch := reRoutableVersioned.FindStringSubmatch(m.token)
-			if len(submatch) > 0 {
-				var prefixIdx, payloadIdx, versionIdx, lengthIdx, crcIdx int
-				for i, name := range reRoutableVersioned.SubexpNames() {
-					if i == 0 {
-						continue
-					}
-					switch name {
-					case "prefix":
-						prefixIdx = i
-					case "payload":
-						payloadIdx = i
-					case "version":
-						versionIdx = i
-					case "length":
-						lengthIdx = i
-					case "crc":
-						crcIdx = i
-					}
-				}
-
-				if prefixIdx > 0 && payloadIdx > 0 && versionIdx > 0 && lengthIdx > 0 && crcIdx > 0 &&
-					isValidCRC32(submatch[prefixIdx], submatch[payloadIdx], submatch[versionIdx], submatch[lengthIdx], submatch[crcIdx]) {
-					finalMatches = append(finalMatches, m)
-				}
+			if len(submatch) == 6 &&
+				isValidCRC32(submatch[1], submatch[2], submatch[3], submatch[4], submatch[5]) {
+				finalMatches = append(finalMatches, m)
 			}
 		} else {
 			finalMatches = append(finalMatches, m)
