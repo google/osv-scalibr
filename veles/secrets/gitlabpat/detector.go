@@ -76,105 +76,118 @@ func (d *detector) MaxSecretLen() uint32 {
 func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	type match struct {
 		start int
-		end   int
 		token string
 	}
-	var found []match
-	// tokens with invalid CRC32 checksum
-	var blacklist []string
 
-	// Collect routable versioned matches using string matching
+	var versionedMatches, routableMatches, legacyMatches []match
+
+	// Collect routable versioned matches
 	contentStr := string(content)
-	for i, tokenMatch := range reRoutableVersioned.FindAllStringSubmatch(contentStr, -1) {
-		subexpNames := reRoutableVersioned.SubexpNames()
-		var prefixValue, payloadValue, lengthValue, crcValue string
-		for i, name := range subexpNames {
-			if i == 0 {
-				continue
-			}
-			switch name {
-			case "prefix":
-				prefixValue = tokenMatch[i]
-			case "payload":
-				payloadValue = tokenMatch[i]
-			case "length":
-				lengthValue = tokenMatch[i]
-			case "crc":
-				crcValue = tokenMatch[i]
-			}
-		}
-
-		token := tokenMatch[0]
-		matchIndices := reRoutableVersioned.FindAllStringSubmatchIndex(contentStr, -1)[i]
-		start, end := matchIndices[0], matchIndices[1]
-
-		if isValidCRC32(prefixValue, payloadValue, lengthValue, crcValue) {
-			found = append(found, match{
-				start: start,
-				end:   end,
-				token: token,
-			})
-		} else {
-			// this token can be still matched by legacy regex
-			// we need to blacklist it
-			blacklist = append(blacklist, token)
-		}
+	for _, tokenMatchIndex := range reRoutableVersioned.FindAllStringSubmatchIndex(contentStr, -1) {
+		versionedMatches = append(versionedMatches, match{
+			start: tokenMatchIndex[0],
+			token: contentStr[tokenMatchIndex[0]:tokenMatchIndex[1]],
+		})
 	}
 
 	// Collect routable matches
 	for _, loc := range reRoutable.FindAllIndex(content, -1) {
-		found = append(found, match{
+		routableMatches = append(routableMatches, match{
 			start: loc[0],
-			end:   loc[1],
 			token: string(content[loc[0]:loc[1]]),
 		})
 	}
 
 	// Collect legacy matches
 	for _, loc := range reLegacy.FindAllIndex(content, -1) {
-		found = append(found, match{
+		legacyMatches = append(legacyMatches, match{
 			start: loc[0],
-			end:   loc[1],
 			token: string(content[loc[0]:loc[1]]),
 		})
 	}
 
-	// Remove matches that are strictly contained within another match (e.g., legacy inside routable)
-	// here we check if 'm'(shorter string match) is inside 'n'
-	pruned := make([]match, 0, len(found))
-	for i, m := range found {
+	pruned := make([]match, 0, len(versionedMatches)+len(routableMatches)+len(legacyMatches))
+
+	// Always keep versioned tokens
+	pruned = append(pruned, versionedMatches...)
+
+	// Keep routable tokens only if they're not contained in any versioned token
+	for _, routable := range routableMatches {
 		contained := false
-		invalidCrc32 := false
-		// check if it is not contained in a longer match with invalid crc32 checksum
-		for _, bl := range blacklist {
-			if strings.Contains(bl, m.token) {
-				invalidCrc32 = true
-				break
-			}
-		}
-		if invalidCrc32 {
-			break
-		}
-		for j, n := range found {
-			if i == j {
-				continue
-			}
-			if len(n.token) > len(m.token) && strings.Contains(n.token, m.token) {
+		for _, versioned := range versionedMatches {
+			if strings.Contains(versioned.token, routable.token) {
 				contained = true
 				break
 			}
 		}
 		if !contained {
-			pruned = append(pruned, m)
+			pruned = append(pruned, routable)
+		}
+	}
+
+	// Keep legacy tokens only if they're not contained in any routable or versioned token
+	for _, legacy := range legacyMatches {
+		contained := false
+		// Check against versioned tokens
+		for _, versioned := range versionedMatches {
+			if strings.Contains(versioned.token, legacy.token) {
+				contained = true
+				break
+			}
+		}
+		// If not contained in versioned, check against routable
+		if !contained {
+			for _, routable := range routableMatches {
+				if strings.Contains(routable.token, legacy.token) {
+					contained = true
+					break
+				}
+			}
+		}
+		if !contained {
+			pruned = append(pruned, legacy)
+		}
+	}
+
+	// Filter out invalid versioned tokens based on CRC32 validation
+	finalMatches := make([]match, 0, len(pruned))
+	for _, m := range pruned {
+		if reRoutableVersioned.MatchString(m.token) {
+			submatch := reRoutableVersioned.FindStringSubmatch(m.token)
+			if len(submatch) > 0 {
+				var prefixIdx, payloadIdx, lengthIdx, crcIdx int
+				for i, name := range reRoutableVersioned.SubexpNames() {
+					if i == 0 {
+						continue
+					}
+					switch name {
+					case "prefix":
+						prefixIdx = i
+					case "payload":
+						payloadIdx = i
+					case "length":
+						lengthIdx = i
+					case "crc":
+						crcIdx = i
+					}
+				}
+
+				if prefixIdx > 0 && payloadIdx > 0 && lengthIdx > 0 && crcIdx > 0 &&
+					isValidCRC32(submatch[prefixIdx], submatch[payloadIdx], submatch[lengthIdx], submatch[crcIdx]) {
+					finalMatches = append(finalMatches, m)
+				}
+			}
+		} else {
+			finalMatches = append(finalMatches, m)
 		}
 	}
 
 	// Sort by start offset to preserve document order
-	sort.Slice(pruned, func(i, j int) bool { return pruned[i].start < pruned[j].start })
+	sort.Slice(finalMatches, func(i, j int) bool { return finalMatches[i].start < finalMatches[j].start })
 
-	secrets := make([]veles.Secret, 0, len(pruned))
-	offsets := make([]int, 0, len(pruned))
-	for _, m := range pruned {
+	secrets := make([]veles.Secret, 0, len(finalMatches))
+	offsets := make([]int, 0, len(finalMatches))
+	for _, m := range finalMatches {
 		secrets = append(secrets, GitlabPAT{Pat: m.token})
 		offsets = append(offsets, m.start)
 	}
