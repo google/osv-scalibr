@@ -27,7 +27,7 @@ import (
 
 const (
 	testKeyVersioned             = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r0l8l6ir"
-	testKeyVersionedInvalidCrc20 = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7a"
+	testKeyVersionedInvalidCrc32 = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r03gxo7a"
 	testKeyRoutable              = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
 	testKeyLegacy                = "glpat-vzDNJu3Lvh4YCCekKsnx"
 )
@@ -155,7 +155,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		},
 		{
 			name:  "prefix missing dash should not match",
-			input: testKeyVersionedInvalidCrc20,
+			input: testKeyVersionedInvalidCrc32,
 		},
 	}
 	for _, tc := range cases {
