@@ -102,6 +102,30 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Package.resolved                          | `swift/packageresolved`              |
 | Nim        | Nimble packages                           | `nim/nimble`                         |
 
+### Secrets
+
+| Type                          | Extractor Plugin                 |
+|-------------------------------|----------------------------------|
+| Anthropic API key             | `secrets/anthropicapikey`        |
+| Azure Token                   | `secrets/azuretoken`             |
+| DigitalOcean API key          | `secrets/digitaloceanapikey`     |
+| Docker hub PAT                | `secrets/dockerhubpat`           |
+| GCP API key                   | `secrets/gcpapikey`              |
+| GCP Express Mode API key      | `secrets/gcpexpressmode`         |
+| GCP service account key       | `secrets/gcpsak`                 |
+| Gitlab PAT                    | `secrets/gitlabpat`              |
+| Grok xAI API key              | `secrets/grokxaiapikey`          |
+| Grok xAI Management key       | `secrets/grokxaimanagementkey`   |
+| Hashicorp Vault token         | `secrets/hashicorpvaulttoken`    |
+| Hashicorp Vault AppRole token | `secrets/hashicorpvaultapprole`  |
+| OpenAI API key                | `secrets/openai`                 |
+| Perplexity API key            | `secrets/perplexityapikey`       |
+| Postman API key               | `secrets/postmanapikey`          |
+| Postman Collection token      | `secrets/postmancollectiontoken` |
+| PEM/OpenSSH Private key       | `secrets/privatekey`             |
+| RubyGems API key              | `secrets/rubygemsapikey`         |
+| Tink keyset                   | `secrets/tinkkeyset`             |
+
 ### Container inventory
 
 | Type                        | Extractor Plugin                                                                   |
@@ -151,7 +175,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`   |
 | Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`   |
 | Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`  |
-| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
+pp| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
 | Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
 | Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
 
