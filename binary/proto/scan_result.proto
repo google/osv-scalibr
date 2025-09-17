@@ -650,6 +650,7 @@ message SecretData {
     OpenAIAPIKey openai_api_key = 10;
     PostmanAPIKey postman_api_key = 11;
     PostmanCollectionAccessToken postman_collection_access_token = 12;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 13;
   }
 
   message GCPSAK {
@@ -692,6 +693,10 @@ message SecretData {
   }
 
   message GrokXAIManagementAPIKey {
+    string key = 1;
+  }
+
+  message AzureStorageAccountAccessKey{
     string key = 1;
   }
 

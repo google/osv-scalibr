@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
@@ -84,6 +85,7 @@ func init() { //nolint:gochecknoinits
 		openai.NewDetector(),
 		postmanapikey.NewAPIKeyDetector(),
 		postmanapikey.NewCollectionTokenDetector(),
+		azurestorageaccountaccesskey.NewDetector(),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
