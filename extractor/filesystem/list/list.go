@@ -106,6 +106,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 )
 
 // InitFn is the extractor initializer function.
@@ -270,6 +271,9 @@ var (
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
+		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
+		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
+		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
 	})
 
 	// Misc artifact extractors.
