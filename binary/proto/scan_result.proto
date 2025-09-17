@@ -654,6 +654,8 @@ message SecretData {
     AzureIdentityToken azure_identity_token = 14;
     TinkKeyset tink_keyset = 15;
     GitlabPat gitlab_pat = 16;
+    HashiCorpVaultToken hashicorp_vault_token = 17;
+    HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
   }
 
   message GCPSAK {
@@ -739,6 +741,16 @@ message SecretData {
 
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset
+  }
+
+  message HashiCorpVaultToken {
+    string token = 1;
+  }
+
+  message HashiCorpVaultAppRoleCredentials {
+    string role_id = 1;
+    string secret_id = 2;
+    string id = 3;  // General ID field for uncertain UUID types when context is unclear
   }
 }
 
