@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+package digitaloceanapikey
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.3"
+// DigitaloceanAPIToken is a Veles Secret that holds relevant information for a
+// DigitalOcean API key (prefix `dop_v1_`).
+// DigitaloceanAPIToken represents an API key used to authenticate requests
+type DigitaloceanAPIToken struct {
+	Key string
+}

@@ -19,7 +19,6 @@ package etcpasswdpermissions_test
 import (
 	"errors"
 	"io/fs"
-	"time"
 )
 
 func (fakeFS) Open(name string) (fs.File, error) { return nil, errors.New("unsupported system") }
@@ -29,13 +28,3 @@ func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
 func (fakeFS) Stat(name string) (fs.FileInfo, error) {
 	return nil, errors.New("not implemented")
 }
-func (fakeFile) Stat() (fs.FileInfo, error) { return nil, errors.New("unsupported system") }
-func (fakeFile) Read([]byte) (int, error)   { return 0, errors.New("unsupported system") }
-func (fakeFile) Close() error               { return nil }
-
-func (fakeFileInfo) Name() string       { return "unsupported" }
-func (fakeFileInfo) Size() int64        { return 0 }
-func (fakeFileInfo) Mode() fs.FileMode  { return 0 }
-func (fakeFileInfo) ModTime() time.Time { return time.Now() }
-func (fakeFileInfo) IsDir() bool        { return false }
-func (fakeFileInfo) Sys() any           { return nil }

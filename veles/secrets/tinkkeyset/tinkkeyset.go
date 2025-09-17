@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package tinkkeyset package implements the logic to detect [Tink keyset](https://developers.google.com/tink/design/keysets) stored as plaintext
+package tinkkeyset
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.3"
+// TinkKeySet contains information of a [Tink keyset](https://developers.google.com/tink/design/keysets)
+type TinkKeySet struct {
+	// Content is a JSON formatted Tink keyset.
+	Content string
+}

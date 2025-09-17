@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package postmanapikey contains detectors and validators for
+// Postman API credentials.
+package postmanapikey
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.3"
+// PostmanAPIKey is a Veles Secret that holds a standard Postman API key.
+// These keys allow programmatic access to the Postman API.
+type PostmanAPIKey struct {
+	Key string
+}
+
+// PostmanCollectionToken is a Veles Secret that holds a Postman Collection
+// access token. These tokens are used to access shared Postman collections.
+// Keeping this distinct from PostmanAPIKey makes reporting clearer.
+type PostmanCollectionToken struct {
+	Key string
+}

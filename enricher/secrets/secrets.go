@@ -25,10 +25,14 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 )
 
 const (
@@ -52,9 +56,14 @@ func New() enricher.Enricher {
 		veles.WithValidator(anthropicapikey.NewModelValidator()),
 		veles.WithValidator(gcpsak.NewValidator()),
 		veles.WithValidator(dockerhubpat.NewValidator()),
+		veles.WithValidator(digitaloceanapikey.NewValidator()),
 		veles.WithValidator(perplexityapikey.NewValidator()),
 		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
 		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
+		veles.WithValidator(gitlabpat.NewValidator()),
+		veles.WithValidator(openai.NewProjectValidator()),
+		veles.WithValidator(postmanapikey.NewAPIValidator()),
+		veles.WithValidator(postmanapikey.NewCollectionValidator()),
 	)
 	return &Enricher{engine: engine}
 }

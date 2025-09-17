@@ -22,13 +22,19 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -95,6 +101,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpsakToProto(t), nil
 	case dockerhubpat.DockerHubPAT:
 		return dockerHubPATToProto(t), nil
+	case velesdigitalocean.DigitaloceanAPIToken:
+		return digitaloceanAPIKeyToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -105,6 +113,20 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case gitlabpat.GitlabPAT:
+		return gitalbPatKeyToProto(t), nil
+	case velesazuretoken.AzureAccessToken:
+		return azureAccessTokenToProto(t), nil
+	case velesazuretoken.AzureIdentityToken:
+		return azureIdentityTokenToProto(t), nil
+	case tinkkeyset.TinkKeySet:
+		return tinkKeysetToProto(t), nil
+	case velesopenai.APIKey:
+		return openaiAPIKeyToProto(t.Key), nil
+	case velespostmanapikey.PostmanAPIKey:
+		return postmanAPIKeyToProto(t), nil
+	case velespostmanapikey.PostmanCollectionToken:
+		return postmanCollectionTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -116,6 +138,16 @@ func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
 			DockerHubPat: &spb.SecretData_DockerHubPat{
 				Pat:      s.Pat,
 				Username: s.Username,
+			},
+		},
+	}
+}
+
+func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Digitalocean{
+			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
+				Key: s.Key,
 			},
 		},
 	}
@@ -194,12 +226,82 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabPat_{
+			GitlabPat: &spb.SecretData_GitlabPat{
+				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanApiKey{
+			PostmanApiKey: &spb.SecretData_PostmanAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func postmanCollectionTokenToProto(s velespostmanapikey.PostmanCollectionToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PostmanCollectionAccessToken_{ // wrapper type has trailing underscore
+			PostmanCollectionAccessToken: &spb.SecretData_PostmanCollectionAccessToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PrivateKey_{
 			PrivateKey: &spb.SecretData_PrivateKey{
 				Block: pk.Block,
 				Der:   pk.Der,
+			},
+		},
+	}
+}
+
+func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureAccessToken_{
+			AzureAccessToken: &spb.SecretData_AzureAccessToken{
+				Token: pk.Token,
+			},
+		},
+	}
+}
+
+func azureIdentityTokenToProto(pk velesazuretoken.AzureIdentityToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureIdentityToken_{
+			AzureIdentityToken: &spb.SecretData_AzureIdentityToken{
+				Token: pk.Token,
+			},
+		},
+	}
+}
+
+func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_TinkKeyset_{
+			TinkKeyset: &spb.SecretData_TinkKeyset{
+				Content: t.Content,
+			},
+		},
+	}
+}
+
+func openaiAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenaiApiKey{
+			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
 			},
 		},
 	}
@@ -287,6 +389,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
+	case *spb.SecretData_GitlabPat_:
+		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_Digitalocean:
+		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -297,8 +403,28 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_AzureAccessToken_:
+		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
+	case *spb.SecretData_AzureIdentityToken_:
+		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
+	case *spb.SecretData_TinkKeyset_:
+		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
+	case *spb.SecretData_PostmanApiKey:
+		return velespostmanapikey.PostmanAPIKey{
+			Key: s.GetPostmanApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_PostmanCollectionAccessToken_:
+		return velespostmanapikey.PostmanCollectionToken{
+			Key: s.GetPostmanCollectionAccessToken().GetKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
+	}
+}
+
+func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
+	return velesdigitalocean.DigitaloceanAPIToken{
+		Key: kPB.GetKey(),
 	}
 }
 
@@ -306,6 +432,11 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 	return dockerhubpat.DockerHubPAT{
 		Pat:      kPB.GetPat(),
 		Username: kPB.GetUsername(),
+	}
+}
+func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
+	return gitlabpat.GitlabPAT{
+		Pat: kPB.GetPat(),
 	}
 }
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {

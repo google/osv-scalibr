@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+package gitlabpat
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.3"
+// GitlabPAT is a Veles Secret that holds relevant information for a
+// Gitlab Personal Access Tokens (prefix `glpat-`).
+// GitlabPAT represents PAT and used to authenticate requests
+type GitlabPAT struct {
+	Pat string
+}

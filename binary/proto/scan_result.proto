@@ -646,6 +646,14 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
+    DigitalOceanAPIToken digitalocean = 9;
+    OpenAIAPIKey openai_api_key = 10;
+    PostmanAPIKey postman_api_key = 11;
+    PostmanCollectionAccessToken postman_collection_access_token = 12;
+    AzureAccessToken azure_access_token = 13;
+    AzureIdentityToken azure_identity_token = 14;
+    TinkKeyset tink_keyset = 15;
+    GitlabPat gitlab_pat = 16;
   }
 
   message GCPSAK {
@@ -696,9 +704,41 @@ message SecretData {
     bytes der = 2;     // DER-encoded key material
   }
 
+  message AzureAccessToken {
+    string token = 1;
+  }
+
+  message AzureIdentityToken {
+    string token = 1;
+  }
+
+  message OpenAIAPIKey {
+    string key = 1;
+  }
+
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message GitlabPat {
+    string pat = 1;
+  }
+
+  message PostmanAPIKey {
+    string key = 1;
+  }
+
+  message PostmanCollectionAccessToken {
+    string key = 1;
+  }
+
+  message DigitalOceanAPIToken {
+    string key = 1;
+  }
+
+  message TinkKeyset {
+    string content = 1;  // JSON encoded Tink keyset
   }
 }
 
