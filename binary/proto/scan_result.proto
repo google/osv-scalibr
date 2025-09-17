@@ -656,6 +656,7 @@ message SecretData {
     GitlabPat gitlab_pat = 16;
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
+    GCPAPIKey gcp_api_key = 19;
   }
 
   message GCPSAK {
@@ -751,6 +752,10 @@ message SecretData {
     string role_id = 1;
     string secret_id = 2;
     string id = 3;  // General ID field for uncertain UUID types when context is unclear
+  }
+
+  message GCPAPIKey {
+    string key = 1;
   }
 }
 
