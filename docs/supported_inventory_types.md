@@ -156,6 +156,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
 
+### EmbeddedFS
+
+| Type | Details                                           | Extractor Plugin |
+|------|---------------------------------------------------|------------------|
+| vdi  | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi` |
+
 ## Detectors
 
 | Description                                                          | Plugin Name                              |
