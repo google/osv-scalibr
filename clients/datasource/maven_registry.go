@@ -309,7 +309,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	if isArtifactRegistry {
 		// For Artifact Registry, use google.DefaultClient for ADC.
 		if m.googleClient == nil {
-			return errors.New("Google client for Artifact Registry not available")
+			return errors.New("google client for Artifact Registry not available")
 		}
 		requestURL.Scheme = "https"
 		httpClient = m.googleClient
