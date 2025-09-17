@@ -73,7 +73,7 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -101,7 +101,7 @@ func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*M
 		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
 	}
 	if registry.Parsed.Scheme == "artifactregistry" {
-		if err := client.createGoogleClient(); err != nil {
+		if err := client.createGoogleClient(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -127,9 +127,9 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 }
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
-func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
+func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry MavenRegistry) error {
 	if registry.ID == m.defaultRegistry.ID {
-		return m.updateDefaultRegistry(registry)
+		return m.updateDefaultRegistry(ctx, registry)
 	}
 
 	for _, reg := range m.registries {
@@ -146,7 +146,7 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 	if registry.Parsed.Scheme == "artifactregistry" {
-		if err := m.createGoogleClient(); err != nil {
+		if err := m.createGoogleClient(ctx); err != nil {
 			return err
 		}
 	}
@@ -154,7 +154,7 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 	return nil
 }
 
-func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) error {
+func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, registry MavenRegistry) error {
 	u, err := url.Parse(registry.URL)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) e
 	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == "artifactregistry" {
-		if err := m.createGoogleClient(); err != nil {
+		if err := m.createGoogleClient(ctx); err != nil {
 			return err
 		}
 	}
@@ -170,13 +170,13 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) e
 }
 
 // createGoogleClient creates a client for authenticating with Google services.
-func (m *MavenRegistryAPIClient) createGoogleClient() error {
+func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) error {
 	if m.googleClient != nil {
 		return nil
 	}
 	// This is the scope that artifact-registry-go-tools uses.
 	// https://github.com/GoogleCloudPlatform/artifact-registry-go-tools/blob/main/pkg/auth/auth.go
-	client, err := google.DefaultClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+	client, err := google.DefaultClient(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
 		return fmt.Errorf("failed to create Google default client, Artifact Registry access will be unavailable: %w", err)
 	}

@@ -191,7 +191,7 @@ type readWriter struct {
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
 func GetReadWriter(remote, local string) (manifest.ReadWriter, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
+	client, err := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 
 	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
 	for _, repo := range project.Repositories {
-		if err := r.MavenRegistryAPIClient.AddRegistry(datasource.MavenRegistry{
+		if err := r.MavenRegistryAPIClient.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
