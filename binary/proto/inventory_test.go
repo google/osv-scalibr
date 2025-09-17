@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -49,6 +50,7 @@ func TestInventoryToProto(t *testing.T) {
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
 					purlDPKGAnnotationPackage,
+					pkgWithLayerStruct,
 				},
 				GenericFindings: []*inventory.GenericFinding{
 					genericFindingStruct1,
@@ -56,16 +58,23 @@ func TestInventoryToProto(t *testing.T) {
 				Secrets: []*inventory.Secret{
 					secretGCPSAKStruct1,
 				},
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					cimStructForTest,
+				},
 			},
 			want: &pb.Inventory{
 				Packages: []*pb.Package{
 					purlDPKGAnnotationPackageProto,
+					pkgWithLayerProto,
 				},
 				GenericFindings: []*pb.GenericFinding{
 					genericFindingProto1,
 				},
 				Secrets: []*pb.Secret{
 					secretGCPSAKProto1,
+				},
+				ContainerImageMetadata: []*pb.ContainerImageMetadata{
+					cimProtoForTest,
 				},
 			},
 		},
@@ -77,13 +86,13 @@ func TestInventoryToProto(t *testing.T) {
 			if !errors.Is(err, tc.wantErr) {
 				t.Errorf("InventoryToProto(%v) returned error %v, want error %v", tc.inv, err, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.want, got, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 
 			// Test the reverse conversion for completeness.
 			gotInv := proto.InventoryToStruct(got)
-			if diff := cmp.Diff(tc.inv, gotInv); diff != "" {
+			if diff := cmp.Diff(tc.inv, gotInv, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
 				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})
@@ -111,6 +120,7 @@ func TestInventoryToStruct(t *testing.T) {
 			inv: &pb.Inventory{
 				Packages: []*pb.Package{
 					purlDPKGAnnotationPackageProto,
+					pkgWithLayerProto,
 				},
 				GenericFindings: []*pb.GenericFinding{
 					genericFindingProto1,
@@ -118,16 +128,23 @@ func TestInventoryToStruct(t *testing.T) {
 				Secrets: []*pb.Secret{
 					secretGCPSAKProto1,
 				},
+				ContainerImageMetadata: []*pb.ContainerImageMetadata{
+					cimProtoForTest,
+				},
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
 					purlDPKGAnnotationPackage,
+					pkgWithLayerStruct,
 				},
 				GenericFindings: []*inventory.GenericFinding{
 					genericFindingStruct1,
 				},
 				Secrets: []*inventory.Secret{
 					secretGCPSAKStruct1,
+				},
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					cimStructForTest,
 				},
 			},
 		},
@@ -136,7 +153,7 @@ func TestInventoryToStruct(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := proto.InventoryToStruct(tc.inv)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
 				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 
@@ -145,7 +162,7 @@ func TestInventoryToStruct(t *testing.T) {
 			if err != nil {
 				t.Fatalf("InventoryToProto(%v) returned error %v, want nil", got, err)
 			}
-			if diff := cmp.Diff(tc.inv, gotPB, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.inv, gotPB, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
 				t.Fatalf("InventoryToProto(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})

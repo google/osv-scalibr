@@ -103,70 +103,34 @@ func TestRequiredPlugins(t *testing.T) {
 }
 
 func TestEnrich(t *testing.T) {
-	// Test packages.
-	pkg1 := &extractor.Package{
-		Name:    "curl1",
-		Version: "1.2.3",
+	// Test layer metadata.
+	// lm1: in base image alpine.
+	// lm2: not in base image.
+	// lm3: in base image debian.
+	lm1ChainID := digest.FromString("alpine")
+	lm1 := &extractor.LayerMetadata{
+		ChainID: lm1ChainID,
 	}
-	pkg2 := &extractor.Package{
-		Name:    "curl2",
-		Version: "2.3.4",
+	lm1Enriched := &extractor.LayerMetadata{
+		ChainID:        lm1ChainID,
+		BaseImageIndex: 1,
 	}
-	pkg3 := &extractor.Package{
-		Name:    "curl3",
-		Version: "3.4.5",
+	lm2ChainID := digest.FromString("notbase")
+	lm2 := &extractor.LayerMetadata{
+		ChainID: lm2ChainID,
 	}
-
-	// Test layer details.
-	// ld1: in base image alpine.
-	// ld2: not in base image.
-	// ld3: in base image debian.
-	ld1 := &extractor.LayerDetails{
-		ChainID: "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+	lm3ChainID := digest.FromString("debian")
+	lm3 := &extractor.LayerMetadata{
+		ChainID: lm3ChainID,
 	}
-	ld1base := &extractor.LayerDetails{
-		ChainID:     "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
-		InBaseImage: true,
-	}
-	ld2 := &extractor.LayerDetails{
-		ChainID: "sha256:d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
-	}
-	ld3 := &extractor.LayerDetails{
-		ChainID: "sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
-	}
-	ld3base := &extractor.LayerDetails{
-		ChainID:     "sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
-		InBaseImage: true,
-	}
-	ldWrong := &extractor.LayerDetails{
-		ChainID: "sha123:abcd",
+	lm3Enriched := &extractor.LayerMetadata{
+		ChainID:        lm3ChainID,
+		BaseImageIndex: 2,
 	}
 	clientErr := errors.New("client error")
-	ldErr := &extractor.LayerDetails{
-		ChainID: "sha256:53e60bc18399d11a8953c224619cd6147f2f8ef1233acf2818575ba1a17f7ca2",
-	}
-	withLayerDetails := func(pkg *extractor.Package, ld *extractor.LayerDetails) *extractor.Package {
-		pkg = deepcopy.Copy(pkg).(*extractor.Package)
-		pkg.LayerDetails = ld
-		return pkg
-	}
-
-	// Additional scan result types to ensure they are not modified.
-	finding1 := &inventory.GenericFinding{
-		Adv: &inventory.GenericFindingAdvisory{
-			ID: &inventory.AdvisoryID{
-				Publisher: "CVE",
-				Reference: "CVE-2024-1234",
-			},
-		},
-	}
-	finding2 := &inventory.GenericFinding{
-		Adv: &inventory.GenericFindingAdvisory{
-			ID: &inventory.AdvisoryID{
-				Publisher: "CVE",
-				Reference: "CVE-2024-5678",
-			},
-		},
+	lmErrChainID := digest.FromString("clienterror")
+	lmErr := &extractor.LayerMetadata{
+		ChainID: lmErrChainID,
 	}
 
 	tests := []struct {
@@ -177,7 +141,7 @@ func TestEnrich(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "no packages to enrich",
+			name: "no image metadata to enrich",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{}),
 			},
@@ -185,164 +149,141 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{},
 		},
 		{
-			name: "packages with no layer details",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{}),
-			},
-			inv:  &inventory.Inventory{Packages: []*extractor.Package{pkg1, pkg2, pkg3}},
-			want: &inventory.Inventory{Packages: []*extractor.Package{pkg1, pkg2, pkg3}},
-		},
-		{
-			name: "packages with layer details",
+			name: "enrich layers",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
-						req:  &baseimage.Request{ChainID: ld1.ChainID},
+						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
 						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
 					},
 					{
-						req: &baseimage.Request{ChainID: ld2.ChainID},
+						req: &baseimage.Request{ChainID: lm2.ChainID.String()},
 					},
 					{
-						req:  &baseimage.Request{ChainID: ld3.ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
-					},
-				}}),
-			},
-			inv: &inventory.Inventory{Packages: []*extractor.Package{
-				withLayerDetails(pkg1, ld1),
-				withLayerDetails(pkg2, ld2),
-				withLayerDetails(pkg3, ld3),
-			}},
-			want: &inventory.Inventory{Packages: []*extractor.Package{
-				withLayerDetails(pkg1, ld1base),
-				withLayerDetails(pkg2, ld2),
-				withLayerDetails(pkg3, ld3base),
-			}},
-		},
-		{
-			name: "packages with layer details and other inventory",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req:  &baseimage.Request{ChainID: ld1.ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-					{
-						req: &baseimage.Request{ChainID: ld2.ChainID},
-					},
-					{
-						req:  &baseimage.Request{ChainID: ld3.ChainID},
+						req:  &baseimage.Request{ChainID: lm3.ChainID.String()},
 						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
 					},
 				}}),
 			},
 			inv: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1),
-					withLayerDetails(pkg2, ld2),
-					withLayerDetails(pkg3, ld3),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lm3}},
 				},
-				GenericFindings: []*inventory.GenericFinding{finding1, finding2},
 			},
 			want: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1base),
-					withLayerDetails(pkg2, ld2),
-					withLayerDetails(pkg3, ld3base),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2, lm3Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							[]*extractor.BaseImageDetails{},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    lm1ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "debian",
+									Registry:   "docker.io",
+									ChainID:    lm3ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
 				},
-				GenericFindings: []*inventory.GenericFinding{finding1, finding2},
 			},
 		},
 		{
-			name: "packages with same layer, should use cache",
+			name: "same layer chainID in different images, should use cache",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
-						req:  &baseimage.Request{ChainID: ld1.ChainID},
+						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
 						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-					{
-						req:  &baseimage.Request{ChainID: ld3.ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
 					},
 				}}),
 			},
 			inv: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1),
-					withLayerDetails(pkg2, ld1),
-					withLayerDetails(pkg3, ld3),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{LayerMetadata: []*extractor.LayerMetadata{lm1}},
+					{LayerMetadata: []*extractor.LayerMetadata{lm1}},
 				},
 			},
 			want: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1base),
-					withLayerDetails(pkg2, ld1base),
-					withLayerDetails(pkg3, ld3base),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							[]*extractor.BaseImageDetails{},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    lm1ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							[]*extractor.BaseImageDetails{},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    lm1ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		{
-			name: "packages with some invalid layer details",
+			name: "client error",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
-						req:  &baseimage.Request{ChainID: ld1.ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-					// No call for ld2 because it's malformed.
-					{
-						req:  &baseimage.Request{ChainID: ld3.ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
-					},
-				}}),
-			},
-			inv: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1),
-					withLayerDetails(pkg2, ldWrong),
-					withLayerDetails(pkg3, ld3),
-				},
-			},
-			want: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1base),
-					withLayerDetails(pkg2, ldWrong),
-					withLayerDetails(pkg3, ld3base),
-				},
-			},
-			wantErr: digest.ErrDigestUnsupported,
-		},
-		{
-			name: "packages with layer details, and client error",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req:  &baseimage.Request{ChainID: ld1.ChainID},
+						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
 						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
 					},
 					{
-						req: &baseimage.Request{ChainID: ld2.ChainID},
+						req: &baseimage.Request{ChainID: lm2.ChainID.String()},
 					},
 					{
-						req: &baseimage.Request{ChainID: ldErr.ChainID},
+						req: &baseimage.Request{ChainID: lmErr.ChainID.String()},
 						err: clientErr,
 					},
 				}}),
 			},
 			inv: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1),
-					withLayerDetails(pkg2, ld2),
-					withLayerDetails(pkg3, ldErr),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr}},
 				},
 			},
 			want: &inventory.Inventory{
-				Packages: []*extractor.Package{
-					withLayerDetails(pkg1, ld1base),
-					withLayerDetails(pkg2, ld2),
-					withLayerDetails(pkg3, ldErr),
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2, lmErr},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							[]*extractor.BaseImageDetails{},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    lm1ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
 				},
 			},
 			wantErr: clientErr,
@@ -358,6 +299,7 @@ func TestEnrich(t *testing.T) {
 			}
 			opts := []cmp.Option{
 				protocmp.Transform(),
+				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
 			}
 			if diff := cmp.Diff(tc.want, inv, opts...); diff != "" {
 				t.Errorf("Enrich(%v) returned diff (-want +got):\n%s\n", tc.inv, diff)

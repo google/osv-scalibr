@@ -35,17 +35,6 @@ type SourceCodeIdentifier struct {
 	Commit string
 }
 
-// LayerDetails stores details about the layer a package was found in.
-type LayerDetails struct {
-	Index  int
-	DiffID string
-	// The layer chain ID (sha256 hash) of the layer in the container image.
-	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
-	ChainID     string
-	Command     string
-	InBaseImage bool
-}
-
 // Package is an instance of a software package or library found by the extractor.
 // TODO(b/400910349): Currently package is also used to store non-package data
 // like open ports. Move these into their own dedicated types.
@@ -74,7 +63,7 @@ type Package struct {
 	// Signals to indicate that specific vulnerabilities are not applicable to this package.
 	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
-	LayerDetails *LayerDetails
+	LayerMetadata *LayerMetadata
 	// The additional data found in the package.
 	Metadata any
 	// Licenses information of this package
