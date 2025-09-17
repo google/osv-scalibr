@@ -47,6 +47,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
@@ -153,6 +154,8 @@ var (
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
 	// Nim source extractors.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
+	// Lua source extractors.
+	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// Elixir source extractors.
 	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
 	// Haskell source extractors.
@@ -262,6 +265,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		NimSource,
+		LuaSource,
 		Secrets,
 		MiscSource,
 	)
@@ -306,6 +310,7 @@ var (
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
 		"erlang":     vals(ErlangSource),
+		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
