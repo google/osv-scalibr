@@ -82,7 +82,7 @@ func (d *appRoleDetector) Detect(data []byte) ([]veles.Secret, []int) {
 	processedUUIDs := make(map[string]bool)
 
 	// Group matches by proximity to find potential pairs
-	credentialPairs := d.groupCredentialsByProximity(data, contextMatches, processedUUIDs)
+	credentialPairs := groupCredentialsByProximity(data, contextMatches, processedUUIDs)
 
 	for _, pair := range credentialPairs {
 		secrets = append(secrets, pair.credentials)
@@ -111,7 +111,7 @@ type credentialPair struct {
 }
 
 // groupCredentialsByProximity analyzes context matches to group role_id/secret_id pairs.
-func (d *appRoleDetector) groupCredentialsByProximity(data []byte, matches [][]int, processedUUIDs map[string]bool) []credentialPair {
+func groupCredentialsByProximity(data []byte, matches [][]int, processedUUIDs map[string]bool) []credentialPair {
 	var pairs []credentialPair
 
 	// Convert matches to a more workable format
