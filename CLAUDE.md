@@ -373,9 +373,7 @@ Implements comprehensive npm package detection including:
 
 Fixes #<issue-number>
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+🤖 Generated with [Claude Code](https://claude.ai/code)"
 
 # Push feature branch (NEVER push to main)
 git push -u origin feat/descriptive-feature-name
