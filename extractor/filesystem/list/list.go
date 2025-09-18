@@ -47,6 +47,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
@@ -85,7 +86,24 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 )
 
 // InitFn is the extractor initializer function.
@@ -153,6 +171,8 @@ var (
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
 	// Nim source extractors.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
+	// Lua source extractors.
+	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// Elixir source extractors.
 	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
 	// Haskell source extractors.
@@ -226,9 +246,27 @@ var (
 	}
 
 	// Credential extractors.
-	Secrets = InitMap{
-		secrets.Name: {secrets.New},
-	}
+	Secrets = initMapFromVelesPlugins([]velesPlugin{
+		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
+		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
+		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
+		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
+		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
+		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
+		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
+		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},
+		{grokxaiapikey.NewAPIKeyDetector(), "secrets/grokxaiapikey", 0},
+		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
+		{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
+		{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
+		{openai.NewDetector(), "secrets/openai", 0},
+		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
+		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
+		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
+		{privatekey.NewDetector(), "secrets/privatekey", 0},
+		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
+		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
+	})
 
 	// Misc artifact extractors.
 	Misc = InitMap{
@@ -262,6 +300,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		NimSource,
+		LuaSource,
 		Secrets,
 		MiscSource,
 	)
@@ -306,6 +345,7 @@ var (
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
 		"erlang":     vals(ErlangSource),
+		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
@@ -357,4 +397,18 @@ func ExtractorsFromName(name string) ([]filesystem.Extractor, error) {
 		return result, nil
 	}
 	return nil, fmt.Errorf("unknown extractor %q", name)
+}
+
+type velesPlugin struct {
+	detector veles.Detector
+	name     string
+	version  int
+}
+
+func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
+	result := InitMap{}
+	for _, p := range plugins {
+		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
+	}
+	return result
 }

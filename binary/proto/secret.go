@@ -24,9 +24,11 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -127,6 +129,12 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
 		return postmanCollectionTokenToProto(t), nil
+	case veleshashicorpvault.Token:
+		return hashicorpVaultTokenToProto(t), nil
+	case veleshashicorpvault.AppRoleCredentials:
+		return hashicorpVaultAppRoleCredentialsToProto(t), nil
+	case velesgcpapikey.GCPAPIKey:
+		return gcpAPIKeyToProto(t.Key), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -173,6 +181,16 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func gcpAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpApiKey{
+			GcpApiKey: &spb.SecretData_GCPAPIKey{
+				Key: key,
+			},
 		},
 	}
 }
@@ -307,6 +325,28 @@ func openaiAPIKeyToProto(key string) *spb.SecretData {
 	}
 }
 
+func hashicorpVaultTokenToProto(s veleshashicorpvault.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpVaultToken{
+			HashicorpVaultToken: &spb.SecretData_HashiCorpVaultToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpVaultAppRoleCredentials{
+			HashicorpVaultAppRoleCredentials: &spb.SecretData_HashiCorpVaultAppRoleCredentials{
+				RoleId:   s.RoleID,
+				SecretId: s.SecretID,
+				Id:       s.ID,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -417,6 +457,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velespostmanapikey.PostmanCollectionToken{
 			Key: s.GetPostmanCollectionAccessToken().GetKey(),
 		}, nil
+	case *spb.SecretData_HashicorpVaultToken:
+		return hashicorpVaultTokenToStruct(s.GetHashicorpVaultToken()), nil
+	case *spb.SecretData_HashicorpVaultAppRoleCredentials:
+		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
+	case *spb.SecretData_GcpApiKey:
+		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -502,4 +548,18 @@ func secretLocationToStruct(location *spb.Location) string {
 		return location.GetFilepath().GetPath()
 	}
 	return ""
+}
+
+func hashicorpVaultTokenToStruct(tokenPB *spb.SecretData_HashiCorpVaultToken) veleshashicorpvault.Token {
+	return veleshashicorpvault.Token{
+		Token: tokenPB.GetToken(),
+	}
+}
+
+func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpVaultAppRoleCredentials) veleshashicorpvault.AppRoleCredentials {
+	return veleshashicorpvault.AppRoleCredentials{
+		RoleID:   credsPB.GetRoleId(),
+		SecretID: credsPB.GetSecretId(),
+		ID:       credsPB.GetId(),
+	}
 }

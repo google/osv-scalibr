@@ -33,9 +33,12 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/enricher"
+	ce "github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	cf "github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/standalone"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
@@ -45,8 +48,6 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
-
-	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 var (
@@ -190,10 +191,17 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	extractors := pl.FilesystemExtractors(config.Plugins)
+	extractors, err := cf.SetupVelesExtractors(extractors)
+	if err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
-		Extractors:            pl.FilesystemExtractors(config.Plugins),
+		Extractors:            extractors,
 		PathsToExtract:        config.PathsToExtract,
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
@@ -258,8 +266,15 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
+	enrichers := pl.Enrichers(config.Plugins)
+	enrichers, err = ce.SetupVelesEnrichers(enrichers)
+	if err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
 	enricherCfg := &enricher.Config{
-		Enrichers: pl.Enrichers(config.Plugins),
+		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
 			FS:   sysroot.FS,
 			Path: sysroot.Path,
@@ -316,10 +331,15 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	}
 
 	scanResult := s.Scan(ctx, config)
+	extractors := pl.FilesystemExtractors(config.Plugins)
+	extractors, err = cf.SetupVelesExtractors(extractors)
+	if err != nil {
+		return scanResult, err
+	}
 	extractorConfig := &filesystem.Config{
 		Stats:                 config.Stats,
 		ReadSymlinks:          config.ReadSymlinks,
-		Extractors:            pl.FilesystemExtractors(config.Plugins),
+		Extractors:            extractors,
 		PathsToExtract:        config.PathsToExtract,
 		IgnoreSubDirs:         config.IgnoreSubDirs,
 		DirsToSkip:            config.DirsToSkip,
@@ -347,6 +367,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	}
 
 	// Run enrichers with the updated inventory.
+	enrichers, err = ce.SetupVelesEnrichers(enrichers)
+	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
+		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
