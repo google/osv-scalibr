@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/language/nvm/metadata"
+	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -99,7 +99,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      "nodejs",
 			Version:   version,
-			PURLType:  purl.TypeNvm,
+			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 			Metadata: &nvmmeta.Metadata{
 				NodeVersion: version,

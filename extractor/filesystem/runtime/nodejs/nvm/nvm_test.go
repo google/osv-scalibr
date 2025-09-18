@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/nvm"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/nvm/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -84,7 +84,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "nodejs",
 					Version:  "20.1.0",
-					PURLType: purl.TypeNvm,
+					PURLType: purl.TypeGeneric,
 					Metadata: &metadata.Metadata{
 						NodeVersion: "20.1.0",
 					},
@@ -101,7 +101,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "nodejs",
 					Version:  "24.04",
-					PURLType: purl.TypeNvm,
+					PURLType: purl.TypeGeneric,
 					Metadata: &metadata.Metadata{
 						NodeVersion: "24.04",
 					},
