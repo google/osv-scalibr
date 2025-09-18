@@ -657,6 +657,7 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 20;
   }
 
   message GCPSAK {
@@ -699,6 +700,10 @@ message SecretData {
   }
 
   message GrokXAIManagementAPIKey {
+    string key = 1;
+  }
+
+  message AzureStorageAccountAccessKey{
     string key = 1;
   }
 

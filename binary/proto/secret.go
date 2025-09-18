@@ -19,10 +19,13 @@ import (
 	"fmt"
 	"time"
 
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
@@ -34,9 +37,6 @@ import (
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
-
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -129,6 +129,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
 		return postmanCollectionTokenToProto(t), nil
+	case velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey:
+		return azurestorageaccountaccessKeyToProto(t), nil
 	case veleshashicorpvault.Token:
 		return hashicorpVaultTokenToProto(t), nil
 	case veleshashicorpvault.AppRoleCredentials:
@@ -229,6 +231,16 @@ func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GrokXaiApiKey{
 			GrokXaiApiKey: &spb.SecretData_GrokXAIAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func azurestorageaccountaccessKeyToProto(s velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureStorageAccountAccessKey_{
+			AzureStorageAccountAccessKey: &spb.SecretData_AzureStorageAccountAccessKey{
 				Key: s.Key,
 			},
 		},
@@ -441,6 +453,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
 	case *spb.SecretData_GrokXaiApiKey:
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
+	case *spb.SecretData_AzureStorageAccountAccessKey_:
+		return velesazurestorageaccountaccesskeyToStruct(s.GetAzureStorageAccountAccessKey()), nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_AzureAccessToken_:
@@ -509,6 +523,12 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
 	return velesperplexity.PerplexityAPIKey{
+		Key: kPB.GetKey(),
+	}
+}
+
+func velesazurestorageaccountaccesskeyToStruct(kPB *spb.SecretData_AzureStorageAccountAccessKey) velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey {
+	return velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey{
 		Key: kPB.GetKey(),
 	}
 }
