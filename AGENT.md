@@ -114,12 +114,41 @@ Add contextual information to inventory:
 - `misc/` - Miscellaneous annotations
 
 #### Veles Sub-library (`veles/`)
-Standalone secret scanning library:
-- **Purpose**: Detect and validate credentials/secrets
-- **`detect.go`** - Secret detection engine and detector interfaces
-- **`validate.go`** - Secret validation functionality
-- **`secrets/`** - Individual secret detectors (API keys, tokens, certificates)
-- **Integration**: Used via SCALIBR extractors and enrichers
+Standalone secret scanning library for detecting and validating credentials:
+
+**Core Architecture:**
+- **`detect.go`** - `DetectionEngine` that coordinates multiple detectors with streaming support
+- **`validate.go`** - `ValidationEngine` that validates detected secrets against real services
+- **`secret.go`** - Core `Secret` interface (empty interface for maximum flexibility)
+- **`veles.go`** - Package constants and utilities
+
+**Secret Detection Process:**
+1. **Stream Processing**: Reads data in chunks to handle large files efficiently
+2. **Multiple Detectors**: Runs all registered detectors on each chunk
+3. **Edge Handling**: Retains buffer overlap to catch secrets spanning chunk boundaries
+4. **Deduplication**: Avoids duplicate detections across chunk boundaries
+
+**Available Secret Types** (`veles/secrets/`):
+- **API Keys**: Anthropic, GCP, DigitalOcean, Perplexity, Postman, RubyGems
+- **Cloud Tokens**: Azure, GCP Service Account Keys, GCP Express Mode
+- **Version Control**: GitLab Personal Access Tokens, Docker Hub PATs
+- **HashiCorp**: Vault tokens and AppRole credentials (with context awareness)
+- **AI/ML**: OpenAI, Grok xAI keys
+- **Cryptographic**: Private keys (PEM/OpenSSH), Tink keysets
+
+**Adding New Secret Types:**
+1. **Create Secret Struct**: Define in `veles/secrets/newsecret/newsecret.go`
+2. **Implement Detector**: Create detector in `detector.go` using patterns:
+   - Simple regex: Use `simpletoken.Detector` helper
+   - Complex logic: Implement custom `veles.Detector` interface
+3. **Optional Validator**: Implement `veles.Validator[SecretType]` in `validator.go`
+4. **Register**: Add to `extractor/filesystem/list/list.go` in `Secrets` map
+5. **Tests**: Create comprehensive tests in `*_test.go` files
+
+**Integration with SCALIBR:**
+- **Extractors**: `extractor/filesystem/secrets/` converts veles secrets to SCALIBR inventory
+- **Enrichers**: `enricher/secrets/velesvalidate` validates detected secrets
+- **Protocol Buffers**: `binary/proto/secret.go` handles conversion to protobuf format
 
 ### Plugin Development Locations
 
