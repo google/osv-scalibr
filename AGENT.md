@@ -373,7 +373,7 @@ Implements comprehensive npm package detection including:
 
 Fixes #<issue-number>
 
-🤖 Generated with [Claude Code](https://claude.ai/code)"
+🤖 Generated with [{agent name}]({website})"
 
 # Push feature branch (NEVER push to main)
 git push -u origin feat/descriptive-feature-name
@@ -393,7 +393,7 @@ Implements comprehensive npm package detection as requested in #<issue-number>
 - [ ] New tests cover edge cases
 - [ ] Manual testing with real npm projects
 
-🤖 Generated with [Claude Code](https://claude.ai/code)"
+🤖 Generated with [{agent name}]({website})"
 ```
 
 **🔴 CRITICAL**: All changes must go through PR review - no exceptions, even for urgent fixes
