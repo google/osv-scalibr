@@ -86,7 +86,7 @@ func TestExtract(t *testing.T) {
 					Version:  "20.1.0",
 					PURLType: purl.TypeGeneric,
 					Metadata: &metadata.Metadata{
-						NodeVersion: "20.1.0",
+						NodeJsVersion: "20.1.0",
 					},
 					Locations: []string{"testdata/simpleValidWithComments/.nvmrc"},
 				},
@@ -103,7 +103,7 @@ func TestExtract(t *testing.T) {
 					Version:  "24.04",
 					PURLType: purl.TypeGeneric,
 					Metadata: &metadata.Metadata{
-						NodeVersion: "24.04",
+						NodeJsVersion: "24.04",
 					},
 					Locations: []string{"testdata/validWhiteSpaces/.nvmrc"},
 				},

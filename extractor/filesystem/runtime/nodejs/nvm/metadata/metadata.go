@@ -21,7 +21,7 @@ import (
 
 // Metadata holds parsing information for an NVM Node.js version.
 type Metadata struct {
-	NodeVersion string
+	NodeJsVersion string
 }
 
 // SetProto sets the NvmMetadata field in the Package proto.
@@ -35,7 +35,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 
 	p.Metadata = &pb.Package_NvmMetadata{
 		NvmMetadata: &pb.NvmMetadata{
-			NodejsVersion: m.NodeVersion,
+			NodejsVersion: m.NodeJsVersion,
 		},
 	}
 }
@@ -47,6 +47,6 @@ func ToStruct(m *pb.NvmMetadata) *Metadata {
 	}
 
 	return &Metadata{
-		NodeVersion: m.GetNodejsVersion(),
+		NodeJsVersion: m.GetNodejsVersion(),
 	}
 }

@@ -102,7 +102,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			PURLType:  purl.TypeGeneric,
 			Locations: []string{input.Path},
 			Metadata: &nvmmeta.Metadata{
-				NodeVersion: version,
+				NodeJsVersion: version,
 			},
 		})
 		// For nvm, we typically only expect one version per file
