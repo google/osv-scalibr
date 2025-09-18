@@ -140,7 +140,7 @@ func (ip *inPlaceInfo) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		case key.Matches(msg, Keys.Quit):
 			return ip, CloseViewModel
 		case key.Matches(msg, Keys.Select):
-			vID := ip.Model.Rows()[ip.Model.Cursor()][2]
+			vID := ip.Rows()[ip.Cursor()][2]
 			vIdx := slices.IndexFunc(ip.vulns, func(v resolution.Vulnerability) bool { return v.OSV.ID == vID })
 			if vIdx == -1 {
 				// something went wrong, just ignore this.

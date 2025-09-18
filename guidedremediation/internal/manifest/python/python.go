@@ -90,7 +90,7 @@ func (m *pythonManifest) Clone() manifest.Manifest {
 		root:         m.root,
 		requirements: slices.Clone(m.requirements),
 	}
-	clone.root.AttrSet = m.root.AttrSet.Clone()
+	clone.root.AttrSet = m.root.Clone()
 
 	return clone
 }
