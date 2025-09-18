@@ -24,13 +24,17 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
@@ -114,16 +118,26 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	case velesegithub.AppRefreshToken:
 		return githubAppRefreshTokenToProto(t.Token), nil
+	case gitlabpat.GitlabPAT:
+		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
 		return azureIdentityTokenToProto(t), nil
+	case tinkkeyset.TinkKeySet:
+		return tinkKeysetToProto(t), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
 	case velespostmanapikey.PostmanAPIKey:
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
 		return postmanCollectionTokenToProto(t), nil
+	case veleshashicorpvault.Token:
+		return hashicorpVaultTokenToProto(t), nil
+	case veleshashicorpvault.AppRoleCredentials:
+		return hashicorpVaultAppRoleCredentialsToProto(t), nil
+	case velesgcpapikey.GCPAPIKey:
+		return gcpAPIKeyToProto(t.Key), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -174,6 +188,16 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	}
 }
 
+func gcpAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpApiKey{
+			GcpApiKey: &spb.SecretData_GCPAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
 func anthropicWorkspaceAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AnthropicWorkspaceApiKey{
@@ -219,6 +243,15 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		Secret: &spb.SecretData_GrokXaiManagementApiKey{
 			GrokXaiManagementApiKey: &spb.SecretData_GrokXAIManagementAPIKey{
 				Key: s.Key,
+			},
+		},
+	}
+}
+func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabPat_{
+			GitlabPat: &spb.SecretData_GitlabPat{
+				Pat: s.Pat,
 			},
 		},
 	}
@@ -285,11 +318,43 @@ func azureIdentityTokenToProto(pk velesazuretoken.AzureIdentityToken) *spb.Secre
 	}
 }
 
+func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_TinkKeyset_{
+			TinkKeyset: &spb.SecretData_TinkKeyset{
+				Content: t.Content,
+			},
+		},
+	}
+}
+
 func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
 			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func hashicorpVaultTokenToProto(s veleshashicorpvault.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpVaultToken{
+			HashicorpVaultToken: &spb.SecretData_HashiCorpVaultToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpVaultAppRoleCredentials{
+			HashicorpVaultAppRoleCredentials: &spb.SecretData_HashiCorpVaultAppRoleCredentials{
+				RoleId:   s.RoleID,
+				SecretId: s.SecretID,
+				Id:       s.ID,
 			},
 		},
 	}
@@ -377,6 +442,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
+	case *spb.SecretData_GitlabPat_:
+		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
@@ -395,6 +462,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:
 		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
+	case *spb.SecretData_TinkKeyset_:
+		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),
@@ -403,6 +472,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velespostmanapikey.PostmanCollectionToken{
 			Key: s.GetPostmanCollectionAccessToken().GetKey(),
 		}, nil
+	case *spb.SecretData_HashicorpVaultToken:
+		return hashicorpVaultTokenToStruct(s.GetHashicorpVaultToken()), nil
+	case *spb.SecretData_HashicorpVaultAppRoleCredentials:
+		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
+	case *spb.SecretData_GcpApiKey:
+		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -418,6 +493,11 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 	return dockerhubpat.DockerHubPAT{
 		Pat:      kPB.GetPat(),
 		Username: kPB.GetUsername(),
+	}
+}
+func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
+	return gitlabpat.GitlabPAT{
+		Pat: kPB.GetPat(),
 	}
 }
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
@@ -483,4 +563,18 @@ func secretLocationToStruct(location *spb.Location) string {
 		return location.GetFilepath().GetPath()
 	}
 	return ""
+}
+
+func hashicorpVaultTokenToStruct(tokenPB *spb.SecretData_HashiCorpVaultToken) veleshashicorpvault.Token {
+	return veleshashicorpvault.Token{
+		Token: tokenPB.GetToken(),
+	}
+}
+
+func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpVaultAppRoleCredentials) veleshashicorpvault.AppRoleCredentials {
+	return veleshashicorpvault.AppRoleCredentials{
+		RoleID:   credsPB.GetRoleId(),
+		SecretID: credsPB.GetSecretId(),
+		ID:       credsPB.GetId(),
+	}
 }

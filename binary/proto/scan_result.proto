@@ -652,7 +652,12 @@ message SecretData {
     PostmanCollectionAccessToken postman_collection_access_token = 12;
     AzureAccessToken azure_access_token = 13;
     AzureIdentityToken azure_identity_token = 14;
-    GithubAppRefreshToken github_app_refresh_token = 15;
+    TinkKeyset tink_keyset = 15;
+    GitlabPat gitlab_pat = 16;
+    HashiCorpVaultToken hashicorp_vault_token = 17;
+    HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
+    GCPAPIKey gcp_api_key = 19;
+    GithubAppRefreshToken github_app_refresh_token = 20;
   }
 
   message GCPSAK {
@@ -720,6 +725,10 @@ message SecretData {
     string username = 2;
   }
 
+  message GitlabPat {
+    string pat = 1;
+  }
+
   message PostmanAPIKey {
     string key = 1;
   }
@@ -734,6 +743,23 @@ message SecretData {
 
   message GithubAppRefreshToken {
     string token = 1;
+  }
+  message TinkKeyset {
+    string content = 1;  // JSON encoded Tink keyset
+  }
+
+  message HashiCorpVaultToken {
+    string token = 1;
+  }
+
+  message HashiCorpVaultAppRoleCredentials {
+    string role_id = 1;
+    string secret_id = 2;
+    string id = 3;  // General ID field for uncertain UUID types when context is unclear
+  }
+
+  message GCPAPIKey {
+    string key = 1;
   }
 }
 
