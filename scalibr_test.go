@@ -30,8 +30,10 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakeimage"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/enricher"
+	ce "github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	cf "github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -41,6 +43,8 @@ import (
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
 	fen "github.com/google/osv-scalibr/testing/fakeenricher"
 	fe "github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 	"github.com/google/osv-scalibr/version"
 	"github.com/mohae/deepcopy"
 )
@@ -141,6 +145,10 @@ func TestScan(t *testing.T) {
 		},
 	}
 	fakeEnricherErr := fen.MustNew(t, fakeEnricherCfgErr)
+
+	fakeSecretDetector1 := velestest.NewFakeDetector("Con")
+	fakeSecretDetector2 := velestest.NewFakeDetector("tent")
+	fakeSecretValidator1 := velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)
 
 	testCases := []struct {
 		desc string
@@ -282,17 +290,87 @@ func TestScan(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "One Veles secret detector",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secrets/veles", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"}},
+				},
+			},
+		},
+		{
+			desc: "Two Veles secret detectors",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector-1", 1)(),
+					cf.FromVelesDetector(fakeSecretDetector2, "secret-detector-2", 2)(),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secrets/veles", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
+						{Secret: velestest.NewFakeStringSecret("tent"), Location: "file.txt"},
+					},
+				},
+			},
+		},
+		{
+			desc: "Veles secret detector with validation",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
+					ce.FromVelesValidator(fakeSecretValidator1, "secret-validator", 1)(),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secrets/veles", Version: 1, Status: success},
+					{Name: "secrets/velesvalidate", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{{
+						Secret:     velestest.NewFakeStringSecret("Con"),
+						Location:   "file.txt",
+						Validation: inventory.SecretValidationResult{Status: veles.ValidationValid},
+					}},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := scalibr.New().Scan(context.Background(), tc.cfg)
+			got := scalibr.New().Scan(t.Context(), tc.cfg)
 
 			// We can't mock the time from here so we skip it in the comparison.
 			tc.want.StartTime = got.StartTime
 			tc.want.EndTime = got.EndTime
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported); diff != "" {
+			// Ignore timestamps.
+			ignoreFields := cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At")
+
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})
@@ -565,7 +643,7 @@ func TestScanContainer(t *testing.T) {
 			}}
 
 			fi := fakeimage.New(tc.chainLayers)
-			got, err := scalibr.New().ScanContainer(context.Background(), fi, &scanConfig)
+			got, err := scalibr.New().ScanContainer(t.Context(), fi, &scanConfig)
 
 			if tc.wantErr != nil {
 				if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
@@ -822,7 +900,7 @@ func TestErrorOnFSErrors(t *testing.T) {
 				ErrorOnFSErrors: tc.ErrorOnFSErrors,
 			}
 
-			got := scalibr.New().Scan(context.Background(), cfg)
+			got := scalibr.New().Scan(t.Context(), cfg)
 
 			if got.Status.Status != tc.wantstatus {
 				t.Errorf("Scan() status: %v, want %v", got.Status.Status, tc.wantstatus)
@@ -862,7 +940,7 @@ func TestAnnotator(t *testing.T) {
 		}},
 	}}
 
-	got := scalibr.New().Scan(context.Background(), cfg)
+	got := scalibr.New().Scan(t.Context(), cfg)
 
 	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
 		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)

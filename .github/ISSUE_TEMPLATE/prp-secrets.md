@@ -2,7 +2,7 @@
 name: Patch reward program - secret scanning
 about: Submit a secret extractor suggestion for the PRP
 title: 'PRP: Secret extractor for {Secret name}'
-labels: PRP:Request
+labels: ['PRP', 'PRP:Request']
 assignees: ''
 
 ---

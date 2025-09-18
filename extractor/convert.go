@@ -27,7 +27,9 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	spdxpurl "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/purl"
 	winpurl "github.com/google/osv-scalibr/extractor/standalone/windows/common/purl"
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // toPURL converts a SCALIBR package structure into a package URL.
@@ -79,41 +81,43 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 
 // toEcosystem converts a SCALIBR package structure into an OSV ecosystem value
 // defined in https://ossf.github.io/osv-schema/#defined-ecosystems
-func toEcosystem(p *Package) string {
+func toEcosystem(p *Package) osvecosystem.Parsed {
 	switch p.PURLType {
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
 		purl.TypeSnap, purl.TypePacman, purl.TypePortage:
+
 		return osecosystem.MakeEcosystem(p.Metadata)
 	case purl.TypePyPi:
-		return "PyPI"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemPyPI)
 	case purl.TypeMaven:
-		return "Maven"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemMaven)
 	case purl.TypeNPM:
-		return "npm"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemNPM)
 	case purl.TypeGolang:
-		return "Go"
-	case purl.TypeCocoapods:
-		return "CocoaPods"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemGo)
+	// Not yet supported by OSV yet
+	// case purl.TypeCocoapods:
+	// 	return string(osvschema.EcosystemCocoaPods)
 	case purl.TypeConan:
-		return "ConanCenter"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemConanCenter)
 	case purl.TypeCran:
-		return "CRAN"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemCRAN)
 	case purl.TypeGem:
-		return "RubyGems"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemRubyGems)
 	case purl.TypeNuget:
-		return "NuGet"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemNuGet)
 	case purl.TypeHaskell:
-		return "Hackage"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemHackage)
 	case purl.TypeHex:
-		return "Hex"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemHex)
 	case purl.TypeComposer:
-		return "Packagist"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemPackagist)
 	case purl.TypeCargo:
-		return "crates.io"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemCratesIO)
 	case purl.TypePub:
-		return "Pub"
+		return osvecosystem.FromEcosystem(osvschema.EcosystemPub)
 	}
 
 	// No Ecosystem defined for this package.
-	return ""
+	return osvecosystem.Parsed{}
 }

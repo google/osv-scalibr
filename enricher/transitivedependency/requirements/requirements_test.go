@@ -15,7 +15,6 @@
 package requirements_test
 
 import (
-	"context"
 	"sort"
 	"testing"
 
@@ -93,7 +92,7 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
 	enricher := requirements.NewEnricher(resolutionClient)
-	err := enricher.Enrich(context.Background(), &input, &inv)
+	err := enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)
 	}

@@ -15,7 +15,6 @@
 package packagelockjson_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -589,6 +588,50 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "bundled_dependencies_are_grouped",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/bundled-dependencies.v3.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "ansi-regex",
+					Version:   "6.2.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"bundled"},
+					},
+				},
+				{
+					Name:      "semver",
+					Version:   "7.7.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{"bundled", "dev"},
+					},
+				},
+				{
+					Name:      "strip-ansi",
+					Version:   "7.1.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -601,7 +644,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			got, err := extr.Extract(context.Background(), &scanInput)
+			got, err := extr.Extract(t.Context(), &scanInput)
 
 			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)

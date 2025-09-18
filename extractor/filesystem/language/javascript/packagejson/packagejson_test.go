@@ -15,7 +15,6 @@
 package packagejson_test
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -33,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
 )
@@ -311,6 +311,57 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "package with dependencies",
+			path: "testdata/package-with-deps.json",
+			cfg:  packagejson.Config{IncludeDependencies: true},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "package-with-deps",
+					Version:   "1.2.3",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+					Metadata:  &metadata.JavascriptPackageJSONMetadata{},
+				},
+				{
+					Name:      "dep1",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+				{
+					Name:      "dep2",
+					Version:   "2.0.1",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+				{
+					Name:      "dep3",
+					Version:   "3.1.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+				{
+					Name:      "dep4",
+					Version:   "0.4.2",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+				{
+					Name:      "dep5",
+					Version:   "5.0.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+				// dep6 is invalid, so it should not be included.
+				{
+					Name:      "dep7",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/package-with-deps.json"},
+				},
+			},
+		},
+		{
 			name:             "invalid packagejson",
 			path:             "testdata/invalid",
 			wantErr:          cmpopts.AnyError,
@@ -346,7 +397,7 @@ func TestExtract(t *testing.T) {
 				Info:   info,
 			}
 			e := packagejson.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}
@@ -356,7 +407,7 @@ func TestExtract(t *testing.T) {
 				want = inventory.Inventory{Packages: tt.wantPackages}
 			}
 
-			if diff := cmp.Diff(want, got); diff != "" {
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 
@@ -380,6 +431,7 @@ func TestExtract(t *testing.T) {
 // defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
 func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
 	newCfg := packagejson.DefaultConfig()
+	newCfg.IncludeDependencies = cfg.IncludeDependencies
 
 	if cfg.Stats != nil {
 		newCfg.Stats = cfg.Stats

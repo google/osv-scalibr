@@ -24,22 +24,24 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/log"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 // MakeEcosystem computes the OSV Ecosystem value from an OS package's metadata.
-func MakeEcosystem(metadata any) string {
+func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	namespace := ""
 	osVersionID := ""
 	switch m := metadata.(type) {
 	case *apkmeta.Metadata:
 		version := m.ToDistro()
 		if version == "" {
-			return "Alpine"
+			return osvecosystem.FromEcosystem(osvschema.EcosystemAlpine)
 		}
-		return "Alpine:" + m.TrimDistroVersion(version)
+		return osvecosystem.Parsed{Ecosystem: osvschema.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
 
 	case *dpkgmeta.Metadata:
 		namespace = m.ToNamespace()
@@ -47,17 +49,18 @@ func MakeEcosystem(metadata any) string {
 
 	case *rpmmeta.Metadata:
 		if m.OSID == "rhel" {
-			return "Red Hat"
-		} else if m.OSID == "rocky" {
-			return "Rocky Linux"
+			return osvecosystem.FromEcosystem(osvschema.EcosystemRedHat)
+		}
+		if m.OSID == "rocky" {
+			return osvecosystem.FromEcosystem(osvschema.EcosystemRockyLinux)
 		}
 
 	case *snapmeta.Metadata:
 		if m.OSID == "ubuntu" {
-			return "Ubuntu"
+			return osvecosystem.FromEcosystem(osvschema.EcosystemUbuntu)
 		}
 		log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
-		return ""
+		return osvecosystem.Parsed{}
 
 	case *pacmanmeta.Metadata:
 		namespace = m.ToNamespace()
@@ -76,12 +79,23 @@ func MakeEcosystem(metadata any) string {
 		osVersionID = m.OSVersionID
 
 	default:
-		return ""
+		return osvecosystem.Parsed{}
 	}
 
 	osID := cases.Title(language.English).String(namespace)
-	if osVersionID == "" {
-		return osID
+	parsed, err := osvecosystem.Parse(osID)
+	if err != nil {
+		return osvecosystem.Parsed{}
 	}
-	return osID + ":" + osVersionID
+
+	if osVersionID == "" {
+		return parsed
+	}
+
+	parsed.Suffix = osVersionID
+	if parsed.GetValidity() != nil {
+		return osvecosystem.Parsed{}
+	}
+
+	return parsed
 }

@@ -33,8 +33,8 @@ context, check out the
 [OSV-Scanner usage guide](https://google.github.io/osv-scanner/usage/).
 
 **Note:** Not all OSV-SCALIBR functionality is available via OSV-Scanner yet.
-Check out [this issue](https://github.com/google/osv-scanner/issues/1701) for
-the current status.
+Check out [this migration guide](https://google.github.io/osv-scanner/migrating-from-scalibr.html)
+for more information.
 
 ### Via the OSV-SCALIBR wrapper binary
 
@@ -215,6 +215,10 @@ log.Info(results)
 ## Contributing
 
 Read how to [contribute to OSV-SCALIBR](CONTRIBUTING.md).
+
+Look for any [open issues](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20-label%3APRP)
+or [unowned Patch Reward work](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20label%3APRP%3AInactive)
+you'd like to contribute to.
 
 To build and test your local changes, run `make` and `make test`. A local
 `scalibr` binary will be generated in the repo base.

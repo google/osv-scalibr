@@ -17,7 +17,6 @@
 package proc
 
 import (
-	"context"
 	"errors"
 	"net"
 	"strings"
@@ -96,7 +95,7 @@ sl local_address rem_address st tx_queue rx_queue tr tm->when retrnsmt uid timeo
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ParseNetTCP(context.Background(), strings.NewReader(tc.content))
+			got, err := ParseNetTCP(t.Context(), strings.NewReader(tc.content))
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("ParseNetTCP(...) returned an unexpected error: %v", err)
 			}

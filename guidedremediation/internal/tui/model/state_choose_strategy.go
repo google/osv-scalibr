@@ -181,6 +181,15 @@ func (s stateChooseStrategy) UpdateTextFocus() stateChooseStrategy {
 		s.depthInput.Focus()
 	case chooseStratSeverity:
 		s.severityInput.Focus()
+	case
+		chooseStratInfo,
+		chooseStratErrors,
+		chooseStratInPlace,
+		chooseStratRelock,
+		chooseStratDev,
+		chooseStratApplyCriteria,
+		chooseStratQuit,
+		chooseStratEnd:
 	}
 	return s
 }
@@ -201,6 +210,13 @@ func (s stateChooseStrategy) currentInfoView() (view components.ViewModel, canFo
 		return s.relockFixVulns, s.canRelock
 	case chooseStratQuit: // quit
 		return components.TextView("Exit Guided Remediation"), false
+	case
+		chooseStratDepth,
+		chooseStratSeverity,
+		chooseStratDev,
+		chooseStratApplyCriteria,
+		chooseStratEnd:
+		fallthrough
 	default:
 		return components.TextView(""), false
 	}
@@ -250,6 +266,11 @@ func (s stateChooseStrategy) parseInput(m Model) (tea.Model, tea.Cmd) {
 		cmd = m.st.Init(m)
 	case chooseStratQuit: // quit line
 		cmd = tea.Quit
+	case
+		chooseStratErrors,
+		chooseStratDepth,
+		chooseStratSeverity,
+		chooseStratEnd:
 	}
 
 	return m, cmd

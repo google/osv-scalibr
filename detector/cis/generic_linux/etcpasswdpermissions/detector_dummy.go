@@ -14,11 +14,12 @@
 
 //go:build !linux && !darwin
 
+// Package etcpasswdpermissions implements a detector for the "Ensure permissions on /etc/passwd- are configured" CIS check.
 package etcpasswdpermissions
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/fs"
 
 	"github.com/google/osv-scalibr/detector"
@@ -76,10 +77,10 @@ func (d Detector) DetectedFinding() inventory.Finding {
 
 // Scan is a no-op for Windows.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
-	return inventory.Finding{}, fmt.Errorf("plugin only supported on Linux")
+	return inventory.Finding{}, errors.New("plugin only supported on Linux")
 }
 
 // ScanFS starts the scan from a pseudo-filesystem.
 func (Detector) ScanFS(ctx context.Context, fs fs.FS, px *packageindex.PackageIndex) (inventory.Finding, error) {
-	return inventory.Finding{}, fmt.Errorf("plugin only supported on Linux")
+	return inventory.Finding{}, errors.New("plugin only supported on Linux")
 }

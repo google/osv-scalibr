@@ -26,32 +26,9 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
-type testManifest struct {
-	FilePath     string
-	Root         resolve.Version
-	System       resolve.System
-	Requirements []resolve.RequirementVersion
-}
-
-func checkManifest(t *testing.T, name string, got manifest.Manifest, want testManifest) {
-	t.Helper()
-	if want.FilePath != got.FilePath() {
-		t.Errorf("%s.FilePath() = %q, want %q", name, got.FilePath(), want.FilePath)
-	}
-	if diff := cmp.Diff(want.Root, got.Root()); diff != "" {
-		t.Errorf("%s.Root() (-want +got):\n%s", name, diff)
-	}
-	if want.System != got.System() {
-		t.Errorf("%s.System() = %v, want %v", name, got.System(), want.System)
-	}
-	if diff := cmp.Diff(want.Requirements, got.Requirements()); diff != "" {
-		t.Errorf("%s.Requirements() (-want +got):\n%s", name, diff)
-	}
-}
-
-func TestRead(t *testing.T) {
-	fsys := fs.DirFS("./testdata")
-	pypiRW, _ := GetReadWriter()
+func TestReadRequirements(t *testing.T) {
+	fsys := fs.DirFS("./testdata/requirements")
+	pypiRW, _ := GetRequirementsReadWriter()
 	got, err := pypiRW.Read("requirements.txt", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -151,13 +128,14 @@ func TestRead(t *testing.T) {
 				},
 			},
 		},
+		Groups: map[manifest.RequirementKey][]string{},
 	}
 	checkManifest(t, "Manifest", got, want)
 }
 
-func TestWrite(t *testing.T) {
-	rw, _ := GetReadWriter()
-	fsys := fs.DirFS("./testdata")
+func TestWriteRequirements(t *testing.T) {
+	rw, _ := GetRequirementsReadWriter()
+	fsys := fs.DirFS("./testdata/requirements")
 	manif, err := rw.Read("requirements.txt", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -177,7 +155,7 @@ func TestWrite(t *testing.T) {
 			PackageUpdates: []result.PackageUpdate{
 				{
 					Name:        "requests",
-					VersionFrom: ">=2.8.1,== 2.8.*",
+					VersionFrom: ">=2.8.1,==2.8.*",
 					VersionTo:   ">=2.32.4,<3.0.0",
 				},
 			},
@@ -203,7 +181,7 @@ func TestWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read got requirements.txt: %v", err)
 	}
-	want, err := os.ReadFile(filepath.Join("./testdata", "want.requirements.txt"))
+	want, err := os.ReadFile(filepath.Join("./testdata/requirements", "want.requirements.txt"))
 	if err != nil {
 		t.Fatalf("failed to read want requirements.txt: %v", err)
 	}

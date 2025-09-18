@@ -46,9 +46,18 @@ func TestDetectorsFromName(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			desc:     "Find all detectors of a type",
-			name:     "cis",
-			wantDets: []string{"cis/generic-linux/etcpasswdpermissions"},
+			desc: "Find all detectors of a type",
+			name: "cis",
+			wantDets: []string{
+				"cis/generic-linux/etcpasswdpermissions",
+			},
+		},
+		{
+			desc: "Find misc detectors",
+			name: "misc",
+			wantDets: []string{
+				"dockersocket",
+			},
 		},
 		{
 			desc: "Find weak credentials detectors",

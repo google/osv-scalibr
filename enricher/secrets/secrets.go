@@ -42,15 +42,6 @@ type Enricher struct {
 	engine *veles.ValidationEngine
 }
 
-// New creates a new Enricher using the default Veles Validators.
-func New() enricher.Enricher {
-	engine := veles.NewValidationEngine(
-		veles.WithValidator(gcpsak.NewValidator()),
-		veles.WithValidator(huggingfaceapikey.NewValidator()),
-	)
-	return &Enricher{engine: engine}
-}
-
 // AddValidator adds a Validator for a specific type of Secret to the underlying validation engine.
 //
 // Returns whether there was already a Validator in place that now got replaced.

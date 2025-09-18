@@ -15,7 +15,6 @@
 package dockerbaseimage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -180,7 +179,7 @@ func TestExtract(t *testing.T) {
 			})
 			defer extracttest.CloseTestScanInput(t, input)
 
-			got, err := extr.Extract(context.Background(), &input)
+			got, err := extr.Extract(t.Context(), &input)
 			if err != nil {
 				t.Fatalf("%s.Extract(%q) failed: %v", extr.Name(), tc.path, err)
 			}
@@ -217,7 +216,7 @@ func TestExtract_failures(t *testing.T) {
 			})
 			defer extracttest.CloseTestScanInput(t, input)
 
-			_, err := extr.Extract(context.Background(), &input)
+			_, err := extr.Extract(t.Context(), &input)
 			if err == nil {
 				t.Fatalf("Extract(): got nil, want err")
 			}

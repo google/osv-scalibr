@@ -85,7 +85,7 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		Version:    pkg.Version,
 		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
 		Purl:       purlToProto(p),
-		Ecosystem:  pkg.Ecosystem(),
+		Ecosystem:  pkg.Ecosystem().String(),
 		Locations:  pkg.Locations,
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.

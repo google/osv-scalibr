@@ -112,7 +112,7 @@ type GenericFindingTargetDetails struct {
 func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvschema.Severity) []osvschema.Affected {
 	return []osvschema.Affected{{
 		Package: osvschema.Package{
-			Ecosystem: pkg.Ecosystem(),
+			Ecosystem: pkg.Ecosystem().String(),
 			Name:      pkg.Name,
 		},
 		Severity: []osvschema.Severity{*severity},

@@ -15,7 +15,6 @@
 package relaxer_test
 
 import (
-	"context"
 	"testing"
 
 	"deps.dev/util/resolve"
@@ -195,7 +194,7 @@ func TestRelaxPython(t *testing.T) {
 			}
 
 			reqRelaxer := relaxer.PythonRelaxer{}
-			got, ok := reqRelaxer.Relax(context.Background(), cl, resolve.RequirementVersion{
+			got, ok := reqRelaxer.Relax(t.Context(), cl, resolve.RequirementVersion{
 				VersionKey: resolve.VersionKey{
 					PackageKey:  pk,
 					VersionType: resolve.Requirement,
