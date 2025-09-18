@@ -653,6 +653,7 @@ message SecretData {
     AzureAccessToken azure_access_token = 13;
     AzureIdentityToken azure_identity_token = 14;
     GithubAppRefreshToken github_app_refresh_token = 15;
+    GithubPersonalAccessToken github_personal_access_token = 16;
   }
 
   message GCPSAK {
@@ -733,6 +734,10 @@ message SecretData {
   }
 
   message GithubAppRefreshToken {
+    string token = 1;
+  }
+
+  message GithubPersonalAccessToken {
     string token = 1;
   }
 }

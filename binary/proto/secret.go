@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
+	githubpersonalaccesstoken "github.com/google/osv-scalibr/veles/secrets/github/personalaccesstoken"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -114,6 +115,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIManagementKeyToProto(t), nil
 	case githubapprefreshtoken.GithubAppRefreshToken:
 		return githubAppRefreshTokenToProto(t.Token), nil
+	case githubpersonalaccesstoken.GithubPersonalAccessToken:
+		return githubPersonalAccessTokenToProto(t.Token), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
@@ -265,6 +268,16 @@ func githubAppRefreshTokenToProto(token string) *spb.SecretData {
 	}
 }
 
+func githubPersonalAccessTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubPersonalAccessToken_{
+			GithubPersonalAccessToken: &spb.SecretData_GithubPersonalAccessToken{
+				Token: token,
+			},
+		},
+	}
+}
+
 func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AzureAccessToken_{
@@ -391,6 +404,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_GithubAppRefreshToken_:
 		return githubapprefreshtoken.GithubAppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
+	case *spb.SecretData_GithubPersonalAccessToken_:
+		return githubpersonalaccesstoken.GithubPersonalAccessToken{
+			Token: s.GetGithubPersonalAccessToken().GetToken(),
+		}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:
