@@ -89,10 +89,10 @@ func (f fakeFile) Close() error {
 }
 
 func (f *fakeFile) Read(b []byte) (int, error) {
-	if f.offset >= len(f.MapFile.Data) {
+	if f.offset >= len(f.Data) {
 		return 0, io.EOF
 	}
-	n := copy(b, f.MapFile.Data[f.offset:])
+	n := copy(b, f.Data[f.offset:])
 	f.offset += n
 	return n, nil
 }

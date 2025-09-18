@@ -61,7 +61,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 	toRelax := reqsToRelax(ctx, cl, resolved, vulnIDs, opts)
 	for len(toRelax) > 0 {
 		for _, req := range toRelax {
-			if opts.UpgradeConfig.Get(req.VersionKey.Name) == upgrade.None {
+			if opts.UpgradeConfig.Get(req.Name) == upgrade.None {
 				return nil, common.ErrPatchImpossible
 			}
 			newVer, ok := reqRelaxer.Relax(ctx, cl, req, opts.UpgradeConfig)
@@ -118,7 +118,7 @@ func reqsToRelax(ctx context.Context, cl resolve.Client, resolved *remediation.R
 	}
 
 	cmpFn := func(a, b resolve.RequirementVersion) int {
-		if cmp := a.VersionKey.Compare(b.VersionKey); cmp != 0 {
+		if cmp := a.Compare(b.VersionKey); cmp != 0 {
 			return cmp
 		}
 		return a.Type.Compare(b.Type)
