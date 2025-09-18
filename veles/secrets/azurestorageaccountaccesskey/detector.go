@@ -25,12 +25,17 @@ import (
 const maxTokenLength = 88
 
 // keyRe is a regular expression that matches an azure storage account access keys.
-// Azure Storage account access keys are made by 88 characters
-// They contain only base64 data ending with '=='
+// Azure Storage account access keys are made by:
+// - zero to one of the greater than symbol (>), apostrophe ('), equal sign (=), quotation mark ("), or number sign (#)
+// - a combination of 86 characters that are lower- or uppercase letters, digits, the forward slash (/), or plus sign (+)
+// - two equal signs (=)
+//
+// References:
+// - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
 var keyRe = regexp.MustCompile(`[>'=?#]?[A-Za-z0-9\/+]{86}==`)
 
-// NewDetector returns a new simpletoken.Detector that matches Azure Storage Acccount Access Key
-// and returns the appropriate key type.
+// NewDetector returns a new simpletoken.Detector
+// that matches Azure Storage Account Access Key and returns the appropriate key type.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,

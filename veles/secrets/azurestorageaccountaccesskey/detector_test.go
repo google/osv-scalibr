@@ -126,7 +126,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: testKey[:len(testKey)-1],
 	}, {
-		name:  "special character in key should not match",
+		name:  "special character ($) in key should not match",
 		input: `Yut$V0Vlauqsobd6tPWz2AKwHhBXMEWsAH+rSbz0UZUfaMVj1CFrcNQK47ygmrC4vHmc7eOp1LdM+AStk5mMYA==`,
 	},
 	}
