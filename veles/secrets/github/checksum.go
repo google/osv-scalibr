@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package token contains common logic to handle github tokens
-package token
+package github
 
 import (
 	"bytes"

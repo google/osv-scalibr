@@ -12,30 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apprefreshtoken
+package github
 
 import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletokenwithok"
-	"github.com/google/osv-scalibr/veles/secrets/github/token"
 )
 
 const tokenMaxLen = 80
 
 var tokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
 
-// NewDetector returns a new Veles Detector that finds Github app refresh tokens
-func NewDetector() veles.Detector {
+// NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
+func NewAppRefreshTokenDetector() veles.Detector {
 	return simpletokenwithok.Detector{
 		MaxLen: tokenMaxLen,
 		Re:     tokenPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
-			if !token.ValidateChecksum(match) {
+			if !ValidateChecksum(match) {
 				return nil, false
 			}
-			return GithubAppRefreshToken{Token: string(match)}, true
+			return AppRefreshToken{Token: string(match)}, true
 		},
 	}
 }

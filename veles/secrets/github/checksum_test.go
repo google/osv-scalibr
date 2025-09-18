@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package token_test
+package github_test
 
 import (
 	"testing"
 
-	"github.com/google/osv-scalibr/veles/secrets/github/token"
+	"github.com/google/osv-scalibr/veles/secrets/github"
 )
 
 func TestValidateChecksum(t *testing.T) {
@@ -53,7 +53,7 @@ func TestValidateChecksum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := token.ValidateChecksum([]byte(tc.token))
+			got := github.ValidateChecksum([]byte(tc.token))
 			if got != tc.want {
 				t.Errorf("ValidateChecksum() = %t, want %t", got, tc.want)
 			}

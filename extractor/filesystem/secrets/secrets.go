@@ -32,7 +32,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	githubapprefreshtoken "github.com/google/osv-scalibr/veles/secrets/github/apprefreshtoken"
+	"github.com/google/osv-scalibr/veles/secrets/github"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -83,7 +83,7 @@ func init() { //nolint:gochecknoinits
 		grokxaiapikey.NewAPIKeyDetector(),
 		grokxaiapikey.NewManagementKeyDetector(),
 		privatekey.NewDetector(),
-		githubapprefreshtoken.NewDetector(),
+		github.NewAppRefreshTokenDetector(),
 		azuretoken.NewDetector(),
 		openai.NewDetector(),
 		postmanapikey.NewAPIKeyDetector(),

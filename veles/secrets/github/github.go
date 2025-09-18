@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package apprefreshtoken implements the logic to detect Github app refresh tokens
-package apprefreshtoken
+// Package github implements the logic to detect Github tokens
+package github
 
-// GithubAppRefreshToken contains a Github App refresh token
-type GithubAppRefreshToken struct {
+// AppRefreshToken contains a Github App refresh token
+type AppRefreshToken struct {
 	Token string
 }
