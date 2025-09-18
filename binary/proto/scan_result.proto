@@ -654,6 +654,7 @@ message SecretData {
     AzureIdentityToken azure_identity_token = 14;
     TinkKeyset tink_keyset = 15;
     GitlabPat gitlab_pat = 16;
+    OpenRouterAPIKey openrouter_api_key = 17;
   }
 
   message GCPSAK {
@@ -730,6 +731,10 @@ message SecretData {
   }
 
   message PostmanCollectionAccessToken {
+    string key = 1;
+  }
+
+  message OpenRouterAPIKey {
     string key = 1;
   }
 

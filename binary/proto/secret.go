@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
+	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -123,6 +124,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return tinkKeysetToProto(t), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
+	case velesopenrouter.APIKey:
+		return openrouterAPIKeyToProto(t.Key), nil
 	case velespostmanapikey.PostmanAPIKey:
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
@@ -301,6 +304,16 @@ func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
 			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
+func openrouterAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OpenrouterApiKey{
+			OpenrouterApiKey: &spb.SecretData_OpenRouterAPIKey{
 				Key: key,
 			},
 		},

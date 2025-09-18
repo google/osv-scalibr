@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -88,6 +89,7 @@ func init() { //nolint:gochecknoinits
 		azuretoken.NewDetector(),
 		tinkkeyset.NewDetector(),
 		openai.NewDetector(),
+		openrouter.NewDetector(),
 		postmanapikey.NewAPIKeyDetector(),
 		postmanapikey.NewCollectionTokenDetector(),
 	})
