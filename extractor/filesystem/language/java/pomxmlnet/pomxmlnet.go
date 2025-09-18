@@ -58,7 +58,7 @@ type Config struct {
 // NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
 func NewConfig(remote, local string) Config {
 	// No need to check errors since we are using the default Maven Central URL.
-	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
+	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
 		URL:             remote,
 		ReleasesEnabled: true,
 	}, local)
@@ -117,7 +117,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// Clear the registries that may be from other extraction.
 	e.MavenClient = e.MavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
-		if err := e.MavenClient.AddRegistry(datasource.MavenRegistry{
+		if err := e.MavenClient.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -150,7 +150,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			clientRegs[i] = reg
 		}
 		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
-			if err := cl.AddRegistries(clientRegs); err != nil {
+			if err := cl.AddRegistries(ctx, clientRegs); err != nil {
 				return inventory.Inventory{}, err
 			}
 		}
