@@ -104,9 +104,7 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
 	}
 	if registry.Parsed.Scheme == artifactRegistryScheme {
-		if err := client.createGoogleClient(ctx); err != nil {
-			return nil, err
-		}
+		client.createGoogleClient(ctx)
 	}
 	return client, nil
 }
@@ -149,9 +147,7 @@ func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry Maven
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 	if registry.Parsed.Scheme == artifactRegistryScheme {
-		if err := m.createGoogleClient(ctx); err != nil {
-			return err
-		}
+		m.createGoogleClient(ctx)
 	}
 
 	return nil
@@ -165,26 +161,25 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == artifactRegistryScheme {
-		if err := m.createGoogleClient(ctx); err != nil {
-			return err
-		}
+		m.createGoogleClient(ctx)
 	}
 	return nil
 }
 
 // createGoogleClient creates a client for authenticating with Google services.
-func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) error {
+func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
 	if m.googleClient != nil {
-		return nil
+		return
 	}
 	// This is the scope that artifact-registry-go-tools uses.
 	// https://github.com/GoogleCloudPlatform/artifact-registry-go-tools/blob/main/pkg/auth/auth.go
 	client, err := google.DefaultClient(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
-		return fmt.Errorf("failed to create Google default client, Artifact Registry access will be unavailable: %w", err)
+		// We don't return an error here so that we can fall back to a regular http client.
+		log.Warnf("failed to create Google default client, Artifact Registry access will be unavailable: %v", err)
+		return
 	}
 	m.googleClient = client
-	return nil
 }
 
 // GetRegistries returns the registries added to this client.
@@ -310,12 +305,11 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	requestURL := *registry.Parsed
 	isArtifactRegistry := requestURL.Scheme == artifactRegistryScheme
 	if isArtifactRegistry {
-		// For Artifact Registry, use google.DefaultClient for ADC.
-		if m.googleClient == nil {
-			return errors.New("google client for Artifact Registry not available")
-		}
 		requestURL.Scheme = "https"
-		httpClient = m.googleClient
+		// For Artifact Registry, use google.DefaultClient for ADC if available.
+		if m.googleClient != nil {
+			httpClient = m.googleClient
+		}
 	}
 
 	u := requestURL.JoinPath(paths...).String()
