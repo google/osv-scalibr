@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -44,7 +43,7 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -172,7 +171,7 @@ VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -566,7 +565,7 @@ func TestExtract(t *testing.T) {
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
