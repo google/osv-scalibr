@@ -40,6 +40,9 @@ import (
 // mavenCentral holds the URL of Maven Central Repository.
 const mavenCentral = "https://repo.maven.apache.org/maven2"
 
+// artifactRegistryScheme defines the scheme for Google Artifact Registry.
+const artifactRegistryScheme = "artifactregistry"
+
 var errAPIFailed = errors.New("API query failed")
 
 // MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
@@ -100,7 +103,7 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 		responses:       NewRequestCache[string, response](),
 		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
 	}
-	if registry.Parsed.Scheme == "artifactregistry" {
+	if registry.Parsed.Scheme == artifactRegistryScheme {
 		if err := client.createGoogleClient(ctx); err != nil {
 			return nil, err
 		}
@@ -145,7 +148,7 @@ func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry Maven
 
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
-	if registry.Parsed.Scheme == "artifactregistry" {
+	if registry.Parsed.Scheme == artifactRegistryScheme {
 		if err := m.createGoogleClient(ctx); err != nil {
 			return err
 		}
@@ -161,7 +164,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 	}
 	registry.Parsed = u
 	m.defaultRegistry = registry
-	if registry.Parsed.Scheme == "artifactregistry" {
+	if registry.Parsed.Scheme == artifactRegistryScheme {
 		if err := m.createGoogleClient(ctx); err != nil {
 			return err
 		}
@@ -305,7 +308,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 	httpClient := http.DefaultClient
 	requestURL := *registry.Parsed
-	isArtifactRegistry := requestURL.Scheme == "artifactregistry"
+	isArtifactRegistry := requestURL.Scheme == artifactRegistryScheme
 	if isArtifactRegistry {
 		// For Artifact Registry, use google.DefaultClient for ADC.
 		if m.googleClient == nil {
