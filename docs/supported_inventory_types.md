@@ -125,6 +125,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | PEM/OpenSSH Private key       | `secrets/privatekey`             |
 | RubyGems API key              | `secrets/rubygemsapikey`         |
 | Tink keyset                   | `secrets/tinkkeyset`             |
+| 1Password Secret Key        | `secrets/onepasswordsecretkey`   |
+| 1Password Service Token     | `secrets/onepasswordservicetoken`|
 
 ### Container inventory
 

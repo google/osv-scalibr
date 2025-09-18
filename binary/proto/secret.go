@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -135,6 +136,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case velesonepasswordkeys.OnePasswordSecretKey:
+		return onepasswordSecretKeyToProto(t), nil
+	case velesonepasswordkeys.OnePasswordServiceToken:
+		return onepasswordServiceTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -463,8 +468,36 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_OnepasswordSecretKey:
+		return velesonepasswordkeys.OnePasswordSecretKey{
+			Key: s.GetOnepasswordSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordServiceToken:
+		return velesonepasswordkeys.OnePasswordServiceToken{
+			Key: s.GetOnepasswordServiceToken().GetKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
+	}
+}
+
+func onepasswordSecretKeyToProto(s velesonepasswordkeys.OnePasswordSecretKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordSecretKey{
+			OnepasswordSecretKey: &spb.SecretData_OnePasswordSecretKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func onepasswordServiceTokenToProto(s velesonepasswordkeys.OnePasswordServiceToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordServiceToken{
+			OnepasswordServiceToken: &spb.SecretData_OnePasswordServiceToken{
+				Key: s.Key,
+			},
+		},
 	}
 }
 
