@@ -657,6 +657,16 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
+    OnePasswordSecretKey onepassword_secret_key = 20;
+    OnePasswordServiceToken onepassword_service_token = 21;
+  }
+
+  message OnePasswordSecretKey {
+    string key = 1;
+  }
+
+  message OnePasswordServiceToken {
+    string key = 1;
   }
 
   message GCPSAK {
