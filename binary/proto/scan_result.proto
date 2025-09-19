@@ -657,6 +657,7 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
+    DenoPat deno_pat = 20;
   }
 
   message GCPSAK {
@@ -722,6 +723,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message DenoPat {
+    string pat = 1;
   }
 
   message GitlabPat {

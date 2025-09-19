@@ -110,6 +110,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Token                   | `secrets/azuretoken`             |
 | DigitalOcean API key          | `secrets/digitaloceanapikey`     |
 | Docker hub PAT                | `secrets/dockerhubpat`           |
+| Deno PAT                      | `secrets/denopat`                |
 | GCP API key                   | `secrets/gcpapikey`              |
 | GCP Express Mode API key      | `secrets/gcpexpressmode`         |
 | GCP service account key       | `secrets/gcpsak`                 |
