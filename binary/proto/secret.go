@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -135,6 +136,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case huggingfaceapikey.HuggingfaceAPIKey:
+		return huggingfaceAPIKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -347,6 +350,18 @@ func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCreden
 	}
 }
 
+func huggingfaceAPIKeyToProto(s huggingfaceapikey.HuggingfaceAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Hugginface{
+			Hugginface: &spb.SecretData_HuggingfaceAPIKey{
+				Key:              s.Key,
+				Role:             s.Role,
+				FineGrainedScope: s.FineGrainedScope,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -463,6 +478,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_Hugginface:
+		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -485,6 +502,15 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 		Pat: kPB.GetPat(),
 	}
 }
+
+func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfaceapikey.HuggingfaceAPIKey {
+	return huggingfaceapikey.HuggingfaceAPIKey{
+		Key:              kPB.GetKey(),
+		Role:             kPB.GetRole(),
+		FineGrainedScope: kPB.GetFineGrainedScope(),
+	}
+}
+
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	sak := velesgcpsak.GCPSAK{
 		PrivateKeyID:   sakPB.GetPrivateKeyId(),

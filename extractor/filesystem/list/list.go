@@ -98,6 +98,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -259,6 +260,7 @@ var (
 		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
 		{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
 		{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
+		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
