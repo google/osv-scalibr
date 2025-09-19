@@ -95,6 +95,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -268,6 +269,7 @@ var (
 		{privatekey.NewDetector(), "secrets/privatekey", 0},
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
+		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
 	})
 
 	// Misc artifact extractors.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcpapikey
+package github
 
 import (
 	"regexp"
@@ -21,19 +21,20 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a GPC API key.
-const maxTokenLength = 39
+const tokenMaxLen = 80
 
-// keyRe is a regular expression that matches a GCP API key.
-var keyRe = regexp.MustCompile(`AIza[a-zA-Z0-9_-]{35}`)
+var tokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
 
-// NewDetector returns a new simpletoken.Detector that matches GCP API keys.
-func NewDetector() veles.Detector {
+// NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
+func NewAppRefreshTokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: maxTokenLength,
-		Re:     keyRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return GCPAPIKey{Key: string(b)}, true
+		MaxLen: tokenMaxLen,
+		Re:     tokenPattern,
+		FromMatch: func(match []byte) (veles.Secret, bool) {
+			if !ValidateChecksum(match) {
+				return nil, false
+			}
+			return AppRefreshToken{Token: string(match)}, true
 		},
 	}
 }

@@ -12,30 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcpexpressmode
+// Package github implements the logic to detect Github tokens
+package github
 
-import (
-	"regexp"
-
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
-)
-
-var (
-	keyRe = regexp.MustCompile(`AQ\.Ab8R[a-zA-Z0-9_-]{46}`)
-)
-
-const (
-	maxKeyLen = 53
-)
-
-// NewDetector creates a new Veles Detector that finds candidate GCP Express Mode API keys.
-func NewDetector() veles.Detector {
-	return &simpletoken.Detector{
-		Re:     keyRe,
-		MaxLen: maxKeyLen,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return APIKey{Key: string(b)}, true
-		},
-	}
+// AppRefreshToken contains a Github App refresh token
+type AppRefreshToken struct {
+	Token string
 }
