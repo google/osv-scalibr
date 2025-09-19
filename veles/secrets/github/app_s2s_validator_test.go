@@ -28,7 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github"
 )
 
-const validatorTestKey = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
+const validatorS2STestKey = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -65,7 +65,7 @@ func mockGithubServer(t *testing.T, code int) *httptest.Server {
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if authHeader != "Bearer "+validatorTestKey {
+		if authHeader != "Bearer "+validatorS2STestKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -105,7 +105,7 @@ func TestAppS2STokenValidator(t *testing.T) {
 		},
 		{
 			name:   "valid_key",
-			token:  validatorTestKey,
+			token:  validatorS2STestKey,
 			server: mockGithubServer(t, http.StatusOK),
 			want:   veles.ValidationValid,
 		},
