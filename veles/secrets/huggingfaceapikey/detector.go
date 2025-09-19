@@ -28,7 +28,7 @@ const maxTokenLength = 37
 
 // keyRe is a regular expression that matches a Huggingface API key.
 // Huggingface API keys have the form: `hf_` followed by 34
-// alphanumeric characters.
+// alphabet characters.
 var keyRe = regexp.MustCompile(`hf_[A-Za-z]{34}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
