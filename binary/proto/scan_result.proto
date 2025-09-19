@@ -657,6 +657,7 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
+    GCPOAuth2AccessToken gcp_oauth2_access_token = 21;
   }
 
   message GCPSAK {
@@ -756,6 +757,11 @@ message SecretData {
 
   message GCPAPIKey {
     string key = 1;
+  }
+
+  message GCPOAuth2AccessToken {
+    // GCP OAuth2 access token, typically in format: 1/alphanumeric_string
+    string token = 1;
   }
 }
 

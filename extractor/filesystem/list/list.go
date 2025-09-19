@@ -94,6 +94,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2token"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -253,6 +254,7 @@ var (
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
+		{gcpoauth2token.NewDetector(), "secrets/gcpoauth2token", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
 		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},
 		{grokxaiapikey.NewAPIKeyDetector(), "secrets/grokxaiapikey", 0},
