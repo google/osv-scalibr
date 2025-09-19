@@ -62,6 +62,8 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
 	pluginsToRun := cli.NewStringListFlag(nil)
 	fs.Var(&pluginsToRun, "plugins", "Comma-separated list of plugin to run")
+	var extractorOverride cli.Array
+	fs.Var(&extractorOverride, "extractor-override", `Override extractor for files matching a glob pattern. Format: <plugin-name>:<glob-pattern>. Can be specified multiple times.`)
 	extractorsToRun := cli.NewStringListFlag(nil)
 	fs.Var(&extractorsToRun, "extractors", "[Legacy field, prefer using --plugins instead] Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag(nil)
@@ -107,6 +109,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		ResultFile:                 *resultFile,
 		Output:                     output,
 		PluginsToRun:               pluginsToRun.GetSlice(),
+		ExtractorOverride:          extractorOverride,
 		ExtractorsToRun:            extractorsToRun.GetSlice(),
 		DetectorsToRun:             detectorsToRun.GetSlice(),
 		AnnotatorsToRun:            annotatorsToRun.GetSlice(),
