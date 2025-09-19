@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -59,6 +60,30 @@ var (
 		Status: &spb.SecretStatus{
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(secretAt1),
+		},
+		Locations: []*spb.Location{
+			&spb.Location{
+				Location: &spb.Location_Filepath{
+					Filepath: &spb.Filepath{
+						Path: "/foo/bar/baz.json",
+					},
+				},
+			},
+		},
+	}
+	secretGCPAPIKeyStruct = &inventory.Secret{
+		Secret: gcpapikey.GCPAPIKey{
+			Key: "AIzatestestestestestestestestestesttest",
+		},
+		Location: "/foo/bar/baz.json",
+	}
+	secretGCPAPIKeyProto = &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_GcpApiKey{
+				GcpApiKey: &spb.SecretData_GCPAPIKey{
+					Key: "AIzatestestestestestestestestestesttest",
+				},
+			},
 		},
 		Locations: []*spb.Location{
 			&spb.Location{
@@ -107,6 +132,11 @@ func TestSecretToProto(t *testing.T) {
 				s.Status = nil
 				return s
 			}(secretGCPSAKProto1),
+		},
+		{
+			desc: "success GCP API key",
+			s:    secretGCPAPIKeyStruct,
+			want: secretGCPAPIKeyProto,
 		},
 	}
 
@@ -172,6 +202,11 @@ func TestSecretToStruct(t *testing.T) {
 				s.Validation = inventory.SecretValidationResult{}
 				return s
 			}(secretGCPSAKStruct1),
+		},
+		{
+			desc: "success GCP API key",
+			s:    secretGCPAPIKeyProto,
+			want: secretGCPAPIKeyStruct,
 		},
 	}
 

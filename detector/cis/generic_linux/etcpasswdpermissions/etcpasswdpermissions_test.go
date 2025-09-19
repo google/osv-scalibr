@@ -37,18 +37,6 @@ type fakeFS struct {
 	gid    uint32
 }
 
-type fakeFile struct {
-	perms fs.FileMode
-	uid   uint32
-	gid   uint32
-}
-
-type fakeFileInfo struct {
-	perms fs.FileMode
-	uid   uint32
-	gid   uint32
-}
-
 func TestScan(t *testing.T) {
 	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
 		t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)

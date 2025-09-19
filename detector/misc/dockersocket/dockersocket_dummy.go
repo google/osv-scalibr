@@ -14,6 +14,7 @@
 
 //go:build windows
 
+// Package dockersocket implements a detector for Docker socket exposure vulnerabilities.
 package dockersocket
 
 import (

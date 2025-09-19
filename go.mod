@@ -3,12 +3,12 @@ module github.com/google/osv-scalibr
 go 1.24.4
 
 require (
-	deps.dev/api/v3 v3.0.0-20250616031631-419a06b41f9b
-	deps.dev/api/v3alpha v0.0.0-20250616031631-419a06b41f9b
-	deps.dev/util/maven v0.0.0-20250616031631-419a06b41f9b
-	deps.dev/util/pypi v0.0.0-20250616031631-419a06b41f9b
-	deps.dev/util/resolve v0.0.0-20250616031631-419a06b41f9b
-	deps.dev/util/semver v0.0.0-20250610062038-1c74ed268106
+	deps.dev/api/v3 v3.0.0-20250903005441-604c45d5b44b
+	deps.dev/api/v3alpha v0.0.0-20250903005441-604c45d5b44b
+	deps.dev/util/maven v0.0.0-20250903005441-604c45d5b44b
+	deps.dev/util/pypi v0.0.0-20250903005441-604c45d5b44b
+	deps.dev/util/resolve v0.0.0-20250903005441-604c45d5b44b
+	deps.dev/util/semver v0.0.0-20250903005441-604c45d5b44b
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
@@ -46,18 +46,20 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tidwall/sjson v1.2.5
+	github.com/tink-crypto/tink-go/v2 v2.4.0
 	go.etcd.io/bbolt v1.4.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.39.0
 	golang.org/x/mod v0.25.0
 	golang.org/x/net v0.41.0
+	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/term v0.32.0
 	golang.org/x/text v0.26.0
 	golang.org/x/vuln v1.1.4
-	google.golang.org/grpc v1.73.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/grpc v1.75.0
+	google.golang.org/protobuf v1.36.8
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.38.0
@@ -66,6 +68,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 // indirect
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
@@ -150,17 +153,17 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
-	go.opentelemetry.io/otel v1.36.0 // indirect
-	go.opentelemetry.io/otel/metric v1.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.36.0 // indirect
+	go.opentelemetry.io/otel v1.37.0 // indirect
+	go.opentelemetry.io/otel/metric v1.37.0 // indirect
+	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	modernc.org/libc v1.65.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
