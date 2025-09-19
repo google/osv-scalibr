@@ -108,6 +108,9 @@ type ScanConfig struct {
 	PrintDurationAnalysis bool
 	// Optional: If true, fail the scan if any permission errors are encountered.
 	ErrorOnFSErrors bool
+	// Optional: If set, this function is called for each file to check if there is a specific
+	// extractor for this file. If it returns an extractor, only that extractor is used for the file.
+	ExtractorOverride func(filesystem.FileAPI) []filesystem.Extractor
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled
@@ -214,6 +217,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
+		ExtractorOverride:     config.ExtractorOverride,
 	}
 	inv, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
@@ -351,6 +355,8 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		MaxInodes:             config.MaxInodes,
 		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
+		ErrorOnFSErrors:       config.ErrorOnFSErrors,
+		ExtractorOverride:     config.ExtractorOverride,
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
