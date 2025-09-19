@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
@@ -75,6 +76,7 @@ var (
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
+		fromVeles(denopat.NewValidator(), "secrets/denopat", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
