@@ -177,10 +177,10 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	}
 
 	// Load environment variables from a sibling .env file if it exists
-	workingDir := filepath.Dir(absPath)
+	workingDir := filepath.Dir(input.Path)
 	envPath := filepath.Join(workingDir, ".env")
 	environment := types.Mapping{}
-	if f, err := os.Open(envPath); err == nil {
+	if f, err := input.FS.Open(envPath); err == nil {
 		defer f.Close()
 		if envVars, err := dotenv.Parse(f); err != nil {
 			log.Warnf("dotenv.Parse(%q): %v", envPath, err)
@@ -190,7 +190,7 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 			}
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
-		log.Warnf("os.Open(%q): %v", envPath, err)
+		log.Warnf("input.FS.Open(%q): %v", envPath, err)
 	}
 	configFiles := []types.ConfigFile{
 		{Filename: absPath},
@@ -202,7 +202,7 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	}
 	customOpts := loader.Options{
 		Interpolate: &interpolation.Options{
-			Substitute:      Substitute,
+			Substitute:      substitute,
 			LookupValue:     details.LookupEnv,
 			TypeCastMapping: make(map[tree.Path]interpolation.Cast),
 		},
@@ -219,6 +219,9 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	}
 
 	uniq := map[string]struct{}{}
+	// We Skip services with an empty image version.
+	// An empty image version is not a valid image reference.
+	// This happened because some environment variables are not resolved
 	for _, s := range project.Services {
 		if s.Image != "" && !strings.Contains(s.Image, "<IMPERFECT_ENV_VAR_RESOLVING>") {
 			uniq[s.Image] = struct{}{}
@@ -250,10 +253,10 @@ func parseName(name string) (string, string) {
 	return name, "latest"
 }
 
-// Substitute replaces environment variables in template strings with their values.
+// substitute replaces environment variables in template strings with their values.
 // For missing variables, it inserts a placeholder "<IMPERFECT_ENV_VAR_RESOLVING>" to indicate
 // that the substitution was incomplete, allowing processing to continue.
-func Substitute(inTemplate string, mapping template.Mapping) (string, error) {
+func substitute(inTemplate string, mapping template.Mapping) (string, error) {
 	options := []template.Option{
 		template.WithPattern(template.DefaultPattern),
 		template.WithReplacementFunction(

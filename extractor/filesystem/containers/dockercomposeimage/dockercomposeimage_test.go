@@ -87,6 +87,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/docker-compose-1.yml",
 			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
+				// "image3" and "image6" are not expected because
+				// the version values are set(partially) via environment variables,
+				// the responsible environment variable values are not known at extraction time,
+				// and the version values are imperfectly extracted.
 				{
 					Name:      "image1",
 					Version:   "1.1.1",
