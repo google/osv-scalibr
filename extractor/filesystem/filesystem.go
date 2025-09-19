@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -284,6 +285,8 @@ type walkContext struct {
 	// Whether to read symlinks.
 	readSymlinks bool
 
+	// Mutex to protect the status fields.
+	statusMu sync.Mutex
 	// Data for status printing.
 	lastStatus   time.Time
 	lastInodes   int
@@ -328,9 +331,10 @@ func walkIndividualPaths(wc *walkContext) error {
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
+	wc.statusMu.Lock()
 	wc.currentPath = path
-
 	wc.inodesVisited++
+	wc.statusMu.Unlock()
 	if wc.maxInodes > 0 && wc.inodesVisited > wc.maxInodes {
 		return fmt.Errorf("maxInodes (%d) exceeded", wc.maxInodes)
 	}
@@ -485,7 +489,9 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 		}
 	}
 
+	wc.statusMu.Lock()
 	wc.extractCalls++
+	wc.statusMu.Unlock()
 
 	start := time.Now()
 	results, err := ex.Extract(wc.ctx, &ScanInput{
@@ -625,6 +631,8 @@ func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, erro
 }
 
 func (wc *walkContext) printStatus() {
+	wc.statusMu.Lock()
+	defer wc.statusMu.Unlock()
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),
