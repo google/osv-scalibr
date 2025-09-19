@@ -25,11 +25,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github"
 )
 
-// Note: Github tokens are encoded using `` + `` to bypass github security checks
-
 const (
-	testKey        = `gh` + `r_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	anotherTestKey = `gh` + `r_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	testKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
+	anotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
 
 // TestDetector_truePositives tests for cases where we know the Detector

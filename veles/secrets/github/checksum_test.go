@@ -22,19 +22,18 @@ import (
 
 func TestValidateChecksum(t *testing.T) {
 	testcases := []struct {
-		name string
-		// Github tokens are encoded using `` + `` to bypass github security checks
+		name  string
 		token string
 		want  bool
 	}{
 		{
 			name:  "example valid",
-			token: `gh` + `r_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+			token: `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 			want:  true,
 		},
 		{
 			name:  "another example valid",
-			token: `gh` + `u_aGgfQsQ52sImE9zwWxKcjt2nhESfYG1U2FhX`,
+			token: `ghu_aGgfQsQ52sImE9zwWxKcjt2nhESfYG1U2FhX`,
 			want:  true,
 		},
 		{
@@ -44,7 +43,7 @@ func TestValidateChecksum(t *testing.T) {
 		},
 		{
 			name:  "invalid checksum",
-			token: `gh` + `r_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG1fw`,
+			token: `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG1fw`,
 			want:  false,
 		},
 	}
