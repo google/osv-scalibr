@@ -127,6 +127,7 @@ message Package {
     MacportsPackageMetadata macports_metadata = 53;
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
+    ChocolateyPackageMetadata chocolatey_metadata = 56;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -627,6 +628,17 @@ message WingetPackageMetadata {
   string channel = 5;
   repeated string tags = 6;
   repeated string commands = 7;
+}
+
+// The additional data found in Chocolatey packages.
+message ChocolateyPackageMetadata {
+  string name = 1;
+  string version = 2;
+  string authors = 3;
+  string summary = 4;
+  string licenseurl = 5;
+  string projecturl = 6;
+  string tags = 7;
 }
 
 // A secret (i.e. credential) found by Veles secret scanning.

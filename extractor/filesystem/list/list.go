@@ -70,6 +70,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -230,21 +231,22 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {dpkg.NewDefault},
-		apk.Name:      {apk.NewDefault},
-		rpm.Name:      {rpm.NewDefault},
-		cos.Name:      {cos.NewDefault},
-		snap.Name:     {snap.NewDefault},
-		nix.Name:      {nix.New},
-		module.Name:   {module.NewDefault},
-		vmlinuz.Name:  {vmlinuz.NewDefault},
-		pacman.Name:   {pacman.NewDefault},
-		portage.Name:  {portage.NewDefault},
-		flatpak.Name:  {flatpak.NewDefault},
-		homebrew.Name: {homebrew.New},
-		macapps.Name:  {macapps.NewDefault},
-		macports.Name: {macports.New},
-		winget.Name:   {winget.NewDefault},
+		dpkg.Name:       {dpkg.NewDefault},
+		apk.Name:        {apk.NewDefault},
+		rpm.Name:        {rpm.NewDefault},
+		cos.Name:        {cos.NewDefault},
+		snap.Name:       {snap.NewDefault},
+		nix.Name:        {nix.New},
+		module.Name:     {module.NewDefault},
+		vmlinuz.Name:    {vmlinuz.NewDefault},
+		pacman.Name:     {pacman.NewDefault},
+		portage.Name:    {portage.NewDefault},
+		flatpak.Name:    {flatpak.NewDefault},
+		homebrew.Name:   {homebrew.New},
+		macapps.Name:    {macapps.NewDefault},
+		macports.Name:   {macports.New},
+		winget.Name:     {winget.NewDefault},
+		chocolatey.Name: {chocolatey.NewDefault},
 	}
 
 	// Credential extractors.

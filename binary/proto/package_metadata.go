@@ -23,6 +23,7 @@ import (
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	chocolateymeta "github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
@@ -90,6 +91,9 @@ var (
 		reflect.TypeOf(&spb.Package_WingetMetadata{}): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
 		},
+		reflect.TypeOf(&spb.Package_ChocolateyMetadata{}): func(p *spb.Package) any {
+			return chocolateymeta.ToStruct(p.GetChocolateyMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -110,5 +114,6 @@ var (
 		(*asdfmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
+		(*chocolateymeta.Metadata)(nil),
 	}
 )
