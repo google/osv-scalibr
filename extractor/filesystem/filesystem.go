@@ -118,6 +118,9 @@ type Config struct {
 	PrintDurationAnalysis bool
 	// Optional: If true, fail the scan if any permission errors are encountered.
 	ErrorOnFSErrors bool
+	// Optional: If set, this function is called for each file to check if there is a specific
+	// extractor for this file. If it returns an extractor, only that extractor is used for the file.
+	ExtractorOverride func(FileAPI) []Extractor
 }
 
 // Run runs the specified extractors and returns their extraction results,
@@ -200,6 +203,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		inodesVisited:     0,
 		storeAbsolutePath: config.StoreAbsolutePath,
 		errorOnFSErrors:   config.ErrorOnFSErrors,
+		extractorOverride: config.ExtractorOverride,
 
 		lastStatus: time.Now(),
 
@@ -292,6 +296,10 @@ type walkContext struct {
 
 	currentPath string
 	fileAPI     *lazyFileAPI
+
+	// If set, this function is called for each file to check if there is a specific
+	// extractor for this file. If it returns an extractor, only that extractor is used for the file.
+	extractorOverride func(FileAPI) []Extractor
 }
 
 func walkIndividualPaths(wc *walkContext) error {
@@ -369,9 +377,19 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 			wc.gitignores = append(wc.gitignores, gitignores)
 		}
 
+		exts := wc.extractors
+		ignoreFileRequired := false
 		// Pass the path to the extractors that extract from directories.
-		for _, ex := range wc.extractors {
-			if ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
+		if wc.extractorOverride != nil {
+			if overrideExts := wc.extractorOverride(wc.fileAPI); len(overrideExts) > 0 {
+				exts = overrideExts
+				ignoreFileRequired = true
+			}
+		}
+
+		for _, ex := range exts {
+			if ex.Requirements().ExtractFromDirs &&
+				(ignoreFileRequired || ex.FileRequired(wc.fileAPI)) {
 				wc.runExtractor(ex, path, true)
 			}
 		}
@@ -400,9 +418,20 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 		}
 	}
 
+	exts := wc.extractors
+	ignoreFileRequired := false
+	// Pass the path to the extractors that extract from directories.
+	if wc.extractorOverride != nil {
+		if overrideExts := wc.extractorOverride(wc.fileAPI); len(overrideExts) > 0 {
+			exts = overrideExts
+			ignoreFileRequired = true
+		}
+	}
+
 	fSize := int64(-1) // -1 means we haven't checked the file size yet.
-	for _, ex := range wc.extractors {
-		if !ex.Requirements().ExtractFromDirs && ex.FileRequired(wc.fileAPI) {
+	for _, ex := range exts {
+		if !ex.Requirements().ExtractFromDirs &&
+			(ignoreFileRequired || ex.FileRequired(wc.fileAPI)) {
 			if wc.maxFileSize > 0 && fSize == -1 {
 				var err error
 				fSize, err = fileSize(wc.fileAPI)
@@ -414,6 +443,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 					return nil
 				}
 			}
+
 			wc.runExtractor(ex, path, false)
 		}
 	}
