@@ -19,3 +19,8 @@ package github
 type AppRefreshToken struct {
 	Token string
 }
+
+// AppServerToServerToken contains a Github App server to server token
+type AppServerToServerToken struct {
+	Token string
+}

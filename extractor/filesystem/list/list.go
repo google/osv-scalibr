@@ -270,6 +270,7 @@ var (
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
+		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},
 	})
 
 	// Misc artifact extractors.
