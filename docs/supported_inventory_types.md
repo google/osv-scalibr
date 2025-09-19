@@ -150,6 +150,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
 
+### EmbeddedFS
+
+| Type | Extractor Plugin |
+|------|------------------|
+| vdi  | `embeddedfs/vdi` |
+
 ## Detectors
 
 | Description                                                          | Plugin Name                              |

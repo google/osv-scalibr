@@ -24,28 +24,40 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
+// readDirAll reads all directory entries using fsys.ReadDir and returns a DirIterator with preloaded entries.
+func readDirAll(fsys scalibrfs.FS, name string) (*DirIterator, error) {
+	files, err := fsys.ReadDir(name)
+	if err != nil {
+		return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
+	}
+	return &DirIterator{files: files, curr: 0}, nil
+}
+
 // ReadDir reads the named directory and returns an iterator over the directory entries.
 func ReadDir(fsys scalibrfs.FS, name string) (*DirIterator, error) {
+	// Check if the path is accessible
+	_, err := fsys.Stat(name)
+	if err != nil {
+		return nil, &fs.PathError{Op: "stat", Path: name, Err: err}
+	}
+
+	// Try to open the directory
 	file, err := fsys.Open(name)
 	if err != nil {
-		return nil, err
+		// If Open fails, fall back to reading all entries
+		return readDirAll(fsys, name)
 	}
 
+	// Check if the file supports incremental Readdir
 	dir, ok := file.(fs.ReadDirFile)
 	if !ok {
-		// Fallback if ReadDirFile is not implemented: Use fs.DirFS's ReadDir().
-		// (Uses more memory since it reads all subdirs at once.)
-		err := file.Close()
-		if err != nil {
-			return nil, err
+		// If ReadDirFile is not implemented, close the file and fall back to reading all entries
+		if err := file.Close(); err != nil {
+			return nil, &fs.PathError{Op: "close", Path: name, Err: err}
 		}
-
-		files, err := fsys.ReadDir(name)
-		if err != nil {
-			return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
-		}
-		return &DirIterator{files: files, curr: 0}, nil
+		return readDirAll(fsys, name)
 	}
+
 	return &DirIterator{dir: dir}, nil
 }
 

@@ -165,7 +165,71 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		return inventory.Inventory{}, nil, err
 	}
 
-	return RunFS(ctx, config, wc)
+	// Run extractors on the scan root
+	inv, status, err := RunFS(ctx, config, wc)
+	if err != nil {
+		return inv, status, err
+	}
+
+	// Process embedded filesystems
+	var additionalInv inventory.Inventory
+	for _, embeddedFS := range inv.EmbeddedFSs {
+		// Mount the embedded filesystem
+		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to mount embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+
+		// Create a new ScanRoot for the mounted filesystem
+		newScanRoot := &scalibrfs.ScanRoot{
+			FS:   mountedFS,
+			Path: "", // Virtual filesystem
+		}
+
+		// Run extractors on the mounted filesystem using Run
+		mountedInv, mountedStatus, err := Run(ctx, &Config{
+			Extractors:            config.Extractors,
+			ScanRoots:             []*scalibrfs.ScanRoot{newScanRoot},
+			PathsToExtract:        []string{}, // Clear PathsToExtract to scan entire mounted filesystem
+			IgnoreSubDirs:         config.IgnoreSubDirs,
+			DirsToSkip:            config.DirsToSkip,
+			SkipDirRegex:          config.SkipDirRegex,
+			SkipDirGlob:           config.SkipDirGlob,
+			UseGitignore:          config.UseGitignore,
+			Stats:                 config.Stats,
+			ReadSymlinks:          config.ReadSymlinks,
+			MaxInodes:             config.MaxInodes, // Enforce inode limit for disk images
+			MaxFileSize:           config.MaxFileSize,
+			StoreAbsolutePath:     true,
+			PrintDurationAnalysis: config.PrintDurationAnalysis,
+			ErrorOnFSErrors:       config.ErrorOnFSErrors,
+		})
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to extract from embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+		additionalInv.Append(mountedInv)
+		status = append(status, mountedStatus...)
+	}
+
+	// Combine inventories
+	inv.Append(additionalInv)
+	return inv, status, nil
 }
 
 // InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
