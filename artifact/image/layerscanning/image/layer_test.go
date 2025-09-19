@@ -66,7 +66,7 @@ func TestConvertV1Layer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty, DefaultMaxSymlinkDepth)
 
-			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
+			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, VirtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
 			}
 		})
@@ -74,12 +74,12 @@ func TestConvertV1Layer(t *testing.T) {
 }
 
 func TestChainLayerFS(t *testing.T) {
-	root := &virtualFile{
+	root := &VirtualFile{
 		virtualPath: "/",
 		isWhiteout:  false,
 		mode:        fs.ModeDir | dirPermission,
 	}
-	file1 := &virtualFile{
+	file1 := &VirtualFile{
 		virtualPath: "/file1",
 		isWhiteout:  false,
 		mode:        filePermission,
@@ -151,7 +151,7 @@ func TestChainFSOpen(t *testing.T) {
 		name            string
 		chainfs         FS
 		path            string
-		wantVirtualFile *virtualFile
+		wantVirtualFile *VirtualFile
 		wantErr         error
 	}{
 		{
@@ -172,7 +172,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open root from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/",
 				isWhiteout:  false,
 				mode:        fs.ModeDir | dirPermission,
@@ -182,7 +182,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open directory from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir1",
 				isWhiteout:  false,
 				mode:        fs.ModeDir | dirPermission,
@@ -192,7 +192,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open file from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/baz",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/baz",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -202,7 +202,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open non-root file from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1/foo",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir1/foo",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -212,7 +212,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open file with .. in path",
 			chainfs: populatedChainFS,
 			path:    "/dir1/../dir2/bar",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -222,7 +222,7 @@ func TestChainFSOpen(t *testing.T) {
 			name:    "open file with .. outside of root (This should get normalized to root)",
 			chainfs: populatedChainFS,
 			path:    "../../dir2/bar",
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -233,7 +233,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink1",
 			// The node the symlink points to is expected.
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -244,7 +244,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink2",
 			// The node the symlink points to is expected.
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -255,7 +255,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink-relative-1",
 			// The node the symlink points to is expected.
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -266,7 +266,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/dir2/symlink-relative-2",
 			// The node the symlink points to is expected.
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -277,7 +277,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/dir2/symlink-relative-3",
 			// The node the symlink points to is expected.
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -288,7 +288,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-dir/bar",
 			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -299,7 +299,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-dir-nested/bar",
 			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -310,7 +310,7 @@ func TestChainFSOpen(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/symlink-into-nested-dir-symlink",
 			// "/symlink-dir" resolves to "/dir1", so we should get the virtual file with path "/dir1/foo"
-			wantVirtualFile: &virtualFile{
+			wantVirtualFile: &VirtualFile{
 				virtualPath: "/dir2/bar",
 				isWhiteout:  false,
 				mode:        filePermission,
@@ -357,7 +357,7 @@ func TestChainFSOpen(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(gotFile, tc.wantVirtualFile, cmp.AllowUnexported(virtualFile{})); tc.wantVirtualFile != nil && diff != "" {
+			if diff := cmp.Diff(gotFile, tc.wantVirtualFile, cmp.AllowUnexported(VirtualFile{})); tc.wantVirtualFile != nil && diff != "" {
 				t.Errorf("Open(%v) returned file: %v, want file: %v", tc.path, gotFile, tc.wantVirtualFile)
 			}
 		})
@@ -463,7 +463,7 @@ func TestChainFSReadDir(t *testing.T) {
 		name             string
 		chainfs          FS
 		path             string
-		wantVirtualFiles []*virtualFile
+		wantVirtualFiles []*VirtualFile
 		wantErr          error
 	}{
 		{
@@ -478,7 +478,7 @@ func TestChainFSReadDir(t *testing.T) {
 			name:             "root directory",
 			chainfs:          setUpEmptyChainFS(t),
 			path:             "/",
-			wantVirtualFiles: []*virtualFile{},
+			wantVirtualFiles: []*VirtualFile{},
 		},
 		{
 			name:    "non-root directory in empty tree",
@@ -491,7 +491,7 @@ func TestChainFSReadDir(t *testing.T) {
 			chainfs: populatedChainFS,
 			path:    "/",
 			// wh.foobar is a whiteout file and should not be returned.
-			wantVirtualFiles: []*virtualFile{
+			wantVirtualFiles: []*VirtualFile{
 				{
 					virtualPath: "/dir1",
 					isWhiteout:  false,
@@ -585,7 +585,7 @@ func TestChainFSReadDir(t *testing.T) {
 			name:    "read non-root directory from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/dir1",
-			wantVirtualFiles: []*virtualFile{
+			wantVirtualFiles: []*VirtualFile{
 				{
 					virtualPath: "/dir1/foo",
 					isWhiteout:  false,
@@ -603,7 +603,7 @@ func TestChainFSReadDir(t *testing.T) {
 			name:    "read symlink from filled tree",
 			chainfs: populatedChainFS,
 			path:    "/symlink-to-dir",
-			wantVirtualFiles: []*virtualFile{
+			wantVirtualFiles: []*VirtualFile{
 				{
 					virtualPath: "/dir2/bar",
 					isWhiteout:  false,
@@ -696,123 +696,123 @@ func setUpChainFS(t *testing.T, maxSymlinkDepth int) FS {
 		tree: NewNode(maxSymlinkDepth),
 	}
 
-	vfsMap := map[string]*virtualFile{
+	vfsMap := map[string]*VirtualFile{
 		// Layer 1 files / directories
-		"/": &virtualFile{
+		"/": &VirtualFile{
 			virtualPath: "/",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/dir1": &virtualFile{
+		"/dir1": &VirtualFile{
 			virtualPath: "/dir1",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/baz": &virtualFile{
+		"/baz": &VirtualFile{
 			virtualPath: "/baz",
 			isWhiteout:  false,
 			mode:        filePermission,
 		},
 		// Layer 2 files / directories
-		"/dir1/foo": &virtualFile{
+		"/dir1/foo": &VirtualFile{
 			virtualPath: "/dir1/foo",
 			isWhiteout:  false,
 			mode:        filePermission,
 		},
-		"/dir2": &virtualFile{
+		"/dir2": &VirtualFile{
 			virtualPath: "/dir2",
 			isWhiteout:  false,
 			mode:        fs.ModeDir | dirPermission,
 		},
-		"/dir2/bar": &virtualFile{
+		"/dir2/bar": &VirtualFile{
 			virtualPath: "/dir2/bar",
 			isWhiteout:  false,
 			mode:        filePermission,
 		},
-		"/wh.foobar": &virtualFile{
+		"/wh.foobar": &VirtualFile{
 			virtualPath: "/wh.foobar",
 			isWhiteout:  true,
 			mode:        filePermission,
 		},
-		"/symlink1": &virtualFile{
+		"/symlink1": &VirtualFile{
 			virtualPath: "/symlink1",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2/bar",
 		},
-		"/symlink2": &virtualFile{
+		"/symlink2": &VirtualFile{
 			virtualPath: "/symlink2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink1",
 		},
-		"/symlink3": &virtualFile{
+		"/symlink3": &VirtualFile{
 			virtualPath: "/symlink3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink2",
 		},
-		"/symlink4": &virtualFile{
+		"/symlink4": &VirtualFile{
 			virtualPath: "/symlink4",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink3",
 		},
-		"/symlink-relative-1": &virtualFile{
+		"/symlink-relative-1": &VirtualFile{
 			virtualPath: "/symlink-relative-1",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "./dir2/bar",
 		},
-		"/dir2/symlink-relative-2": &virtualFile{
+		"/dir2/symlink-relative-2": &VirtualFile{
 			virtualPath: "/dir2/symlink-relative-2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "./bar",
 		},
-		"/dir2/symlink-relative-3": &virtualFile{
+		"/dir2/symlink-relative-3": &VirtualFile{
 			virtualPath: "/dir2/symlink-relative-3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "../symlink-relative-1",
 		},
-		"/symlink-to-dir-nested": &virtualFile{
+		"/symlink-to-dir-nested": &VirtualFile{
 			virtualPath: "/symlink-to-dir-nested",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-to-dir",
 		},
-		"/symlink-into-nested-dir-symlink": &virtualFile{
+		"/symlink-into-nested-dir-symlink": &VirtualFile{
 			virtualPath: "/symlink-into-nested-dir-symlink",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-to-dir-nested/bar",
 		},
-		"/symlink-to-dir": &virtualFile{
+		"/symlink-to-dir": &VirtualFile{
 			virtualPath: "/symlink-to-dir",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/dir2",
 		},
-		"/symlink-to-nonexistent-file": &virtualFile{
+		"/symlink-to-nonexistent-file": &VirtualFile{
 			virtualPath: "/symlink-to-nonexistent-file",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/nonexistent-file",
 		},
-		"/symlink-cycle1": &virtualFile{
+		"/symlink-cycle1": &VirtualFile{
 			virtualPath: "/symlink-cycle1",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle2",
 		},
-		"/symlink-cycle2": &virtualFile{
+		"/symlink-cycle2": &VirtualFile{
 			virtualPath: "/symlink-cycle2",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
 			targetPath:  "/symlink-cycle3",
 		},
-		"/symlink-cycle3": &virtualFile{
+		"/symlink-cycle3": &VirtualFile{
 			virtualPath: "/symlink-cycle3",
 			isWhiteout:  false,
 			mode:        fs.ModeSymlink,
