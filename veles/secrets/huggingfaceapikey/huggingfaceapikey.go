@@ -12,21 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package resolution provides clients required by dependency resolution.
-package resolution
+package huggingfaceapikey
 
-import (
-	"context"
-
-	"deps.dev/util/resolve"
-)
-
-// ClientWithRegistries is a resolve.Client that allows package registries to be added.
-type ClientWithRegistries interface {
-	resolve.Client
-	// AddRegistries adds the specified registries to fetch data.
-	AddRegistries(ctx context.Context, registries []Registry) error
+// HuggingfaceAPIKey is a Veles Secret that holds relevant information for a
+// Huggingface API key (prefix `hf_`).
+// HuggingfaceAPIKey represents an API key used to authenticate requests
+type HuggingfaceAPIKey struct {
+	Key              string
+	Role             string
+	FineGrainedScope []string
 }
-
-// Registry is the interface of a registry to fetch data.
-type Registry any

@@ -24,6 +24,16 @@ type redHatVersion struct {
 	release string
 }
 
+// isOnlyDigits returns true if the given string contains only digits
+func isOnlyDigits(str string) bool {
+	for _, c := range str {
+		if !isASCIIDigit(c) {
+			return false
+		}
+	}
+	return true
+}
+
 // isASCIIDigit returns true if the given rune is an ASCII digit.
 //
 // Unicode digits are not considered ASCII digits by this function.
@@ -209,29 +219,23 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 // parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
 //
 // A Red Hat version contains the following components:
-// - name (of the package), represented as "n"
 // - epoch, represented as "e"
 // - version, represented as "v"
 // - release, represented as "r"
-// - architecture, represented as "a"
 //
-// When all components are present, the version is represented as "n-e:v-r.a",
+// When all components are present, the version is represented as "e:v-r",
 // though only the version is actually required.
 func parseRedHatVersion(str string) redHatVersion {
-	bf, af, hasColon := strings.Cut(str, ":")
+	epoch, vr, hasColon := strings.Cut(str, ":")
 
-	if !hasColon {
-		af, bf = bf, af
+	// if there's not a colon, or the "epoch" value has characters other than digits,
+	// then the string does not have an epoch value
+	if !hasColon || !isOnlyDigits(epoch) {
+		vr = str
+		epoch = ""
 	}
 
-	// (note, we don't actually use the name)
-	name, epoch, hasName := strings.Cut(bf, "-")
-
-	if !hasName {
-		epoch = name
-	}
-
-	version, release, hasRelease := strings.Cut(af, "-")
+	version, release, hasRelease := strings.Cut(vr, "-")
 
 	if hasRelease {
 		release = "-" + release

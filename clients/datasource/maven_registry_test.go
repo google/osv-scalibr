@@ -28,7 +28,7 @@ import (
 
 func TestGetProject(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
 	srv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
 	<project>
 	  <groupId>org.example</groupId>
@@ -55,7 +55,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "")
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "")
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -107,7 +107,7 @@ func TestGetProjectSnapshot(t *testing.T) {
 
 func TestMultipleRegistry(t *testing.T) {
 	dft := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -138,7 +138,7 @@ func TestMultipleRegistry(t *testing.T) {
 	`))
 
 	srv := clienttest.NewMockHTTPServer(t)
-	if err := client.AddRegistry(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}); err != nil {
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}); err != nil {
 		t.Fatalf("failed to add registry %s: %v", srv.URL, err)
 	}
 	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
@@ -197,7 +197,7 @@ func TestMultipleRegistry(t *testing.T) {
 
 func TestUpdateDefaultRegistry(t *testing.T) {
 	dft := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -222,7 +222,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 	}
 
 	srv := clienttest.NewMockHTTPServer(t)
-	if err := client.AddRegistry(datasource.MavenRegistry{URL: srv.URL, ID: "default", ReleasesEnabled: true}); err != nil {
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{URL: srv.URL, ID: "default", ReleasesEnabled: true}); err != nil {
 		t.Fatalf("failed to add registry %s: %v", srv.URL, err)
 	}
 	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
@@ -252,7 +252,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>

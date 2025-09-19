@@ -657,7 +657,8 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
-    GithubAppRefreshToken github_app_refresh_token = 20;
+    HuggingfaceAPIKey hugginface = 20;
+    GithubAppRefreshToken github_app_refresh_token = 21;
   }
 
   message GCPSAK {
@@ -755,11 +756,18 @@ message SecretData {
   message HashiCorpVaultAppRoleCredentials {
     string role_id = 1;
     string secret_id = 2;
-    string id = 3;  // General ID field for uncertain UUID types when context is unclear
+    string id =
+        3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
     string key = 1;
+  }
+
+  message HuggingfaceAPIKey {
+    string key = 1;
+    string role = 2;
+    repeated string fine_grained_scope = 3;
   }
 }
 
