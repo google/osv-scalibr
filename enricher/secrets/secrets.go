@@ -24,13 +24,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
-	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
-	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
-	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	githubappservertoservertoken "github.com/google/osv-scalibr/veles/secrets/github/appservertoservertoken"
-	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
 const (
@@ -45,22 +38,6 @@ var _ enricher.Enricher = &Enricher{}
 // Enricher uses a Veles ValidationEngine to validate Secrets found by Veles.
 type Enricher struct {
 	engine *veles.ValidationEngine
-}
-
-// New creates a new Enricher using the default Veles Validators.
-func New() enricher.Enricher {
-	engine := veles.NewValidationEngine(
-		veles.WithValidator(anthropicapikey.NewWorkspaceValidator()),
-		veles.WithValidator(anthropicapikey.NewModelValidator()),
-		veles.WithValidator(gcpsak.NewValidator()),
-		veles.WithValidator(dockerhubpat.NewValidator()),
-		veles.WithValidator(digitaloceanapikey.NewValidator()),
-		veles.WithValidator(perplexityapikey.NewValidator()),
-		veles.WithValidator(grokxaiapikey.NewAPIValidator()),
-		veles.WithValidator(grokxaiapikey.NewManagementAPIValidator()),
-		veles.WithValidator(githubappservertoservertoken.NewValidator()),
-	)
-	return &Enricher{engine: engine}
 }
 
 // AddValidator adds a Validator for a specific type of Secret to the underlying validation engine.

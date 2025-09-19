@@ -31,7 +31,8 @@ type Detector struct {
 	// Matches on the token.
 	Re *regexp.Regexp
 	// Returns a veles.Secret from a regexp match.
-	FromMatch func([]byte) veles.Secret
+	//  It returns the secret and a boolean indicating success.
+	FromMatch func([]byte) (veles.Secret, bool)
 }
 
 // MaxSecretLen returns the maximum length of the token.
@@ -44,8 +45,10 @@ func (d Detector) MaxSecretLen() uint32 {
 func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
 	for _, m := range d.Re.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
-		secrets = append(secrets, d.FromMatch(data[l:r]))
-		positions = append(positions, l)
+		if match, ok := d.FromMatch(data[l:r]); ok {
+			secrets = append(secrets, match)
+			positions = append(positions, l)
+		}
 	}
 	return secrets, positions
 }

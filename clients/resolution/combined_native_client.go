@@ -50,7 +50,7 @@ func NewCombinedNativeClient(opts CombinedNativeClientOptions) (*CombinedNativeC
 
 // Version returns metadata of a version specified by the VersionKey.
 func (c *CombinedNativeClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return resolve.Version{}, err
 	}
@@ -59,7 +59,7 @@ func (c *CombinedNativeClient) Version(ctx context.Context, vk resolve.VersionKe
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
 func (c *CombinedNativeClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
-	client, err := c.clientForSystem(pk.System)
+	client, err := c.clientForSystem(ctx, pk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (c *CombinedNativeClient) Versions(ctx context.Context, pk resolve.PackageK
 
 // Requirements returns requirements of a version specified by the VersionKey.
 func (c *CombinedNativeClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *CombinedNativeClient) Requirements(ctx context.Context, vk resolve.Vers
 
 // MatchingVersions returns versions matching the requirement specified by the VersionKey.
 func (c *CombinedNativeClient) MatchingVersions(ctx context.Context, vk resolve.VersionKey) ([]resolve.Version, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +85,12 @@ func (c *CombinedNativeClient) MatchingVersions(ctx context.Context, vk resolve.
 }
 
 // AddRegistries adds registries to the MavenRegistryClient.
-func (c *CombinedNativeClient) AddRegistries(registries []Registry) error {
+func (c *CombinedNativeClient) AddRegistries(ctx context.Context, registries []Registry) error {
 	// TODO(#541): Currently only MavenRegistryClient supports adding registries.
 	// We might need to add support for PyPIRegistryClient.
 	// But this AddRegistries method should take a system as input,
 	// so that we can add registries to the corresponding client.
-	client, err := c.clientForSystem(resolve.Maven)
+	client, err := c.clientForSystem(ctx, resolve.Maven)
 	if err != nil {
 		return err
 	}
@@ -99,10 +99,10 @@ func (c *CombinedNativeClient) AddRegistries(registries []Registry) error {
 		// Currently should not happen.
 		return nil
 	}
-	return regCl.AddRegistries(registries)
+	return regCl.AddRegistries(ctx, registries)
 }
 
-func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Client, error) {
+func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.System) (resolve.Client, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -114,7 +114,7 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 			if localRegistry != "" {
 				localRegistry = filepath.Join(c.opts.LocalRegistry, "maven")
 			}
-			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, localRegistry)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, localRegistry)
 			if err != nil {
 				return nil, err
 			}

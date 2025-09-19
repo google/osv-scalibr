@@ -14,6 +14,7 @@
 
 //go:build !linux && !darwin
 
+// Package etcpasswdpermissions implements a detector for the "Ensure permissions on /etc/passwd- are configured" CIS check.
 package etcpasswdpermissions
 
 import (
