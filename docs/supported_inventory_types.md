@@ -120,11 +120,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault AppRole token | `secrets/hashicorpvaultapprole`  |
 | OpenAI API key                | `secrets/openai`                 |
 | Perplexity API key            | `secrets/perplexityapikey`       |
+| Postgres Pgpass               | `secrets/pgpass`                 |
 | Postman API key               | `secrets/postmanapikey`          |
 | Postman Collection token      | `secrets/postmancollectiontoken` |
 | PEM/OpenSSH Private key       | `secrets/privatekey`             |
 | RubyGems API key              | `secrets/rubygemsapikey`         |
 | Tink keyset                   | `secrets/tinkkeyset`             |
+
 
 ### Container inventory
 

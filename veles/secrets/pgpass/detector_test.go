@@ -27,10 +27,11 @@ import (
 const (
 	testEntry                    = `hostname:port:database:username:password`
 	testEntryWithSemicolumnInPwd = `hostname:port:database:username:passw\:ord`
+	testEntryWiwthWildcardInside = `*:port:*:username:password`
 )
 
 // TestDetector_truePositives tests for cases where we know the Detector
-// will find a TODO.
+// will find a valid pgpass entry.
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{pgpass.NewDetector()})
 	if err != nil {
@@ -55,10 +56,16 @@ func TestDetector_truePositives(t *testing.T) {
 			pgpass.Pgpass{Entry: testEntry},
 		},
 	}, {
-		name:  "TODO: match with : in pwd",
+		name:  "match with : in pwd",
 		input: testEntryWithSemicolumnInPwd,
 		want: []veles.Secret{
 			pgpass.Pgpass{Entry: testEntryWithSemicolumnInPwd},
+		},
+	}, {
+		name:  "match fields with wildcard",
+		input: testEntryWiwthWildcardInside,
+		want: []veles.Secret{
+			pgpass.Pgpass{Entry: testEntryWiwthWildcardInside},
 		},
 	}}
 	for _, tc := range cases {
@@ -75,7 +82,7 @@ func TestDetector_truePositives(t *testing.T) {
 }
 
 // TestDetector_trueNegatives tests for cases where we know the Detector
-// will not find a TODO.
+// will not find a valid pgpass entry.
 func TestDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{pgpass.NewDetector()})
 	if err != nil {
@@ -89,14 +96,17 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "empty input",
 		input: "",
 	}, {
-		name:  "TODO: less number of fields",
+		name:  "malformed entry: less number of fields",
 		input: `hostname:port:database:password`,
 	}, {
-		name:  "TODO: more number of fields",
-		input: `hostname:port:data:base:username:password`,
+		name:  "malformed entry: more number of fields",
+		input: `hostname:port:database:username:password:extrafield`,
 	}, {
-		name:  "TODO: escaped : in group",
+		name:  "malformed entry: escaped: in database field",
 		input: `hostname:port:data\:base:username:password`,
+	}, {
+		name:  "malformed entry: wildcard in password",
+		input: `hostname:port:database:username:*`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
