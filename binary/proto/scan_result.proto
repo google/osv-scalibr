@@ -657,6 +657,7 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
+    GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 20;
   }
 
   message GCPSAK {
@@ -756,6 +757,15 @@ message SecretData {
 
   message GCPAPIKey {
     string key = 1;
+  }
+
+  message GCPOAuth2ClientCredentials {
+    // GCP OAuth2 client ID in format: 12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+    string client_id = 1;
+    // GCP OAuth2 client secret, typically 24+ character alphanumeric string
+    string client_secret = 2;
+    // General ID field for cases where credential type is uncertain
+    string id = 3;
   }
 }
 
