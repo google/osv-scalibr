@@ -22,20 +22,22 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 // tokenInfoResponse represents the response from Google's tokeninfo endpoint.
+// https://developers.google.com/identity/protocols/oauth2
 type tokenInfoResponse struct {
-	Audience         string `json:"audience,omitempty"`
-	Scope            string `json:"scope,omitempty"`
-	UserID           string `json:"user_id,omitempty"`
-	ExpiresIn        string `json:"expires_in,omitempty"`
-	Email            string `json:"email,omitempty"`
-	Error            string `json:"error,omitempty"`
-	ErrorDescription string `json:"error_description,omitempty"`
+	// Expiry is the expiration time of the token in Unix time.
+	Expiry string `json:"exp"`
+	// ExpiresIn is the number of seconds until the token expires.
+	ExpiresIn string `json:"expires_in"`
+	// Scope is a space-delimited list that identify the resources that your application could access
+	// https://developers.google.com/identity/protocols/oauth2/scopes
+	Scope string `json:"scope"`
 }
 
 // Validator implements veles.Validator for GCP OAuth2 access tokens.
@@ -59,7 +61,7 @@ func (v *Validator) Validate(ctx context.Context, token GCPOAuth2AccessToken) (v
 	}
 
 	// Validate using Google's tokeninfo endpoint
-	tokenInfoURL := "https://www.googleapis.com/oauth2/v1/tokeninfo"
+	tokenInfoURL := "https://www.googleapis.com/oauth2/v3/tokeninfo"
 	params := url.Values{}
 	params.Set("access_token", token.Token)
 
@@ -84,19 +86,39 @@ func (v *Validator) Validate(ctx context.Context, token GCPOAuth2AccessToken) (v
 		return veles.ValidationFailed, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	// Check for error in response
-	if tokenInfo.Error != "" {
-		// Common errors: "invalid_token", "expired_token"
-		if tokenInfo.Error == "invalid_token" {
-			return veles.ValidationInvalid, nil
+	// Bade request indicates invalid token.
+	if resp.StatusCode == http.StatusBadRequest {
+		return veles.ValidationInvalid, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return veles.ValidationFailed, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
+	}
+
+	// Token is recognized. Check scopes and expiration.
+
+	if tokenInfo.Scope == "" {
+		// Token does not have access to any scopes.
+		return veles.ValidationInvalid, nil
+	}
+
+	expiresIn, err := strconv.ParseInt(tokenInfo.ExpiresIn, 10, 64)
+	if err == nil {
+		if expiresIn > 0 {
+			return veles.ValidationValid, nil
 		}
-		return veles.ValidationFailed, fmt.Errorf("token validation error: %s - %s", tokenInfo.Error, tokenInfo.ErrorDescription)
+		return veles.ValidationInvalid, nil
 	}
 
-	// Token is valid if we have scope or audience information
-	if tokenInfo.Scope != "" || tokenInfo.Audience != "" {
-		return veles.ValidationValid, nil
+	expiresAt, err := strconv.ParseInt(tokenInfo.Expiry, 10, 64)
+	if err == nil && expiresAt > 0 {
+		expire := time.Unix(expiresAt, 0)
+		if time.Now().Before(expire) {
+			return veles.ValidationValid, nil
+		}
+		return veles.ValidationInvalid, nil
 	}
 
-	return veles.ValidationFailed, errors.New("unexpected response format")
+	// If we can't determine expiration, consider validation failed
+	return veles.ValidationFailed, errors.New("failed to determine token expiration")
 }

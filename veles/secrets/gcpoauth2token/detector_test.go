@@ -36,59 +36,59 @@ func TestDetector_Detect(t *testing.T) {
 		},
 		{
 			name:  "classic OAuth2 access token",
-			input: `access_token: "1/fFAGRNJru1FTz70BzhT3Zg"`,
+			input: `access_token: "ya29.fFAGRNJru1FTz70BzhT3Zg"`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/fFAGRNJru1FTz70BzhT3Zg"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.fFAGRNJru1FTz70BzhT3Zg"},
 			},
 		},
 		{
 			name:  "OAuth2 token in JSON response",
-			input: `{"access_token": "1/fFAGRNJru1FTz70BzhT3Zg", "expires_in": 3920, "token_type": "Bearer"}`,
+			input: `{"access_token": "ya29.fFAGRNJru1FTz70BzhT3Zg", "expires_in": 3920, "token_type": "Bearer"}`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/fFAGRNJru1FTz70BzhT3Zg"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.fFAGRNJru1FTz70BzhT3Zg"},
 			},
 		},
 		{
 			name:  "bearer token in Authorization header",
-			input: `Authorization: Bearer 1/AbCdEfGhIjKlMnOpQrStUvWxYz1234567890`,
+			input: `Authorization: Bearer ya29.AbCdEfGhIjKlMnOpQrStUvWxYz1234567890`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"},
 			},
 		},
 		{
 			name:  "longer access token with underscores and hyphens",
-			input: `curl -H "Authorization: Bearer 1/aB-cD_eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ"`,
+			input: `curl -H "Authorization: Bearer ya29.aB-cD_eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ"`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/aB-cD_eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.aB-cD_eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ"},
 			},
 		},
 		{
 			name:  "multiple tokens in the same input",
-			input: `access_token: "1/FirstToken123" refresh_token: "1/SecondToken456"`,
+			input: `access_token: "ya29.FirstToken123" refresh_token: "ya29.SecondToken456"`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/FirstToken123"},
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/SecondToken456"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.FirstToken123"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.SecondToken456"},
 			},
 		},
 		{
 			name:  "token in environment variable format",
-			input: `export GCP_ACCESS_TOKEN="1/EnvToken987654321"`,
+			input: `export GCP_ACCESS_TOKEN="ya29.EnvToken987654321"`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/EnvToken987654321"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.EnvToken987654321"},
 			},
 		},
 		{
 			name: "token in configuration file",
 			input: `[auth]
-access_token = 1/ConfigToken123456789
+access_token = ya29.ConfigToken123456789
 token_type = Bearer`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/ConfigToken123456789"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.ConfigToken123456789"},
 			},
 		},
 		{
 			name:     "false positive: token too short",
-			input:    `1/abc`,
+			input:    `ya29.abc`,
 			expected: nil,
 		},
 		{
@@ -103,12 +103,12 @@ token_type = Bearer`,
 		},
 		{
 			name:     "false positive: contains invalid characters early",
-			input:    `1/fF@AGRNJru1FTz70BzhT3Zg`,
+			input:    `ya29.fF@AGRNJru1FTz70BzhT3Zg`,
 			expected: nil,
 		},
 		{
 			name:     "false positive: contains spaces early",
-			input:    `1/fF AGRNJru1FTz70BzhT3Zg`,
+			input:    `ya29.fF AGRNJru1FTz70BzhT3Zg`,
 			expected: nil,
 		},
 		{
@@ -118,7 +118,7 @@ token_type = Bearer`,
 		},
 		{
 			name:     "random URL should not match",
-			input:    `https://api.example.com/v1/users/123456789/profile`,
+			input:    `https://api.example.com/vya29.users/123456789/profile`,
 			expected: nil,
 		},
 		{
@@ -128,16 +128,16 @@ token_type = Bearer`,
 		},
 		{
 			name:  "edge case: exactly minimum length",
-			input: `1/abcdefghij`,
+			input: `ya29.abcdefghij`,
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/abcdefghij"},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29.abcdefghij"},
 			},
 		},
 		{
 			name:  "edge case: very long token",
-			input: `1/` + strings.Repeat("a", 150),
+			input: `ya29.` + strings.Repeat("a", 150),
 			expected: []veles.Secret{
-				gcpoauth2token.GCPOAuth2AccessToken{Token: "1/" + strings.Repeat("a", 150)},
+				gcpoauth2token.GCPOAuth2AccessToken{Token: "ya29." + strings.Repeat("a", 150)},
 			},
 		},
 	}

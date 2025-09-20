@@ -25,8 +25,10 @@ import (
 const maxTokenLength = 200
 
 // tokenRe is a regular expression that matches GCP OAuth2 access tokens.
-// Pattern: 1/ followed by alphanumeric characters, underscores, and hyphens
-var tokenRe = regexp.MustCompile(`1/[A-Za-z0-9_-]{10,}`)
+// Pattern: ya29. followed by alphanumeric characters, underscores, and hyphens (case-insensitive)
+// Modern GCP OAuth2 access tokens start with "ya29." prefix
+// https://cloud.google.com/docs/authentication/token-types#access-tokens
+var tokenRe = regexp.MustCompile(`\b(ya29\.(?i:[a-z0-9_-]{10,}))(?:[^a-z0-9_-]|\z)`)
 
 // NewDetector returns a new simpletoken.Detector that matches GCP OAuth2 access tokens.
 func NewDetector() veles.Detector {
@@ -34,6 +36,12 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     tokenRe,
 		FromMatch: func(b []byte) veles.Secret {
+			// Extract the first capturing group which contains the actual token
+			matches := tokenRe.FindSubmatch(b)
+			if len(matches) >= 2 {
+				return GCPOAuth2AccessToken{Token: string(matches[1])}
+			}
+			// Fallback to full match if no capturing group found
 			return GCPOAuth2AccessToken{Token: string(b)}
 		},
 	}
