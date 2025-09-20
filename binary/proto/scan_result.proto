@@ -659,6 +659,9 @@ message SecretData {
     GCPAPIKey gcp_api_key = 19;
     HuggingfaceAPIKey hugginface = 20;
     GithubAppRefreshToken github_app_refresh_token = 21;
+    StripeSecretKey stripe_secret_key = 22;
+    StripeRestrictedKey stripe_restricted_key = 23;
+    StripeWebhookSecret stripe_webhook_secret = 24;
   }
 
   message GCPSAK {
@@ -768,6 +771,18 @@ message SecretData {
     string key = 1;
     string role = 2;
     repeated string fine_grained_scope = 3;
+  }
+
+  message StripeSecretKey {
+    string key = 1;
+  }
+
+  message StripeRestrictedKey {
+    string key = 1;
+  }
+
+  message StripeWebhookSecret {
+    string key = 1;
   }
 }
 
