@@ -33,7 +33,7 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "os/nvm"
+	Name = "runtime/nvm"
 )
 
 // Extractor extracts nvm Node.js versions.
@@ -60,18 +60,16 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 func parseVersionLine(line string) (version string, ok bool) {
 	line = strings.TrimSpace(line)
+	// Comments and empty lines are ignored
 	if line == "" || strings.HasPrefix(line, "#") {
 		return "", false
 	}
 	// Remove 'v' prefix if present (e.g., v18.17.0 -> 18.17.0)
 	version = strings.TrimPrefix(line, "v")
 	// Skip if the version doesn't start with a digit.
-	// Skip special keywords like 'lts/*', 'node', 'system'.
+	// This is for skipping special keywords like 'lts/*', 'node', 'system'.
 	var startDigitRE = regexp.MustCompile(`^[0-9]`)
-	if strings.Contains(version, "/") ||
-		version == "node" ||
-		version == "system" ||
-		!startDigitRE.MatchString(version) {
+	if !startDigitRE.MatchString(version) {
 		return "", false
 	}
 	return version, true

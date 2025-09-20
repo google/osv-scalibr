@@ -15,8 +15,6 @@
 package nvm_test
 
 import (
-	"io/fs"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
-	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -54,15 +51,10 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = nvm.Extractor{}
-			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: 30 * 1024,
-			})); got != tt.wantRequired {
+			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 		})
@@ -78,7 +70,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "valid .nvmrc with version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/simpleValidWithComments/.nvmrc",
+				Path: "testdata/simpleValidWithComments.nvmrc",
 			},
 			wantPackages: []*extractor.Package{
 				{
@@ -88,14 +80,14 @@ func TestExtract(t *testing.T) {
 					Metadata: &metadata.Metadata{
 						NodeJsVersion: "20.1.0",
 					},
-					Locations: []string{"testdata/simpleValidWithComments/.nvmrc"},
+					Locations: []string{"testdata/simpleValidWithComments.nvmrc"},
 				},
 			},
 		},
 		{
 			name: "valid .nvmrc with whitespaces and comments",
 			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/validWhiteSpaces/.nvmrc",
+				Path: "testdata/validWhiteSpaces.nvmrc",
 			},
 			wantPackages: []*extractor.Package{
 				{
@@ -105,21 +97,21 @@ func TestExtract(t *testing.T) {
 					Metadata: &metadata.Metadata{
 						NodeJsVersion: "24.04",
 					},
-					Locations: []string{"testdata/validWhiteSpaces/.nvmrc"},
+					Locations: []string{"testdata/validWhiteSpaces.nvmrc"},
 				},
 			},
 		},
 		{
 			name: ".nvmrc with node and lts instead of version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/notNumericVersion/.nvmrc",
+				Path: "testdata/notNumericVersion.nvmrc",
 			},
 			wantPackages: nil,
 		},
 		{
 			name: ".nvmrc with no numerical version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/validMultiVersionWithSkip/.nvmrc",
+				Path: "testdata/validMultiVersionWithSkip.nvmrc",
 			},
 			wantPackages: nil,
 		},
