@@ -35,14 +35,14 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     tokenRe,
-		FromMatch: func(b []byte) veles.Secret {
+		FromMatch: func(b []byte) (veles.Secret, bool) {
 			// Extract the first capturing group which contains the actual token
 			matches := tokenRe.FindSubmatch(b)
 			if len(matches) >= 2 {
-				return GCPOAuth2AccessToken{Token: string(matches[1])}
+				return GCPOAuth2AccessToken{Token: string(matches[1])}, true
 			}
 			// Fallback to full match if no capturing group found
-			return GCPOAuth2AccessToken{Token: string(b)}
+			return GCPOAuth2AccessToken{Token: string(b)}, true
 		},
 	}
 }
