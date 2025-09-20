@@ -5027,6 +5027,8 @@ type SecretData struct {
 	//	*SecretData_HashicorpVaultToken
 	//	*SecretData_HashicorpVaultAppRoleCredentials
 	//	*SecretData_GcpApiKey
+	//	*SecretData_Hugginface
+	//	*SecretData_GithubAppRefreshToken_
 	//	*SecretData_GcpOauth2AccessToken
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
@@ -5241,6 +5243,24 @@ func (x *SecretData) GetGcpApiKey() *SecretData_GCPAPIKey {
 	return nil
 }
 
+func (x *SecretData) GetHugginface() *SecretData_HuggingfaceAPIKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_Hugginface); ok {
+			return x.Hugginface
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetGithubAppRefreshToken() *SecretData_GithubAppRefreshToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_GithubAppRefreshToken_); ok {
+			return x.GithubAppRefreshToken
+		}
+	}
+	return nil
+}
+
 func (x *SecretData) GetGcpOauth2AccessToken() *SecretData_GCPOAuth2AccessToken {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_GcpOauth2AccessToken); ok {
@@ -5330,8 +5350,16 @@ type SecretData_GcpApiKey struct {
 	GcpApiKey *SecretData_GCPAPIKey `protobuf:"bytes,19,opt,name=gcp_api_key,json=gcpApiKey,proto3,oneof"`
 }
 
+type SecretData_Hugginface struct {
+	Hugginface *SecretData_HuggingfaceAPIKey `protobuf:"bytes,20,opt,name=hugginface,proto3,oneof"`
+}
+
+type SecretData_GithubAppRefreshToken_ struct {
+	GithubAppRefreshToken *SecretData_GithubAppRefreshToken `protobuf:"bytes,21,opt,name=github_app_refresh_token,json=githubAppRefreshToken,proto3,oneof"`
+}
+
 type SecretData_GcpOauth2AccessToken struct {
-	GcpOauth2AccessToken *SecretData_GCPOAuth2AccessToken `protobuf:"bytes,21,opt,name=gcp_oauth2_access_token,json=gcpOauth2AccessToken,proto3,oneof"`
+	GcpOauth2AccessToken *SecretData_GCPOAuth2AccessToken `protobuf:"bytes,23,opt,name=gcp_oauth2_access_token,json=gcpOauth2AccessToken,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5371,6 +5399,10 @@ func (*SecretData_HashicorpVaultToken) isSecretData_Secret() {}
 func (*SecretData_HashicorpVaultAppRoleCredentials) isSecretData_Secret() {}
 
 func (*SecretData_GcpApiKey) isSecretData_Secret() {}
+
+func (*SecretData_Hugginface) isSecretData_Secret() {}
+
+func (*SecretData_GithubAppRefreshToken_) isSecretData_Secret() {}
 
 func (*SecretData_GcpOauth2AccessToken) isSecretData_Secret() {}
 
@@ -6494,6 +6526,50 @@ func (x *SecretData_DigitalOceanAPIToken) GetKey() string {
 	return ""
 }
 
+type SecretData_GithubAppRefreshToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_GithubAppRefreshToken) Reset() {
+	*x = SecretData_GithubAppRefreshToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_GithubAppRefreshToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_GithubAppRefreshToken) ProtoMessage() {}
+
+func (x *SecretData_GithubAppRefreshToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_GithubAppRefreshToken.ProtoReflect.Descriptor instead.
+func (*SecretData_GithubAppRefreshToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 15}
+}
+
+func (x *SecretData_GithubAppRefreshToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 type SecretData_TinkKeyset struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"` // JSON encoded Tink keyset
@@ -6503,7 +6579,7 @@ type SecretData_TinkKeyset struct {
 
 func (x *SecretData_TinkKeyset) Reset() {
 	*x = SecretData_TinkKeyset{}
-	mi := &file_proto_scan_result_proto_msgTypes[76]
+	mi := &file_proto_scan_result_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6515,7 +6591,7 @@ func (x *SecretData_TinkKeyset) String() string {
 func (*SecretData_TinkKeyset) ProtoMessage() {}
 
 func (x *SecretData_TinkKeyset) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[76]
+	mi := &file_proto_scan_result_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6528,7 +6604,7 @@ func (x *SecretData_TinkKeyset) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_TinkKeyset.ProtoReflect.Descriptor instead.
 func (*SecretData_TinkKeyset) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 15}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 16}
 }
 
 func (x *SecretData_TinkKeyset) GetContent() string {
@@ -6547,7 +6623,7 @@ type SecretData_HashiCorpVaultToken struct {
 
 func (x *SecretData_HashiCorpVaultToken) Reset() {
 	*x = SecretData_HashiCorpVaultToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[77]
+	mi := &file_proto_scan_result_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6559,7 +6635,7 @@ func (x *SecretData_HashiCorpVaultToken) String() string {
 func (*SecretData_HashiCorpVaultToken) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpVaultToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[77]
+	mi := &file_proto_scan_result_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6572,7 +6648,7 @@ func (x *SecretData_HashiCorpVaultToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HashiCorpVaultToken.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpVaultToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 16}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 17}
 }
 
 func (x *SecretData_HashiCorpVaultToken) GetToken() string {
@@ -6593,7 +6669,7 @@ type SecretData_HashiCorpVaultAppRoleCredentials struct {
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) Reset() {
 	*x = SecretData_HashiCorpVaultAppRoleCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[78]
+	mi := &file_proto_scan_result_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6605,7 +6681,7 @@ func (x *SecretData_HashiCorpVaultAppRoleCredentials) String() string {
 func (*SecretData_HashiCorpVaultAppRoleCredentials) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[78]
+	mi := &file_proto_scan_result_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6618,7 +6694,7 @@ func (x *SecretData_HashiCorpVaultAppRoleCredentials) ProtoReflect() protoreflec
 
 // Deprecated: Use SecretData_HashiCorpVaultAppRoleCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpVaultAppRoleCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 17}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 18}
 }
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) GetRoleId() string {
@@ -6651,7 +6727,7 @@ type SecretData_GCPAPIKey struct {
 
 func (x *SecretData_GCPAPIKey) Reset() {
 	*x = SecretData_GCPAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[79]
+	mi := &file_proto_scan_result_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6663,7 +6739,7 @@ func (x *SecretData_GCPAPIKey) String() string {
 func (*SecretData_GCPAPIKey) ProtoMessage() {}
 
 func (x *SecretData_GCPAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[79]
+	mi := &file_proto_scan_result_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6676,7 +6752,7 @@ func (x *SecretData_GCPAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 18}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 19}
 }
 
 func (x *SecretData_GCPAPIKey) GetKey() string {
@@ -6686,9 +6762,69 @@ func (x *SecretData_GCPAPIKey) GetKey() string {
 	return ""
 }
 
+type SecretData_HuggingfaceAPIKey struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Key              string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Role             string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	FineGrainedScope []string               `protobuf:"bytes,3,rep,name=fine_grained_scope,json=fineGrainedScope,proto3" json:"fine_grained_scope,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SecretData_HuggingfaceAPIKey) Reset() {
+	*x = SecretData_HuggingfaceAPIKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_HuggingfaceAPIKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_HuggingfaceAPIKey) ProtoMessage() {}
+
+func (x *SecretData_HuggingfaceAPIKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_HuggingfaceAPIKey.ProtoReflect.Descriptor instead.
+func (*SecretData_HuggingfaceAPIKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 20}
+}
+
+func (x *SecretData_HuggingfaceAPIKey) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SecretData_HuggingfaceAPIKey) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *SecretData_HuggingfaceAPIKey) GetFineGrainedScope() []string {
+	if x != nil {
+		return x.FineGrainedScope
+	}
+	return nil
+}
+
 type SecretData_GCPOAuth2AccessToken struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// GCP OAuth2 access token, typically in format: 1/alphanumeric_string
+	// GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
 	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6696,7 +6832,7 @@ type SecretData_GCPOAuth2AccessToken struct {
 
 func (x *SecretData_GCPOAuth2AccessToken) Reset() {
 	*x = SecretData_GCPOAuth2AccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[80]
+	mi := &file_proto_scan_result_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6708,7 +6844,7 @@ func (x *SecretData_GCPOAuth2AccessToken) String() string {
 func (*SecretData_GCPOAuth2AccessToken) ProtoMessage() {}
 
 func (x *SecretData_GCPOAuth2AccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[80]
+	mi := &file_proto_scan_result_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6721,7 +6857,7 @@ func (x *SecretData_GCPOAuth2AccessToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPOAuth2AccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPOAuth2AccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 19}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53, 21}
 }
 
 func (x *SecretData_GCPOAuth2AccessToken) GetToken() string {
@@ -7136,7 +7272,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xe8\x17\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xaf\x1a\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -7163,8 +7299,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"gitlab_pat\x18\x10 \x01(\v2\x1d.scalibr.SecretData.GitlabPatH\x00R\tgitlabPat\x12]\n" +
 	"\x15hashicorp_vault_token\x18\x11 \x01(\v2'.scalibr.SecretData.HashiCorpVaultTokenH\x00R\x13hashicorpVaultToken\x12\x86\x01\n" +
 	"$hashicorp_vault_app_role_credentials\x18\x12 \x01(\v24.scalibr.SecretData.HashiCorpVaultAppRoleCredentialsH\x00R hashicorpVaultAppRoleCredentials\x12?\n" +
-	"\vgcp_api_key\x18\x13 \x01(\v2\x1d.scalibr.SecretData.GCPAPIKeyH\x00R\tgcpApiKey\x12a\n" +
-	"\x17gcp_oauth2_access_token\x18\x15 \x01(\v2(.scalibr.SecretData.GCPOAuth2AccessTokenH\x00R\x14gcpOauth2AccessToken\x1a\xb0\x03\n" +
+	"\vgcp_api_key\x18\x13 \x01(\v2\x1d.scalibr.SecretData.GCPAPIKeyH\x00R\tgcpApiKey\x12G\n" +
+	"\n" +
+	"hugginface\x18\x14 \x01(\v2%.scalibr.SecretData.HuggingfaceAPIKeyH\x00R\n" +
+	"hugginface\x12d\n" +
+	"\x18github_app_refresh_token\x18\x15 \x01(\v2).scalibr.SecretData.GithubAppRefreshTokenH\x00R\x15githubAppRefreshToken\x12a\n" +
+	"\x17gcp_oauth2_access_token\x18\x17 \x01(\v2(.scalibr.SecretData.GCPOAuth2AccessTokenH\x00R\x14gcpOauth2AccessToken\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -7211,7 +7351,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x1cPostmanCollectionAccessToken\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
 	"\x14DigitalOceanAPIToken\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1a&\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a-\n" +
+	"\x15GithubAppRefreshToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a&\n" +
 	"\n" +
 	"TinkKeyset\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x1a+\n" +
@@ -7222,7 +7364,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12\x0e\n" +
 	"\x02id\x18\x03 \x01(\tR\x02id\x1a\x1d\n" +
 	"\tGCPAPIKey\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1a,\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1ag\n" +
+	"\x11HuggingfaceAPIKey\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12,\n" +
+	"\x12fine_grained_scope\x18\x03 \x03(\tR\x10fineGrainedScope\x1a,\n" +
 	"\x14GCPOAuth2AccessToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05tokenB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
@@ -7282,7 +7428,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 81)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 83)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                               // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                                   // 1: scalibr.SeverityEnum
@@ -7365,16 +7511,18 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_PostmanAPIKey)(nil),                    // 78: scalibr.SecretData.PostmanAPIKey
 	(*SecretData_PostmanCollectionAccessToken)(nil),     // 79: scalibr.SecretData.PostmanCollectionAccessToken
 	(*SecretData_DigitalOceanAPIToken)(nil),             // 80: scalibr.SecretData.DigitalOceanAPIToken
-	(*SecretData_TinkKeyset)(nil),                       // 81: scalibr.SecretData.TinkKeyset
-	(*SecretData_HashiCorpVaultToken)(nil),              // 82: scalibr.SecretData.HashiCorpVaultToken
-	(*SecretData_HashiCorpVaultAppRoleCredentials)(nil), // 83: scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	(*SecretData_GCPAPIKey)(nil),                        // 84: scalibr.SecretData.GCPAPIKey
-	(*SecretData_GCPOAuth2AccessToken)(nil),             // 85: scalibr.SecretData.GCPOAuth2AccessToken
-	(*timestamppb.Timestamp)(nil),                       // 86: google.protobuf.Timestamp
+	(*SecretData_GithubAppRefreshToken)(nil),            // 81: scalibr.SecretData.GithubAppRefreshToken
+	(*SecretData_TinkKeyset)(nil),                       // 82: scalibr.SecretData.TinkKeyset
+	(*SecretData_HashiCorpVaultToken)(nil),              // 83: scalibr.SecretData.HashiCorpVaultToken
+	(*SecretData_HashiCorpVaultAppRoleCredentials)(nil), // 84: scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	(*SecretData_GCPAPIKey)(nil),                        // 85: scalibr.SecretData.GCPAPIKey
+	(*SecretData_HuggingfaceAPIKey)(nil),                // 86: scalibr.SecretData.HuggingfaceAPIKey
+	(*SecretData_GCPOAuth2AccessToken)(nil),             // 87: scalibr.SecretData.GCPOAuth2AccessToken
+	(*timestamppb.Timestamp)(nil),                       // 88: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	86, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	86, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	88, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	88, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -7436,8 +7584,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15, // 60: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15, // 61: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	65, // 62: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	86, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	86, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	88, // 63: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	88, // 64: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	55, // 65: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	58, // 66: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	59, // 67: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -7456,25 +7604,27 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	79, // 80: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
 	73, // 81: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
 	74, // 82: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
-	81, // 83: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
+	82, // 83: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
 	77, // 84: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
-	82, // 85: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
-	83, // 86: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	84, // 87: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
-	85, // 88: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
-	4,  // 89: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	86, // 90: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	61, // 91: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	62, // 92: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	63, // 93: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	64, // 94: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11, // 95: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	52, // 96: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	97, // [97:97] is the sub-list for method output_type
-	97, // [97:97] is the sub-list for method input_type
-	97, // [97:97] is the sub-list for extension type_name
-	97, // [97:97] is the sub-list for extension extendee
-	0,  // [0:97] is the sub-list for field type_name
+	83, // 85: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
+	84, // 86: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	85, // 87: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
+	86, // 88: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
+	81, // 89: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
+	87, // 90: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
+	4,  // 91: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	88, // 92: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	61, // 93: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	62, // 94: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	63, // 95: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	64, // 96: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11, // 97: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	52, // 98: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	99, // [99:99] is the sub-list for method output_type
+	99, // [99:99] is the sub-list for method input_type
+	99, // [99:99] is the sub-list for extension type_name
+	99, // [99:99] is the sub-list for extension extendee
+	0,  // [0:99] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -7542,6 +7692,8 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_HashicorpVaultToken)(nil),
 		(*SecretData_HashicorpVaultAppRoleCredentials)(nil),
 		(*SecretData_GcpApiKey)(nil),
+		(*SecretData_Hugginface)(nil),
+		(*SecretData_GithubAppRefreshToken_)(nil),
 		(*SecretData_GcpOauth2AccessToken)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[55].OneofWrappers = []any{
@@ -7556,7 +7708,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   81,
+			NumMessages:   83,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -27,9 +27,11 @@ import (
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	velesgcpoauth2token "github.com/google/osv-scalibr/veles/secrets/gcpoauth2token"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -116,6 +118,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesegithub.AppRefreshToken:
+		return githubAppRefreshTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -136,6 +140,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case huggingfaceapikey.HuggingfaceAPIKey:
+		return huggingfaceAPIKeyToProto(t), nil
 	case velesgcpoauth2token.GCPOAuth2AccessToken:
 		return gcpOAuth2AccessTokenToProto(t), nil
 	default:
@@ -298,6 +304,16 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 	}
 }
 
+func githubAppRefreshTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppRefreshToken_{
+			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
+				Token: token,
+			},
+		},
+	}
+}
+
 func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AzureAccessToken_{
@@ -355,6 +371,18 @@ func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCreden
 				RoleId:   s.RoleID,
 				SecretId: s.SecretID,
 				Id:       s.ID,
+			},
+		},
+	}
+}
+
+func huggingfaceAPIKeyToProto(s huggingfaceapikey.HuggingfaceAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Hugginface{
+			Hugginface: &spb.SecretData_HuggingfaceAPIKey{
+				Key:              s.Key,
+				Role:             s.Role,
+				FineGrainedScope: s.FineGrainedScope,
 			},
 		},
 	}
@@ -456,6 +484,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_GithubAppRefreshToken_:
+		return velesegithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:
@@ -476,6 +506,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_Hugginface:
+		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
 	default:
@@ -500,6 +532,15 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 		Pat: kPB.GetPat(),
 	}
 }
+
+func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfaceapikey.HuggingfaceAPIKey {
+	return huggingfaceapikey.HuggingfaceAPIKey{
+		Key:              kPB.GetKey(),
+		Role:             kPB.GetRole(),
+		FineGrainedScope: kPB.GetFineGrainedScope(),
+	}
+}
+
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	sak := velesgcpsak.GCPSAK{
 		PrivateKeyID:   sakPB.GetPrivateKeyId(),

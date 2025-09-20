@@ -447,7 +447,7 @@ func runcInitPid(scanRoot string, id string) int {
 
 	statusContent, err := os.ReadFile(statusPath)
 	if err != nil {
-		log.Errorf("Could not read for %s status for container: %v, error: %v", id, err)
+		log.Errorf("Could not read for %s status for container: %v", id, err)
 		return -1
 	}
 	var grpcContainerStatus map[string]*json.RawMessage
@@ -480,7 +480,7 @@ func runhcsInitPid(scanRoot string, namespace string, id string) int {
 
 	shimPIDContent, err := os.ReadFile(shimPIDPath)
 	if err != nil {
-		log.Errorf("Could not read for %s shim.pid for container: %v, error: %v", id, err)
+		log.Errorf("Could not read for %s shim.pid for container: %v", id, err)
 		return -1
 	}
 	shimPidStr := strings.TrimSpace(string(shimPIDContent))

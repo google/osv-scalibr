@@ -118,6 +118,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Grok xAI Management key       | `secrets/grokxaimanagementkey`   |
 | Hashicorp Vault token         | `secrets/hashicorpvaulttoken`    |
 | Hashicorp Vault AppRole token | `secrets/hashicorpvaultapprole`  |
+| Hugging Face API key          | `secrets/huggingfaceapikey`      |
 | OpenAI API key                | `secrets/openai`                 |
 | Perplexity API key            | `secrets/perplexityapikey`       |
 | Postman API key               | `secrets/postmanapikey`          |

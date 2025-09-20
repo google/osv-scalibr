@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcpapikey
+// Package huggingfaceapikey contains a Veles Secret type and a Detector for
+// Huggingface API keys (prefix `hf_`).
+package huggingfaceapikey
 
 import (
 	"regexp"
@@ -21,19 +23,22 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a GPC API key.
-const maxTokenLength = 39
+// maxTokenLength is the maximum size of a Huggingface API key.
+const maxTokenLength = 37
 
-// keyRe is a regular expression that matches a GCP API key.
-var keyRe = regexp.MustCompile(`AIza[a-zA-Z0-9_-]{35}`)
+// keyRe is a regular expression that matches a Huggingface API key.
+// Huggingface API keys have the form: `hf_` followed by 34
+// alphabet characters.
+var keyRe = regexp.MustCompile(`hf_[A-Za-z]{34}`)
 
-// NewDetector returns a new simpletoken.Detector that matches GCP API keys.
+// NewDetector returns a new simpletoken.Detector that matches
+// Huggingface API keys.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return GCPAPIKey{Key: string(b)}, true
+			return HuggingfaceAPIKey{Key: string(b)}, true
 		},
 	}
 }
