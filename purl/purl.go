@@ -53,8 +53,8 @@ const (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
-	// TypeK8sDocker is a pkg:docker purl.
-	TypeK8sDocker = "k8sdocker"
+	// TypeK8s is a pkg:k8s purl.
+	TypeK8s = "k8s"
 	// TypeFlatpak is a pkg:flatpak purl.
 	TypeFlatpak = "flatpak"
 	// TypeGem is a pkg:gem purl.

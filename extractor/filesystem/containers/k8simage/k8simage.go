@@ -44,44 +44,44 @@ const (
 	DefaultMaxFileSizeBytes = 1 * units.MiB
 )
 
-// K8sResource represents a Kubernetes resource with the fields needed for image extraction.
-type K8sResource struct {
+// k8sResource represents a Kubernetes resource with the fields needed for image extraction.
+type k8sResource struct {
 	APIVersion string   `yaml:"apiVersion"`
 	Kind       string   `yaml:"kind"`
-	Spec       *K8sSpec `yaml:"spec,omitempty"`
+	Spec       *k8sSpec `yaml:"spec,omitempty"`
 }
 
-// K8sSpec represents the spec section of a Kubernetes resource.
-type K8sSpec struct {
-	Containers     []Container  `yaml:"containers,omitempty"`
-	InitContainers []Container  `yaml:"initContainers,omitempty"`
-	Template       *PodTemplate `yaml:"template,omitempty"`
-	JobTemplate    *JobTemplate `yaml:"jobTemplate,omitempty"`
+// k8sSpec represents the spec section of a Kubernetes resource.
+type k8sSpec struct {
+	Containers     []container  `yaml:"containers,omitempty"`
+	InitContainers []container  `yaml:"initContainers,omitempty"`
+	Template       *podTemplate `yaml:"template,omitempty"`
+	JobTemplate    *jobTemplate `yaml:"jobTemplate,omitempty"`
 }
 
-// JobTemplate represents a job template in CronJob resources.
-type JobTemplate struct {
-	Spec *JobSpec `yaml:"spec,omitempty"`
+// jobTemplate represents a job template in CronJob resources.
+type jobTemplate struct {
+	Spec *jobSpec `yaml:"spec,omitempty"`
 }
 
-// JobSpec represents the spec of a Job.
-type JobSpec struct {
-	Template *PodTemplate `yaml:"template,omitempty"`
+// jobSpec represents the spec of a Job.
+type jobSpec struct {
+	Template *podTemplate `yaml:"template,omitempty"`
 }
 
-// PodTemplate represents a pod template in Kubernetes resources.
-type PodTemplate struct {
-	Spec *PodSpec `yaml:"spec,omitempty"`
+// podTemplate represents a pod template in Kubernetes resources.
+type podTemplate struct {
+	Spec *podSpec `yaml:"spec,omitempty"`
 }
 
-// PodSpec represents a pod specification.
-type PodSpec struct {
-	Containers     []Container `yaml:"containers,omitempty"`
-	InitContainers []Container `yaml:"initContainers,omitempty"`
+// podSpec represents a pod specification.
+type podSpec struct {
+	Containers     []container `yaml:"containers,omitempty"`
+	InitContainers []container `yaml:"initContainers,omitempty"`
 }
 
-// Container represents a container specification in Kubernetes.
-type Container struct {
+// container represents a container specification in Kubernetes.
+type container struct {
 	Image string `yaml:"image"`
 }
 
@@ -138,19 +138,12 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// Only consider YAML/YML files
 	path := api.Path()
-	ext := strings.ToLower(filepath.Ext(filepath.Base(path)))
+	ext := strings.ToLower(filepath.Ext(path))
 	return ext == ".yaml" || ext == ".yml"
 }
 
 // Extract extracts container image references from a K8s configuration file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	// Defer context cancellation check
-	defer func() {
-		if err := ctx.Err(); err != nil {
-			log.Debugf("%s context canceled during extraction: %v", e.Name(), err)
-		}
-	}()
-
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
 	}
@@ -173,7 +166,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Locations: []string{input.Path},
 			Name:      name,
 			Version:   version,
-			PURLType:  purl.TypeK8sDocker,
+			PURLType:  purl.TypeK8s,
 		})
 	}
 
@@ -211,7 +204,7 @@ func parseK8sYAML(ctx context.Context, r io.Reader) ([]string, error) {
 		}
 
 		// Parse each YAML document in the file
-		var doc K8sResource
+		var doc k8sResource
 		if err := decoder.Decode(&doc); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -232,7 +225,7 @@ func parseK8sYAML(ctx context.Context, r io.Reader) ([]string, error) {
 
 // extractImagesFromK8sResource extracts container images from a Kubernetes resource.
 // It handles various resource types including Pods, Deployments, StatefulSets, Jobs, and CronJobs.
-func extractImagesFromK8sResource(doc *K8sResource) []string {
+func extractImagesFromK8sResource(doc *k8sResource) []string {
 	var images []string
 
 	if doc.Spec == nil {
@@ -262,7 +255,7 @@ func extractImagesFromK8sResource(doc *K8sResource) []string {
 
 // getImagesFromContainerList extracts image references from a list of containers,
 // filtering out any containers with empty image fields.
-func getImagesFromContainerList(containers []Container) []string {
+func getImagesFromContainerList(containers []container) []string {
 	var images []string
 	for _, container := range containers {
 		if container.Image != "" {
