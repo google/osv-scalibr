@@ -25,6 +25,7 @@ import (
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	velesgcpoauth2token "github.com/google/osv-scalibr/veles/secrets/gcpoauth2token"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
@@ -141,6 +142,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpAPIKeyToProto(t.Key), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
+	case velesgcpoauth2token.GCPOAuth2AccessToken:
+		return gcpOAuth2AccessTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -196,6 +199,16 @@ func gcpAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_GcpApiKey{
 			GcpApiKey: &spb.SecretData_GCPAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func gcpOAuth2AccessTokenToProto(s velesgcpoauth2token.GCPOAuth2AccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpOauth2AccessToken{
+			GcpOauth2AccessToken: &spb.SecretData_GCPOAuth2AccessToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -495,6 +508,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
 	case *spb.SecretData_Hugginface:
 		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
+	case *spb.SecretData_GcpOauth2AccessToken:
+		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -602,5 +617,11 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func gcpOAuth2AccessTokenToStruct(tokenPB *spb.SecretData_GCPOAuth2AccessToken) velesgcpoauth2token.GCPOAuth2AccessToken {
+	return velesgcpoauth2token.GCPOAuth2AccessToken{
+		Token: tokenPB.GetToken(),
 	}
 }
