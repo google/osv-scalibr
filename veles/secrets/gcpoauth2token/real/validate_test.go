@@ -18,7 +18,7 @@
 // Test tokens can be generated via: https://developers.google.com/oauthplayground/
 //
 // Note: Do not submit any real or test tokens.
-// The tokens will eventually expire and become invalid.
+// The tokens will eventually expire and become invalid, breaking continuous tests.
 
 package gcpoauth2_manual_test
 
@@ -45,13 +45,22 @@ func TestValidate(t *testing.T) {
 			want:    veles.ValidationFailed,
 			wantErr: true,
 		},
-		// Example of a valid token. Replace with a real token for manual testing.
+		// -- Example of a valid token. Replace with a real token for manual testing.
 		// {
 		// 	name: "valid token",
 		// 	token: gcpoauth2token.GCPOAuth2AccessToken{
 		// 		Token: "ya29.a0AQQ_BDTp8QsUMgcGoezG7A1XQ7wI-6FaupdtJGT35GmIbLNISfIe04DzUlZ7GyqcKMOtF4bF_TbSEj6zaFA46fmFR6qLC0clpF1WwDFMCH1c2uVjYcoiy4lLMtz3XGJuv8kc8DNRqM7WOM3j5wHL2xaUrR8vdn23WiLZcgn-JkgclDWDTGoMEjWwM9XlfrtMMnA_eywaCgYKAUQSARESFQHGX2MiQ5dy52dLBdjQOFwKVI0rWg0206",
 		// 	},
 		// 	want:    veles.ValidationValid,
+		// 	wantErr: false,
+		// },
+		// -- Example of an expired token. Replace with a real token for manual testing.
+		// {
+		// 	name: "valid token",
+		// 	token: gcpoauth2token.GCPOAuth2AccessToken{
+		// 		Token: "ya29.a0AQQ_BDTp8QsUMgcGoezG7A1XQ7wI-6FaupdtJGT35GmIbLNISfIe04DzUlZ7GyqcKMOtF4bF_TbSEj6zaFA46fmFR6qLC0clpF1WwDFMCH1c2uVjYcoiy4lLMtz3XGJuv8kc8DNRqM7WOM3j5wHL2xaUrR8vdn23WiLZcgn-JkgclDWDTGoMEjWwM9XlfrtMMnA_eywaCgYKAUQSARESFQHGX2MiQ5dy52dLBdjQOFwKVI0rWg0206",
+		// 	},
+		// 	want:    veles.ValidationInvalid,
 		// 	wantErr: false,
 		// },
 	}
