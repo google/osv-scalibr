@@ -127,10 +127,10 @@ func NewRestrictedKeyValidator(opts ...ValidatorOptionRestrictedKey) *Restricted
 // Restricted Keys are scoped to specific endpoints and permissions, so a 403
 // from /v1/accounts does not necessarily mean the key is invalid.
 // Possible outcomes:
-// - 200 OK       -> key has access to this endpoint and is valid.
-// - 403 Forbidden -> key is valid but lacks permission for this endpoint;
-//                   it may still work for other allowed endpoints.
-// - other         -> key is invalid.
+//   - 200 OK       -> key has access to this endpoint and is valid.
+//   - 403 Forbidden -> key is valid but lacks permission for this endpoint;
+//     it may still work for other allowed endpoints.
+//   - other         -> key is invalid.
 func (v *RestrictedKeyValidator) Validate(ctx context.Context, key StripeRestrictedKey) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stripeAPIEndpoint, nil)
 	if err != nil {
