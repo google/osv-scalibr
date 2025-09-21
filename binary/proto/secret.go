@@ -25,7 +25,7 @@ import (
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
-	velesgcpoauth2 "github.com/google/osv-scalibr/veles/secrets/gcpoauth2"
+	velesgcpoauth2client "github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -136,7 +136,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
-	case velesgcpoauth2.ClientCredentials:
+	case velesgcpoauth2client.ClientCredentials:
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
@@ -198,7 +198,7 @@ func gcpAPIKeyToProto(key string) *spb.SecretData {
 	}
 }
 
-func gcpOAuth2ClientCredentialsToProto(s velesgcpoauth2.ClientCredentials) *spb.SecretData {
+func gcpOAuth2ClientCredentialsToProto(s velesgcpoauth2client.ClientCredentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GcpOauth2ClientCredentials{
 			GcpOauth2ClientCredentials: &spb.SecretData_GCPOAuth2ClientCredentials{
@@ -581,8 +581,8 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 	}
 }
 
-func gcpOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_GCPOAuth2ClientCredentials) velesgcpoauth2.ClientCredentials {
-	return velesgcpoauth2.ClientCredentials{
+func gcpOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_GCPOAuth2ClientCredentials) velesgcpoauth2client.ClientCredentials {
+	return velesgcpoauth2client.ClientCredentials{
 		ClientID:     credsPB.GetClientId(),
 		ClientSecret: credsPB.GetClientSecret(),
 		ID:           credsPB.GetId(),

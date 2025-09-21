@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcpoauth2 contains Veles Secret types and Detectors for GCP OAuth2 client credentials.
-package gcpoauth2
+// Package gcpoauth2client contains Veles Secret types and Detectors for GCP OAuth2 client credentials.
+package gcpoauth2client
 
 // ClientCredentials is a Veles Secret that holds relevant information for GCP OAuth2 client credentials.
 // OAuth2 client credentials consist of a client ID and client secret pair used for application authentication.

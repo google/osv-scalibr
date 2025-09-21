@@ -12,70 +12,70 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcpoauth2_test
+package gcpoauth2client_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 )
 
 func TestValidator_Validate_FormatValidation(t *testing.T) {
-	validator := gcpoauth2.NewValidator()
+	validator := gcpoauth2client.NewValidator()
 	ctx := context.Background()
 
 	tests := []struct {
 		name     string
-		secret   gcpoauth2.ClientCredentials
+		secret   gcpoauth2client.ClientCredentials
 		expected veles.ValidationStatus
 	}{
 		{
 			name: "valid client ID format only",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ClientID: "717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com",
 			},
 			expected: veles.ValidationValid,
 		},
 		{
 			name: "invalid client ID format only",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ClientID: "invalid-format",
 			},
 			expected: veles.ValidationInvalid,
 		},
 		{
 			name: "valid client secret format only",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ClientSecret: "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",
 			},
 			expected: veles.ValidationValid,
 		},
 		{
 			name: "invalid client secret format only",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ClientSecret: "short",
 			},
 			expected: veles.ValidationInvalid,
 		},
 		{
 			name: "valid ID format",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ID: "123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
 			},
 			expected: veles.ValidationValid,
 		},
 		{
 			name: "invalid ID format",
-			secret: gcpoauth2.ClientCredentials{
+			secret: gcpoauth2client.ClientCredentials{
 				ID: "invalid-id",
 			},
 			expected: veles.ValidationInvalid,
 		},
 		{
 			name:     "empty credentials",
-			secret:   gcpoauth2.ClientCredentials{},
+			secret:   gcpoauth2client.ClientCredentials{},
 			expected: veles.ValidationInvalid,
 		},
 	}
