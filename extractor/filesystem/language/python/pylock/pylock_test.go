@@ -127,6 +127,57 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "package_with_commits",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/commits.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "click",
+					Version:   "8.2.1",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "mleroc",
+					Version:   "0.1.0",
+					Locations: []string{"testdata/commits.toml"},
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "735093f03c4d8be70bfaaae44074ac92d7419b6d",
+					},
+				},
+				{
+					Name:      "net-inf-eval",
+					Version:   "",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "packaging",
+					Version:   "24.2",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "pathspec",
+					Version:   "0.12.1",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "python-dateutil",
+					Version:   "2.9.0.post0",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "scikit-learn",
+					Version:   "1.6.1",
+					Locations: []string{"testdata/commits.toml"},
+				},
+				{
+					Name:      "tqdm",
+					Version:   "4.67.1",
+					Locations: []string{"testdata/commits.toml"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
