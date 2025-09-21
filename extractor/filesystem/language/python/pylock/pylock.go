@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
 )
 
 const (
@@ -105,6 +106,7 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 		pkgDetails := &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
+			PURLType:  purl.TypePyPi,
 			Locations: []string{input.Path},
 		}
 		if lockPackage.VCS.Commit != "" {
