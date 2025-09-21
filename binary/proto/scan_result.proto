@@ -659,6 +659,7 @@ message SecretData {
     GCPAPIKey gcp_api_key = 19;
     HuggingfaceAPIKey hugginface = 20;
     GithubAppRefreshToken github_app_refresh_token = 21;
+    SlackToken slack_token = 22;
   }
 
   message GCPSAK {
@@ -728,6 +729,15 @@ message SecretData {
 
   message GitlabPat {
     string pat = 1;
+  }
+
+  message SlackToken {
+    string token = 1;
+    oneof token_type{
+      bool is_app_level_token = 2;
+      bool is_app_config_access_token = 3;
+      bool is_app_config_refresh_token = 4;
+    }
   }
 
   message PostmanAPIKey {

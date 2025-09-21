@@ -105,6 +105,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 )
 
@@ -252,6 +253,7 @@ var (
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
+		{slacktoken.NewDetector(), "secrets/slacktoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},

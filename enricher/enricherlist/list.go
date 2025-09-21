@@ -40,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 )
 
 // InitFn is the enricher initializer function.
@@ -76,6 +77,7 @@ var (
 		fromVeles(anthropicapikey.NewWorkspaceValidator(), "secrets/anthropicapikeyworkspacevalidate", 0),
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
+		fromVeles(slacktoken.NewValidator(), "secrets/slacktoken", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
