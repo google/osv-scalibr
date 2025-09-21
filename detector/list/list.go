@@ -71,8 +71,12 @@ var Untested = InitMap{
 	cve202011978.Name: {cve202011978.New},
 	// CVE-2024-2912 BentoML detector.
 	cve20242912.Name: {cve20242912.New},
+}
+
+// CVE Detectors for vulnerabilities
+var CVEDetectors = InitMap{
 	// CVE-2025-8088 WinRAR RCE detector
-	cve20258088.Name: {cve20258088.New},
+	cve20258088.Name: {cve20258088.NewDefault},
 }
 
 // Weakcredentials detectors for weak credentials.
@@ -99,6 +103,7 @@ var All = concat(
 	Misc,
 	Weakcredentials,
 	Untested,
+	CVEDetectors,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -112,6 +117,7 @@ var detectorNames = concat(All, InitMap{
 	"default":           vals(Default),
 	"detectors/all":     vals(All),
 	"all":               vals(All),
+	"cvedetectors":      vals(CVEDetectors),
 })
 
 func concat(initMaps ...InitMap) InitMap {
