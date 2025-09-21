@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -113,16 +114,19 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "attrs",
 					Version:   "25.1.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/example.toml"},
 				},
 				{
 					Name:      "cattrs",
 					Version:   "24.1.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/example.toml"},
 				},
 				{
 					Name:      "numpy",
 					Version:   "2.2.3",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/example.toml"},
 				},
 			},
@@ -136,11 +140,13 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "click",
 					Version:   "8.2.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 				{
 					Name:      "mleroc",
 					Version:   "0.1.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "735093f03c4d8be70bfaaae44074ac92d7419b6d",
@@ -149,26 +155,31 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "packaging",
 					Version:   "24.2",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 				{
 					Name:      "pathspec",
 					Version:   "0.12.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 				{
 					Name:      "python-dateutil",
 					Version:   "2.9.0.post0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 				{
 					Name:      "scikit-learn",
 					Version:   "1.6.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 				{
 					Name:      "tqdm",
 					Version:   "4.67.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/commits.toml"},
 				},
 			},
@@ -189,26 +200,31 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "annotated-types",
 					Version:   "0.7.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pip-full.toml"},
 				},
 				{
 					Name:      "packaging",
 					Version:   "25.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pip-full.toml"},
 				},
 				{
 					Name:      "pyproject-toml",
 					Version:   "0.1.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pip-full.toml"},
 				},
 				{
 					Name:      "setuptools",
 					Version:   "80.9.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pip-full.toml"},
 				},
 				{
 					Name:      "wheel",
 					Version:   "0.45.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pip-full.toml"},
 				},
 			},
@@ -222,51 +238,61 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:      "certifi",
 					Version:   "2025.1.31",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "chardet",
 					Version:   "3.0.4",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "charset-normalizer",
 					Version:   "2.0.12",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "colorama",
 					Version:   "0.3.9",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "idna",
 					Version:   "2.7",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "py",
 					Version:   "1.4.34",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "pytest",
 					Version:   "3.2.5",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "requests",
 					Version:   "2.27.1",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "setuptools",
 					Version:   "39.2.0",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 				{
 					Name:      "urllib3",
 					Version:   "1.26.20",
+					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/pdm-full.toml"},
 				},
 			},
