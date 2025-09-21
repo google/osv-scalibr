@@ -178,6 +178,110 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "created_by_pip_with_just_self",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/pip-just-self.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "hspaans-github-io",
+					Version:   "",
+					Locations: []string{"testdata/pip-just-self.toml"},
+				},
+			},
+		},
+		{
+			Name: "created_by_pip",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/pip-full.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "annotated-types",
+					Version:   "0.7.0",
+					Locations: []string{"testdata/pip-full.toml"},
+				},
+				{
+					Name:      "packaging",
+					Version:   "25.0",
+					Locations: []string{"testdata/pip-full.toml"},
+				},
+				{
+					Name:      "pyproject-toml",
+					Version:   "0.1.0",
+					Locations: []string{"testdata/pip-full.toml"},
+				},
+				{
+					Name:      "setuptools",
+					Version:   "80.9.0",
+					Locations: []string{"testdata/pip-full.toml"},
+				},
+				{
+					Name:      "wheel",
+					Version:   "0.45.1",
+					Locations: []string{"testdata/pip-full.toml"},
+				},
+			},
+		},
+		{
+			Name: "created_by_pdm",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/pdm-full.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "certifi",
+					Version:   "2025.1.31",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "chardet",
+					Version:   "3.0.4",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "charset-normalizer",
+					Version:   "2.0.12",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "colorama",
+					Version:   "0.3.9",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "idna",
+					Version:   "2.7",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "py",
+					Version:   "1.4.34",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "pytest",
+					Version:   "3.2.5",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "requests",
+					Version:   "2.27.1",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "setuptools",
+					Version:   "39.2.0",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+				{
+					Name:      "urllib3",
+					Version:   "1.26.20",
+					Locations: []string{"testdata/pdm-full.toml"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
