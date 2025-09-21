@@ -33,9 +33,15 @@ const (
 	Name = "python/pylock"
 )
 
+type pylockVCS struct {
+	Type   string `toml:"type"`
+	Commit string `toml:"commit-id"`
+}
+
 type pylockPackage struct {
-	Name    string `toml:"name"`
-	Version string `toml:"version"`
+	Name    string    `toml:"name"`
+	Version string    `toml:"version"`
+	VCS     pylockVCS `toml:"vcs"`
 }
 
 type pylockLockfile struct {
@@ -90,6 +96,11 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,
 			Locations: []string{input.Path},
+		}
+		if lockPackage.VCS.Commit != "" {
+			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
+				Commit: lockPackage.VCS.Commit,
+			}
 		}
 		packages = append(packages, pkgDetails)
 	}
