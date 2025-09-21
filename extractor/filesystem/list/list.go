@@ -118,9 +118,9 @@ type InitMap map[string][]InitFn
 var (
 	// Language extractors.
 
-	// C++ source extractors.
+	// CppSource extractors for C++.
 	CppSource = InitMap{conanlock.Name: {conanlock.New}}
-	// Java source extractors.
+	// JavaSource extractors for Java.
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
@@ -128,11 +128,11 @@ var (
 		pomxml.Name:    {pomxml.New},
 		pomxmlnet.Name: {pomxmlnet.NewDefault},
 	}
-	// Java artifact extractors.
+	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
 		javaarchive.Name: {javaarchive.NewDefault},
 	}
-	// Javascript source extractors.
+	// JavascriptSource extractors for Javascript.
 	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.NewDefault},
 		packagelockjson.Name: {packagelockjson.NewDefault},
@@ -140,11 +140,11 @@ var (
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
 	}
-	// Javascript artifact extractors.
+	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.NewDefault},
 	}
-	// Python source extractors.
+	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
 		requirements.Name: {requirements.NewDefault},
@@ -155,46 +155,46 @@ var (
 		condameta.Name:    {condameta.NewDefault},
 		uvlock.Name:       {uvlock.New},
 	}
-	// Python artifact extractors.
+	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
 		wheelegg.Name: {wheelegg.NewDefault},
 	}
-	// Go source extractors.
+	// GoSource extractors for Go.
 	GoSource = InitMap{
 		gomod.Name: {gomod.New},
 	}
-	// Go artifact extractors.
+	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
 		gobinary.Name: {gobinary.NewDefault},
 	}
-	// Dart source extractors.
+	// DartSource extractors for Dart.
 	DartSource = InitMap{pubspec.Name: {pubspec.New}}
-	// Erlang source extractors.
+	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
-	// Nim source extractors.
+	// NimSource extractors for Nim.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
-	// Lua source extractors.
+	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
-	// Elixir source extractors.
+	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
-	// Haskell source extractors.
+	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
 		stacklock.Name: {stacklock.NewDefault},
 		cabal.Name:     {cabal.NewDefault},
 	}
-	// R source extractors
+	// RSource extractors for R source extractors
 	RSource = InitMap{renvlock.Name: {renvlock.New}}
-	// Ruby source extractors.
+	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {gemspec.NewDefault},
 		gemfilelock.Name: {gemfilelock.New},
 	}
-	// Rust source extractors.
+	// RustSource extractors for Rust.
 	RustSource = InitMap{
 		cargolock.Name: {cargolock.New},
 		cargotoml.Name: {cargotoml.New},
 	}
-	// Rust artifact extractors.
+	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.NewDefault},
 	}
@@ -203,19 +203,19 @@ var (
 		cdx.Name:  {cdx.New},
 		spdx.Name: {spdx.New},
 	}
-	// Dotnet (.NET) source extractors.
+	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
 		depsjson.Name:         {depsjson.NewDefault},
 		packagesconfig.Name:   {packagesconfig.NewDefault},
 		packageslockjson.Name: {packageslockjson.NewDefault},
 	}
-	// Dotnet (.NET) artifact extractors.
+	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
 		dotnetpe.Name: {dotnetpe.NewDefault},
 	}
-	// PHP Source extractors.
+	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
-	// Swift source extractors.
+	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {packageresolved.NewDefault},
 		podfilelock.Name:     {podfilelock.NewDefault},
@@ -247,7 +247,7 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Credential extractors.
+	// Secrets list extractors for credentials.
 	Secrets = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
@@ -279,7 +279,7 @@ var (
 		chromeextensions.Name: {chromeextensions.New},
 	}
 
-	// Misc source extractors.
+	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
 		asdf.Name: {asdf.New},
 	}
