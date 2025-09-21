@@ -38,10 +38,15 @@ type pylockVCS struct {
 	Commit string `toml:"commit-id"`
 }
 
+type pylockDirectory struct {
+	Path string `toml:"path"`
+}
+
 type pylockPackage struct {
-	Name    string    `toml:"name"`
-	Version string    `toml:"version"`
-	VCS     pylockVCS `toml:"vcs"`
+	Name      string          `toml:"name"`
+	Version   string          `toml:"version"`
+	VCS       pylockVCS       `toml:"vcs"`
+	Directory pylockDirectory `toml:"directory"`
 }
 
 type pylockLockfile struct {
@@ -92,6 +97,11 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, lockPackage := range parsedLockfile.Packages {
+		// this is likely the root package, which is sometimes included in the lockfile
+		if lockPackage.Version == "" && lockPackage.Directory.Path == "." {
+			continue
+		}
+
 		pkgDetails := &extractor.Package{
 			Name:      lockPackage.Name,
 			Version:   lockPackage.Version,

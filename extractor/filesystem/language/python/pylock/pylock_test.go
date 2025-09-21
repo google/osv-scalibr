@@ -147,11 +147,6 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "net-inf-eval",
-					Version:   "",
-					Locations: []string{"testdata/commits.toml"},
-				},
-				{
 					Name:      "packaging",
 					Version:   "24.2",
 					Locations: []string{"testdata/commits.toml"},
@@ -183,13 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/pip-just-self.toml",
 			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:      "hspaans-github-io",
-					Version:   "",
-					Locations: []string{"testdata/pip-just-self.toml"},
-				},
-			},
+			WantPackages: []*extractor.Package{},
 		},
 		{
 			Name: "created_by_pip",
