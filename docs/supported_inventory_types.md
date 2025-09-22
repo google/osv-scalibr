@@ -113,6 +113,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | GCP API key                    | `secrets/gcpapikey`              |
 | GCP Express Mode API key       | `secrets/gcpexpressmode`         |
 | GCP service account key        | `secrets/gcpsak`                 |
+| GCP OAuth 2 Access Tokens      | `secrets/gcpoauth2access`        |
 | GCP OAuth 2 Client Credentials | `secrets/gcpoauth2client`        |
 | Gitlab PAT                     | `secrets/gitlabpat`              |
 | Grok xAI API key               | `secrets/grokxaiapikey`          |
