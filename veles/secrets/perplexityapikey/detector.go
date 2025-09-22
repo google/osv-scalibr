@@ -37,8 +37,8 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return PerplexityAPIKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return PerplexityAPIKey{Key: string(b)}, true
 		},
 	}
 }

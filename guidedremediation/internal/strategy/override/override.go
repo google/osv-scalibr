@@ -168,7 +168,7 @@ func getVersionsGreater(ctx context.Context, cl resolve.Client, vk resolve.Versi
 		return nil, err
 	}
 	semvers := make(map[resolve.VersionKey]*semver.Version)
-	sv := vk.System.Semver()
+	sv := vk.Semver()
 	for _, ver := range versions {
 		parsed, err := sv.Parse(ver.Version)
 		if err != nil {

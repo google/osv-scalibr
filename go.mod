@@ -45,11 +45,13 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tidwall/sjson v1.2.5
+	github.com/tink-crypto/tink-go/v2 v2.4.0
 	go.etcd.io/bbolt v1.4.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.39.0
 	golang.org/x/mod v0.25.0
 	golang.org/x/net v0.41.0
+	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/term v0.32.0
@@ -65,6 +67,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 // indirect
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect

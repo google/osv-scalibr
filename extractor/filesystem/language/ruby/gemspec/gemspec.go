@@ -193,7 +193,7 @@ func extract(path string, r io.Reader) (*extractor.Package, error) {
 	}
 
 	if err := buf.Err(); err != nil {
-		log.Warnf("error scanning gemspec file %s: %w", path, err)
+		log.Warnf("error scanning gemspec file %s: %v", path, err)
 	}
 
 	// This was likely a marshalled gemspec. Not a readable text file.

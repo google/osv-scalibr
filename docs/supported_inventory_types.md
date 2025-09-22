@@ -39,7 +39,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
-| NIX               |                                | `os/nix`                                     |
+| Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
 | RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
@@ -81,6 +81,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                 | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                            | `javascript/pnpmlock`                |
 |            | bun.lock                                  | `javascript/bunlock`                 |
+| Lua        | Luarocks modules                          | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                              | `swift/podfilelock`                  |
 | PHP        | Composer                                  | `php/composerlock`                   |
 | Python     | Installed PyPI packages (global and venv) | `python/wheelegg`                    |
@@ -100,6 +101,31 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                              | `swift/podfilelock`                  |
 |            | Package.resolved                          | `swift/packageresolved`              |
 | Nim        | Nimble packages                           | `nim/nimble`                         |
+
+### Secrets
+
+| Type                          | Extractor Plugin                 |
+|-------------------------------|----------------------------------|
+| Anthropic API key             | `secrets/anthropicapikey`        |
+| Azure Token                   | `secrets/azuretoken`             |
+| DigitalOcean API key          | `secrets/digitaloceanapikey`     |
+| Docker hub PAT                | `secrets/dockerhubpat`           |
+| GCP API key                   | `secrets/gcpapikey`              |
+| GCP Express Mode API key      | `secrets/gcpexpressmode`         |
+| GCP service account key       | `secrets/gcpsak`                 |
+| Gitlab PAT                    | `secrets/gitlabpat`              |
+| Grok xAI API key              | `secrets/grokxaiapikey`          |
+| Grok xAI Management key       | `secrets/grokxaimanagementkey`   |
+| Hashicorp Vault token         | `secrets/hashicorpvaulttoken`    |
+| Hashicorp Vault AppRole token | `secrets/hashicorpvaultapprole`  |
+| Hugging Face API key          | `secrets/huggingfaceapikey`      |
+| OpenAI API key                | `secrets/openai`                 |
+| Perplexity API key            | `secrets/perplexityapikey`       |
+| Postman API key               | `secrets/postmanapikey`          |
+| Postman Collection token      | `secrets/postmancollectiontoken` |
+| PEM/OpenSSH Private key       | `secrets/privatekey`             |
+| RubyGems API key              | `secrets/rubygemsapikey`         |
+| Tink keyset                   | `secrets/tinkkeyset`             |
 
 ### Container inventory
 
@@ -150,7 +176,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`   |
 | Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`   |
 | Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`  |
-| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
+pp| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
 | Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
 | Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
 
