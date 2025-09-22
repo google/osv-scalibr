@@ -18,7 +18,6 @@ package gcpoauth2client
 // ClientCredentials is a Veles Secret that holds relevant information for GCP OAuth2 client credentials.
 // OAuth2 client credentials consist of a client ID and client secret pair used for application authentication.
 type ClientCredentials struct {
-	ClientID     string
-	ClientSecret string
-	ID           string // General ID field for uncertain credential types when context is unclear
+	ID     string
+	Secret string
 }

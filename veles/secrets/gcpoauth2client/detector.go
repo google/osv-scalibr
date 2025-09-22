@@ -184,8 +184,8 @@ func (d *detector) buildResults(clientIDs, clientSecrets []match, pairs []creden
 		clientSecret := clientSecrets[pair.clientSecretIndex]
 
 		secrets = append(secrets, ClientCredentials{
-			ClientID:     clientID.value,
-			ClientSecret: clientSecret.value,
+			ID:     clientID.value,
+			Secret: clientSecret.value,
 		})
 		positions = append(positions, minInt(clientID.position, clientSecret.position))
 
@@ -197,7 +197,7 @@ func (d *detector) buildResults(clientIDs, clientSecrets []match, pairs []creden
 	for i, clientID := range clientIDs {
 		if !usedClientIDs[i] {
 			secrets = append(secrets, ClientCredentials{
-				ClientID: clientID.value,
+				ID: clientID.value,
 			})
 			positions = append(positions, clientID.position)
 		}
@@ -207,7 +207,7 @@ func (d *detector) buildResults(clientIDs, clientSecrets []match, pairs []creden
 	for i, clientSecret := range clientSecrets {
 		if !usedClientSecrets[i] {
 			secrets = append(secrets, ClientCredentials{
-				ClientSecret: clientSecret.value,
+				Secret: clientSecret.value,
 			})
 			positions = append(positions, clientSecret.position)
 		}

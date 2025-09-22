@@ -40,8 +40,8 @@ func TestDetector_Detect(t *testing.T) {
 GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
+					ID:     "123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+					Secret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
 				},
 			},
 		},
@@ -53,8 +53,8 @@ GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			}`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-WebAppSecret9876543210ABC",
+					ID:     "717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com",
+					Secret: "GOCSPX-WebAppSecret9876543210ABC",
 				},
 			},
 		},
@@ -69,12 +69,12 @@ config_app2:
 GOCSPX-SecondSecret987654321098`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "222222222222-second.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-FirstSecret123456789012",
+					ID:     "222222222222-second.apps.googleusercontent.com",
+					Secret: "GOCSPX-FirstSecret123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "111111111111-first.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-SecondSecret987654321098",
+					ID:     "111111111111-first.apps.googleusercontent.com",
+					Secret: "GOCSPX-SecondSecret987654321098",
 				},
 			},
 		},
@@ -86,10 +86,10 @@ config_app2:
 GOCSPX-FarAwaySecret123456789012`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID: "111111111111-first.apps.googleusercontent.com",
+					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientSecret: "GOCSPX-FarAwaySecret123456789012",
+					Secret: "GOCSPX-FarAwaySecret123456789012",
 				},
 			},
 		},
@@ -98,7 +98,7 @@ GOCSPX-FarAwaySecret123456789012`,
 			input: `app_id: 333333333333-standalone.apps.googleusercontent.com`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID: "333333333333-standalone.apps.googleusercontent.com",
+					ID: "333333333333-standalone.apps.googleusercontent.com",
 				},
 			},
 		},
@@ -107,7 +107,7 @@ GOCSPX-FarAwaySecret123456789012`,
 			input: `app_secret: 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`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientSecret: "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",
+					Secret: "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",
 				},
 			},
 		},
@@ -118,11 +118,11 @@ second_id: 222222222222-second.apps.googleusercontent.com
 shared_secret: GOCSPX-SharedSecret123456789012`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "222222222222-second.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-SharedSecret123456789012",
+					ID:     "222222222222-second.apps.googleusercontent.com",
+					Secret: "GOCSPX-SharedSecret123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID: "111111111111-first.apps.googleusercontent.com",
+					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 			},
 		},
@@ -133,11 +133,11 @@ shared_id: 333333333333-shared.apps.googleusercontent.com
 second_secret: GOCSPX-SecondSecret987654321098`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "333333333333-shared.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-FirstSecret123456789012",
+					ID:     "333333333333-shared.apps.googleusercontent.com",
+					Secret: "GOCSPX-FirstSecret123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientSecret: "GOCSPX-SecondSecret987654321098",
+					Secret: "GOCSPX-SecondSecret987654321098",
 				},
 			},
 		},
@@ -169,8 +169,8 @@ valid_secret: GOCSPX-ValidSecret123456789012
 invalid_secret: WRONG-InvalidSecret123456789012`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "444444444444-valid.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-ValidSecret123456789012",
+					ID:     "444444444444-valid.apps.googleusercontent.com",
+					Secret: "GOCSPX-ValidSecret123456789012",
 				},
 			},
 		},
@@ -189,8 +189,8 @@ invalid_secret: WRONG-InvalidSecret123456789012`,
 }`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "555666777888-webappclient.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-RealWorldExample123456789",
+					ID:     "555666777888-webappclient.apps.googleusercontent.com",
+					Secret: "GOCSPX-RealWorldExample123456789",
 				},
 			},
 		},
@@ -202,11 +202,11 @@ second_occurrence: 123456789012-duplicate.apps.googleusercontent.com
 secret: GOCSPX-DuplicateTest123456789012`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "123456789012-duplicate.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-DuplicateTest123456789012",
+					ID:     "123456789012-duplicate.apps.googleusercontent.com",
+					Secret: "GOCSPX-DuplicateTest123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID: "123456789012-duplicate.apps.googleusercontent.com",
+					ID: "123456789012-duplicate.apps.googleusercontent.com",
 				},
 			},
 		},
@@ -218,11 +218,11 @@ some_other_data: random_value
 second_secret: GOCSPX-DuplicateSecret123456789`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "111111111111-unique.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-DuplicateSecret123456789",
+					ID:     "111111111111-unique.apps.googleusercontent.com",
+					Secret: "GOCSPX-DuplicateSecret123456789",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientSecret: "GOCSPX-DuplicateSecret123456789",
+					Secret: "GOCSPX-DuplicateSecret123456789",
 				},
 			},
 		},
@@ -236,16 +236,16 @@ shared_id_again: 123456789012-shared.apps.googleusercontent.com
 shared_secret_again: GOCSPX-SharedSecret987654321098`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "987654321098-another.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-FirstSecret123456789012",
+					ID:     "987654321098-another.apps.googleusercontent.com",
+					Secret: "GOCSPX-FirstSecret123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "123456789012-shared.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-SharedSecret987654321098",
+					ID:     "123456789012-shared.apps.googleusercontent.com",
+					Secret: "GOCSPX-SharedSecret987654321098",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "123456789012-shared.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-SharedSecret987654321098",
+					ID:     "123456789012-shared.apps.googleusercontent.com",
+					Secret: "GOCSPX-SharedSecret987654321098",
 				},
 			},
 		},
@@ -257,14 +257,14 @@ second_id: 222222222222-second.apps.googleusercontent.com
 first_id_again: 111111111111-first.apps.googleusercontent.com`,
 			expected: []veles.Secret{
 				gcpoauth2client.ClientCredentials{
-					ClientID:     "222222222222-second.apps.googleusercontent.com",
-					ClientSecret: "GOCSPX-UniqueSecret123456789012",
+					ID:     "222222222222-second.apps.googleusercontent.com",
+					Secret: "GOCSPX-UniqueSecret123456789012",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID: "111111111111-first.apps.googleusercontent.com",
+					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 				gcpoauth2client.ClientCredentials{
-					ClientID: "111111111111-first.apps.googleusercontent.com",
+					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 			},
 		},

@@ -657,7 +657,9 @@ message SecretData {
     HashiCorpVaultToken hashicorp_vault_token = 17;
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
-    GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 20;
+    HuggingfaceAPIKey hugginface = 20;
+    GithubAppRefreshToken github_app_refresh_token = 21;
+    GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 22;
   }
 
   message GCPSAK {
@@ -741,6 +743,9 @@ message SecretData {
     string key = 1;
   }
 
+  message GithubAppRefreshToken {
+    string token = 1;
+  }
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset
   }
@@ -752,20 +757,25 @@ message SecretData {
   message HashiCorpVaultAppRoleCredentials {
     string role_id = 1;
     string secret_id = 2;
-    string id = 3;  // General ID field for uncertain UUID types when context is unclear
+    string id =
+        3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
     string key = 1;
   }
 
+  message HuggingfaceAPIKey {
+    string key = 1;
+    string role = 2;
+    repeated string fine_grained_scope = 3;
+  }
+
   message GCPOAuth2ClientCredentials {
-    // GCP OAuth2 client ID in format: 12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
-    string client_id = 1;
-    // GCP OAuth2 client secret, typically 24+ character alphanumeric string
-    string client_secret = 2;
-    // General ID field for cases where credential type is uncertain
-    string id = 3;
+    // GCP OAuth2 client ID in format: `12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com`
+    string id = 1;
+    // GCP OAuth2 client secret, typically 24+ character alphanumeric string prefixed with `GOCSPX-`
+    string secret = 2;
   }
 }
 
