@@ -22,15 +22,15 @@ import (
 	checksum "github.com/google/osv-scalibr/veles/secrets/github/cheksum"
 )
 
-const patClassicTokenMaxLen = 80
+const classicPATMaxLen = 80
 
-var patClassicTokenPattern = regexp.MustCompile(`ghp_[A-Za-z0-9]{36}`)
+var classicPATPattern = regexp.MustCompile(`ghp_[A-Za-z0-9]{36}`)
 
 // NewClassicPATDetector returns a new Veles Detector that finds Github classic personal access tokens
 func NewClassicPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: patClassicTokenMaxLen,
-		Re:     patClassicTokenPattern,
+		MaxLen: classicPATMaxLen,
+		Re:     classicPATPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false

@@ -21,15 +21,15 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-const patFineGraindedTokenMaxLen = 80
+const fineGrainedPATMaxLen = 80
 
-var patFinegrainedTokenPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
+var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
 
 // NewFineGrainedPATDetector returns a new Veles Detector that finds Github fine-grained personal access tokens
 func NewFineGrainedPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: patFineGraindedTokenMaxLen,
-		Re:     patFinegrainedTokenPattern,
+		MaxLen: fineGrainedPATMaxLen,
+		Re:     fineGrainedPATPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			return PersonalAccessToken{Token: string(match)}, true
 		},
