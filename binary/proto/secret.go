@@ -39,6 +39,7 @@ import (
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -107,6 +108,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case velesslacktoken.SlackToken:
+		return slackTokenToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -165,6 +168,53 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 			},
 		},
 	}
+}
+func slackTokenToProto(s velesslacktoken.SlackToken) *spb.SecretData {
+	if s.IsAppLevelToken {
+		return &spb.SecretData{
+			Secret: &spb.SecretData_SlackToken_{
+				SlackToken: &spb.SecretData_SlackToken{
+					Token: s.Token,
+					TokenType: &spb.SecretData_SlackToken_IsAppLevelToken{
+						IsAppLevelToken: s.IsAppLevelToken,
+					},
+				},
+			},
+		}
+	}
+	if s.IsAppConfigAccessToken {
+		return &spb.SecretData{
+			Secret: &spb.SecretData_SlackToken_{
+				SlackToken: &spb.SecretData_SlackToken{
+					Token: s.Token,
+					TokenType: &spb.SecretData_SlackToken_IsAppConfigAccessToken{
+						IsAppConfigAccessToken: s.IsAppConfigAccessToken,
+					},
+				},
+			},
+		}
+	}
+	if s.IsAppConfigRefreshToken {
+		return &spb.SecretData{
+			Secret: &spb.SecretData_SlackToken_{
+				SlackToken: &spb.SecretData_SlackToken{
+					Token: s.Token,
+					TokenType: &spb.SecretData_SlackToken_IsAppConfigRefreshToken{
+						IsAppConfigRefreshToken: s.IsAppConfigRefreshToken,
+					},
+				},
+			},
+		}
+	}
+
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackToken_{
+			SlackToken: &spb.SecretData_SlackToken{
+				Token: s.Token,
+			},
+		},
+	}
+
 }
 
 func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
@@ -461,6 +511,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_SlackToken_:
+		return slackTokenToStruct(s.GetSlackToken()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -503,6 +555,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
 	return velesdigitalocean.DigitaloceanAPIToken{
 		Key: kPB.GetKey(),
+	}
+}
+func slackTokenToStruct(kPB *spb.SecretData_SlackToken) velesslacktoken.SlackToken {
+	return velesslacktoken.SlackToken{
+		Token:                   kPB.GetToken(),
+		IsAppConfigAccessToken:  kPB.GetIsAppConfigAccessToken(),
+		IsAppConfigRefreshToken: kPB.GetIsAppConfigRefreshToken(),
+		IsAppLevelToken:         kPB.GetIsAppLevelToken(),
 	}
 }
 
