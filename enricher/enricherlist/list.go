@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 )
 
 // InitFn is the enricher initializer function.
@@ -91,6 +92,8 @@ var (
 		fromVeles(github.NewAppU2STokenValidator(), "secrets/githubappu2stokenvalidate", 0),
 		fromVeles(github.NewOAuthTokenValidator(), "secrets/githuboauthtokenvalidate", 0),
 		fromVeles(github.NewPATValidator(), "secrets/githubpatvalidate", 0),
+		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
+		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 	})
 
 	// HuggingfaceMeta enricher.
