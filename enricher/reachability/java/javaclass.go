@@ -90,7 +90,7 @@ const (
 	ConstantKindModule             ConstantKind = 19
 	ConstantKindPackage            ConstantKind = 20
 
-	// This is not a real Java class constant kind.
+	// ConstantKindPlaceholder is not a real Java class constant kind.
 	// We use this to implement long and double constants taking up two entries
 	// in the constant pool, as well as the constant pool being 1-indexed.
 	//
