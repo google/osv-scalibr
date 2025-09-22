@@ -28,9 +28,12 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
 )
 
-const validatorS2STestKey = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
+const (
+	validatorFineGrainedKey = `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`
+	validatorClassicKey     = `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`
+)
 
-func TestAppS2STokenValidator(t *testing.T) {
+func TestPATValidator(t *testing.T) {
 	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -41,7 +44,10 @@ func TestAppS2STokenValidator(t *testing.T) {
 	defer cancel()
 
 	mockGithubServer := func(code int) *httptest.Server {
-		return mockgithub.Server(t, "/installation/repositories", code, validatorS2STestKey)
+		return mockgithub.Server(
+			t, "/user", code,
+			validatorFineGrainedKey, validatorClassicKey,
+		)
 	}
 
 	cases := []struct {
@@ -61,8 +67,14 @@ func TestAppS2STokenValidator(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			name:   "valid_key",
-			token:  validatorS2STestKey,
+			name:   "valid_classic_key",
+			token:  validatorClassicKey,
+			server: mockGithubServer(http.StatusOK),
+			want:   veles.ValidationValid,
+		},
+		{
+			name:   "valid_finegrainded_key",
+			token:  validatorFineGrainedKey,
 			server: mockGithubServer(http.StatusOK),
 			want:   veles.ValidationValid,
 		},
@@ -96,12 +108,12 @@ func TestAppS2STokenValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := github.NewAppS2STokenValidator(
-				github.AppS2SWithClient(client),
+			validator := github.NewPATValidator(
+				github.PATWithClient(client),
 			)
 
 			// Create a test key
-			key := github.AppServerToServerToken{Token: tt.token}
+			key := github.PersonalAccessToken{Token: tt.token}
 
 			// Test validation
 			got, err := validator.Validate(tt.ctx, key)

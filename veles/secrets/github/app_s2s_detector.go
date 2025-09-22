@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	checksum "github.com/google/osv-scalibr/veles/secrets/github/cheksum"
 )
 
 const s2sTokenMaxLen = 40
@@ -31,7 +32,7 @@ func NewAppS2STokenDetector() veles.Detector {
 		MaxLen: s2sTokenMaxLen,
 		Re:     s2sTokenPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
-			if !ValidateChecksum(match) {
+			if !checksum.Validate(match) {
 				return nil, false
 			}
 			return AppServerToServerToken{Token: string(match)}, true

@@ -23,26 +23,26 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// AppS2SValidator validates Github app User to Server token via the Github API endpoint.
-type AppS2SValidator struct {
+// PATValidator validates Github app User to Server token via the Github API endpoint.
+type PATValidator struct {
 	httpC *http.Client
 }
 
-// App2S2ValidatorOption configures a Validator when creating it via NewValidator.
-type App2S2ValidatorOption func(*AppS2SValidator)
+// PATValidatorOption configures a Validator when creating it via NewValidator.
+type PATValidatorOption func(*PATValidator)
 
-// AppS2SWithClient configures the http.Client that the Validator uses.
+// PATWithClient configures the http.Client that the Validator uses.
 //
 // By default, it uses http.DefaultClient.
-func AppS2SWithClient(c *http.Client) App2S2ValidatorOption {
-	return func(v *AppS2SValidator) {
+func PATWithClient(c *http.Client) PATValidatorOption {
+	return func(v *PATValidator) {
 		v.httpC = c
 	}
 }
 
-// NewAppS2STokenValidator creates a new Validator with the given ValidatorOptions.
-func NewAppS2STokenValidator(opts ...App2S2ValidatorOption) *AppS2SValidator {
-	v := &AppS2SValidator{
+// NewPATValidator creates a new Validator with the given ValidatorOptions.
+func NewPATValidator(opts ...PATValidatorOption) *PATValidator {
+	v := &PATValidator{
 		httpC: http.DefaultClient,
 	}
 	for _, opt := range opts {
@@ -52,9 +52,9 @@ func NewAppS2STokenValidator(opts ...App2S2ValidatorOption) *AppS2SValidator {
 }
 
 // Validate checks whether the given Github app User to Server token is valid.
-func (v *AppS2SValidator) Validate(ctx context.Context, key AppServerToServerToken) (veles.ValidationStatus, error) {
+func (v *PATValidator) Validate(ctx context.Context, key PersonalAccessToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.github.com/installation/repositories", nil)
+		"https://api.github.com/user", nil)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}

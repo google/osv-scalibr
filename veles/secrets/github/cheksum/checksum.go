@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+// Package checksum contains the checksum validation logic for github tokens
+package checksum
 
 import (
 	"bytes"
 	"hash/crc32"
 )
 
-// ValidateChecksum validates a GitHub token
-func ValidateChecksum(token []byte) bool {
+// Validate validates a GitHub token
+func Validate(token []byte) bool {
 	_, suf, ok := bytes.Cut(token, []byte("_"))
 	if !ok {
 		return false

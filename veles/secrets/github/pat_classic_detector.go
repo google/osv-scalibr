@@ -22,20 +22,20 @@ import (
 	checksum "github.com/google/osv-scalibr/veles/secrets/github/cheksum"
 )
 
-const appRefreshTokenMaxLen = 80
+const patClassicTokenMaxLen = 80
 
-var appRefreshTokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
+var patClassicTokenPattern = regexp.MustCompile(`ghp_[A-Za-z0-9]{36}`)
 
-// NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
-func NewAppRefreshTokenDetector() veles.Detector {
+// NewClassicPATDetector returns a new Veles Detector that finds Github classic personal access tokens
+func NewClassicPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: appRefreshTokenMaxLen,
-		Re:     appRefreshTokenPattern,
+		MaxLen: patClassicTokenMaxLen,
+		Re:     patClassicTokenPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false
 			}
-			return AppRefreshToken{Token: string(match)}, true
+			return PersonalAccessToken{Token: string(match)}, true
 		},
 	}
 }
