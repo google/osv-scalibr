@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>atom.install</id>
+    <version>1.60.0</version>
+    <title>Atom (Install)</title>
+    <authors>GitHub Inc.</authors>
+    <owners>Thilas</owners>
+    <licenseUrl>https://github.com/atom/atom/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://atom.io/</projectUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/Thilas/chocolatey-packages@058df13746c9cfa791d72eedd05f888d48a1bc1a/atom/icon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Atom is a text editor that's modern, approachable, yet hackable to the core—a tool you can customize to do anything but also use productively without ever touching a config file.
+
+### Cross-platform editing
+Atom works across operating systems. You can use it on OS X, Windows, or Linux.
+
+### Built-in package manager
+Search for and install new packages or start creating your own—all from within Atom.
+
+### Smart autocompletion
+Atom helps you write code faster with a smart, flexible autocomplete.
+
+### File system browser
+Easily browse and open a single file, a whole project, or multiple projects in one window.
+
+### Multiple panes
+Split your Atom interface into multiple panes to compare and edit code across files.
+
+### Find and replace
+Find, preview, and replace text as you type in a file or across all your projects.</description>
+    <summary>A hackable text editor for the 21st Century.</summary>
+    <releaseNotes>[Release notes](https://atom.io/releases)</releaseNotes>
+    <copyright>Copyright © GitHub Inc.</copyright>
+    <tags>atom admin text editor notepad github package autocompletion</tags>
+    <projectSourceUrl>https://github.com/atom/atom</projectSourceUrl>
+    <packageSourceUrl>https://github.com/Thilas/chocolatey-packages/tree/master/atom.install</packageSourceUrl>
+    <docsUrl>https://atom.io/docs</docsUrl>
+    <bugTrackerUrl>https://github.com/atom/atom/issues</bugTrackerUrl>
+  </metadata>
+</package>

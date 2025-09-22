@@ -52,6 +52,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
 | OS X Applications | OS X                           | `os/macapps`                                 |
+| Chocolatey        | Windows software               | `os/chocolatey`                              |
 | Windows           | Build number                   | `windows/regosversion`                       |
 | Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
 | Windows           | Installed software             | `windows/ospackages`                         |
