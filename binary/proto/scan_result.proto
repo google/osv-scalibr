@@ -658,6 +658,7 @@ message SecretData {
     HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
     GCPAPIKey gcp_api_key = 19;
     HuggingfaceAPIKey hugginface = 20;
+    GithubAppRefreshToken github_app_refresh_token = 21;
   }
 
   message GCPSAK {
@@ -741,6 +742,9 @@ message SecretData {
     string key = 1;
   }
 
+  message GithubAppRefreshToken {
+    string token = 1;
+  }
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset
   }

@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -116,6 +117,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesegithub.AppRefreshToken:
+		return githubAppRefreshTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -283,6 +286,16 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 			PrivateKey: &spb.SecretData_PrivateKey{
 				Block: pk.Block,
 				Der:   pk.Der,
+			},
+		},
+	}
+}
+
+func githubAppRefreshTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppRefreshToken_{
+			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
+				Token: token,
 			},
 		},
 	}
@@ -458,6 +471,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_GithubAppRefreshToken_:
+		return velesegithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:
