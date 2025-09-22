@@ -94,6 +94,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/github"
@@ -276,6 +277,7 @@ var (
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
+		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 	})
 
 	// Misc artifact extractors.

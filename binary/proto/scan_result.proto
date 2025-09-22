@@ -668,6 +668,7 @@ message SecretData {
     StripeRestrictedKey stripe_restricted_key = 23;
     StripeWebhookSecret stripe_webhook_secret = 24;
     GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
+    GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
   }
 
   message GCPSAK {
@@ -798,6 +799,11 @@ message SecretData {
     // GCP OAuth2 client secret, typically 24+ character alphanumeric string
     // prefixed with `GOCSPX-`
     string secret = 2;
+  }
+
+  message GCPOAuth2AccessToken {
+    // GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
+    string token = 1;
   }
 }
 

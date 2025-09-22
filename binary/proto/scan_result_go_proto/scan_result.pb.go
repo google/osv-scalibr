@@ -5093,6 +5093,7 @@ type SecretData struct {
 	//	*SecretData_StripeRestrictedKey_
 	//	*SecretData_StripeWebhookSecret_
 	//	*SecretData_GcpOauth2ClientCredentials
+	//	*SecretData_GcpOauth2AccessToken
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5360,6 +5361,15 @@ func (x *SecretData) GetGcpOauth2ClientCredentials() *SecretData_GCPOAuth2Client
 	return nil
 }
 
+func (x *SecretData) GetGcpOauth2AccessToken() *SecretData_GCPOAuth2AccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_GcpOauth2AccessToken); ok {
+			return x.GcpOauth2AccessToken
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -5464,6 +5474,10 @@ type SecretData_GcpOauth2ClientCredentials struct {
 	GcpOauth2ClientCredentials *SecretData_GCPOAuth2ClientCredentials `protobuf:"bytes,25,opt,name=gcp_oauth2_client_credentials,json=gcpOauth2ClientCredentials,proto3,oneof"`
 }
 
+type SecretData_GcpOauth2AccessToken struct {
+	GcpOauth2AccessToken *SecretData_GCPOAuth2AccessToken `protobuf:"bytes,26,opt,name=gcp_oauth2_access_token,json=gcpOauth2AccessToken,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -5513,6 +5527,8 @@ func (*SecretData_StripeRestrictedKey_) isSecretData_Secret() {}
 func (*SecretData_StripeWebhookSecret_) isSecretData_Secret() {}
 
 func (*SecretData_GcpOauth2ClientCredentials) isSecretData_Secret() {}
+
+func (*SecretData_GcpOauth2AccessToken) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -7118,6 +7134,51 @@ func (x *SecretData_GCPOAuth2ClientCredentials) GetSecret() string {
 	return ""
 }
 
+type SecretData_GCPOAuth2AccessToken struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
+	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_GCPOAuth2AccessToken) Reset() {
+	*x = SecretData_GCPOAuth2AccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[87]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_GCPOAuth2AccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_GCPOAuth2AccessToken) ProtoMessage() {}
+
+func (x *SecretData_GCPOAuth2AccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[87]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_GCPOAuth2AccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_GCPOAuth2AccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 25}
+}
+
+func (x *SecretData_GCPOAuth2AccessToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -7526,7 +7587,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xe1\x1d\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf2\x1e\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -7561,7 +7622,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x11stripe_secret_key\x18\x16 \x01(\v2#.scalibr.SecretData.StripeSecretKeyH\x00R\x0fstripeSecretKey\x12]\n" +
 	"\x15stripe_restricted_key\x18\x17 \x01(\v2'.scalibr.SecretData.StripeRestrictedKeyH\x00R\x13stripeRestrictedKey\x12]\n" +
 	"\x15stripe_webhook_secret\x18\x18 \x01(\v2'.scalibr.SecretData.StripeWebhookSecretH\x00R\x13stripeWebhookSecret\x12s\n" +
-	"\x1dgcp_oauth2_client_credentials\x18\x19 \x01(\v2..scalibr.SecretData.GCPOAuth2ClientCredentialsH\x00R\x1agcpOauth2ClientCredentials\x1a\xb0\x03\n" +
+	"\x1dgcp_oauth2_client_credentials\x18\x19 \x01(\v2..scalibr.SecretData.GCPOAuth2ClientCredentialsH\x00R\x1agcpOauth2ClientCredentials\x12a\n" +
+	"\x17gcp_oauth2_access_token\x18\x1a \x01(\v2(.scalibr.SecretData.GCPOAuth2AccessTokenH\x00R\x14gcpOauth2AccessToken\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -7634,7 +7696,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1aD\n" +
 	"\x1aGCPOAuth2ClientCredentials\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06secret\x18\x02 \x01(\tR\x06secretB\b\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x1a,\n" +
+	"\x14GCPOAuth2AccessToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05tokenB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -7692,7 +7756,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 87)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 88)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                               // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                                   // 1: scalibr.SeverityEnum
@@ -7786,11 +7850,12 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_StripeRestrictedKey)(nil),              // 89: scalibr.SecretData.StripeRestrictedKey
 	(*SecretData_StripeWebhookSecret)(nil),              // 90: scalibr.SecretData.StripeWebhookSecret
 	(*SecretData_GCPOAuth2ClientCredentials)(nil),       // 91: scalibr.SecretData.GCPOAuth2ClientCredentials
-	(*timestamppb.Timestamp)(nil),                       // 92: google.protobuf.Timestamp
+	(*SecretData_GCPOAuth2AccessToken)(nil),             // 92: scalibr.SecretData.GCPOAuth2AccessToken
+	(*timestamppb.Timestamp)(nil),                       // 93: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	92,  // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	92,  // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	93,  // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	93,  // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,   // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -7853,8 +7918,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15,  // 61: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15,  // 62: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	66,  // 63: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	92,  // 64: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	92,  // 65: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	93,  // 64: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	93,  // 65: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	56,  // 66: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	59,  // 67: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	60,  // 68: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -7884,19 +7949,20 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	89,  // 92: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
 	90,  // 93: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
 	91,  // 94: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
-	4,   // 95: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	92,  // 96: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	62,  // 97: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	63,  // 98: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	64,  // 99: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	65,  // 100: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11,  // 101: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	52,  // 102: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	103, // [103:103] is the sub-list for method output_type
-	103, // [103:103] is the sub-list for method input_type
-	103, // [103:103] is the sub-list for extension type_name
-	103, // [103:103] is the sub-list for extension extendee
-	0,   // [0:103] is the sub-list for field type_name
+	92,  // 95: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
+	4,   // 96: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	93,  // 97: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	62,  // 98: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	63,  // 99: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	64,  // 100: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	65,  // 101: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11,  // 102: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	52,  // 103: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	104, // [104:104] is the sub-list for method output_type
+	104, // [104:104] is the sub-list for method input_type
+	104, // [104:104] is the sub-list for extension type_name
+	104, // [104:104] is the sub-list for extension extendee
+	0,   // [0:104] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -7971,6 +8037,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_StripeRestrictedKey_)(nil),
 		(*SecretData_StripeWebhookSecret_)(nil),
 		(*SecretData_GcpOauth2ClientCredentials)(nil),
+		(*SecretData_GcpOauth2AccessToken)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[56].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
@@ -7984,7 +8051,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   87,
+			NumMessages:   88,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
