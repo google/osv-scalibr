@@ -134,7 +134,7 @@ func (r poetryReadWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifes
 		groupReqs := parseDependencies(deps, true)
 		allReqs = append(allReqs, groupReqs...)
 		for _, r := range groupReqs {
-			key := manifest.RequirementKey(r.VersionKey.PackageKey)
+			key := manifest.RequirementKey(r.PackageKey)
 			groups[key] = append(groups[key], groupName)
 		}
 	}
