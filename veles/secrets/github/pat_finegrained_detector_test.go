@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	patFinegrainedTestKey        = `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`
-	patFinegrainedAnotherTestKey = `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`
+	fineGrainedPATTestKey        = `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`
+	anotherFinegrainedPATTestKey = `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`
 )
 
 // TestFineGrainedPATDetector_truePositives tests for cases where we know the Detector
@@ -43,57 +43,57 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: patFinegrainedTestKey,
+		input: fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
-		input: patFinegrainedAnotherTestKey,
+		input: anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedAnotherTestKey},
+			github.PersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + patFinegrainedTestKey,
+		input: `API_TOKEN=` + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + patFinegrainedTestKey + `"`,
+		input: `API_TOKEN="` + fineGrainedPATTestKey + `"`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: patFinegrainedTestKey + patFinegrainedTestKey + patFinegrainedTestKey,
+		input: fineGrainedPATTestKey + fineGrainedPATTestKey + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
-		input: patFinegrainedTestKey + "\n" + patFinegrainedAnotherTestKey,
+		input: fineGrainedPATTestKey + "\n" + anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
-			github.PersonalAccessToken{Token: patFinegrainedAnotherTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.PersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, patFinegrainedTestKey),
+		`, fineGrainedPATTestKey),
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: patFinegrainedTestKey + `extra`,
+		input: fineGrainedPATTestKey + `extra`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: patFinegrainedTestKey},
+			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -125,7 +125,7 @@ func TestFineGrainedPATDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: patFinegrainedTestKey[:len(patFinegrainedTestKey)-1],
+		input: fineGrainedPATTestKey[:len(fineGrainedPATTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
 		input: `github_pat_11ALJFEII0Zi+19DEeBWSe_apMVlTnpi9UgqDHLAkMLh7iVx63tio9DckV9Rjqas6H4K5W45OQZK6Suog5`,

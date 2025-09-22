@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	fineGrainedValidatorKey = `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`
-	classicValidatorKey     = `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`
+	fineGrainedPATValidatorKey = `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`
+	classicPATValidatorKey     = `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`
 )
 
 func TestPATValidator(t *testing.T) {
@@ -46,7 +46,7 @@ func TestPATValidator(t *testing.T) {
 	mockGithubServer := func(code int) *httptest.Server {
 		return mockgithub.Server(
 			t, "/user", code,
-			fineGrainedValidatorKey, classicValidatorKey,
+			fineGrainedPATValidatorKey, classicPATValidatorKey,
 		)
 	}
 
@@ -68,13 +68,13 @@ func TestPATValidator(t *testing.T) {
 		},
 		{
 			name:   "valid_classic_key",
-			token:  classicValidatorKey,
+			token:  classicPATValidatorKey,
 			server: mockGithubServer(http.StatusOK),
 			want:   veles.ValidationValid,
 		},
 		{
 			name:   "valid_finegrainded_key",
-			token:  fineGrainedValidatorKey,
+			token:  fineGrainedPATValidatorKey,
 			server: mockGithubServer(http.StatusOK),
 			want:   veles.ValidationValid,
 		},
