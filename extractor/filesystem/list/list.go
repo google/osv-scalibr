@@ -274,6 +274,7 @@ var (
 		{github.NewAppU2SDetector(), "secrets/githubappu2stoken", 0},
 		{github.NewClassicPATDetector(), "secrets/githubclassicpat", 0},
 		{github.NewFineGrainedPATDetector(), "secrets/githubfinegrainedpat", 0},
+		{github.NewOAuthTokenDetector(), "secrets/githuboauthtoken", 0},
 	})
 
 	// Misc artifact extractors.

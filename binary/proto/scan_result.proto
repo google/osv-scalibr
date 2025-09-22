@@ -662,6 +662,7 @@ message SecretData {
     GithubAppRefreshToken github_app_refresh_token = 23;
     GithubPersonalAccessToken github_personal_access_token = 24;
     GithubAppUserToServerToken github_app_user_to_server_token = 25;
+    GithubOAuthToken github_oauth_token = 26;
   }
 
   message GCPSAK {
@@ -750,6 +751,10 @@ message SecretData {
   }
 
   message GithubPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubOAuthToken {
     string token = 1;
   }
 

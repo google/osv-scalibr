@@ -39,3 +39,8 @@ type AppUserToServerToken struct {
 type PersonalAccessToken struct {
 	Token string
 }
+
+// OAuthToken contains an oauth token
+type OAuthToken struct {
+	Token string
+}
