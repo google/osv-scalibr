@@ -88,6 +88,7 @@ var (
 		fromVeles(postmanapikey.NewAPIValidator(), "secrets/postmanapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewCollectionValidator(), "secrets/postmancollectiontokenvalidate", 0),
 		fromVeles(github.NewAppS2STokenValidator(), "secrets/githubapps2stokenvalidate", 0),
+		fromVeles(github.NewAppU2STokenValidator(), "secrets/githubappu2stokenvalidate", 0),
 		fromVeles(github.NewPATValidator(), "secrets/githubpatvalidate", 0),
 	})
 

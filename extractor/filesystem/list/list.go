@@ -271,6 +271,7 @@ var (
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
 		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},
+		{github.NewAppU2SDetector(), "secrets/githubappu2stoken", 0},
 		{github.NewClassicPATDetector(), "secrets/githubclassicpat", 0},
 		{github.NewFineGrainedPATDetector(), "secrets/githubfinegrainedpat", 0},
 	})

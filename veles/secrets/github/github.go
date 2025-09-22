@@ -25,6 +25,14 @@ type AppServerToServerToken struct {
 	Token string
 }
 
+// AppUserToServerToken contains a user to server token
+//
+// A Github App User to Server token is a temporary, secure credential that allows a GitHub App
+// to perform actions on the platform on behalf of a user
+type AppUserToServerToken struct {
+	Token string
+}
+
 // PersonalAccessToken contains a Github App personal access token
 //
 // The underlying value can be either a classic or a fine-grained token

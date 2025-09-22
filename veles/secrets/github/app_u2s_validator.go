@@ -23,26 +23,26 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// AppS2STokenValidator validates Github app User to Server token via the Github API endpoint.
-type AppS2STokenValidator struct {
+// AppU2STokenValidator validates Github app User to Server token via the Github API endpoint.
+type AppU2STokenValidator struct {
 	httpC *http.Client
 }
 
-// App2S2TokenValidatorOption configures a Validator when creating it via NewValidator.
-type App2S2TokenValidatorOption func(*AppS2STokenValidator)
+// AppU2STokenValidatorOption configures a AppU2SValidator when creating it via NewAppU2SValidator.
+type AppU2STokenValidatorOption func(*AppU2STokenValidator)
 
-// AppS2STokenWithClient configures the http.Client that the Validator uses.
+// AppU2STokenWithClient configures the http.Client that the AppU2SValidator uses.
 //
 // By default, it uses http.DefaultClient.
-func AppS2STokenWithClient(c *http.Client) App2S2TokenValidatorOption {
-	return func(v *AppS2STokenValidator) {
+func AppU2STokenWithClient(c *http.Client) AppU2STokenValidatorOption {
+	return func(v *AppU2STokenValidator) {
 		v.httpC = c
 	}
 }
 
-// NewAppS2STokenValidator creates a new Validator with the given ValidatorOptions.
-func NewAppS2STokenValidator(opts ...App2S2TokenValidatorOption) *AppS2STokenValidator {
-	v := &AppS2STokenValidator{
+// NewAppU2STokenValidator creates a new AppU2SValidator with the given AppU2SValidatorOptions.
+func NewAppU2STokenValidator(opts ...AppU2STokenValidatorOption) *AppU2STokenValidator {
+	v := &AppU2STokenValidator{
 		httpC: http.DefaultClient,
 	}
 	for _, opt := range opts {
@@ -52,9 +52,9 @@ func NewAppS2STokenValidator(opts ...App2S2TokenValidatorOption) *AppS2STokenVal
 }
 
 // Validate checks whether the given Github app User to Server token is valid.
-func (v *AppS2STokenValidator) Validate(ctx context.Context, key AppServerToServerToken) (veles.ValidationStatus, error) {
+func (v *AppU2STokenValidator) Validate(ctx context.Context, key AppUserToServerToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.github.com/installation/repositories", nil)
+		"https://api.github.com/user", nil)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}

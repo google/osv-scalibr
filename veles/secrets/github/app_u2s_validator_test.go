@@ -28,9 +28,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
 )
 
-const s2sValidatorTestKey = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
+const u2sValidatorTestKey = `ghu_aGgfQsQ52sImE9zwWxKcjt2nhESfYG1U2FhX`
 
-func TestAppS2STokenValidator(t *testing.T) {
+func TestAppU2SValidator(t *testing.T) {
 	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -41,7 +41,7 @@ func TestAppS2STokenValidator(t *testing.T) {
 	defer cancel()
 
 	mockGithubServer := func(code int) *httptest.Server {
-		return mockgithub.Server(t, "/installation/repositories", code, s2sValidatorTestKey)
+		return mockgithub.Server(t, "/user", code, u2sValidatorTestKey)
 	}
 
 	cases := []struct {
@@ -62,7 +62,7 @@ func TestAppS2STokenValidator(t *testing.T) {
 		},
 		{
 			name:   "valid_key",
-			token:  s2sValidatorTestKey,
+			token:  u2sValidatorTestKey,
 			server: mockGithubServer(http.StatusOK),
 			want:   veles.ValidationValid,
 		},
@@ -96,12 +96,12 @@ func TestAppS2STokenValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := github.NewAppS2STokenValidator(
-				github.AppS2STokenWithClient(client),
+			validator := github.NewAppU2STokenValidator(
+				github.AppU2STokenWithClient(client),
 			)
 
 			// Create a test key
-			key := github.AppServerToServerToken{Token: tt.token}
+			key := github.AppUserToServerToken{Token: tt.token}
 
 			// Test validation
 			got, err := validator.Validate(tt.ctx, key)

@@ -123,6 +123,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubAppServerToServerTokenToProto(t.Token), nil
 	case velesgithub.PersonalAccessToken:
 		return githubPersonalAccessTokenToProto(t.Token), nil
+	case velesgithub.AppUserToServerToken:
+		return githubAppUserToServerTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -309,6 +311,16 @@ func githubAppServerToServerTokenToProto(token string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GithubAppServerToServerToken_{
 			GithubAppServerToServerToken: &spb.SecretData_GithubAppServerToServerToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubAppUserToServerTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppUserToServerToken_{
+			GithubAppUserToServerToken: &spb.SecretData_GithubAppUserToServerToken{
 				Token: token,
 			},
 		},
@@ -502,6 +514,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_GithubPersonalAccessToken_:
 		return velesgithub.PersonalAccessToken{
 			Token: s.GetGithubPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GithubAppUserToServerToken_:
+		return velesgithub.AppUserToServerToken{
+			Token: s.GetGithubAppUserToServerToken().GetToken(),
 		}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
