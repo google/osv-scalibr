@@ -23,7 +23,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// AppS2STokenValidator validates Github app User to Server token via the Github API endpoint.
+// AppS2STokenValidator validates Github app Server to Server token via the Github API endpoint.
 type AppS2STokenValidator struct {
 	httpC *http.Client
 }
@@ -51,7 +51,7 @@ func NewAppS2STokenValidator(opts ...App2S2TokenValidatorOption) *AppS2STokenVal
 	return v
 }
 
-// Validate checks whether the given Github app User to Server token is valid.
+// Validate checks whether the given Github app Server to Server token is valid.
 func (v *AppS2STokenValidator) Validate(ctx context.Context, key AppServerToServerToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://api.github.com/installation/repositories", nil)

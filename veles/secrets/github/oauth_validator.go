@@ -23,7 +23,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// OAuthTokenValidator validates Github app User to Server token via the Github API endpoint.
+// OAuthTokenValidator validates Github OAuth token via the Github API endpoint.
 type OAuthTokenValidator struct {
 	httpC *http.Client
 }
@@ -51,7 +51,7 @@ func NewOAuthTokenValidator(opts ...OAuthTokenValidatorOption) *OAuthTokenValida
 	return v
 }
 
-// Validate checks whether the given Github app User to Server token is valid.
+// Validate checks whether the given Github OAuth token is valid.
 func (v *OAuthTokenValidator) Validate(ctx context.Context, key OAuthToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://api.github.com/user", nil)

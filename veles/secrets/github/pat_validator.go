@@ -23,7 +23,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// PATValidator validates Github app User to Server token via the Github API endpoint.
+// PATValidator validates Github app personal access token via the Github API endpoint.
 type PATValidator struct {
 	httpC *http.Client
 }
@@ -51,7 +51,7 @@ func NewPATValidator(opts ...PATValidatorOption) *PATValidator {
 	return v
 }
 
-// Validate checks whether the given Github app User to Server token is valid.
+// Validate checks whether the given Github personal access token is valid.
 func (v *PATValidator) Validate(ctx context.Context, key PersonalAccessToken) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://api.github.com/user", nil)

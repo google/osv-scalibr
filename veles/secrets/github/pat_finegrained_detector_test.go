@@ -31,7 +31,7 @@ const (
 )
 
 // TestFineGrainedPATDetector_truePositives tests for cases where we know the Detector
-// will find a Github app refresh tokens.
+// will find a Github fine-grained personal access tokens.
 func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewFineGrainedPATDetector()})
 	if err != nil {
@@ -110,7 +110,7 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 }
 
 // TestFineGrainedPATDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app refresh tokens.
+// will not find a Github fine-grained personal access tokens.
 func TestFineGrainedPATDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewFineGrainedPATDetector()})
 	if err != nil {

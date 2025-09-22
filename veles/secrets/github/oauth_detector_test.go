@@ -31,7 +31,7 @@ const (
 )
 
 // TestOAuthDetector_truePositives tests for cases where we know the Detector
-// will find a Github app server to server tokens.
+// will find a Github OAuth tokens.
 func TestOAuthDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewOAuthTokenDetector()})
 	if err != nil {
@@ -114,7 +114,7 @@ func TestOAuthDetector_truePositives(t *testing.T) {
 }
 
 // TestOAuthDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app server to server tokens.
+// will not find a Github OAuth tokens.
 func TestOAuthDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewOAuthTokenDetector()})
 	if err != nil {

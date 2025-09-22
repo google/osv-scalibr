@@ -31,7 +31,7 @@ const (
 )
 
 // TestClassicPATDetector_truePositives tests for cases where we know the Detector
-// will find a Github app refresh tokens.
+// will find a Github classic personal access tokens.
 func TestClassicPATDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewClassicPATDetector()})
 	if err != nil {
@@ -114,7 +114,7 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 }
 
 // TestClassicPATDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app refresh tokens.
+// will not find a Github classic personal access tokens.
 func TestClassicPATDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewClassicPATDetector()})
 	if err != nil {
