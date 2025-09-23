@@ -51,6 +51,7 @@ import (
 
 func TestScan(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
+	partialSuccess := &plugin.ScanStatus{Status: plugin.ScanStatusPartiallySucceeded}
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
@@ -108,7 +109,7 @@ func TestScan(t *testing.T) {
 						withDetectorName(finding, "detector"),
 					},
 				},
-			): fen.InventoryAndErr{
+			): {
 				Inventory: &inventory.Inventory{
 					Packages: []*extractor.Package{pkgWithLayerDetails},
 					GenericFindings: []*inventory.GenericFinding{
@@ -133,7 +134,7 @@ func TestScan(t *testing.T) {
 						withDetectorName(finding, "detector2"),
 					},
 				},
-			): fen.InventoryAndErr{
+			): {
 				Inventory: &inventory.Inventory{
 					Packages: []*extractor.Package{pkg},
 					GenericFindings: []*inventory.GenericFinding{
@@ -216,7 +217,7 @@ func TestScan(t *testing.T) {
 			},
 			want: &scalibr.ScanResult{
 				Version: version.ScannerVersion,
-				Status:  success,
+				Status:  partialSuccess,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: success},
 					{Name: "python/wheelegg", Version: 1, Status: extFailure},
@@ -240,7 +241,7 @@ func TestScan(t *testing.T) {
 			},
 			want: &scalibr.ScanResult{
 				Version: version.ScannerVersion,
-				Status:  success,
+				Status:  partialSuccess,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector", Version: 2, Status: detFailure},
 					{Name: "python/wheelegg", Version: 1, Status: success},
@@ -262,7 +263,7 @@ func TestScan(t *testing.T) {
 			},
 			want: &scalibr.ScanResult{
 				Version: version.ScannerVersion,
-				Status:  success,
+				Status:  partialSuccess,
 				PluginStatus: []*plugin.Status{
 					{Name: "detector2", Version: 2, Status: success},
 					{Name: "enricher", Version: 1, Status: enrFailure},
