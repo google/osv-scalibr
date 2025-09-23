@@ -62,8 +62,8 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return Pgpass{Entry: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return Pgpass{Entry: string(b)}, true
 		},
 	}
 }

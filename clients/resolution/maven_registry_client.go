@@ -33,8 +33,8 @@ type MavenRegistryClient struct {
 }
 
 // NewMavenRegistryClient makes a new MavenRegistryClient.
-func NewMavenRegistryClient(remote, local string) (*MavenRegistryClient, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
+func NewMavenRegistryClient(ctx context.Context, remote, local string) (*MavenRegistryClient, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
 	if err != nil {
 		return nil, err
 	}
@@ -174,13 +174,13 @@ func (c *MavenRegistryClient) MatchingVersions(ctx context.Context, vk resolve.V
 }
 
 // AddRegistries adds registries to the MavenRegistryClient.
-func (c *MavenRegistryClient) AddRegistries(registries []Registry) error {
+func (c *MavenRegistryClient) AddRegistries(ctx context.Context, registries []Registry) error {
 	for _, reg := range registries {
 		specific, ok := reg.(datasource.MavenRegistry)
 		if !ok {
 			return errors.New("invalid Maven registry information")
 		}
-		if err := c.api.AddRegistry(specific); err != nil {
+		if err := c.api.AddRegistry(ctx, specific); err != nil {
 			return err
 		}
 	}
