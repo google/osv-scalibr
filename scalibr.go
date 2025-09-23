@@ -360,7 +360,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
+	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
 	// Since we skipped storing absolute path in the main Scan function.
 	// Actually convert it to absolute path here.
