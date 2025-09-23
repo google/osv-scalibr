@@ -19,7 +19,7 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/canonical/chisel/public/jsonwall"
+	"github.com/canonical/chisel-manifest/public/manifest"
 	"github.com/klauspost/compress/zstd"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -171,28 +171,27 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	pkgs := []*extractor.Package{}
 
-	manifest, err := zstd.NewReader(input.Reader)
+	r, err := zstd.NewReader(input.Reader)
 	if err != nil {
 		return pkgs, err
 	}
-	defer manifest.Close()
+	defer r.Close()
 
-	db, err := jsonwall.ReadDB(manifest)
-	if err != nil {
-		return pkgs, err
-	}
-
-	packagesIterator, err := db.Iterate(&ChiselPackage{Kind: "package"})
+	chiselManifest, err := manifest.Read(r)
 	if err != nil {
 		return pkgs, err
 	}
 
-	for packagesIterator.Next() {
-		var chiselPackage ChiselPackage
-		if err := packagesIterator.Get(&chiselPackage); err != nil {
-			return pkgs, err
-		}
+	var manifestPkgs []*manifest.Package
+	err = chiselManifest.IteratePackages(func(pkg *manifest.Package) error {
+		manifestPkgs = append(manifestPkgs, pkg)
+		return nil
+	})
+	if err != nil {
+		return pkgs, err
+	}
 
+	for _, chiselPackage := range manifestPkgs {
 		pkgName := chiselPackage.Name
 		pkgVersion := chiselPackage.Version
 		if pkgName == "" || pkgVersion == "" {
