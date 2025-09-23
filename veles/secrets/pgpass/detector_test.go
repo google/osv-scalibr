@@ -24,10 +24,11 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pgpass"
 )
 
+// TODO: add tests for numeric values of the port when regex is modified in detector.go
 const (
-	testEntry                    = `hostname:port:database:username:password`
-	testEntryWithSemicolumnInPwd = `hostname:port:database:username:passw\:ord`
-	testEntryWiwthWildcardInside = `*:port:*:username:password`
+	testEntry                    = `hostname:234:database:username:password`
+	testEntryWithSemicolumnInPwd = `hostname:31337:database:username:passw\:ord`
+	testEntryWiwthWildcardInside = `*:*:*:*:password`
 )
 
 // TestDetector_truePositives tests for cases where we know the Detector
@@ -97,16 +98,22 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "malformed entry: less number of fields",
-		input: `hostname:port:database:password`,
+		input: `hostname:123:database:password`,
 	}, {
 		name:  "malformed entry: more number of fields",
-		input: `hostname:port:database:username:password:extrafield`,
+		input: `hostname:1234:database:username:password:extrafield`,
+	}, {
+		name:  "malformed entry: invalid port number",
+		input: `hostname:12343333:database:username:password`,
+	}, {
+		name:  "malformed entry: port field with text chars",
+		input: `hostname:port:database:username:password`,
 	}, {
 		name:  "malformed entry: escaped: in database field",
-		input: `hostname:port:data\:base:username:password`,
+		input: `hostname:123:data\:base:username:password`,
 	}, {
 		name:  "malformed entry: wildcard in password",
-		input: `hostname:port:database:username:*`,
+		input: `hostname:123:database:username:*`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

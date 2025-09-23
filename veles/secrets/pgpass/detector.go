@@ -44,9 +44,16 @@ const maxTokenLength = 560
 // keyRe is a regular expression that matches the content of a pgpass file entry
 // Every entry in the pgpass file is composed by the following fields:
 // hostname:port:database:username:password
+//   - hostname: matches any character except the `:` (that is currently used for separating fields)
+//   - port: matches numbers until 5 digits and * (wildcard)
+//     this group can match ports > 65535 but it is a compromise for regex performance
+//   - database: same as hostname
+//   - username: same as hostname
+//   - password: can match any allowed characters but semicolon must be escaped and wildcard is not allowed
+//
 // Official documentation:
 // - https://www.postgresql.org/docs/current/libpq-pgpass.html
-var keyRe = regexp.MustCompile(`(?m)^(?:[!-9;-~]*:){4}(?:\\:|[!-9;-~])*(?:\\:|[!-)+-.0-9;-~])(?:\\:|[!-9;-~])*$`)
+var keyRe = regexp.MustCompile(`(?m)^(?:[!-9;-~]+):(?:\*|[0-9]{1,5}):(?:[!-9;-~]+):(?:[!-9;-~]+):(?:\\:|[!-9;-~])*(?:\\:|[!-)+-.0-9;-~])(?:\\:|[!-9;-~])*$`)
 
 // NewDetector returns a new simpletoken.Detector that matches a complete entry
 // of a .pgpass file for which the related structure is define in the above
