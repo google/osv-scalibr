@@ -661,6 +661,126 @@ func TestScanContainer(t *testing.T) {
 	}
 }
 
+func TestScan_ExtractorOverride(t *testing.T) {
+	tmp := t.TempDir()
+	fs := scalibrfs.DirFS(tmp)
+	if err := os.WriteFile(filepath.Join(tmp, "file1"), []byte("content1"), 0644); err != nil {
+		t.Fatalf("write file1: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "file2"), []byte("content2"), 0644); err != nil {
+		t.Fatalf("write file2: %v", err)
+	}
+	if err := os.Mkdir(filepath.Join(tmp, "dir"), 0755); err != nil {
+		t.Fatalf("mkdir dir: %v", err)
+	}
+	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
+
+	e1 := fe.New("e1", 1, []string{"file1"}, map[string]fe.NamesErr{"file1": {Names: []string{"pkg1"}}})
+	e2 := fe.New("e2", 1, []string{"file2"}, map[string]fe.NamesErr{"file2": {Names: []string{"pkg2"}}})
+	e3 := fe.New("e3", 1, []string{}, map[string]fe.NamesErr{"file2": {Names: []string{"pkg3"}}})
+	e4 := fe.NewDirExtractor("e4", 1, []string{"dir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg4"}}})
+	e5 := fe.NewDirExtractor("e5", 1, []string{"notdir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg5"}}})
+
+	pkg1 := &extractor.Package{Name: "pkg1", Locations: []string{"file1"}, Plugins: []string{"e1"}}
+	pkg2 := &extractor.Package{Name: "pkg2", Locations: []string{"file2"}, Plugins: []string{"e2"}}
+	pkg3 := &extractor.Package{Name: "pkg3", Locations: []string{"file2"}, Plugins: []string{"e3"}}
+	pkg4 := &extractor.Package{Name: "pkg4", Locations: []string{"dir"}, Plugins: []string{"e4"}}
+	pkg5 := &extractor.Package{Name: "pkg5", Locations: []string{"dir"}, Plugins: []string{"e5"}}
+
+	tests := []struct {
+		name              string
+		plugins           []plugin.Plugin
+		extractorOverride func(filesystem.FileAPI) []filesystem.Extractor
+		wantPkgs          []*extractor.Package
+	}{
+		{
+			name:    "no override",
+			plugins: []plugin.Plugin{e1, e2, e3},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg2,
+			},
+		},
+		{
+			name:    "override returns nil",
+			plugins: []plugin.Plugin{e1, e2, e3},
+			extractorOverride: func(api filesystem.FileAPI) []filesystem.Extractor {
+				return nil
+			},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg2,
+			},
+		},
+		{
+			name:    "override returns empty",
+			plugins: []plugin.Plugin{e1, e2, e3},
+			extractorOverride: func(api filesystem.FileAPI) []filesystem.Extractor {
+				return []filesystem.Extractor{}
+			},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg2,
+			},
+		},
+		{
+			name:    "override e3 for file2",
+			plugins: []plugin.Plugin{e1, e2, e3},
+			extractorOverride: func(api filesystem.FileAPI) []filesystem.Extractor {
+				if api.Path() == "file2" {
+					return []filesystem.Extractor{e3}
+				}
+				return nil
+			},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg3,
+			},
+		},
+		{
+			name:    "override e5 for irrelevant directory",
+			plugins: []plugin.Plugin{e1, e4, e5},
+			extractorOverride: func(api filesystem.FileAPI) []filesystem.Extractor {
+				if api.Path() == "otherdir" {
+					return []filesystem.Extractor{e5}
+				}
+				return nil
+			},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg4,
+			},
+		},
+		{
+			name:    "override e5 for dir",
+			plugins: []plugin.Plugin{e1, e4, e5},
+			extractorOverride: func(api filesystem.FileAPI) []filesystem.Extractor {
+				if api.Path() == "dir" {
+					return []filesystem.Extractor{e5}
+				}
+				return nil
+			},
+			wantPkgs: []*extractor.Package{
+				pkg1, pkg5,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &scalibr.ScanConfig{
+				Plugins:           tt.plugins,
+				ScanRoots:         tmpRoot,
+				ExtractorOverride: tt.extractorOverride,
+			}
+			res := scalibr.New().Scan(context.Background(), cfg)
+			if res.Status.Status != plugin.ScanStatusSucceeded {
+				t.Fatalf("Scan failed: %s", res.Status.FailureReason)
+			}
+
+			sortSlices := cmpopts.SortSlices(func(a, b *extractor.Package) bool { return scalibr.CmpPackages(a, b) < 0 })
+			if diff := cmp.Diff(tt.wantPkgs, res.Inventory.Packages, fe.AllowUnexported, sortSlices, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Scan() packages diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func withDetectorName(f *inventory.GenericFinding, det string) *inventory.GenericFinding {
 	c := *f
 	c.Plugins = []string{det}
