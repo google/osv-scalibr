@@ -668,9 +668,10 @@ message SecretData {
     StripeRestrictedKey stripe_restricted_key = 23;
     StripeWebhookSecret stripe_webhook_secret = 24;
     GithubAppServerToServerToken github_app_server_to_server_token = 25;
-    GithubPersonalAccessToken github_personal_access_token = 26;
-    GithubAppUserToServerToken github_app_user_to_server_token = 27;
-    GithubOAuthToken github_oauth_token = 28;
+    GithubClassicPersonalAccessToken github_classic_personal_access_token = 26;
+    GithubFineGrainedPersonalAccessToken github_fine_grained_personal_access_token = 27;
+    GithubAppUserToServerToken github_app_user_to_server_token = 28;
+    GithubOAuthToken github_oauth_token = 29;
   }
 
   message GCPSAK {
@@ -762,7 +763,11 @@ message SecretData {
     string token = 1;
   }
 
-  message GithubPersonalAccessToken {
+  message GithubClassicPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubFineGrainedPersonalAccessToken {
     string token = 1;
   }
 

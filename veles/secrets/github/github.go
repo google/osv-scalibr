@@ -33,10 +33,13 @@ type AppUserToServerToken struct {
 	Token string
 }
 
-// PersonalAccessToken contains a Github App personal access token
-//
-// The underlying value can be either a classic or a fine-grained token
-type PersonalAccessToken struct {
+// ClassicPersonalAccessToken contains a Github classic personal access token
+type ClassicPersonalAccessToken struct {
+	Token string
+}
+
+// FineGrainedPersonalAccessToken contains a Github fine-grained personal access token
+type FineGrainedPersonalAccessToken struct {
 	Token string
 }
 

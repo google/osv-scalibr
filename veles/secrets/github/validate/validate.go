@@ -24,7 +24,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// Validate validates a Github token given the a client and a path
+// Validate validates a Github token given a client and a path
 func Validate(ctx context.Context, client *http.Client, path string, token string) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com"+path, nil)
 	if err != nil {

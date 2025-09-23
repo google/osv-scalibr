@@ -31,7 +31,7 @@ func NewFineGrainedPATDetector() veles.Detector {
 		MaxLen: fineGrainedPATMaxLen,
 		Re:     fineGrainedPATPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
-			return PersonalAccessToken{Token: string(match)}, true
+			return FineGrainedPersonalAccessToken{Token: string(match)}, true
 		},
 	}
 }

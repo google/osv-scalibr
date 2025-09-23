@@ -45,33 +45,33 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: classicPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
 		input: anotherClassicPATKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: anotherClassicPATKey},
+			github.ClassicPersonalAccessToken{Token: anotherClassicPATKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `API_TOKEN=` + classicPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `API_TOKEN="` + classicPATTestKey + `"`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: classicPATTestKey + classicPATTestKey + classicPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
-			github.PersonalAccessToken{Token: classicPATTestKey},
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "bad checksum",
@@ -81,8 +81,8 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 		name:  "multiple distinct matches",
 		input: classicPATTestKey + "\n" + anotherClassicPATKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
-			github.PersonalAccessToken{Token: anotherClassicPATKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: anotherClassicPATKey},
 		},
 	}, {
 		name: "larger input containing key",
@@ -91,13 +91,13 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 :API_TOKEN: %s
 		`, classicPATTestKey),
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: classicPATTestKey + `extra`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}}
 	for _, tc := range cases {

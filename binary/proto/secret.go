@@ -122,8 +122,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubAppRefreshTokenToProto(t.Token), nil
 	case velesgithub.AppServerToServerToken:
 		return githubAppServerToServerTokenToProto(t.Token), nil
-	case velesgithub.PersonalAccessToken:
-		return githubPersonalAccessTokenToProto(t.Token), nil
+	case velesgithub.FineGrainedPersonalAccessToken:
+		return githubFineGrainedPersonalAccessTokenToProto(t.Token), nil
+	case velesgithub.ClassicPersonalAccessToken:
+		return githubClassicPersonalAccessTokenToProto(t.Token), nil
 	case velesgithub.AppUserToServerToken:
 		return githubAppUserToServerTokenToProto(t.Token), nil
 	case velesgithub.OAuthToken:
@@ -336,10 +338,20 @@ func githubAppUserToServerTokenToProto(token string) *spb.SecretData {
 	}
 }
 
-func githubPersonalAccessTokenToProto(token string) *spb.SecretData {
+func githubFineGrainedPersonalAccessTokenToProto(token string) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_GithubPersonalAccessToken_{
-			GithubPersonalAccessToken: &spb.SecretData_GithubPersonalAccessToken{
+		Secret: &spb.SecretData_GithubFineGrainedPersonalAccessToken_{
+			GithubFineGrainedPersonalAccessToken: &spb.SecretData_GithubFineGrainedPersonalAccessToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubClassicPersonalAccessTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubClassicPersonalAccessToken_{
+			GithubClassicPersonalAccessToken: &spb.SecretData_GithubClassicPersonalAccessToken{
 				Token: token,
 			},
 		},
@@ -560,9 +572,13 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
 	case *spb.SecretData_GithubAppServerToServerToken_:
 		return velesgithub.AppServerToServerToken{Token: s.GetGithubAppServerToServerToken().GetToken()}, nil
-	case *spb.SecretData_GithubPersonalAccessToken_:
-		return velesgithub.PersonalAccessToken{
-			Token: s.GetGithubPersonalAccessToken().GetToken(),
+	case *spb.SecretData_GithubFineGrainedPersonalAccessToken_:
+		return velesgithub.FineGrainedPersonalAccessToken{
+			Token: s.GetGithubFineGrainedPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GithubClassicPersonalAccessToken_:
+		return velesgithub.ClassicPersonalAccessToken{
+			Token: s.GetGithubClassicPersonalAccessToken().GetToken(),
 		}, nil
 	case *spb.SecretData_GithubAppUserToServerToken_:
 		return velesgithub.AppUserToServerToken{

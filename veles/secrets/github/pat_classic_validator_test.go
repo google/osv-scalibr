@@ -29,11 +29,10 @@ import (
 )
 
 const (
-	fineGrainedPATValidatorKey = `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`
-	classicPATValidatorKey     = `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`
+	classicPATValidatorKey = `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`
 )
 
-func TestPATValidator(t *testing.T) {
+func TestClassicPATValidator(t *testing.T) {
 	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -46,7 +45,7 @@ func TestPATValidator(t *testing.T) {
 	mockGithubServer := func(code int) *httptest.Server {
 		return mockgithub.Server(
 			t, "/user", code,
-			fineGrainedPATValidatorKey, classicPATValidatorKey,
+			classicPATValidatorKey,
 		)
 	}
 
@@ -69,12 +68,6 @@ func TestPATValidator(t *testing.T) {
 		{
 			name:   "valid_classic_key",
 			token:  classicPATValidatorKey,
-			server: mockGithubServer(http.StatusOK),
-			want:   veles.ValidationValid,
-		},
-		{
-			name:   "valid_finegrainded_key",
-			token:  fineGrainedPATValidatorKey,
 			server: mockGithubServer(http.StatusOK),
 			want:   veles.ValidationValid,
 		},
@@ -108,12 +101,12 @@ func TestPATValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := github.NewPATValidator(
-				github.PATWithClient(client),
+			validator := github.NewClassicPATValidator(
+				github.ClassicPATWithClient(client),
 			)
 
 			// Create a test key
-			key := github.PersonalAccessToken{Token: tt.token}
+			key := github.ClassicPersonalAccessToken{Token: tt.token}
 
 			// Test validation
 			got, err := validator.Validate(tt.ctx, key)

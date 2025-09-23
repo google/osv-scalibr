@@ -35,7 +35,7 @@ func NewClassicPATDetector() veles.Detector {
 			if !checksum.Validate(match) {
 				return nil, false
 			}
-			return PersonalAccessToken{Token: string(match)}, true
+			return ClassicPersonalAccessToken{Token: string(match)}, true
 		},
 	}
 }

@@ -45,40 +45,40 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
 		input: anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: anotherFinegrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `API_TOKEN=` + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `API_TOKEN="` + fineGrainedPATTestKey + `"`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: fineGrainedPATTestKey + fineGrainedPATTestKey + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: fineGrainedPATTestKey + "\n" + anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
-			github.PersonalAccessToken{Token: anotherFinegrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name: "larger input containing key",
@@ -87,13 +87,13 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 :API_TOKEN: %s
 		`, fineGrainedPATTestKey),
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: fineGrainedPATTestKey + `extra`,
 		want: []veles.Secret{
-			github.PersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}}
 	for _, tc := range cases {
