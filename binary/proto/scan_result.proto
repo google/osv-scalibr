@@ -47,6 +47,7 @@ message Inventory {
   repeated Package packages = 1;
   repeated GenericFinding generic_findings = 2;
   repeated Secret secrets = 3;
+  repeated ContainerImageMetadata container_image_metadata = 5;
 }
 
 message ScanStatus {
@@ -69,7 +70,7 @@ message PluginStatus {
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
 message Package {
-  reserved 3, 4;
+  reserved 3, 4, 35;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -144,12 +145,18 @@ message Package {
     INSIDE_CACHE_DIR = 3;
   }
 
-  // Details about the layer a package was found in. This should be set only for
-  // container image scanning.
-  LayerDetails layer_details = 35;
-
   // Software licenses information
   repeated string licenses = 52;
+
+  message ContainerImageMetadataIndexes {
+    // The index of ContainerImageMetadata in Inventory.ContainerImageMetadata
+    // list.
+    int32 container_image_index = 1;
+    // The index of LayerMetadata in ContainerImageMetadata.LayerMetadata list.
+    int32 layer_index = 2;
+  }
+
+  optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
@@ -667,11 +674,13 @@ message SecretData {
     StripeSecretKey stripe_secret_key = 22;
     StripeRestrictedKey stripe_restricted_key = 23;
     StripeWebhookSecret stripe_webhook_secret = 24;
-    GithubAppServerToServerToken github_app_server_to_server_token = 25;
-    GithubClassicPersonalAccessToken github_classic_personal_access_token = 26;
-    GithubFineGrainedPersonalAccessToken github_fine_grained_personal_access_token = 27;
-    GithubAppUserToServerToken github_app_user_to_server_token = 28;
-    GithubOAuthToken github_oauth_token = 29;
+    GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
+    GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
+    GithubAppServerToServerToken github_app_server_to_server_token = 27;
+    GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
+    GithubFineGrainedPersonalAccessToken github_fine_grained_personal_access_token = 29;
+    GithubAppUserToServerToken github_app_user_to_server_token = 30;
+    GithubOAuthToken github_oauth_token = 31;
   }
 
   message GCPSAK {
@@ -815,6 +824,20 @@ message SecretData {
   message StripeWebhookSecret {
     string key = 1;
   }
+
+  message GCPOAuth2ClientCredentials {
+    // GCP OAuth2 client ID in format:
+    // `12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com`
+    string id = 1;
+    // GCP OAuth2 client secret, typically 24+ character alphanumeric string
+    // prefixed with `GOCSPX-`
+    string secret = 2;
+  }
+
+  message GCPOAuth2AccessToken {
+    // GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
+    string token = 1;
+  }
 }
 
 message SecretStatus {
@@ -862,4 +885,49 @@ message EnvironmentVariable {
 
 message ContainerCommand {
   string command = 1;
+}
+
+message ContainerImageMetadata {
+  int32 index = 1;
+  // Layers are ordered from the earliest to the latest.
+  repeated LayerMetadata layer_metadata = 2;
+  // The base images that make up the chain.
+  // The first base image is always empty, acting as a placeholder for the
+  // scanned image itself. If the scanned image is a base image, there will be
+  // no layers pointing to the first base image.
+  //
+  // The base images are ordered from the biggest base image containing all base
+  // images to the smallest. e.g. [empty, postgresql, alpine]
+  repeated BaseImageChain base_image_chains = 3;
+}
+
+message BaseImageChain {
+  // List of potential base images (repositories that have a matching ChainID).
+  repeated BaseImageDetails base_images = 1;
+  // Chain ID of the last layer in the image.
+  string chain_id = 2;
+}
+
+message BaseImageDetails {
+  // Name of the image. (e.g. `debian`, `circleci/node`)
+  string repository = 1;
+  // Name of the registry. (e.g. `docker.io`, `ghcr.io`)
+  string registry = 2;
+  // Name of the plugin used to extract the base image.
+  string plugin = 3;
+}
+
+message LayerMetadata {
+  // The index of the layer within the ContainerImageMetadata.layer_metadata
+  // field.
+  int32 index = 1;
+  string diff_id = 2;
+  string chain_id = 3;
+  // The command that was used to build the layer.
+  string command = 4;
+  // Whether the layer is empty (currently always false).
+  bool is_empty = 5;
+  // The index of the base image match within the
+  // ContainerImageMetadata.base_image_chains field.
+  int32 base_image_index = 6;
 }

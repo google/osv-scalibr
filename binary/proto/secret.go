@@ -25,6 +25,8 @@ import (
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
@@ -158,6 +160,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return stripeRestrictedKeyToProto(t), nil
 	case velesstripeapikeys.StripeWebhookSecret:
 		return stripeWebhookSecretToProto(t), nil
+	case gcpoauth2client.Credentials:
+		return gcpOAuth2ClientCredentialsToProto(t), nil
+	case gcpoauth2access.Token:
+		return gcpOAuth2AccessTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -472,6 +478,27 @@ func stripeWebhookSecretToProto(s velesstripeapikeys.StripeWebhookSecret) *spb.S
 	}
 }
 
+func gcpOAuth2ClientCredentialsToProto(s gcpoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpOauth2ClientCredentials{
+			GcpOauth2ClientCredentials: &spb.SecretData_GCPOAuth2ClientCredentials{
+				Id:     s.ID,
+				Secret: s.Secret,
+			},
+		},
+	}
+}
+
+func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpOauth2AccessToken{
+			GcpOauth2AccessToken: &spb.SecretData_GCPOAuth2AccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -620,6 +647,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesstripeapikeys.StripeWebhookSecret{
 			Key: s.GetStripeWebhookSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_GcpOauth2ClientCredentials:
+		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
+	case *spb.SecretData_GcpOauth2AccessToken:
+		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -648,6 +679,19 @@ func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfac
 		Key:              kPB.GetKey(),
 		Role:             kPB.GetRole(),
 		FineGrainedScope: kPB.GetFineGrainedScope(),
+	}
+}
+
+func gcpOAuth2ClientCredentialsToStruct(kPB *spb.SecretData_GCPOAuth2ClientCredentials) gcpoauth2client.Credentials {
+	return gcpoauth2client.Credentials{
+		ID:     kPB.GetId(),
+		Secret: kPB.GetSecret(),
+	}
+}
+
+func gcpOAuth2AccessTokenToStruct(kPB *spb.SecretData_GCPOAuth2AccessToken) gcpoauth2access.Token {
+	return gcpoauth2access.Token{
+		Token: kPB.GetToken(),
 	}
 }
 

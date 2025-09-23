@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
@@ -94,6 +95,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
@@ -224,9 +227,10 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:      {containerd.NewDefault},
-		podman.Name:          {podman.NewDefault},
-		dockerbaseimage.Name: {dockerbaseimage.NewDefault},
+		containerd.Name:         {containerd.NewDefault},
+		podman.Name:             {podman.NewDefault},
+		dockerbaseimage.Name:    {dockerbaseimage.NewDefault},
+		dockercomposeimage.Name: {dockercomposeimage.NewDefault},
 	}
 
 	// OS extractors.
@@ -279,6 +283,8 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
+		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 	})
 
 	// Misc artifact extractors.
