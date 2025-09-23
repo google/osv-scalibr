@@ -260,7 +260,6 @@ var (
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
-		{pgpass.NewDetector(), "secrets/pgpass", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
 		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},

@@ -24,7 +24,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pgpass"
 )
 
-// TODO: add tests for numeric values of the port when regex is modified in detector.go
 const (
 	testEntry                    = `hostname:234:database:username:password`
 	testEntryWithSemicolumnInPwd = `hostname:31337:database:username:passw\:ord`

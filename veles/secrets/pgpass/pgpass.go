@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pgpass contains a Veles Secret type and a Detector for TODO.
+// Package pgpass contains a Veles Secret type and a Detector for [Postgres Pgpass](https://www.postgresql.org/docs/current/libpq-pgpass.html).
 package pgpass
 
-// Pgpass is a Veles Secret that holds relevant information for a TODO.
+// Pgpass is a Veles Secret that holds relevant information for a [Postgres Pgpass](https://www.postgresql.org/docs/current/libpq-pgpass.html).
 type Pgpass struct {
 	Entry string
 }
