@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -33,14 +32,8 @@ const (
 )
 
 func TestClassicPATValidator(t *testing.T) {
-	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer slowServer.Close()
-
-	shortCtx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	cancelledContext, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	mockGithubServer := func(code int) *httptest.Server {
 		return mockgithub.Server(
@@ -59,9 +52,9 @@ func TestClassicPATValidator(t *testing.T) {
 		ctx context.Context
 	}{
 		{
-			name:    "slow_server",
-			ctx:     shortCtx,
-			server:  slowServer,
+			name:    "cancelled_context",
+			ctx:     cancelledContext,
+			server:  mockGithubServer(http.StatusOK),
 			want:    veles.ValidationFailed,
 			wantErr: cmpopts.AnyError,
 		},
