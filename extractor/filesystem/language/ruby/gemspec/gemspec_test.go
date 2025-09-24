@@ -157,6 +157,19 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "version constant gemspec",
+			path: "testdata/version_constant/version_constant.gemspec",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "example_app",
+					Version:   "1.2.3",
+					PURLType:  purl.TypeGem,
+					Locations: []string{"testdata/version_constant/version_constant.gemspec"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name:             "invalid gemspec",
 			path:             "testdata/invalid.gemspec",
 			wantErr:          cmpopts.AnyError,
