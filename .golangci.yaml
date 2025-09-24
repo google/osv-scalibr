@@ -37,6 +37,7 @@ linters:
     - prealloc         # We don't want to preallocate all the time
     - protogetter      # TODO(#274): work on enabling this
     - recvcheck        # TODO(#274): work on enabling this
+    - staticcheck      # TODO(#1394): work on enabling this
     - tagliatelle      #
     - testpackage      #
     - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
@@ -109,7 +110,6 @@ linters:
         - all
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
-        - -QF1008 # remove embedded field from selector
   exclusions:
     generated: lax
     presets:

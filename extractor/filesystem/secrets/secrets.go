@@ -27,13 +27,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
-	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
-	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
-	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
-	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
 
 const (
@@ -58,38 +51,19 @@ var (
 		".txt":       true,
 		".xml":       true,
 		".yaml":      true,
+		".pem":       true,
+		".crt":       true,
+		".key":       true,
+		".der":       true,
+		".cer":       true,
 	}
-
-	defaultEngine *veles.DetectionEngine
 )
-
-func init() { //nolint:gochecknoinits
-	var err error
-	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
-		anthropicapikey.NewDetector(),
-		gcpsak.NewDetector(),
-		dockerhubpat.NewDetector(),
-		digitaloceanapikey.NewDetector(),
-		perplexityapikey.NewDetector(),
-		grokxaiapikey.NewAPIKeyDetector(),
-		grokxaiapikey.NewManagementKeyDetector(),
-		privatekey.NewDetector(),
-	})
-	if err != nil {
-		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
-	}
-}
 
 // Extractor extracts secrets from the filesystem using the Veles secret
 // scanning library.
 // Other than most extractors, it adds Secrets to the Inventory, not Packages.
 type Extractor struct {
 	e *veles.DetectionEngine
-}
-
-// New creates a new Extractor using the default Veles detectors.
-func New() filesystem.Extractor {
-	return &Extractor{e: defaultEngine}
 }
 
 // NewWithEngine creates a new Extractor that uses the specified

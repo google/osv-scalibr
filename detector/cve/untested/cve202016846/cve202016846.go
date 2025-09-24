@@ -243,7 +243,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		log.Infof("Error marshaling JSON:", err)
+		log.Infof("Error marshaling JSON: %v", err)
 		return false
 	}
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
