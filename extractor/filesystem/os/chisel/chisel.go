@@ -47,14 +47,6 @@ const (
 	packageMaintainer = "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>"
 )
 
-type ChiselPackage struct {
-	Kind    string `json:"kind"`
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-	Digest  string `json:"sha256,omitempty"`
-	Arch    string `json:"arch,omitempty"`
-}
-
 // Config is the configuration for the Extractor.
 type Config struct {
 	// Stats is a stats collector for reporting metrics.
@@ -64,6 +56,7 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
+// NewDefault returns an extractor with the default config settings.
 func DefaultConfig() Config {
 	return Config{
 		MaxFileSizeBytes: defaultMaxFileSizeBytes,
@@ -112,7 +105,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches chisel manifest file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !fileRequired(path) {
+	if filepath.ToSlash(path) != "var/lib/chisel/manifest.wall" {
 		return false
 	}
 
@@ -127,11 +120,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
-}
-
-func fileRequired(path string) bool {
-	normalized := filepath.ToSlash(path)
-	return normalized == "var/lib/chisel/manifest.wall"
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
@@ -162,7 +150,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+func (e Extractor) extractFromInput(_ context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
