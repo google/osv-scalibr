@@ -129,7 +129,6 @@ message Package {
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
-    ChiselPackageMetadata chisel_metadata = 58;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -905,14 +904,4 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
-}
-
-message ChiselPackageMetadata {
-  string package_name = 1;
-  string package_version = 2;
-  string os_id = 3;
-  string os_version_codename = 4;
-  string os_version_id = 5;
-  string maintainer = 6;
-  string architecture = 7;
 }

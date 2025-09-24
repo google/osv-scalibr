@@ -25,14 +25,13 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -200,9 +199,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		p := &extractor.Package{
-			Name:    chiselPackage.Name,
-			Version: pkgVersion,
-			Metadata: &Metadata{
+			Name:     chiselPackage.Name,
+			Version:  pkgVersion,
+			PURLType: purl.TypeDebian,
+			Metadata: &dpkgmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
 				OSID:              m["ID"],
@@ -217,56 +217,4 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		pkgs = append(pkgs, p)
 	}
 	return pkgs, nil
-}
-
-func toNamespace(m *Metadata) string {
-	if m.OSID != "" {
-		return m.OSID
-	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
-	// TODO(b/298152210): Implement metric
-	return "linux"
-}
-
-func toDistro(m *Metadata) string {
-	// e.g. jammy
-	if m.OSVersionCodename != "" {
-		return m.OSVersionCodename
-	}
-	// fallback: e.g. 22.04
-	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
-		return m.OSVersionID
-	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
-	return ""
-}
-
-func (e Extractor) ToPURL(p *extractor.Package) *purl.PackageURL {
-	m := p.Metadata.(*Metadata)
-	q := map[string]string{}
-	distro := toDistro(m)
-	if distro != "" {
-		q[purl.Distro] = distro
-	}
-	if m.Architecture != "" {
-		q[purl.Arch] = m.Architecture
-	}
-
-	return &purl.PackageURL{
-		Type:       purl.TypeChisel,
-		Name:       m.PackageName,
-		Namespace:  toNamespace(m),
-		Version:    p.Version,
-		Qualifiers: purl.QualifiersFromMap(q),
-	}
-}
-
-func (Extractor) Ecosystem(p *extractor.Package) string {
-	m := p.Metadata.(*Metadata)
-	osID := cases.Title(language.English).String(toNamespace(m))
-	if m.OSVersionID == "" {
-		return osID
-	}
-	return osID + ":" + m.OSVersionID
 }

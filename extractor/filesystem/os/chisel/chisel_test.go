@@ -30,11 +30,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/chisel"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	scalibrlog "github.com/google/osv-scalibr/log"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -157,7 +157,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "base-files",
 					Version: "13ubuntu10.2",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:       "base-files",
 						PackageVersion:    "13ubuntu10.2",
 						OSID:              "ubuntu",
@@ -167,11 +167,12 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/chisel/openssl.wall"},
+					PURLType:  "deb",
 				},
 				{
 					Name:    "libc6",
 					Version: "2.39-0ubuntu8.4",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:       "libc6",
 						PackageVersion:    "2.39-0ubuntu8.4",
 						OSID:              "ubuntu",
@@ -181,11 +182,12 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/chisel/openssl.wall"},
+					PURLType:  "deb",
 				},
 				{
 					Name:    "libssl3t64",
 					Version: "3.0.13-0ubuntu3.5",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:       "libssl3t64",
 						PackageVersion:    "3.0.13-0ubuntu3.5",
 						OSID:              "ubuntu",
@@ -195,11 +197,12 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/chisel/openssl.wall"},
+					PURLType:  "deb",
 				},
 				{
 					Name:    "openssl",
 					Version: "3.0.13-0ubuntu3.5",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:       "openssl",
 						PackageVersion:    "3.0.13-0ubuntu3.5",
 						OSID:              "ubuntu",
@@ -209,6 +212,7 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/chisel/openssl.wall"},
+					PURLType:  "deb",
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -239,7 +243,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "base-files",
 					Version: "13ubuntu10.2",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:    "base-files",
 						PackageVersion: "13ubuntu10.2",
 						OSID:           "ubuntu",
@@ -248,6 +252,7 @@ func TestExtract(t *testing.T) {
 						Architecture:   "amd64",
 					},
 					Locations: []string{"testdata/chisel/single.wall"},
+					PURLType:  "deb",
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -260,7 +265,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "base-files",
 					Version: "13ubuntu10.2",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:    "base-files",
 						PackageVersion: "13ubuntu10.2",
 						OSID:           "ubuntu",
@@ -268,6 +273,7 @@ func TestExtract(t *testing.T) {
 						Architecture:   "amd64",
 					},
 					Locations: []string{"testdata/chisel/single.wall"},
+					PURLType:  "deb",
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -280,7 +286,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:    "base-files",
 					Version: "13ubuntu10.2",
-					Metadata: &chisel.Metadata{
+					Metadata: &dpkgmeta.Metadata{
 						PackageName:       "base-files",
 						PackageVersion:    "13ubuntu10.2",
 						OSVersionCodename: "noble",
@@ -288,6 +294,7 @@ func TestExtract(t *testing.T) {
 						Architecture:      "amd64",
 					},
 					Locations: []string{"testdata/chisel/single.wall"},
+					PURLType:  "deb",
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -422,7 +429,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 		{
 			Name:    "base-files",
 			Version: "13ubuntu10.2",
-			Metadata: &chisel.Metadata{
+			Metadata: &dpkgmeta.Metadata{
 				PackageName:    "base-files",
 				PackageVersion: "13ubuntu10.2",
 				OSID:           "",
@@ -431,6 +438,7 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 				Architecture:   "amd64",
 			},
 			Locations: []string{path},
+			PURLType:  "deb",
 		},
 	}}
 
@@ -458,137 +466,6 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Extract(%s) (-want +got):\n%s", path, diff)
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	pkgname := "pkgname"
-	version := "1.2.3"
-	e := chisel.Extractor{}
-	tests := []struct {
-		name     string
-		location string
-		metadata *chisel.Metadata
-		want     *purl.PackageURL
-	}{
-		{
-			name:     "both OS versions present",
-			location: "var/lib/chisel/status",
-			metadata: &chisel.Metadata{
-				PackageName:       pkgname,
-				OSID:              "ubuntu",
-				OSVersionCodename: "jammy",
-				OSVersionID:       "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeChisel,
-				Name:      pkgname,
-				Namespace: "ubuntu",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "jammy",
-				}),
-			},
-		},
-		{
-			name:     "only VERSION_ID set",
-			location: "var/lib/chisel/status",
-			metadata: &chisel.Metadata{
-				PackageName: pkgname,
-				OSID:        "ubuntu",
-				OSVersionID: "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeChisel,
-				Name:      pkgname,
-				Namespace: "ubuntu",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "22.04",
-				}),
-			},
-		},
-		{
-			name:     "ID not set, fallback to linux",
-			location: "var/lib/chisel/status",
-			metadata: &chisel.Metadata{
-				PackageName:       pkgname,
-				OSVersionCodename: "jammy",
-				OSVersionID:       "22.04",
-			},
-			want: &purl.PackageURL{
-				Type:      purl.TypeChisel,
-				Name:      pkgname,
-				Namespace: "linux",
-				Version:   version,
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					purl.Distro: "jammy",
-				}),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Name:      pkgname,
-				Version:   version,
-				Metadata:  tt.metadata,
-				Locations: []string{tt.location},
-			}
-			got := e.ToPURL(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ToPURL(%v) (-want +got):\n%s", p, diff)
-			}
-		})
-	}
-}
-
-func TestEcosystem(t *testing.T) {
-	e := chisel.Extractor{}
-	tests := []struct {
-		name     string
-		metadata *chisel.Metadata
-		want     string
-	}{
-		{
-			name: "OS ID present",
-			metadata: &chisel.Metadata{
-				OSID: "ubuntu",
-			},
-			want: "Ubuntu",
-		},
-		{
-			name:     "OS ID not present",
-			metadata: &chisel.Metadata{},
-			want:     "Linux",
-		},
-		{
-			name: "OS version present",
-			metadata: &chisel.Metadata{
-				OSID:        "ubuntu",
-				OSVersionID: "24.04",
-			},
-			want: "Ubuntu:24.04",
-		},
-		{
-			name: "OS version present (Generic Linux)",
-			metadata: &chisel.Metadata{
-				OSID:        "linux",
-				OSVersionID: "5",
-			},
-			want: "Linux:5",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &extractor.Package{
-				Metadata: tt.metadata,
-			}
-			got := e.Ecosystem(p)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Ecosystem(%v) (-want +got):\n%s", p, diff)
-			}
-		})
 	}
 }
 
