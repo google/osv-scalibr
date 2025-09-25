@@ -676,6 +676,12 @@ message SecretData {
     StripeWebhookSecret stripe_webhook_secret = 24;
     GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
     GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
+    GithubAppServerToServerToken github_app_server_to_server_token = 27;
+    GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
+    GithubFineGrainedPersonalAccessToken
+        github_fine_grained_personal_access_token = 29;
+    GithubAppUserToServerToken github_app_user_to_server_token = 30;
+    GithubOAuthToken github_oauth_token = 31;
   }
 
   message GCPSAK {
@@ -762,6 +768,27 @@ message SecretData {
   message GithubAppRefreshToken {
     string token = 1;
   }
+
+  message GithubAppServerToServerToken {
+    string token = 1;
+  }
+
+  message GithubClassicPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubFineGrainedPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubOAuthToken {
+    string token = 1;
+  }
+
+  message GithubAppUserToServerToken {
+    string token = 1;
+  }
+
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset
   }
@@ -809,7 +836,8 @@ message SecretData {
   }
 
   message GCPOAuth2AccessToken {
-    // GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
+    // GCP OAuth2 access token, typically in format:
+    // "ya29.[alphanumeric_string]"
     string token = 1;
   }
 }

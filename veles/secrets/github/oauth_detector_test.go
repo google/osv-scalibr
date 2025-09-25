@@ -26,14 +26,14 @@ import (
 )
 
 const (
-	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	oauthTestKey        = `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`
+	oauthAnotherTestKey = `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`
 )
 
-// TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
-// will find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestOAuthDetector_truePositives tests for cases where we know the Detector
+// will find a Github OAuth tokens.
+func TestOAuthDetector_truePositives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewOAuthTokenDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,61 +43,61 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: refreshTestKey,
+		input: oauthTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
-		input: refreshAnotherTestKey,
+		input: oauthAnotherTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.OAuthToken{Token: oauthAnotherTestKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + refreshTestKey,
+		input: `API_TOKEN=` + oauthTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + refreshTestKey + `"`,
+		input: `API_TOKEN="` + oauthTestKey + `"`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: refreshTestKey + refreshTestKey + refreshTestKey,
+		input: oauthTestKey + oauthTestKey + oauthTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
+			github.OAuthToken{Token: oauthTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}, {
 		name:  "bad checksum",
-		input: refreshTestKey[:len(refreshTestKey)-1] + "a",
+		input: oauthTestKey[:len(oauthTestKey)-1] + "a",
 		want:  []veles.Secret{},
 	}, {
 		name:  "multiple distinct matches",
-		input: refreshTestKey + "\n" + refreshAnotherTestKey,
+		input: oauthTestKey + "\n" + oauthAnotherTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.OAuthToken{Token: oauthTestKey},
+			github.OAuthToken{Token: oauthAnotherTestKey},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, refreshTestKey),
+		`, oauthTestKey),
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: refreshTestKey + `extra`,
+		input: oauthTestKey + `extra`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.OAuthToken{Token: oauthTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -113,10 +113,10 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestAppRefreshTokenDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestOAuthDetector_trueNegatives tests for cases where we know the Detector
+// will not find a Github OAuth tokens.
+func TestOAuthDetector_trueNegatives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewOAuthTokenDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,19 +129,19 @@ func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: refreshTestKey[:len(refreshTestKey)-1],
+		input: oauthTestKey[:len(oauthTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `gho_oJrI3NxJonXeg-4cd3v1XHDjjMk3jh2ENWzb`,
 	}, {
 		name:  "incorrect prefix should not match",
 		input: `Eop_v1_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "bad checksum should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7ziyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `gho_oJrI3NxJonXega4cd2v1XHDjjMk3jh2ENWzb`,
 	}, {
 		name:  "prefix missing dash should not match",
-		input: `gh` + `rOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `ghooJrI3NxJonXega4cd2v1XHDjjMk3jh2ENWzb`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -28,7 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -120,8 +120,18 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
-	case velesegithub.AppRefreshToken:
+	case velesgithub.AppRefreshToken:
 		return githubAppRefreshTokenToProto(t.Token), nil
+	case velesgithub.AppServerToServerToken:
+		return githubAppServerToServerTokenToProto(t.Token), nil
+	case velesgithub.FineGrainedPersonalAccessToken:
+		return githubFineGrainedPersonalAccessTokenToProto(t.Token), nil
+	case velesgithub.ClassicPersonalAccessToken:
+		return githubClassicPersonalAccessTokenToProto(t.Token), nil
+	case velesgithub.AppUserToServerToken:
+		return githubAppUserToServerTokenToProto(t.Token), nil
+	case velesgithub.OAuthToken:
+		return githubOAuthTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -308,6 +318,56 @@ func githubAppRefreshTokenToProto(token string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GithubAppRefreshToken_{
 			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubAppServerToServerTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppServerToServerToken_{
+			GithubAppServerToServerToken: &spb.SecretData_GithubAppServerToServerToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubAppUserToServerTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppUserToServerToken_{
+			GithubAppUserToServerToken: &spb.SecretData_GithubAppUserToServerToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubFineGrainedPersonalAccessTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubFineGrainedPersonalAccessToken_{
+			GithubFineGrainedPersonalAccessToken: &spb.SecretData_GithubFineGrainedPersonalAccessToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubClassicPersonalAccessTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubClassicPersonalAccessToken_{
+			GithubClassicPersonalAccessToken: &spb.SecretData_GithubClassicPersonalAccessToken{
+				Token: token,
+			},
+		},
+	}
+}
+
+func githubOAuthTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubOauthToken{
+			GithubOauthToken: &spb.SecretData_GithubOAuthToken{
 				Token: token,
 			},
 		},
@@ -536,7 +596,23 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_GithubAppRefreshToken_:
-		return velesegithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
+		return velesgithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
+	case *spb.SecretData_GithubAppServerToServerToken_:
+		return velesgithub.AppServerToServerToken{Token: s.GetGithubAppServerToServerToken().GetToken()}, nil
+	case *spb.SecretData_GithubFineGrainedPersonalAccessToken_:
+		return velesgithub.FineGrainedPersonalAccessToken{
+			Token: s.GetGithubFineGrainedPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GithubClassicPersonalAccessToken_:
+		return velesgithub.ClassicPersonalAccessToken{
+			Token: s.GetGithubClassicPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GithubAppUserToServerToken_:
+		return velesgithub.AppUserToServerToken{
+			Token: s.GetGithubAppUserToServerToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GithubOauthToken:
+		return velesgithub.OAuthToken{Token: s.GetGithubOauthToken().GetToken()}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:

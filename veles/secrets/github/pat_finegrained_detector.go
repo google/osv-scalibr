@@ -19,23 +19,19 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
-	checksum "github.com/google/osv-scalibr/veles/secrets/github/checksum"
 )
 
-const appRefreshTokenMaxLen = 80
+const fineGrainedPATMaxLen = 80
 
-var appRefreshTokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
+var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
 
-// NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
-func NewAppRefreshTokenDetector() veles.Detector {
+// NewFineGrainedPATDetector returns a new Veles Detector that finds Github fine-grained personal access tokens
+func NewFineGrainedPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: appRefreshTokenMaxLen,
-		Re:     appRefreshTokenPattern,
+		MaxLen: fineGrainedPATMaxLen,
+		Re:     fineGrainedPATPattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
-			if !checksum.Validate(match) {
-				return nil, false
-			}
-			return AppRefreshToken{Token: string(match)}, true
+			return FineGrainedPersonalAccessToken{Token: string(match)}, true
 		},
 	}
 }

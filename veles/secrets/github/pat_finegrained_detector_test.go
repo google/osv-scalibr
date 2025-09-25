@@ -26,14 +26,14 @@ import (
 )
 
 const (
-	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	fineGrainedPATTestKey        = `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`
+	anotherFinegrainedPATTestKey = `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`
 )
 
-// TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
-// will find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestFineGrainedPATDetector_truePositives tests for cases where we know the Detector
+// will find a Github fine-grained personal access tokens.
+func TestFineGrainedPATDetector_truePositives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewFineGrainedPATDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,61 +43,57 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: refreshTestKey,
+		input: fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
-		input: refreshAnotherTestKey,
+		input: anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.FineGrainedPersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + refreshTestKey,
+		input: `API_TOKEN=` + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + refreshTestKey + `"`,
+		input: `API_TOKEN="` + fineGrainedPATTestKey + `"`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: refreshTestKey + refreshTestKey + refreshTestKey,
+		input: fineGrainedPATTestKey + fineGrainedPATTestKey + fineGrainedPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
-		name:  "bad checksum",
-		input: refreshTestKey[:len(refreshTestKey)-1] + "a",
-		want:  []veles.Secret{},
-	}, {
 		name:  "multiple distinct matches",
-		input: refreshTestKey + "\n" + refreshAnotherTestKey,
+		input: fineGrainedPATTestKey + "\n" + anotherFinegrainedPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+			github.FineGrainedPersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, refreshTestKey),
+		`, fineGrainedPATTestKey),
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: refreshTestKey + `extra`,
+		input: fineGrainedPATTestKey + `extra`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -113,10 +109,10 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestAppRefreshTokenDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestFineGrainedPATDetector_trueNegatives tests for cases where we know the Detector
+// will not find a Github fine-grained personal access tokens.
+func TestFineGrainedPATDetector_trueNegatives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewFineGrainedPATDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,19 +125,16 @@ func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: refreshTestKey[:len(refreshTestKey)-1],
+		input: fineGrainedPATTestKey[:len(fineGrainedPATTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `github_pat_11ALJFEII0Zi+19DEeBWSe_apMVlTnpi9UgqDHLAkMLh7iVx63tio9DckV9Rjqas6H4K5W45OQZK6Suog5`,
 	}, {
 		name:  "incorrect prefix should not match",
 		input: `Eop_v1_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
-		name:  "bad checksum should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7ziyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
-	}, {
 		name:  "prefix missing dash should not match",
-		input: `gh` + `rOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `githubpat11ALJFEII0ZiQ19DEeBWSe_apMVlTnpi9UgqDHLAkMLh7iVx63tio9DckV9Rjqas6H4K5W45OQZK6Suog5`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

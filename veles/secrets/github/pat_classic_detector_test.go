@@ -26,14 +26,14 @@ import (
 )
 
 const (
-	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	classicPATTestKey    = `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`
+	anotherClassicPATKey = `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`
 )
 
-// TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
-// will find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestClassicPATDetector_truePositives tests for cases where we know the Detector
+// will find a Github classic personal access tokens.
+func TestClassicPATDetector_truePositives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewClassicPATDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,61 +43,61 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: refreshTestKey,
+		input: classicPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
-		input: refreshAnotherTestKey,
+		input: anotherClassicPATKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.ClassicPersonalAccessToken{Token: anotherClassicPATKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + refreshTestKey,
+		input: `API_TOKEN=` + classicPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + refreshTestKey + `"`,
+		input: `API_TOKEN="` + classicPATTestKey + `"`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: refreshTestKey + refreshTestKey + refreshTestKey,
+		input: classicPATTestKey + classicPATTestKey + classicPATTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "bad checksum",
-		input: refreshTestKey[:len(refreshTestKey)-1] + "a",
+		input: classicPATTestKey[:len(classicPATTestKey)-1] + "a",
 		want:  []veles.Secret{},
 	}, {
 		name:  "multiple distinct matches",
-		input: refreshTestKey + "\n" + refreshAnotherTestKey,
+		input: classicPATTestKey + "\n" + anotherClassicPATKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
-			github.AppRefreshToken{Token: refreshAnotherTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+			github.ClassicPersonalAccessToken{Token: anotherClassicPATKey},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, refreshTestKey),
+		`, classicPATTestKey),
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: refreshTestKey + `extra`,
+		input: classicPATTestKey + `extra`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: refreshTestKey},
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -113,10 +113,10 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestAppRefreshTokenDetector_trueNegatives tests for cases where we know the Detector
-// will not find a Github app refresh tokens.
-func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
+// TestClassicPATDetector_trueNegatives tests for cases where we know the Detector
+// will not find a Github classic personal access tokens.
+func TestClassicPATDetector_trueNegatives(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewClassicPATDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,19 +129,19 @@ func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: refreshTestKey[:len(refreshTestKey)-1],
+		input: classicPATTestKey[:len(classicPATTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `ghr_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "incorrect prefix should not match",
 		input: `Eop_v1_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "bad checksum should not match",
-		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7ziyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `ghr_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7ziyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}, {
 		name:  "prefix missing dash should not match",
-		input: `gh` + `rOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
+		input: `ghrOWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
