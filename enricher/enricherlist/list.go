@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
@@ -38,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -86,6 +88,8 @@ var (
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
 		fromVeles(hashicorpvault.NewTokenValidator(), "secrets/hashicorpvaulttokenvalidate", 0),
 		fromVeles(hashicorpvault.NewAppRoleValidator(), "secrets/hashicorpvaultapprolevalidate", 0),
+		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),
+		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
@@ -95,6 +99,11 @@ var (
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 	})
+
+	// HCPIdentity enricher.
+	HCPIdentity = InitMap{
+		hcpidentity.Name: {hcpidentity.New},
+	}
 
 	// HuggingfaceMeta enricher.
 	HuggingfaceMeta = InitMap{
@@ -120,6 +129,7 @@ var (
 		VulnMatching,
 		VEX,
 		Secrets,
+		HCPIdentity,
 		HuggingfaceMeta,
 		License,
 		Reachability,
@@ -132,6 +142,7 @@ var (
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(Secrets),
+		"hcpidentity":          vals(HCPIdentity),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"enrichers/default":    vals(Default),
