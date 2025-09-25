@@ -98,6 +98,11 @@ func RunScan(flags *cli.Flags) int {
 	}
 
 	log.Infof("Scan status: %v", result.Status)
+	for _, p := range result.PluginStatus {
+		if p.Status.Status != plugin.ScanStatusSucceeded {
+			log.Warnf("Plugin '%s' did not succeed. Status: %v, Reason: %s", p.Name, p.Status, p.Status.FailureReason)
+		}
+	}
 	log.Infof(
 		"Found %d software packages, %d security findings",
 		len(result.Inventory.Packages),
