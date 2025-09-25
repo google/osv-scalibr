@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -83,6 +84,8 @@ var (
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
+		fromVeles(hashicorpvault.NewTokenValidator(), "secrets/hashicorpvaulttokenvalidate", 0),
+		fromVeles(hashicorpvault.NewAppRoleValidator(), "secrets/hashicorpvaultapprolevalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),

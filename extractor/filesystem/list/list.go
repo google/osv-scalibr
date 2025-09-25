@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -85,6 +84,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
@@ -292,6 +293,7 @@ var (
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
 		asdf.Name: {asdf.New},
+		nvm.Name:  {nvm.New},
 	}
 
 	// Collections of extractors.

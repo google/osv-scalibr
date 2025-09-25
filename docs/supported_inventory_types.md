@@ -35,7 +35,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Inventory Type    | Details                        | Extractor Plugin                             |
 |-------------------|--------------------------------|----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
-| asdf              | .tool-versions                 | `lanuages/asdf`                              |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
@@ -101,6 +100,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                              | `swift/podfilelock`                  |
 |            | Package.resolved                          | `swift/packageresolved`              |
 | Nim        | Nimble packages                           | `nim/nimble`                         |
+
+### Language runtime managers
+| runtime    | Details                                     | Extractor Plugin(s)                  |
+|------------|---------------------------------------------|--------------------------------------|
+| asdf       | .tool-versions                              | `runtime/asdf`                       |
+| nvm        | .nvmrc                                      | `runtime/nvm`                        |
 
 ### Secrets
 
