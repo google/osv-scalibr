@@ -417,6 +417,7 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		for _, pluginStatus := range o.PluginStatus {
 			if pluginStatus.Status.Status == plugin.ScanStatusFailed {
 				status.Status = plugin.ScanStatusPartiallySucceeded
+				status.FailureReason = "not all plugins succeeded, see the plugin statuses"
 				break
 			}
 		}

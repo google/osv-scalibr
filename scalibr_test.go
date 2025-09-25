@@ -53,7 +53,10 @@ import (
 
 func TestScan(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
-	partialSuccess := &plugin.ScanStatus{Status: plugin.ScanStatusPartiallySucceeded}
+	partialSuccess := &plugin.ScanStatus{
+		Status:        plugin.ScanStatusPartiallySucceeded,
+		FailureReason: "not all plugins succeeded, see the plugin statuses",
+	}
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
