@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -125,6 +126,7 @@ type Flags struct {
 	DetectorsToRun             []string
 	AnnotatorsToRun            []string
 	PluginsToRun               []string
+	ExtractorOverride          Array
 	PathsToExtract             []string
 	IgnoreSubDirs              bool
 	DirsToSkip                 []string
@@ -200,6 +202,9 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateOutput(flags.Output); err != nil {
 		return fmt.Errorf("--o %w", err)
 	}
+	if err := validateExtractorOverride(flags.ExtractorOverride); err != nil {
+		return fmt.Errorf("--extractor-override: %w", err)
+	}
 	if err := validateImagePlatform(flags.ImagePlatform); err != nil {
 		return fmt.Errorf("--image-platform %w", err)
 	}
@@ -232,6 +237,19 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateExtractorOverride(extractorOverride []string) error {
+	for _, item := range extractorOverride {
+		parts := strings.SplitN(item, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return fmt.Errorf("invalid format for extractor override %q, should be <plugin-name>:<glob-pattern>", item)
+		}
+		if _, err := glob.Compile(parts[1]); err != nil {
+			return fmt.Errorf("invalid glob pattern %q in extractor override %q: %w", parts[1], item, err)
+		}
 	}
 	return nil
 }
@@ -333,6 +351,11 @@ func validateComponentType(componentType string) error {
 	return nil
 }
 
+type extractorOverride struct {
+	glob      glob.Glob
+	extractor filesystem.Extractor
+}
+
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	plugins, err := f.pluginsToRun()
@@ -363,6 +386,48 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		return nil, err
 	}
 
+	var overrides []extractorOverride
+	if len(f.ExtractorOverride) > 0 {
+		pluginMap := make(map[string]filesystem.Extractor)
+		for _, p := range plugins {
+			if e, ok := p.(filesystem.Extractor); ok {
+				pluginMap[e.Name()] = e
+			}
+		}
+
+		for _, o := range f.ExtractorOverride {
+			parts := strings.SplitN(o, ":", 2)
+			pluginName := parts[0]
+			globPattern := parts[1]
+			extractor, ok := pluginMap[pluginName]
+			if !ok {
+				return nil, fmt.Errorf("plugin %q specified in --extractor-override not found or not a filesystem extractor", pluginName)
+			}
+			g, err := glob.Compile(globPattern)
+			if err != nil {
+				// This should not happen due to ValidateFlags.
+				return nil, fmt.Errorf("invalid glob pattern %q in extractor override: %w", globPattern, err)
+			}
+			overrides = append(overrides, extractorOverride{
+				glob:      g,
+				extractor: extractor,
+			})
+		}
+	}
+
+	var extractorOverrideFn func(filesystem.FileAPI) []filesystem.Extractor
+	if len(overrides) > 0 {
+		extractorOverrideFn = func(api filesystem.FileAPI) []filesystem.Extractor {
+			var result []filesystem.Extractor
+			for _, o := range overrides {
+				if o.glob.Match(api.Path()) {
+					result = append(result, o.extractor)
+				}
+			}
+			return result
+		}
+	}
+
 	return &scalibr.ScanConfig{
 		ScanRoots:         scanRoots,
 		Plugins:           plugins,
@@ -375,6 +440,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		MaxFileSize:       f.MaxFileSize,
 		UseGitignore:      f.UseGitignore,
 		StoreAbsolutePath: f.StoreAbsolutePath,
+		ExtractorOverride: extractorOverrideFn,
 	}, nil
 }
 

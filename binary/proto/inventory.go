@@ -56,10 +56,16 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 		secrets = append(secrets, p)
 	}
 
+	var containerImageMetadata []*spb.ContainerImageMetadata
+	for _, cim := range inv.ContainerImageMetadata {
+		containerImageMetadata = append(containerImageMetadata, containerImageMetadataToProto(cim))
+	}
+
 	return &spb.Inventory{
-		Packages:        packages,
-		GenericFindings: genericFindings,
-		Secrets:         secrets,
+		Packages:               packages,
+		GenericFindings:        genericFindings,
+		Secrets:                secrets,
+		ContainerImageMetadata: containerImageMetadata,
 	}, nil
 }
 
@@ -99,9 +105,32 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 		secrets = append(secrets, s)
 	}
 
+	var containerImageMetadata []*extractor.ContainerImageMetadata
+	for _, cimProto := range invProto.GetContainerImageMetadata() {
+		cim := containerImageMetadataToStruct(cimProto)
+		containerImageMetadata = append(containerImageMetadata, cim)
+		for _, lm := range cim.LayerMetadata {
+			lm.ParentContainer = cim
+		}
+	}
+
+	for i, p := range packages {
+		pProto := invProto.GetPackages()[i]
+		cii := pProto.GetContainerImageMetadataIndexes()
+
+		if cii != nil &&
+			int(cii.ContainerImageIndex) < len(containerImageMetadata) {
+			cim := containerImageMetadata[cii.ContainerImageIndex]
+			if int(cii.LayerIndex) < len(cim.LayerMetadata) {
+				p.LayerMetadata = cim.LayerMetadata[cii.LayerIndex]
+			}
+		}
+	}
+
 	return &inventory.Inventory{
-		Packages:        packages,
-		GenericFindings: genericFindings,
-		Secrets:         secrets,
+		Packages:               packages,
+		GenericFindings:        genericFindings,
+		Secrets:                secrets,
+		ContainerImageMetadata: containerImageMetadata,
 	}
 }

@@ -107,6 +107,7 @@ linters:
     staticcheck:
       checks:
         - all
+        - -SA5011 # seems prone to false positives in tests
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
   exclusions:

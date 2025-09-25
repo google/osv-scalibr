@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This test uses datasource package in order to test auth data
 package datasource
 
 import (
