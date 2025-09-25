@@ -106,6 +106,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
@@ -270,6 +271,7 @@ var (
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
+		{pgpass.NewDetector(), "secrets/pgpass", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
 		{privatekey.NewDetector(), "secrets/privatekey", 0},

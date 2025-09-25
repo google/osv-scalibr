@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velespgpass "github.com/google/osv-scalibr/veles/secrets/pgpass"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -142,6 +143,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case velespgpass.Pgpass:
+		return pgpassToProto(t.Entry), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
@@ -209,6 +212,16 @@ func gcpAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_GcpApiKey{
 			GcpApiKey: &spb.SecretData_GCPAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func pgpassToProto(entry string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pgpass_{
+			Pgpass: &spb.SecretData_Pgpass{
+				Entry: entry,
 			},
 		},
 	}
@@ -557,6 +570,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_Pgpass_:
+		return velespgpass.Pgpass{Entry: s.GetPgpass().GetEntry()}, nil
 	case *spb.SecretData_Hugginface:
 		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
 	case *spb.SecretData_StripeSecretKey_:

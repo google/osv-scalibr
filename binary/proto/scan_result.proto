@@ -676,6 +676,7 @@ message SecretData {
     StripeWebhookSecret stripe_webhook_secret = 24;
     GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
     GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
+    Pgpass pgpass = 27;
   }
 
   message GCPSAK {
@@ -779,6 +780,10 @@ message SecretData {
 
   message GCPAPIKey {
     string key = 1;
+  }
+
+  message Pgpass {
+    string entry = 1;
   }
 
   message HuggingfaceAPIKey {
