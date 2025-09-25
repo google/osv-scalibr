@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -294,6 +295,11 @@ var (
 		asdf.Name: {asdf.New},
 	}
 
+	// EmbeddedFS extractors.
+	EmbeddedFS = InitMap{
+		vmdk.Name: {vmdk.NewDefault},
+	}
+
 	// Collections of extractors.
 
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
@@ -317,6 +323,7 @@ var (
 		LuaSource,
 		Secrets,
 		MiscSource,
+		EmbeddedFS,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -376,6 +383,7 @@ var (
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 		"miscsource": vals(MiscSource),
+		"embeddedfs": vals(EmbeddedFS),
 
 		// Collections.
 		"artifact":           vals(Artifact),
