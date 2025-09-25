@@ -134,11 +134,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Container inventory
 
-| Type                        | Extractor Plugin                                                                   |
-|-----------------------------|------------------------------------------------------------------------------------|
-| Containerd container images | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
-| Docker container images     | `containers/docker` (standalone)                                                   |
-| Podman container images     | `containers/podman` (filesystem)                                                   |
+| Type                            | Extractor Plugin                                                                   |
+|---------------------------------|------------------------------------------------------------------------------------|
+| Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
+| Docker container images         | `containers/docker` (standalone)                                                   |
+| Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
+| Podman container images         | `containers/podman` (filesystem)                                                   |
 
 ### SBOM files
 
