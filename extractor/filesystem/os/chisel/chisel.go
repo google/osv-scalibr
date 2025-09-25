@@ -56,7 +56,7 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
-// NewDefault returns an extractor with the default config settings.
+// DefaultConfig returns the default configuration for the Chisel extractor.
 func DefaultConfig() Config {
 	return Config{
 		MaxFileSizeBytes: defaultMaxFileSizeBytes,
