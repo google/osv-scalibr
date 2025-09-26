@@ -37,6 +37,7 @@ import (
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -105,6 +106,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case pypiapitoken.PyPIAPIToken:
+		return pypiAPITokenToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -156,6 +159,16 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 		Secret: &spb.SecretData_Digitalocean{
 			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pypi{
+			Pypi: &spb.SecretData_PyPIAPIToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -433,6 +446,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_Pypi:
+		return pypiAPITokenToStruct(s.GetPypi()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -471,6 +486,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
 	return velesdigitalocean.DigitaloceanAPIToken{
 		Key: kPB.GetKey(),
+	}
+}
+
+func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPIToken {
+	return pypiapitoken.PyPIAPIToken{
+		Token: kPB.GetToken(),
 	}
 }
 
