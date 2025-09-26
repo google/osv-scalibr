@@ -20,32 +20,42 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
-// Validator validates Slack App tokens via the Slack API endpoint.
-type Validator struct {
+// slackResponse represents the common response structure from Slack API
+type slackResponse struct {
+	Ok    bool   `json:"ok"`
+	Error string `json:"error"`
+}
+
+//
+// --- Slack App Level Token Validator ---
+//
+
+var _ veles.Validator[SlackAppLevelToken] = &ValidatorAppLevelToken{}
+
+// ValidatorAppLevelToken validates Slack App Level Tokens via the Slack API.
+type ValidatorAppLevelToken struct {
 	httpC *http.Client
 }
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
+// ValidatorOptionAppLevelToken configures a ValidatorAppLevelToken when creating it.
+type ValidatorOptionAppLevelToken func(*ValidatorAppLevelToken)
 
-// WithClient configures the http.Client that the Validator uses.
+// WithClientAppLevelToken configures the http.Client that the ValidatorAppLevelToken uses.
 //
 // By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
+func WithClientAppLevelToken(c *http.Client) ValidatorOptionAppLevelToken {
+	return func(v *ValidatorAppLevelToken) {
 		v.httpC = c
 	}
 }
 
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
+// NewAppLevelTokenValidator creates a new ValidatorAppLevelToken with the given options.
+func NewAppLevelTokenValidator(opts ...ValidatorOptionAppLevelToken) *ValidatorAppLevelToken {
+	v := &ValidatorAppLevelToken{
 		httpC: http.DefaultClient,
 	}
 	for _, opt := range opts {
@@ -54,38 +64,103 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 	return v
 }
 
-// Validate checks whether the given SlackToken is valid.
-//
-// It supports three types of Slack tokens:
-// 1. App Level Token (IsAppLevelToken) - uses auth.test endpoint
-// 2. App Configuration Access Token (IsAppConfigAccessToken) - uses auth.test endpoint
-// 3. App Configuration Refresh Token (IsAppConfigRefreshToken) - uses tooling.tokens.rotate endpoint
-//
-// Each token type has different validation endpoints and response formats.
-func (v *Validator) Validate(ctx context.Context, key SlackToken) (veles.ValidationStatus, error) {
-	if key.IsAppLevelToken || key.IsAppConfigAccessToken {
-		return v.validateAuthToken(ctx, key.Token)
-	}
-	if key.IsAppConfigRefreshToken {
-		return v.validateRefreshToken(ctx, key.Token)
-	}
-
-	return veles.ValidationInvalid, nil
+// Validate checks whether the given SlackAppLevelToken is valid.
+// It sends a request to the Slack API endpoint `auth.test` to verify the token.
+func (v *ValidatorAppLevelToken) Validate(ctx context.Context, key SlackAppLevelToken) (veles.ValidationStatus, error) {
+	return validateSlackToken(ctx, v.httpC, key.Token)
 }
 
-// validateAuthToken validates tokens using the auth.test endpoint.
-// This function handles both App Level Tokens (xapp-) and App Configuration Access Tokens (xoxe.xoxp-)
-// since both token types use the same Slack API endpoint for validation.
-func (v *Validator) validateAuthToken(ctx context.Context, token string) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://slack.com/api/auth.test", nil)
+//
+// --- Slack App Configuration Access Token Validator ---
+//
+
+var _ veles.Validator[SlackAppConfigAccessToken] = &ValidatorAppConfigAccessToken{}
+
+// ValidatorAppConfigAccessToken validates Slack App Config Access Tokens via the Slack API.
+type ValidatorAppConfigAccessToken struct {
+	httpC *http.Client
+}
+
+// ValidatorOptionAppConfigAccessToken configures a ValidatorAppConfigAccessToken when creating it.
+type ValidatorOptionAppConfigAccessToken func(*ValidatorAppConfigAccessToken)
+
+// WithClientAppConfigAccessToken configures the http.Client that the ValidatorAppConfigAccessToken uses.
+//
+// By default, it uses http.DefaultClient.
+func WithClientAppConfigAccessToken(c *http.Client) ValidatorOptionAppConfigAccessToken {
+	return func(v *ValidatorAppConfigAccessToken) {
+		v.httpC = c
+	}
+}
+
+// NewAppConfigAccessTokenValidator creates a new ValidatorAppConfigAccessToken with the given options.
+func NewAppConfigAccessTokenValidator(opts ...ValidatorOptionAppConfigAccessToken) *ValidatorAppConfigAccessToken {
+	v := &ValidatorAppConfigAccessToken{
+		httpC: http.DefaultClient,
+	}
+	for _, opt := range opts {
+		opt(v)
+	}
+	return v
+}
+
+// Validate checks whether the given SlackAppConfigAccessToken is valid.
+// It sends a request to the Slack API endpoint `auth.test` to verify the token.
+func (v *ValidatorAppConfigAccessToken) Validate(ctx context.Context, key SlackAppConfigAccessToken) (veles.ValidationStatus, error) {
+	return validateSlackToken(ctx, v.httpC, key.Token)
+}
+
+//
+// --- Slack App Configuration Refresh Token Validator ---
+//
+
+var _ veles.Validator[SlackAppConfigRefreshToken] = &ValidatorAppConfigRefreshToken{}
+
+// ValidatorAppConfigRefreshToken validates Slack App Config Refresh Tokens via the Slack API.
+type ValidatorAppConfigRefreshToken struct {
+	httpC *http.Client
+}
+
+// ValidatorOptionAppConfigRefreshToken configures a ValidatorAppConfigRefreshToken when creating it.
+type ValidatorOptionAppConfigRefreshToken func(*ValidatorAppConfigRefreshToken)
+
+// WithClientAppConfigRefreshToken configures the http.Client that the ValidatorAppConfigRefreshToken uses.
+//
+// By default, it uses http.DefaultClient.
+func WithClientAppConfigRefreshToken(c *http.Client) ValidatorOptionAppConfigRefreshToken {
+	return func(v *ValidatorAppConfigRefreshToken) {
+		v.httpC = c
+	}
+}
+
+// NewAppConfigRefreshTokenValidator creates a new ValidatorAppConfigRefreshToken with the given options.
+func NewAppConfigRefreshTokenValidator(opts ...ValidatorOptionAppConfigRefreshToken) *ValidatorAppConfigRefreshToken {
+	v := &ValidatorAppConfigRefreshToken{
+		httpC: http.DefaultClient,
+	}
+	for _, opt := range opts {
+		opt(v)
+	}
+	return v
+}
+
+// Validate checks whether the given SlackAppConfigRefreshToken is valid.
+// It sends a request to the Slack API endpoint `auth.test` to verify the token.
+func (v *ValidatorAppConfigRefreshToken) Validate(ctx context.Context, key SlackAppConfigRefreshToken) (veles.ValidationStatus, error) {
+	return validateSlackToken(ctx, v.httpC, key.Token)
+}
+
+// validateSlackToken is a helper function that validates a Slack token by sending a request
+// to the Slack API endpoint. This is common code used by all three validators.
+func validateSlackToken(ctx context.Context, httpC *http.Client, token string) (veles.ValidationStatus, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://slack.com/api/auth.test", nil)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	res, err := v.httpC.Do(req)
+	res, err := httpC.Do(req)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("HTTP POST failed: %w", err)
 	}
@@ -96,12 +171,7 @@ func (v *Validator) validateAuthToken(ctx context.Context, token string) (veles.
 		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Parse JSON response
-	var response struct {
-		Ok    bool   `json:"ok"`
-		Error string `json:"error"`
-	}
-
+	var response slackResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to parse JSON response: %w", err)
 	}
@@ -109,49 +179,6 @@ func (v *Validator) validateAuthToken(ctx context.Context, token string) (veles.
 	if response.Ok {
 		return veles.ValidationValid, nil
 	} else if response.Error == "invalid_auth" {
-		return veles.ValidationInvalid, nil
-	}
-	return veles.ValidationFailed, nil
-}
-
-
-// validateRefreshToken validates App Configuration Refresh Tokens (xoxe-)
-func (v *Validator) validateRefreshToken(ctx context.Context, token string) (veles.ValidationStatus, error) {
-	// Prepare form data
-	formData := url.Values{}
-	formData.Set("refresh_token", token)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://slack.com/api/tooling.tokens.rotate", strings.NewReader(formData.Encode()))
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP POST failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Parse JSON response
-	var response struct {
-		Ok    bool   `json:"ok"`
-		Error string `json:"error"`
-	}
-
-	if err := json.Unmarshal(body, &response); err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to parse JSON response: %w", err)
-	}
-
-	if response.Ok {
-		return veles.ValidationValid, nil
-	} else if response.Error == "invalid_refresh_token" {
 		return veles.ValidationInvalid, nil
 	}
 	return veles.ValidationFailed, nil

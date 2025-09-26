@@ -26,16 +26,18 @@ import (
 )
 
 const testAppLevelToken = `xapp-1-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af`
-
 const testAppConfigAccessToken = `xoxe.xoxp-1-Mi0yLTk1NTI2NjcxMzI3ODYtOTU1MjY2NzEzMzI1MC05NTUyODA2ODE4OTk0LTk1NTI4MDY4MzYxOTQtNWI4NzRmYjU0MTdhZGM3MjYyZmQ5MzNjNGQwMWJhZjhmY2VhMzIyMmQ4NGY4MDZlNjkyYjM5NTMwMjFiZTgwNA`
-
 const testAppConfigRefreshToken = `xoxe-1-My0xLTk1NTI2NjcxMzI3ODYtOTU1MjgwNjgxODk5NC05NTUyODA2ODcxNTU0LTk3Y2UxYWRlYWRlZjhhOWY5ZDRlZTVlOTI4MTRjNWZmYWZlZDU4MTU2OGZhNTIyNmVlYzY5MDE1ZmZmY2FkNTY`
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find Slack tokens (App Level Tokens, App Configuration Access Tokens,
 // and App Configuration Refresh Tokens).
 func TestDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{slacktoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		slacktoken.NewAppLevelTokenDetector(),
+		slacktoken.NewAppConfigAccessTokenDetector(),
+		slacktoken.NewAppConfigRefreshTokenDetector(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,73 +49,49 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string - app level token",
 		input: testAppLevelToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
 		},
 	}, {
-		name:  "match at end of string - app level token",
-		input: `SL_TOKEN=` + testAppLevelToken,
+		name:  "match at end of string - app config refresh token",
+		input: `SL_TOKEN=` + testAppConfigRefreshToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppConfigRefreshToken{
+				Token: testAppConfigRefreshToken,
 			},
 		},
 	}, {
 		name:  "match in middle of string - app level token",
 		input: `SL_TOKEN="` + testAppLevelToken + `"`,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
 		},
 	}, {
 		name:  "multiple matches - app level tokens",
 		input: testAppLevelToken + testAppLevelToken + testAppLevelToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
 		},
 	}, {
 		name:  "multiple distinct matches - app level tokens",
 		input: testAppLevelToken + "\n" + testAppLevelToken[:len(testAppLevelToken)-1] + "a",
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken[:len(testAppLevelToken)-1] + "a",
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken[:len(testAppLevelToken)-1] + "a",
 			},
 		},
 	}, {
@@ -123,67 +101,46 @@ func TestDetector_truePositives(t *testing.T) {
 :SL_TOKEN: %s
 		`, testAppLevelToken),
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
 		},
 	}, {
 		name:  "potential match longer than max key length - app level token",
 		input: testAppLevelToken + `extra`,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
 		},
 	}, {
 		name:  "app config access token",
 		input: testAppConfigAccessToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppConfigAccessToken,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  true,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppConfigAccessToken{
+				Token: testAppConfigAccessToken,
 			},
 		},
 	}, {
 		name:  "app config refresh token",
 		input: testAppConfigRefreshToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppConfigRefreshToken,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: true,
+			slacktoken.SlackAppConfigRefreshToken{
+				Token: testAppConfigRefreshToken,
 			},
 		},
 	}, {
 		name:  "multiple token types",
 		input: testAppLevelToken + "\n" + testAppConfigAccessToken + "\n" + testAppConfigRefreshToken,
 		want: []veles.Secret{
-			slacktoken.SlackToken{
-				Token:                   testAppLevelToken,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppLevelToken{
+				Token: testAppLevelToken,
 			},
-			slacktoken.SlackToken{
-				Token:                   testAppConfigAccessToken,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  true,
-				IsAppConfigRefreshToken: false,
+			slacktoken.SlackAppConfigAccessToken{
+				Token: testAppConfigAccessToken,
 			},
-			slacktoken.SlackToken{
-				Token:                   testAppConfigRefreshToken,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: true,
+			slacktoken.SlackAppConfigRefreshToken{
+				Token: testAppConfigRefreshToken,
 			},
 		},
 	}}
@@ -205,7 +162,11 @@ func TestDetector_truePositives(t *testing.T) {
 // will not find Slack tokens (App Level Tokens, App Configuration Access Tokens,
 // and App Configuration Refresh Tokens).
 func TestDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{slacktoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		slacktoken.NewAppLevelTokenDetector(),
+		slacktoken.NewAppConfigAccessTokenDetector(),
+		slacktoken.NewAppConfigRefreshTokenDetector(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

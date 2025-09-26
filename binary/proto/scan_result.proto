@@ -659,7 +659,9 @@ message SecretData {
     GCPAPIKey gcp_api_key = 19;
     HuggingfaceAPIKey hugginface = 20;
     GithubAppRefreshToken github_app_refresh_token = 21;
-    SlackToken slack_token = 22;
+    SlackAppConfigRefreshToken slack_app_config_refresh_token = 22;
+    SlackAppLevelToken slack_app_level_token = 23;
+    SlackAppConfigAccessToken slack_app_config_access_token = 24;
   }
 
   message GCPSAK {
@@ -731,13 +733,16 @@ message SecretData {
     string pat = 1;
   }
 
-  message SlackToken {
+  message SlackAppLevelToken {
     string token = 1;
-    oneof token_type{
-      bool is_app_level_token = 2;
-      bool is_app_config_access_token = 3;
-      bool is_app_config_refresh_token = 4;
-    }
+  }
+
+  message SlackAppConfigAccessToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigRefreshToken {
+    string token = 1;
   }
 
   message PostmanAPIKey {

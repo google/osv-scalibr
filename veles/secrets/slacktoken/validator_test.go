@@ -27,10 +27,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 )
 
-const appLevelTestToken = "xapp-1-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af"
-const appConfigTestAccessToken = "xoxe.xoxp-1-Mi0yLTk1NTI2NjcxMzI3ODYtOTU1MjY2NzEzMzI1MC05NTUyODA2ODE4OTk0LTk1NTI4MDY4MzYxOTQtNWI4NzRmYjU0MTdhZGM3MjYyZmQ5MzNjNGQwMWJhZjhmY2VhMzIyMmQ4NGY4MDZlNjkyYjM5NTMwMjFiZTgwNA"
-const appConfigTestRefreshToken = "xoxe-1-My0xLTk1NTI2NjcxMzI3ODYtOTU1MjgwNjgxODk5NC05NTUyODA2ODcxNTU0LTk3Y2UxYWRlYWRlZjhhOWY5ZDRlZTVlOTI4MTRjNWZmYWZlZDU4MTU2OGZhNTIyNmVlYzY5MDE1ZmZmY2FkNTY"
-
 // mockTransport redirects requests to the test server
 type mockTransport struct {
 	testServer *httptest.Server
@@ -69,38 +65,21 @@ func mockSlackServer(t *testing.T, expectedKey string, responseBody string, expe
 			if !strings.Contains(authHeader, expectedKey) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"ok":false,"error":"invalid_auth"}`))
+				_, _ = w.Write([]byte(`{"ok":false,"error":"invalid_auth"}`))
 				return
 			}
 		}
-
-		// Check form data for tooling.tokens.rotate endpoint
-		if expectedEndpoint == "/api/tooling.tokens.rotate" {
-			if err := r.ParseForm(); err != nil {
-				t.Errorf("failed to parse form: %v", err)
-				http.Error(w, "bad request", http.StatusBadRequest)
-				return
-			}
-			refreshToken := r.Form.Get("refresh_token")
-			if refreshToken != expectedKey {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"ok":false,"error":"invalid_refresh_token"}`))
-				return
-			}
-		}
-
 		// Set response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(responseBody))
+		_, _ = w.Write([]byte(responseBody))
 	}))
 }
 
-func TestValidator(t *testing.T) {
+func TestAppLevelTokenValidator(t *testing.T) {
 	cases := []struct {
 		name              string
-		key               slacktoken.SlackToken
+		key               slacktoken.SlackAppLevelToken
 		serverExpectedKey string
 		responseBody      string
 		expectedEndpoint  string
@@ -109,58 +88,92 @@ func TestValidator(t *testing.T) {
 	}{
 		{
 			name:              "valid_app_level_token",
-			key:               slacktoken.SlackToken{Token: appLevelTestToken, IsAppLevelToken: true},
-			serverExpectedKey: appLevelTestToken,
+			key:               slacktoken.SlackAppLevelToken{Token: testAppLevelToken},
+			serverExpectedKey: testAppLevelToken,
 			responseBody:      `{"ok":true}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationValid,
 		},
 		{
 			name:              "invalid_app_level_token",
-			key:               slacktoken.SlackToken{Token: "random_string", IsAppLevelToken: true},
-			serverExpectedKey: appLevelTestToken,
+			key:               slacktoken.SlackAppLevelToken{Token: "random_string"},
+			serverExpectedKey: testAppLevelToken,
 			responseBody:      `{"ok":false,"error":"invalid_auth"}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationInvalid,
 		},
 		{
 			name:              "server_error_app_level",
-			key:               slacktoken.SlackToken{Token: appLevelTestToken, IsAppLevelToken: true},
-			serverExpectedKey: appLevelTestToken,
+			key:               slacktoken.SlackAppLevelToken{Token: testAppLevelToken},
+			serverExpectedKey: testAppLevelToken,
 			responseBody:      `{"ok":false,"error":"server_error"}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationFailed,
 		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock server
+			server := mockSlackServer(t, tc.serverExpectedKey, tc.responseBody, tc.expectedEndpoint)
+			defer server.Close()
+
+			// Create a client with custom transport
+			client := &http.Client{
+				Transport: &mockTransport{testServer: server},
+			}
+
+			// Create a validator with a mock client
+			validator := slacktoken.NewAppLevelTokenValidator(
+				slacktoken.WithClientAppLevelToken(client),
+			)
+
+			// Test validation
+			got, err := validator.Validate(context.Background(), tc.key)
+
+			// Check error expectation
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
+			}
+
+			// Check validation status
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAppConfigAccessTokenValidator(t *testing.T) {
+	cases := []struct {
+		name              string
+		key               slacktoken.SlackAppConfigAccessToken
+		serverExpectedKey string
+		responseBody      string
+		expectedEndpoint  string
+		want              veles.ValidationStatus
+		expectError       bool
+	}{
 		{
 			name:              "valid_access_token",
-			key:               slacktoken.SlackToken{Token: appConfigTestAccessToken, IsAppConfigAccessToken: true},
-			serverExpectedKey: appConfigTestAccessToken,
+			key:               slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken},
+			serverExpectedKey: testAppConfigAccessToken,
 			responseBody:      `{"ok":true}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationValid,
 		},
 		{
 			name:              "invalid_access_token",
-			key:               slacktoken.SlackToken{Token: "invalid_access_token", IsAppConfigAccessToken: true},
-			serverExpectedKey: appConfigTestAccessToken,
+			key:               slacktoken.SlackAppConfigAccessToken{Token: "invalid_access_token"},
+			serverExpectedKey: testAppConfigAccessToken,
 			responseBody:      `{"ok":false,"error":"invalid_auth"}`,
 			expectedEndpoint:  "/api/auth.test",
-			want:              veles.ValidationInvalid,
-		},
-		{
-			name:              "valid_refresh_token",
-			key:               slacktoken.SlackToken{Token: appConfigTestRefreshToken, IsAppConfigRefreshToken: true},
-			serverExpectedKey: appConfigTestRefreshToken,
-			responseBody:      `{"ok":true}`,
-			expectedEndpoint:  "/api/tooling.tokens.rotate",
-			want:              veles.ValidationValid,
-		},
-		{
-			name:              "invalid_refresh_token",
-			key:               slacktoken.SlackToken{Token: "invalid_refresh_token", IsAppConfigRefreshToken: true},
-			serverExpectedKey: appConfigTestRefreshToken,
-			responseBody:      `{"ok":false,"error":"invalid_refresh_token"}`,
-			expectedEndpoint:  "/api/tooling.tokens.rotate",
 			want:              veles.ValidationInvalid,
 		},
 	}
@@ -177,8 +190,74 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := slacktoken.NewValidator(
-				slacktoken.WithClient(client),
+			validator := slacktoken.NewAppConfigAccessTokenValidator(
+				slacktoken.WithClientAppConfigAccessToken(client),
+			)
+
+			// Test validation
+			got, err := validator.Validate(context.Background(), tc.key)
+
+			// Check error expectation
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
+			}
+
+			// Check validation status
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAppConfigRefreshTokenValidator(t *testing.T) {
+	cases := []struct {
+		name              string
+		key               slacktoken.SlackAppConfigRefreshToken
+		serverExpectedKey string
+		responseBody      string
+		expectedEndpoint  string
+		want              veles.ValidationStatus
+		expectError       bool
+	}{
+		{
+			name:              "valid_refresh_token",
+			key:               slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken},
+			serverExpectedKey: testAppConfigRefreshToken,
+			responseBody:      `{"ok":true}`,
+			expectedEndpoint:  "/api/auth.test",
+			want:              veles.ValidationValid,
+		},
+		{
+			name:              "invalid_refresh_token",
+			key:               slacktoken.SlackAppConfigRefreshToken{Token: "invalid_refresh_token"},
+			serverExpectedKey: testAppConfigRefreshToken,
+			responseBody:      `{"ok":false,"error":"invalid_auth"}`,
+			expectedEndpoint:  "/api/auth.test",
+			want:              veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock server
+			server := mockSlackServer(t, tc.serverExpectedKey, tc.responseBody, tc.expectedEndpoint)
+			defer server.Close()
+
+			// Create a client with custom transport
+			client := &http.Client{
+				Transport: &mockTransport{testServer: server},
+			}
+
+			// Create a validator with a mock client
+			validator := slacktoken.NewAppConfigRefreshTokenValidator(
+				slacktoken.WithClientAppConfigRefreshToken(client),
 			)
 
 			// Test validation
@@ -210,7 +289,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"ok":true"}`))
+		_, _ = w.Write([]byte(`{"ok":true"}`))
 	}))
 	defer server.Close()
 
@@ -219,25 +298,74 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := slacktoken.NewValidator(
-		slacktoken.WithClient(client),
-	)
+	// Test with App Level Token validator
+	t.Run("app_level_token", func(t *testing.T) {
+		validator := slacktoken.NewAppLevelTokenValidator(
+			slacktoken.WithClientAppLevelToken(client),
+		)
 
-	key := slacktoken.SlackToken{Token: appLevelTestToken, IsAppLevelToken: true}
+		key := slacktoken.SlackAppLevelToken{Token: testAppLevelToken}
 
-	// Create context with a very short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+		// Create context with a very short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
 
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
+		// Test validation with cancelled context
+		got, err := validator.Validate(ctx, key)
 
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
+		if err == nil {
+			t.Errorf("Validate() expected error due to context cancellation, got nil")
+		}
+		if got != veles.ValidationFailed {
+			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+		}
+	})
+
+	// Test with App Config Access Token validator
+	t.Run("app_config_access_token", func(t *testing.T) {
+		validator := slacktoken.NewAppConfigAccessTokenValidator(
+			slacktoken.WithClientAppConfigAccessToken(client),
+		)
+
+		key := slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken}
+
+		// Create context with a very short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		// Test validation with cancelled context
+		got, err := validator.Validate(ctx, key)
+
+		if err == nil {
+			t.Errorf("Validate() expected error due to context cancellation, got nil")
+		}
+		if got != veles.ValidationFailed {
+			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+		}
+	})
+
+	// Test with App Config Refresh Token validator
+	t.Run("app_config_refresh_token", func(t *testing.T) {
+		validator := slacktoken.NewAppConfigRefreshTokenValidator(
+			slacktoken.WithClientAppConfigRefreshToken(client),
+		)
+
+		key := slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken}
+
+		// Create context with a very short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		// Test validation with cancelled context
+		got, err := validator.Validate(ctx, key)
+
+		if err == nil {
+			t.Errorf("Validate() expected error due to context cancellation, got nil")
+		}
+		if got != veles.ValidationFailed {
+			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+		}
+	})
 }
 
 func TestValidator_InvalidRequest(t *testing.T) {
@@ -250,37 +378,114 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := slacktoken.NewValidator(
-		slacktoken.WithClient(client),
-	)
+	// Test with App Level Token validator
+	t.Run("app_level_token", func(t *testing.T) {
+		validator := slacktoken.NewAppLevelTokenValidator(
+			slacktoken.WithClientAppLevelToken(client),
+		)
 
-	testCases := []struct {
-		name     string
-		key      slacktoken.SlackToken
-		expected veles.ValidationStatus
-	}{
-		{
-			name:     "empty_key",
-			key:      slacktoken.SlackToken{Token: "", IsAppLevelToken: true},
-			expected: veles.ValidationInvalid,
-		},
-		{
-			name:     "invalid_key_format",
-			key:      slacktoken.SlackToken{Token: "invalid-key-format", IsAppLevelToken: true},
-			expected: veles.ValidationInvalid,
-		},
-	}
+		testCases := []struct {
+			name     string
+			key      slacktoken.SlackAppLevelToken
+			expected veles.ValidationStatus
+		}{
+			{
+				name:     "empty_key",
+				key:      slacktoken.SlackAppLevelToken{Token: ""},
+				expected: veles.ValidationInvalid,
+			},
+			{
+				name:     "invalid_key_format",
+				key:      slacktoken.SlackAppLevelToken{Token: "invalid-key-format"},
+				expected: veles.ValidationInvalid,
+			},
+		}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := validator.Validate(context.Background(), tc.key)
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				got, err := validator.Validate(context.Background(), tc.key)
 
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-			}
-		})
-	}
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
+				if got != tc.expected {
+					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+				}
+			})
+		}
+	})
+
+	// Test with App Config Access Token validator
+	t.Run("app_config_access_token", func(t *testing.T) {
+		validator := slacktoken.NewAppConfigAccessTokenValidator(
+			slacktoken.WithClientAppConfigAccessToken(client),
+		)
+
+		testCases := []struct {
+			name     string
+			key      slacktoken.SlackAppConfigAccessToken
+			expected veles.ValidationStatus
+		}{
+			{
+				name:     "empty_key",
+				key:      slacktoken.SlackAppConfigAccessToken{Token: ""},
+				expected: veles.ValidationInvalid,
+			},
+			{
+				name:     "invalid_key_format",
+				key:      slacktoken.SlackAppConfigAccessToken{Token: "invalid-key-format"},
+				expected: veles.ValidationInvalid,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				got, err := validator.Validate(context.Background(), tc.key)
+
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
+				if got != tc.expected {
+					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+				}
+			})
+		}
+	})
+
+	// Test with App Config Refresh Token validator
+	t.Run("app_config_refresh_token", func(t *testing.T) {
+		validator := slacktoken.NewAppConfigRefreshTokenValidator(
+			slacktoken.WithClientAppConfigRefreshToken(client),
+		)
+
+		testCases := []struct {
+			name     string
+			key      slacktoken.SlackAppConfigRefreshToken
+			expected veles.ValidationStatus
+		}{
+			{
+				name:     "empty_key",
+				key:      slacktoken.SlackAppConfigRefreshToken{Token: ""},
+				expected: veles.ValidationInvalid,
+			},
+			{
+				name:     "invalid_key_format",
+				key:      slacktoken.SlackAppConfigRefreshToken{Token: "invalid-key-format"},
+				expected: veles.ValidationInvalid,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				got, err := validator.Validate(context.Background(), tc.key)
+
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
+				if got != tc.expected {
+					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+				}
+			})
+		}
+	})
 }

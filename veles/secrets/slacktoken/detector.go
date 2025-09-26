@@ -19,93 +19,66 @@
 package slacktoken
 
 import (
-	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a Slack API token.
-const maxTokenLength = 178
+var (
+	// Ensure constructors satisfy the interface at compile time.
+	_ veles.Detector = NewAppLevelTokenDetector()
+	_ veles.Detector = NewAppConfigAccessTokenDetector()
+	_ veles.Detector = NewAppConfigRefreshTokenDetector()
+)
 
-// keyRe is a regular expression that matches a Slack App token.
-// Slack App Level Tokens have the form: `xapp-` followed by a number,
-// a dash, an app ID, a dash, and 64 hex characters.
+// App Level Token: prefix `xapp-` followed by a number, a dash, an app ID,
+// a dash, and 64 hex characters.
+const appLevelTokenMaxLen = 96
+
 var appLevelTokenRe = regexp.MustCompile(`xapp-\d+-[A-Za-z0-9]{11}-[0-9]{13}-[a-fA-F0-9]{64}`)
 
-// appConfigAccessTokenRe is a regular expression that matches a Slack App Configuration Access token.
-// Slack App Configuration Access token has the form: `xoxe.xoxp-` followed by a number,
+// App Configuration Access Token: prefix `xoxe.xoxp-` followed by a number,
 // a dash, and 166 alphanumeric characters.
+const appConfigAccessTokenMaxLen = 178
+
 var appConfigAccessTokenRe = regexp.MustCompile(`xoxe\.xoxp-\d+-[a-zA-Z0-9]{166}`)
 
-// appConfigRefreshTokenRe is a regular expression that matches a Slack App Configuration Refresh token.
-// Slack App Configuration Refresh token has the form: `xoxe-` followed by a number,
+// App Configuration Refresh Token: prefix `xoxe-` followed by a number,
 // a dash, and 147 alphanumeric characters.
+const appConfigRefreshTokenMaxLen = 154
+
 var appConfigRefreshTokenRe = regexp.MustCompile(`xoxe-\d+-[a-zA-Z0-9]{147}`)
 
-var _ veles.Detector = NewDetector()
-
-// detector is a Veles Detector.
-type detector struct{}
-
-// NewDetector returns a new Detector that matches
-// Slack App tokens.
-func NewDetector() veles.Detector {
-	return &detector{}
+// NewAppLevelTokenDetector returns a detector for Slack App Level Tokens (xapp-...).
+func NewAppLevelTokenDetector() veles.Detector {
+	return simpletoken.Detector{
+		MaxLen: appLevelTokenMaxLen,
+		Re:     appLevelTokenRe,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return SlackAppLevelToken{Token: string(b)}, true
+		},
+	}
 }
 
-func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
+// NewAppConfigAccessTokenDetector returns a detector for Slack App Configuration Access Tokens (xoxe.xoxp-...).
+func NewAppConfigAccessTokenDetector() veles.Detector {
+	return simpletoken.Detector{
+		MaxLen: appConfigAccessTokenMaxLen,
+		Re:     appConfigAccessTokenRe,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return SlackAppConfigAccessToken{Token: string(b)}, true
+		},
+	}
 }
 
-func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
-
-	// Detect App Level Tokens (xapp-...)
-	appLevelMatches := appLevelTokenRe.FindAllSubmatch(content, -1)
-	for _, m := range appLevelMatches {
-		if len(m[0]) > 0 {
-			token := string(m[0])
-			secrets = append(secrets, SlackToken{
-				Token:                   token,
-				IsAppLevelToken:         true,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: false,
-			})
-			offsets = append(offsets, bytes.Index(content, m[0]))
-		}
+// NewAppConfigRefreshTokenDetector returns a detector for Slack App Configuration Refresh Tokens (xoxe-...).
+func NewAppConfigRefreshTokenDetector() veles.Detector {
+	return simpletoken.Detector{
+		MaxLen: appConfigRefreshTokenMaxLen,
+		Re:     appConfigRefreshTokenRe,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return SlackAppConfigRefreshToken{Token: string(b)}, true
+		},
 	}
-
-	// Detect App Configuration Access Tokens (xoxe.xoxp-...)
-	configAccessMatches := appConfigAccessTokenRe.FindAllSubmatch(content, -1)
-	for _, m := range configAccessMatches {
-		if len(m[0]) > 0 {
-			token := string(m[0])
-			secrets = append(secrets, SlackToken{
-				Token:                   token,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  true,
-				IsAppConfigRefreshToken: false,
-			})
-			offsets = append(offsets, bytes.Index(content, m[0]))
-		}
-	}
-
-	// Detect App Configuration Refresh Tokens (xoxe-...)
-	configRefreshMatches := appConfigRefreshTokenRe.FindAllSubmatch(content, -1)
-	for _, m := range configRefreshMatches {
-		if len(m[0]) > 0 {
-			token := string(m[0])
-			secrets = append(secrets, SlackToken{
-				Token:                   token,
-				IsAppLevelToken:         false,
-				IsAppConfigAccessToken:  false,
-				IsAppConfigRefreshToken: true,
-			})
-			offsets = append(offsets, bytes.Index(content, m[0]))
-		}
-	}
-
-	return secrets, offsets
 }

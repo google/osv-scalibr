@@ -14,14 +14,23 @@
 
 package slacktoken
 
-// SlackToken is a Veles Secret that holds relevant information for
-// Slack tokens including App Level Tokens (prefix `xapp-`),
-// App Configuration Access Tokens (prefix `xoxe.xoxp-`), and
+// SlackAppLevelToken is a Veles Secret that holds relevant information for
+// Slack tokens including App Level Tokens (prefix `xapp-`).
+// SlackAppLevelToken represents tokens used to authenticate requests
+type SlackAppLevelToken struct {
+	Token string
+}
+
+// SlackAppConfigAccessToken is a Veles Secret that holds relevant information for
+// App Configuration Access Tokens (prefix `xoxe.xoxp-`).
+// SlackAppConfigAccessToken represents tokens used to authenticate requests
+type SlackAppConfigAccessToken struct {
+	Token string
+}
+
+// SlackAppConfigRefreshToken is a Veles Secret that holds relevant information for
 // App Configuration Refresh Tokens (prefix `xoxe-`).
-// SlackToken represents tokens used to authenticate requests
-type SlackToken struct {
-	Token                   string
-	IsAppLevelToken         bool
-	IsAppConfigAccessToken  bool
-	IsAppConfigRefreshToken bool
+// SlackAppConfigRefreshToken represents tokens used to authenticate requests
+type SlackAppConfigRefreshToken struct {
+	Token string
 }
