@@ -310,6 +310,44 @@ func TestExtract(t *testing.T) {
 			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
+		{
+			name: "version constant class",
+			path: "testdata/version_constant_class/version_constant_class.gemspec",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "example_app",
+					Version:   "3.0.0",
+					PURLType:  purl.TypeGem,
+					Locations: []string{"testdata/version_constant_class/version_constant_class.gemspec"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name: "version constant different casing",
+			path: "testdata/version_constant_different_casing/version_constant_different_casing.gemspec",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "example_app",
+					Version:   "4.0.0",
+					PURLType:  purl.TypeGem,
+					Locations: []string{"testdata/version_constant_different_casing/version_constant_different_casing.gemspec"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:             "version method not supported",
+			path:             "testdata/version_method/version_method.gemspec",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name:             "load path not supported",
+			path:             "testdata/version_load_path/version_load_path.gemspec",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
 	}
 
 	for _, test := range tests {

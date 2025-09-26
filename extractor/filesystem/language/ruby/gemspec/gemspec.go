@@ -292,10 +292,12 @@ func versionConstantName(expr string) (string, bool) {
 	}
 	parts := strings.Split(expr, "::")
 	name := parts[len(parts)-1]
-	if name != "VERSION" {
-		return "", false
+	// Support common version constant naming patterns
+	upperName := strings.ToUpper(name)
+	if upperName == "VERSION" {
+		return name, true
 	}
-	return name, true
+	return "", false
 }
 
 func versionFileCandidates(req string) []string {
