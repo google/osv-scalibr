@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/os/bazelmaven/metadata"
+	bazelmetadata "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -55,9 +56,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // FileRequired returns true if the file is a Bazel build file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return path.Base(api.Path()) == "BUILD.bazel" ||
-		path.Base(api.Path()) == "MODULE.bazel" ||
-		path.Base(api.Path()) == "WORKSPACE"
+	return slices.Contains([]string{"BUILD.bazel", "MODULE.bazel", "WORKSPACE"}, path.Base(api.Path()))
 }
 
 // Extract extracts maven packages from the bazel build file.
@@ -74,27 +73,31 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	// Use FindAllMavenDependencies to parse the Bazel file and extract Maven dependencies
-	dependencies := FindAllMavenDependencies(data)
+	dependencies, err := FindAllMavenDependencies(data)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("error parsing Bazel file: %w", err)
+	}
 
 	var pkgs []*extractor.Package
 
 	// Convert the dependencies to extractor.Package objects
-	for _, mavenDeps := range dependencies {
-		// should we add the rule name too? the rule which found the deps
-		// e.g., maven_install, maven.install, maven.artifact
-		// ruleName := rule
+	for ruleName, mavenDeps := range dependencies {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
 		for _, dep := range mavenDeps {
 			// Create a package for each Maven dependency
 			pkg := &extractor.Package{
 				Name:      dep.Name,
 				Version:   dep.Version,
-				PURLType:  purl.TypeBazelMaven,
+				PURLType:  purl.TypeMaven,
 				Locations: []string{input.Path},
-				Metadata: &bazelmavenmeta.Metadata{
+				Metadata: &bazelmetadata.Metadata{
 					Name:       dep.Name,
 					GroupID:    dep.GroupID,
 					ArtifactID: dep.ArtifactID,
 					Version:    dep.Version,
+					RuleName:   ruleName,
 				},
 			}
 			pkgs = append(pkgs, pkg)
@@ -104,26 +107,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-// MavenDependency represents a Maven dependency
-type MavenDependency struct {
-	Name       string // Name of the dependency
-	GroupID    string // Maven group ID
-	ArtifactID string // Maven artifact ID
-	Version    string // Maven version
-}
-
 // RuleDependencies maps rule types to their dependencies
-type RuleDependencies map[string][]MavenDependency
+type RuleDependencies map[string][]bazelmetadata.Metadata
 
 // FindAllMavenDependencies parses all file sources and returns dependencies by rule type
-func FindAllMavenDependencies(input []byte) RuleDependencies {
+func FindAllMavenDependencies(input []byte) (RuleDependencies, error) {
 	// Create a map to hold dependencies by rule type
 	allDeps := make(RuleDependencies)
 
 	// Parse the combined file
 	f, err := build.Parse("default", input)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse Bazel file: %w", err)
 	}
 
 	// Find all load statements to track rule sources
@@ -148,7 +143,7 @@ func FindAllMavenDependencies(input []byte) RuleDependencies {
 					isMavenInstallFromRulesJvmExt := exists && source == "@rules_jvm_external//:defs.bzl"
 					if isMavenInstallFromRulesJvmExt {
 						if r.Attr("artifacts") != nil {
-							artifacts := GetAttributeArrayValues(r, f, "artifacts")
+							artifacts := getAttributeArrayValues(r, f, "artifacts")
 							// Add a note about the source in the rule name if it's from rules_jvm_external
 							allDeps["maven_install"] = append(allDeps["maven_install"], ExtractMavenArtifactInfo(artifacts)...)
 						}
@@ -171,16 +166,16 @@ func FindAllMavenDependencies(input []byte) RuleDependencies {
 							// https://github.com/bazel-contrib/rules_jvm_external/blob/1c5cfbf96de595a3e23cf440fb40380cc28c1aea/docs/bzlmod-api.md#maven
 							case "install":
 								if artifactsAttr := r.Attr("artifacts"); artifactsAttr != nil {
-									artifacts := GetAttributeArrayValues(r, f, "artifacts")
+									artifacts := getAttributeArrayValues(r, f, "artifacts")
 									allDeps["maven.install"] = append(allDeps["maven.install"], ExtractMavenArtifactInfo(artifacts)...)
 								}
 							case "artifact":
 								// A single artifact
 								if r.Attr("group") != nil && r.Attr("artifact") != nil && r.Attr("version") != nil {
-									group := GetAttributeStringValue(r, f, "group")
-									artifact := GetAttributeStringValue(r, f, "artifact")
-									version := GetAttributeStringValue(r, f, "version")
-									allDeps["maven.artifact"] = append(allDeps["maven.artifact"], MavenDependency{
+									group := getAttributeStringValue(r, f, "group")
+									artifact := getAttributeStringValue(r, f, "artifact")
+									version := getAttributeStringValue(r, f, "version")
+									allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.Metadata{
 										Name:       group + ":" + artifact + ":" + version,
 										GroupID:    group,
 										ArtifactID: artifact,
@@ -195,17 +190,17 @@ func FindAllMavenDependencies(input []byte) RuleDependencies {
 		}
 	}
 
-	return allDeps
+	return allDeps, nil
 }
 
 // ExtractMavenArtifactInfo extracts Maven coordinates from artifact strings like "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"
-func ExtractMavenArtifactInfo(artifacts []string) []MavenDependency {
-	var deps []MavenDependency
+func ExtractMavenArtifactInfo(artifacts []string) []bazelmetadata.Metadata {
+	var deps []bazelmetadata.Metadata
 
 	for _, artifact := range artifacts {
 		parts := strings.Split(artifact, ":")
 
-		dep := MavenDependency{
+		dep := bazelmetadata.Metadata{
 			Name: artifact,
 		}
 

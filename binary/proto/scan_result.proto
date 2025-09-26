@@ -116,7 +116,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-      25;
+        25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -617,6 +617,7 @@ message BazelMavenMetadata {
   string group_id = 2;
   string artifact_id = 3;
   string version = 4;
+  string rule_name = 5;
 }
 
 message DockerPort {

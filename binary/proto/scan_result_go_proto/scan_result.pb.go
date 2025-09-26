@@ -4804,6 +4804,7 @@ type BazelMavenMetadata struct {
 	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	ArtifactId    string                 `protobuf:"bytes,3,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	Version       string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	RuleName      string                 `protobuf:"bytes,5,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4862,6 +4863,13 @@ func (x *BazelMavenMetadata) GetArtifactId() string {
 func (x *BazelMavenMetadata) GetVersion() string {
 	if x != nil {
 		return x.Version
+	}
+	return ""
+}
+
+func (x *BazelMavenMetadata) GetRuleName() string {
+	if x != nil {
+		return x.RuleName
 	}
 	return ""
 }
@@ -6465,13 +6473,14 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x05ports\x18\x04 \x03(\v2\x13.scalibr.DockerPortR\x05ports\"N\n" +
 	"\fAsdfMetadata\x12\x1b\n" +
 	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12!\n" +
-	"\ftool_version\x18\x02 \x01(\tR\vtoolVersion\"~\n" +
+	"\ftool_version\x18\x02 \x01(\tR\vtoolVersion\"\x9b\x01\n" +
 	"\x12BazelMavenMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1f\n" +
 	"\vartifact_id\x18\x03 \x01(\tR\n" +
 	"artifactId\x12\x18\n" +
-	"\aversion\x18\x04 \x01(\tR\aversion\"t\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\x12\x1b\n" +
+	"\trule_name\x18\x05 \x01(\tR\bruleName\"t\n" +
 	"\n" +
 	"DockerPort\x12\x0e\n" +
 	"\x02ip\x18\x01 \x01(\tR\x02ip\x12!\n" +

@@ -25,6 +25,7 @@ type Metadata struct {
 	GroupID    string // Maven group ID
 	ArtifactID string // Maven artifact ID
 	Version    string // Maven version
+	RuleName   string // Bazel rule name
 }
 
 // SetProto sets the BazelMetadata field in the Package proto.
@@ -42,6 +43,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			GroupId:    m.GroupID,
 			ArtifactId: m.ArtifactID,
 			Version:    m.Version,
+			RuleName:   m.RuleName,
 		},
 	}
 }
@@ -57,5 +59,6 @@ func ToStruct(m *pb.BazelMavenMetadata) *Metadata {
 		GroupID:    m.GetGroupId(),
 		ArtifactID: m.GetArtifactId(),
 		Version:    m.GetVersion(),
+		RuleName:   m.GetRuleName(),
 	}
 }

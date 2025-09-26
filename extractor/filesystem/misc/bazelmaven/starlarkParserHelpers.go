@@ -4,19 +4,19 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 )
 
-// LoadMapping maps rule names to their source paths
-type LoadMapping map[string]string
+// loadMapping maps rule names to their source paths
+type loadMapping map[string]string
 
-// ExtensionInfo holds information about a use_extension call
-type ExtensionInfo struct {
+// extensionInfo holds information about a use_extension call
+type extensionInfo struct {
 	BzlFile string // First argument (extension path)
 	Name    string // Second argument (extension type)
 }
 
-// GetAttributeStringValue extracts a single string value from an attribute
+// getAttributeStringValue extracts a single string value from an attribute
 // It handles cases where the attribute value is a direct string or a variable reference
 // and also where the variables are concatenated.
-func GetAttributeStringValue(rule *build.Rule, file *build.File, attrName string) string {
+func getAttributeStringValue(rule *build.Rule, file *build.File, attrName string) string {
 	attr := rule.Attr(attrName)
 	if attr == nil {
 		return ""
@@ -89,9 +89,9 @@ func findStringVariableValueWithVisited(varName string, file *build.File, visite
 	return ""
 }
 
-// GetAttributeArrayValues extracts all string values from an attribute that is expected to be a list
+// getAttributeArrayValues extracts all string values from an attribute that is expected to be a list
 // It handles cases where the attribute value is a direct list or a variable reference
-func GetAttributeArrayValues(rule *build.Rule, file *build.File, attrName string) []string {
+func getAttributeArrayValues(rule *build.Rule, file *build.File, attrName string) []string {
 	var attributeValues []string
 
 	attr := rule.Attr(attrName)
@@ -193,8 +193,8 @@ func findAndProcessVariableWithVisited(varName string, file *build.File, visited
 
 // findExtensionVariables identifies all variables that are assigned from use_extension
 // Returns a map of variable names to their extension info (path and type)
-func findExtensionVariables(file *build.File) map[string]ExtensionInfo {
-	extensionVars := make(map[string]ExtensionInfo)
+func findExtensionVariables(file *build.File) map[string]extensionInfo {
+	extensionVars := make(map[string]extensionInfo)
 
 	for _, stmt := range file.Stmt {
 		if assign, ok := stmt.(*build.AssignExpr); ok {
@@ -218,7 +218,7 @@ func findExtensionVariables(file *build.File) map[string]ExtensionInfo {
 							}
 
 							// Record the variable name and its extension info
-							extensionVars[lhs.Name] = ExtensionInfo{
+							extensionVars[lhs.Name] = extensionInfo{
 								BzlFile: bzlFile,
 								Name:    extensionName,
 							}
@@ -234,8 +234,8 @@ func findExtensionVariables(file *build.File) map[string]ExtensionInfo {
 
 // findLoadStatements finds all load statements in a Bazel file and returns a mapping
 // of rule names to their source paths
-func findLoadStatements(file *build.File) LoadMapping {
-	loadMapping := make(LoadMapping)
+func findLoadStatements(file *build.File) loadMapping {
+	loadMapping := make(loadMapping)
 
 	for _, stmt := range file.Stmt {
 		if loadStmt, ok := stmt.(*build.LoadStmt); ok {
