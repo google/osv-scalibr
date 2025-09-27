@@ -682,6 +682,9 @@ message SecretData {
         github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
+    OnePasswordSecretKey onepassword_secret_key = 32;
+    OnePasswordServiceToken onepassword_service_token = 33;
+    OnePasswordRecoveryCode onepassword_recovery_code = 34; 
   }
 
   message GCPSAK {
@@ -840,6 +843,18 @@ message SecretData {
     // "ya29.[alphanumeric_string]"
     string token = 1;
   }
+
+  message OnePasswordSecretKey {
+    string key = 1;
+  }
+  message OnePasswordServiceToken {
+    string key = 1;
+  }
+
+  message OnePasswordRecoveryCode {  
+    string key = 1;
+  }
+
 }
 
 message SecretStatus {
