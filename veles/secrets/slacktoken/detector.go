@@ -32,23 +32,23 @@ var (
 	_ veles.Detector = NewAppConfigRefreshTokenDetector()
 )
 
-// App Level Token: prefix `xapp-` followed by a number, a dash, an app ID,
+// App Level Token: prefix `xapp-` followed by digits (presumably with max 10 digits), a dash, an app ID,
 // a dash, and 64 hex characters.
-const appLevelTokenMaxLen = 96
+const appLevelTokenMaxLen = 106
 
-var appLevelTokenRe = regexp.MustCompile(`xapp-\d+-[A-Za-z0-9]{11}-[0-9]{13}-[a-fA-F0-9]{64}`)
+var appLevelTokenRe = regexp.MustCompile(`xapp-\d{1,10}-[A-Za-z0-9]{11}-[0-9]{13}-[a-fA-F0-9]{64}`)
 
-// App Configuration Access Token: prefix `xoxe.xoxp-` followed by a number,
+// App Configuration Access Token: prefix `xoxe.xoxp-` followed by digits (presumably with max 10 digits),
 // a dash, and 166 alphanumeric characters.
-const appConfigAccessTokenMaxLen = 178
+const appConfigAccessTokenMaxLen = 187
 
-var appConfigAccessTokenRe = regexp.MustCompile(`xoxe\.xoxp-\d+-[a-zA-Z0-9]{166}`)
+var appConfigAccessTokenRe = regexp.MustCompile(`xoxe\.xoxp-\d{1,10}-[a-zA-Z0-9]{166}`)
 
-// App Configuration Refresh Token: prefix `xoxe-` followed by a number,
+// App Configuration Refresh Token: prefix `xoxe-` followed by digits (presumably with max 10 digits),
 // a dash, and 147 alphanumeric characters.
-const appConfigRefreshTokenMaxLen = 154
+const appConfigRefreshTokenMaxLen = 163
 
-var appConfigRefreshTokenRe = regexp.MustCompile(`xoxe-\d+-[a-zA-Z0-9]{147}`)
+var appConfigRefreshTokenRe = regexp.MustCompile(`xoxe-\d{1,10}-[a-zA-Z0-9]{147}`)
 
 // NewAppLevelTokenDetector returns a detector for Slack App Level Tokens (xapp-...).
 func NewAppLevelTokenDetector() veles.Detector {

@@ -62,6 +62,14 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 	}, {
+		name:  "match with 5 numbers in second place - app level token",
+		input: "xapp-12345-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af",
+		want: []veles.Secret{
+			slacktoken.SlackAppLevelToken{
+				Token: "xapp-12345-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af",
+			},
+		},
+	}, {
 		name:  "match in middle of string - app level token",
 		input: `SL_TOKEN="` + testAppLevelToken + `"`,
 		want: []veles.Secret{
@@ -180,6 +188,9 @@ func TestDetector_trueNegatives(t *testing.T) {
 	}, {
 		name:  "short app level token should not match",
 		input: testAppLevelToken[:len(testAppLevelToken)-1],
+	}, {
+		name:  "more than 10 numbers in second place should not match - app level token",
+		input: "xapp-12345678910-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af",
 	}, {
 		name:  "invalid character in app level token should not match",
 		input: `xapp-1-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421ag`, // 'g' instead of 'f'
