@@ -129,6 +129,7 @@ message Package {
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
+    OnePasswordConnectTokenMetadata one_password_connect_token_metadata = 58;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -621,6 +622,11 @@ message AsdfMetadata {
 
 message NvmMetadata {
   string nodejs_version = 2;
+}
+
+message OnePasswordConnectTokenMetadata {
+  string device_uuid = 1;
+  string version = 2;
 }
 
 message DockerPort {
