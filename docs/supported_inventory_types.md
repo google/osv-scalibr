@@ -136,6 +136,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key              | `secrets/stripesecretkey`        |
 | Stripe Restricted Key          | `secrets/striperestrictedkey`    |
 | Stripe Webhook Secret          | `secrets/stripewebhooksecret`    |
+| 1Password Secret Key           | `secrets/onepasswordsecretkey`   |
+| 1Password Service Token        | `secrets/onepasswordservicetoken`|
+| 1Password Recovery Code        | `secrets/onepasswordrecoverycode`|
 
 ### Container inventory
 
