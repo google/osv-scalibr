@@ -104,29 +104,31 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                          | Extractor Plugin                 |
-|-------------------------------|----------------------------------|
-| Anthropic API key             | `secrets/anthropicapikey`        |
-| Azure Token                   | `secrets/azuretoken`             |
-| DigitalOcean API key          | `secrets/digitaloceanapikey`     |
-| Slack Token                   | `secrets/slacktoken`             |
-| Docker hub PAT                | `secrets/dockerhubpat`           |
-| GCP API key                   | `secrets/gcpapikey`              |
-| GCP Express Mode API key      | `secrets/gcpexpressmode`         |
-| GCP service account key       | `secrets/gcpsak`                 |
-| Gitlab PAT                    | `secrets/gitlabpat`              |
-| Grok xAI API key              | `secrets/grokxaiapikey`          |
-| Grok xAI Management key       | `secrets/grokxaimanagementkey`   |
-| Hashicorp Vault token         | `secrets/hashicorpvaulttoken`    |
-| Hashicorp Vault AppRole token | `secrets/hashicorpvaultapprole`  |
-| Hugging Face API key          | `secrets/huggingfaceapikey`      |
-| OpenAI API key                | `secrets/openai`                 |
-| Perplexity API key            | `secrets/perplexityapikey`       |
-| Postman API key               | `secrets/postmanapikey`          |
-| Postman Collection token      | `secrets/postmancollectiontoken` |
-| PEM/OpenSSH Private key       | `secrets/privatekey`             |
-| RubyGems API key              | `secrets/rubygemsapikey`         |
-| Tink keyset                   | `secrets/tinkkeyset`             |
+| Type                              | Extractor Plugin                  |
+|-----------------------------------|-----------------------------------|
+| Anthropic API key                 | `secrets/anthropicapikey`         |
+| Azure Token                       | `secrets/azuretoken`              |
+| DigitalOcean API key              | `secrets/digitaloceanapikey`      |
+| Slack Application Level Token     | `secrets/slackappleveltoken`      |
+| Slack Configuration Access Token  | `secrets/slackconfigaccesstoken`  |
+| Slack Configuration Refresh Token | `secrets/slackconfigrefreshtoken` |
+| Docker hub PAT                    | `secrets/dockerhubpat`            |
+| GCP API key                       | `secrets/gcpapikey`               |
+| GCP Express Mode API key          | `secrets/gcpexpressmode`          |
+| GCP service account key           | `secrets/gcpsak`                  |
+| Gitlab PAT                        | `secrets/gitlabpat`               |
+| Grok xAI API key                  | `secrets/grokxaiapikey`           |
+| Grok xAI Management key           | `secrets/grokxaimanagementkey`    |
+| Hashicorp Vault token             | `secrets/hashicorpvaulttoken`     |
+| Hashicorp Vault AppRole token     | `secrets/hashicorpvaultapprole`   |
+| Hugging Face API key              | `secrets/huggingfaceapikey`       |
+| OpenAI API key                    | `secrets/openai`                  |
+| Perplexity API key                | `secrets/perplexityapikey`        |
+| Postman API key                   | `secrets/postmanapikey`           |
+| Postman Collection token          | `secrets/postmancollectiontoken`  |
+| PEM/OpenSSH Private key           | `secrets/privatekey`              |
+| RubyGems API key                  | `secrets/rubygemsapikey`          |
+| Tink keyset                       | `secrets/tinkkeyset`              |
 
 ### Container inventory
 

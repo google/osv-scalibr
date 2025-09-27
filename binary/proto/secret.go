@@ -109,7 +109,11 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
-		return slackTokenToProto(t), nil
+		return slackAppConfigAccessTokenToProto(t), nil
+	case velesslacktoken.SlackAppConfigRefreshToken:
+		return slackAppConfigRefreshTokenToProto(t), nil
+	case velesslacktoken.SlackAppLevelToken:
+		return slackAppLevelTokenToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -169,10 +173,31 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 		},
 	}
 }
-func slackTokenToProto(s velesslacktoken.SlackAppConfigAccessToken) *spb.SecretData {
+
+func slackAppLevelTokenToProto(s velesslacktoken.SlackAppLevelToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackAppLevelToken_{
+			SlackAppLevelToken: &spb.SecretData_SlackAppLevelToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func slackAppConfigAccessTokenToProto(s velesslacktoken.SlackAppConfigAccessToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SlackAppConfigAccessToken_{
 			SlackAppConfigAccessToken: &spb.SecretData_SlackAppConfigAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func slackAppConfigRefreshTokenToProto(s velesslacktoken.SlackAppConfigRefreshToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackAppConfigRefreshToken_{
+			SlackAppConfigRefreshToken: &spb.SecretData_SlackAppConfigRefreshToken{
 				Token: s.Token,
 			},
 		},
