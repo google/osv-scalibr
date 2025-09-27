@@ -177,7 +177,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		}
 		newPKG, newPaths, err := openAndExtractFromFile(path, fs)
 		if err != nil {
-			log.Warnf("openAndExtractFromFile(%s): %w", path, err)
+			log.Warnf("openAndExtractFromFile(%s): %v", path, err)
 			continue
 		}
 		found[path] = true

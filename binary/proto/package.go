@@ -80,6 +80,15 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		annotations = append(annotations, AnnotationToProto(a))
 	}
 
+	var cii *spb.Package_ContainerImageMetadataIndexes
+
+	if pkg.LayerMetadata != nil && pkg.LayerMetadata.ParentContainer != nil {
+		cii = &spb.Package_ContainerImageMetadataIndexes{
+			ContainerImageIndex: int32(pkg.LayerMetadata.ParentContainer.Index),
+			LayerIndex:          int32(pkg.LayerMetadata.Index),
+		}
+	}
+
 	packageProto := &spb.Package{
 		Name:       pkg.Name,
 		Version:    pkg.Version,
@@ -89,12 +98,12 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		Locations:  pkg.Locations,
 		// TODO(b/400910349): Stop setting the deprecated fields
 		// once integrators no longer read them.
-		ExtractorDeprecated:   firstPluginName,
-		Plugins:               pkg.Plugins,
-		AnnotationsDeprecated: annotations,
-		ExploitabilitySignals: exps,
-		LayerDetails:          layerDetailsToProto(pkg.LayerDetails),
-		Licenses:              pkg.Licenses,
+		ExtractorDeprecated:           firstPluginName,
+		Plugins:                       pkg.Plugins,
+		AnnotationsDeprecated:         annotations,
+		ExploitabilitySignals:         exps,
+		ContainerImageMetadataIndexes: cii,
+		Licenses:                      pkg.Licenses,
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto
@@ -107,19 +116,6 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 	return &spb.SourceCodeIdentifier{
 		Repo:   s.Repo,
 		Commit: s.Commit,
-	}
-}
-
-func layerDetailsToProto(ld *extractor.LayerDetails) *spb.LayerDetails {
-	if ld == nil {
-		return nil
-	}
-	return &spb.LayerDetails{
-		Index:       int32(ld.Index),
-		DiffId:      ld.DiffID,
-		ChainId:     ld.ChainID,
-		Command:     ld.Command,
-		InBaseImage: ld.InBaseImage,
 	}
 }
 
@@ -391,7 +387,6 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Plugins:               pkgProto.GetPlugins(),
 		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
-		LayerDetails:          layerDetailsToStruct(pkgProto.GetLayerDetails()),
 		Metadata:              metadataToStruct(pkgProto),
 		Licenses:              pkgProto.GetLicenses(),
 	}
@@ -405,19 +400,6 @@ func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.Source
 	return &extractor.SourceCodeIdentifier{
 		Repo:   s.Repo,
 		Commit: s.Commit,
-	}
-}
-
-func layerDetailsToStruct(ld *spb.LayerDetails) *extractor.LayerDetails {
-	if ld == nil {
-		return nil
-	}
-	return &extractor.LayerDetails{
-		Index:       int(ld.GetIndex()),
-		DiffID:      ld.GetDiffId(),
-		ChainID:     ld.GetChainId(),
-		Command:     ld.GetCommand(),
-		InBaseImage: ld.GetInBaseImage(),
 	}
 }
 

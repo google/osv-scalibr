@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"path"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -59,6 +60,10 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 	f, err := input.ScanRoot.FS.Open(apkInstalledDB)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Nothing to annotate if we're not running on Alpine.
+			return nil
+		}
 		return err
 	}
 	defer f.Close()

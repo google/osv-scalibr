@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This test uses datasource package in order to test auth data
 package datasource
 
 import (
@@ -28,7 +27,7 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 
 	// Create original client with multiple registries
-	client, _ := NewMavenRegistryAPIClient(MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	client, _ := NewMavenRegistryAPIClient(t.Context(), MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
 	testRegistry1 := MavenRegistry{
 		URL:             "https://test1.maven.org/maven2/",
 		ID:              "test1",
@@ -39,10 +38,10 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 		ID:               "test2",
 		SnapshotsEnabled: true,
 	}
-	if err := client.AddRegistry(testRegistry1); err != nil {
+	if err := client.AddRegistry(t.Context(), testRegistry1); err != nil {
 		t.Fatalf("failed to add registry %s: %v", testRegistry1.URL, err)
 	}
-	if err := client.AddRegistry(testRegistry2); err != nil {
+	if err := client.AddRegistry(t.Context(), testRegistry2); err != nil {
 		t.Fatalf("failed to add registry %s: %v", testRegistry2.URL, err)
 	}
 

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -41,7 +41,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "nil package",
 			m: &metadata.Metadata{
-				ToolName: "name",
+				NodeJsVersion: "name",
 			},
 			p:    nil,
 			want: nil,
@@ -49,14 +49,14 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set metadata",
 			m: &metadata.Metadata{
-				ToolName: "name",
+				NodeJsVersion: "name",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
-						ToolName: "name",
+				Metadata: &pb.Package_NvmMetadata{
+					NvmMetadata: &pb.NvmMetadata{
+						NodejsVersion: "name",
 					},
 				},
 			},
@@ -64,21 +64,21 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "override metadata",
 			m: &metadata.Metadata{
-				ToolName: "another-name",
+				NodeJsVersion: "another-name",
 			},
 			p: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
-						ToolName: "name",
+				Metadata: &pb.Package_NvmMetadata{
+					NvmMetadata: &pb.NvmMetadata{
+						NodejsVersion: "name",
 					},
 				},
 			},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
-						ToolName: "another-name",
+				Metadata: &pb.Package_NvmMetadata{
+					NvmMetadata: &pb.NvmMetadata{
+						NodejsVersion: "another-name",
 					},
 				},
 			},
@@ -86,16 +86,14 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set all fields",
 			m: &metadata.Metadata{
-				ToolName:    "name",
-				ToolVersion: "version",
+				NodeJsVersion: "name",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
-						ToolName:    "name",
-						ToolVersion: "version",
+				Metadata: &pb.Package_NvmMetadata{
+					NvmMetadata: &pb.NvmMetadata{
+						NodejsVersion: "name",
 					},
 				},
 			},
@@ -119,9 +117,9 @@ func TestSetProto(t *testing.T) {
 				return
 			}
 
-			got := metadata.ToStruct(p.GetAsdfMetadata())
+			got := metadata.ToStruct(p.GetNvmMetadata())
 			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetAsdfMetadata(), diff)
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetNvmMetadata(), diff)
 			}
 		})
 	}
@@ -130,7 +128,7 @@ func TestSetProto(t *testing.T) {
 func TestToStruct(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *pb.AsdfMetadata
+		m    *pb.NvmMetadata
 		want *metadata.Metadata
 	}{
 		{
@@ -140,22 +138,20 @@ func TestToStruct(t *testing.T) {
 		},
 		{
 			desc: "some fields",
-			m: &pb.AsdfMetadata{
-				ToolName: "name",
+			m: &pb.NvmMetadata{
+				NodejsVersion: "name",
 			},
 			want: &metadata.Metadata{
-				ToolName: "name",
+				NodeJsVersion: "name",
 			},
 		},
 		{
 			desc: "all fields",
-			m: &pb.AsdfMetadata{
-				ToolName:    "name",
-				ToolVersion: "version",
+			m: &pb.NvmMetadata{
+				NodejsVersion: "name",
 			},
 			want: &metadata.Metadata{
-				ToolName:    "name",
-				ToolVersion: "version",
+				NodeJsVersion: "name",
 			},
 		},
 	}
@@ -175,8 +171,8 @@ func TestToStruct(t *testing.T) {
 
 			gotP := &pb.Package{}
 			wantP := &pb.Package{
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: tc.m,
+				Metadata: &pb.Package_NvmMetadata{
+					NvmMetadata: tc.m,
 				},
 			}
 			got.SetProto(gotP)

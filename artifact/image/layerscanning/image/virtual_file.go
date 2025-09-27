@@ -143,6 +143,7 @@ func (f *virtualFile) Info() (fs.FileInfo, error) {
 // ========================================================
 // fs.FileInfo METHODS
 // ========================================================
+
 func (f *virtualFile) Size() int64 {
 	return f.size
 }

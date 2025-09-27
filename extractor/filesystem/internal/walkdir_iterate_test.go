@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// These are the same tests as in io/fs/walk_test.go, but ignoring the order of walking.
 package internal
 
 import (
@@ -30,6 +29,8 @@ import (
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
+
+// These are the same tests as in io/fs/walk_test.go, but ignoring the order of walking.
 
 type Node struct {
 	name    string

@@ -32,7 +32,7 @@ func canonicalizeRubyGemVersion(str string) string {
 			continue
 		}
 
-		isDigit := c >= 48 && c <= 57
+		isDigit := isASCIIDigit(c)
 
 		if checkPrevious && previousWasDigit != isDigit {
 			res += "."

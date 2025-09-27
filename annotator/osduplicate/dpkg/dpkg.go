@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path"
 	"strings"
 
@@ -64,6 +65,10 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 	dirs, err := diriterate.ReadDir(input.ScanRoot.FS, dpkgInfoDirPath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Nothing to annotate if we're not running on a DPKG based distro.
+			return nil
+		}
 		return err
 	}
 	defer dirs.Close()

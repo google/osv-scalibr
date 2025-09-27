@@ -50,8 +50,8 @@ func NewAPIKeyDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: pmakMaxLen,
 		Re:     pmakRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return PostmanAPIKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return PostmanAPIKey{Key: string(b)}, true
 		},
 	}
 }
@@ -62,8 +62,8 @@ func NewCollectionTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: pmatMaxLen,
 		Re:     pmatRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return PostmanCollectionToken{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return PostmanCollectionToken{Key: string(b)}, true
 		},
 	}
 }
