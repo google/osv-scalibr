@@ -685,7 +685,6 @@ message SecretData {
     SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
     SlackAppLevelToken slack_app_level_token = 34;
     SlackAppConfigAccessToken slack_app_config_access_token = 35;
-
   }
 
   message GCPSAK {
