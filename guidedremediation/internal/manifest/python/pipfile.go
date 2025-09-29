@@ -32,8 +32,8 @@ import (
 
 // Pipfile is a struct that represents the contents of a Pipfile.
 type Pipfile struct {
-	Packages    map[string]interface{} `toml:"packages"`
-	DevPackages map[string]interface{} `toml:"dev-packages"`
+	Packages    map[string]any `toml:"packages"`
+	DevPackages map[string]any `toml:"dev-packages"`
 }
 
 type pipfileReadWriter struct{}
@@ -116,7 +116,7 @@ func (r pipfileReadWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manife
 
 // parsePipfileDependencies converts a map of dependencies from a Pipfile's [packages] or
 // [dev-packages] section into a slice of resolve.RequirementVersion, respecting the original key order.
-func parsePipfileDependencies(deps map[string]interface{}, keys []string, dev bool) []resolve.RequirementVersion {
+func parsePipfileDependencies(deps map[string]any, keys []string, dev bool) []resolve.RequirementVersion {
 	var reqs []resolve.RequirementVersion
 	if deps == nil {
 		return reqs
@@ -151,11 +151,11 @@ func parsePipfileDependencies(deps map[string]interface{}, keys []string, dev bo
 // extractVersionConstraint parses a single dependency entry from a Pipfile.
 // It returns the version constraint string and a boolean indicating if parsing was successful.
 // It skips over non-version dependencies like git or path references, returning false in those cases.
-func extractVersionConstraint(name string, details interface{}) (string, bool) {
+func extractVersionConstraint(name string, details any) (string, bool) {
 	switch v := details.(type) {
 	case string:
 		return v, true
-	case map[string]interface{}:
+	case map[string]any:
 		if vs, ok := v["version"].(string); ok {
 			return vs, true
 		} else if _, ok := v["git"]; ok {
