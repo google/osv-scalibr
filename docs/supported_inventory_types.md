@@ -130,6 +130,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Perplexity API key             | `secrets/perplexityapikey`       |
 | Postman API key                | `secrets/postmanapikey`          |
 | Postman Collection token       | `secrets/postmancollectiontoken` |
+| reCAPTCHA Secret               | `secrets/recaptcha`              |
 | PEM/OpenSSH Private key        | `secrets/privatekey`             |
 | RubyGems API key               | `secrets/rubygemsapikey`         |
 | Tink keyset                    | `secrets/tinkkeyset`             |

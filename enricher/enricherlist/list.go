@@ -43,6 +43,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/recaptcha"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 )
 
@@ -92,6 +93,7 @@ var (
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewAPIValidator(), "secrets/postmanapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewCollectionValidator(), "secrets/postmancollectiontokenvalidate", 0),
+		fromVeles(recaptcha.NewValidator(), "secrets/recaptchavalidate", 0),
 		fromVeles(github.NewAppS2STokenValidator(), "secrets/githubapps2stokenvalidate", 0),
 		fromVeles(github.NewAppU2STokenValidator(), "secrets/githubappu2stokenvalidate", 0),
 		fromVeles(github.NewOAuthTokenValidator(), "secrets/githuboauthtokenvalidate", 0),

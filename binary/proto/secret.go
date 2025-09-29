@@ -37,6 +37,7 @@ import (
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	velesrecaptcha "github.com/google/osv-scalibr/veles/secrets/recaptcha"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
@@ -164,6 +165,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case velesrecaptcha.CaptchaSecret:
+		return recaptchaSecretToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -499,6 +502,16 @@ func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
 	}
 }
 
+func recaptchaSecretToProto(s velesrecaptcha.CaptchaSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_RecaptchaSecret{
+			RecaptchaSecret: &spb.SecretData_CaptchaSecret{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -651,6 +664,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
+	case *spb.SecretData_RecaptchaSecret:
+		return velesrecaptcha.CaptchaSecret{Key: s.GetRecaptchaSecret().GetKey()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
