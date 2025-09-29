@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/osv-scalibr/veles"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -196,7 +195,6 @@ func TestValidatorAPI(t *testing.T) {
 func TestValidatorAPI_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"api_key_blocked": false, "api_key_disabled": false}`))
 	}))
@@ -213,9 +211,9 @@ func TestValidatorAPI_ContextCancellation(t *testing.T) {
 
 	key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
 
-	// Create context with short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
@@ -377,7 +375,6 @@ func TestValidatorManagement(t *testing.T) {
 func TestValidatorManagement_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"code":7,"message":"team mismatch"}`))
 	}))
@@ -394,9 +391,9 @@ func TestValidatorManagement_ContextCancellation(t *testing.T) {
 
 	key := grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}
 
-	// Create context with short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)

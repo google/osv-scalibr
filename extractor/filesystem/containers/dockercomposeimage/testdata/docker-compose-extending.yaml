@@ -1,0 +1,9 @@
+name: myApp
+
+x-base: &base
+  image: ghcr.io/acme/api:1.2.0
+
+services:
+  api-stable:
+    <<: *base
+    restart: unless-stopped

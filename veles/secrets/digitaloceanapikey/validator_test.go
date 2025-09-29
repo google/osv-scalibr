@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
@@ -155,7 +154,6 @@ func TestValidator(t *testing.T) {
 func TestValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -171,9 +169,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 
 	key := digitaloceanapikey.DigitaloceanAPIToken{Key: validatorTestKey}
 
-	// Create context with a short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)

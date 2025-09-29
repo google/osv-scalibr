@@ -34,20 +34,6 @@ func isOnlyDigits(str string) bool {
 	return true
 }
 
-// isASCIIDigit returns true if the given rune is an ASCII digit.
-//
-// Unicode digits are not considered ASCII digits by this function.
-func isASCIIDigit(c rune) bool {
-	return c >= 48 && c <= 57
-}
-
-// isASCIILetter returns true if the given rune is an ASCII letter.
-//
-// Unicode letters are not considered ASCII letters by this function.
-func isASCIILetter(c rune) bool {
-	return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
-}
-
 // shouldBeTrimmed checks if the given rune should be trimmed when parsing redHatVersion components
 func shouldBeTrimmed(r rune) bool {
 	return !isASCIILetter(r) && !isASCIIDigit(r) && r != '~' && r != '^'
