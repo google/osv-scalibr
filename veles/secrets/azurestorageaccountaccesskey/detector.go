@@ -32,7 +32,7 @@ const maxTokenLength = 88
 //
 // References:
 // - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
-var keyRe = regexp.MustCompile(`[>'=?#]?[A-Za-z0-9\/+]{86}==`)
+var keyRe = regexp.MustCompile(`(?i)(?:(?:AZURE|ACCOUNT|STORAGE|ACCESS)[_.-]?){1,4}KEY.{0,5}?([>'=?#]?[A-Za-z0-9+\/]{86}==)`)
 
 // NewDetector returns a new simpletoken.Detector
 // that matches Azure Storage Account Access Key and returns the appropriate key type.
@@ -41,7 +41,13 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) veles.Secret {
-			return AzureStorageAccountAccessKey{Key: string(b)}
+			// Extract the capture group (the actual key)
+			matches := keyRe.FindSubmatch(b)
+			if len(matches) < 1 {
+				return nil // matches[0] is the full match, matches[1] is the first capture group
+			} else {
+				return AzureStorageAccountAccessKey{Key: string(matches[1])}
+			}
 		},
 	}
 }

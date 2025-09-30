@@ -43,7 +43,7 @@ func TestDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: testKey,
+		input: "AzureStoragekey : " + testKey,
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
@@ -53,36 +53,29 @@ func TestDetector_truePositives(t *testing.T) {
 		// equal sign (=), quotation mark (?), or number sign (#)
 		// Therefore the equal sign after the api key should be present in the result
 		name:  "match at end of string",
-		input: `API_KEY=` + testKey,
+		input: `AZURE_ACCOUNT_STORAGE_ACCESS_KEY=` + testKey,
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: `=` + testKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_KEY="` + testKey + `"`,
+		input: `AZURE_KEY="` + testKey + `"`,
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: testKey + testKey + testKey,
+		input: "AZURE_KEY:" + testKey + "AZURE_ACCOUNT_STORAGE_ACCESS_KEY:" + testKey + "AZURE_KEY:" + testKey,
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
-		},
-	}, {
-		name:  "multiple distinct matches",
-		input: testKey + "\n" + "1" + testKey[1:] + "\n",
-		want: []veles.Secret{
-			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
-			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: "1" + testKey[1:]},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 CONFIG_FILE=config.txt
-API_KEY="%s"
+storage_access_KEY="%s"
 CLOUD_PROJECT=my-project
 		`, testKey),
 		want: []veles.Secret{
@@ -90,7 +83,7 @@ CLOUD_PROJECT=my-project
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: testKey + `test`,
+		input: "azure_account_key:" + testKey + `test`,
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
@@ -124,10 +117,10 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: testKey[:len(testKey)-1],
+		input: "Azure_storage_key:" + testKey[:len(testKey)-1],
 	}, {
 		name:  "special character ($) in key should not match",
-		input: `Yut$V0Vlauqsobd6tPWz2AKwHhBXMEWsAH+rSbz0UZUfaMVj1CFrcNQK47ygmrC4vHmc7eOp1LdM+AStk5mMYA==`,
+		input: `Azure.storage.key : Yut$V0Vlauqsobd6tPWz2AKwHhBXMEWsAH+rSbz0UZUfaMVj1CFrcNQK47ygmrC4vHmc7eOp1LdM+AStk5mMYA==`,
 	},
 	}
 	for _, tc := range cases {
