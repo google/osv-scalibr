@@ -16,6 +16,8 @@
 package resolution
 
 import (
+	"context"
+
 	"deps.dev/util/resolve"
 )
 
@@ -23,7 +25,7 @@ import (
 type ClientWithRegistries interface {
 	resolve.Client
 	// AddRegistries adds the specified registries to fetch data.
-	AddRegistries(registries []Registry) error
+	AddRegistries(ctx context.Context, registries []Registry) error
 }
 
 // Registry is the interface of a registry to fetch data.

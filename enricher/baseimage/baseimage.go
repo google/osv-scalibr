@@ -23,9 +23,9 @@ import (
 
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/opencontainers/go-digest"
 	"go.uber.org/multierr"
 )
 
@@ -107,55 +107,60 @@ func (*Enricher) RequiredPlugins() []string {
 
 // Enrich enriches the inventory with base image information from deps.dev.
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if inv.Packages == nil {
+	if inv.ContainerImageMetadata == nil {
 		return nil
 	}
 
 	// Map from chain ID to list of repositories it belongs to.
-	baseImageCache := make(map[string][]string)
+	chainIDToBaseImage := make(map[string][]*extractor.BaseImageDetails)
 	var enrichErr error
-	for _, pkg := range inv.Packages {
-		// Only enrich packages that have a layer details with a chain ID.
-		if pkg.LayerDetails == nil {
-			continue
-		}
-		if pkg.LayerDetails.ChainID == "" {
+	for _, cim := range inv.ContainerImageMetadata {
+		if cim.LayerMetadata == nil {
 			continue
 		}
 
-		// Validate the chain ID.
-		chainID, err := digest.Parse(pkg.LayerDetails.ChainID)
-		if err != nil {
-			enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to parse chain ID %q: %w", pkg.LayerDetails.ChainID, err))
-			continue
+		// Placeholder for the scanned image itself.
+		cim.BaseImages = [][]*extractor.BaseImageDetails{
+			[]*extractor.BaseImageDetails{},
 		}
 
-		repos, ok := baseImageCache[chainID.String()]
-		if !ok {
-			// Query deps.dev for the container image repository.
-			req := &Request{
-				ChainID: chainID.String(),
-			}
-			resp, err := e.client.QueryContainerImages(ctx, req)
-			if err != nil {
-				enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to query container images for chain ID %q: %w", chainID.String(), err))
+		for _, lm := range cim.LayerMetadata {
+			chainID := lm.ChainID.String()
+			// Only enrich layers that have a chain ID.
+			if chainID == "" {
 				continue
 			}
-			// If the layer exists in any base image, mark the package as in a base image.
-			if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
-				for _, result := range resp.Results {
-					if result.Repository != "" {
-						repos = append(repos, result.Repository)
+
+			baseImages, ok := chainIDToBaseImage[chainID]
+			if !ok {
+				// Query deps.dev for the container image repository.
+				req := &Request{
+					ChainID: chainID,
+				}
+				resp, err := e.client.QueryContainerImages(ctx, req)
+				if err != nil {
+					enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to query container images for chain ID %q: %w", chainID, err))
+					continue
+				}
+				// If the layer exists in any base image, mark the package as in a base image.
+				if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
+					for _, result := range resp.Results {
+						if result.Repository != "" {
+							baseImages = append(baseImages, &extractor.BaseImageDetails{
+								Repository: result.Repository,
+								Registry:   "docker.io", // Currently all deps.dev images are from the docker mirror.
+								ChainID:    lm.ChainID,
+								Plugin:     Name,
+							})
+						}
 					}
 				}
+				chainIDToBaseImage[chainID] = baseImages
 			}
-			baseImageCache[chainID.String()] = repos
-		}
 
-		for _, repo := range repos {
-			if repo != "" {
-				pkg.LayerDetails.InBaseImage = true
-				break
+			if len(baseImages) > 0 {
+				cim.BaseImages = append(cim.BaseImages, baseImages)
+				lm.BaseImageIndex = len(cim.BaseImages) - 1
 			}
 		}
 	}

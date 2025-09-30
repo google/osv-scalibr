@@ -132,7 +132,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	configsWithForward := []fileLocations{}
 	for _, path := range findSSHConfigs() {
 		ls := sshConfigContainsForward(path)
-		log.Debugf("ssh config: %q %v %v", path, ls)
+		log.Debugf("ssh config: %q %v", path, ls)
 		if len(ls) > 0 {
 			configsWithForward = append(configsWithForward, fileLocations{Path: path, LineNumbers: ls})
 			log.Debugf("Found ForwardConfig in %s in line(s): %v", path, ls)
@@ -154,7 +154,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	historyLocations := []fileLocations{}
 	for _, path := range findHistoryFiles() {
 		ls := findString(path, sshRegex)
-		log.Debugf("history file: %q %v %v", path, ls)
+		log.Debugf("history file: %q %v", path, ls)
 		if len(ls) > 0 {
 			historyLocations = append(historyLocations, fileLocations{Path: path, LineNumbers: ls})
 			log.Debugf("Found \"ssh .*-A\" in history file %s in line(s): %v", path, ls)

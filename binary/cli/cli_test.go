@@ -15,6 +15,7 @@
 package cli_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -224,6 +225,33 @@ func TestValidateFlags(t *testing.T) {
 				ImageLocal:   "nginx:latest",
 				ImageTarball: "image.tar",
 				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "valid extractor override",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "extractor override invalid format",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "extractor override invalid glob",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:["},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -889,6 +917,104 @@ func TestWriteScanResults(t *testing.T) {
 
 			if !strings.HasPrefix(gotStr, tc.wantContentPrefix) {
 				t.Errorf("%v.WriteScanResults(%v) want file with content prefix %q, got %q", tc.flags, result, tc.wantContentPrefix, gotStr)
+			}
+		})
+	}
+}
+
+type fakeFileAPI struct {
+	path string
+}
+
+func (f *fakeFileAPI) Path() string {
+	return f.path
+}
+
+func (f *fakeFileAPI) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func TestGetScanConfig_ExtractorOverride(t *testing.T) {
+	tests := []struct {
+		name              string
+		flags             *cli.Flags
+		fileAPI           *fakeFileAPI
+		wantExtractorName string
+		wantNumExtractors int
+		wantErr           error
+	}{
+		{
+			name: "no override",
+			flags: &cli.Flags{
+				Root:       "/",
+				ResultFile: "result.textproto",
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+		{
+			name: "extractor override plugin not found",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"nonexistent/plugin:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           cmpopts.AnyError,
+		},
+		{
+			name: "override matches",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantExtractorName: "python/wheelegg",
+			wantNumExtractors: 1,
+			wantErr:           nil,
+		},
+		{
+			name: "override does not match",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "abc/efg/foo.go"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := tt.flags.GetScanConfig()
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("GetScanConfig() error got diff (-want +got):\n%s", diff)
+			}
+
+			// If an error was expected, the rest of the checks are not necessary.
+			if tt.wantErr != nil {
+				return
+			}
+
+			if cfg.ExtractorOverride == nil && tt.wantNumExtractors > 0 {
+				t.Fatalf("ExtractorOverride is nil, want non-nil")
+			}
+			if cfg.ExtractorOverride != nil {
+				extractors := cfg.ExtractorOverride(tt.fileAPI)
+				if len(extractors) != tt.wantNumExtractors {
+					t.Fatalf("ExtractorOverride() returned %d extractors, want %d", len(extractors), tt.wantNumExtractors)
+				}
+				if tt.wantNumExtractors == 1 && extractors[0].Name() != tt.wantExtractorName {
+					t.Errorf("ExtractorOverride() returned extractor %q, want %q", extractors[0].Name(), tt.wantExtractorName)
+				}
 			}
 		})
 	}

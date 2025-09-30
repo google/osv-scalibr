@@ -17,6 +17,7 @@ package azurestorageaccountaccesskey
 import (
 	"regexp"
 
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
@@ -40,14 +41,17 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
-		FromMatch: func(b []byte) veles.Secret {
+		FromMatch: func(b []byte) (veles.Secret, bool) {
 			// Extract the capture group (the actual key)
 			matches := keyRe.FindSubmatch(b)
-			if len(matches) < 1 {
-				return nil // matches[0] is the full match, matches[1] is the first capture group
-			} else {
-				return AzureStorageAccountAccessKey{Key: string(matches[1])}
+			// In the regex we have the following matches:
+			// 1st is the entire string
+			// 2nd is the key
+			log.Warnf("minded +   ", matches)
+			if len(matches) != 2 {
+				return nil, false
 			}
+			return AzureStorageAccountAccessKey{Key: string(matches[1])}, true
 		},
 	}
 }

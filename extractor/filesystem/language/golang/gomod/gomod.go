@@ -105,7 +105,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// For versions below 1.17 extract indirect dependencies from the go.sum file
 	sumPkgs, err := extractFromSum(input)
 	if err != nil {
-		log.Warnf("could not extract from %s's sum file: %w", input.Path, err)
+		log.Debugf("could not extract from %s's sum file: %v", input.Path, err)
 		return inventory.Inventory{Packages: slices.Collect(maps.Values(pkgs))}, nil
 	}
 

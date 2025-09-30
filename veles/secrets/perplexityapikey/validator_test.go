@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/osv-scalibr/veles"
 	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -143,7 +142,6 @@ func TestValidator(t *testing.T) {
 func TestValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -159,9 +157,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 
 	key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
 
-	// Create context with short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
