@@ -17,7 +17,6 @@ package azurestorageaccountaccesskey
 import (
 	"regexp"
 
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
@@ -47,7 +46,6 @@ func NewDetector() veles.Detector {
 			// In the regex we have the following matches:
 			// 1st is the entire string
 			// 2nd is the key
-			log.Warnf("minded +   ", matches)
 			if len(matches) != 2 {
 				return nil, false
 			}

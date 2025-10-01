@@ -87,6 +87,37 @@ CLOUD_PROJECT=my-project
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
+	}, {
+		name: "match with command line",
+		input: fmt.Sprintf(`az storage container create
+			--account-name sample_username
+			--name sample-container
+			--account-key %s
+			--auth-mode key`, testKey),
+		want: []veles.Secret{
+			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
+		},
+	}, {
+		// the equal sign in the result is present according to Ms Documentation
+		// See comment at row 51
+		name: "match with connection string",
+		input: fmt.Sprintf(`
+			DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;
+AccountKey=%s;
+BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;
+TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;`, testKey),
+		want: []veles.Secret{
+			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: "=" + testKey},
+		},
+	}, {
+		// the equal sign is present as per Microsoft documentation
+		// See comment at row 51
+		name:  "match with env vars",
+		input: "AZURE_STORAGE_KEY=" + testKey,
+		want: []veles.Secret{
+			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: "=" + testKey},
+		},
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

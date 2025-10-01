@@ -154,7 +154,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	case velespostmanapikey.PostmanCollectionToken:
 		return postmanCollectionTokenToProto(t), nil
 	case velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey:
-		return azurestorageaccountaccessKeyToProto(t), nil
+		return azureStorageAccountAccessKeyToProto(t), nil
 	case veleshashicorpvault.Token:
 		return hashicorpVaultTokenToProto(t), nil
 	case veleshashicorpvault.AppRoleCredentials:
@@ -303,7 +303,7 @@ func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 	}
 }
 
-func azurestorageaccountaccessKeyToProto(s velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey) *spb.SecretData {
+func azureStorageAccountAccessKeyToProto(s velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AzureStorageAccountAccessKey_{
 			AzureStorageAccountAccessKey: &spb.SecretData_AzureStorageAccountAccessKey{
