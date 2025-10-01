@@ -137,7 +137,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
 	case velespgpass.Pgpass:
-		return pgpassToProto(t.Entry), nil
+		return pgpassToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -193,16 +193,6 @@ func gcpAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_GcpApiKey{
 			GcpApiKey: &spb.SecretData_GCPAPIKey{
 				Key: key,
-			},
-		},
-	}
-}
-
-func pgpassToProto(entry string) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_Pgpass_{
-			Pgpass: &spb.SecretData_Pgpass{
-				Entry: entry,
 			},
 		},
 	}
@@ -294,6 +284,22 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 				Block: pk.Block,
 				Der:   pk.Der,
 			},
+		},
+	}
+}
+
+func pgpassToProto(e velespgpass.Pgpass) *spb.SecretData {
+	ePB := &spb.SecretData_Pgpass{
+		Hostname: e.Hostname,
+		Port:     e.Port,
+		Database: e.Database,
+		Username: e.Username,
+		Password: e.Password,
+	}
+
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pgpass_{
+			Pgpass: ePB,
 		},
 	}
 }
@@ -438,6 +444,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_PrivateKey_:
 		return privatekeyToStruct(s.GetPrivateKey()), nil
+	case *spb.SecretData_Pgpass_:
+		return pgpassToStruct(s.GetPgpass()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_DockerHubPat_:
@@ -476,8 +484,6 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
-	case *spb.SecretData_Pgpass_:
-		return velespgpass.Pgpass{Entry: s.GetPgpass().GetEntry()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -520,6 +526,17 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func pgpassToStruct(ePB *spb.SecretData_Pgpass) velespgpass.Pgpass {
+	pgpass := velespgpass.Pgpass{
+		Hostname: ePB.GetHostname(),
+		Port:     ePB.GetPort(),
+		Database: ePB.GetDatabase(),
+		Username: ePB.GetUsername(),
+		Password: ePB.GetPassword(),
+	}
+	return pgpass
 }
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {

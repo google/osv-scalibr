@@ -116,7 +116,6 @@ type InitMap map[string][]InitFn
 // LINT.IfChange
 var (
 	// Language extractors.
-
 	// C++ source extractors.
 	CppSource = InitMap{conanlock.Name: {conanlock.New}}
 	// Java source extractors.
@@ -246,14 +245,16 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Credential extractors.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	SecretsExtractors = InitMap{
+		pgpass.Name: {pgpass.New},
+	}
+
+	SecretsDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
-		{pgpass.NewDetector(), "secrets/pgpass", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
 		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},
@@ -269,6 +270,12 @@ var (
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 	})
+
+	// Credential extractors.
+	Secrets = concat(
+		SecretsDetectors,
+		SecretsExtractors,
+	)
 
 	// Misc artifact extractors.
 	Misc = InitMap{

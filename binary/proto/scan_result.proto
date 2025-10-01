@@ -712,6 +712,14 @@ message SecretData {
     string token = 1;
   }
 
+  message Pgpass {
+    string hostname = 1;
+    string port = 2;
+    string database = 3;
+    string username = 4;
+    string password = 5;
+  }
+
   message AzureIdentityToken {
     string token = 1;
   }
@@ -757,10 +765,6 @@ message SecretData {
 
   message GCPAPIKey {
     string key = 1;
-  }
-
-  message Pgpass {
-    string entry = 1;
   }
 }
 
