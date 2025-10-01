@@ -28,8 +28,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 )
 
-// Pgpass is a Veles Secret that holds relevant information for a
-// postgres .pgpass file.
+// Pgpass is a Veles Secret that holds relevant information for a [Postgres Pgpass](https://www.postgresql.org/docs/current/libpq-pgpass.html).
 type Pgpass struct {
 	Hostname string
 	Port     string

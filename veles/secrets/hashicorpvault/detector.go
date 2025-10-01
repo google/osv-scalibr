@@ -51,8 +51,8 @@ func NewTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     vaultTokenRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return Token{Token: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return Token{Token: string(b)}, true
 		},
 	}
 }

@@ -95,7 +95,7 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 		defer func() {
 			dir := filepath.Dir(realDBPath)
 			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %w", dir, err)
+				log.Errorf("os.RemoveAll(%q): %v", dir, err)
 			}
 		}()
 	}

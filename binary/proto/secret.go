@@ -25,15 +25,20 @@ import (
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	velesegithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespgpass "github.com/google/osv-scalibr/veles/secrets/pgpass"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -116,6 +121,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
 		return grokXAIManagementKeyToProto(t), nil
+	case velesegithub.AppRefreshToken:
+		return githubAppRefreshTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -138,6 +145,18 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpAPIKeyToProto(t.Key), nil
 	case velespgpass.Pgpass:
 		return pgpassToProto(t), nil
+	case huggingfaceapikey.HuggingfaceAPIKey:
+		return huggingfaceAPIKeyToProto(t), nil
+	case velesstripeapikeys.StripeSecretKey:
+		return stripeSecretKeyToProto(t), nil
+	case velesstripeapikeys.StripeRestrictedKey:
+		return stripeRestrictedKeyToProto(t), nil
+	case velesstripeapikeys.StripeWebhookSecret:
+		return stripeWebhookSecretToProto(t), nil
+	case gcpoauth2client.Credentials:
+		return gcpOAuth2ClientCredentialsToProto(t), nil
+	case gcpoauth2access.Token:
+		return gcpOAuth2AccessTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -304,6 +323,16 @@ func pgpassToProto(e velespgpass.Pgpass) *spb.SecretData {
 	}
 }
 
+func githubAppRefreshTokenToProto(token string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GithubAppRefreshToken_{
+			GithubAppRefreshToken: &spb.SecretData_GithubAppRefreshToken{
+				Token: token,
+			},
+		},
+	}
+}
+
 func azureAccessTokenToProto(pk velesazuretoken.AzureAccessToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AzureAccessToken_{
@@ -361,6 +390,69 @@ func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCreden
 				RoleId:   s.RoleID,
 				SecretId: s.SecretID,
 				Id:       s.ID,
+			},
+		},
+	}
+}
+
+func huggingfaceAPIKeyToProto(s huggingfaceapikey.HuggingfaceAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Hugginface{
+			Hugginface: &spb.SecretData_HuggingfaceAPIKey{
+				Key:              s.Key,
+				Role:             s.Role,
+				FineGrainedScope: s.FineGrainedScope,
+			},
+		},
+	}
+}
+
+func stripeSecretKeyToProto(s velesstripeapikeys.StripeSecretKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeSecretKey_{
+			StripeSecretKey: &spb.SecretData_StripeSecretKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func stripeRestrictedKeyToProto(s velesstripeapikeys.StripeRestrictedKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeRestrictedKey_{
+			StripeRestrictedKey: &spb.SecretData_StripeRestrictedKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func stripeWebhookSecretToProto(s velesstripeapikeys.StripeWebhookSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_StripeWebhookSecret_{
+			StripeWebhookSecret: &spb.SecretData_StripeWebhookSecret{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func gcpOAuth2ClientCredentialsToProto(s gcpoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpOauth2ClientCredentials{
+			GcpOauth2ClientCredentials: &spb.SecretData_GCPOAuth2ClientCredentials{
+				Id:     s.ID,
+				Secret: s.Secret,
+			},
+		},
+	}
+}
+
+func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcpOauth2AccessToken{
+			GcpOauth2AccessToken: &spb.SecretData_GCPOAuth2AccessToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -464,6 +556,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
+	case *spb.SecretData_GithubAppRefreshToken_:
+		return velesegithub.AppRefreshToken{Token: s.GetGithubAppRefreshToken().GetToken()}, nil
 	case *spb.SecretData_AzureAccessToken_:
 		return velesazuretoken.AzureAccessToken{Token: s.GetAzureAccessToken().GetToken()}, nil
 	case *spb.SecretData_AzureIdentityToken_:
@@ -484,6 +578,24 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_Hugginface:
+		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
+	case *spb.SecretData_StripeSecretKey_:
+		return velesstripeapikeys.StripeSecretKey{
+			Key: s.GetStripeSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_StripeRestrictedKey_:
+		return velesstripeapikeys.StripeRestrictedKey{
+			Key: s.GetStripeRestrictedKey().GetKey(),
+		}, nil
+	case *spb.SecretData_StripeWebhookSecret_:
+		return velesstripeapikeys.StripeWebhookSecret{
+			Key: s.GetStripeWebhookSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_GcpOauth2ClientCredentials:
+		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
+	case *spb.SecretData_GcpOauth2AccessToken:
+		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -506,6 +618,28 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 		Pat: kPB.GetPat(),
 	}
 }
+
+func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfaceapikey.HuggingfaceAPIKey {
+	return huggingfaceapikey.HuggingfaceAPIKey{
+		Key:              kPB.GetKey(),
+		Role:             kPB.GetRole(),
+		FineGrainedScope: kPB.GetFineGrainedScope(),
+	}
+}
+
+func gcpOAuth2ClientCredentialsToStruct(kPB *spb.SecretData_GCPOAuth2ClientCredentials) gcpoauth2client.Credentials {
+	return gcpoauth2client.Credentials{
+		ID:     kPB.GetId(),
+		Secret: kPB.GetSecret(),
+	}
+}
+
+func gcpOAuth2AccessTokenToStruct(kPB *spb.SecretData_GCPOAuth2AccessToken) gcpoauth2access.Token {
+	return gcpoauth2access.Token{
+		Token: kPB.GetToken(),
+	}
+}
+
 func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	sak := velesgcpsak.GCPSAK{
 		PrivateKeyID:   sakPB.GetPrivateKeyId(),

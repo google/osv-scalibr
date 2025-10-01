@@ -87,6 +87,7 @@ func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath st
 
 	for index, layer := range layers.Layers {
 		diffID := digest.NewDigestFromEncoded(digest.SHA256, fmt.Sprintf("diff-id-%d", index))
+		chainID := digest.NewDigestFromEncoded(digest.SHA256, fmt.Sprintf("chain-id-%d", index))
 		command := fmt.Sprintf("command-%d", index)
 
 		// Build and edit layer contents
@@ -117,6 +118,7 @@ func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath st
 			TestDir:           filepath.Join(testDir, fmt.Sprintf("chainlayer-%d", index)),
 			Index:             index,
 			DiffID:            diffID,
+			ChainID:           chainID,
 			Command:           command,
 			Layer:             fakeLayer,
 			Files:             chainLayerContentsClone,

@@ -37,8 +37,8 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return DigitaloceanAPIToken{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return DigitaloceanAPIToken{Key: string(b)}, true
 		},
 	}
 }

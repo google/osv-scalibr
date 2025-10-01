@@ -174,7 +174,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		defer func() {
 			dir := filepath.Dir(absPath)
 			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %w", dir, err)
+				log.Errorf("os.RemoveAll(%q): %v", dir, err)
 			}
 		}()
 	}
