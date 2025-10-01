@@ -56,7 +56,6 @@ var (
 		".key":       true,
 		".der":       true,
 		".cer":       true,
-		".pgpass":    true,
 	}
 )
 
