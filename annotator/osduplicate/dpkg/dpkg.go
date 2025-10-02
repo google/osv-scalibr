@@ -17,20 +17,15 @@
 package dpkg
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
-	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate"
-	"github.com/google/osv-scalibr/extractor"
-	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/fs/diriterate"
+	"github.com/google/osv-scalibr/common/linux/dpkg"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -38,8 +33,7 @@ import (
 
 const (
 	// Name of the Annotator.
-	Name            = "vex/os-duplicate/dpkg"
-	dpkgInfoDirPath = "var/lib/dpkg/info"
+	Name = "vex/os-duplicate/dpkg"
 )
 
 // Annotator adds annotations to language packages that have already been found in DPKG OS packages.
@@ -63,15 +57,11 @@ func (Annotator) Requirements() *plugin.Capabilities {
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
 
-	dirs, err := diriterate.ReadDir(input.ScanRoot.FS, dpkgInfoDirPath)
+	it, err := dpkg.NewListFilePathIterator(input.ScanRoot.FS)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// Nothing to annotate if we're not running on a DPKG based distro.
-			return nil
-		}
-		return err
+		return fmt.Errorf("failed to create dpkg file iterator: %w", err)
 	}
-	defer dirs.Close()
+	defer it.Close()
 
 	errs := []error{}
 	for {
@@ -81,7 +71,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			break
 		}
 
-		f, err := dirs.Next()
+		filePath, err := it.Next(ctx)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				errs = append(errs, err)
@@ -89,27 +79,8 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			break
 		}
 
-		if !f.IsDir() && path.Ext(f.Name()) == ".list" {
-			if err := processListFile(path.Join(dpkgInfoDirPath, f.Name()), input.ScanRoot.FS, locationToPKGs); err != nil {
-				errs = append(errs, err)
-			}
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func processListFile(path string, fs scalibrfs.FS, locationToPKGs map[string][]*extractor.Package) error {
-	reader, err := fs.Open(path)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	s := bufio.NewScanner(reader)
-	for s.Scan() {
 		// Remove leading '/' since SCALIBR fs paths don't include that.
-		filePath := strings.TrimPrefix(s.Text(), "/")
+		filePath = strings.TrimPrefix(filePath, "/")
 		if pkgs, ok := locationToPKGs[filePath]; ok {
 			for _, pkg := range pkgs {
 				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
@@ -123,5 +94,6 @@ func processListFile(path string, fs scalibrfs.FS, locationToPKGs map[string][]*
 			}
 		}
 	}
-	return nil
+
+	return errors.Join(errs...)
 }

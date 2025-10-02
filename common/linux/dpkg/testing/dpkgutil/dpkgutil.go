@@ -41,6 +41,7 @@ func SetupDPKGInfo(t *testing.T, contents map[string]string, createFiles bool) s
 		if err != nil {
 			t.Fatalf("Error while creating file %q: %v", listPath, err)
 		}
+		defer listFile.Close()
 
 		for path := range strings.SplitSeq(content, "\n") {
 			path, isFolder := strings.CutSuffix(path, "/")
