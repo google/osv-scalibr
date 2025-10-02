@@ -91,6 +91,10 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 	}
 	registry.Parsed = u
 
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "maven")
+	}
+
 	// TODO: allow for manual specification of settings files
 	globalSettings := ParseMavenSettings(globalMavenSettingsFile())
 	userSettings := ParseMavenSettings(userMavenSettingsFile())
@@ -111,6 +115,9 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 
 // SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
 func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "maven")
+	}
 	m.localRegistry = localRegistry
 }
 
