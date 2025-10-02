@@ -35,8 +35,8 @@ const (
 	Name = "secrets/onepasswordconnecttoken"
 )
 
-// OnePasswordConnectTokenData represents the structure of a OnePassword Connect Token JSON file.
-type OnePasswordConnectTokenData struct {
+// TokenData represents the structure of a OnePassword Connect Token JSON file.
+type TokenData struct {
 	Verifier struct {
 		Salt      string `json:"salt"`
 		LocalHash string `json:"localHash"`
@@ -92,7 +92,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts OnePassword Connect Token information from JSON files.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var data OnePasswordConnectTokenData
+	var data TokenData
 
 	decoder := json.NewDecoder(input.Reader)
 	if err := decoder.Decode(&data); err != nil {
