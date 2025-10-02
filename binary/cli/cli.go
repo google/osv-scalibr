@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -548,11 +547,11 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 			if f.LocalRegistry != "" {
 				switch p.Name() {
 				case pomxmlnet.Name:
-					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
+					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(f.LocalRegistry)
 				case requirements.Name:
 					if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
 						// The resolution client is the native PyPI registry client.
-						client.SetLocalRegistry(filepath.Join(f.LocalRegistry, "pypi"))
+						client.SetLocalRegistry(f.LocalRegistry)
 					}
 				}
 			}
