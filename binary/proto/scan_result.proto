@@ -679,9 +679,13 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-        github_fine_grained_personal_access_token = 29;
+      github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
+    SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
+    SlackAppLevelToken slack_app_level_token = 34;
+    SlackAppConfigAccessToken slack_app_config_access_token = 35;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
   }
 
   message GCPSAK {
@@ -727,6 +731,10 @@ message SecretData {
     string key = 1;
   }
 
+  message AzureStorageAccountAccessKey{
+    string key = 1;
+  }
+
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
@@ -751,6 +759,18 @@ message SecretData {
 
   message GitlabPat {
     string pat = 1;
+  }
+
+  message SlackAppLevelToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigAccessToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigRefreshToken {
+    string token = 1;
   }
 
   message PostmanAPIKey {
