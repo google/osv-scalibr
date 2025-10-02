@@ -268,7 +268,7 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 
 	// Check that the pom file is stored locally.
-	filePath := filepath.Join(tempDir, path)
+	filePath := filepath.Join(tempDir, "maven", path)
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
