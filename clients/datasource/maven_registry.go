@@ -113,6 +113,12 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 	return client, nil
 }
 
+// NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient.
+// The provided `registry` URL is set as the default registry, with releases enabled.
+func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "")
+}
+
 // SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
 func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
 	if localRegistry != "" {

@@ -28,7 +28,7 @@ import (
 
 func TestGetProject(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
 	srv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
 	<project>
 	  <groupId>org.example</groupId>
@@ -107,7 +107,7 @@ func TestGetProjectSnapshot(t *testing.T) {
 
 func TestMultipleRegistry(t *testing.T) {
 	dft := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -197,7 +197,7 @@ func TestMultipleRegistry(t *testing.T) {
 
 func TestUpdateDefaultRegistry(t *testing.T) {
 	dft := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: dft.URL, ReleasesEnabled: true}, "")
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
