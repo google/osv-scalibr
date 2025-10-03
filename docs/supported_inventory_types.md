@@ -139,6 +139,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key             | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret             | `secrets/stripewebhooksecret`        |
 | Tink keyset                       | `secrets/tinkkeyset`                 |
+| Mysql Mylogin                     | `secrets/mysqlmylogin`               |
 
 ### Container inventory
 
