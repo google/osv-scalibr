@@ -679,7 +679,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-      github_fine_grained_personal_access_token = 29;
+        github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
@@ -731,7 +731,7 @@ message SecretData {
     string key = 1;
   }
 
-  message AzureStorageAccountAccessKey{
+  message AzureStorageAccountAccessKey {
     string key = 1;
   }
 
@@ -921,6 +921,9 @@ message ContainerImageMetadata {
   // The base images are ordered from the biggest base image containing all base
   // images to the smallest. e.g. [empty, postgresql, alpine]
   repeated BaseImageChain base_image_chains = 3;
+
+  // Key value map of OS info from /etc/os-release.
+  map<string, string> os_info = 4;
 }
 
 message BaseImageChain {
