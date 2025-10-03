@@ -26,6 +26,122 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
+func TestConffilePathIterator(t *testing.T) {
+	tests := []struct {
+		name      string
+		conffiles map[string]string
+		want      []string
+		wantOpen  []string
+	}{
+		{
+			name:      "empty info dir",
+			conffiles: map[string]string{},
+			want:      nil,
+		},
+		{
+			name: "No conffiles files",
+			conffiles: map[string]string{
+				"foo.txt": "foocontents",
+			},
+			want: nil,
+		},
+		{
+			name: "one empty conffiles file",
+			conffiles: map[string]string{
+				"foo.conffiles": "",
+			},
+			want: []string{""},
+		},
+		{
+			name: "one conffiles file with lines",
+			conffiles: map[string]string{
+				"foo.conffiles": "/foo\n/bar",
+			},
+			want: []string{"/foo", "/bar"},
+		},
+		{
+			name: "two conffiles files",
+			conffiles: map[string]string{
+				"foo.conffiles": "/foo\n/bar",
+				"baz.conffiles": "/baz",
+			},
+			want: []string{"/foo", "/bar", "/baz"},
+		},
+		{
+			name: "conffiles file with irrelevant files",
+			conffiles: map[string]string{
+				"foo.conffiles": "/foo\n/bar",
+				"baz.txt":       "bazcontents",
+			},
+			want: []string{"/foo", "/bar"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := dpkgutil.SetupDPKGInfo(t, tt.conffiles, false)
+			fs := scalibrfs.RealFSScanRoot(root).FS
+
+			it, err := NewConffilePathIterator(fs)
+			if err != nil {
+				t.Fatalf("NewConffilePathIterator() returned err: %v", err)
+			}
+			defer it.Close()
+
+			var got []string
+			for {
+				path, err := it.Next(context.Background())
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				if err != nil {
+					t.Fatalf("it.Next() returned err: %v", err)
+				}
+				got = append(got, path)
+			}
+
+			sort.Strings(got)
+			sort.Strings(tt.want)
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ConffilePathIterator returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestConffilePathIteratorContextCancel(t *testing.T) {
+	root := dpkgutil.SetupDPKGInfo(t, map[string]string{
+		"foo.conffiles": "/foo\n/bar",
+	}, false)
+	fs := scalibrfs.RealFSScanRoot(root).FS
+
+	ctx, cancel := context.WithCancel(context.Background())
+	it, err := NewConffilePathIterator(fs)
+	if err != nil {
+		t.Fatalf("NewConffilePathIterator() returned err: %v", err)
+	}
+	defer it.Close()
+	cancel()
+	_, err = it.Next(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("it.Next() after context cancel: got err %v, want context.Canceled", err)
+	}
+}
+
+func TestConffilePathIteratorMissingInfoDir(t *testing.T) {
+	sfs := scalibrfs.RealFSScanRoot(t.TempDir()).FS
+	it, err := NewConffilePathIterator(sfs)
+	if err != nil {
+		t.Fatalf("NewConffilePathIterator() with missing info dir: got err %v, want nil", err)
+	}
+	defer it.Close()
+	_, err = it.Next(context.Background())
+	if !errors.Is(err, io.EOF) {
+		t.Errorf("it.Next() with missing info dir: got err %v, want io.EOF", err)
+	}
+}
+
 func TestListFilePathIterator(t *testing.T) {
 	tests := []struct {
 		name     string

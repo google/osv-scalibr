@@ -32,22 +32,21 @@ const (
 	infoDirPath = "var/lib/dpkg/info"
 )
 
-// ListFilePathIterator is an iterator over all paths found in dpkg .list files.
-type ListFilePathIterator struct {
+// filePathIterator is an iterator over all paths found in dpkg files with a specific extension.
+type filePathIterator struct {
 	rootFs            scalibrfs.FS
 	dirs              *diriterate.DirIterator
 	currentFileReader io.ReadCloser
 	currentScanner    *bufio.Scanner
+	fileExt           string
 }
 
-// NewListFilePathIterator creates a new iterator over files installed by dpkg.
-// The caller is responsible for calling Close() on the returned iterator.
-func NewListFilePathIterator(rootFs scalibrfs.FS) (*ListFilePathIterator, error) {
+func newFilePathIterator(rootFs scalibrfs.FS, fileExt string) (*filePathIterator, error) {
 	if _, err := rootFs.Stat(infoDirPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// If info dir doesn't exist, dpkg is not installed or has no package info.
 			// Return an iterator that doesn't iterate over any files.
-			return &ListFilePathIterator{rootFs: rootFs}, nil
+			return &filePathIterator{rootFs: rootFs, fileExt: fileExt}, nil
 		}
 		return nil, err
 	}
@@ -55,14 +54,14 @@ func NewListFilePathIterator(rootFs scalibrfs.FS) (*ListFilePathIterator, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read dpkg info dir at %s: %w", infoDirPath, err)
 	}
-	return &ListFilePathIterator{rootFs: rootFs, dirs: dirs}, nil
+	return &filePathIterator{rootFs: rootFs, dirs: dirs, fileExt: fileExt}, nil
 }
 
 // Next returns the path of the next installed file.
 // It returns io.EOF when there are no more files.
-func (it *ListFilePathIterator) Next(ctx context.Context) (string, error) {
+func (it *filePathIterator) Next(ctx context.Context) (string, error) {
 	if err := ctx.Err(); err != nil {
-		return "", fmt.Errorf("dpkg.ListFilePathIterator.Next halted because of context error: %w", err)
+		return "", fmt.Errorf("dpkg.filePathIterator.Next halted because of context error: %w", err)
 	}
 
 	for {
@@ -75,7 +74,7 @@ func (it *ListFilePathIterator) Next(ctx context.Context) (string, error) {
 			it.currentScanner = nil
 		}
 
-		listPath, err := it.nextListFile()
+		listPath, err := it.nextFileWithExt()
 		if err != nil {
 			return "", err
 		}
@@ -89,7 +88,7 @@ func (it *ListFilePathIterator) Next(ctx context.Context) (string, error) {
 	}
 }
 
-func (it *ListFilePathIterator) nextListFile() (string, error) {
+func (it *filePathIterator) nextFileWithExt() (string, error) {
 	if it.dirs == nil {
 		return "", io.EOF
 	}
@@ -99,14 +98,14 @@ func (it *ListFilePathIterator) nextListFile() (string, error) {
 			return "", err
 		}
 
-		if !f.IsDir() && path.Ext(f.Name()) == ".list" {
+		if !f.IsDir() && path.Ext(f.Name()) == it.fileExt {
 			return path.Join(infoDirPath, f.Name()), nil
 		}
 	}
 }
 
 // Close closes the iterator and releases any resources.
-func (it *ListFilePathIterator) Close() error {
+func (it *filePathIterator) Close() error {
 	var errs []error
 	if it.currentFileReader != nil {
 		if err := it.currentFileReader.Close(); err != nil {
@@ -119,4 +118,34 @@ func (it *ListFilePathIterator) Close() error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// ListFilePathIterator is an iterator over all paths found in dpkg .list files.
+type ListFilePathIterator struct {
+	*filePathIterator
+}
+
+// NewListFilePathIterator creates a new iterator over files installed by dpkg.
+// The caller is responsible for calling Close() on the returned iterator.
+func NewListFilePathIterator(rootFs scalibrfs.FS) (*ListFilePathIterator, error) {
+	it, err := newFilePathIterator(rootFs, ".list")
+	if err != nil {
+		return nil, err
+	}
+	return &ListFilePathIterator{it}, nil
+}
+
+// ConffilePathIterator is an iterator over all paths found in dpkg .conffiles files.
+type ConffilePathIterator struct {
+	*filePathIterator
+}
+
+// NewConffilePathIterator creates a new iterator over conffiles managed by dpkg.
+// The caller is responsible for calling Close() on the returned iterator.
+func NewConffilePathIterator(rootFs scalibrfs.FS) (*ConffilePathIterator, error) {
+	it, err := newFilePathIterator(rootFs, ".conffiles")
+	if err != nil {
+		return nil, err
+	}
+	return &ConffilePathIterator{it}, nil
 }
