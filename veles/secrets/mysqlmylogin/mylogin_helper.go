@@ -1,3 +1,5 @@
+// this parser has been ispired by the https://github.com/PyMySQL/myloginpath project
+
 package mysqlmylogin
 
 import (
