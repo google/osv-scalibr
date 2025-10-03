@@ -686,6 +686,7 @@ message SecretData {
     SlackAppLevelToken slack_app_level_token = 34;
     SlackAppConfigAccessToken slack_app_config_access_token = 35;
     AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
+    MysqlMyloginSection mysql_mylogin_section = 37;
   }
 
   message GCPSAK {
@@ -808,6 +809,17 @@ message SecretData {
   message GithubAppUserToServerToken {
     string token = 1;
   }
+
+  message MysqlMyloginSection {
+    string section_name = 1;
+    string user = 2;
+    string password = 3;
+    string host = 4;
+    string port = 5;
+    string socket = 6;
+  }
+
+
 
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset

@@ -36,6 +36,7 @@ import (
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	velesmysqlmylogin "github.com/google/osv-scalibr/veles/secrets/mysqlmylogin"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -161,6 +162,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case velesmysqlmylogin.MysqlMyloginSection:
+		return mysqlMyloginSectionToProto(t), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
@@ -249,6 +252,23 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func mysqlMyloginSectionToProto(e velesmysqlmylogin.MysqlMyloginSection) *spb.SecretData {
+	ePB := &spb.SecretData_MysqlMyloginSection{
+		SectionName: e.SectionName,
+		User:        e.User,
+		Password:    e.Password,
+		Host:        e.Host,
+		Port:        e.Port,
+		Socket:      e.Socket,
+	}
+
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MysqlMyloginSection_{
+			MysqlMyloginSection: ePB,
 		},
 	}
 }
@@ -628,6 +648,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_MysqlMyloginSection_:
+		return mysqlMyloginSectionToStruct(s.GetMysqlMyloginSection()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
 	case *spb.SecretData_GitlabPat_:
@@ -790,6 +812,18 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func mysqlMyloginSectionToStruct(ePB *spb.SecretData_MysqlMyloginSection) velesmysqlmylogin.MysqlMyloginSection {
+	mysqlmylogin := velesmysqlmylogin.MysqlMyloginSection{
+		SectionName: ePB.GetSectionName(),
+		User:        ePB.GetUser(),
+		Password:    ePB.GetPassword(),
+		Host:        ePB.GetHost(),
+		Port:        ePB.GetPort(),
+		Socket:      ePB.GetSocket(),
+	}
+	return mysqlmylogin
 }
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {

@@ -105,6 +105,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -255,8 +256,8 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Secrets list extractors for credentials.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	// SecretsDetectors list extractors for credentials.
+	SecretsDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
@@ -293,6 +294,15 @@ var (
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 	})
+
+	SecretsExtractors = InitMap{
+		mysqlmylogin.Name: {mysqlmylogin.New},
+	}
+
+	Secrets = concat(
+		SecretsDetectors,
+		SecretsExtractors,
+	)
 
 	// Misc artifact extractors.
 	Misc = InitMap{
