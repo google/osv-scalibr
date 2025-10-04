@@ -190,11 +190,7 @@ type readWriter struct {
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(remote, local string) (manifest.ReadWriter, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
-	if err != nil {
-		return nil, err
-	}
+func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
 	return readWriter{MavenRegistryAPIClient: client}, nil
 }
 

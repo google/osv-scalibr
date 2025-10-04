@@ -19,6 +19,7 @@ import (
 	"context"
 
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
@@ -35,16 +36,16 @@ type DependencyCachePopulator interface {
 type FixVulnsOptions struct {
 	RemediationOptions
 
-	Manifest          string                       // Path to manifest file on disk.
-	Lockfile          string                       // Path to lockfile on disk.
-	Strategy          strategy.Strategy            // Remediation strategy to use.
-	MaxUpgrades       int                          // Maximum number of patches to apply. If <= 0 applies as many as possible.
-	NoIntroduce       bool                         // If true, do not apply patches that introduce new vulnerabilities.
-	NoMavenNewDepMgmt bool                         // If true, do not apply patches that introduce new dependency management.
-	MatcherClient     matcher.VulnerabilityMatcher // Matcher for vulnerability information.
-	ResolveClient     resolve.Client               // Client for dependency information.
-	DefaultRepository string                       // Default registry to fetch dependency information from.
-	DepCachePopulator DependencyCachePopulator     // Interface for populating the cache of the resolve.Client. Can be nil.
+	Manifest          string                             // Path to manifest file on disk.
+	Lockfile          string                             // Path to lockfile on disk.
+	Strategy          strategy.Strategy                  // Remediation strategy to use.
+	MaxUpgrades       int                                // Maximum number of patches to apply. If <= 0 applies as many as possible.
+	NoIntroduce       bool                               // If true, do not apply patches that introduce new vulnerabilities.
+	NoMavenNewDepMgmt bool                               // If true, do not apply patches that introduce new dependency management.
+	MatcherClient     matcher.VulnerabilityMatcher       // Matcher for vulnerability information.
+	ResolveClient     resolve.Client                     // Client for dependency information.
+	MavenClient       *datasource.MavenRegistryAPIClient // Client for fetching Maven dependency information, may be nil.
+	DepCachePopulator DependencyCachePopulator           // Interface for populating the cache of the resolve.Client. Can be nil.
 }
 
 // RemediationOptions are the configuration options for vulnerability remediation.
@@ -59,7 +60,6 @@ type RemediationOptions struct {
 	MaxDepth    int     // Maximum depth of dependency to consider vulnerabilities for (e.g. 1 for direct only)
 
 	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
-
 }
 
 // DefaultRemediationOptions creates a default initialized remediation configuration.
@@ -78,9 +78,9 @@ type ResolutionOptions struct {
 
 // UpdateOptions are the options for performing guidedremediation.Update().
 type UpdateOptions struct {
-	Manifest          string         // Path to manifest file on disk.
-	ResolveClient     resolve.Client // Client for dependency information.
-	DefaultRepository string         // Default registry to fetch dependency information from.
+	Manifest      string                             // Path to manifest file on disk.
+	ResolveClient resolve.Client                     // Client for dependency information.
+	MavenClient   *datasource.MavenRegistryAPIClient // Client for fetching Maven dependency information, may be nil.
 
 	IgnoreDev     bool           // Whether to ignore updates on dev dependencies
 	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
