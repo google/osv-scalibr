@@ -103,6 +103,8 @@ const (
 	TypeWordpress = "wordpress"
 	// TypeAsdf is pkg:asdf purl
 	TypeAsdf = "asdf"
+	// TypeMise is pkg:mise purl
+	TypeMise = "mise"
 	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
@@ -216,6 +218,7 @@ func validType(t string) bool {
 		TypeGooget:    true,
 		TypeWordpress: true,
 		TypeAsdf:      true,
+		TypeMise:      true,
 		TypeMacports:  true,
 		TypeWinget:    true,
 	}

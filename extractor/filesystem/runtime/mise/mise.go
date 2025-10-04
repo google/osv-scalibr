@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package asdf extracts the installed language runtime names and versions from asdf .tool-version files.
-package asdf
+// Package mise extracts the installed language runtime names and versions from mise.toml files.
+package mise
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
+	misemeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/mise/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -32,10 +31,10 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "runtime/asdf"
+	Name = "runtime/mise"
 )
 
-// Extractor extracts asdf tools.
+// Extractor extracts mise tools.
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
@@ -52,60 +51,43 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// FileRequired returns true if the file name is '.tool-versions'.
+// FileRequired returns true if the file name is 'mise.toml'.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return path.Base(api.Path()) == ".tool-versions"
+	return path.Base(api.Path()) == "mise.toml"
 }
 
-func parseToolLine(line string) (tool string, versions []string, ok bool) {
-	line = strings.TrimSpace(line)
-	if line == "" || strings.HasPrefix(line, "#") {
-		return "", nil, false
-	}
-	fields := strings.Fields(line)
-	if len(fields) < 2 {
-		return "", nil, false
-	}
-	return fields[0], fields[1:], true
+// miseTomlFile represents the structure of a mise.toml file.
+type miseTomlFile struct {
+	Tools map[string]string `toml:"tools"`
 }
 
-// Extract extracts packages from the asdf .tool-versions file.
+// Extract extracts packages from the mise.toml file.
 //
-// Reference: https://asdf-vm.com/manage/configuration.html#tool-versions
+// Reference: https://mise.jdx.dev/configuration.html
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	scanner := bufio.NewScanner(input.Reader)
-	var pkgs []*extractor.Package
+	var parsedTomlFile miseTomlFile
+	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract from %s: %w", input.Path, err)
+	}
 
-	for scanner.Scan() {
+	var pkgs []*extractor.Package
+	for tool, version := range parsedTomlFile.Tools {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
-		tool, versions, ok := parseToolLine(scanner.Text())
-		if !ok {
-			continue
-		}
-
-		for _, v := range versions {
-			// Skip entries that don't store version strings.
-			if v == "system" || strings.HasPrefix(v, "file:") {
-				continue
-			}
-			pkgs = append(pkgs, &extractor.Package{
-				Name:      tool,
-				Version:   v,
-				PURLType:  purl.TypeAsdf,
-				Locations: []string{input.Path},
-				Metadata: &asdfmeta.Metadata{
-					ToolName:    tool,
-					ToolVersion: v,
-				},
-			})
-		}
+		pkgs = append(pkgs, &extractor.Package{
+			Name:      tool,
+			Version:   version,
+			PURLType:  purl.TypeMise,
+			Locations: []string{input.Path},
+			Metadata: &misemeta.Metadata{
+				ToolName:    tool,
+				ToolVersion: version,
+			},
+		})
 	}
 
-	if err := scanner.Err(); err != nil {
-		return inventory.Inventory{}, err
-	}
 	return inventory.Inventory{Packages: pkgs}, nil
 }

@@ -129,6 +129,7 @@ message Package {
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
+    MiseMetadata mise_metadata = 58;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -615,6 +616,11 @@ message DockerContainersMetadata {
 }
 
 message AsdfMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
+}
+
+message MiseMetadata {
   string tool_name = 1;
   string tool_version = 2;
 }

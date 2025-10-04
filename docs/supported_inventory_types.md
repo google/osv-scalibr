@@ -102,10 +102,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Nim        | Nimble packages                           | `nim/nimble`                         |
 
 ### Language runtime managers
-| runtime    | Details                                     | Extractor Plugin(s)                  |
-|------------|---------------------------------------------|--------------------------------------|
-| asdf       | .tool-versions                              | `runtime/asdf`                       |
-| nvm        | .nvmrc                                      | `runtime/nvm`                        |
+| runtime | Details        | Extractor Plugin(s) |
+|---------|----------------|---------------------|
+| asdf    | .tool-versions | `runtime/asdf`      |
+| mise    | mise.toml      | `runtime/mise`      |
+| nvm     | .nvmrc         | `runtime/nvm`       |
 
 ### Secrets
 

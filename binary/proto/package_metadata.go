@@ -34,6 +34,7 @@ import (
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
+	misemeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/mise/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 )
@@ -85,6 +86,9 @@ var (
 		reflect.TypeOf(&spb.Package_AsdfMetadata{}): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
 		},
+		reflect.TypeOf(&spb.Package_MiseMetadata{}): func(p *spb.Package) any {
+			return misemeta.ToStruct(p.GetMiseMetadata())
+		},
 		reflect.TypeOf(&spb.Package_NvmMetadata{}): func(p *spb.Package) any {
 			return nvmmeta.ToStruct(p.GetNvmMetadata())
 		},
@@ -112,6 +116,7 @@ var (
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
+		(*misemeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
