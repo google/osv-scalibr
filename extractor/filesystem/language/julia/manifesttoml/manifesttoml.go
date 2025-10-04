@@ -53,8 +53,6 @@ var shaPattern = regexp.MustCompile("^[0-9a-f]{40}$")
 
 type juliaManifestDependency struct {
 	Version     string   `toml:"version"`
-	Git         string   `toml:"git"`
-	Rev         string   `toml:"rev"`
 	GitTreeSha1 string   `toml:"git-tree-sha1"`
 	RepoURL     string   `toml:"repo-url"`
 	Deps        []string `toml:"deps"`
