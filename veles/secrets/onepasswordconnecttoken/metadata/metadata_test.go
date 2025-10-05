@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken/metadata"
+	"github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 

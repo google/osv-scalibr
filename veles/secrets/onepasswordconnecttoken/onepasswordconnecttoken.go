@@ -24,10 +24,10 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	onepasswordconnecttokenmeta "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	onepasswordconnecttokenmeta "github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken/metadata"
 )
 
 const (

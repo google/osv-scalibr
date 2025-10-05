@@ -111,6 +111,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                           | Extractor Plugin                 |
 |--------------------------------|----------------------------------|
+| 1Password Connect Token        | `secrets/onepasswordconnecttoken`|
 | Anthropic API key              | `secrets/anthropicapikey`        |
 | Azure Token                    | `secrets/azuretoken`             |
 | DigitalOcean API key           | `secrets/digitaloceanapikey`     |

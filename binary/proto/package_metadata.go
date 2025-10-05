@@ -35,8 +35,8 @@ import (
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
-	onepasswordconnecttokenmeta "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
+	onepasswordconnecttokenmeta "github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken/metadata"
 )
 
 var (
