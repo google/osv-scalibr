@@ -17,7 +17,6 @@ package chisel
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/canonical/chisel-manifest/public/manifest"
 	"github.com/klauspost/compress/zstd"
@@ -105,7 +104,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches chisel manifest file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if filepath.ToSlash(path) != "var/lib/chisel/manifest.wall" {
+	if path != "var/lib/chisel/manifest.wall" {
 		return false
 	}
 
