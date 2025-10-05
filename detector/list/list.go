@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -87,6 +88,12 @@ var Misc = InitMap{
 	dockersocket.Name: {noCFG(dockersocket.New)},
 }
 
+// CVEDetectors for vulnerabilities
+var CVEDetectors = InitMap{
+	// CVE-2025-7775 detector
+	cve20257775.Name: {noCFG(cve20257775.New)},
+}
+
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{}
 
@@ -98,6 +105,7 @@ var All = concat(
 	Misc,
 	Weakcredentials,
 	Untested,
+	CVEDetectors,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -107,6 +115,7 @@ var detectorNames = concat(All, InitMap{
 	"misc":              vals(Misc),
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
+	"cvedetectors":      vals(CVEDetectors),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),
 	"detectors/all":     vals(All),
