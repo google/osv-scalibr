@@ -35,6 +35,7 @@ var ecosystems = []string{
 	"GHC",
 	"Go",
 	"Hex",
+	"Julia",
 	"Mageia",
 	"Maven",
 	"MinimOS",
