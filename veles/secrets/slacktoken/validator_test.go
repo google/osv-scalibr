@@ -129,7 +129,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 			)
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), tc.key)
+			got, err := validator.Validate(t.Context(), tc.key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -195,7 +195,7 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 			)
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), tc.key)
+			got, err := validator.Validate(t.Context(), tc.key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -261,7 +261,7 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 			)
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), tc.key)
+			got, err := validator.Validate(t.Context(), tc.key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -307,7 +307,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		key := slacktoken.SlackAppLevelToken{Token: testAppLevelToken}
 
 		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 		defer cancel()
 
 		// Test validation with cancelled context
@@ -330,7 +330,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		key := slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken}
 
 		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 		defer cancel()
 
 		// Test validation with cancelled context
@@ -353,7 +353,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		key := slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken}
 
 		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 		defer cancel()
 
 		// Test validation with cancelled context
@@ -403,7 +403,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				got, err := validator.Validate(context.Background(), tc.key)
+				got, err := validator.Validate(t.Context(), tc.key)
 
 				if err != nil {
 					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
@@ -440,7 +440,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				got, err := validator.Validate(context.Background(), tc.key)
+				got, err := validator.Validate(t.Context(), tc.key)
 
 				if err != nil {
 					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
@@ -477,7 +477,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				got, err := validator.Validate(context.Background(), tc.key)
+				got, err := validator.Validate(t.Context(), tc.key)
 
 				if err != nil {
 					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

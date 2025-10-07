@@ -15,7 +15,6 @@
 package openai_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -111,7 +110,7 @@ func TestProjectValidator(t *testing.T) {
 			key := openai.APIKey{Key: projectValidatorTestKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -136,7 +135,7 @@ func TestProjectValidator_EmptyKey(t *testing.T) {
 	validator := openai.NewProjectValidator()
 	key := openai.APIKey{Key: ""}
 
-	got, err := validator.Validate(context.Background(), key)
+	got, err := validator.Validate(t.Context(), key)
 
 	if err == nil {
 		t.Errorf("Validate() expected error for empty key, got nil")

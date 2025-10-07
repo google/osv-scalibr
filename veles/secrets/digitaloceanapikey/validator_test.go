@@ -130,7 +130,7 @@ func TestValidator(t *testing.T) {
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -221,7 +221,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

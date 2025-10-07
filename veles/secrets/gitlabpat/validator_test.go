@@ -111,7 +111,7 @@ func TestValidator(t *testing.T) {
 
 			v := gitlabpat.NewValidator(gitlabpat.WithClient(client))
 
-			ctx := context.Background()
+			ctx := t.Context()
 			pat := gitlabpat.GitlabPAT{Pat: tc.pat}
 			got, err := v.Validate(ctx, pat)
 
