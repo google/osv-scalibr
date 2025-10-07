@@ -71,6 +71,8 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parseHackageVersion(str)
 	case "Hex":
 		return parseSemverVersion(str), nil
+	case "Julia":
+		return parseSemverVersion(str), nil		
 	case "Mageia":
 		return parseRedHatVersion(str), nil
 	case "Maven":
