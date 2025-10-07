@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -173,6 +174,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case veleshashicorpcloudplatform.ClientCredentials:
+		return hashicorpCloudPlatformCredentialsToProto(t), nil
+	case veleshashicorpcloudplatform.AccessToken:
+		return hashicorpCloudPlatformTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -708,6 +713,24 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
+	case *spb.SecretData_HashicorpCloudPlatformCredentials:
+		return veleshashicorpcloudplatform.ClientCredentials{
+			ClientID:     s.GetHashicorpCloudPlatformCredentials().GetClientId(),
+			ClientSecret: s.GetHashicorpCloudPlatformCredentials().GetClientSecret(),
+		}, nil
+	case *spb.SecretData_HashicorpCloudPlatformToken:
+		t := s.GetHashicorpCloudPlatformToken()
+		return veleshashicorpcloudplatform.AccessToken{
+			Token:          t.GetToken(),
+			OrganizationID: t.GetOrganizationId(),
+			ProjectID:      t.GetProjectId(),
+			PrincipalID:    t.GetPrincipalId(),
+			PrincipalType:  t.GetPrincipalType(),
+			ServiceName:    t.GetServiceName(),
+			GroupIDs:       t.GetGroupIds(),
+			UserID:         t.GetUserId(),
+			UserEmail:      t.GetUserEmail(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -852,5 +875,34 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func hashicorpCloudPlatformCredentialsToProto(creds veleshashicorpcloudplatform.ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpCloudPlatformCredentials{
+			HashicorpCloudPlatformCredentials: &spb.SecretData_HashiCorpCloudPlatformCredentials{
+				ClientId:     creds.ClientID,
+				ClientSecret: creds.ClientSecret,
+			},
+		},
+	}
+}
+
+func hashicorpCloudPlatformTokenToProto(token veleshashicorpcloudplatform.AccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpCloudPlatformToken{
+			HashicorpCloudPlatformToken: &spb.SecretData_HashiCorpCloudPlatformToken{
+				Token:          token.Token,
+				OrganizationId: token.OrganizationID,
+				ProjectId:      token.ProjectID,
+				PrincipalId:    token.PrincipalID,
+				PrincipalType:  token.PrincipalType,
+				ServiceName:    token.ServiceName,
+				GroupIds:       token.GroupIDs,
+				UserId:         token.UserID,
+				UserEmail:      token.UserEmail,
+			},
+		},
 	}
 }

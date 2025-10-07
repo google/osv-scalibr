@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
@@ -39,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -76,8 +78,8 @@ var (
 		filter.Name: {filter.New},
 	}
 
-	// Secrets enrichers.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	// SecretsValidate lists secret validators.
+	SecretsValidate = initMapFromVelesPlugins([]velesPlugin{
 		fromVeles(anthropicapikey.NewWorkspaceValidator(), "secrets/anthropicapikeyworkspacevalidate", 0),
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
@@ -91,6 +93,8 @@ var (
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
 		fromVeles(hashicorpvault.NewTokenValidator(), "secrets/hashicorpvaulttokenvalidate", 0),
 		fromVeles(hashicorpvault.NewAppRoleValidator(), "secrets/hashicorpvaultapprolevalidate", 0),
+		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),
+		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
@@ -105,6 +109,11 @@ var (
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 	})
+
+	// SecretsEnrich lists enrichers that add data to detected secrets.
+	SecretsEnrich = InitMap{
+		hcpidentity.Name: {hcpidentity.New},
+	}
 
 	// HuggingfaceMeta enricher.
 	HuggingfaceMeta = InitMap{
@@ -129,7 +138,8 @@ var (
 		LayerDetails,
 		VulnMatching,
 		VEX,
-		Secrets,
+		SecretsValidate,
+		SecretsEnrich,
 		HuggingfaceMeta,
 		License,
 		Reachability,
@@ -141,7 +151,8 @@ var (
 		"vex":                  vals(VEX),
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
-		"secretsvalidate":      vals(Secrets),
+		"secretsvalidate":      vals(SecretsValidate),
+		"secretsenrich":        vals(SecretsEnrich),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"enrichers/default":    vals(Default),

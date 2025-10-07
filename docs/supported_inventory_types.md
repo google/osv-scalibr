@@ -111,34 +111,36 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                              | Extractor Plugin                     |
 |-----------------------------------|--------------------------------------|
-| Anthropic API key                 | `secrets/anthropicapikey`            |
-| Azure Token                       | `secrets/azuretoken`                 |
-| DigitalOcean API key              | `secrets/digitaloceanapikey`         |
-| Docker hub PAT                    | `secrets/dockerhubpat`               |
-| GCP API key                       | `secrets/gcpapikey`                  |
-| GCP Express Mode API key          | `secrets/gcpexpressmode`             |
-| GCP service account key           | `secrets/gcpsak`                     |
-| GCP OAuth 2 Access Tokens         | `secrets/gcpoauth2access`            |
-| GCP OAuth 2 Client Credentials    | `secrets/gcpoauth2client`            |
-| Gitlab PAT                        | `secrets/gitlabpat`                  |
-| Grok xAI API key                  | `secrets/grokxaiapikey`              |
-| Grok xAI Management key           | `secrets/grokxaimanagementkey`       |
-| Hashicorp Vault token             | `secrets/hashicorpvaulttoken`        |
-| Hashicorp Vault AppRole token     | `secrets/hashicorpvaultapprole`      |
-| Hugging Face API key              | `secrets/huggingfaceapikey`          |
-| OpenAI API key                    | `secrets/openai`                     |
-| Perplexity API key                | `secrets/perplexityapikey`           |
-| Postman API key                   | `secrets/postmanapikey`              |
-| Postman Collection token          | `secrets/postmancollectiontoken`     |
-| PEM/OpenSSH Private key           | `secrets/privatekey`                 |
-| RubyGems API key                  | `secrets/rubygemsapikey`             |
-| Slack Application Level Token     | `secrets/slackappleveltoken`         |
-| Slack Configuration Access Token  | `secrets/slackappconfigaccesstoken`  |
-| Slack Configuration Refresh Token | `secrets/slackappconfigrefreshtoken` |
-| Stripe Secret Key                 | `secrets/stripesecretkey`            |
-| Stripe Restricted Key             | `secrets/striperestrictedkey`        |
-| Stripe Webhook Secret             | `secrets/stripewebhooksecret`        |
-| Tink keyset                       | `secrets/tinkkeyset`                 |
+| Anthropic API key                           | `secrets/anthropicapikey`            |
+| Azure Token                                 | `secrets/azuretoken`                 |
+| DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
+| Docker hub PAT                              | `secrets/dockerhubpat`               |
+| GCP API key                                 | `secrets/gcpapikey`                  |
+| GCP Express Mode API key                    | `secrets/gcpexpressmode`             |
+| GCP service account key                     | `secrets/gcpsak`                     |
+| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
+| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
+| Gitlab PAT                                  | `secrets/gitlabpat`                  |
+| Grok xAI API key                            | `secrets/grokxaiapikey`              |
+| Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |
+| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`       |
+| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`             |
+| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
+| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
+| Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| OpenAI API key                              | `secrets/openai`                     |
+| Perplexity API key                          | `secrets/perplexityapikey`           |
+| Postman API key                             | `secrets/postmanapikey`              |
+| Postman Collection token                    | `secrets/postmancollectiontoken`     |
+| PEM/OpenSSH Private key                     | `secrets/privatekey`                 |
+| RubyGems API key                            | `secrets/rubygemsapikey`             |
+| Slack Application Level Token               | `secrets/slackappleveltoken`         |
+| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`  |
+| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken` |
+| Stripe Secret Key                           | `secrets/stripesecretkey`            |
+| Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
+| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
+| Tink keyset                                 | `secrets/tinkkeyset`                 |
 
 ### Container inventory
 
