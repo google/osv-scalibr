@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package asdf extracts the installed language runtime names and versions from asdf .tool-version files.
-package asdf
+// Package nvm extracts the Node.js version from nvm .nvmrc files.
+package nvm
 
 import (
 	"bufio"
 	"context"
 	"fmt"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
+	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -32,10 +33,10 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "os/asdf"
+	Name = "runtime/nvm"
 )
 
-// Extractor extracts asdf tools.
+// Extractor extracts nvm Node.js versions.
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
@@ -52,56 +53,58 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// FileRequired returns true if the file name is '.tool-versions'.
+// FileRequired returns true if the file name is '.nvmrc'.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return path.Base(api.Path()) == ".tool-versions"
+	return path.Base(api.Path()) == ".nvmrc"
 }
 
-func parseToolLine(line string) (tool string, versions []string, ok bool) {
+func parseVersionLine(line string) (version string, ok bool) {
 	line = strings.TrimSpace(line)
+	// Comments and empty lines are ignored
 	if line == "" || strings.HasPrefix(line, "#") {
-		return "", nil, false
+		return "", false
 	}
-	fields := strings.Fields(line)
-	if len(fields) < 2 {
-		return "", nil, false
+	// Remove 'v' prefix if present (e.g., v18.17.0 -> 18.17.0)
+	version = strings.TrimPrefix(line, "v")
+	// Skip if the version doesn't start with a digit.
+	// This is for skipping special keywords like 'lts/*', 'node', 'system'.
+	var startDigitRE = regexp.MustCompile(`^[0-9]`)
+	if !startDigitRE.MatchString(version) {
+		return "", false
 	}
-	return fields[0], fields[1:], true
+	return version, true
 }
 
-// Extract extracts packages from the asdf .tool-versions file.
+// Extract extracts Node.js version from the nvm .nvmrc file.
 //
-// Reference: https://asdf-vm.com/manage/configuration.html#tool-versions
+// Reference: https://github.com/nvm-sh/nvm#nvmrc
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
 	var pkgs []*extractor.Package
 
+	// NVM .nvmrc files typically contain a single Node.js version,
+	// But we'll read all lines in case there are comments or multiple versions
 	for scanner.Scan() {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
-		tool, versions, ok := parseToolLine(scanner.Text())
+		version, ok := parseVersionLine(scanner.Text())
 		if !ok {
 			continue
 		}
 
-		for _, v := range versions {
-			// Skip entries that don't store version strings.
-			if v == "system" || strings.HasPrefix(v, "file:") {
-				continue
-			}
-			pkgs = append(pkgs, &extractor.Package{
-				Name:      tool,
-				Version:   v,
-				PURLType:  purl.TypeAsdf,
-				Locations: []string{input.Path},
-				Metadata: &asdfmeta.Metadata{
-					ToolName:    tool,
-					ToolVersion: v,
-				},
-			})
-		}
+		pkgs = append(pkgs, &extractor.Package{
+			Name:      "nodejs",
+			Version:   version,
+			PURLType:  purl.TypeGeneric,
+			Locations: []string{input.Path},
+			Metadata: &nvmmeta.Metadata{
+				NodeJsVersion: version,
+			},
+		})
+		// For nvm, we typically only expect one version per file
+		break
 	}
 
 	if err := scanner.Err(); err != nil {

@@ -17,12 +17,7 @@ package semantic
 import (
 	"fmt"
 	"math/big"
-	"regexp"
 	"strings"
-)
-
-var (
-	semverIsDigit = regexp.MustCompile(`\d`)
 )
 
 // semverLikeVersion is a version that is _like_ a version as defined by the
@@ -83,7 +78,7 @@ func parseSemverLike(line string) semverLikeVersion {
 		}
 
 		// this is part of a component version
-		if semverIsDigit.MatchString(string(c)) {
+		if isASCIIDigit(c) {
 			currentCom += string(c)
 
 			continue

@@ -26,13 +26,13 @@ import (
 )
 
 const (
-	testKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
-	anotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
+	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
+	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
 
-// TestDetector_truePositives tests for cases where we know the Detector
+// TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
 // will find a Github app refresh tokens.
-func TestDetector_truePositives(t *testing.T) {
+func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
 	if err != nil {
 		t.Fatal(err)
@@ -43,61 +43,61 @@ func TestDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: testKey,
+		input: refreshTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
-		input: anotherTestKey,
+		input: refreshAnotherTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: anotherTestKey},
+			github.AppRefreshToken{Token: refreshAnotherTestKey},
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + testKey,
+		input: `API_TOKEN=` + refreshTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + testKey + `"`,
+		input: `API_TOKEN="` + refreshTestKey + `"`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: testKey + testKey + testKey,
+		input: refreshTestKey + refreshTestKey + refreshTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
-			github.AppRefreshToken{Token: testKey},
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
+			github.AppRefreshToken{Token: refreshTestKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}, {
 		name:  "bad checksum",
-		input: testKey[:len(testKey)-1] + "a",
+		input: refreshTestKey[:len(refreshTestKey)-1] + "a",
 		want:  []veles.Secret{},
 	}, {
 		name:  "multiple distinct matches",
-		input: testKey + "\n" + anotherTestKey,
+		input: refreshTestKey + "\n" + refreshAnotherTestKey,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
-			github.AppRefreshToken{Token: anotherTestKey},
+			github.AppRefreshToken{Token: refreshTestKey},
+			github.AppRefreshToken{Token: refreshAnotherTestKey},
 		},
 	}, {
 		name: "larger input containing key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, testKey),
+		`, refreshTestKey),
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: testKey + `extra`,
+		input: refreshTestKey + `extra`,
 		want: []veles.Secret{
-			github.AppRefreshToken{Token: testKey},
+			github.AppRefreshToken{Token: refreshTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -113,9 +113,9 @@ func TestDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestDetector_trueNegatives tests for cases where we know the Detector
+// TestAppRefreshTokenDetector_trueNegatives tests for cases where we know the Detector
 // will not find a Github app refresh tokens.
-func TestDetector_trueNegatives(t *testing.T) {
+func TestAppRefreshTokenDetector_trueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{github.NewAppRefreshTokenDetector()})
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +129,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: testKey[:len(testKey)-1],
+		input: refreshTestKey[:len(refreshTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
 		input: `gh` + `r_OWOCPzqKuy3J4w53QpkLfff+BUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`,
