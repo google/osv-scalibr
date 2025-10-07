@@ -19,3 +19,31 @@ package github
 type AppRefreshToken struct {
 	Token string
 }
+
+// AppServerToServerToken contains a Github App server to server token
+type AppServerToServerToken struct {
+	Token string
+}
+
+// AppUserToServerToken contains a user to server token
+//
+// A Github App User to Server token is a temporary, secure credential that allows a GitHub App
+// to perform actions on the platform on behalf of a user
+type AppUserToServerToken struct {
+	Token string
+}
+
+// ClassicPersonalAccessToken contains a Github classic personal access token
+type ClassicPersonalAccessToken struct {
+	Token string
+}
+
+// FineGrainedPersonalAccessToken contains a Github fine-grained personal access token
+type FineGrainedPersonalAccessToken struct {
+	Token string
+}
+
+// OAuthToken contains an oauth token
+type OAuthToken struct {
+	Token string
+}

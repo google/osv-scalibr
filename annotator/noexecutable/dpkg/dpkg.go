@@ -62,6 +62,10 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 	// early exit if the dpkgInfoDirPath does not exists
 	if _, err := input.ScanRoot.FS.Stat(dpkgInfoDirPath); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Nothing to annotate if we're not running on a DPKG based distro.
+			return nil
+		}
 		return fmt.Errorf("folder %q does not exists", dpkgInfoDirPath)
 	}
 

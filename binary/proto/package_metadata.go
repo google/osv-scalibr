@@ -18,7 +18,6 @@ import (
 	"reflect"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -34,6 +33,7 @@ import (
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 )

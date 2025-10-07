@@ -17,7 +17,6 @@ package resolution
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"deps.dev/util/resolve"
@@ -106,15 +105,11 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	localRegistry := c.opts.LocalRegistry
 	var err error
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			if localRegistry != "" {
-				localRegistry = filepath.Join(c.opts.LocalRegistry, "maven")
-			}
-			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, localRegistry)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry)
 			if err != nil {
 				return nil, err
 			}
@@ -129,11 +124,8 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 		}
 		return c.npmRegistryClient, nil
 	case resolve.PyPI:
-		if localRegistry != "" {
-			localRegistry = filepath.Join(c.opts.LocalRegistry, "pypi")
-		}
 		if c.pypiRegistryClient == nil {
-			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, localRegistry)
+			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, c.opts.LocalRegistry)
 		}
 		return c.pypiRegistryClient, nil
 	case resolve.UnknownSystem:
