@@ -15,6 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: fernandrone/linelint@7907a5dca0c28ea7dd05c6d8d8cacded713aca11 # v0.0.6
+  filenames:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: |
+          find . -mindepth 1 ! -regex '.*/[@A-Za-z0-9._-]*' \
+            | xargs -I '{}' bash -c \
+              "echo '{}' && echo '::error file={}::This filename contains undesired characters' && false"
   tidy:
     runs-on: ubuntu-latest
     steps:
