@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"regexp"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -74,15 +73,17 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-var (
-	pylockFilePattern = regexp.MustCompile(`^pylock\.([^.]+)\.toml$`)
-)
-
 // FileRequired returns true if the specified file matches pylock lockfile patterns
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	base := filepath.Base(api.Path())
 
-	return base == "pylock.toml" || pylockFilePattern.MatchString(filepath.Base(api.Path()))
+	if base == "pylock.toml" {
+		return true
+	}
+
+	m, _ := filepath.Match("pylock.*.toml", base)
+
+	return m
 }
 
 // Extract extracts packages from pylock.toml files passed through the scan input.

@@ -40,6 +40,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 		},
 		{
 			name:      "",
+			inputPath: "mypylock.toml",
+			want:      false,
+		},
+		{
+			name:      "",
 			inputPath: "pylock.toml",
 			want:      true,
 		},
