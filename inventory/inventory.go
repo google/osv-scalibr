@@ -68,8 +68,8 @@ func (i Inventory) IsEmpty() bool {
 		return false
 	}
 	if len(i.EmbeddedFSs) != 0 {
-    return false
-  }
+		return false
+	}
 	if len(i.ContainerImageMetadata) != 0 {
 		return false
 	}

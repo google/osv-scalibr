@@ -31,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xXA/go-exfat"
+	"github.com/0xXA/go-exfat-1"
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -258,13 +258,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 					refMu:      &refMu,
 				}, nil
 			case "exFAT":
-				fs, err := exfat.NewExFATFileSystem(section)
-				if err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to create exFAT filesystem for partition %d: %w", partitionIndex, err)
-				}
-				if err := fs.ExtractAllRecursive("/", tempDir); err != nil {
+				if err := extractAllRecursiveExFAT(section, tempDir); err != nil {
 					f.Close()
 					os.RemoveAll(tempDir)
 					return nil, fmt.Errorf("failed to extract exFAT files for partition %d: %w", partitionIndex, err)
@@ -396,6 +390,19 @@ func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	return filtered
 }
 
+// Add filterEntriesNtfs to remove ".", "..", and "$" entries
+func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
+	var filtered []*parser.FileInfo
+	for _, e := range entries {
+		name := e.Name
+		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	return filtered
+}
+
 // extractAllRecursiveExt extracts all files from an ext4 filesystem to a temporary directory.
 func extractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error {
 	srcPath = normalizePath(srcPath)
@@ -446,19 +453,6 @@ func extractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 		}
 	}
 	return nil
-}
-
-// Add filterEntriesNtfs to remove ".", "..", and "$" entries
-func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
-	var filtered []*parser.FileInfo
-	for _, e := range entries {
-		name := e.Name
-		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") {
-			continue
-		}
-		filtered = append(filtered, e)
-	}
-	return filtered
 }
 
 // extractAllRecursiveFat32 extracts all files from a FAT32 filesystem to a temporary directory.
@@ -582,6 +576,63 @@ func extractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 			}
 		}
 	}
+	return nil
+}
+
+// extractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directorary.
+func extractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
+	er := exfat.NewExfatReader(section)
+	if err := er.Parse(); err != nil {
+		return fmt.Errorf("failed to parse exfat filesystem: %w", err)
+	}
+
+	tree := exfat.NewTree(er)
+	if err := tree.Load(); err != nil {
+		return fmt.Errorf("failed to load exfat tree: %w", err)
+	}
+
+	files, nodes, err := tree.List()
+	if err != nil {
+		return fmt.Errorf("failed to list exfat entries: %w", err)
+	}
+
+	for _, relPath := range files {
+		node := nodes[relPath]
+		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
+		outPath := filepath.Join(dst, resPath)
+
+		sde := node.StreamDirectoryEntry()
+		if node.IsDirectory() {
+			if err := os.MkdirAll(outPath, 0o755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", outPath, err)
+			}
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+			return fmt.Errorf("failed to create parent directories for %s: %w", outPath, err)
+		}
+
+		outFile, err := os.Create(outPath)
+		if err != nil {
+			return fmt.Errorf("failed to create file %s: %w", outPath, err)
+		}
+
+		useFat := sde.GeneralSecondaryFlags.NoFatChain() == false
+		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
+			return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+		}
+
+		err = outFile.Truncate(int64(sde.ValidDataLength))
+		if err != nil {
+			continue
+		}
+
+		if err := outFile.Close(); err != nil {
+			return fmt.Errorf("failed to close file %s: %w", outPath, err)
+		}
+	}
+
 	return nil
 }
 
