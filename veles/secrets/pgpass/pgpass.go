@@ -45,6 +45,9 @@ const (
 var (
 	// pgpassRe is a regular expression that matches the content of a pgpass file entry
 	//
+	// Reference:
+	// - https://www.postgresql.org/docs/current/libpq-pgpass.html
+	//
 	// Every entry in the pgpass file is composed by the following fields:
 	// hostname:port:database:username:password
 	//
@@ -53,8 +56,8 @@ var (
 	//     this group can match ports > 65535 but it is a compromise for regex performance
 	//   - database: same as hostname
 	//   - username: same as hostname
-	//   - password: can match any allowed characters but semicolon must be escaped and wildcard is not allowed
-	pgpassRe = regexp.MustCompile(`^([!-9;-~]+):(\*|[0-9]{1,5}):([!-9;-~]+):([!-9;-~]+):((?:\\:|[!-9;-~])*(?:\\:|[!-)+-.0-9;-~])(?:\\:|[!-9;-~]))?$`)
+	//   - password: can match any allowed characters but colons must be escaped
+	pgpassRe = regexp.MustCompile(`^([ -9;-~]+):(\*|[0-9]{1,5}):([ -9;-~]+):([ -9;-~]+):((?:\\:|[ -9;-~])+)$`)
 )
 
 // Extractor extracts postres credentials from .pgpass files.
@@ -94,6 +97,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		matches := pgpassRe.FindStringSubmatch(line)
 
 		if len(matches) == 6 {
+			password := matches[5]
+			// Skip entries where the password is a single '*'
+			if password == "*" {
+				continue
+			}
+
 			pgpassSecret := Pgpass{
 				Hostname: matches[1],
 				Port:     matches[2],

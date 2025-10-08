@@ -253,11 +253,13 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	SecretsExtractors = InitMap{
+	// SecretExtractors for Extractor interface.
+	SecretExtractors = InitMap{
 		pgpass.Name: {pgpass.New},
 	}
 
-	SecretsDetectors = initMapFromVelesPlugins([]velesPlugin{
+	// SecretDetectors for Detector interface.
+	SecretDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
@@ -286,10 +288,10 @@ var (
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 	})
 
-	// Credential extractors.
+	// Secrets contains both secret extractors and detectors.
 	Secrets = concat(
-		SecretsDetectors,
-		SecretsExtractors,
+		SecretDetectors,
+		SecretExtractors,
 	)
 
 	// Misc artifact extractors.

@@ -104,6 +104,22 @@ func TestExtract(t *testing.T) {
 					Location: "testdata/valid",
 				},
 				{
+					Secret: pgpass.Pgpass{Hostname: "hostname",
+						Port:     "1234",
+						Database: "testdb",
+						Username: "testuser",
+						Password: "passw ord"},
+					Location: "testdata/valid",
+				},
+				{
+					Secret: pgpass.Pgpass{Hostname: "hostname",
+						Port:     "1234",
+						Database: "db name",
+						Username: "testuser",
+						Password: "password"},
+					Location: "testdata/valid",
+				},
+				{
 					Secret: pgpass.Pgpass{Hostname: "*",
 						Port:     "*",
 						Database: "db",
