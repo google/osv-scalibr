@@ -15,14 +15,13 @@
 package pgpass_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/veles/secrets/pgpass"
 )
 
@@ -71,14 +70,17 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name        string
-		path        string
-		wantSecrets []*inventory.Secret
+		Name        string
+		InputConfig extracttest.ScanInputMockConfig
+		WantSecrets []*inventory.Secret
+		WantErr     error
 	}{
 		{
-			name: "valid .pgpass file",
-			path: "testdata/valid",
-			wantSecrets: []*inventory.Secret{
+			Name: "valid .pgpass file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid",
+			},
+			WantSecrets: []*inventory.Secret{
 				{
 					Secret: pgpass.Pgpass{Hostname: "localhost",
 						Port:     "5432",
@@ -137,47 +139,28 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		}, {
-			name:        "invalid .pgpass file",
-			path:        "testdata/invalid",
-			wantSecrets: nil,
+			Name: "invalid .pgpass file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid",
+			},
+			WantSecrets: nil,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			e := pgpass.New()
-			d := t.TempDir()
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			// Opening and Reading the Test File
-			r, err := os.Open(tt.path)
-
+			got, err := e.Extract(t.Context(), &scanInput)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("%s.Extract(%q) failed: %v", e.Name(), tt.InputConfig.Path, err)
 			}
 
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
-			}
-
-			got, err := e.Extract(t.Context(), input)
-			if err != nil {
-				t.Fatalf("Extract() error = %v", err)
-			}
-
-			wantInv := inventory.Inventory{Secrets: tt.wantSecrets}
+			wantInv := inventory.Inventory{Secrets: tt.WantSecrets}
 			if diff := cmp.Diff(wantInv, got); diff != "" {
-				t.Errorf("Secret mismatch (-want +got):\n%s", diff)
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}
