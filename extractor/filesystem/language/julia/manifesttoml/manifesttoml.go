@@ -55,11 +55,6 @@ type juliaManifestDependency struct {
 	Deps        []string `toml:"deps"`
 }
 
-type juliaManifestPackage struct {
-	Name    string `toml:"name"`
-	Version string `toml:"version"`
-}
-
 type juliaManifestFile struct {
 	ManifestFormat string                               `toml:"manifest_format"`
 	Dependencies   map[string][]juliaManifestDependency `toml:"deps"`
@@ -108,6 +103,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 		dependency := dependencies[0]
+		// Skip dependencies that have no version
+		if dependency.Version == "" {
+			continue
+		}
 
 		var srcCode *extractor.SourceCodeIdentifier
 		if dependency.GitTreeSha1 != "" {
@@ -115,11 +114,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				Commit: dependency.GitTreeSha1,
 				Repo:   dependency.RepoURL, // Include repo-url if available
 			}
-		}
-
-		// Skip dependencies that have no version (name is always present from map key)
-		if dependency.Version == "" {
-			continue
 		}
 
 		packages = append(packages, &extractor.Package{
