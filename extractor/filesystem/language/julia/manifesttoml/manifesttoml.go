@@ -33,7 +33,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"regexp"
 
 	"github.com/BurntSushi/toml"
 
@@ -48,8 +47,6 @@ const (
 	// Name is the name of the Extractor.
 	Name = "julia/manifesttoml"
 )
-
-var shaPattern = regexp.MustCompile("^[0-9a-f]{40}$")
 
 type juliaManifestDependency struct {
 	Version     string   `toml:"version"`
@@ -113,8 +110,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		dependency := dependencies[0]
 
 		var srcCode *extractor.SourceCodeIdentifier
-		// Check for git-tree-sha1 (40 character hex string)
-		if dependency.GitTreeSha1 != "" && shaPattern.MatchString(dependency.GitTreeSha1) {
+		if dependency.GitTreeSha1 != "" {
 			srcCode = &extractor.SourceCodeIdentifier{
 				Commit: dependency.GitTreeSha1,
 				Repo:   dependency.RepoURL, // Include repo-url if available
