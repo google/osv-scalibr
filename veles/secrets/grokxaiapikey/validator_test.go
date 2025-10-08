@@ -171,7 +171,7 @@ func TestValidatorAPI(t *testing.T) {
 			key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -265,7 +265,7 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := grokxaiapikey.GrokXAIAPIKey{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
@@ -351,7 +351,7 @@ func TestValidatorManagement(t *testing.T) {
 			key := grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -441,7 +441,7 @@ func TestValidatorManagement_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := grokxaiapikey.GrokXAIManagementKey{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

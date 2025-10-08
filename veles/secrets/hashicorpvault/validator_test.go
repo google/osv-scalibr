@@ -86,7 +86,7 @@ func TestTokenValidator_Validate(t *testing.T) {
 			)
 
 			token := Token{Token: "hvs.test-token"}
-			status, err := validator.Validate(context.Background(), token)
+			status, err := validator.Validate(t.Context(), token)
 
 			if test.expectError && err == nil {
 				t.Fatal("Expected error, got nil")
@@ -195,7 +195,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 				WithVaultURL(server.URL),
 			)
 
-			status, err := validator.Validate(context.Background(), test.credentials)
+			status, err := validator.Validate(t.Context(), test.credentials)
 
 			if test.expectError && err == nil {
 				t.Fatal("Expected error, got nil")
@@ -214,7 +214,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 func TestValidator_InvalidVaultURL(t *testing.T) {
 	validator := NewTokenValidator(WithVaultURL("://invalid-url"))
 	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(context.Background(), token)
+	status, err := validator.Validate(t.Context(), token)
 
 	if err == nil {
 		t.Fatal("Expected error for invalid URL, got nil")
@@ -228,7 +228,7 @@ func TestValidator_NetworkError(t *testing.T) {
 	// Use a URL that will cause a network error
 	validator := NewTokenValidator(WithVaultURL("http://localhost:1"))
 	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(context.Background(), token)
+	status, err := validator.Validate(t.Context(), token)
 
 	if err == nil {
 		t.Fatal("Expected network error, got nil")
@@ -250,7 +250,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		WithVaultURL(server.URL),
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately
 
 	token := Token{Token: "hvs.test-token"}

@@ -682,9 +682,15 @@ message SecretData {
         github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
-    OnePasswordSecretKey onepassword_secret_key = 32;
-    OnePasswordServiceToken onepassword_service_token = 33;
-    OnePasswordRecoveryCode onepassword_recovery_code = 34; 
+    SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
+    SlackAppLevelToken slack_app_level_token = 34;
+    SlackAppConfigAccessToken slack_app_config_access_token = 35;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
+    HashiCorpCloudPlatformCredentials hashicorp_cloud_platform_credentials = 37;
+    HashiCorpCloudPlatformToken hashicorp_cloud_platform_token = 38;
+    OnePasswordSecretKey onepassword_secret_key = 39;
+    OnePasswordServiceToken onepassword_service_token = 40;
+    OnePasswordRecoveryCode onepassword_recovery_code = 41; 
   }
 
   message GCPSAK {
@@ -730,6 +736,10 @@ message SecretData {
     string key = 1;
   }
 
+  message AzureStorageAccountAccessKey {
+    string key = 1;
+  }
+
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
@@ -754,6 +764,18 @@ message SecretData {
 
   message GitlabPat {
     string pat = 1;
+  }
+
+  message SlackAppLevelToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigAccessToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigRefreshToken {
+    string token = 1;
   }
 
   message PostmanAPIKey {
@@ -815,6 +837,24 @@ message SecretData {
     string key = 1;
     string role = 2;
     repeated string fine_grained_scope = 3;
+  }
+
+  message HashiCorpCloudPlatformCredentials {
+    string client_id = 1;
+    string client_secret = 2;
+  }
+
+  message HashiCorpCloudPlatformToken {
+    string token = 1;
+    // Optional identity enrichment fields populated when available
+    string organization_id = 2;
+    string project_id = 3;
+    string principal_id = 4;
+    string principal_type = 5;
+    string service_name = 6;
+    string user_id = 7;
+    string user_email = 8;
+    repeated string group_ids = 9;
   }
 
   message StripeSecretKey {
@@ -916,6 +956,9 @@ message ContainerImageMetadata {
   // The base images are ordered from the biggest base image containing all base
   // images to the smallest. e.g. [empty, postgresql, alpine]
   repeated BaseImageChain base_image_chains = 3;
+
+  // Key value map of OS info from /etc/os-release.
+  map<string, string> os_info = 4;
 }
 
 message BaseImageChain {
