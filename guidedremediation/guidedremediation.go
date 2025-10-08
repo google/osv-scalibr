@@ -564,6 +564,8 @@ func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 		return writeNpmLockfile(ctx, manifestPath)
 	case "requirements.in":
 		return writeRequirementsLockfile(ctx, manifestPath)
+	case "pyproject.toml":
+		return writePoetryLockfile(ctx, manifestPath)
 	default:
 		return fmt.Errorf("unsupported manifest type: %s", base)
 	}
@@ -626,6 +628,21 @@ func writeRequirementsLockfile(ctx context.Context, path string) error {
 	return cmd.Run()
 }
 
+func writePoetryLockfile(ctx context.Context, path string) error {
+	dir := filepath.Dir(path)
+	poetryPath, err := exec.LookPath("poetry")
+	if err != nil {
+		return fmt.Errorf("cannot find poetry executable: %w", err)
+	}
+
+	log.Infof("Running poetry to regenerate poetry.lock")
+	cmd := exec.CommandContext(ctx, poetryPath, "lock")
+	cmd.Dir = dir
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run()
+}
+
 func readWriterForManifest(manifestPath string, registry string) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
@@ -635,6 +652,8 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 		return npm.GetReadWriter(registry)
 	case "requirements.in", "requirements.txt":
 		return python.GetRequirementsReadWriter()
+	case "pyproject.toml":
+		return python.GetPoetryReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
@@ -663,6 +682,9 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 	}
 	if manifestBaseName == "requirements.in" {
 		return lockfileBaseName == "requirements.txt"
+	}
+	if manifestBaseName == "pyproject.toml" {
+		return lockfileBaseName == "poetry.lock"
 	}
 	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json"
 }

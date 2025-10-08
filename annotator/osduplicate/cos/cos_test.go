@@ -56,7 +56,7 @@ func TestAnnotate(t *testing.T) {
 				},
 				{
 					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"path/to/file-not-in-pkgs"},
+					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
 				},
 			},
 			wantPackages: []*extractor.Package{
@@ -71,7 +71,35 @@ func TestAnnotate(t *testing.T) {
 				},
 				{
 					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"path/to/file-not-in-pkgs"},
+					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+				},
+			},
+		},
+		{
+			desc: "some_pkgs_outside_mutable_dir",
+			packages: []*extractor.Package{
+				{
+					Name:      "file-in-mutable-dir",
+					Locations: []string{"mnt/stateful_partition/in/mutable/dir"},
+				},
+				{
+					Name:      "file-not-in-mutable-dir",
+					Locations: []string{"not/in/mutable/dir"},
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "file-in-mutable-dir",
+					Locations: []string{"mnt/stateful_partition/in/mutable/dir"},
+				},
+				{
+					Name:      "file-not-in-mutable-dir",
+					Locations: []string{"not/in/mutable/dir"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          cos.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 		},

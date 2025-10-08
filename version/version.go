@@ -16,4 +16,4 @@
 package version
 
 // ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.3.4"
+const ScannerVersion = "0.3.5"

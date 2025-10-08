@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"

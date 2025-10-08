@@ -20,6 +20,8 @@ import "github.com/opencontainers/go-digest"
 type ContainerImageMetadata struct {
 	// Index of the container image in the full inventory.
 	Index int
+	// OSInfo is the key value map from /etc/os-release.
+	OSInfo map[string]string
 	// LayerMetadata stores metadata about the layers in the container image.
 	// Currently this does not store any empty layers.
 	LayerMetadata []*LayerMetadata

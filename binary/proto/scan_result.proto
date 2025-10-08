@@ -676,7 +676,19 @@ message SecretData {
     StripeWebhookSecret stripe_webhook_secret = 24;
     GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
     GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
-    Pgpass pgpass = 27;
+    GithubAppServerToServerToken github_app_server_to_server_token = 27;
+    GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
+    GithubFineGrainedPersonalAccessToken
+        github_fine_grained_personal_access_token = 29;
+    GithubAppUserToServerToken github_app_user_to_server_token = 30;
+    GithubOAuthToken github_oauth_token = 31;
+    SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
+    SlackAppLevelToken slack_app_level_token = 34;
+    SlackAppConfigAccessToken slack_app_config_access_token = 35;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
+    HashiCorpCloudPlatformCredentials hashicorp_cloud_platform_credentials = 37;
+    HashiCorpCloudPlatformToken hashicorp_cloud_platform_token = 38;
+    Pgpass pgpass = 39;
   }
 
   message GCPSAK {
@@ -722,6 +734,10 @@ message SecretData {
     string key = 1;
   }
 
+  message AzureStorageAccountAccessKey {
+    string key = 1;
+  }
+
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
@@ -756,6 +772,18 @@ message SecretData {
     string pat = 1;
   }
 
+  message SlackAppLevelToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigAccessToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigRefreshToken {
+    string token = 1;
+  }
+
   message PostmanAPIKey {
     string key = 1;
   }
@@ -771,6 +799,27 @@ message SecretData {
   message GithubAppRefreshToken {
     string token = 1;
   }
+
+  message GithubAppServerToServerToken {
+    string token = 1;
+  }
+
+  message GithubClassicPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubFineGrainedPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubOAuthToken {
+    string token = 1;
+  }
+
+  message GithubAppUserToServerToken {
+    string token = 1;
+  }
+
   message TinkKeyset {
     string content = 1;  // JSON encoded Tink keyset
   }
@@ -796,6 +845,24 @@ message SecretData {
     repeated string fine_grained_scope = 3;
   }
 
+  message HashiCorpCloudPlatformCredentials {
+    string client_id = 1;
+    string client_secret = 2;
+  }
+
+  message HashiCorpCloudPlatformToken {
+    string token = 1;
+    // Optional identity enrichment fields populated when available
+    string organization_id = 2;
+    string project_id = 3;
+    string principal_id = 4;
+    string principal_type = 5;
+    string service_name = 6;
+    string user_id = 7;
+    string user_email = 8;
+    repeated string group_ids = 9;
+  }
+
   message StripeSecretKey {
     string key = 1;
   }
@@ -818,7 +885,8 @@ message SecretData {
   }
 
   message GCPOAuth2AccessToken {
-    // GCP OAuth2 access token, typically in format: "ya29.[alphanumeric_string]"
+    // GCP OAuth2 access token, typically in format:
+    // "ya29.[alphanumeric_string]"
     string token = 1;
   }
 }
@@ -882,6 +950,9 @@ message ContainerImageMetadata {
   // The base images are ordered from the biggest base image containing all base
   // images to the smallest. e.g. [empty, postgresql, alpine]
   repeated BaseImageChain base_image_chains = 3;
+
+  // Key value map of OS info from /etc/os-release.
+  map<string, string> os_info = 4;
 }
 
 message BaseImageChain {
