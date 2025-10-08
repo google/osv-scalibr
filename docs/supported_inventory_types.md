@@ -150,6 +150,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Docker container images         | `containers/docker` (standalone)                                                   |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
 | Podman container images         | `containers/podman` (filesystem)                                                   |
+| K8s images                      | `containers/k8simage` (filesystem)                                                 |
 
 ### SBOM files
 
