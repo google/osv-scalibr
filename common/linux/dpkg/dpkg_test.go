@@ -90,7 +90,7 @@ func TestConffilePathIterator(t *testing.T) {
 
 			var got []string
 			for {
-				path, err := it.Next(context.Background())
+				path, err := it.Next(t.Context())
 				if errors.Is(err, io.EOF) {
 					break
 				}
@@ -116,7 +116,7 @@ func TestConffilePathIteratorContextCancel(t *testing.T) {
 	}, false)
 	fs := scalibrfs.RealFSScanRoot(root).FS
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	it, err := NewConffilePathIterator(fs)
 	if err != nil {
 		t.Fatalf("NewConffilePathIterator() returned err: %v", err)
@@ -136,7 +136,7 @@ func TestConffilePathIteratorMissingInfoDir(t *testing.T) {
 		t.Fatalf("NewConffilePathIterator() with missing info dir: got err %v, want nil", err)
 	}
 	defer it.Close()
-	_, err = it.Next(context.Background())
+	_, err = it.Next(t.Context())
 	if !errors.Is(err, io.EOF) {
 		t.Errorf("it.Next() with missing info dir: got err %v, want io.EOF", err)
 	}
@@ -206,7 +206,7 @@ func TestListFilePathIterator(t *testing.T) {
 
 			var got []string
 			for {
-				path, err := it.Next(context.Background())
+				path, err := it.Next(t.Context())
 				if errors.Is(err, io.EOF) {
 					break
 				}
@@ -232,7 +232,7 @@ func TestListFilePathIteratorContextCancel(t *testing.T) {
 	}, false)
 	fs := scalibrfs.RealFSScanRoot(root).FS
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	it, err := NewListFilePathIterator(fs)
 	if err != nil {
 		t.Fatalf("NewFileIterator() returned err: %v", err)
@@ -252,7 +252,7 @@ func TestListFilePathIteratorMissingInfoDir(t *testing.T) {
 		t.Fatalf("NewFileIterator() with missing info dir: got err %v, want nil", err)
 	}
 	defer it.Close()
-	_, err = it.Next(context.Background())
+	_, err = it.Next(t.Context())
 	if !errors.Is(err, io.EOF) {
 		t.Errorf("it.Next() with missing info dir: got err %v, want io.EOF", err)
 	}

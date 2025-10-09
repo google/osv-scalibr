@@ -119,7 +119,7 @@ func TestValidator(t *testing.T) {
 			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.Pat, Username: tc.Username}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), usernamePat)
+			got, err := validator.Validate(t.Context(), usernamePat)
 
 			if !cmp.Equal(err, nil, cmpopts.EquateErrors()) {
 				t.Fatalf("plugin.Validate(%v) got error: %v\n", usernamePat, err)
@@ -212,7 +212,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.Pat, Username: tc.Username}
 
-			got, err := validator.Validate(context.Background(), usernamePat)
+			got, err := validator.Validate(t.Context(), usernamePat)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

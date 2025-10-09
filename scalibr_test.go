@@ -760,7 +760,7 @@ func TestScan_ExtractorOverride(t *testing.T) {
 				ScanRoots:         tmpRoot,
 				ExtractorOverride: tt.extractorOverride,
 			}
-			res := scalibr.New().Scan(context.Background(), cfg)
+			res := scalibr.New().Scan(t.Context(), cfg)
 			if res.Status.Status != plugin.ScanStatusSucceeded {
 				t.Fatalf("Scan failed: %s", res.Status.FailureReason)
 			}

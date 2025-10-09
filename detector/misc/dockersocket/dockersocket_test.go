@@ -17,7 +17,6 @@
 package dockersocket
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -162,7 +161,7 @@ func TestDockerSocketPermissions(t *testing.T) {
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), customFS, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), customFS, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -253,7 +252,7 @@ func TestDockerDaemonConfig(t *testing.T) {
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -349,7 +348,7 @@ WantedBy=multi-user.target`,
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -440,7 +439,7 @@ ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378`,
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -475,7 +474,7 @@ func TestScanFS_NoDocker(t *testing.T) {
 	fsys := fstest.MapFS{}
 
 	d := &Detector{}
-	finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+	finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 	if err != nil {
 		t.Errorf("ScanFS() returned error: %v", err)
@@ -582,7 +581,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2377`),
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), tt.setupFS(), &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), tt.setupFS(), &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
