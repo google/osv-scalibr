@@ -33,6 +33,7 @@ import (
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	velesonepasswordconnecttoken "github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -164,6 +165,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case velesonepasswordconnecttoken.OnePasswordConnectToken:
+		return onePasswordConnectTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -239,6 +242,23 @@ func anthropicModelAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_AnthropicModelApiKey{
 			AnthropicModelApiKey: &spb.SecretData_AnthropicModelAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func onePasswordConnectTokenToProto(s velesonepasswordconnecttoken.OnePasswordConnectToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordConnectToken{
+			OnepasswordConnectToken: &spb.SecretData_OnePasswordConnectToken{
+				DeviceUuid:        s.DeviceUUID,
+				Version:           s.Version,
+				EncryptedData:     s.EncryptedData,
+				EncryptionKeyId:   s.EncryptionKeyID,
+				Iv:                s.IV,
+				UniqueKeyId:       s.UniqueKeyID,
+				VerifierSalt:      s.VerifierSalt,
+				VerifierLocalHash: s.VerifierLocalHash,
 			},
 		},
 	}
@@ -651,6 +671,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
+	case *spb.SecretData_OnepasswordConnectToken:
+		return onePasswordConnectTokenToStruct(s.GetOnepasswordConnectToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -671,6 +693,22 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func onePasswordConnectTokenToStruct(kPB *spb.SecretData_OnePasswordConnectToken) velesonepasswordconnecttoken.OnePasswordConnectToken {
+	if kPB == nil {
+		return velesonepasswordconnecttoken.OnePasswordConnectToken{}
+	}
+	return velesonepasswordconnecttoken.OnePasswordConnectToken{
+		DeviceUUID:        kPB.GetDeviceUuid(),
+		Version:           kPB.GetVersion(),
+		EncryptedData:     kPB.GetEncryptedData(),
+		EncryptionKeyID:   kPB.GetEncryptionKeyId(),
+		IV:                kPB.GetIv(),
+		UniqueKeyID:       kPB.GetUniqueKeyId(),
+		VerifierSalt:      kPB.GetVerifierSalt(),
+		VerifierLocalHash: kPB.GetVerifierLocalHash(),
 	}
 }
 

@@ -129,7 +129,6 @@ message Package {
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
-    OnePasswordConnectTokenMetadata one_password_connect_token_metadata = 58;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -624,10 +623,6 @@ message NvmMetadata {
   string nodejs_version = 2;
 }
 
-message OnePasswordConnectTokenMetadata {
-  string device_uuid = 1;
-  string version = 2;
-}
 
 message DockerPort {
   string ip = 1;
@@ -688,6 +683,7 @@ message SecretData {
         github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
+    OnePasswordConnectToken onepassword_connect_token=32;
   }
 
   message GCPSAK {
@@ -844,7 +840,26 @@ message SecretData {
   message GCPOAuth2AccessToken {
     // GCP OAuth2 access token, typically in format:
     // "ya29.[alphanumeric_string]"
-    string token = 1;
+    string token = 1;  
+  }
+
+  message OnePasswordConnectToken {
+    // Device UUID from the token JSON.
+    string device_uuid = 1;
+    // Version field from the token JSON.
+    string version = 2;
+    // Encrypted payload data (from encCredentials.data).
+    string encrypted_data = 3;
+    // Key ID used to encrypt the credentials (encCredentials.kid).
+    string encryption_key_id = 4;
+    // Initialization vector (encCredentials.iv).
+    string iv = 5;
+    // Unique key kid (uniqueKey.kid).
+    string unique_key_id = 6;
+    // Verifier salt (verifier.salt).
+    string verifier_salt = 7;
+    // Verifier local hash (verifier.localHash).
+    string verifier_local_hash = 8;
   }
 }
 

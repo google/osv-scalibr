@@ -36,7 +36,6 @@ import (
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
-	onepasswordconnecttokenmeta "github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken/metadata"
 )
 
 var (
@@ -89,9 +88,6 @@ var (
 		reflect.TypeOf(&spb.Package_NvmMetadata{}): func(p *spb.Package) any {
 			return nvmmeta.ToStruct(p.GetNvmMetadata())
 		},
-		reflect.TypeOf(&spb.Package_OnePasswordConnectTokenMetadata{}): func(p *spb.Package) any {
-			return onepasswordconnecttokenmeta.ToStruct(p.GetOnePasswordConnectTokenMetadata())
-		},
 		reflect.TypeOf(&spb.Package_MacportsMetadata{}): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
@@ -117,7 +113,6 @@ var (
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
-		(*onepasswordconnecttokenmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 	}

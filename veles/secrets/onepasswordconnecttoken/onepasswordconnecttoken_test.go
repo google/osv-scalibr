@@ -19,14 +19,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken"
-	"github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken/metadata"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -68,7 +64,7 @@ func TestFileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = onepasswordconnecttoken.Extractor{}
+			e := onepasswordconnecttoken.Extractor{}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -79,7 +75,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name            string
-		wantPackages    []*extractor.Package
+		wantSecrets     []*inventory.Secret
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
@@ -87,16 +83,19 @@ func TestExtract(t *testing.T) {
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid-onepassword-token.json",
 			},
-			wantPackages: []*extractor.Package{
+			wantSecrets: []*inventory.Secret{
 				{
-					Name:     "onepassword-connect-token",
-					Version:  "2",
-					PURLType: purl.TypeGeneric,
-					Metadata: &metadata.Metadata{
-						DeviceUUID: "yrkdmusoblmgm6siuj4kcssxke",
-						Version:    "2",
+					Secret: onepasswordconnecttoken.OnePasswordConnectToken{
+						DeviceUUID:        "yrkdmusoblmgm6siuj4kcssxke",
+						Version:           "2",
+						EncryptedData:     "yQVzCjBZa5mRMHsT5DQF9y9NWR0oY1ZudueqUCuKEUm4agXFGagMLiZJgwX4zn8nCfhtEWgA0OUo10HlR-oMx6hpHw8QsW8Y3e61t0en40LHAzMwjIZtIn_NFKAzSAMJRU3sv4Kz70YsZZopK9Jsgx4czkCcYqgr-3KxVczVpBhsq6PhPYh-xsr8a2tDQ2_ZWYQgTyUH51vV0ZfNOH81Wa6M6Xc2uAtBLx3uxP7odK0h1CH6RhEmokX1lwPy8C5d0wKRF-DJGpzEUZ9wenic8BtDVO00rAOQJT1sUZM6YHPcxL6mco3kWhuXtPVHBcWbDPWWK-WHoRTI_qUKBg3yof-19Y9DBwT2ScwBFbssZgCcQ7pXy8GK_VP0n381zMDbD5w0ZD3qA58jYWTK36_ZWkbcFv_jG1rvk1O5DuGnlQT3cQxv9ELUKT6FB9qqvGjvkWZzKDfljHQ7QThlOzG5iVFYkWKXEAW60BOQmRwI4xikrPvf3KjywE2IFxliUWxt5AMHSWrknyEoHSLkpSThLDL4EhePptc9UBW6rkYhVsC6ZUkiOIIQ1hOBPRqctAteacuCGD1I9CI3x5CgnEL7TNPX_njDO_fkvQBJUBauLaPP7ObjyPDnWLOAKROELWjrFA",
+						EncryptionKeyID:   "localauthv2keykid",
+						IV:                "nHE-eIYl0_YgVo14",
+						UniqueKeyID:       "pol5dybe7lxax42ha6r7rwwdm4",
+						VerifierSalt:      "JD6cq4PDx8biZ_WIEo8sJQ",
+						VerifierLocalHash: "lLjGM419fBfty9S-a7BwXBLsl40QL0xWmReBF2r9hM8",
 					},
-					Locations: []string{"testdata/valid-onepassword-token.json"},
+					Location: "testdata/valid-onepassword-token.json",
 				},
 			},
 		},
@@ -105,14 +104,14 @@ func TestExtract(t *testing.T) {
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid.json",
 			},
-			wantPackages: nil,
+			wantSecrets: nil,
 		},
 		{
 			name: "missing required fields",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/incomplete.json",
 			},
-			wantPackages: nil,
+			wantSecrets: nil,
 		},
 	}
 
@@ -124,21 +123,21 @@ func TestExtract(t *testing.T) {
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
 			got, err := extr.Extract(t.Context(), &scanInput)
-			if tt.wantPackages == nil && err == nil {
+			if err != nil {
+				t.Fatalf("Extract() unexpected error = %v", err)
+			}
+
+			if tt.wantSecrets == nil {
 				// For invalid cases, we expect empty inventory
 				wantInv := inventory.Inventory{}
-				if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				if diff := cmp.Diff(wantInv, got); diff != "" {
 					t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.inputConfigFile.Path, diff)
 				}
 				return
 			}
 
-			if err != nil && tt.wantPackages != nil {
-				t.Fatalf("Extract() error = %v, want nil", err)
-			}
-
-			wantInv := inventory.Inventory{Packages: tt.wantPackages}
-			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+			wantInv := inventory.Inventory{Secrets: tt.wantSecrets}
+			if diff := cmp.Diff(wantInv, got, cmpopts.IgnoreUnexported(onepasswordconnecttoken.OnePasswordConnectToken{})); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.inputConfigFile.Path, diff)
 			}
 		})
