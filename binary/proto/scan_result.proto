@@ -688,6 +688,9 @@ message SecretData {
     AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
     HashiCorpCloudPlatformCredentials hashicorp_cloud_platform_credentials = 37;
     HashiCorpCloudPlatformToken hashicorp_cloud_platform_token = 38;
+    OnePasswordSecretKey onepassword_secret_key = 39;
+    OnePasswordServiceToken onepassword_service_token = 40;
+    OnePasswordRecoveryCode onepassword_recovery_code = 41;
   }
 
   message GCPSAK {
@@ -880,6 +883,18 @@ message SecretData {
     // "ya29.[alphanumeric_string]"
     string token = 1;
   }
+
+  message OnePasswordSecretKey {
+    string key = 1;
+  }
+  message OnePasswordServiceToken {
+    string key = 1;
+  }
+
+  message OnePasswordRecoveryCode {
+    string key = 1;
+  }
+
 }
 
 message SecretStatus {
