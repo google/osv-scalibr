@@ -5111,6 +5111,10 @@ type SecretData struct {
 	//	*SecretData_AzureStorageAccountAccessKey_
 	//	*SecretData_HashicorpCloudPlatformCredentials
 	//	*SecretData_HashicorpCloudPlatformToken
+	//	*SecretData_OnepasswordSecretKey
+	//	*SecretData_OnepasswordServiceToken
+	//	*SecretData_OnepasswordRecoveryCode
+	//	*SecretData_OnepasswordConnectToken
 	//	*SecretData_Pgpass_
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
@@ -5487,6 +5491,42 @@ func (x *SecretData) GetHashicorpCloudPlatformToken() *SecretData_HashiCorpCloud
 	return nil
 }
 
+func (x *SecretData) GetOnepasswordSecretKey() *SecretData_OnePasswordSecretKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_OnepasswordSecretKey); ok {
+			return x.OnepasswordSecretKey
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetOnepasswordServiceToken() *SecretData_OnePasswordServiceToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_OnepasswordServiceToken); ok {
+			return x.OnepasswordServiceToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetOnepasswordRecoveryCode() *SecretData_OnePasswordRecoveryCode {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_OnepasswordRecoveryCode); ok {
+			return x.OnepasswordRecoveryCode
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetOnepasswordConnectToken() *SecretData_OnePasswordConnectToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_OnepasswordConnectToken); ok {
+			return x.OnepasswordConnectToken
+		}
+	}
+	return nil
+}
+
 func (x *SecretData) GetPgpass() *SecretData_Pgpass {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_Pgpass_); ok {
@@ -5648,8 +5688,24 @@ type SecretData_HashicorpCloudPlatformToken struct {
 	HashicorpCloudPlatformToken *SecretData_HashiCorpCloudPlatformToken `protobuf:"bytes,38,opt,name=hashicorp_cloud_platform_token,json=hashicorpCloudPlatformToken,proto3,oneof"`
 }
 
+type SecretData_OnepasswordSecretKey struct {
+	OnepasswordSecretKey *SecretData_OnePasswordSecretKey `protobuf:"bytes,39,opt,name=onepassword_secret_key,json=onepasswordSecretKey,proto3,oneof"`
+}
+
+type SecretData_OnepasswordServiceToken struct {
+	OnepasswordServiceToken *SecretData_OnePasswordServiceToken `protobuf:"bytes,40,opt,name=onepassword_service_token,json=onepasswordServiceToken,proto3,oneof"`
+}
+
+type SecretData_OnepasswordRecoveryCode struct {
+	OnepasswordRecoveryCode *SecretData_OnePasswordRecoveryCode `protobuf:"bytes,41,opt,name=onepassword_recovery_code,json=onepasswordRecoveryCode,proto3,oneof"`
+}
+
+type SecretData_OnepasswordConnectToken struct {
+	OnepasswordConnectToken *SecretData_OnePasswordConnectToken `protobuf:"bytes,42,opt,name=onepassword_connect_token,json=onepasswordConnectToken,proto3,oneof"`
+}
+
 type SecretData_Pgpass_ struct {
-	Pgpass *SecretData_Pgpass `protobuf:"bytes,39,opt,name=pgpass,proto3,oneof"`
+	Pgpass *SecretData_Pgpass `protobuf:"bytes,43,opt,name=pgpass,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5725,6 +5781,14 @@ func (*SecretData_AzureStorageAccountAccessKey_) isSecretData_Secret() {}
 func (*SecretData_HashicorpCloudPlatformCredentials) isSecretData_Secret() {}
 
 func (*SecretData_HashicorpCloudPlatformToken) isSecretData_Secret() {}
+
+func (*SecretData_OnepasswordSecretKey) isSecretData_Secret() {}
+
+func (*SecretData_OnepasswordServiceToken) isSecretData_Secret() {}
+
+func (*SecretData_OnepasswordRecoveryCode) isSecretData_Secret() {}
+
+func (*SecretData_OnepasswordConnectToken) isSecretData_Secret() {}
 
 func (*SecretData_Pgpass_) isSecretData_Secret() {}
 
@@ -8350,6 +8414,246 @@ func (x *SecretData_GCPOAuth2AccessToken) GetToken() string {
 	return ""
 }
 
+type SecretData_OnePasswordConnectToken struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Device UUID from the token JSON.
+	DeviceUuid string `protobuf:"bytes,1,opt,name=device_uuid,json=deviceUuid,proto3" json:"device_uuid,omitempty"`
+	// Version field from the token JSON.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Encrypted payload data (from encCredentials.data).
+	EncryptedData string `protobuf:"bytes,3,opt,name=encrypted_data,json=encryptedData,proto3" json:"encrypted_data,omitempty"`
+	// Key ID used to encrypt the credentials (encCredentials.kid).
+	EncryptionKeyId string `protobuf:"bytes,4,opt,name=encryption_key_id,json=encryptionKeyId,proto3" json:"encryption_key_id,omitempty"`
+	// Initialization vector (encCredentials.iv).
+	Iv string `protobuf:"bytes,5,opt,name=iv,proto3" json:"iv,omitempty"`
+	// Unique key kid (uniqueKey.kid).
+	UniqueKeyId string `protobuf:"bytes,6,opt,name=unique_key_id,json=uniqueKeyId,proto3" json:"unique_key_id,omitempty"`
+	// Verifier salt (verifier.salt).
+	VerifierSalt string `protobuf:"bytes,7,opt,name=verifier_salt,json=verifierSalt,proto3" json:"verifier_salt,omitempty"`
+	// Verifier local hash (verifier.localHash).
+	VerifierLocalHash string `protobuf:"bytes,8,opt,name=verifier_local_hash,json=verifierLocalHash,proto3" json:"verifier_local_hash,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SecretData_OnePasswordConnectToken) Reset() {
+	*x = SecretData_OnePasswordConnectToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[105]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_OnePasswordConnectToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_OnePasswordConnectToken) ProtoMessage() {}
+
+func (x *SecretData_OnePasswordConnectToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[105]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_OnePasswordConnectToken.ProtoReflect.Descriptor instead.
+func (*SecretData_OnePasswordConnectToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 38}
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetDeviceUuid() string {
+	if x != nil {
+		return x.DeviceUuid
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetEncryptedData() string {
+	if x != nil {
+		return x.EncryptedData
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetEncryptionKeyId() string {
+	if x != nil {
+		return x.EncryptionKeyId
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetIv() string {
+	if x != nil {
+		return x.Iv
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetUniqueKeyId() string {
+	if x != nil {
+		return x.UniqueKeyId
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetVerifierSalt() string {
+	if x != nil {
+		return x.VerifierSalt
+	}
+	return ""
+}
+
+func (x *SecretData_OnePasswordConnectToken) GetVerifierLocalHash() string {
+	if x != nil {
+		return x.VerifierLocalHash
+	}
+	return ""
+}
+
+type SecretData_OnePasswordSecretKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_OnePasswordSecretKey) Reset() {
+	*x = SecretData_OnePasswordSecretKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[106]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_OnePasswordSecretKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_OnePasswordSecretKey) ProtoMessage() {}
+
+func (x *SecretData_OnePasswordSecretKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[106]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_OnePasswordSecretKey.ProtoReflect.Descriptor instead.
+func (*SecretData_OnePasswordSecretKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 39}
+}
+
+func (x *SecretData_OnePasswordSecretKey) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_OnePasswordServiceToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_OnePasswordServiceToken) Reset() {
+	*x = SecretData_OnePasswordServiceToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[107]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_OnePasswordServiceToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_OnePasswordServiceToken) ProtoMessage() {}
+
+func (x *SecretData_OnePasswordServiceToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[107]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_OnePasswordServiceToken.ProtoReflect.Descriptor instead.
+func (*SecretData_OnePasswordServiceToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 40}
+}
+
+func (x *SecretData_OnePasswordServiceToken) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_OnePasswordRecoveryCode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_OnePasswordRecoveryCode) Reset() {
+	*x = SecretData_OnePasswordRecoveryCode{}
+	mi := &file_proto_scan_result_proto_msgTypes[108]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_OnePasswordRecoveryCode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_OnePasswordRecoveryCode) ProtoMessage() {}
+
+func (x *SecretData_OnePasswordRecoveryCode) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[108]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_OnePasswordRecoveryCode.ProtoReflect.Descriptor instead.
+func (*SecretData_OnePasswordRecoveryCode) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 41}
+}
+
+func (x *SecretData_OnePasswordRecoveryCode) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -8764,7 +9068,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xdd1\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xb78\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -8811,8 +9115,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x1dslack_app_config_access_token\x18# \x01(\v2-.scalibr.SecretData.SlackAppConfigAccessTokenH\x00R\x19slackAppConfigAccessToken\x12z\n" +
 	" azure_storage_account_access_key\x18$ \x01(\v20.scalibr.SecretData.AzureStorageAccountAccessKeyH\x00R\x1cazureStorageAccountAccessKey\x12\x88\x01\n" +
 	"$hashicorp_cloud_platform_credentials\x18% \x01(\v25.scalibr.SecretData.HashiCorpCloudPlatformCredentialsH\x00R!hashicorpCloudPlatformCredentials\x12v\n" +
-	"\x1ehashicorp_cloud_platform_token\x18& \x01(\v2/.scalibr.SecretData.HashiCorpCloudPlatformTokenH\x00R\x1bhashicorpCloudPlatformToken\x124\n" +
-	"\x06pgpass\x18' \x01(\v2\x1a.scalibr.SecretData.PgpassH\x00R\x06pgpass\x1a\xb0\x03\n" +
+	"\x1ehashicorp_cloud_platform_token\x18& \x01(\v2/.scalibr.SecretData.HashiCorpCloudPlatformTokenH\x00R\x1bhashicorpCloudPlatformToken\x12`\n" +
+	"\x16onepassword_secret_key\x18' \x01(\v2(.scalibr.SecretData.OnePasswordSecretKeyH\x00R\x14onepasswordSecretKey\x12i\n" +
+	"\x19onepassword_service_token\x18( \x01(\v2+.scalibr.SecretData.OnePasswordServiceTokenH\x00R\x17onepasswordServiceToken\x12i\n" +
+	"\x19onepassword_recovery_code\x18) \x01(\v2+.scalibr.SecretData.OnePasswordRecoveryCodeH\x00R\x17onepasswordRecoveryCode\x12i\n" +
+	"\x19onepassword_connect_token\x18* \x01(\v2+.scalibr.SecretData.OnePasswordConnectTokenH\x00R\x17onepasswordConnectToken\x124\n" +
+	"\x06pgpass\x18+ \x01(\v2\x1a.scalibr.SecretData.PgpassH\x00R\x06pgpass\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -8926,7 +9234,23 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06secret\x18\x02 \x01(\tR\x06secret\x1a,\n" +
 	"\x14GCPOAuth2AccessToken\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05tokenB\b\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a\xb0\x02\n" +
+	"\x17OnePasswordConnectToken\x12\x1f\n" +
+	"\vdevice_uuid\x18\x01 \x01(\tR\n" +
+	"deviceUuid\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12%\n" +
+	"\x0eencrypted_data\x18\x03 \x01(\tR\rencryptedData\x12*\n" +
+	"\x11encryption_key_id\x18\x04 \x01(\tR\x0fencryptionKeyId\x12\x0e\n" +
+	"\x02iv\x18\x05 \x01(\tR\x02iv\x12\"\n" +
+	"\runique_key_id\x18\x06 \x01(\tR\vuniqueKeyId\x12#\n" +
+	"\rverifier_salt\x18\a \x01(\tR\fverifierSalt\x12.\n" +
+	"\x13verifier_local_hash\x18\b \x01(\tR\x11verifierLocalHash\x1a(\n" +
+	"\x14OnePasswordSecretKey\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a+\n" +
+	"\x17OnePasswordServiceToken\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a+\n" +
+	"\x17OnePasswordRecoveryCode\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -9009,7 +9333,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 106)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 110)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -9121,12 +9445,16 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_StripeWebhookSecret)(nil),                  // 107: scalibr.SecretData.StripeWebhookSecret
 	(*SecretData_GCPOAuth2ClientCredentials)(nil),           // 108: scalibr.SecretData.GCPOAuth2ClientCredentials
 	(*SecretData_GCPOAuth2AccessToken)(nil),                 // 109: scalibr.SecretData.GCPOAuth2AccessToken
-	nil,                                                     // 110: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),                           // 111: google.protobuf.Timestamp
+	(*SecretData_OnePasswordConnectToken)(nil),              // 110: scalibr.SecretData.OnePasswordConnectToken
+	(*SecretData_OnePasswordSecretKey)(nil),                 // 111: scalibr.SecretData.OnePasswordSecretKey
+	(*SecretData_OnePasswordServiceToken)(nil),              // 112: scalibr.SecretData.OnePasswordServiceToken
+	(*SecretData_OnePasswordRecoveryCode)(nil),              // 113: scalibr.SecretData.OnePasswordRecoveryCode
+	nil,                           // 114: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil), // 115: google.protobuf.Timestamp
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	111, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	111, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	115, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	115, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	9,   // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
@@ -9190,8 +9518,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	15,  // 62: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	15,  // 63: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	71,  // 64: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	111, // 65: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	111, // 66: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	115, // 65: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	115, // 66: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	56,  // 67: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	59,  // 68: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	60,  // 69: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -9233,24 +9561,28 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	78,  // 105: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
 	103, // 106: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
 	104, // 107: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
-	81,  // 108: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
-	4,   // 109: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	111, // 110: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	62,  // 111: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	63,  // 112: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	64,  // 113: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	65,  // 114: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	11,  // 115: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	69,  // 116: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	67,  // 117: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	110, // 118: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	68,  // 119: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	52,  // 120: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	121, // [121:121] is the sub-list for method output_type
-	121, // [121:121] is the sub-list for method input_type
-	121, // [121:121] is the sub-list for extension type_name
-	121, // [121:121] is the sub-list for extension extendee
-	0,   // [0:121] is the sub-list for field type_name
+	111, // 108: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
+	112, // 109: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
+	113, // 110: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
+	110, // 111: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
+	81,  // 112: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
+	4,   // 113: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	115, // 114: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	62,  // 115: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	63,  // 116: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	64,  // 117: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	65,  // 118: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	11,  // 119: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	69,  // 120: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	67,  // 121: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	114, // 122: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	68,  // 123: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	52,  // 124: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	125, // [125:125] is the sub-list for method output_type
+	125, // [125:125] is the sub-list for method input_type
+	125, // [125:125] is the sub-list for extension type_name
+	125, // [125:125] is the sub-list for extension extendee
+	0,   // [0:125] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -9337,6 +9669,10 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_AzureStorageAccountAccessKey_)(nil),
 		(*SecretData_HashicorpCloudPlatformCredentials)(nil),
 		(*SecretData_HashicorpCloudPlatformToken)(nil),
+		(*SecretData_OnepasswordSecretKey)(nil),
+		(*SecretData_OnepasswordServiceToken)(nil),
+		(*SecretData_OnepasswordRecoveryCode)(nil),
+		(*SecretData_OnepasswordConnectToken)(nil),
 		(*SecretData_Pgpass_)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[56].OneofWrappers = []any{
@@ -9351,7 +9687,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   106,
+			NumMessages:   110,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

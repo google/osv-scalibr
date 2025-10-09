@@ -73,6 +73,18 @@ func TestBuildLocationToPKGsMap(t *testing.T) {
 				"lockfile": []*extractor.Package{{Name: "package", Locations: []string{"lockfile", "non-lockfile"}}},
 			},
 		},
+		{
+			desc: "ignore_os_packages",
+			inventory: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					{Name: "os-package", Locations: []string{"location-1"}, Plugins: []string{"os/dpkg"}},
+					{Name: "language-package", Locations: []string{"location-2"}, Plugins: []string{"python/wheelegg"}},
+				},
+			},
+			want: map[string][]*extractor.Package{
+				"location-2": []*extractor.Package{{Name: "language-package", Locations: []string{"location-2"}, Plugins: []string{"python/wheelegg"}}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

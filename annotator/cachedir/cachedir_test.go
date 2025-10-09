@@ -37,6 +37,7 @@ func TestIsInsideCacheDir(t *testing.T) {
 		{inputPath: "/var/cache/apt/archives", wantCacheAnnotation: true},
 		{inputPath: "/home/user/.local/share/Trash/files/file.txt", wantCacheAnnotation: true},
 		{inputPath: "/home/user/.cache/thumbnails", wantCacheAnnotation: true},
+		{inputPath: "/root/.cache/pip", wantCacheAnnotation: true},
 		{inputPath: "/home/user/projects/code", wantCacheAnnotation: false},
 
 		// macOS

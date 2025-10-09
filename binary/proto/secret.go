@@ -20,6 +20,7 @@ import (
 	"time"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
@@ -38,6 +39,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -177,6 +179,14 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case velesonepasswordconnecttoken.OnePasswordConnectToken:
+		return onePasswordConnectTokenToProto(t), nil
+	case velesonepasswordkeys.OnePasswordSecretKey:
+		return onepasswordSecretKeyToProto(t), nil
+	case velesonepasswordkeys.OnePasswordServiceToken:
+		return onepasswordServiceTokenToProto(t), nil
+	case velesonepasswordkeys.OnePasswordRecoveryCode:
+		return onepasswordRecoveryCodeToProto(t), nil
 	case veleshashicorpcloudplatform.ClientCredentials:
 		return hashicorpCloudPlatformCredentialsToProto(t), nil
 	case veleshashicorpcloudplatform.AccessToken:
@@ -286,6 +296,23 @@ func anthropicModelAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_AnthropicModelApiKey{
 			AnthropicModelApiKey: &spb.SecretData_AnthropicModelAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func onePasswordConnectTokenToProto(s velesonepasswordconnecttoken.OnePasswordConnectToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordConnectToken{
+			OnepasswordConnectToken: &spb.SecretData_OnePasswordConnectToken{
+				DeviceUuid:        s.DeviceUUID,
+				Version:           s.Version,
+				EncryptedData:     s.EncryptedData,
+				EncryptionKeyId:   s.EncryptionKeyID,
+				Iv:                s.IV,
+				UniqueKeyId:       s.UniqueKeyID,
+				VerifierSalt:      s.VerifierSalt,
+				VerifierLocalHash: s.VerifierLocalHash,
 			},
 		},
 	}
@@ -572,6 +599,36 @@ func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
 	}
 }
 
+func onepasswordSecretKeyToProto(s velesonepasswordkeys.OnePasswordSecretKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordSecretKey{
+			OnepasswordSecretKey: &spb.SecretData_OnePasswordSecretKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func onepasswordServiceTokenToProto(s velesonepasswordkeys.OnePasswordServiceToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordServiceToken{
+			OnepasswordServiceToken: &spb.SecretData_OnePasswordServiceToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func onepasswordRecoveryCodeToProto(s velesonepasswordkeys.OnePasswordRecoveryCode) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordRecoveryCode{
+			OnepasswordRecoveryCode: &spb.SecretData_OnePasswordRecoveryCode{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -734,6 +791,20 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
+	case *spb.SecretData_OnepasswordSecretKey:
+		return velesonepasswordkeys.OnePasswordSecretKey{
+			Key: s.GetOnepasswordSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordServiceToken:
+		return velesonepasswordkeys.OnePasswordServiceToken{
+			Key: s.GetOnepasswordServiceToken().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordRecoveryCode:
+		return velesonepasswordkeys.OnePasswordRecoveryCode{
+			Key: s.GetOnepasswordRecoveryCode().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordConnectToken:
+		return onePasswordConnectTokenToStruct(s.GetOnepasswordConnectToken()), nil
 	case *spb.SecretData_HashicorpCloudPlatformCredentials:
 		return veleshashicorpcloudplatform.ClientCredentials{
 			ClientID:     s.GetHashicorpCloudPlatformCredentials().GetClientId(),
@@ -790,6 +861,22 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func onePasswordConnectTokenToStruct(kPB *spb.SecretData_OnePasswordConnectToken) velesonepasswordconnecttoken.OnePasswordConnectToken {
+	if kPB == nil {
+		return velesonepasswordconnecttoken.OnePasswordConnectToken{}
+	}
+	return velesonepasswordconnecttoken.OnePasswordConnectToken{
+		DeviceUUID:        kPB.GetDeviceUuid(),
+		Version:           kPB.GetVersion(),
+		EncryptedData:     kPB.GetEncryptedData(),
+		EncryptionKeyID:   kPB.GetEncryptionKeyId(),
+		IV:                kPB.GetIv(),
+		UniqueKeyID:       kPB.GetUniqueKeyId(),
+		VerifierSalt:      kPB.GetVerifierSalt(),
+		VerifierLocalHash: kPB.GetVerifierLocalHash(),
 	}
 }
 

@@ -128,6 +128,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
+| 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
+| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
 | Postgres pgpass file                        | `secrets/pgpass`                     |
@@ -142,6 +145,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
+| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
 
 ### Container inventory
 

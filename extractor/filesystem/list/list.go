@@ -90,6 +90,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
@@ -108,6 +109,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -261,7 +263,8 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		pgpass.Name: {pgpass.New},
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -303,6 +306,9 @@ var (
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
+		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
+		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
+		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

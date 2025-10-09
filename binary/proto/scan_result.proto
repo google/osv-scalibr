@@ -688,7 +688,11 @@ message SecretData {
     AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
     HashiCorpCloudPlatformCredentials hashicorp_cloud_platform_credentials = 37;
     HashiCorpCloudPlatformToken hashicorp_cloud_platform_token = 38;
-    Pgpass pgpass = 39;
+    OnePasswordSecretKey onepassword_secret_key = 39;
+    OnePasswordServiceToken onepassword_service_token = 40;
+    OnePasswordRecoveryCode onepassword_recovery_code = 41;
+    OnePasswordConnectToken onepassword_connect_token = 42;
+    Pgpass pgpass = 43;
   }
 
   message GCPSAK {
@@ -888,6 +892,36 @@ message SecretData {
     // GCP OAuth2 access token, typically in format:
     // "ya29.[alphanumeric_string]"
     string token = 1;
+  }
+
+  message OnePasswordConnectToken {
+    // Device UUID from the token JSON.
+    string device_uuid = 1;
+    // Version field from the token JSON.
+    string version = 2;
+    // Encrypted payload data (from encCredentials.data).
+    string encrypted_data = 3;
+    // Key ID used to encrypt the credentials (encCredentials.kid).
+    string encryption_key_id = 4;
+    // Initialization vector (encCredentials.iv).
+    string iv = 5;
+    // Unique key kid (uniqueKey.kid).
+    string unique_key_id = 6;
+    // Verifier salt (verifier.salt).
+    string verifier_salt = 7;
+    // Verifier local hash (verifier.localHash).
+    string verifier_local_hash = 8;
+  }
+
+  message OnePasswordSecretKey {
+    string key = 1;
+  }
+  message OnePasswordServiceToken {
+    string key = 1;
+  }
+
+  message OnePasswordRecoveryCode {
+    string key = 1;
   }
 }
 
