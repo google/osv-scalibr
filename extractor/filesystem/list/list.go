@@ -90,6 +90,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
@@ -259,8 +260,13 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Secrets list extractors for credentials.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	// SecretExtractors for Extractor interface.
+	SecretExtractors = InitMap{
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+	}
+
+	// SecretDetectors for Detector interface.
+	SecretDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
@@ -302,6 +308,12 @@ var (
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 	})
+
+	// Secrets contains both secret extractors and detectors.
+	Secrets = concat(
+		SecretDetectors,
+		SecretExtractors,
+	)
 
 	// Misc artifact extractors.
 	Misc = InitMap{
