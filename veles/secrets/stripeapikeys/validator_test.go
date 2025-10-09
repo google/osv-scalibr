@@ -132,7 +132,7 @@ func TestValidatorSecretKey(t *testing.T) {
 			key := stripeapikeys.StripeSecretKey{Key: validatorTestSK}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -164,7 +164,7 @@ func TestValidatorSecretKey_ContextCancellation(t *testing.T) {
 	key := stripeapikeys.StripeSecretKey{Key: validatorTestSK}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
@@ -227,7 +227,7 @@ func TestValidatorRestrictedKey(t *testing.T) {
 			key := stripeapikeys.StripeRestrictedKey{Key: validatorTestRK}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -259,7 +259,7 @@ func TestValidatorRestrictedKey_ContextCancellation(t *testing.T) {
 	key := stripeapikeys.StripeRestrictedKey{Key: validatorTestRK}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context

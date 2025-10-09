@@ -158,7 +158,7 @@ operations will only run on a small subset of the files.
 
 When parsing binaries and lockfiles that can get large, avoid reading all of the
 file contents into memory whenever possible. Prefer to use streaming readers.
-For reading a specific section of a large file, perfer using
+For reading a specific section of a large file, prefer using
 [`ReadAt()`](https://pkg.go.dev/io#ReaderAt) instead of slicing out the relevant
 sections in memory.
 

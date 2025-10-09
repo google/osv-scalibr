@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -91,6 +92,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -103,6 +105,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -110,6 +113,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 )
@@ -230,6 +234,7 @@ var (
 	// Containers extractors.
 	Containers = InitMap{
 		containerd.Name:         {containerd.NewDefault},
+		k8simage.Name:           {k8simage.NewDefault},
 		podman.Name:             {podman.NewDefault},
 		dockerbaseimage.Name:    {dockerbaseimage.NewDefault},
 		dockercomposeimage.Name: {dockercomposeimage.NewDefault},
@@ -259,7 +264,11 @@ var (
 		initMapFromVelesPlugins([]velesPlugin{
 			{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 			{azuretoken.NewDetector(), "secrets/azuretoken", 0},
+		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
 			{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
+		{slacktoken.NewAppConfigAccessTokenDetector(), "secrets/slackappconfigaccesstoken", 0},
+		{slacktoken.NewAppConfigRefreshTokenDetector(), "secrets/slackappconfigrefreshtoken", 0},
+		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 			{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 			{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 			{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
@@ -269,6 +278,8 @@ var (
 			{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
 			{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
 			{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
+		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
+		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 			{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 			{openai.NewDetector(), "secrets/openai", 0},
 			{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},

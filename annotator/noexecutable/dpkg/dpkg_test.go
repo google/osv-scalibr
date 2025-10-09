@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
-	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
+	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"

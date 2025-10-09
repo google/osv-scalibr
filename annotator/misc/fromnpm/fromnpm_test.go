@@ -239,7 +239,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 					FromNPMRepository: false,
 				},
 			},
-			wantAnyErr: true,
+			wantAnyErr: false,
 		},
 	}
 
@@ -448,7 +448,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 					FromNPMRepository: false,
 				},
 			},
-			wantAnyErr: true,
+			wantAnyErr: false,
 		},
 	}
 
@@ -645,28 +645,28 @@ func TestResolvedFromLockfile(t *testing.T) {
 			skipWindows: true,
 		},
 		{
-			name:        "parse with no lockfiles returns error",
+			name:        "parse with no lockfiles returns nothing",
 			lockfiles:   map[string]string{},
 			wantDeps:    nil,
-			wantAnyErr:  true,
+			wantAnyErr:  false,
 			skipWindows: false,
 		},
 		{
 			name: "parse empty lockfiles returns error",
 			lockfiles: map[string]string{
-				"testproject/node_modules/package-lock.json": "empty-file.json",
+				"testproject/node_modules/.package-lock.json": "empty-file.json",
 			},
 			wantDeps:    nil,
 			wantAnyErr:  true,
 			skipWindows: true,
 		},
 		{
-			name: "parse lockfiles without dependencies and packages returns error",
+			name: "parse lockfiles without dependencies and packages returns nothing",
 			lockfiles: map[string]string{
-				"testproject/node_modules/package-lock.json": "testdata/no-dep-list-package-lock.json",
+				"testproject/node_modules/.package-lock.json": "testdata/no-dep-list-package-lock.json",
 			},
-			wantDeps:    nil,
-			wantAnyErr:  true,
+			wantDeps:    map[string]bool{},
+			wantAnyErr:  false,
 			skipWindows: true,
 		},
 	}
