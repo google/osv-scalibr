@@ -109,8 +109,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                              | Extractor Plugin                     |
-|-----------------------------------|--------------------------------------|
+| Type                                        | Extractor Plugin                     |
+|---------------------------------------------|--------------------------------------|
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
@@ -128,6 +128,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| Mysql Mylogin                               | `secrets/mysqlmylogin`               |
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
 | Postman API key                             | `secrets/postmanapikey`              |
