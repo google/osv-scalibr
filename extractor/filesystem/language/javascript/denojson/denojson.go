@@ -407,19 +407,13 @@ func parseImportSpecifier(specifier string) *extractor.Package {
 // parseNPMNameAndVersion parses the name and version from a npm package specifier.
 // Handles both regular packages (e.g., "chalk@1") and scoped packages (e.g., "@types/node@14").
 func parseNPMNameAndVersion(specifier string) (name, version string) {
+	if strings.HasPrefix(specifier, "@") {
+		specifier = strings.TrimPrefix(specifier, "@")
+	}
 	parts := strings.SplitN(specifier, "@", 2)
 	if len(parts) == 1 {
 		return parts[0], ""
 	}
-	// Handle scoped packages (e.g., @types/node@14)
-	if strings.HasPrefix(specifier, "@") {
-		idx := strings.LastIndex(specifier, "@")
-		if idx > 0 {
-			return specifier[:idx], specifier[idx+1:]
-		}
-		return specifier, ""
-	}
-
 	return parts[0], parts[1]
 }
 
