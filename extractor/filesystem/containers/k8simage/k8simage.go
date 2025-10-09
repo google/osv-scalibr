@@ -156,6 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	images, err := parseK8sYAML(ctx, input.Reader)
 	if err != nil {
 		// Not a K8s YAML file.
+		//nolint:nilerr
 		return inventory.Inventory{}, nil
 	}
 
