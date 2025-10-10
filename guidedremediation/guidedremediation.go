@@ -31,6 +31,7 @@ import (
 
 	"deps.dev/util/resolve"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	pythonlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/python"
@@ -73,7 +74,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 
 	if hasManifest {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 		if err != nil {
 			return result.Result{}, err
 		}
@@ -130,7 +131,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 	var lockfileRW lockfile.ReadWriter
 	if opts.Manifest != "" {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 		if err != nil {
 			return err
 		}
@@ -185,7 +186,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 	}
 
 	var err error
-	manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+	manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -643,13 +644,18 @@ func writePoetryLockfile(ctx context.Context, path string) error {
 	return cmd.Run()
 }
 
-func readWriterForManifest(manifestPath string, registry string) (manifest.ReadWriter, error) {
+// readWriterForManifest returns the manifest read/write interface for the given manifest path.
+// mavenClient is used to read/write Maven manifests, and may be nil for other ecosystems.
+func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
-		return maven.GetReadWriter(registry, "")
+		if mavenClient == nil {
+			return nil, errors.New("a maven client must be provided for pom.xml")
+		}
+		return maven.GetReadWriter(mavenClient)
 	case "package.json":
-		return npm.GetReadWriter(registry)
+		return npm.GetReadWriter()
 	case "requirements.in", "requirements.txt":
 		return python.GetRequirementsReadWriter()
 	case "pyproject.toml":
@@ -658,6 +664,7 @@ func readWriterForManifest(manifestPath string, registry string) (manifest.ReadW
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
 
+// readWriterForLockfile returns the lockfile read/write interface for the given lockfile path.
 func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
 	switch strings.ToLower(baseName) {

@@ -43,6 +43,9 @@ func NewMavenRegistryClient(ctx context.Context, remote, local string) (*MavenRe
 
 // NewMavenRegistryClientWithAPI makes a new MavenRegistryClient with the given Maven registry client.
 func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient) *MavenRegistryClient {
+	if api == nil {
+		panic("NewMavenRegistryClientWithAPI: api must not be nil")
+	}
 	return &MavenRegistryClient{api: api}
 }
 
