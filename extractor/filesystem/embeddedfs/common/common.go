@@ -340,7 +340,7 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 			return fmt.Errorf("failed to create file %s: %w", outPath, err)
 		}
 
-		useFat := sde.GeneralSecondaryFlags.NoFatChain() == false
+		useFat := !sde.GeneralSecondaryFlags.NoFatChain()
 		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
 			// Ignore this error because we're going to manually truncate the file at the end
 			if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
@@ -529,7 +529,7 @@ func (e *EmbeddedDirFS) Close() error {
 	return nil
 }
 
-// TmpPathsM returns the temporary paths associated with the filesystem for cleanup.
+// TempPaths returns the temporary paths associated with the filesystem for cleanup.
 func (e *EmbeddedDirFS) TempPaths() []string {
 	return e.TmpPaths
 }
