@@ -43,6 +43,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
@@ -108,6 +109,7 @@ var (
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
+		fromVeles(paystacksecretkey.NewSecretKeyValidator(), "secrets/paystacksecretkeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

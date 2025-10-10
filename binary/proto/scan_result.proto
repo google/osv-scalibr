@@ -698,6 +698,8 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    PaystackSecretKey paystack_secret_key = 44;
+
   }
 
   message GCPSAK {
@@ -926,6 +928,10 @@ message SecretData {
   }
 
   message OnePasswordRecoveryCode {
+    string key = 1;
+  }
+
+  message PaystackSecretKey {
     string key = 1;
   }
 }
