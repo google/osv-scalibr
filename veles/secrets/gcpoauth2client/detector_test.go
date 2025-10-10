@@ -71,20 +71,12 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name:  "client ID but no client secret",
 			input: `app_id: 333333333333-standalone.apps.googleusercontent.com`,
-			want: []veles.Secret{
-				gcpoauth2client.Credentials{
-					ID: "333333333333-standalone.apps.googleusercontent.com",
-				},
-			},
+			want:  nil,
 		},
 		{
 			name:  "client secret but no client ID",
 			input: `app_secret: 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`,
-			want: []veles.Secret{
-				gcpoauth2client.Credentials{
-					Secret: "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",
-				},
-			},
+			want:  nil,
 		},
 		// -- Single Client ID and Secret in close proximity (happy path) ---
 		{
@@ -97,6 +89,12 @@ GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 					Secret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
 				},
 			},
+		},
+		{
+			name: "client secret in with invalid prefix",
+			input: `123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+abcGOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
+			want: nil,
 		},
 		{
 			name: "client ID and secret in close proximity in json format",
@@ -172,14 +170,7 @@ GOCSPX-SecondSecret987654321098`,
 111111111111-first.apps.googleusercontent.com` + strings.Repeat("\nfiller line with random data", 500) + `
 config_app2:
 GOCSPX-FarAwaySecret123456789012`,
-			want: []veles.Secret{
-				gcpoauth2client.Credentials{
-					ID: "111111111111-first.apps.googleusercontent.com",
-				},
-				gcpoauth2client.Credentials{
-					Secret: "GOCSPX-FarAwaySecret123456789012",
-				},
-			},
+			want: nil,
 		},
 		{
 			name: "multiple client IDs with one secret - closest pairing",
@@ -190,9 +181,6 @@ shared_secret: GOCSPX-SharedSecret123456789012`,
 				gcpoauth2client.Credentials{
 					ID:     "222222222222-second.apps.googleusercontent.com",
 					Secret: "GOCSPX-SharedSecret123456789012",
-				},
-				gcpoauth2client.Credentials{
-					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 			},
 		},
@@ -205,9 +193,6 @@ second_secret: GOCSPX-SecondSecret987654321098`,
 				gcpoauth2client.Credentials{
 					ID:     "333333333333-shared.apps.googleusercontent.com",
 					Secret: "GOCSPX-FirstSecret123456789012",
-				},
-				gcpoauth2client.Credentials{
-					Secret: "GOCSPX-SecondSecret987654321098",
 				},
 			},
 		},
@@ -223,9 +208,6 @@ secret: GOCSPX-DuplicateTest123456789012`,
 					ID:     "123456789012-duplicate.apps.googleusercontent.com",
 					Secret: "GOCSPX-DuplicateTest123456789012",
 				},
-				gcpoauth2client.Credentials{
-					ID: "123456789012-duplicate.apps.googleusercontent.com",
-				},
 			},
 		},
 		{
@@ -237,9 +219,6 @@ second_secret: GOCSPX-DuplicateSecret123456789`,
 			want: []veles.Secret{
 				gcpoauth2client.Credentials{
 					ID:     "111111111111-unique.apps.googleusercontent.com",
-					Secret: "GOCSPX-DuplicateSecret123456789",
-				},
-				gcpoauth2client.Credentials{
 					Secret: "GOCSPX-DuplicateSecret123456789",
 				},
 			},
@@ -277,12 +256,6 @@ first_id_again: 111111111111-first.apps.googleusercontent.com`,
 				gcpoauth2client.Credentials{
 					ID:     "222222222222-second.apps.googleusercontent.com",
 					Secret: "GOCSPX-UniqueSecret123456789012",
-				},
-				gcpoauth2client.Credentials{
-					ID: "111111111111-first.apps.googleusercontent.com",
-				},
-				gcpoauth2client.Credentials{
-					ID: "111111111111-first.apps.googleusercontent.com",
 				},
 			},
 		},

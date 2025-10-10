@@ -18,7 +18,6 @@ import (
 	"reflect"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/language/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -34,6 +33,8 @@ import (
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
+	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 )
@@ -88,6 +89,9 @@ var (
 		reflect.TypeOf(&spb.Package_NvmMetadata{}): func(p *spb.Package) any {
 			return nvmmeta.ToStruct(p.GetNvmMetadata())
 		},
+		reflect.TypeOf(&spb.NodeVersionMetadata{}): func(p *spb.Package) any {
+			return nodeversionmeta.ToStruct(p.GetNodeversionMetadata())
+		},
 		reflect.TypeOf(&spb.Package_MacportsMetadata{}): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
@@ -113,6 +117,7 @@ var (
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
+		(*nodeversionmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 	}

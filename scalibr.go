@@ -413,6 +413,14 @@ func newScanResult(o *newScanResultOptions) *ScanResult {
 		status.FailureReason = o.Err.Error()
 	} else {
 		status.Status = plugin.ScanStatusSucceeded
+		// If any plugin failed, set the overall scan status to partially succeeded.
+		for _, pluginStatus := range o.PluginStatus {
+			if pluginStatus.Status.Status == plugin.ScanStatusFailed {
+				status.Status = plugin.ScanStatusPartiallySucceeded
+				status.FailureReason = "not all plugins succeeded, see the plugin statuses"
+				break
+			}
+		}
 	}
 	r := &ScanResult{
 		StartTime:    o.StartTime,

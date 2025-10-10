@@ -15,7 +15,6 @@
 package hashicorpvault
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -83,7 +82,7 @@ func TestNewTokenDetector_Detect(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reader := strings.NewReader(test.input)
-			secrets, err := engine.Detect(context.Background(), reader)
+			secrets, err := engine.Detect(t.Context(), reader)
 			if err != nil {
 				t.Fatalf("Detect() returned error: %v", err)
 			}
@@ -175,7 +174,7 @@ func TestNewAppRoleDetector_Detect(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reader := strings.NewReader(test.input)
-			secrets, err := engine.Detect(context.Background(), reader)
+			secrets, err := engine.Detect(t.Context(), reader)
 			if err != nil {
 				t.Fatalf("Detect() returned error: %v", err)
 			}
@@ -196,7 +195,7 @@ func TestDetector_LargeInput(t *testing.T) {
 	}
 
 	reader := strings.NewReader(largeInput)
-	secrets, err := engine.Detect(context.Background(), reader)
+	secrets, err := engine.Detect(t.Context(), reader)
 	if err != nil {
 		t.Fatalf("Detect() returned error: %v", err)
 	}
@@ -217,7 +216,7 @@ func TestDetector_EmptyInput(t *testing.T) {
 	}
 
 	reader := strings.NewReader("")
-	secrets, err := engine.Detect(context.Background(), reader)
+	secrets, err := engine.Detect(t.Context(), reader)
 	if err != nil {
 		t.Fatalf("Detect() returned error: %v", err)
 	}
@@ -292,7 +291,7 @@ func TestDetect_IncorrectFormat(t *testing.T) {
 			for _, test := range tests {
 				t.Run(test.name, func(t *testing.T) {
 					reader := strings.NewReader(test.input)
-					secrets, err := engine.Detect(context.Background(), reader)
+					secrets, err := engine.Detect(t.Context(), reader)
 					if err != nil {
 						t.Fatalf("Detect() returned error: %v", err)
 					}

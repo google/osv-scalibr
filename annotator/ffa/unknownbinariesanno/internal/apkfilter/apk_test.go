@@ -15,7 +15,6 @@
 package apkfilter
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,7 +62,7 @@ func TestShouldExclude(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			filter := ApkFilter{}
-			got := filter.ShouldExclude(context.Background(), nil, tc.path)
+			got := filter.ShouldExclude(t.Context(), nil, tc.path)
 			if got != tc.isExcluded {
 				t.Errorf("ShouldExclude(%q): got %v, want %v", tc.path, got, tc.isExcluded)
 			}
