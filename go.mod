@@ -9,7 +9,6 @@ require (
 	deps.dev/util/pypi v0.0.0-20250903005441-604c45d5b44b
 	deps.dev/util/resolve v0.0.0-20250903005441-604c45d5b44b
 	deps.dev/util/semver v0.0.0-20250903005441-604c45d5b44b
-	github.com/0xXA/go-exfat-1 v0.0.0-20251008061252-5d818a0fb693
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
@@ -22,6 +21,7 @@ require (
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
 	github.com/docker/docker v28.2.2+incompatible
+	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
 	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gobwas/glob v0.2.3

@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xXA/go-exfat-1"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
+	"github.com/dsoprea/go-exfat"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
@@ -336,7 +336,10 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 
 		useFat := sde.GeneralSecondaryFlags.NoFatChain() == false
 		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
-			return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+			// Ignore this error because we're going to manually truncate the file at the end
+			if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
+				return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+			}
 		}
 
 		err = outFile.Truncate(int64(sde.ValidDataLength))
