@@ -109,8 +109,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                              | Extractor Plugin                     |
-|-----------------------------------|--------------------------------------|
+| Type                                        | Extractor Plugin                     |
+|---------------------------------------------|--------------------------------------|
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
@@ -146,6 +146,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
+| Paystack Secret Key                         | `secrets/paystacksecretkey`          |
+
 
 ### Container inventory
 
