@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/enricher"
@@ -124,7 +125,10 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			[]*extractor.BaseImageDetails{},
 		}
 
-		for _, lm := range cim.LayerMetadata {
+		// Loop backwards through the layers, from the newest to the oldest layer.
+		// This is because base images are identified by the chain ID of the newest layer in the image,
+		// so all older layer must belong to that base image.
+		for _, lm := range slices.Backward(cim.LayerMetadata) {
 			chainID := lm.ChainID.String()
 			// Only enrich layers that have a chain ID.
 			if chainID == "" {
@@ -160,8 +164,9 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 			if len(baseImages) > 0 {
 				cim.BaseImages = append(cim.BaseImages, baseImages)
-				lm.BaseImageIndex = len(cim.BaseImages) - 1
 			}
+			// Always set the base image index to the last element in the slice.
+			lm.BaseImageIndex = len(cim.BaseImages) - 1
 		}
 	}
 
