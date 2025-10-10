@@ -49,8 +49,8 @@ func mockCratesioServer(t *testing.T, expectedKey string) *httptest.Server {
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if it's a PUT request to the expected crates endpoint
-		expectedPath := "/api/v1/crates/velesvalidationtestcrate/owners"
-		if r.Method != http.MethodPut || r.URL.Path != expectedPath {
+		expectedPath := "/api/v1/crates/osvscalibr"
+		if r.Method != http.MethodPut || !strings.HasPrefix(r.URL.Path, expectedPath) {
 			t.Errorf("unexpected request: %s %s, expected: PUT %s", r.Method, r.URL.Path, expectedPath)
 			http.Error(w, "not found", http.StatusNotFound)
 			return

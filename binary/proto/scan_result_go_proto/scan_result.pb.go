@@ -5105,7 +5105,7 @@ type SecretData struct {
 	//	*SecretData_GithubFineGrainedPersonalAccessToken_
 	//	*SecretData_GithubAppUserToServerToken_
 	//	*SecretData_GithubOauthToken
-	//	*SecretData_Crateio
+	//	*SecretData_CratesIO
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5427,10 +5427,10 @@ func (x *SecretData) GetGithubOauthToken() *SecretData_GithubOAuthToken {
 	return nil
 }
 
-func (x *SecretData) GetCrateio() *SecretData_CreatesioAPIToken {
+func (x *SecretData) GetCratesIO() *SecretData_CratesIOAPIToken {
 	if x != nil {
-		if x, ok := x.Secret.(*SecretData_Crateio); ok {
-			return x.Crateio
+		if x, ok := x.Secret.(*SecretData_CratesIO); ok {
+			return x.CratesIO
 		}
 	}
 	return nil
@@ -5564,8 +5564,8 @@ type SecretData_GithubOauthToken struct {
 	GithubOauthToken *SecretData_GithubOAuthToken `protobuf:"bytes,31,opt,name=github_oauth_token,json=githubOauthToken,proto3,oneof"`
 }
 
-type SecretData_Crateio struct {
-	Crateio *SecretData_CreatesioAPIToken `protobuf:"bytes,32,opt,name=crateio,proto3,oneof"`
+type SecretData_CratesIO struct {
+	CratesIO *SecretData_CratesIOAPIToken `protobuf:"bytes,32,opt,name=cratesIO,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -5630,7 +5630,7 @@ func (*SecretData_GithubAppUserToServerToken_) isSecretData_Secret() {}
 
 func (*SecretData_GithubOauthToken) isSecretData_Secret() {}
 
-func (*SecretData_Crateio) isSecretData_Secret() {}
+func (*SecretData_CratesIO) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -7082,27 +7082,27 @@ func (x *SecretData_DigitalOceanAPIToken) GetKey() string {
 	return ""
 }
 
-type SecretData_CreatesioAPIToken struct {
+type SecretData_CratesIOAPIToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SecretData_CreatesioAPIToken) Reset() {
-	*x = SecretData_CreatesioAPIToken{}
+func (x *SecretData_CratesIOAPIToken) Reset() {
+	*x = SecretData_CratesIOAPIToken{}
 	mi := &file_proto_scan_result_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SecretData_CreatesioAPIToken) String() string {
+func (x *SecretData_CratesIOAPIToken) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SecretData_CreatesioAPIToken) ProtoMessage() {}
+func (*SecretData_CratesIOAPIToken) ProtoMessage() {}
 
-func (x *SecretData_CreatesioAPIToken) ProtoReflect() protoreflect.Message {
+func (x *SecretData_CratesIOAPIToken) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_scan_result_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -7114,12 +7114,12 @@ func (x *SecretData_CreatesioAPIToken) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SecretData_CreatesioAPIToken.ProtoReflect.Descriptor instead.
-func (*SecretData_CreatesioAPIToken) Descriptor() ([]byte, []int) {
+// Deprecated: Use SecretData_CratesIOAPIToken.ProtoReflect.Descriptor instead.
+func (*SecretData_CratesIOAPIToken) Descriptor() ([]byte, []int) {
 	return file_proto_scan_result_proto_rawDescGZIP(), []int{54, 15}
 }
 
-func (x *SecretData_CreatesioAPIToken) GetToken() string {
+func (x *SecretData_CratesIOAPIToken) GetToken() string {
 	if x != nil {
 		return x.Token
 	}
@@ -8331,8 +8331,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"$github_classic_personal_access_token\x18\x1c \x01(\v24.scalibr.SecretData.GithubClassicPersonalAccessTokenH\x00R githubClassicPersonalAccessToken\x12\x93\x01\n" +
 	")github_fine_grained_personal_access_token\x18\x1d \x01(\v28.scalibr.SecretData.GithubFineGrainedPersonalAccessTokenH\x00R$githubFineGrainedPersonalAccessToken\x12u\n" +
 	"\x1fgithub_app_user_to_server_token\x18\x1e \x01(\v2..scalibr.SecretData.GithubAppUserToServerTokenH\x00R\x1agithubAppUserToServerToken\x12T\n" +
-	"\x12github_oauth_token\x18\x1f \x01(\v2$.scalibr.SecretData.GithubOAuthTokenH\x00R\x10githubOauthToken\x12A\n" +
-	"\acrateio\x18  \x01(\v2%.scalibr.SecretData.CreatesioAPITokenH\x00R\acrateio\x1a\xb0\x03\n" +
+	"\x12github_oauth_token\x18\x1f \x01(\v2$.scalibr.SecretData.GithubOAuthTokenH\x00R\x10githubOauthToken\x12B\n" +
+	"\bcratesIO\x18  \x01(\v2$.scalibr.SecretData.CratesIOAPITokenH\x00R\bcratesIO\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -8379,8 +8379,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x1cPostmanCollectionAccessToken\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
 	"\x14DigitalOceanAPIToken\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1a)\n" +
-	"\x11CreatesioAPIToken\x12\x14\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
+	"\x10CratesIOAPIToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x1a-\n" +
 	"\x15GithubAppRefreshToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x1a4\n" +
@@ -8587,7 +8587,7 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_PostmanAPIKey)(nil),                        // 84: scalibr.SecretData.PostmanAPIKey
 	(*SecretData_PostmanCollectionAccessToken)(nil),         // 85: scalibr.SecretData.PostmanCollectionAccessToken
 	(*SecretData_DigitalOceanAPIToken)(nil),                 // 86: scalibr.SecretData.DigitalOceanAPIToken
-	(*SecretData_CreatesioAPIToken)(nil),                    // 87: scalibr.SecretData.CreatesioAPIToken
+	(*SecretData_CratesIOAPIToken)(nil),                     // 87: scalibr.SecretData.CratesIOAPIToken
 	(*SecretData_GithubAppRefreshToken)(nil),                // 88: scalibr.SecretData.GithubAppRefreshToken
 	(*SecretData_GithubAppServerToServerToken)(nil),         // 89: scalibr.SecretData.GithubAppServerToServerToken
 	(*SecretData_GithubClassicPersonalAccessToken)(nil),     // 90: scalibr.SecretData.GithubClassicPersonalAccessToken
@@ -8709,7 +8709,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	91,  // 99: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
 	93,  // 100: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
 	92,  // 101: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
-	87,  // 102: scalibr.SecretData.crateio:type_name -> scalibr.SecretData.CreatesioAPIToken
+	87,  // 102: scalibr.SecretData.cratesIO:type_name -> scalibr.SecretData.CratesIOAPIToken
 	4,   // 103: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
 	104, // 104: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
 	62,  // 105: scalibr.Location.filepath:type_name -> scalibr.Filepath
@@ -8806,7 +8806,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_GithubFineGrainedPersonalAccessToken_)(nil),
 		(*SecretData_GithubAppUserToServerToken_)(nil),
 		(*SecretData_GithubOauthToken)(nil),
-		(*SecretData_Crateio)(nil),
+		(*SecretData_CratesIO)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[56].OneofWrappers = []any{
 		(*Location_Filepath)(nil),

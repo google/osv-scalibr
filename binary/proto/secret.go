@@ -41,7 +41,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	velescratesio "github.com/google/osv-scalibr/veles/secrets/createsioapitoken"
+	cratesioapitoken "github.com/google/osv-scalibr/veles/secrets/createsioapitoken"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -111,7 +111,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
-	case velescratesio.CreatesioAPIToken:
+	case cratesioapitoken.CreatesioAPIToken:
 		return createsioAPITokenToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
@@ -193,10 +193,10 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 	}
 }
 
-func createsioAPITokenToProto(s velescratesio.CreatesioAPIToken) *spb.SecretData {
+func createsioAPITokenToProto(s cratesioapitoken.CreatesioAPIToken) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_Crateio{
-			Crateio: &spb.SecretData_CreatesioAPIToken{
+		Secret: &spb.SecretData_CratesIO{
+			CratesIO: &spb.SecretData_CratesIOAPIToken{
 				Token: s.Token,
 			},
 		},
@@ -598,8 +598,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
-	case *spb.SecretData_Crateio:
-		return createsioAPITokenToStruct(s.GetCrateio()), nil
+	case *spb.SecretData_CratesIO:
+		return createsioAPITokenToStruct(s.GetCratesIO()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -677,8 +677,8 @@ func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) vele
 	}
 }
 
-func createsioAPITokenToStruct(kPB *spb.SecretData_CreatesioAPIToken) velescratesio.CreatesioAPIToken {
-	return velescratesio.CreatesioAPIToken{
+func createsioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapitoken.CreatesioAPIToken {
+	return cratesioapitoken.CreatesioAPIToken{
 		Token: kPB.GetToken(),
 	}
 }

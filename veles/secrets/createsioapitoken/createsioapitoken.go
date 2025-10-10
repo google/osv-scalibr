@@ -15,7 +15,7 @@
 package createsioapitoken
 
 // CreatesioAPIToken is a Veles Secret that holds relevant information for a
-// DigitalOcean API Token (prefix `dop_v1_`).
+// Crates.io API Token (prefix `cio`).
 // CreatesioAPIToken represents an API Token used to authenticate requests
 type CreatesioAPIToken struct {
 	Token string

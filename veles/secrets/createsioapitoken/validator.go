@@ -17,21 +17,14 @@ package createsioapitoken
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
-
-// cratesErrorResponse represents the error response from Crates.io API
-type cratesErrorResponse struct {
-	Errors []struct {
-		Detail string `json:"detail"`
-	} `json:"errors"`
-}
 
 // Validator validates Crates.io API keys via the Crates.io API endpoint.
 type Validator struct {
@@ -68,7 +61,11 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 // while invalid tokens return 401 Unauthorized.
 func (v *Validator) Validate(ctx context.Context, key CreatesioAPIToken) (veles.ValidationStatus, error) {
 	// Use a random crate name that is unlikely to exist
-	randomCrateName := "velesvalidationtestcrate"
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return veles.ValidationFailed, fmt.Errorf("failed to generate random hex: %w", err)
+	}
+	randomCrateName := "osvscalibr" + hex.EncodeToString(randomBytes)
 	randomUserName := "velesvalidationtestuser"
 
 	// Prepare the JSON payload
@@ -95,40 +92,12 @@ func (v *Validator) Validate(ctx context.Context, key CreatesioAPIToken) (veles.
 	}
 	defer res.Body.Close()
 
-	// Read and parse the response body
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
+	switch res.StatusCode {
+	case http.StatusNotFound: // crate doesn't exist, but the token is valid
+		return veles.ValidationValid, nil
+	case http.StatusForbidden: // invalid token
+		return veles.ValidationInvalid, nil
+	default:
+		return veles.ValidationFailed, nil
 	}
-
-	// Parse the JSON response to check error details
-	var errorResp cratesErrorResponse
-	if err := json.Unmarshal(body, &errorResp); err != nil {
-		// If JSON parsing fails, fall back to status code only
-		switch res.StatusCode {
-		case http.StatusNotFound: // crate doesn't exist, but the token is valid
-			return veles.ValidationValid, nil
-		case http.StatusForbidden: // invalid token
-			return veles.ValidationInvalid, nil
-		default:
-			return veles.ValidationFailed, nil
-		}
-	}
-
-	// Check both status code and error details for robust validation
-	if len(errorResp.Errors) > 0 {
-		detail := errorResp.Errors[0].Detail
-
-		// Valid token: "crates ****** does not exist" error
-		if res.StatusCode == http.StatusNotFound && strings.Contains(detail, "does not exist") {
-			return veles.ValidationValid, nil
-		}
-
-		// Invalid token: ith "authentication failed" error
-		if res.StatusCode == http.StatusForbidden && strings.Contains(detail, "authentication failed") {
-			return veles.ValidationInvalid, nil
-		}
-	}
-
-	return veles.ValidationFailed, nil
 }

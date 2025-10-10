@@ -682,7 +682,7 @@ message SecretData {
         github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
-    CreatesioAPIToken crateio = 32;
+    CratesIOAPIToken cratesIO = 32;
   }
 
   message GCPSAK {
@@ -766,7 +766,7 @@ message SecretData {
     string key = 1;
   }
 
-  message CreatesioAPIToken {
+  message CratesIOAPIToken {
     string token = 1;
   }
 
