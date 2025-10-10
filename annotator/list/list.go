@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
+	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
 	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
@@ -49,6 +50,9 @@ var VEX = InitMap{
 // Misc annotators.
 var Misc = InitMap{fromnpm.Name: {fromnpm.New}}
 
+// FFA (Full Filesystem Accountability) related annotators.
+var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
+
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{cachedir.Name: {cachedir.New}}
 
@@ -56,11 +60,13 @@ var Default = InitMap{cachedir.Name: {cachedir.New}}
 var All = concat(
 	VEX,
 	Misc,
+	FFA,
 )
 
 var annotatorNames = concat(All, InitMap{
 	"vex":                vals(VEX),
 	"misc":               vals(Misc),
+	"ffa":                vals(FFA),
 	"annotators/default": vals(Default),
 	"default":            vals(Default),
 	"annotators/all":     vals(All),
