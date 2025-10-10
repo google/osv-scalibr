@@ -37,6 +37,7 @@ var cacheDirPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/?tmp/`),
 	regexp.MustCompile(`^/?home/[^/]+/\.local/share/Trash/`),
 	regexp.MustCompile(`^/?home/[^/]+/\.cache/`),
+	regexp.MustCompile(`^/?root/\.cache/`),
 	regexp.MustCompile(`^/?var/cache/`),
 
 	// macOS

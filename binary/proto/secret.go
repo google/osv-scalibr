@@ -19,10 +19,14 @@ import (
 	"fmt"
 	"time"
 
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
@@ -32,16 +36,16 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
-
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -110,6 +114,12 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case velesslacktoken.SlackAppConfigAccessToken:
+		return slackAppConfigAccessTokenToProto(t), nil
+	case velesslacktoken.SlackAppConfigRefreshToken:
+		return slackAppConfigRefreshTokenToProto(t), nil
+	case velesslacktoken.SlackAppLevelToken:
+		return slackAppLevelTokenToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
 		return anthropicWorkspaceAPIKeyToProto(t.Key), nil
 	case velesanthropicapikey.ModelAPIKey:
@@ -146,6 +156,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
 		return postmanCollectionTokenToProto(t), nil
+	case velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey:
+		return azureStorageAccountAccessKeyToProto(t), nil
 	case veleshashicorpvault.Token:
 		return hashicorpVaultTokenToProto(t), nil
 	case veleshashicorpvault.AppRoleCredentials:
@@ -164,6 +176,18 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case velesonepasswordconnecttoken.OnePasswordConnectToken:
+		return onePasswordConnectTokenToProto(t), nil
+	case velesonepasswordkeys.OnePasswordSecretKey:
+		return onepasswordSecretKeyToProto(t), nil
+	case velesonepasswordkeys.OnePasswordServiceToken:
+		return onepasswordServiceTokenToProto(t), nil
+	case velesonepasswordkeys.OnePasswordRecoveryCode:
+		return onepasswordRecoveryCodeToProto(t), nil
+	case veleshashicorpcloudplatform.ClientCredentials:
+		return hashicorpCloudPlatformCredentialsToProto(t), nil
+	case veleshashicorpcloudplatform.AccessToken:
+		return hashicorpCloudPlatformTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -185,6 +209,36 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 		Secret: &spb.SecretData_Digitalocean{
 			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func slackAppLevelTokenToProto(s velesslacktoken.SlackAppLevelToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackAppLevelToken_{
+			SlackAppLevelToken: &spb.SecretData_SlackAppLevelToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func slackAppConfigAccessTokenToProto(s velesslacktoken.SlackAppConfigAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackAppConfigAccessToken_{
+			SlackAppConfigAccessToken: &spb.SecretData_SlackAppConfigAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func slackAppConfigRefreshTokenToProto(s velesslacktoken.SlackAppConfigRefreshToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SlackAppConfigRefreshToken_{
+			SlackAppConfigRefreshToken: &spb.SecretData_SlackAppConfigRefreshToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -244,6 +298,23 @@ func anthropicModelAPIKeyToProto(key string) *spb.SecretData {
 	}
 }
 
+func onePasswordConnectTokenToProto(s velesonepasswordconnecttoken.OnePasswordConnectToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordConnectToken{
+			OnepasswordConnectToken: &spb.SecretData_OnePasswordConnectToken{
+				DeviceUuid:        s.DeviceUUID,
+				Version:           s.Version,
+				EncryptedData:     s.EncryptedData,
+				EncryptionKeyId:   s.EncryptionKeyID,
+				Iv:                s.IV,
+				UniqueKeyId:       s.UniqueKeyID,
+				VerifierSalt:      s.VerifierSalt,
+				VerifierLocalHash: s.VerifierLocalHash,
+			},
+		},
+	}
+}
+
 func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Perplexity{
@@ -258,6 +329,16 @@ func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GrokXaiApiKey{
 			GrokXaiApiKey: &spb.SecretData_GrokXAIAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func azureStorageAccountAccessKeyToProto(s velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AzureStorageAccountAccessKey_{
+			AzureStorageAccountAccessKey: &spb.SecretData_AzureStorageAccountAccessKey{
 				Key: s.Key,
 			},
 		},
@@ -499,6 +580,36 @@ func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
 	}
 }
 
+func onepasswordSecretKeyToProto(s velesonepasswordkeys.OnePasswordSecretKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordSecretKey{
+			OnepasswordSecretKey: &spb.SecretData_OnePasswordSecretKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func onepasswordServiceTokenToProto(s velesonepasswordkeys.OnePasswordServiceToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordServiceToken{
+			OnepasswordServiceToken: &spb.SecretData_OnePasswordServiceToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func onepasswordRecoveryCodeToProto(s velesonepasswordkeys.OnePasswordRecoveryCode) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_OnepasswordRecoveryCode{
+			OnepasswordRecoveryCode: &spb.SecretData_OnePasswordRecoveryCode{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -585,6 +696,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_SlackAppConfigRefreshToken_:
+		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
+	case *spb.SecretData_SlackAppConfigAccessToken_:
+		return slackAppConfigAccessTokenToStruct(s.GetSlackAppConfigAccessToken()), nil
+	case *spb.SecretData_SlackAppLevelToken_:
+		return slackAppLevelTokenToStruct(s.GetSlackAppLevelToken()), nil
 	case *spb.SecretData_AnthropicWorkspaceApiKey:
 		return velesanthropicapikey.WorkspaceAPIKey{Key: s.GetAnthropicWorkspaceApiKey().GetKey()}, nil
 	case *spb.SecretData_AnthropicModelApiKey:
@@ -593,6 +710,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
 	case *spb.SecretData_GrokXaiApiKey:
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
+	case *spb.SecretData_AzureStorageAccountAccessKey_:
+		return velesazurestorageaccountaccesskeyToStruct(s.GetAzureStorageAccountAccessKey()), nil
 	case *spb.SecretData_GrokXaiManagementApiKey:
 		return velesgrokxaiapikey.GrokXAIManagementKey{Key: s.GetGrokXaiManagementApiKey().GetKey()}, nil
 	case *spb.SecretData_GithubAppRefreshToken_:
@@ -651,6 +770,38 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
+	case *spb.SecretData_OnepasswordSecretKey:
+		return velesonepasswordkeys.OnePasswordSecretKey{
+			Key: s.GetOnepasswordSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordServiceToken:
+		return velesonepasswordkeys.OnePasswordServiceToken{
+			Key: s.GetOnepasswordServiceToken().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordRecoveryCode:
+		return velesonepasswordkeys.OnePasswordRecoveryCode{
+			Key: s.GetOnepasswordRecoveryCode().GetKey(),
+		}, nil
+	case *spb.SecretData_OnepasswordConnectToken:
+		return onePasswordConnectTokenToStruct(s.GetOnepasswordConnectToken()), nil
+	case *spb.SecretData_HashicorpCloudPlatformCredentials:
+		return veleshashicorpcloudplatform.ClientCredentials{
+			ClientID:     s.GetHashicorpCloudPlatformCredentials().GetClientId(),
+			ClientSecret: s.GetHashicorpCloudPlatformCredentials().GetClientSecret(),
+		}, nil
+	case *spb.SecretData_HashicorpCloudPlatformToken:
+		t := s.GetHashicorpCloudPlatformToken()
+		return veleshashicorpcloudplatform.AccessToken{
+			Token:          t.GetToken(),
+			OrganizationID: t.GetOrganizationId(),
+			ProjectID:      t.GetProjectId(),
+			PrincipalID:    t.GetPrincipalId(),
+			PrincipalType:  t.GetPrincipalType(),
+			ServiceName:    t.GetServiceName(),
+			GroupIDs:       t.GetGroupIds(),
+			UserID:         t.GetUserId(),
+			UserEmail:      t.GetUserEmail(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -659,6 +810,24 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
 	return velesdigitalocean.DigitaloceanAPIToken{
 		Key: kPB.GetKey(),
+	}
+}
+
+func slackAppLevelTokenToStruct(kPB *spb.SecretData_SlackAppLevelToken) velesslacktoken.SlackAppLevelToken {
+	return velesslacktoken.SlackAppLevelToken{
+		Token: kPB.GetToken(),
+	}
+}
+
+func slackAppConfigAccessTokenToStruct(kPB *spb.SecretData_SlackAppConfigAccessToken) velesslacktoken.SlackAppConfigAccessToken {
+	return velesslacktoken.SlackAppConfigAccessToken{
+		Token: kPB.GetToken(),
+	}
+}
+
+func slackAppConfigRefreshTokenToStruct(kPB *spb.SecretData_SlackAppConfigRefreshToken) velesslacktoken.SlackAppConfigRefreshToken {
+	return velesslacktoken.SlackAppConfigRefreshToken{
+		Token: kPB.GetToken(),
 	}
 }
 
@@ -671,6 +840,22 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func onePasswordConnectTokenToStruct(kPB *spb.SecretData_OnePasswordConnectToken) velesonepasswordconnecttoken.OnePasswordConnectToken {
+	if kPB == nil {
+		return velesonepasswordconnecttoken.OnePasswordConnectToken{}
+	}
+	return velesonepasswordconnecttoken.OnePasswordConnectToken{
+		DeviceUUID:        kPB.GetDeviceUuid(),
+		Version:           kPB.GetVersion(),
+		EncryptedData:     kPB.GetEncryptedData(),
+		EncryptionKeyID:   kPB.GetEncryptionKeyId(),
+		IV:                kPB.GetIv(),
+		UniqueKeyID:       kPB.GetUniqueKeyId(),
+		VerifierSalt:      kPB.GetVerifierSalt(),
+		VerifierLocalHash: kPB.GetVerifierLocalHash(),
 	}
 }
 
@@ -723,6 +908,12 @@ func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplex
 	}
 }
 
+func velesazurestorageaccountaccesskeyToStruct(kPB *spb.SecretData_AzureStorageAccountAccessKey) velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey {
+	return velesazurestorageaccountaccesskey.AzureStorageAccountAccessKey{
+		Key: kPB.GetKey(),
+	}
+}
+
 func privatekeyToStruct(pkPB *spb.SecretData_PrivateKey) velesprivatekey.PrivateKey {
 	return velesprivatekey.PrivateKey{
 		Block: pkPB.GetBlock(),
@@ -771,5 +962,34 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func hashicorpCloudPlatformCredentialsToProto(creds veleshashicorpcloudplatform.ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpCloudPlatformCredentials{
+			HashicorpCloudPlatformCredentials: &spb.SecretData_HashiCorpCloudPlatformCredentials{
+				ClientId:     creds.ClientID,
+				ClientSecret: creds.ClientSecret,
+			},
+		},
+	}
+}
+
+func hashicorpCloudPlatformTokenToProto(token veleshashicorpcloudplatform.AccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HashicorpCloudPlatformToken{
+			HashicorpCloudPlatformToken: &spb.SecretData_HashiCorpCloudPlatformToken{
+				Token:          token.Token,
+				OrganizationId: token.OrganizationID,
+				ProjectId:      token.ProjectID,
+				PrincipalId:    token.PrincipalID,
+				PrincipalType:  token.PrincipalType,
+				ServiceName:    token.ServiceName,
+				GroupIds:       token.GroupIDs,
+				UserId:         token.UserID,
+				UserEmail:      token.UserEmail,
+			},
+		},
 	}
 }

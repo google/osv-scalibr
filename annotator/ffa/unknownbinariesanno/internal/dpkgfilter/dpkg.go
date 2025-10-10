@@ -16,23 +16,19 @@
 package dpkgfilter
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"io"
-	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
+	"github.com/google/osv-scalibr/common/linux/dpkg"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
-	"github.com/google/osv-scalibr/fs/diriterate"
 )
 
 var (
-	dpkgInfoDirPath = "var/lib/dpkg/info"
-
 	ignorePathPrefix = []string{
 		// We want to ignore everything in the info directory as DPKG indexes doesn't index itself.
 		// There are many executable scripts in this directory, including preinstall/postinstall/preremove/postremove scripts.
@@ -54,11 +50,11 @@ func (DpkgFilter) Name() string {
 
 // HashSetFilter removes binaries from the input set that are found in dpkg .list files.
 func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]*extractor.Package) error {
-	dirs, err := diriterate.ReadDir(fs, dpkgInfoDirPath)
+	it, err := dpkg.NewListFilePathIterator(fs)
 	if err != nil {
 		return err
 	}
-	defer dirs.Close()
+	defer it.Close()
 
 	var errs []error
 	for {
@@ -68,7 +64,7 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 			break
 		}
 
-		f, err := dirs.Next()
+		filePath, err := it.Next(ctx)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				errs = append(errs, err)
@@ -76,10 +72,16 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 			break
 		}
 
-		if !f.IsDir() && path.Ext(f.Name()) == ".list" {
-			if err := processDpkgListFile(path.Join(dpkgInfoDirPath, f.Name()), fs, unknownBinariesSet); err != nil {
-				errs = append(errs, err)
+		// Remove leading '/' since SCALIBR fs paths don't include that.
+		// noop if filePath doesn't exist
+		delete(unknownBinariesSet, strings.TrimPrefix(filePath, "/"))
+
+		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
+			evalPath, err := evalFS.EvalSymlink(filePath)
+			if err != nil {
+				continue
 			}
+			delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 		}
 	}
 
@@ -95,28 +97,4 @@ func (d DpkgFilter) ShouldExclude(_ context.Context, _ scalibrfs.FS, binaryPath 
 	}
 
 	return false
-}
-
-func processDpkgListFile(path string, fs scalibrfs.FS, knownBinariesSet map[string]*extractor.Package) error {
-	reader, err := fs.Open(path)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	s := bufio.NewScanner(reader)
-	for s.Scan() {
-		// Remove leading '/' since SCALIBR fs paths don't include that.
-		// noop if filePath doesn't exist
-		delete(knownBinariesSet, strings.TrimPrefix(s.Text(), "/"))
-
-		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
-			evalPath, err := evalFS.EvalSymlink(s.Text())
-			if err != nil {
-				continue
-			}
-			delete(knownBinariesSet, strings.TrimPrefix(evalPath, "/"))
-		}
-	}
-	return nil
 }

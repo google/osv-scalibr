@@ -16,6 +16,8 @@
 package osduplicate
 
 import (
+	"strings"
+
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 )
@@ -23,9 +25,16 @@ import (
 // BuildLocationToPKGsMap sets up a map of package locations to package pointers from the inventory.
 func BuildLocationToPKGsMap(results *inventory.Inventory) map[string][]*extractor.Package {
 	locationToPKGs := map[string][]*extractor.Package{}
+pkgLoop:
 	for _, pkg := range results.Packages {
 		if len(pkg.Locations) == 0 {
 			continue
+		}
+		// Skip packages found by OS extractors since those are not OS duplicates.
+		for _, p := range pkg.Plugins {
+			if strings.HasPrefix(p, "os/") {
+				continue pkgLoop
+			}
 		}
 		// The descriptor file (e.g. lockfile) is always stored in the first element.
 		// TODO(b/400910349): Separate locations into a dedicated "descriptor file"
