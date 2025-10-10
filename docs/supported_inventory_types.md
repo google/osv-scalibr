@@ -133,6 +133,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
+| Postgres pgpass file                        | `secrets/pgpass`                     |
 | Postman API key                             | `secrets/postmanapikey`              |
 | Postman Collection token                    | `secrets/postmancollectiontoken`     |
 | PEM/OpenSSH Private key                     | `secrets/privatekey`                 |

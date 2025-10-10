@@ -21,6 +21,7 @@ import (
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
+	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
@@ -164,6 +165,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpVaultAppRoleCredentialsToProto(t), nil
 	case velesgcpapikey.GCPAPIKey:
 		return gcpAPIKeyToProto(t.Key), nil
+	case velespgpass.Pgpass:
+		return pgpassToProto(t), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
@@ -391,6 +394,22 @@ func privatekeyToProto(pk velesprivatekey.PrivateKey) *spb.SecretData {
 				Block: pk.Block,
 				Der:   pk.Der,
 			},
+		},
+	}
+}
+
+func pgpassToProto(e velespgpass.Pgpass) *spb.SecretData {
+	ePB := &spb.SecretData_Pgpass{
+		Hostname: e.Hostname,
+		Port:     e.Port,
+		Database: e.Database,
+		Username: e.Username,
+		Password: e.Password,
+	}
+
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pgpass_{
+			Pgpass: ePB,
 		},
 	}
 }
@@ -688,6 +707,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
 	case *spb.SecretData_PrivateKey_:
 		return privatekeyToStruct(s.GetPrivateKey()), nil
+	case *spb.SecretData_Pgpass_:
+		return pgpassToStruct(s.GetPgpass()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
 	case *spb.SecretData_DockerHubPat_:
@@ -900,6 +921,17 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func pgpassToStruct(ePB *spb.SecretData_Pgpass) velespgpass.Pgpass {
+	pgpass := velespgpass.Pgpass{
+		Hostname: ePB.GetHostname(),
+		Port:     ePB.GetPort(),
+		Database: ePB.GetDatabase(),
+		Username: ePB.GetUsername(),
+		Password: ePB.GetPassword(),
+	}
+	return pgpass
 }
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {

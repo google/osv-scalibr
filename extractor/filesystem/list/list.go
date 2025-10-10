@@ -91,6 +91,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
@@ -262,6 +263,7 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
+		pgpass.Name:                  {pgpass.New},
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 	}
 

@@ -692,6 +692,7 @@ message SecretData {
     OnePasswordServiceToken onepassword_service_token = 40;
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
+    Pgpass pgpass = 43;
   }
 
   message GCPSAK {
@@ -748,6 +749,14 @@ message SecretData {
 
   message AzureAccessToken {
     string token = 1;
+  }
+
+  message Pgpass {
+    string hostname = 1;
+    string port = 2;
+    string database = 3;
+    string username = 4;
+    string password = 5;
   }
 
   message AzureIdentityToken {
