@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/dsoprea/go-exfat"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -34,7 +35,12 @@ import (
 	"www.velocidex.com/golang/go-ntfs/parser"
 )
 
-// DetectFilesystem identifies the filesystem type by magic bytes
+const (
+	defaultPageSize  = 1024 * 1024
+	defaultCacheSize = 100 * 1024 * 1024
+)
+
+// DetectFilesystem identifies the filesystem type by magic bytes.
 func DetectFilesystem(r io.ReaderAt, offset int64) string {
 	buf := make([]byte, 4096)
 	_, err := r.ReadAt(buf, offset)
@@ -80,7 +86,7 @@ func normalizePath(p string) string {
 	return p
 }
 
-// removes ".", "..", and "lost+found"
+// filterEntriesFat32 removes ".", "..", and "lost+found" from FAT32 entries.
 func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	var filtered []os.FileInfo
 	for _, e := range entries {
@@ -93,7 +99,7 @@ func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	return filtered
 }
 
-// removes ".", "..", and "lost+found"
+// filterEntriesExt removes ".", "..", and "lost+found" from ext4 entries.
 func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	var filtered []fs.DirEntry
 	for _, e := range entries {
@@ -106,7 +112,7 @@ func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	return filtered
 }
 
-// Add filterEntriesNtfs to remove ".", "..", and "$" entries
+// filterEntriesNtfs removes ".", "..", and "$"-prefixed entries from NTFS entries.
 func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
 	var filtered []*parser.FileInfo
 	for _, e := range entries {
@@ -119,7 +125,7 @@ func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
 	return filtered
 }
 
-// ExtractAllRecursiveExt extracts all files from an ext4 filesystem to a temporary directory.
+// ExtractAllRecursiveExt extracts all files from an ext4 filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error {
 	srcPath = normalizePath(srcPath)
 	entries, err := fs.ReadDir(srcPath)
@@ -171,7 +177,7 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 	return nil
 }
 
-// ExtractAllRecursiveFat32 extracts all files from a FAT32 filesystem to a temporary directory.
+// ExtractAllRecursiveFat32 extracts all files from a FAT32 filesystem to a temporary directory recursively.
 func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) error {
 	if srcPath == "" || srcPath == "." {
 		srcPath = "/"
@@ -226,7 +232,7 @@ func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) er
 	return nil
 }
 
-// ExtractAllRecursiveNtfs extracts all files from a NTFS filesystem to a temporary directory.
+// ExtractAllRecursiveNtfs extracts all files from a NTFS filesystem to a temporary directory recursively.
 func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) error {
 	srcPath = normalizePath(srcPath)
 	if srcPath == "" || srcPath == "." {
@@ -295,7 +301,7 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 	return nil
 }
 
-// ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directorary.
+// ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 	er := exfat.NewExfatReader(section)
 	if err := er.Parse(); err != nil {
@@ -355,28 +361,145 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 	return nil
 }
 
-// Ext4DirFS wraps scalibrfs.DirFS to include reference counting and cleanup
-type Ext4DirFS struct {
-	FS         scalibrfs.FS
-	File       *os.File
-	TmpDir     string
-	TmpRawPath string
-	RefCount   *int32
-	RefMu      *sync.Mutex
+// CloserWithTmpPaths is an interface for filesystems that provide temporary paths for cleanup.
+type CloserWithTmpPaths interface {
+	scalibrfs.FS
+	Close() error
+	TempPaths() []string
 }
 
-func (e *Ext4DirFS) Open(name string) (fs.File, error) {
+// GenerateFSParams holds parameters for generating embedded filesystems.
+type GenerateFSParams struct {
+	File           *os.File
+	Disk           *disk.Disk
+	Section        *io.SectionReader
+	PartitionIndex int
+	TempDir        string
+	TmpRawPath     string
+	RefMu          *sync.Mutex
+	RefCount       *int32
+}
+
+// GenerateEXTFS generates an ext4 filesystem and extracts files to a temporary directory.
+func GenerateEXTFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+	fs, err := ext4.NewFS(*params.Section, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ext4 filesystem for partition %d: %w", params.PartitionIndex, err)
+	}
+	if err := ExtractAllRecursiveExt(fs, "/", params.TempDir); err != nil {
+		return nil, fmt.Errorf("failed to extract ext4 files for partition %d: %w", params.PartitionIndex, err)
+	}
+	params.RefMu.Lock()
+	*params.RefCount++
+	params.RefMu.Unlock()
+	return &EmbeddedDirFS{
+		FS:       scalibrfs.DirFS(params.TempDir),
+		File:     params.File,
+		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		RefCount: params.RefCount,
+		RefMu:    params.RefMu,
+	}, nil
+}
+
+// GenerateFAT32FS generates a FAT32 filesystem and extracts files to a temporary directory.
+func GenerateFAT32FS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+	fs, err := params.Disk.GetFilesystem(params.PartitionIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get filesystem for partition %d: %w", params.PartitionIndex, err)
+	}
+	fat32fs, ok := fs.(*fat32.FileSystem)
+	if !ok {
+		return nil, fmt.Errorf("partition %d is not a FAT32 filesystem", params.PartitionIndex)
+	}
+	f, err := os.Open(params.TmpRawPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reopen raw image %s: %w", params.TmpRawPath, err)
+	}
+	if err := ExtractAllRecursiveFat32(fat32fs, "/", params.TempDir); err != nil {
+		f.Close()
+		return nil, fmt.Errorf("failed to extract FAT32 files for partition %d: %w", params.PartitionIndex, err)
+	}
+	params.RefMu.Lock()
+	*params.RefCount++
+	params.RefMu.Unlock()
+	return &EmbeddedDirFS{
+		FS:       scalibrfs.DirFS(params.TempDir),
+		File:     f,
+		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		RefCount: params.RefCount,
+		RefMu:    params.RefMu,
+	}, nil
+}
+
+// GenerateEXFATFS generates an exFAT filesystem and extracts files to a temporary directory.
+func GenerateEXFATFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+	if err := ExtractAllRecursiveExFAT(params.Section, params.TempDir); err != nil {
+		return nil, fmt.Errorf("failed to extract exFAT files for partition %d: %w", params.PartitionIndex, err)
+	}
+	params.RefMu.Lock()
+	*params.RefCount++
+	params.RefMu.Unlock()
+	return &EmbeddedDirFS{
+		FS:       scalibrfs.DirFS(params.TempDir),
+		File:     params.File,
+		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		RefCount: params.RefCount,
+		RefMu:    params.RefMu,
+	}, nil
+}
+
+// GenerateNTFSFS generates an NTFS filesystem and extracts files to a temporary directory.
+func GenerateNTFSFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+	reader, err := parser.NewPagedReader(params.Section, defaultPageSize, defaultCacheSize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create paged reader for NTFS partition %d: %w", params.PartitionIndex, err)
+	}
+	fs, err := parser.GetNTFSContext(reader, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create NTFS filesystem for partition %d: %w", params.PartitionIndex, err)
+	}
+	if err := ExtractAllRecursiveNtfs(fs, "/", params.TempDir); err != nil {
+		return nil, fmt.Errorf("failed to extract NTFS files for partition %d: %w", params.PartitionIndex, err)
+	}
+	params.RefMu.Lock()
+	*params.RefCount++
+	params.RefMu.Unlock()
+	return &EmbeddedDirFS{
+		FS:       scalibrfs.DirFS(params.TempDir),
+		File:     params.File,
+		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		RefCount: params.RefCount,
+		RefMu:    params.RefMu,
+	}, nil
+}
+
+// EmbeddedDirFS wraps scalibrfs.DirFS to include reference counting and cleanup.
+type EmbeddedDirFS struct {
+	FS       scalibrfs.FS
+	File     *os.File
+	TmpPaths []string
+	RefCount *int32
+	RefMu    *sync.Mutex
+}
+
+// Open opens the specified file from the embedded filesystem.
+func (e *EmbeddedDirFS) Open(name string) (fs.File, error) {
 	return e.FS.Open(name)
 }
 
-func (e *Ext4DirFS) ReadDir(name string) ([]fs.DirEntry, error) {
+// ReadDir returns a list of directory entries for the specified path.
+// If name is empty or "/", it reads from the root directory instead.
+func (e *EmbeddedDirFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if name == "/" || name == "" {
 		name = "."
 	}
 	return e.FS.ReadDir(name)
 }
 
-func (e *Ext4DirFS) Stat(name string) (fs.FileInfo, error) {
+// Stat returns a FileInfo describing the named file or directory.
+// If the name refers to the root directory ("/", "", or "."), it
+// returns a synthetic FileInfo representing a directory.
+func (e *EmbeddedDirFS) Stat(name string) (fs.FileInfo, error) {
 	if name == "/" || name == "" || name == "." {
 		// Return synthetic FileInfo for root directory
 		return &fileInfo{
@@ -388,7 +511,8 @@ func (e *Ext4DirFS) Stat(name string) (fs.FileInfo, error) {
 	return e.FS.Stat(name)
 }
 
-func (e *Ext4DirFS) Close() error {
+// Close closes the underlying file without removing temporary paths.
+func (e *EmbeddedDirFS) Close() error {
 	e.RefMu.Lock()
 	defer e.RefMu.Unlock()
 	if e.File == nil {
@@ -399,187 +523,18 @@ func (e *Ext4DirFS) Close() error {
 		err := e.File.Close()
 		e.File = nil // Prevent double close
 		if err != nil {
-			return fmt.Errorf("failed to close raw file %s: %w", e.TmpRawPath, err)
+			return fmt.Errorf("failed to close raw file: %w", err)
 		}
-		if err := os.Remove(e.TmpRawPath); err != nil {
-			return fmt.Errorf("failed to remove temporary raw file %s: %w", e.TmpRawPath, err)
-		}
-	}
-	if err := os.RemoveAll(e.TmpDir); err != nil {
-		return fmt.Errorf("failed to remove temporary directory %s: %w", e.TmpDir, err)
 	}
 	return nil
 }
 
-// Fat32DirFS wraps scalibrfs.DirFS to include reference counting and cleanup
-type Fat32DirFS struct {
-	FS         scalibrfs.FS
-	File       *os.File
-	TmpDir     string
-	TmpRawPath string
-	RefCount   *int32
-	RefMu      *sync.Mutex
+// TmpPathsM returns the temporary paths associated with the filesystem for cleanup.
+func (e *EmbeddedDirFS) TempPaths() []string {
+	return e.TmpPaths
 }
 
-func (f *Fat32DirFS) Open(name string) (fs.File, error) {
-	return f.FS.Open(name)
-}
-
-func (f *Fat32DirFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if name == "/" || name == "" {
-		name = "."
-	}
-	return f.FS.ReadDir(name)
-}
-
-func (f *Fat32DirFS) Stat(name string) (fs.FileInfo, error) {
-	if name == "/" || name == "" || name == "." {
-		// Return synthetic FileInfo for root directory
-		return &fileInfo{
-			name:    name,
-			isDir:   true,
-			modTime: time.Now(),
-		}, nil
-	}
-	return f.FS.Stat(name)
-}
-
-func (f *Fat32DirFS) Close() error {
-	f.RefMu.Lock()
-	defer f.RefMu.Unlock()
-	if f.File == nil {
-		return nil // Already closed
-	}
-	*f.RefCount--
-	if *f.RefCount == 0 {
-		err := f.File.Close()
-		f.File = nil // Prevent double close
-		if err != nil {
-			return fmt.Errorf("failed to close raw file %s: %w", f.TmpRawPath, err)
-		}
-		if err := os.Remove(f.TmpRawPath); err != nil {
-			return fmt.Errorf("failed to remove temporary raw file %s: %w", f.TmpRawPath, err)
-		}
-	}
-	if err := os.RemoveAll(f.TmpDir); err != nil {
-		return fmt.Errorf("failed to remove temporary directory %s: %w", f.TmpDir, err)
-	}
-	return nil
-}
-
-// ExfatDirFS wraps scalibrfs.DirFS to include reference counting and cleanup
-type ExfatDirFS struct {
-	FS         scalibrfs.FS
-	File       *os.File
-	TmpDir     string
-	TmpRawPath string
-	RefCount   *int32
-	RefMu      *sync.Mutex
-}
-
-func (e *ExfatDirFS) Open(name string) (fs.File, error) {
-	return e.FS.Open(name)
-}
-
-func (e *ExfatDirFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if name == "/" || name == "" {
-		name = "."
-	}
-	return e.FS.ReadDir(name)
-}
-
-func (e *ExfatDirFS) Stat(name string) (fs.FileInfo, error) {
-	if name == "/" || name == "" || name == "." {
-		// Return synthetic FileInfo for root directory
-		return &fileInfo{
-			name:    name,
-			isDir:   true,
-			modTime: time.Now(),
-		}, nil
-	}
-	return e.FS.Stat(name)
-}
-
-func (e *ExfatDirFS) Close() error {
-	e.RefMu.Lock()
-	defer e.RefMu.Unlock()
-	if e.File == nil {
-		return nil // Already closed
-	}
-	*e.RefCount--
-	if *e.RefCount == 0 {
-		err := e.File.Close()
-		e.File = nil // Prevent double close
-		if err != nil {
-			return fmt.Errorf("failed to close raw file %s: %w", e.TmpRawPath, err)
-		}
-		if err := os.Remove(e.TmpRawPath); err != nil {
-			return fmt.Errorf("failed to remove temporary raw file %s: %w", e.TmpRawPath, err)
-		}
-	}
-	if err := os.RemoveAll(e.TmpDir); err != nil {
-		return fmt.Errorf("failed to remove temporary directory %s: %w", e.TmpDir, err)
-	}
-	return nil
-}
-
-// NtfsDirFS wraps scalibrfs.DirFS to include reference counting and cleanup
-type NtfsDirFS struct {
-	FS         scalibrfs.FS
-	File       *os.File
-	TmpDir     string
-	TmpRawPath string
-	RefCount   *int32
-	RefMu      *sync.Mutex
-}
-
-func (n *NtfsDirFS) Open(name string) (fs.File, error) {
-	return n.FS.Open(name)
-}
-
-func (n *NtfsDirFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if name == "/" || name == "" {
-		name = "."
-	}
-	return n.FS.ReadDir(name)
-}
-
-func (n *NtfsDirFS) Stat(name string) (fs.FileInfo, error) {
-	if name == "/" || name == "" || name == "." {
-		// Return synthetic FileInfo for root directory
-		return &fileInfo{
-			name:    name,
-			isDir:   true,
-			modTime: time.Now(),
-		}, nil
-	}
-	return n.FS.Stat(name)
-}
-
-func (n *NtfsDirFS) Close() error {
-	n.RefMu.Lock()
-	defer n.RefMu.Unlock()
-	if n.File == nil {
-		return nil // Already closed
-	}
-	*n.RefCount--
-	if *n.RefCount == 0 {
-		err := n.File.Close()
-		n.File = nil // Prevent double close
-		if err != nil {
-			return fmt.Errorf("failed to close raw file %s: %w", n.TmpRawPath, err)
-		}
-		if err := os.Remove(n.TmpRawPath); err != nil {
-			return fmt.Errorf("failed to remove temporary raw file %s: %w", n.TmpRawPath, err)
-		}
-	}
-	if err := os.RemoveAll(n.TmpDir); err != nil {
-		return fmt.Errorf("failed to remove temporary directory %s: %w", n.TmpDir, err)
-	}
-	return nil
-}
-
-// fileInfo is a simple implementation of fs.FileInfo for the root directory
+// fileInfo is a simple implementation of fs.FileInfo for the root directory.
 type fileInfo struct {
 	name    string
 	isDir   bool

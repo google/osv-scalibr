@@ -29,14 +29,11 @@ import (
 	"sync"
 
 	"github.com/diskfs/go-diskfs"
-	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/masahiro331/go-ext4-filesystem/ext4"
-	"www.velocidex.com/golang/go-ntfs/parser"
 )
 
 const (
@@ -49,9 +46,7 @@ const (
 	// GDAtEnd indicates that the Grain Directory is stored in the footer at the end of the VMDK file.
 	GDAtEnd = 0xFFFFFFFFFFFFFFFF
 	// DefaultGrainSec is default sectors if header invalid (64KiB).
-	DefaultGrainSec  = 128
-	defaultPageSize  = 1024 * 1024
-	defaultCacheSize = 100 * 1024 * 1024
+	DefaultGrainSec = 128
 )
 
 // sparseExtentHeader defines the VMDK sparse extent header structure.
@@ -197,114 +192,38 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 				return nil, fmt.Errorf("failed to create temporary directory for %s partition %d: %w", fsType, partitionIndex, err)
 			}
 
+			params := common.GenerateFSParams{
+				File:           f,
+				Disk:           disk,
+				Section:        section,
+				PartitionIndex: partitionIndex,
+				TempDir:        tempDir,
+				TmpRawPath:     tmpRawPath,
+				RefMu:          &refMu,
+				RefCount:       &refCount,
+			}
+
+			var fsys scalibrfs.FS
 			switch fsType {
 			case "ext4":
-				fs, err := ext4.NewFS(*section, nil)
-				if err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to create ext4 filesystem for partition %d: %w", partitionIndex, err)
-				}
-				if err := common.ExtractAllRecursiveExt(fs, "/", tempDir); err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to extract ext4 files for partition %d: %w", partitionIndex, err)
-				}
-				refMu.Lock()
-				refCount++
-				refMu.Unlock()
-				return &common.Ext4DirFS{
-					FS:         scalibrfs.DirFS(tempDir),
-					File:       f,
-					TmpDir:     tempDir,
-					TmpRawPath: tmpRawPath,
-					RefCount:   &refCount,
-					RefMu:      &refMu,
-				}, nil
+				fsys, err = common.GenerateEXTFS(params)
 			case "FAT32":
-				f.Close() // Close the file as GetFilesystem reopens it
-				fs, err := disk.GetFilesystem(partitionIndex)
-				if err != nil {
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to get filesystem for partition %d: %w", partitionIndex, err)
-				}
-				fat32fs, ok := fs.(*fat32.FileSystem)
-				if !ok {
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("partition %d is not a FAT32 filesystem", partitionIndex)
-				}
-				f, err = os.Open(tmpRawPath)
-				if err != nil {
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to reopen raw image %s: %w", tmpRawPath, err)
-				}
-				if err := common.ExtractAllRecursiveFat32(fat32fs, "/", tempDir); err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to extract FAT32 files for partition %d: %w", partitionIndex, err)
-				}
-				refMu.Lock()
-				refCount++
-				refMu.Unlock()
-				return &common.Fat32DirFS{
-					FS:         scalibrfs.DirFS(tempDir),
-					File:       f,
-					TmpDir:     tempDir,
-					TmpRawPath: tmpRawPath,
-					RefCount:   &refCount,
-					RefMu:      &refMu,
-				}, nil
+				fsys, err = common.GenerateFAT32FS(params)
 			case "exFAT":
-				if err := common.ExtractAllRecursiveExFAT(section, tempDir); err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to extract exFAT files for partition %d: %w", partitionIndex, err)
-				}
-				refMu.Lock()
-				refCount++
-				refMu.Unlock()
-				return &common.ExfatDirFS{
-					FS:         scalibrfs.DirFS(tempDir),
-					File:       f,
-					TmpDir:     tempDir,
-					TmpRawPath: tmpRawPath,
-					RefCount:   &refCount,
-					RefMu:      &refMu,
-				}, nil
+				fsys, err = common.GenerateEXFATFS(params)
 			case "NTFS":
-				reader, err := parser.NewPagedReader(section, defaultPageSize, defaultCacheSize)
-				if err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to create paged reader for NTFS partition %d: %w", partitionIndex, err)
-				}
-				fs, err := parser.GetNTFSContext(reader, 0)
-				if err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to create NTFS filesystem for partition %d: %w", partitionIndex, err)
-				}
-				if err := common.ExtractAllRecursiveNtfs(fs, "/", tempDir); err != nil {
-					f.Close()
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to extract NTFS files for partition %d: %w", partitionIndex, err)
-				}
-				refMu.Lock()
-				refCount++
-				refMu.Unlock()
-				return &common.NtfsDirFS{
-					FS:         scalibrfs.DirFS(tempDir),
-					File:       f,
-					TmpDir:     tempDir,
-					TmpRawPath: tmpRawPath,
-					RefCount:   &refCount,
-					RefMu:      &refMu,
-				}, nil
+				fsys, err = common.GenerateNTFSFS(params)
 			default:
-				f.Close()
-				os.RemoveAll(tempDir)
-				return nil, fmt.Errorf("unsupported filesystem type %s for partition %d", fsType, partitionIndex)
+				fsys, err = nil, fmt.Errorf("unsupported filesystem type %s for partition %d", fsType, partitionIndex)
 			}
+			if err != nil {
+				if fsType != "FAT32" {
+					f.Close()
+				}
+				os.RemoveAll(tempDir)
+				return nil, err
+			}
+			return fsys, nil
 		}
 
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{

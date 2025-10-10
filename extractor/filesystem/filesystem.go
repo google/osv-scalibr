@@ -30,6 +30,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -176,6 +177,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
+	var TempPaths []string
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
 		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
@@ -227,6 +229,18 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		additionalInv.Append(mountedInv)
 		status = append(status, mountedStatus...)
+
+		// Collect temporary directories and raw files after traversal for removal.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			TempPaths = append(TempPaths, c.TempPaths()...)
+		}
+	}
+
+	// Remove all temporary directories and raw files we collected during filesystem traversal.
+	for _, tmpPath := range TempPaths {
+		if err := os.RemoveAll(tmpPath); err != nil {
+			log.Infof("Failed to remove %s temporary file / directory", tmpPath)
+		}
 	}
 
 	// Combine inventories
