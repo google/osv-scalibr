@@ -359,6 +359,7 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
+  string os_pretty_name = 11;
 
   reserved "license";
 }

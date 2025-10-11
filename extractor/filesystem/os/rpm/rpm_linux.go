@@ -195,6 +195,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			SourceRPM:    p.SourceRPM,
 			Epoch:        p.Epoch,
 			OSName:       m["NAME"],
+			OSPrettyName: m["PRETTY_NAME"],
 			OSID:         m["ID"],
 			OSVersionID:  m["VERSION_ID"],
 			OSBuildID:    m["BUILD_ID"],
