@@ -16,28 +16,16 @@
 package purl
 
 import (
-	"strconv"
-
-	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
 // MakePackageURL returns a package URL for NPM PURLs. Technically they spec requires that package names be lowercase,
 // but that'd make us not be able to disambiguate between some packages in the wild that still use uppercase.
 // See https://github.com/package-url/purl-spec/issues/136
-func MakePackageURL(name string, version string, metadata any) *purl.PackageURL {
-	q := make(map[string]string)
-	if m, ok := metadata.(*javascriptmeta.JavascriptPackageJSONMetadata); ok && m.FromNPMRepository {
-		q["from-npm-repository"] = strconv.FormatBool(true)
-	}
-	var qualifiers purl.Qualifiers
-	if len(q) > 0 {
-		qualifiers = purl.QualifiersFromMap(q)
-	}
+func MakePackageURL(name string, version string) *purl.PackageURL {
 	return &purl.PackageURL{
-		Type:       purl.TypeNPM,
-		Name:       name,
-		Version:    version,
-		Qualifiers: qualifiers,
+		Type:    purl.TypeNPM,
+		Name:    name,
+		Version: version,
 	}
 }

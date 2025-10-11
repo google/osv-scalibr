@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -51,27 +50,11 @@ func TestMakePackageURL(t *testing.T) {
 				Version: "version",
 			},
 		},
-		{
-			desc:    "from_npm_repository_qualifier_set",
-			name:    "Name",
-			version: "version",
-			metadata: &metadata.JavascriptPackageJSONMetadata{
-				FromNPMRepository: true,
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypeNPM,
-				Name:    "Name",
-				Version: "version",
-				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"from-npm-repository": "true",
-				}),
-			},
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			got := npmpurl.MakePackageURL(tt.name, tt.version, tt.metadata)
+			got := npmpurl.MakePackageURL(tt.name, tt.version)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("npmpurl.MakePackageURL(%v, %v): unexpected PURL (-want +got):\n%s", tt.name, tt.version, diff)
 			}
