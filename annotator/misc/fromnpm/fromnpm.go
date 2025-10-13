@@ -130,6 +130,11 @@ func ResolvedFromLockfile(root string, fsys scalibrfs.FS) (map[string]bool, erro
 			errs = append(errs, fmt.Errorf("failed to resolve lockfile: %w", err))
 			continue
 		}
+
+		if parsedLockfile == nil {
+			continue
+		}
+
 		return registryResolvedPackages(parsedLockfile), nil
 	}
 	return nil, errors.Join(errs...)
@@ -207,6 +212,10 @@ func packageName(name string) string {
 func npmLockfile(lockfile string, fsys scalibrfs.FS) (*packagelockjson.LockFile, error) {
 	data, err := fs.ReadFile(fsys, lockfile)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 

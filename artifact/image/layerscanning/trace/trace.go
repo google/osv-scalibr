@@ -19,10 +19,10 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 
@@ -54,7 +54,7 @@ type locationAndIndex struct {
 //
 // Note that a precondition of this algorithm is that the chain layers are ordered by order of
 // creation.
-func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, chainLayers []scalibrimage.ChainLayer, extractors []filesystem.Extractor, config *filesystem.Config) {
+func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLayers []scalibrimage.ChainLayer, extractors []filesystem.Extractor, config *filesystem.Config) {
 	// If there are no chain layers, then there is nothing to trace. This should not happen, but we
 	// should handle it gracefully.
 	if len(chainLayers) == 0 {
@@ -62,7 +62,16 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		return
 	}
 
-	chainLayerDetailsList := extractLayerDetailsFromChainLayers(chainLayers)
+	cim := &extractor.ContainerImageMetadata{
+		Index: len(inv.ContainerImageMetadata),
+	}
+	inv.ContainerImageMetadata = append(inv.ContainerImageMetadata, cim)
+	fillLayerMetadataFromChainLayers(cim, chainLayers)
+
+	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].FS())
+	if err == nil {
+		cim.OSInfo = osInfo
+	}
 
 	// Helper function to update the extractor config.
 	updateExtractorConfig := func(pathsToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
@@ -86,8 +95,8 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		nameToExtractor[e.Name()] = e
 	}
 
-	for _, pkg := range inventory.Packages {
-		layerDetails := chainLayerDetailsList[lastLayerIndex]
+	for _, pkg := range inv.Packages {
+		layerDetails := cim.LayerMetadata[lastLayerIndex]
 		var pkgExtractor filesystem.Extractor
 		for _, name := range pkg.Plugins {
 			if ex, ok := nameToExtractor[name]; ok {
@@ -171,7 +180,7 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 
 			// If the package is not present in the old layer, then it was introduced in the previous layer we actually scanned
 			if !foundPackage {
-				layerDetails = chainLayerDetailsList[lastScannedLayerIndex]
+				layerDetails = cim.LayerMetadata[lastScannedLayerIndex]
 				foundOrigin = true
 				break
 			}
@@ -183,9 +192,9 @@ func PopulateLayerDetails(ctx context.Context, inventory inventory.Inventory, ch
 		// If the package is present in every layer, then it means it was introduced in the first
 		// layer.
 		if !foundOrigin {
-			layerDetails = chainLayerDetailsList[0]
+			layerDetails = cim.LayerMetadata[0]
 		}
-		pkg.LayerDetails = layerDetails
+		pkg.LayerMetadata = layerDetails
 	}
 }
 
@@ -214,9 +223,7 @@ func getLayerFSFromChainLayer(chainLayer scalibrimage.ChainLayer) (scalibrfs.FS,
 	return fs, nil
 }
 
-func extractLayerDetailsFromChainLayers(chainLayers []scalibrimage.ChainLayer) []*extractor.LayerDetails {
-	chainLayerDetailsList := []*extractor.LayerDetails{}
-
+func fillLayerMetadataFromChainLayers(cim *extractor.ContainerImageMetadata, chainLayers []scalibrimage.ChainLayer) {
 	// Create list of layer details struct to be referenced by inventory.
 	for i, chainLayer := range chainLayers {
 		// Get the string representation of the diffID, and remove the algorithm prefix if it exists.
@@ -224,20 +231,16 @@ func extractLayerDetailsFromChainLayers(chainLayers []scalibrimage.ChainLayer) [
 		// golang/opencontainers/digest/algorithm.go. Just getting the string representation of the
 		// diffID acts as failing open, but perhaps we should consider validating the diffID and logging
 		// a warning if it isn't.
-		diffID := chainLayer.Layer().DiffID().String()
-		if i := strings.Index(diffID, ":"); i >= 0 {
-			diffID = diffID[i+1:]
+		metadata := &extractor.LayerMetadata{
+			Index:           i,
+			ParentContainer: cim,
+			ChainID:         chainLayer.ChainID(),
+			DiffID:          chainLayer.Layer().DiffID(),
+			Command:         chainLayer.Layer().Command(),
+			IsEmpty:         chainLayer.Layer().IsEmpty(),
 		}
-
-		chainLayerDetailsList = append(chainLayerDetailsList, &extractor.LayerDetails{
-			Index:       i,
-			DiffID:      diffID,
-			ChainID:     chainLayer.ChainID().String(),
-			Command:     chainLayer.Layer().Command(),
-			InBaseImage: false,
-		})
+		cim.LayerMetadata = append(cim.LayerMetadata, metadata)
 	}
-	return chainLayerDetailsList
 }
 
 // filesExistInLayer checks if any of the provided files are present in the underlying layer of the

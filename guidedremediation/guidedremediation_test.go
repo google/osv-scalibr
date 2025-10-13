@@ -178,11 +178,19 @@ func TestFixRelax(t *testing.T) {
 			remOpts:          options.DefaultRemediationOptions(),
 		},
 		{
-			name:             "python basic",
+			name:             "python requirements",
 			universeDir:      "testdata/python",
-			manifest:         "testdata/python/relax/requirements.txt",
-			wantManifestPath: "testdata/python/relax/want.requirements.txt",
-			wantResultPath:   "testdata/python/relax/result.json",
+			manifest:         "testdata/python/relax/requirements/requirements.txt",
+			wantManifestPath: "testdata/python/relax/requirements/want.requirements.txt",
+			wantResultPath:   "testdata/python/relax/requirements/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
+		{
+			name:             "python poetry",
+			universeDir:      "testdata/python",
+			manifest:         "testdata/python/relax/poetry/pyproject.toml",
+			wantManifestPath: "testdata/python/relax/poetry/want.pyproject.toml",
+			wantResultPath:   "testdata/python/relax/poetry/result.json",
 			remOpts:          options.DefaultRemediationOptions(),
 		},
 	} {

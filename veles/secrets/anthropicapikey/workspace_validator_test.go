@@ -15,7 +15,6 @@
 package anthropicapikey_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -147,7 +146,7 @@ func TestWorkspaceValidator(t *testing.T) {
 			key := anthropicapikey.WorkspaceAPIKey{Key: workspaceValidatorTestKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -172,7 +171,7 @@ func TestWorkspaceValidator_EmptyKey(t *testing.T) {
 	validator := anthropicapikey.NewWorkspaceValidator()
 	key := anthropicapikey.WorkspaceAPIKey{Key: ""}
 
-	got, err := validator.Validate(context.Background(), key)
+	got, err := validator.Validate(t.Context(), key)
 
 	if err == nil {
 		t.Errorf("Validate() expected error for empty key, got nil")

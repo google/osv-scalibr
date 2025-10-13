@@ -170,3 +170,17 @@ b~1:1 > a1:1
 1.1.a < 1.2.ββ
 1.1.a < 0:1.2.ββ
 1.1.α < 1.1.a
+
+# versions with colons that are not epochs
+1.m+e2:1 < 4.m+e1:1
+1.module+el9.4.0+23026+aaa2e3cb.2.noarch.rpm-nginx:1 < 4.module+el9.5.0+22954+e2d70a1c.1.noarch.rpm-nginx:1
+1.m+el9.4.0+2.na.r-n:1 < 4.m+el9.5.0+1.na.r-n:1
+4.0+2.na.r-n:1 < 5.0+1.na.r-n:1
+0+2.na.r-n:1 > 0+1.na.r-n:1
+0+2-n:1 > 0+1-n:1
+0+-n:1 = 0+-n:1
+0+2-n:1 > 0+1-n:1
++2-n:1 > +1-n:1
++2-:1 > +1-:1
++2- > +1-
++2-: > +1-:

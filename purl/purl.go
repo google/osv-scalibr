@@ -45,7 +45,7 @@ const (
 	TypeConan = "conan"
 	// TypeConda is a pkg:conda purl.
 	TypeConda = "conda"
-	// COS is the pkg:cos purl
+	// TypeCOS is the pkg:cos purl
 	TypeCOS = "cos"
 	// TypeCran is a pkg:cran purl.
 	TypeCran = "cran"
@@ -53,6 +53,8 @@ const (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
+	// TypeK8s is a pkg:k8s purl.
+	TypeK8s = "k8s"
 	// TypeFlatpak is a pkg:flatpak purl.
 	TypeFlatpak = "flatpak"
 	// TypeGem is a pkg:gem purl.
@@ -65,7 +67,7 @@ const (
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
-	// Type Haskell is a pkg:haskell purl.
+	// TypeHaskell is a pkg:haskell purl.
 	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
 	TypeMacApps = "macapps"
@@ -103,7 +105,7 @@ const (
 	TypeWordpress = "wordpress"
 	// TypeAsdf is pkg:asdf purl
 	TypeAsdf = "asdf"
-	// Macports is pkg:macports purl
+	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
 	TypeWinget = "winget"

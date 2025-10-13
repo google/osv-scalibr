@@ -23,8 +23,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -84,26 +86,39 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 )
 
@@ -117,9 +132,9 @@ type InitMap map[string][]InitFn
 var (
 	// Language extractors.
 
-	// C++ source extractors.
+	// CppSource extractors for C++.
 	CppSource = InitMap{conanlock.Name: {conanlock.New}}
-	// Java source extractors.
+	// JavaSource extractors for Java.
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
@@ -127,11 +142,11 @@ var (
 		pomxml.Name:    {pomxml.New},
 		pomxmlnet.Name: {pomxmlnet.NewDefault},
 	}
-	// Java artifact extractors.
+	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
 		javaarchive.Name: {javaarchive.NewDefault},
 	}
-	// Javascript source extractors.
+	// JavascriptSource extractors for Javascript.
 	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.NewDefault},
 		packagelockjson.Name: {packagelockjson.NewDefault},
@@ -139,11 +154,11 @@ var (
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
 	}
-	// Javascript artifact extractors.
+	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.NewDefault},
 	}
-	// Python source extractors.
+	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
 		requirements.Name: {requirements.NewDefault},
@@ -154,46 +169,46 @@ var (
 		condameta.Name:    {condameta.NewDefault},
 		uvlock.Name:       {uvlock.New},
 	}
-	// Python artifact extractors.
+	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
 		wheelegg.Name: {wheelegg.NewDefault},
 	}
-	// Go source extractors.
+	// GoSource extractors for Go.
 	GoSource = InitMap{
 		gomod.Name: {gomod.New},
 	}
-	// Go artifact extractors.
+	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
 		gobinary.Name: {gobinary.NewDefault},
 	}
-	// Dart source extractors.
+	// DartSource extractors for Dart.
 	DartSource = InitMap{pubspec.Name: {pubspec.New}}
-	// Erlang source extractors.
+	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
-	// Nim source extractors.
+	// NimSource extractors for Nim.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
-	// Lua source extractors.
+	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
-	// Elixir source extractors.
+	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
-	// Haskell source extractors.
+	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
 		stacklock.Name: {stacklock.NewDefault},
 		cabal.Name:     {cabal.NewDefault},
 	}
-	// R source extractors
+	// RSource extractors for R source extractors
 	RSource = InitMap{renvlock.Name: {renvlock.New}}
-	// Ruby source extractors.
+	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {gemspec.NewDefault},
 		gemfilelock.Name: {gemfilelock.New},
 	}
-	// Rust source extractors.
+	// RustSource extractors for Rust.
 	RustSource = InitMap{
 		cargolock.Name: {cargolock.New},
 		cargotoml.Name: {cargotoml.New},
 	}
-	// Rust artifact extractors.
+	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.NewDefault},
 	}
@@ -202,19 +217,19 @@ var (
 		cdx.Name:  {cdx.New},
 		spdx.Name: {spdx.New},
 	}
-	// Dotnet (.NET) source extractors.
+	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
 		depsjson.Name:         {depsjson.NewDefault},
 		packagesconfig.Name:   {packagesconfig.NewDefault},
 		packageslockjson.Name: {packageslockjson.NewDefault},
 	}
-	// Dotnet (.NET) artifact extractors.
+	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
 		dotnetpe.Name: {dotnetpe.NewDefault},
 	}
-	// PHP Source extractors.
+	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
-	// Swift source extractors.
+	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {packageresolved.NewDefault},
 		podfilelock.Name:     {podfilelock.NewDefault},
@@ -222,9 +237,11 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:      {containerd.NewDefault},
-		podman.Name:          {podman.NewDefault},
-		dockerbaseimage.Name: {dockerbaseimage.NewDefault},
+		containerd.Name:         {containerd.NewDefault},
+		k8simage.Name:           {k8simage.NewDefault},
+		podman.Name:             {podman.NewDefault},
+		dockerbaseimage.Name:    {dockerbaseimage.NewDefault},
+		dockercomposeimage.Name: {dockercomposeimage.NewDefault},
 	}
 
 	// OS extractors.
@@ -246,12 +263,22 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Credential extractors.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	// SecretExtractors for Extractor interface.
+	SecretExtractors = InitMap{
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+	}
+
+	// SecretDetectors for Detector interface.
+	SecretDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
+		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
+		{slacktoken.NewAppConfigAccessTokenDetector(), "secrets/slackappconfigaccesstoken", 0},
+		{slacktoken.NewAppConfigRefreshTokenDetector(), "secrets/slackappconfigrefreshtoken", 0},
+		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
@@ -261,6 +288,9 @@ var (
 		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
 		{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
 		{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
+		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
+		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
+		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
@@ -268,7 +298,27 @@ var (
 		{privatekey.NewDetector(), "secrets/privatekey", 0},
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
+		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
+		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},
+		{github.NewAppU2SDetector(), "secrets/githubappu2stoken", 0},
+		{github.NewClassicPATDetector(), "secrets/githubclassicpat", 0},
+		{github.NewFineGrainedPATDetector(), "secrets/githubfinegrainedpat", 0},
+		{github.NewOAuthTokenDetector(), "secrets/githuboauthtoken", 0},
+		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
+		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
+		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
+		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
+		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
+		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
+		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 	})
+
+	// Secrets contains both secret extractors and detectors.
+	Secrets = concat(
+		SecretDetectors,
+		SecretExtractors,
+	)
 
 	// Misc artifact extractors.
 	Misc = InitMap{
@@ -277,9 +327,15 @@ var (
 		chromeextensions.Name: {chromeextensions.New},
 	}
 
-	// Misc source extractors.
+	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
 		asdf.Name: {asdf.New},
+		nvm.Name:  {nvm.New},
+	}
+
+	// EmbeddedFS extractors.
+	EmbeddedFS = InitMap{
+		vmdk.Name: {vmdk.NewDefault},
 	}
 
 	// Collections of extractors.
@@ -319,6 +375,7 @@ var (
 		SBOM,
 		OS,
 		Misc,
+		EmbeddedFS,
 		Containers,
 		Secrets,
 	)
@@ -360,6 +417,7 @@ var (
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
+		"embeddedfs": vals(EmbeddedFS),
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),

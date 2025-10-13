@@ -15,7 +15,6 @@
 package anthropicapikey_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -148,7 +147,7 @@ func TestModelValidator(t *testing.T) {
 			key := anthropicapikey.ModelAPIKey{Key: modelValidatorTestKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -173,7 +172,7 @@ func TestModelValidator_EmptyKey(t *testing.T) {
 	validator := anthropicapikey.NewModelValidator()
 	key := anthropicapikey.ModelAPIKey{Key: ""}
 
-	got, err := validator.Validate(context.Background(), key)
+	got, err := validator.Validate(t.Context(), key)
 
 	if err == nil {
 		t.Errorf("Validate() expected error for empty key, got nil")

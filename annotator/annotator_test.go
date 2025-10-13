@@ -123,7 +123,7 @@ func TestRun(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			// Deep copy the inventory to avoid modifying the original inventory that is used in other tests.
 			inv := copier.Copy(tc.inv).(*inventory.Inventory)
-			got, err := annotator.Run(context.Background(), tc.cfg, inv)
+			got, err := annotator.Run(t.Context(), tc.cfg, inv)
 			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Run(%+v) error: got %v, want %v\n", tc.cfg, err, tc.wantErr)
 			}

@@ -53,6 +53,9 @@ func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegist
 	if registry == "" {
 		registry = pyPIAPI
 	}
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "pypi")
+	}
 	return &PyPIRegistryAPIClient{
 		registry:      registry,
 		localRegistry: localRegistry,
@@ -63,6 +66,9 @@ func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegist
 
 // SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
 func (p *PyPIRegistryAPIClient) SetLocalRegistry(localRegistry string) {
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "pypi")
+	}
 	p.localRegistry = localRegistry
 }
 
