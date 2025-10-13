@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package createsioapitoken_test
+package cratesioapitoken_test
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/createsioapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 )
 
 const testKey = `cioAbCdEfGhIjKlMnOpQrStUvWxYz123456`
@@ -30,7 +30,7 @@ const testKey = `cioAbCdEfGhIjKlMnOpQrStUvWxYz123456`
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Crates.io API key/s.
 func TestDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{createsioapitoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{cratesioapitoken.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,34 +42,34 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: testKey,
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `CIO_API_TOKEN=` + testKey,
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `CIO_API_TOKEN="` + testKey + `"`,
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
-			createsioapitoken.CreatesioAPIToken{Token: testKey[:len(testKey)-1] + "a"},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
 		name: "larger input containing key",
@@ -78,13 +78,13 @@ func TestDetector_truePositives(t *testing.T) {
 	:CIO_API_TOKEN: %s
 			`, testKey),
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: testKey + `extra`,
 		want: []veles.Secret{
-			createsioapitoken.CreatesioAPIToken{Token: testKey},
+			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -104,7 +104,7 @@ func TestDetector_truePositives(t *testing.T) {
 // TestDetector_trueNegatives tests for cases where we know the Detector
 // will not find a Crates.io API key.
 func TestDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{createsioapitoken.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{cratesioapitoken.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}

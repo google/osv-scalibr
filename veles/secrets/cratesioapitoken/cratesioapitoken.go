@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package createsioapitoken
+package cratesioapitoken
 
-// CreatesioAPIToken is a Veles Secret that holds relevant information for a
+// CratesIOAPItoken is a Veles Secret that holds relevant information for a
 // Crates.io API Token (prefix `cio`).
-// CreatesioAPIToken represents an API Token used to authenticate requests
-type CreatesioAPIToken struct {
+// CratesIOAPItoken represents an API Token used to authenticate requests
+type CratesIOAPItoken struct {
 	Token string
 }

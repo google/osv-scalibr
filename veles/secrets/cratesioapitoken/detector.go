@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package createsioapitoken contains a Veles Secret type and a Detector for
+// Package cratesioapitoken contains a Veles Secret type and a Detector for
 // Crates.io API Tokens (prefix `cio`).
-package createsioapitoken
+package cratesioapitoken
 
 import (
 	"regexp"
@@ -38,7 +38,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return CreatesioAPIToken{Token: string(b)}, true
+			return CratesIOAPItoken{Token: string(b)}, true
 		},
 	}
 }

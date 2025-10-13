@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package createsioapitoken_test
+package cratesioapitoken_test
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/createsioapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 )
 
 const validatorValidTestKey = "cioAbCdEfGhIjKlMnOpQrStUvWxYz123456"
@@ -111,12 +111,12 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := createsioapitoken.NewValidator(
-				createsioapitoken.WithClient(client),
+			validator := cratesioapitoken.NewValidator(
+				cratesioapitoken.WithClient(client),
 			)
 
 			// Create a test key
-			key := createsioapitoken.CreatesioAPIToken{Token: tc.key}
+			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
 			// Test validation
 			got, err := validator.Validate(context.Background(), key)
@@ -150,11 +150,11 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := createsioapitoken.NewValidator(
-		createsioapitoken.WithClient(client),
+	validator := cratesioapitoken.NewValidator(
+		cratesioapitoken.WithClient(client),
 	)
 
-	key := createsioapitoken.CreatesioAPIToken{Token: validatorValidTestKey}
+	key := cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey}
 
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
@@ -181,8 +181,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := createsioapitoken.NewValidator(
-		createsioapitoken.WithClient(client),
+	validator := cratesioapitoken.NewValidator(
+		cratesioapitoken.WithClient(client),
 	)
 
 	testCases := []struct {
@@ -204,7 +204,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			key := createsioapitoken.CreatesioAPIToken{Token: tc.key}
+			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
 			got, err := validator.Validate(context.Background(), key)
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package createsioapitoken
+package cratesioapitoken
 
 import (
 	"bytes"
@@ -54,12 +54,12 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 	return v
 }
 
-// Validate checks whether the given CreatesioAPIToken is valid.
+// Validate checks whether the given CratesIOAPItoken is valid.
 //
 // It performs a PUT request to the Crates.io API endpoint to add an owner to a non-existent crate
 // using the API key in the Authorization header. Valid tokens return 404 Not Found,
 // while invalid tokens return 401 Unauthorized.
-func (v *Validator) Validate(ctx context.Context, key CreatesioAPIToken) (veles.ValidationStatus, error) {
+func (v *Validator) Validate(ctx context.Context, key CratesIOAPItoken) (veles.ValidationStatus, error) {
 	// Use a random crate name that is unlikely to exist
 	randomBytes := make([]byte, 8)
 	if _, err := rand.Read(randomBytes); err != nil {
