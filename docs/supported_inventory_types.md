@@ -155,12 +155,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
 
-### EmbeddedFS
-
-| Type  | Details                                           | Extractor Plugin  |
-|-------|---------------------------------------------------|-------------------|
-| vmdk  | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk` |
-
 ### Misc
 
 | Type              | Extractor Plugin    |
@@ -168,6 +162,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Wordpress plugins | `wordpress/plugins` |
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
+
+### EmbeddedFS
+
+| Type  | Details                                           | Extractor Plugin  |
+|-------|---------------------------------------------------|-------------------|
+| vmdk  | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk` |
 
 ## Detectors
 
