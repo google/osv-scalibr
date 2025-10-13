@@ -44,6 +44,11 @@ var filters = []filter.Filter{
 type Annotator struct {
 }
 
+// New returns a new Annotator.
+func New() annotator.Annotator {
+	return &Annotator{}
+}
+
 // Annotate filters out binaries extracted by unknwonbinaries extractor that can be accounted for by other
 // inventories or metadata on the FS.
 func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
