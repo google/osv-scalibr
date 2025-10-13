@@ -528,7 +528,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 }
 
 func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
-	if wc.useGitignore && d.Type().IsDir() {
+	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
 	}
