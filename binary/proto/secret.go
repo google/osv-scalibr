@@ -44,10 +44,10 @@ import (
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
-	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
