@@ -27,6 +27,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -47,9 +48,6 @@ import (
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	cratesioapitoken "github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
-	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
