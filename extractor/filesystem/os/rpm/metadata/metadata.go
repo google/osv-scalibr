@@ -17,6 +17,8 @@ package metadata
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/log"
 
@@ -109,4 +111,34 @@ func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
 		Vendor:       m.GetVendor(),
 		Architecture: m.GetArchitecture(),
 	}
+}
+
+// OpenEulerEcosystemSuffix returns the normalized ecosystem suffix for openEuler RPMs.
+func (m *Metadata) OpenEulerEcosystemSuffix() string {
+	if m == nil {
+		return ""
+	}
+
+	prettyName := strings.TrimSpace(m.OSPrettyName)
+	if prettyName != "" {
+		pnRegexp := regexp.MustCompile(`^openEuler\s+([0-9]+\.[0-9]+)(?:\s*\(([^)]+)\))?$`)
+		if matches := pnRegexp.FindStringSubmatch(prettyName); len(matches) > 0 {
+			version := matches[1]
+			qualifier := strings.TrimSpace(matches[2])
+			if qualifier == "" {
+				return version
+			}
+
+			qualifier = strings.ReplaceAll(qualifier, " ", "-")
+			qualifier = strings.Trim(qualifier, "-")
+			if qualifier == "" {
+				return version
+			}
+
+			return version + "-" + qualifier
+		}
+	}
+
+	versionID := strings.TrimSpace(m.OSVersionID)
+	return versionID
 }
