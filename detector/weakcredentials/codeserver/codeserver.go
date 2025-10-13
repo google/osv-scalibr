@@ -18,14 +18,12 @@ package codeserver
 import (
 	"bufio"
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/google/osv-scalibr/detector"
@@ -176,10 +174,6 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 
 	vuln, err := checkAuth(ctx, client, d.config.Remote)
 	if err != nil {
-		// Only ignore errors that are caused by the connection being refused.
-		if errors.Is(err, syscall.ECONNREFUSED) {
-			return inventory.Finding{}, nil
-		}
 		return inventory.Finding{}, err
 	}
 
@@ -197,11 +191,13 @@ func checkAuth(ctx context.Context, client *http.Client, target string) (bool, e
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, err
+		// Up to and including this point, we swallow errors as we consider a failure to connect to be a
+		// non-vulnerable instance.
+		return false, nil
 	}
 
 	scanner := bufio.NewScanner(resp.Body)

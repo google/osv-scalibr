@@ -169,7 +169,7 @@ func TestValidatorAPI(t *testing.T) {
 			key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -201,7 +201,7 @@ func TestValidatorAPI_ContextCancellation(t *testing.T) {
 	key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
@@ -255,7 +255,7 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := postmanapikey.PostmanAPIKey{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
@@ -348,7 +348,7 @@ func TestValidatorCollection(t *testing.T) {
 			key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -380,7 +380,7 @@ func TestValidatorCollection_ContextCancellation(t *testing.T) {
 	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
@@ -429,7 +429,7 @@ func TestValidatorCollection_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := postmanapikey.PostmanCollectionToken{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

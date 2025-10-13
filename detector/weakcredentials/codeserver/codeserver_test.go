@@ -82,7 +82,7 @@ func TestScanWithTimeouts(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				time.Sleep(2 * time.Second)
 			},
-			expectFails:   true,
+			expectFails:   false,
 			clientTimeout: 100 * time.Millisecond,
 			maxDuration:   180 * time.Millisecond,
 		},

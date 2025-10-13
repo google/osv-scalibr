@@ -29,9 +29,11 @@ import (
 
 const (
 	// Name of the Annotator.
-	Name           = "vex/os-duplicate/cos"
-	cosPkgInfoPath = "etc/cos-package-info.json"
-	cosPkgDir      = "mnt/stateful_partition/var_overlay/db/pkg/"
+	Name = "vex/os-duplicate/cos"
+	// The dir in which all OS-installed COS packages are stored.
+	cosPkgDir = "mnt/stateful_partition/var_overlay/db/pkg/"
+	// The only mutable path inside COS filesystems.
+	mutableDir = "mnt/stateful_partition"
 )
 
 // Annotator adds annotations to language packages that have already been found in COS OS packages.
@@ -64,15 +66,17 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 
 		loc := pkg.Locations[0]
-		// annotate every package found under COS pkg install folder
-		if !strings.HasPrefix(loc, cosPkgDir) {
-			continue
+		// Annotate packages as OS duplicates if:
+		// They're in the OS package installation directory
+		if strings.HasPrefix(loc, cosPkgDir) ||
+			// Or if they're outside of the user-writable path (only OS-installed packages can live there).
+			!strings.HasPrefix(loc, mutableDir) {
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
-		pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-			Plugin:          Name,
-			Justification:   vex.ComponentNotPresent,
-			MatchesAllVulns: true,
-		})
 	}
 	return nil
 }

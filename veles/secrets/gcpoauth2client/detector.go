@@ -62,7 +62,7 @@ var (
 	// References:
 	// - https://gofastmcp.com/integrations/google
 	// - https://web.archive.org/web/20250418010928/https://docs.gitguardian.com/secrets-detection/secrets-detection-engine/detectors/specifics/google_oauth2_keys
-	clientSecretRe = regexp.MustCompile(`GOCSPX-[a-zA-Z0-9_-]{10,40}`)
+	clientSecretRe = regexp.MustCompile(`\bGOCSPX-[a-zA-Z0-9_-]{10,40}`)
 )
 
 // detector implements OAuth2 client credentials detection.
@@ -186,26 +186,6 @@ func buildResults(clientIDs, clientSecrets []match, pairs []credentialPair) ([]v
 
 		usedClientIDs[pair.clientIDIndex] = true
 		usedClientSecrets[pair.clientSecretIndex] = true
-	}
-
-	// Add unpaired client IDs
-	for i, clientID := range clientIDs {
-		if !usedClientIDs[i] {
-			secrets = append(secrets, Credentials{
-				ID: clientID.value,
-			})
-			positions = append(positions, clientID.position)
-		}
-	}
-
-	// Add unpaired client secrets
-	for i, clientSecret := range clientSecrets {
-		if !usedClientSecrets[i] {
-			secrets = append(secrets, Credentials{
-				Secret: clientSecret.value,
-			})
-			positions = append(positions, clientSecret.position)
-		}
 	}
 
 	return secrets, positions

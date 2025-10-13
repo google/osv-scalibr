@@ -223,6 +223,13 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Rocky Linux",
 		},
 		{
+			desc: "openEuler",
+			metadata: &rpmmeta.Metadata{
+				OSID: "openEuler",
+			},
+			want: "openEuler",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",

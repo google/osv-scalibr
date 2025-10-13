@@ -110,7 +110,6 @@ func TestHashSetFilter(t *testing.T) {
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1"},
 			},
-			wantErr: true,
 		},
 		{
 			name: "empty_list_file",
