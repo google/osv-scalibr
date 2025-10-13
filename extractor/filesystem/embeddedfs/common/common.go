@@ -31,7 +31,7 @@ import (
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/dsoprea/go-exfat"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
-	ntfs "www.velocidex.com/golang/go-ntfs/parser"
+	"www.velocidex.com/golang/go-ntfs/parser"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
