@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -330,6 +331,11 @@ var (
 		nvm.Name:  {nvm.New},
 	}
 
+	// EmbeddedFS extractors.
+	EmbeddedFS = InitMap{
+		vmdk.Name: {vmdk.NewDefault},
+	}
+
 	// Collections of extractors.
 
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
@@ -367,6 +373,7 @@ var (
 		SBOM,
 		OS,
 		Misc,
+		EmbeddedFS,
 		Containers,
 		Secrets,
 	)
@@ -408,6 +415,7 @@ var (
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
+		"embeddedfs": vals(EmbeddedFS),
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),

@@ -30,6 +30,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -168,7 +169,83 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		return inventory.Inventory{}, nil, err
 	}
 
-	return RunFS(ctx, config, wc)
+	// Run extractors on the scan root
+	inv, status, err := RunFS(ctx, config, wc)
+	if err != nil {
+		return inv, status, err
+	}
+
+	// Process embedded filesystems
+	var additionalInv inventory.Inventory
+	var tmpPaths []string
+	for _, embeddedFS := range inv.EmbeddedFSs {
+		// Mount the embedded filesystem
+		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to mount embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+
+		// Create a new ScanRoot for the mounted filesystem
+		newScanRoot := &scalibrfs.ScanRoot{
+			FS:   mountedFS,
+			Path: "", // Virtual filesystem
+		}
+
+		// Reuse the existing config, updating only necessary fields
+		config.ScanRoots = []*scalibrfs.ScanRoot{newScanRoot}
+		// Clear PathsToExtract to scan entire mounted filesystem
+		config.PathsToExtract = []string{}
+
+		// Run extractors on the mounted filesystem using Run
+		mountedInv, mountedStatus, err := Run(ctx, config)
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to extract from embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+
+		// Prepend embeddedFS.Path to Locations for all packages in mountedInv
+		for _, pkg := range mountedInv.Packages {
+			updatedLocations := make([]string, len(pkg.Locations))
+			for i, loc := range pkg.Locations {
+				updatedLocations[i] = fmt.Sprintf("%s:%s", embeddedFS.Path, loc)
+			}
+			pkg.Locations = updatedLocations
+		}
+
+		additionalInv.Append(mountedInv)
+		status = append(status, mountedStatus...)
+
+		// Collect temporary directories and raw files after traversal for removal.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			tmpPaths = append(tmpPaths, c.TempPaths()...)
+		}
+	}
+
+	// Remove all temporary directories and raw files we collected during filesystem traversal.
+	for _, tmpPath := range tmpPaths {
+		if err := os.RemoveAll(tmpPath); err != nil {
+			log.Infof("Failed to remove %s temporary file / directory", tmpPath)
+		}
+	}
+
+	// Combine inventories
+	inv.Append(additionalInv)
+	return inv, status, nil
 }
 
 // InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
