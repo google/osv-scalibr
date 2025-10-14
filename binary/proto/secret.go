@@ -44,6 +44,7 @@ import (
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -115,6 +116,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case pypiapitoken.PyPIAPIToken:
+		return pypiAPITokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -212,6 +215,16 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 		Secret: &spb.SecretData_Digitalocean{
 			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pypi{
+			Pypi: &spb.SecretData_PyPIAPIToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -717,6 +730,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_Pypi:
+		return pypiAPITokenToStruct(s.GetPypi()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -834,6 +849,12 @@ func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) vele
 	}
 }
 
+func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPIToken {
+	return pypiapitoken.PyPIAPIToken{
+		Token: kPB.GetToken(),
+	}
+}
+
 func slackAppLevelTokenToStruct(kPB *spb.SecretData_SlackAppLevelToken) velesslacktoken.SlackAppLevelToken {
 	return velesslacktoken.SlackAppLevelToken{
 		Token: kPB.GetToken(),
@@ -858,6 +879,7 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 		Username: kPB.GetUsername(),
 	}
 }
+
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),

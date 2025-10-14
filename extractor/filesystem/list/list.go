@@ -115,6 +115,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
+	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -274,6 +275,7 @@ var (
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
+		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{slacktoken.NewAppConfigAccessTokenDetector(), "secrets/slackappconfigaccesstoken", 0},
 		{slacktoken.NewAppConfigRefreshTokenDetector(), "secrets/slackappconfigrefreshtoken", 0},
 		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
