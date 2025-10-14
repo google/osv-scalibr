@@ -105,32 +105,44 @@ func TestRequiredPlugins(t *testing.T) {
 func TestEnrich(t *testing.T) {
 	// Test layer metadata.
 	// lm1: in base image alpine.
-	// lm2: not in base image.
-	// lm3: in base image debian.
+	// lm2: in base image nginx, but not an edge layer of the base image.
+	// lm3: in base image nginx.
 	lm1ChainID := digest.FromString("alpine")
 	lm1 := &extractor.LayerMetadata{
 		ChainID: lm1ChainID,
 	}
 	lm1Enriched := &extractor.LayerMetadata{
 		ChainID:        lm1ChainID,
+		BaseImageIndex: 2,
+	}
+	lm1EnrichedNoOtherBaseImages := &extractor.LayerMetadata{
+		ChainID:        lm1ChainID,
 		BaseImageIndex: 1,
 	}
-	lm2ChainID := digest.FromString("notbase")
+	lm2ChainID := digest.FromString("nginxnonedge")
 	lm2 := &extractor.LayerMetadata{
 		ChainID: lm2ChainID,
 	}
-	lm3ChainID := digest.FromString("debian")
+	lm2Enriched := &extractor.LayerMetadata{
+		ChainID:        lm2ChainID,
+		BaseImageIndex: 1,
+	}
+	lm3ChainID := digest.FromString("nginx")
 	lm3 := &extractor.LayerMetadata{
 		ChainID: lm3ChainID,
 	}
 	lm3Enriched := &extractor.LayerMetadata{
 		ChainID:        lm3ChainID,
-		BaseImageIndex: 2,
+		BaseImageIndex: 1,
 	}
 	clientErr := errors.New("client error")
 	lmErrChainID := digest.FromString("clienterror")
 	lmErr := &extractor.LayerMetadata{
 		ChainID: lmErrChainID,
+	}
+	lmErrEnrichedWithPrevLayer := &extractor.LayerMetadata{
+		ChainID:        lmErrChainID,
+		BaseImageIndex: 1,
 	}
 
 	tests := []struct {
@@ -153,15 +165,15 @@ func TestEnrich(t *testing.T) {
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
-						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+						req:  &baseimage.Request{ChainID: lm3.ChainID.String()},
+						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
 					},
 					{
 						req: &baseimage.Request{ChainID: lm2.ChainID.String()},
 					},
 					{
-						req:  &baseimage.Request{ChainID: lm3.ChainID.String()},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"debian"}}},
+						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
+						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
 					},
 				}}),
 			},
@@ -173,22 +185,22 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2, lm3Enriched},
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
 						BaseImages: [][]*extractor.BaseImageDetails{
 							[]*extractor.BaseImageDetails{},
 							[]*extractor.BaseImageDetails{
 								&extractor.BaseImageDetails{
-									Repository: "alpine",
+									Repository: "nginx",
 									Registry:   "docker.io",
-									ChainID:    lm1ChainID,
+									ChainID:    lm3ChainID,
 									Plugin:     "baseimage",
 								},
 							},
 							[]*extractor.BaseImageDetails{
 								&extractor.BaseImageDetails{
-									Repository: "debian",
+									Repository: "alpine",
 									Registry:   "docker.io",
-									ChainID:    lm3ChainID,
+									ChainID:    lm1ChainID,
 									Plugin:     "baseimage",
 								},
 							},
@@ -216,7 +228,7 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched},
+						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
 						BaseImages: [][]*extractor.BaseImageDetails{
 							[]*extractor.BaseImageDetails{},
 							[]*extractor.BaseImageDetails{
@@ -230,7 +242,7 @@ func TestEnrich(t *testing.T) {
 						},
 					},
 					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched},
+						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
 						BaseImages: [][]*extractor.BaseImageDetails{
 							[]*extractor.BaseImageDetails{},
 							[]*extractor.BaseImageDetails{
@@ -247,12 +259,57 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
-			name: "client error",
+			name: "client error on last layer",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
+						req: &baseimage.Request{ChainID: lmErr.ChainID.String()},
+						err: clientErr,
+					},
+					{
+						req: &baseimage.Request{ChainID: lm2.ChainID.String()},
+					},
+					{
 						req:  &baseimage.Request{ChainID: lm1.ChainID.String()},
 						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+					},
+				}}),
+			},
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr}},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						// lm1 is enriched with the base image alpine.
+						// lm2 is not enriched because the layer above it lmErr does not get enriched.
+						// lmErr is not enriched because the client returns an error.
+						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages, lm2, lmErr},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							[]*extractor.BaseImageDetails{},
+							[]*extractor.BaseImageDetails{
+								&extractor.BaseImageDetails{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    lm1ChainID,
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: clientErr,
+		},
+		{
+			name: "client error on first layer",
+			cfg: &baseimage.Config{
+				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+					{
+						req:  &baseimage.Request{ChainID: lm3.ChainID.String()},
+						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
 					},
 					{
 						req: &baseimage.Request{ChainID: lm2.ChainID.String()},
@@ -265,20 +322,22 @@ func TestEnrich(t *testing.T) {
 			},
 			inv: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr}},
+					{LayerMetadata: []*extractor.LayerMetadata{lmErr, lm2, lm3}},
 				},
 			},
 			want: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2, lmErr},
+						// The earliest layer is still enriched with the base image of lm2, even though itself
+						// does not match any layers / has an error.
+						LayerMetadata: []*extractor.LayerMetadata{lmErrEnrichedWithPrevLayer, lm2Enriched, lm3Enriched},
 						BaseImages: [][]*extractor.BaseImageDetails{
 							[]*extractor.BaseImageDetails{},
 							[]*extractor.BaseImageDetails{
 								&extractor.BaseImageDetails{
-									Repository: "alpine",
+									Repository: "nginx",
 									Registry:   "docker.io",
-									ChainID:    lm1ChainID,
+									ChainID:    lm3ChainID,
 									Plugin:     "baseimage",
 								},
 							},
