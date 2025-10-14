@@ -47,7 +47,7 @@ const (
 	stripeAPIEndpoint = "https://api.stripe.com/v1/accounts"
 )
 
-// --- Stripe Secret Key Validator (SK) ---
+// --- Stripe Secret Token Validator (SK) ---
 
 // SecretKeyValidator validates Stripe Secret Keys (sk_live_...) using /v1/accounts.
 type SecretKeyValidator struct {
@@ -105,7 +105,7 @@ func (v *SecretKeyValidator) Validate(ctx context.Context, key StripeSecretKey) 
 	}
 }
 
-// --- Stripe Restricted Key Validator (RK) ---
+// --- Stripe Restricted Token Validator (RK) ---
 
 // RestrictedKeyValidator validates Stripe Restricted Keys (rk_live_...) using /v1/accounts.
 type RestrictedKeyValidator struct {

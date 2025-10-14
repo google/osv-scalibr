@@ -88,10 +88,10 @@ func validateAPIKey(ctx context.Context, config *ValidationConfig, key string, e
 	// Check response status
 	switch res.StatusCode {
 	case http.StatusOK:
-		// Key is valid
+		// Token is valid
 		return veles.ValidationValid, nil
 	case http.StatusUnauthorized:
-		// Key is invalid
+		// Token is invalid
 		return veles.ValidationInvalid, nil
 	case http.StatusTooManyRequests:
 		// Rate limited - key is likely valid but we're being throttled.

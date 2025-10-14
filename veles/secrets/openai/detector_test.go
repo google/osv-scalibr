@@ -185,7 +185,7 @@ func TestProjectKeyValidation(t *testing.T) {
 
 			isDetected := len(got) > 0
 			if isDetected != tc.isValid {
-				t.Errorf("Key %q detected=%v, want valid=%v",
+				t.Errorf("Token %q detected=%v, want valid=%v",
 					tc.key, isDetected, tc.isValid)
 			}
 		})

@@ -72,7 +72,7 @@ func (o *LiveRegistry) Close() error {
 	return nil
 }
 
-// LiveKey wraps a winregistry.Key to provide an implementation of the registry.Key interface.
+// LiveKey wraps a winregistry.Token to provide an implementation of the registry.Key interface.
 type LiveKey struct {
 	key  *winregistry.Key
 	name string

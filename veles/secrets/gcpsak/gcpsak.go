@@ -17,7 +17,7 @@
 package gcpsak
 
 // GCPSAK is a Veles Secret that holds relevant information for a GCP Service
-// Account Key.
+// Account Token.
 // It only contains fields necessary for identification and validation.
 type GCPSAK struct {
 	// PrivateKeyID is the globally unique identifier of the service account key.

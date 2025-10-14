@@ -295,7 +295,7 @@ func CheckForBashTask(ctx context.Context, airflowIP string, airflowServerPort i
 	}
 
 	if _, exists := data["env"]; !exists {
-		log.Infof("Key 'env' does not exist in the JSON data")
+		log.Infof("Token 'env' does not exist in the JSON data")
 		return false
 	}
 
@@ -369,14 +369,14 @@ func triggerAndWaitForDAG(ctx context.Context, airflowIP string, airflowServerPo
 
 	// Check for the existence of "message" and "execution_date"
 	if _, messagePresent := resBody["message"]; !messagePresent {
-		log.Errorf("Key 'message' not found in response body")
+		log.Errorf("Token 'message' not found in response body")
 		return false
 	}
 
 	log.Infof("\"%s\"\n", resBody["message"])
 
 	if _, execDatePresent := resBody["execution_date"]; !execDatePresent {
-		log.Errorf("Key 'execution_date' not found in response body")
+		log.Errorf("Token 'execution_date' not found in response body")
 		return false
 	}
 

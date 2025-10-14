@@ -46,7 +46,7 @@ const (
 )
 
 //
-// --- Grok XAI API Key Validator ---
+// --- Grok XAI API Token Validator ---
 //
 
 var _ veles.Validator[GrokXAIAPIKey] = &ValidatorAPI{}
@@ -118,7 +118,7 @@ func (v *ValidatorAPI) Validate(ctx context.Context, key GrokXAIAPIKey) (veles.V
 }
 
 //
-// --- Grok XAI Management Key Validator ---
+// --- Grok XAI Management Token Validator ---
 //
 
 var _ veles.Validator[GrokXAIManagementKey] = &ValidatorManagement{}
