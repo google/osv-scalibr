@@ -39,6 +39,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -115,6 +116,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case npmjsaccesstoken.NpmJSAccessToken:
+		return npmJSAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -212,6 +215,16 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 		Secret: &spb.SecretData_Digitalocean{
 			Digitalocean: &spb.SecretData_DigitalOceanAPIToken{
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJSAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NpmjsAccessToken{
+			NpmjsAccessToken: &spb.SecretData_NpmJSAccessToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -717,6 +730,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_NpmjsAccessToken:
+		return npmJSAccessTokenToStruct(s.GetNpmjsAccessToken()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -831,6 +846,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) velesdigitalocean.DigitaloceanAPIToken {
 	return velesdigitalocean.DigitaloceanAPIToken{
 		Key: kPB.GetKey(),
+	}
+}
+
+func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJSAccessToken) npmjsaccesstoken.NpmJSAccessToken {
+	return npmjsaccesstoken.NpmJSAccessToken{
+		Token: kPB.GetToken(),
 	}
 }
 

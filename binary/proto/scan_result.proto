@@ -698,6 +698,7 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    NpmJSAccessToken npmjs_access_token = 44;
   }
 
   message GCPSAK {
@@ -803,6 +804,10 @@ message SecretData {
 
   message DigitalOceanAPIToken {
     string key = 1;
+  }
+
+  message NpmJSAccessToken {
+    string Token = 1;
   }
 
   message GithubAppRefreshToken {
