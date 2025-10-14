@@ -109,10 +109,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                              | Extractor Plugin                     |
-|-----------------------------------|--------------------------------------|
+| Type                                        | Extractor Plugin                     |
+|---------------------------------------------|--------------------------------------|
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
+| Cloudflare API Token                        | `secrets/cloudflareapitoken`         |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
 | Docker hub PAT                              | `secrets/dockerhubpat`               |
 | GCP API key                                 | `secrets/gcpapikey`                  |
