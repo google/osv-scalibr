@@ -32,7 +32,7 @@ var (
 // Endpoints used for validation.
 const (
 	// API endpoint that returns authenticated user info when the API key is valid.
-	// We call /me with X-Api-Key header.
+	// We call /me with X-Api-Token header.
 	apiEndpoint = "https://api.getpostman.com/me"
 
 	// A dummy collection ID used to produce predictable authentication vs
@@ -50,7 +50,7 @@ const (
 	collectionEndpoint = "https://api.postman.com/collections/" + dummyCollectionID
 )
 
-// --- Postman API Key Validator (PMAK) ---
+// --- Postman API Token Validator (PMAK) ---
 
 // ValidatorAPI validates Postman API keys (PMAK-...) using /me.
 type ValidatorAPI struct {
@@ -90,7 +90,7 @@ type apiErrorResponse struct {
 
 // Validate checks whether the given PostmanAPIKey is valid.
 //
-// It calls GET /me with header "X-Api-Key: <key>".
+// It calls GET /me with header "X-Api-Token: <key>".
 // - 200 OK  -> authenticated and valid.
 // - 401     -> invalid API key (authentication failure).
 // - other   -> validation failed (unexpected response).
@@ -99,7 +99,7 @@ func (v *ValidatorAPI) Validate(ctx context.Context, key PostmanAPIKey) (veles.V
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
-	// Postman expects the API key in the X-Api-Key header.
+	// Postman expects the API key in the X-Api-Token header.
 	req.Header.Set("X-Api-Key", key.Key)
 
 	res, err := v.httpC.Do(req)

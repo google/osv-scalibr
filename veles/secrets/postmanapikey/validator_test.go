@@ -60,10 +60,10 @@ func mockAPIServer(t *testing.T, expectedKey string, statusCode int, body any) *
 			return
 		}
 
-		// Check X-Api-Key header contains the expected key
+		// Check X-Api-Token header contains the expected key
 		apiKeyHeader := r.Header.Get("X-Api-Key")
 		if expectedKey != "" && apiKeyHeader != expectedKey {
-			t.Errorf("expected X-Api-Key header to be %s, got: %s", expectedKey, apiKeyHeader)
+			t.Errorf("expected X-Api-Token header to be %s, got: %s", expectedKey, apiKeyHeader)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -128,7 +128,7 @@ func TestValidatorAPI(t *testing.T) {
 			body: map[string]any{
 				"error": map[string]any{
 					"name":    "AuthenticationError",
-					"message": "Invalid API Key. Every request requires a valid API Key to be sent.",
+					"message": "Invalid API Token. Every request requires a valid API Token to be sent.",
 				},
 			},
 			want: veles.ValidationInvalid,
@@ -220,7 +220,7 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	server := mockAPIServer(t, "", http.StatusUnauthorized, map[string]any{
 		"error": map[string]any{
 			"name":    "AuthenticationError",
-			"message": "Invalid API Key. Every request requires a valid API Key to be sent.",
+			"message": "Invalid API Token. Every request requires a valid API Token to be sent.",
 		},
 	})
 	defer server.Close()

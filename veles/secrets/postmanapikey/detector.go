@@ -27,7 +27,7 @@ var (
 	_ veles.Detector = NewCollectionTokenDetector()
 )
 
-// PMAK (Postman API Key) structure seen in examples:
+// PMAK (Postman API Token) structure seen in examples:
 //
 //	PMAK-68b96b83f4b88500014cc8d1-d5cba29fdcc8434ed67e4ed2fe95a521e5
 //

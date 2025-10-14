@@ -41,7 +41,7 @@ func mockAnthropicModelServer(t *testing.T, expectedKey string, statusCode int, 
 
 		// Check headers
 		if r.Header.Get("X-Api-Key") != expectedKey {
-			t.Errorf("expected X-Api-Key: %s, got: %s", expectedKey, r.Header.Get("X-Api-Key"))
+			t.Errorf("expected X-Api-Token: %s, got: %s", expectedKey, r.Header.Get("X-Api-Key"))
 		}
 		if r.Header.Get("Anthropic-Version") != "2023-06-01" {
 			t.Errorf("expected Anthropic-Version: 2023-06-01, got: %s", r.Header.Get("Anthropic-Version"))

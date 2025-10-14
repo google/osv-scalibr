@@ -21,7 +21,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// Azure Storage Account Access Key maximum length is 88 chars.
+// Azure Storage Account Access Token maximum length is 88 chars.
 const maxTokenLength = 88
 
 // keyRe is a regular expression that matches an azure storage account access keys.
@@ -35,7 +35,7 @@ const maxTokenLength = 88
 var keyRe = regexp.MustCompile(`(?i)(?:(?:AZURE|ACCOUNT|STORAGE|ACCESS)[_.-]?){1,4}KEY.{0,5}?([>'=?#]?[A-Za-z0-9+\/]{86}==)`)
 
 // NewDetector returns a new simpletoken.Detector
-// that matches Azure Storage Account Access Key and returns the appropriate key type.
+// that matches Azure Storage Account Access Token and returns the appropriate key type.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,

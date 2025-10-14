@@ -49,7 +49,7 @@ const (
 )
 
 // TestSecretKeyDetector_TruePositives tests for cases where we know the SecretKeyDetector
-// will find 1Password Secret Key/s.
+// will find 1Password Secret Token/s.
 func TestSecretKeyDetector_TruePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{onepasswordkeys.NewSecretKeyDetector()})
 	if err != nil {
@@ -122,7 +122,7 @@ func TestSecretKeyDetector_TruePositives(t *testing.T) {
 }
 
 // TestSecretKeyDetector_TrueNegatives tests for cases where we know the SecretKeyDetector
-// will not find a 1Password Secret Key.
+// will not find a 1Password Secret Token.
 func TestSecretKeyDetector_TrueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{onepasswordkeys.NewSecretKeyDetector()})
 	if err != nil {
@@ -296,7 +296,7 @@ func TestServiceTokenDetector_TrueNegatives(t *testing.T) {
 }
 
 // TestRecoveryKeyDetector_TruePositives tests for cases where we know the RecoveryKeyDetector
-// will find 1Password Recovery Key/s.
+// will find 1Password Recovery Token/s.
 func TestRecoveryKeyDetector_TruePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{onepasswordkeys.NewRecoveryTokenDetector()})
 	if err != nil {
@@ -369,7 +369,7 @@ func TestRecoveryKeyDetector_TruePositives(t *testing.T) {
 }
 
 // TestRecoveryKeyDetector_TrueNegatives tests for cases where we know the RecoveryKeyDetector
-// will not find a 1Password Recovery Key.
+// will not find a 1Password Recovery Token.
 func TestRecoveryKeyDetector_TrueNegatives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{onepasswordkeys.NewRecoveryTokenDetector()})
 	if err != nil {
