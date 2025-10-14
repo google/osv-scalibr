@@ -85,12 +85,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 // ref: https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	for _, s := range []string{"my.cnf", "my.ini", "mariadb.cnf", "mariadb.ini"} {
-		if strings.HasSuffix(path, s) {
-			return true
-		}
-	}
-	return false
+	return strings.HasSuffix(path, "my.cnf") || strings.HasSuffix(path, "my.ini")
 }
 
 // Extract returns a list of secret mariadb credentials
@@ -107,13 +102,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 // include call includeDir or includeFile depending on the prefix
 func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*inventory.Secret, error) {
 	if after, ok := strings.CutPrefix(line, "!includedir"); ok {
-		// normalize to scalibr path and remove trailing "/"
-		path := strings.Trim(after, "/ ")
+		// Remove leading '/' or "C:" since SCALIBR fs paths don't include that.
+		// Remove trailing '/' if present
+		before, path, _ := strings.Cut(strings.TrimSpace(after), ":")
+		if path == "" {
+			path = before
+		}
+		path = strings.Trim(path, "/\\")
+
 		sections, err := e.includeDir(ctx, input, path)
 		return sections, err
 	}
 	if after, ok := strings.CutPrefix(line, "!include"); ok {
-		// normalize to scalibr path
+		// Remove leading '/' since SCALIBR fs paths don't include that
 		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
 		sections, err := e.includeFile(ctx, input, path)
 		return sections, err
@@ -222,7 +223,7 @@ func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput,
 		if entry.IsDir() {
 			continue
 		}
-		path := filepath.Join(dir, entry.Name())
+		path := filepath.ToSlash(filepath.Join(dir, entry.Name()))
 		if !strings.HasSuffix(path, ".cnf") && !strings.HasSuffix(path, ".ini") {
 			continue
 		}
