@@ -36,7 +36,7 @@ import (
 )
 
 func TestComputePatches(t *testing.T) {
-	npmRW, err := npm.GetReadWriter("")
+	npmRW, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("failed getting npm ReadWriter: %v", err)
 	}
