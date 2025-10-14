@@ -223,50 +223,48 @@ func TestToStruct(t *testing.T) {
 }
 
 func TestOpenEulerEcosystemSuffix(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
+	testCases := []struct {
+		desc string
 		meta *metadata.Metadata
 		want string
 	}{
 		{
-			name: "base version from pretty name",
+			desc: "base version from pretty name",
 			meta: &metadata.Metadata{
 				OSPrettyName: "openEuler 24.03",
 			},
 			want: "24.03",
 		},
 		{
-			name: "lts qualifier",
+			desc: "lts qualifier",
 			meta: &metadata.Metadata{
 				OSPrettyName: "openEuler 24.03 (LTS)",
 			},
 			want: "24.03-LTS",
 		},
 		{
-			name: "lts space qualifier",
+			desc: "lts space qualifier",
 			meta: &metadata.Metadata{
 				OSPrettyName: "openEuler 24.03 (LTS SP1)",
 			},
 			want: "24.03-LTS-SP1",
 		},
 		{
-			name: "lts hyphen qualifier",
+			desc: "lts hyphen qualifier",
 			meta: &metadata.Metadata{
 				OSPrettyName: "openEuler 24.03 (LTS-SP1)",
 			},
 			want: "24.03-LTS-SP1",
 		},
 		{
-			name: "fallback to version id",
+			desc: "fallback to version id",
 			meta: &metadata.Metadata{
 				OSVersionID: "24.03",
 			},
 			want: "24.03",
 		},
 		{
-			name: "non openEuler pretty name",
+			desc: "non openEuler pretty name",
 			meta: &metadata.Metadata{
 				OSPrettyName: "Fedora Linux 38 (Container Image)",
 				OSVersionID:  "38",
@@ -274,16 +272,16 @@ func TestOpenEulerEcosystemSuffix(t *testing.T) {
 			want: "38",
 		},
 		{
-			name: "no details",
+			desc: "no details",
 			meta: &metadata.Metadata{},
 			want: "",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.meta.OpenEulerEcosystemSuffix(); got != tt.want {
-				t.Fatalf("OpenEulerEcosystemSuffix() = %q, want %q", got, tt.want)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.meta.OpenEulerEcosystemSuffix(); got != tc.want {
+				t.Fatalf("OpenEulerEcosystemSuffix() = %q, want %q", got, tc.want)
 			}
 		})
 	}
