@@ -37,7 +37,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 		{inputPath: `my.cnf`, want: true},
 		{inputPath: `/Users/example/.my.cnf`, want: true},
 
-		//windows
+		// windows
 		{inputPath: `System Windows Directory\my.cnf`, want: true},
 		{inputPath: `c:\my.ini`, want: true},
 		{inputPath: `installdir\data\my.cnf`, want: true},
@@ -73,14 +73,20 @@ func TestExtractor_Extract(t *testing.T) {
 			Path: "empty.cnf",
 		},
 		{
-			Name:          "real.cnf",
+			Name:          "real_cnf",
 			FollowInclude: false,
 			Path:          "real.cnf",
 		},
 		{
-			Name:          "real.ini",
+			Name:          "real_ini",
 			FollowInclude: false,
 			Path:          "real.ini",
+		},
+		{
+			Name:          "bad_format",
+			FollowInclude: false,
+			Path:          "bad_format.cnf",
+			WantErr:       extracttest.ContainsErrStr{Str: "bad format: key-value found"},
 		},
 		{
 			Name:          "secret",
@@ -100,7 +106,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantSecrets: []*inventory.Secret{
 				{
 					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "root", Password: "secret_password"},
-					Location: "secret.cnf",
+					Location: "to_include/to_include.cnf",
 				},
 			},
 		},
@@ -108,6 +114,16 @@ func TestExtractor_Extract(t *testing.T) {
 			Name:          "include_dir",
 			FollowInclude: true,
 			Path:          "include_dir.cnf",
+			WantSecrets: []*inventory.Secret{
+				{
+					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "user", Password: "another_password"},
+					Location: "to_include/another_to_include.ini",
+				},
+				{
+					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "root", Password: "secret_password"},
+					Location: "to_include/to_include.cnf",
+				},
+			},
 		},
 		{
 			Name:          "bad_include",
@@ -139,7 +155,8 @@ func TestExtractor_Extract(t *testing.T) {
 			}
 
 			wantInv := inventory.Inventory{Secrets: tt.WantSecrets}
-			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+			opts := []cmp.Option{cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()}
+			if diff := cmp.Diff(wantInv, got, opts...); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.Path, diff)
 			}
 		})

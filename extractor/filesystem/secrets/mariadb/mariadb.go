@@ -20,10 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"maps"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -37,7 +35,6 @@ const (
 )
 
 var (
-	// TODO: check the regex
 	keyValuePattern = regexp.MustCompile(`^\s*([^:=\s]+)\s*[:=]\s*(.+)$`)
 )
 
@@ -47,7 +44,7 @@ type Config struct {
 	FollowInclude bool
 }
 
-// DefaultConfig returns the default configuration values for the Annotator.
+// DefaultConfig returns the default configuration values for the Extractor.
 func DefaultConfig() Config {
 	return Config{
 		FollowInclude: true,
@@ -60,6 +57,7 @@ type Extractor struct {
 	followInclude bool
 }
 
+// New returns the Extractor with the specified config settings.
 func New(cfg Config) *Extractor {
 	return &Extractor{
 		visited:       map[string]struct{}{},
@@ -67,7 +65,7 @@ func New(cfg Config) *Extractor {
 	}
 }
 
-// NewDefault returns the Annotator with the default config settings.
+// NewDefault returns the Extractor with the default config settings.
 func NewDefault() *Extractor {
 	return New(DefaultConfig())
 }
@@ -98,27 +96,33 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract returns a list of secret mariadb credentials
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	i := inventory.Inventory{}
-
-	sections, err := e.includeFile(ctx, input, input.Path)
+	secrets, err := e.includeFile(ctx, input, input.Path)
 	if err != nil {
 		return i, err
 	}
-
-	for _, s := range sections {
-		if !isSecret(s) {
-			continue
-		}
-		i.Secrets = append(i.Secrets, &inventory.Secret{
-			Secret:   *s,
-			Location: input.Path,
-		})
-	}
-
+	i.Secrets = secrets
 	return i, nil
 }
 
-// includeFile recursively extract sections from a config file
-func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput, path string) ([]*Credentials, error) {
+// include call includeDir or includeFile depending on the prefix
+func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*inventory.Secret, error) {
+	if after, ok := strings.CutPrefix(line, "!includedir"); ok {
+		// normalize to scalibr path and remove trailing "/"
+		path := strings.Trim(after, "/ ")
+		sections, err := e.includeDir(ctx, input, path)
+		return sections, err
+	}
+	if after, ok := strings.CutPrefix(line, "!include"); ok {
+		// normalize to scalibr path
+		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
+		sections, err := e.includeFile(ctx, input, path)
+		return sections, err
+	}
+	return nil, fmt.Errorf("unknown include prefix in %q", line)
+}
+
+// includeFile recursively extract secrets from a config file
+func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput, path string) ([]*inventory.Secret, error) {
 	// Prevent circular includes.
 	if _, seen := e.visited[path]; seen {
 		return nil, nil
@@ -134,10 +138,10 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 	curSection := ""
 	sections := map[string]*Credentials{}
 	scanner := bufio.NewScanner(f)
-
-	// keeping included sections separate instead of overwriting
-	// since file are not traversed in a particular order
-	included := []*Credentials{}
+	// Note:
+	// returning all the config flat instead of handling the files hierarchies
+	// because files are opened in no particular order
+	res := []*inventory.Secret{}
 
 	for scanner.Scan() {
 		if err := ctx.Err(); err != nil {
@@ -160,7 +164,7 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 			if err != nil {
 				return nil, err
 			}
-			included = append(included, section...)
+			res = append(res, section...)
 			continue
 		}
 
@@ -170,6 +174,7 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 			if _, ok := sections[curSection]; !ok {
 				sections[curSection] = &Credentials{Section: curSection}
 			}
+			continue
 		}
 
 		// add key value pair to the current section
@@ -178,6 +183,11 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 			continue
 		}
 		key, value := matches[1], matches[2]
+
+		if curSection == "" {
+			return nil, fmt.Errorf("bad format: key-value found outside a section in file %q", path)
+		}
+
 		// If the key is not related to credentials, ignore it silently
 		_ = sections[curSection].setField(key, value)
 	}
@@ -186,34 +196,25 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 		return nil, fmt.Errorf("could not extract from file: %w", err)
 	}
 
-	return slices.Concat(included, slices.Collect(maps.Values(sections))), nil
+	// adding the current file credentials to the ones found in included files
+	for _, s := range sections {
+		if !isSecret(s) {
+			continue
+		}
+		res = append(res, &inventory.Secret{Secret: *s, Location: path})
+	}
+
+	return res, nil
 }
 
-// include call includeDir or includeFile depending on the prefix
-func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*Credentials, error) {
-	if after, ok := strings.CutPrefix(line, "!includedir"); ok {
-		// TODO: recheck
-		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
-		sections, err := e.includeDir(ctx, input, path)
-		return sections, err
-	}
-	if after, ok := strings.CutPrefix(line, "!include"); ok {
-		// TODO: recheck
-		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
-		sections, err := e.includeFile(ctx, input, path)
-		return sections, err
-	}
-	return nil, fmt.Errorf("unknown include prefix in %q", line)
-}
-
-// includeDir recursively loads .cnf and .ini files from a specified directory directory.
-func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*Credentials, error) {
+// includeDir recursively loads .cnf and .ini files from a specified directory.
+func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*inventory.Secret, error) {
 	entries, err := fs.ReadDir(input.FS, dir)
 	if err != nil {
 		return nil, fmt.Errorf("could not read folder %s: %w", dir, err)
 	}
 
-	res := []*Credentials{}
+	res := []*inventory.Secret{}
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return nil, err
