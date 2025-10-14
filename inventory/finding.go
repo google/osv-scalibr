@@ -109,16 +109,16 @@ type GenericFindingTargetDetails struct {
 
 // PackageToAffected creates an osvschema.Affected struct from the given
 // Package, fixed ecosystem version, and severity.
-func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvschema.Severity) []osvschema.Affected {
-	return []osvschema.Affected{{
-		Package: osvschema.Package{
+func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvschema.Severity) []*osvschema.Affected {
+	return []*osvschema.Affected{{
+		Package: &osvschema.Package{
 			Ecosystem: pkg.Ecosystem().String(),
 			Name:      pkg.Name,
 		},
-		Severity: []osvschema.Severity{*severity},
-		Ranges: []osvschema.Range{{
-			Type:   osvschema.RangeEcosystem,
-			Events: []osvschema.Event{{Fixed: fixed}},
+		Severity: []*osvschema.Severity{severity},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_ECOSYSTEM,
+			Events: []*osvschema.Event{{Fixed: fixed}},
 		}},
 	}}
 }

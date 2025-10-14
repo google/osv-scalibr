@@ -40,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type sparkUIPackageNames struct {
@@ -106,18 +107,18 @@ func (d Detector) DetectedFinding() inventory.Finding {
 	return d.findingForPackage(nil)
 }
 
-func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
 	pkg := &extractor.Package{
 		Name:     "pyspark",
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
 		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2022-33891",
+			Id:      "CVE-2022-33891",
 			Summary: "CVE-2022-33891",
 			Details: "CVE-2022-33891",
 			Affected: inventory.PackageToAffected(pkg, "3.2.2", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
+				Type:  osvschema.Severity_CVSS_V3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
 			}),
 			DatabaseSpecific: dbSpecific,
@@ -172,8 +173,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		return inventory.Finding{}, nil
 	}
 
-	dbSpecific := map[string]any{
-		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	dbSpecific := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", "))}},
+		},
 	}
 	return d.findingForPackage(dbSpecific), nil
 }

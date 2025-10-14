@@ -25,7 +25,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 func TestToPURL(t *testing.T) {
@@ -223,7 +223,7 @@ func TestToEcosystem(t *testing.T) {
 				Version:  "version",
 				PURLType: purl.TypeGolang,
 			},
-			want: osvecosystem.FromEcosystem(osvschema.EcosystemGo),
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
 		},
 		{
 			name: "os_ecosystem",
@@ -239,7 +239,7 @@ func TestToEcosystem(t *testing.T) {
 				},
 			},
 			want: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemDebian,
+				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    "11",
 			},
 		},

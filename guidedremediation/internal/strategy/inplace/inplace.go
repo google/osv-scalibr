@@ -80,11 +80,11 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			}
 			// Check the vulns of other patches if this patch also fixes them.
 			seenVulns := make(map[string]struct{})
-			seenVulns[v.OSV.ID] = struct{}{}
+			seenVulns[v.OSV.Id] = struct{}{}
 			for _, p := range vkPatches[vk] {
 				for _, vuln := range p.vulns {
-					if _, ok := seenVulns[vuln.ID]; !ok {
-						seenVulns[vuln.ID] = struct{}{}
+					if _, ok := seenVulns[vuln.Id]; !ok {
+						seenVulns[vuln.Id] = struct{}{}
 						if !vulns.IsAffected(vuln, vulns.VKToPackage(ver)) {
 							newPatch.vulns = append(newPatch.vulns, vuln)
 						}
@@ -111,7 +111,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			}
 			for _, vuln := range p.vulns {
 				resultPatch.Fixed = append(resultPatch.Fixed, result.Vuln{
-					ID: vuln.ID,
+					ID: vuln.Id,
 					Packages: []result.Package{
 						result.Package{
 							Name:    vk.Name,

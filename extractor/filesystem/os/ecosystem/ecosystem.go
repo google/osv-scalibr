@@ -26,7 +26,7 @@ import (
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/log"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -39,9 +39,9 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *apkmeta.Metadata:
 		version := m.ToDistro()
 		if version == "" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemAlpine)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemAlpine)
 		}
-		return osvecosystem.Parsed{Ecosystem: osvschema.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
 
 	case *dpkgmeta.Metadata:
 		namespace = m.ToNamespace()
@@ -49,18 +49,18 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 
 	case *rpmmeta.Metadata:
 		if m.OSID == "rhel" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemRedHat)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemRedHat)
 		}
 		if m.OSID == "rocky" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemRockyLinux)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemRockyLinux)
 		}
 		if m.OSID == "openEuler" {
-			return osvecosystem.Parsed{Ecosystem: osvschema.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}
 		}
 
 	case *snapmeta.Metadata:
 		if m.OSID == "ubuntu" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemUbuntu)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemUbuntu)
 		}
 		log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
 		return osvecosystem.Parsed{}

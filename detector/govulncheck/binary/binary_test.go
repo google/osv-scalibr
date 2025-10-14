@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
@@ -30,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const binaryName = "semaphore-demo-go"
@@ -61,42 +62,45 @@ func TestScan(t *testing.T) {
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
 		Vulnerability: osvschema.Vulnerability{
-			ID:      "GO-2022-1144",
-			Aliases: []string{"CVE-2022-41717", "GHSA-xrjj-mj9h-534m"},
-			Summary: "Excessive memory growth in net/http and golang.org/x/net/http2",
+			Id:        "GO-2022-1144",
+			Modified:  &timestamppb.Timestamp{},
+			Published: &timestamppb.Timestamp{},
+			Withdrawn: &timestamppb.Timestamp{},
+			Aliases:   []string{"CVE-2022-41717", "GHSA-xrjj-mj9h-534m"},
+			Summary:   "Excessive memory growth in net/http and golang.org/x/net/http2",
 			Details: "An attacker can cause excessive memory growth in a Go server accepting HTTP/2 requests.\n\n" +
 				"HTTP/2 server connections contain a cache of HTTP header keys sent by the client. While the total " +
 				"number of entries in this cache is capped, an attacker sending very large keys can cause the " +
 				"server to allocate approximately 64 MiB per open connection.",
-			Affected: []osvschema.Affected{
+			Affected: []*osvschema.Affected{
 				{
-					Package: osvschema.Package{Ecosystem: "Go", Name: "stdlib"},
+					Package: &osvschema.Package{Ecosystem: "Go", Name: "stdlib"},
 				},
 			},
-			References: []osvschema.Reference{
-				{Type: "REPORT", URL: "https://go.dev/issue/56350"},
-				{Type: "FIX", URL: "https://go.dev/cl/455717"},
-				{Type: "FIX", URL: "https://go.dev/cl/455635"},
+			References: []*osvschema.Reference{
+				{Type: osvschema.Reference_REPORT, Url: "https://go.dev/issue/56350"},
+				{Type: osvschema.Reference_FIX, Url: "https://go.dev/cl/455717"},
+				{Type: osvschema.Reference_FIX, Url: "https://go.dev/cl/455635"},
 				{
-					Type: "WEB",
-					URL:  "https://groups.google.com/g/golang-announce/c/L_3rmdT0BMU/m/yZDrXjIiBQAJ",
+					Type: osvschema.Reference_WEB,
+					Url:  "https://groups.google.com/g/golang-announce/c/L_3rmdT0BMU/m/yZDrXjIiBQAJ",
 				},
 			},
-			Credits: []osvschema.Credit{{Name: "Josselin Costanzi"}},
+			Credits: []*osvschema.Credit{{Name: "Josselin Costanzi"}},
 		},
 	}
 
 	// Remove some fields that might change between govulncheck versions.
 	got.SchemaVersion = ""
-	got.Modified = time.Time{}
-	got.Published = time.Time{}
-	got.Withdrawn = time.Time{}
-	got.Affected = []osvschema.Affected{got.Affected[0]}
+	got.Modified = &timestamppb.Timestamp{}
+	got.Published = &timestamppb.Timestamp{}
+	got.Withdrawn = &timestamppb.Timestamp{}
+	got.Affected = []*osvschema.Affected{got.Affected[0]}
 	got.Vulnerability.Affected[0].Ranges = nil
 	got.Vulnerability.Affected[0].EcosystemSpecific = nil
 	got.DatabaseSpecific = nil
 
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
 		t.Errorf("detector.Scan(%v): unexpected findings (-want +got):\n%s", px, diff)
 	}
 }

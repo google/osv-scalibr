@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -40,11 +41,11 @@ func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 // toPURLType an OSV ecosystem into a PURL type.
 func toPURLType(ecosystem string) string {
 	switch ecosystem {
-	case string(osvschema.EcosystemNPM):
+	case string(osvconstants.EcosystemNPM):
 		return purl.TypeNPM
-	case string(osvschema.EcosystemMaven):
+	case string(osvconstants.EcosystemMaven):
 		return purl.TypeMaven
-	case string(osvschema.EcosystemPyPI):
+	case string(osvconstants.EcosystemPyPI):
 		return purl.TypePyPi
 	}
 	return ""
@@ -66,12 +67,12 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 			return true
 		}
 		for _, r := range affected.Ranges {
-			if r.Type != "ECOSYSTEM" &&
-				!(r.Type == "SEMVER" && affected.Package.Ecosystem == "npm") {
+			if r.Type != osvschema.Range_ECOSYSTEM &&
+				!(r.Type == osvschema.Range_SEMVER && affected.Package.Ecosystem == "npm") {
 				continue
 			}
 			events := slices.Clone(r.Events)
-			eventVersion := func(e osvschema.Event) string {
+			eventVersion := func(e *osvschema.Event) string {
 				if e.Introduced != "" {
 					return e.Introduced
 				}
@@ -80,7 +81,7 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 				}
 				return e.LastAffected
 			}
-			slices.SortFunc(events, func(a, b osvschema.Event) int {
+			slices.SortFunc(events, func(a, b *osvschema.Event) int {
 				aVer := eventVersion(a)
 				bVer := eventVersion(b)
 				if aVer == "0" {
@@ -95,7 +96,7 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 				// sys.Compare on strings is expensive, should consider precomputing sys.Parse
 				return sys.Compare(aVer, bVer)
 			})
-			idx, exact := slices.BinarySearchFunc(events, pkg.Version, func(e osvschema.Event, v string) int {
+			idx, exact := slices.BinarySearchFunc(events, pkg.Version, func(e *osvschema.Event, v string) int {
 				eVer := eventVersion(e)
 				if eVer == "0" {
 					return -1

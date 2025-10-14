@@ -30,6 +30,7 @@ import (
 	scalibrversion "github.com/google/osv-scalibr/version"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
+	"osv.dev/bindings/go/api"
 	"osv.dev/bindings/go/osvdev"
 	"osv.dev/bindings/go/osvdevexperimental"
 )
@@ -101,7 +102,7 @@ func (Enricher) RequiredPlugins() []string {
 // Enrich queries the OSV.dev API to find vulnerabilities in the inventory packages
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgs := make([]*extractor.Package, 0, len(inv.Packages))
-	queries := make([]*osvdev.Query, 0, len(inv.Packages))
+	queries := make([]*api.Query, 0, len(inv.Packages))
 	for _, pkg := range inv.Packages {
 		if query := pkgToQuery(pkg); query != nil {
 			pkgs = append(pkgs, pkg)
@@ -132,7 +133,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	vulnToPkgs := map[string][]*extractor.Package{}
 	for i, batch := range batchResp.Results {
 		for _, vv := range batch.Vulns {
-			vulnToPkgs[vv.ID] = append(vulnToPkgs[vv.ID], pkgs[i])
+			vulnToPkgs[vv.Id] = append(vulnToPkgs[vv.Id], pkgs[i])
 		}
 	}
 
@@ -143,11 +144,11 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	for _, vuln := range vulnerabilities {
-		for _, pkg := range vulnToPkgs[vuln.ID] {
+		for _, pkg := range vulnToPkgs[vuln.Id] {
 			inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
 				Vulnerability:         *vuln,
 				Package:               pkg,
-				ExploitabilitySignals: vex.FindingVEXFromPackageVEX(vuln.ID, pkg.ExploitabilitySignals),
+				ExploitabilitySignals: vex.FindingVEXFromPackageVEX(vuln.Id, pkg.ExploitabilitySignals),
 				Plugins:               []string{Name},
 			})
 		}
@@ -175,12 +176,12 @@ func dedupPackageVulns(vulns []*inventory.PackageVuln) []*inventory.PackageVuln 
 	dedupVulns := map[key]*inventory.PackageVuln{}
 
 	for _, vv := range vulns {
-		if vuln, ok := dedupVulns[key{vv.Package, vv.ID}]; !ok {
-			dedupVulns[key{vv.Package, vv.ID}] = vv
+		if vuln, ok := dedupVulns[key{vv.Package, vv.Id}]; !ok {
+			dedupVulns[key{vv.Package, vv.Id}] = vv
 		} else {
 			// use the latest (from OSV.dev) as source of truth
-			dedupVulns[key{vv.Package, vv.ID}] = vv
-			dedupVulns[key{vv.Package, vv.ID}].Plugins = append(dedupVulns[key{vv.Package, vv.ID}].Plugins, vuln.Plugins...)
+			dedupVulns[key{vv.Package, vv.Id}] = vv
+			dedupVulns[key{vv.Package, vv.Id}].Plugins = append(dedupVulns[key{vv.Package, vv.Id}].Plugins, vuln.Plugins...)
 		}
 	}
 
@@ -215,21 +216,25 @@ func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []str
 	return vulnerabilities, nil
 }
 
-func pkgToQuery(pkg *extractor.Package) *osvdev.Query {
+func pkgToQuery(pkg *extractor.Package) *api.Query {
 	if pkg.Name != "" && !pkg.Ecosystem().IsEmpty() && pkg.Version != "" {
 		// TODO(#1222): Ecosystems could return ecosystems
-		return &osvdev.Query{
-			Package: osvdev.Package{
+		return &api.Query{
+			Package: &osvschema.Package{
 				Name:      pkg.Name,
 				Ecosystem: pkg.Ecosystem().String(),
 			},
-			Version: pkg.Version,
+			Param: &api.Query_Version{
+				Version: pkg.Version,
+			},
 		}
 	}
 
 	if pkg.SourceCode != nil && pkg.SourceCode.Commit != "" {
-		return &osvdev.Query{
-			Commit: pkg.SourceCode.Commit,
+		return &api.Query{
+			Param: &api.Query_Commit{
+				Commit: pkg.SourceCode.Commit,
+			},
 		}
 	}
 

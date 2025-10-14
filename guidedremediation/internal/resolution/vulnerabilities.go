@@ -56,7 +56,7 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, d
 			vulnerableNodes = append(vulnerableNodes, resolve.NodeID(i))
 		}
 		for _, vuln := range vulns {
-			uniqueVulns[vuln.ID] = vuln
+			uniqueVulns[vuln.Id] = vuln
 		}
 	}
 
@@ -64,7 +64,7 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, d
 	vulnSubgraphs := make(map[string][]*DependencySubgraph)
 	for i, nID := range vulnerableNodes {
 		for _, vuln := range nodeVulns[nID] {
-			vulnSubgraphs[vuln.ID] = append(vulnSubgraphs[vuln.ID], nodeSubgraphs[i])
+			vulnSubgraphs[vuln.Id] = append(vulnSubgraphs[vuln.Id], nodeSubgraphs[i])
 		}
 	}
 
