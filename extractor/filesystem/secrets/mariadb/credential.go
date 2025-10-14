@@ -17,6 +17,8 @@ package mariadb
 import "strings"
 
 // Credentials contains mariadb credentials
+//
+// TODO: add location in some way
 type Credentials struct {
 	Section  string
 	Host     string
@@ -39,14 +41,7 @@ func (c *Credentials) setField(key, value string) bool {
 	return true
 }
 
-func (c *Credentials) overwrite(other *Credentials) {
-	if other.Host != "" {
-		c.Host = other.Host
-	}
-	if other.Password != "" {
-		c.Password = other.Password
-	}
-	if other.User != "" {
-		c.User = other.User
-	}
+// isSecret returns true if a set of credentials contains a secret
+func isSecret(c *Credentials) bool {
+	return c.Password != ""
 }

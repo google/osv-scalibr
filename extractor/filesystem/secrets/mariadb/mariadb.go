@@ -37,19 +37,39 @@ const (
 )
 
 var (
+	// TODO: check the regex
 	keyValuePattern = regexp.MustCompile(`^\s*([^:=\s]+)\s*[:=]\s*(.+)$`)
 )
 
-// Extractor extracts mariadb secret credentials.
-type Extractor struct {
-	visited map[string]struct{}
+// Config is the extractor config
+type Config struct {
+	// FollowInclude directive tells the extractor to follow the include or not
+	FollowInclude bool
 }
 
-// New returns a new instance of the extractor.
-func New() filesystem.Extractor {
-	return &Extractor{
-		visited: map[string]struct{}{},
+// DefaultConfig returns the default configuration values for the Annotator.
+func DefaultConfig() Config {
+	return Config{
+		FollowInclude: true,
 	}
+}
+
+// Extractor extracts mariadb secret credentials.
+type Extractor struct {
+	visited       map[string]struct{}
+	followInclude bool
+}
+
+func New(cfg Config) *Extractor {
+	return &Extractor{
+		visited:       map[string]struct{}{},
+		followInclude: cfg.FollowInclude,
+	}
+}
+
+// NewDefault returns the Annotator with the default config settings.
+func NewDefault() *Extractor {
+	return New(DefaultConfig())
 }
 
 // Name of the extractor.
@@ -64,7 +84,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // FileRequired returns true if the file contains mariadb config information
-// - ref: https://mariadb.com/docs/connectors/mariadb-connector-c/configuring-mariadb-connectorc-with-option-files
+// ref: https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	for _, s := range []string{"my.cnf", "my.ini", "mariadb.cnf", "mariadb.ini"} {
@@ -99,7 +119,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 // includeFile recursively extract sections from a config file
 func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput, path string) ([]*Credentials, error) {
-
 	// Prevent circular includes.
 	if _, seen := e.visited[path]; seen {
 		return nil, nil
@@ -108,7 +127,7 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 
 	f, err := input.FS.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not open file %w", err)
 	}
 	defer f.Close()
 
@@ -134,6 +153,9 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 
 		// include a file or a folder
 		if strings.HasPrefix(line, "!include") {
+			if !e.followInclude {
+				continue
+			}
 			section, err := e.include(ctx, input, line)
 			if err != nil {
 				return nil, err
@@ -161,25 +183,24 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not extract from file: %w", err)
 	}
 
 	return slices.Concat(included, slices.Collect(maps.Values(sections))), nil
 }
 
-// isSecret returns true if a set of credentials contains a secret
-func isSecret(c *Credentials) bool {
-	return c.Password != "" && c.User != "healthcheck"
-}
-
 // include call includeDir or includeFile depending on the prefix
 func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*Credentials, error) {
 	if after, ok := strings.CutPrefix(line, "!includedir"); ok {
-		sections, err := e.includeDir(ctx, input, strings.TrimSpace(after))
+		// TODO: recheck
+		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
+		sections, err := e.includeDir(ctx, input, path)
 		return sections, err
 	}
 	if after, ok := strings.CutPrefix(line, "!include"); ok {
-		sections, err := e.includeFile(ctx, input, strings.TrimSpace(after))
+		// TODO: recheck
+		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
+		sections, err := e.includeFile(ctx, input, path)
 		return sections, err
 	}
 	return nil, fmt.Errorf("unknown include prefix in %q", line)
@@ -189,7 +210,7 @@ func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, li
 func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*Credentials, error) {
 	entries, err := fs.ReadDir(input.FS, dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not read folder %s: %w", dir, err)
 	}
 
 	res := []*Credentials{}
