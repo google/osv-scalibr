@@ -25,6 +25,14 @@ import (
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
+var (
+	// pattern to match: openEuler version (qualifier)
+	// where (qualifier) is optional. Those without qualifier are considered innovation versions.
+	// version: YY.MM format. e.g. 24.03
+	// qualifier: currently supported are LTS, LTS SPd. e.g. LTS, LTS-SP1, LTS-SP2
+	openEulerPrettyNameRegexp = regexp.MustCompile(`^openEuler\s+([0-9]{2}\.[0-9]{2})(?:\s*\((LTS(?:[- ]SP\d+)?)\))?$`)
+)
+
 // Metadata holds parsing information for an rpm package.
 type Metadata struct {
 	PackageName  string
@@ -113,7 +121,8 @@ func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
 	}
 }
 
-// OpenEulerEcosystemSuffix returns the normalized ecosystem suffix for openEuler RPMs.
+// OpenEulerEcosystemSuffix returns the normalized ecosystem suffix for openEuler RPMs with uses of pretty name.
+// e.g. openEuler 24.03 (LTS) -> 24.03-LTS
 func (m *Metadata) OpenEulerEcosystemSuffix() string {
 	if m == nil {
 		return ""
@@ -121,8 +130,7 @@ func (m *Metadata) OpenEulerEcosystemSuffix() string {
 
 	prettyName := strings.TrimSpace(m.OSPrettyName)
 	if prettyName != "" {
-		pnRegexp := regexp.MustCompile(`^openEuler\s+([0-9]+\.[0-9]+)(?:\s*\(([^)]+)\))?$`)
-		if matches := pnRegexp.FindStringSubmatch(prettyName); len(matches) > 0 {
+		if matches := openEulerPrettyNameRegexp.FindStringSubmatch(prettyName); len(matches) > 0 {
 			version := matches[1]
 			qualifier := strings.TrimSpace(matches[2])
 			if qualifier == "" {
