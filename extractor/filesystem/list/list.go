@@ -24,7 +24,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -89,6 +91,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
@@ -104,7 +108,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
+	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -231,6 +237,7 @@ var (
 	// Containers extractors.
 	Containers = InitMap{
 		containerd.Name:         {containerd.NewDefault},
+		k8simage.Name:           {k8simage.NewDefault},
 		podman.Name:             {podman.NewDefault},
 		dockerbaseimage.Name:    {dockerbaseimage.NewDefault},
 		dockercomposeimage.Name: {dockercomposeimage.NewDefault},
@@ -255,8 +262,14 @@ var (
 		winget.Name:   {winget.NewDefault},
 	}
 
-	// Secrets list extractors for credentials.
-	Secrets = initMapFromVelesPlugins([]velesPlugin{
+	// SecretExtractors for Extractor interface.
+	SecretExtractors = InitMap{
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+	}
+
+	// SecretDetectors for Detector interface.
+	SecretDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
@@ -273,6 +286,8 @@ var (
 		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
 		{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
 		{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
+		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
+		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
@@ -292,7 +307,16 @@ var (
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
+		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
+		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
+		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 	})
+
+	// Secrets contains both secret extractors and detectors.
+	Secrets = concat(
+		SecretDetectors,
+		SecretExtractors,
+	)
 
 	// Misc artifact extractors.
 	Misc = InitMap{
@@ -305,6 +329,11 @@ var (
 	MiscSource = InitMap{
 		asdf.Name: {asdf.New},
 		nvm.Name:  {nvm.New},
+	}
+
+	// EmbeddedFS extractors.
+	EmbeddedFS = InitMap{
+		vmdk.Name: {vmdk.NewDefault},
 	}
 
 	// Collections of extractors.
@@ -344,6 +373,7 @@ var (
 		SBOM,
 		OS,
 		Misc,
+		EmbeddedFS,
 		Containers,
 		Secrets,
 	)
@@ -385,6 +415,7 @@ var (
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
+		"embeddedfs": vals(EmbeddedFS),
 		"containers": vals(Containers),
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
