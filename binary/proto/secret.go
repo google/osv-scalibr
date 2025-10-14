@@ -27,6 +27,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -118,6 +119,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return digitaloceanAPIKeyToProto(t), nil
 	case pypiapitoken.PyPIAPIToken:
 		return pypiAPITokenToProto(t), nil
+	case cratesioapitoken.CratesIOAPItoken:
+		return cratesioAPITokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -254,6 +257,16 @@ func slackAppConfigRefreshTokenToProto(s velesslacktoken.SlackAppConfigRefreshTo
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SlackAppConfigRefreshToken_{
 			SlackAppConfigRefreshToken: &spb.SecretData_SlackAppConfigRefreshToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func cratesioAPITokenToProto(s cratesioapitoken.CratesIOAPItoken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CratesIoApiToken{
+			CratesIoApiToken: &spb.SecretData_CratesIOAPIToken{
 				Token: s.Token,
 			},
 		},
@@ -732,6 +745,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
 		return pypiAPITokenToStruct(s.GetPypi()), nil
+	case *spb.SecretData_CratesIoApiToken:
+		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -851,6 +866,12 @@ func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) vele
 
 func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPIToken {
 	return pypiapitoken.PyPIAPIToken{
+		Token: kPB.GetToken(),
+	}
+}
+
+func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapitoken.CratesIOAPItoken {
+	return cratesioapitoken.CratesIOAPItoken{
 		Token: kPB.GetToken(),
 	}
 }

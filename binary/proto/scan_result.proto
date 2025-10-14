@@ -699,6 +699,7 @@ message SecretData {
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
     PyPIAPIToken pypi = 44;
+    CratesIOAPIToken crates_io_api_token = 45;
   }
 
   message GCPSAK {
@@ -804,6 +805,10 @@ message SecretData {
 
   message DigitalOceanAPIToken {
     string key = 1;
+  }
+
+  message CratesIOAPIToken {
+    string token = 1;
   }
 
   message GithubAppRefreshToken {
