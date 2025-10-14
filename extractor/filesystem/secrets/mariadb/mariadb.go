@@ -58,7 +58,7 @@ type Extractor struct {
 }
 
 // New returns the Extractor with the specified config settings.
-func New(cfg Config) *Extractor {
+func New(cfg Config) filesystem.Extractor {
 	return &Extractor{
 		visited:       map[string]struct{}{},
 		followInclude: cfg.FollowInclude,
@@ -66,7 +66,7 @@ func New(cfg Config) *Extractor {
 }
 
 // NewDefault returns the Extractor with the default config settings.
-func NewDefault() *Extractor {
+func NewDefault() filesystem.Extractor {
 	return New(DefaultConfig())
 }
 

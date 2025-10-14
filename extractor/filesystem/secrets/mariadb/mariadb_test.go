@@ -94,7 +94,9 @@ func TestExtractor_Extract(t *testing.T) {
 			Path:          "secret.cnf",
 			WantSecrets: []*inventory.Secret{
 				{
-					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "root", Password: "secret_password"},
+					Secret: mariadb.Credentials{
+						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
+					},
 					Location: "secret.cnf",
 				},
 			},
@@ -105,7 +107,9 @@ func TestExtractor_Extract(t *testing.T) {
 			Path:          "include_file.cnf",
 			WantSecrets: []*inventory.Secret{
 				{
-					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "root", Password: "secret_password"},
+					Secret: mariadb.Credentials{
+						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
+					},
 					Location: "to_include/to_include.cnf",
 				},
 			},
@@ -116,11 +120,15 @@ func TestExtractor_Extract(t *testing.T) {
 			Path:          "include_dir.cnf",
 			WantSecrets: []*inventory.Secret{
 				{
-					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "user", Password: "another_password"},
+					Secret: mariadb.Credentials{
+						Section: "mariadb-client", User: "user", Password: "another_password", Port: "3306",
+					},
 					Location: "to_include/another_to_include.ini",
 				},
 				{
-					Secret:   mariadb.Credentials{Section: "mariadb-client", User: "root", Password: "secret_password"},
+					Secret: mariadb.Credentials{
+						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
+					},
 					Location: "to_include/to_include.cnf",
 				},
 			},

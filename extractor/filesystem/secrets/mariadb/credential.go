@@ -22,6 +22,7 @@ import "strings"
 type Credentials struct {
 	Section  string
 	Host     string
+	Port     string
 	User     string
 	Password string
 }
@@ -35,6 +36,8 @@ func (c *Credentials) setField(key, value string) bool {
 		c.User = value
 	case "password":
 		c.Password = value
+	case "port":
+		c.Port = value
 	default:
 		return false
 	}

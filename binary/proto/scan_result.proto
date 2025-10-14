@@ -698,6 +698,7 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    MariaDBCredentials maria_db_credentials = 44;
   }
 
   message GCPSAK {
@@ -763,7 +764,15 @@ message SecretData {
     string username = 4;
     string password = 5;
   }
-
+  
+  message MariaDBCredentials {
+    string host = 1;
+    string port = 2;
+    string user = 4;
+    string password = 5;
+    string section = 6;
+  }
+  
   message AzureIdentityToken {
     string token = 1;
   }

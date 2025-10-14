@@ -91,6 +91,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
@@ -266,6 +267,7 @@ var (
 	SecretExtractors = InitMap{
 		pgpass.Name:                  {pgpass.New},
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+		mariadb.Name:                 {mariadb.NewDefault},
 	}
 
 	// SecretDetectors for Detector interface.
