@@ -128,6 +128,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| MariaDB Credentials                         | `secrets/mariadb`                    |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
