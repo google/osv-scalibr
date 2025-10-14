@@ -698,6 +698,7 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    CloudflareAPIToken cloudflare_api_token = 44;
   }
 
   message GCPSAK {
@@ -775,6 +776,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message CloudflareAPIToken {
+    string token = 1;
   }
 
   message GitlabPat {
