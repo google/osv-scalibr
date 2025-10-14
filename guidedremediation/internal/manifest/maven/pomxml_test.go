@@ -28,6 +28,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
+	"github.com/google/osv-scalibr/clients/datasource"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -167,12 +168,13 @@ func TestReadWrite(t *testing.T) {
 </project>
 `))
 
-	fsys := scalibrfs.DirFS("./testdata")
-	mavenRW, err := GetReadWriter(srv.URL, "")
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	mavenRW, err := GetReadWriter(client)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
+	fsys := scalibrfs.DirFS("./testdata")
 	got, err := mavenRW.Read("my-app/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
