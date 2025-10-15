@@ -25,7 +25,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/diskfs/go-diskfs"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
@@ -118,25 +117,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
 
-	// Open the raw disk image with go-diskfs
-	disk, err := diskfs.Open(tmpRawPath, diskfs.WithOpenMode(diskfs.ReadOnly))
-	if err != nil {
-		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, fmt.Errorf("failed to open raw disk image %s: %w", tmpRawPath, err)
-	}
-
-	// Get the partition table
-	partitions, err := disk.GetPartitionTable()
+	// Retrieve all partitions and the associated disk handle from the raw disk image.
+	partitionList, disk, err := common.GetDiskPartitions(tmpRawPath)
 	if err != nil {
 		disk.Close()
 		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, fmt.Errorf("failed to get partition table: %w", err)
-	}
-	partitionList := partitions.GetPartitions()
-	if len(partitionList) == 0 {
-		disk.Close()
-		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, errors.New("no partitions found in raw disk image")
+		return inventory.Inventory{}, err
 	}
 
 	// Create a reference counter for the temporary file

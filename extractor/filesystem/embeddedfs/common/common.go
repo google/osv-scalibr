@@ -18,6 +18,7 @@ package common
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -28,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/diskfs/go-diskfs/partition/part"
@@ -369,6 +371,26 @@ type CloserWithTmpPaths interface {
 	scalibrfs.FS
 	Close() error
 	TempPaths() []string
+}
+
+// GetDiskPartitions opens a raw disk image and returns its partitions along with the disk handle.
+func GetDiskPartitions(tmpRawPath string) ([]part.Partition, *disk.Disk, error) {
+	// Open the raw disk image with go-diskfs
+	disk, err := diskfs.Open(tmpRawPath, diskfs.WithOpenMode(diskfs.ReadOnly))
+	if err != nil {
+		os.Remove(tmpRawPath)
+		return nil, nil, fmt.Errorf("failed to open raw disk image %s: %w", tmpRawPath, err)
+	}
+
+	partitions, err := disk.GetPartitionTable()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get partition table: %w", err)
+	}
+	partitionList := partitions.GetPartitions()
+	if len(partitionList) == 0 {
+		return nil, nil, errors.New("no partitions found in raw disk image")
+	}
+	return partitionList, disk, nil
 }
 
 // NewPartitionEmbeddedFSGetter creates a lazy getter function for an embedded filesystem from a disk partition.
