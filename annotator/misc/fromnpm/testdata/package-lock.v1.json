@@ -8,11 +8,16 @@
     },
     "supports-color": {
       "version": "5.0.0",
-      "resolved": "supports-color"
+      "resolved": "https://artifactory.my-company.com/artifactory/api/npm/npm-virtual/supports-color/-/supports-color-1.2.3.tgz"
     },
     "local-package": {
       "version": "1.0.0",
-      "resolved": "local-package-1.0.0.tgz"
+      "resolved": "file:../../../../javascript/node_modules/local-package-1.0.0.tgz"
+    },
+    "@parcel/watcher": {
+      "version": "2.5.1",
+      "resolved": "",
+      "integrity": "sha512-Z0lk8pM5vwuOJU6pfheRXHrOpQYIIEnVl/z8DY6370D4+ZnrOTvFa5BUdf3pGxahT5ILbPWwQSm2Wthy4q1OTg=="
     },
     "babel-code-frame": {
       "version": "7.0.0",

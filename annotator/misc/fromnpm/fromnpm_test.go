@@ -62,7 +62,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		Metadata: &metadata.JavascriptPackageJSONMetadata{
 			// We want to assert that the package was resolved from the NPM repository which means that
 			// the lockfile was read from the relative path in the scan root.
-			FromNPMRepository: true,
+			Source: metadata.PublicRegistry,
 		},
 	}
 
@@ -105,12 +105,12 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Unknown,
 				},
 			},
 		},
 		{
-			name: "local dependency",
+			name: "dependency from private registry",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -124,12 +124,12 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/supports-color/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Other,
 				},
 			},
 		},
 		{
-			name: "custom package from github",
+			name: "custom package from github (private registry)",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -143,7 +143,26 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/custom-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Other,
+				},
+			},
+		},
+		{
+			name: "local package",
+			lockfiles: map[string]string{
+				"testproject/package-lock.json": "testdata/package-lock.v1.json",
+			},
+			inputPackage: &extractor.Package{
+				Name:      "local-package",
+				PURLType:  "npm",
+				Locations: []string{"testproject/node_modules/local-package/package.json"},
+			},
+			wantPackage: &extractor.Package{
+				Name:      "local-package",
+				PURLType:  "npm",
+				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					Source: metadata.Local,
 				},
 			},
 		},
@@ -162,7 +181,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -181,7 +200,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -200,7 +219,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -219,7 +238,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -236,7 +255,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Unknown,
 				},
 			},
 			wantAnyErr: false,
@@ -295,12 +314,12 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Unknown,
 				},
 			},
 		},
 		{
-			name: "local package",
+			name: "dependency from private registry",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -314,7 +333,26 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/supports-color/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Other,
+				},
+			},
+		},
+		{
+			name: "local package",
+			lockfiles: map[string]string{
+				"testproject/package-lock.json": "testdata/package-lock.json",
+			},
+			inputPackage: &extractor.Package{
+				Name:      "local-package",
+				PURLType:  "npm",
+				Locations: []string{"testproject/node_modules/local-package/package.json"},
+			},
+			wantPackage: &extractor.Package{
+				Name:      "local-package",
+				PURLType:  "npm",
+				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					Source: metadata.Local,
 				},
 			},
 		},
@@ -333,7 +371,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -352,12 +390,12 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
 		{
-			name: "custom package from github",
+			name: "custom package from github (private registry)",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -371,7 +409,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/custom-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Other,
 				},
 			},
 		},
@@ -390,7 +428,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -409,7 +447,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -428,7 +466,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: true,
+					Source: metadata.PublicRegistry,
 				},
 			},
 		},
@@ -445,7 +483,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				PURLType:  "npm",
 				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: metadata.Unknown,
 				},
 			},
 			wantAnyErr: false,
@@ -588,25 +626,27 @@ func TestResolvedFromLockfile(t *testing.T) {
 	testCases := []struct {
 		name        string
 		lockfiles   map[string]string
-		wantDeps    map[string]bool
+		wantDeps    map[string]metadata.NPMPackageSource
 		wantAnyErr  bool
 		skipWindows bool
 	}{
-		// 		// All 3 lockfiles have the same file structure.
+		// All 3 lockfiles have the same file structure.
 		{
 			name: "parse package-lock.json",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
-			wantDeps: map[string]bool{
-				"acorn":             true,
-				"wrappy":            true,
-				"custom-package":    false,
-				"supports-color":    false,
-				"ajv":               true,
-				"@babel/highlight":  true,
-				"@babel/code-frame": true,
-				"string-width":      true,
+			wantDeps: map[string]metadata.NPMPackageSource{
+				"acorn":             metadata.PublicRegistry,
+				"wrappy":            metadata.PublicRegistry,
+				"custom-package":    metadata.Other,
+				"supports-color":    metadata.Other,
+				"ajv":               metadata.PublicRegistry,
+				"@babel/highlight":  metadata.PublicRegistry,
+				"@babel/code-frame": metadata.PublicRegistry,
+				"string-width":      metadata.PublicRegistry,
+				"@parcel/watcher":   metadata.Unknown,
+				"local-package":     metadata.Local,
 			},
 			skipWindows: true,
 		},
@@ -615,15 +655,17 @@ func TestResolvedFromLockfile(t *testing.T) {
 			lockfiles: map[string]string{
 				"testproject/npm-shrinkwrap.json": "testdata/package-lock.json",
 			},
-			wantDeps: map[string]bool{
-				"acorn":             true,
-				"wrappy":            true,
-				"custom-package":    false,
-				"supports-color":    false,
-				"ajv":               true,
-				"@babel/highlight":  true,
-				"@babel/code-frame": true,
-				"string-width":      true,
+			wantDeps: map[string]metadata.NPMPackageSource{
+				"acorn":             metadata.PublicRegistry,
+				"wrappy":            metadata.PublicRegistry,
+				"custom-package":    metadata.Other,
+				"supports-color":    metadata.Other,
+				"ajv":               metadata.PublicRegistry,
+				"@babel/highlight":  metadata.PublicRegistry,
+				"@babel/code-frame": metadata.PublicRegistry,
+				"string-width":      metadata.PublicRegistry,
+				"@parcel/watcher":   metadata.Unknown,
+				"local-package":     metadata.Local,
 			},
 			skipWindows: true,
 		},
@@ -632,15 +674,17 @@ func TestResolvedFromLockfile(t *testing.T) {
 			lockfiles: map[string]string{
 				"testproject/node_modules/.package-lock.json": "testdata/package-lock.json",
 			},
-			wantDeps: map[string]bool{
-				"acorn":             true,
-				"wrappy":            true,
-				"custom-package":    false,
-				"supports-color":    false,
-				"ajv":               true,
-				"@babel/highlight":  true,
-				"@babel/code-frame": true,
-				"string-width":      true,
+			wantDeps: map[string]metadata.NPMPackageSource{
+				"acorn":             metadata.PublicRegistry,
+				"wrappy":            metadata.PublicRegistry,
+				"custom-package":    metadata.Other,
+				"supports-color":    metadata.Other,
+				"ajv":               metadata.PublicRegistry,
+				"@babel/highlight":  metadata.PublicRegistry,
+				"@babel/code-frame": metadata.PublicRegistry,
+				"string-width":      metadata.PublicRegistry,
+				"@parcel/watcher":   metadata.Unknown,
+				"local-package":     metadata.Local,
 			},
 			skipWindows: true,
 		},
@@ -665,7 +709,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			lockfiles: map[string]string{
 				"testproject/node_modules/.package-lock.json": "testdata/no-dep-list-package-lock.json",
 			},
-			wantDeps:    map[string]bool{},
+			wantDeps:    map[string]metadata.NPMPackageSource{},
 			wantAnyErr:  false,
 			skipWindows: true,
 		},
