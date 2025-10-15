@@ -1,0 +1,5 @@
+lock-version = "1.0"
+created-by = "pip"
+packages = [
+  { name = "hspaans-github-io", directory = { path = ".", editable = true } },
+]
