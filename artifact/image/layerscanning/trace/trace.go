@@ -68,7 +68,7 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 	inv.ContainerImageMetadata = append(inv.ContainerImageMetadata, cim)
 	fillLayerMetadataFromChainLayers(cim, chainLayers)
 
-	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].Layer().FS())
+	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].FS())
 	if err == nil {
 		cim.OSInfo = osInfo
 	}

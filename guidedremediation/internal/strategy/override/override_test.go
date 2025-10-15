@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
+	"github.com/google/osv-scalibr/clients/datasource"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
@@ -35,7 +36,8 @@ import (
 )
 
 func TestComputePatches(t *testing.T) {
-	mavenRW, err := maven.GetReadWriter("", "")
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+	mavenRW, err := maven.GetReadWriter(client)
 	if err != nil {
 		t.Fatalf("failed getting ReadWriter: %v", err)
 	}
