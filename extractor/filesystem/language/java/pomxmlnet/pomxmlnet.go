@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -108,11 +109,15 @@ func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+		err = fmt.Errorf("could not extract: %w", err)
+		log.Error(err)
+		return inventory.Inventory{}, err
 	}
 	// Empty JDK and ActivationOS indicates merging the default profiles.
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
+		err = fmt.Errorf("failed to merge profiles: %w", err)
+		log.Error(err)
+		return inventory.Inventory{}, err
 	}
 	// Clear the registries that may be from other extraction.
 	e.MavenClient = e.MavenClient.WithoutRegistries()
@@ -123,7 +128,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
 			SnapshotsEnabled: repo.Snapshots.Enabled.Boolean(),
 		}); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+			err = fmt.Errorf("failed to add registry %s: %w", repo.URL, err)
+			log.Error(err)
+			return inventory.Inventory{}, err
 		}
 	}
 	// Merging parents data by parsing local parent pom.xml or fetching from upstream.
@@ -134,7 +141,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to merge parents: %w", err)
+		err = fmt.Errorf("failed to merge parents: %w", err)
+		log.Error(err)
+		return inventory.Inventory{}, err
 	}
 	// Process the dependencies:
 	//  - dedupe dependencies and dependency management
@@ -151,6 +160,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
 			if err := cl.AddRegistries(ctx, clientRegs); err != nil {
+				err = fmt.Errorf("failed to add registries: %w", err)
+				log.Error(err)
 				return inventory.Inventory{}, err
 			}
 		}
@@ -200,11 +211,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	g, err := resolver.Resolve(ctx, root.VersionKey)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %w", root, err)
+		err = fmt.Errorf("failed resolving %v: %w", root, err)
+		log.Error(err)
+		return inventory.Inventory{}, err
 	}
 	if len(g.Nodes) <= 1 && g.Error != "" {
 		// Multi-registry error may be appended to the resolved graph so only return error when the graph is empty.
-		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
+		err := fmt.Errorf("failed resolving %v: %s", root, g.Error)
+		log.Error(err)
+		return inventory.Inventory{}, err
 	}
 
 	details := map[string]*extractor.Package{}
