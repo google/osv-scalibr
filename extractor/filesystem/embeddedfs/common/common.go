@@ -16,6 +16,7 @@
 package common
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
+	"github.com/diskfs/go-diskfs/partition/part"
 	"github.com/dsoprea/go-exfat"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
@@ -369,8 +371,66 @@ type CloserWithTmpPaths interface {
 	TempPaths() []string
 }
 
-// GenerateFSParams holds parameters for generating embedded filesystems.
-type GenerateFSParams struct {
+// NewPartitionEmbeddedFSGetter creates a lazy getter function for an embedded filesystem from a disk partition.
+func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, tmpRawPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
+	return func(ctx context.Context) (scalibrfs.FS, error) {
+		// Get partition offset and size (already multiplied by sector size)
+		offset := p.GetStart()
+		size := p.GetSize()
+
+		// Open raw image for filesystem parsers
+		f, err := os.Open(tmpRawPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open raw image %s: %w", tmpRawPath, err)
+		}
+
+		section := io.NewSectionReader(f, offset, size)
+		fsType := DetectFilesystem(section, 0)
+
+		// Create a temporary directory for extracted files
+		tempDir, err := os.MkdirTemp("", fmt.Sprintf("scalibr-%s-part-%s-%d-", pluginName, fsType, partitionIndex))
+		if err != nil {
+			f.Close()
+			return nil, fmt.Errorf("failed to create temporary directory for %s partition %d: %w", fsType, partitionIndex, err)
+		}
+
+		params := generateFSParams{
+			File:           f,
+			Disk:           disk,
+			Section:        section,
+			PartitionIndex: partitionIndex,
+			TempDir:        tempDir,
+			TmpRawPath:     tmpRawPath,
+			RefMu:          refMu,
+			RefCount:       refCount,
+		}
+
+		var fsys scalibrfs.FS
+		switch fsType {
+		case "ext4":
+			fsys, err = generateEXTFS(params)
+		case "FAT32":
+			fsys, err = generateFAT32FS(params)
+		case "exFAT":
+			fsys, err = generateEXFATFS(params)
+		case "NTFS":
+			fsys, err = generateNTFSFS(params)
+		default:
+			fsys, err = nil, fmt.Errorf("unsupported filesystem type %s for partition %d", fsType, partitionIndex)
+		}
+		if err != nil {
+			if fsType != "FAT32" {
+				f.Close()
+			}
+			os.RemoveAll(tempDir)
+			return nil, err
+		}
+		return fsys, nil
+	}
+}
+
+// generateFSParams holds parameters for generating embedded filesystems.
+type generateFSParams struct {
 	File           *os.File
 	Disk           *disk.Disk
 	Section        *io.SectionReader
@@ -381,8 +441,8 @@ type GenerateFSParams struct {
 	RefCount       *int32
 }
 
-// GenerateEXTFS generates an ext4 filesystem and extracts files to a temporary directory.
-func GenerateEXTFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+// generateEXTFS generates an ext4 filesystem and extracts files to a temporary directory.
+func generateEXTFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	fs, err := ext4.NewFS(*params.Section, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ext4 filesystem for partition %d: %w", params.PartitionIndex, err)
@@ -402,10 +462,10 @@ func GenerateEXTFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
 	}, nil
 }
 
-// GenerateFAT32FS generates a FAT32 filesystem and extracts files to a temporary directory.
+// generateFAT32FS generates a FAT32 filesystem and extracts files to a temporary directory.
 // Note that unlike in the other generator functions, the file is expected to be closed
 // as disk.GetFilesystem() will reopen it.
-func GenerateFAT32FS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	fs, err := params.Disk.GetFilesystem(params.PartitionIndex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get filesystem for partition %d: %w", params.PartitionIndex, err)
@@ -434,8 +494,8 @@ func GenerateFAT32FS(params GenerateFSParams) (*EmbeddedDirFS, error) {
 	}, nil
 }
 
-// GenerateEXFATFS generates an exFAT filesystem and extracts files to a temporary directory.
-func GenerateEXFATFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+// generateEXFATFS generates an exFAT filesystem and extracts files to a temporary directory.
+func generateEXFATFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if err := ExtractAllRecursiveExFAT(params.Section, params.TempDir); err != nil {
 		return nil, fmt.Errorf("failed to extract exFAT files for partition %d: %w", params.PartitionIndex, err)
 	}
@@ -451,8 +511,8 @@ func GenerateEXFATFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
 	}, nil
 }
 
-// GenerateNTFSFS generates an NTFS filesystem and extracts files to a temporary directory.
-func GenerateNTFSFS(params GenerateFSParams) (*EmbeddedDirFS, error) {
+// generateNTFSFS generates an NTFS filesystem and extracts files to a temporary directory.
+func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	reader, err := parser.NewPagedReader(params.Section, defaultPageSize, defaultCacheSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create paged reader for NTFS partition %d: %w", params.PartitionIndex, err)
