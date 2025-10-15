@@ -223,7 +223,39 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Rocky Linux",
 		},
 		{
-			desc: "openEuler",
+			desc: "openEuler base version from pretty name",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03",
+			},
+			want: "openEuler:24.03",
+		},
+		{
+			desc: "openEuler LTS qualifier",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03 (LTS)",
+			},
+			want: "openEuler:24.03-LTS",
+		},
+		{
+			desc: "openEuler LTS service pack qualifier",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03 (LTS-SP1)",
+			},
+			want: "openEuler:24.03-LTS-SP1",
+		},
+		{
+			desc: "openEuler fallback to version ID",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "openEuler",
+				OSVersionID: "24.03",
+			},
+			want: "openEuler:24.03",
+		},
+		{
+			desc: "openEuler no version details",
 			metadata: &rpmmeta.Metadata{
 				OSID: "openEuler",
 			},

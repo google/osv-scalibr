@@ -90,6 +90,7 @@ func TestSetProto(t *testing.T) {
 				SourceRPM:    "source-rpm",
 				Epoch:        1,
 				OSName:       "os-name",
+				OSPrettyName: "os-pretty-name",
 				OSID:         "os-id",
 				OSVersionID:  "os-version-id",
 				OSBuildID:    "os-build-id",
@@ -105,6 +106,7 @@ func TestSetProto(t *testing.T) {
 						SourceRpm:    "source-rpm",
 						Epoch:        1,
 						OsName:       "os-name",
+						OsPrettyName: "os-pretty-name",
 						OsId:         "os-id",
 						OsVersionId:  "os-version-id",
 						OsBuildId:    "os-build-id",
@@ -168,6 +170,7 @@ func TestToStruct(t *testing.T) {
 				SourceRpm:    "source-rpm",
 				Epoch:        1,
 				OsName:       "os-name",
+				OsPrettyName: "os-pretty-name",
 				OsId:         "os-id",
 				OsVersionId:  "os-version-id",
 				OsBuildId:    "os-build-id",
@@ -179,6 +182,7 @@ func TestToStruct(t *testing.T) {
 				SourceRPM:    "source-rpm",
 				Epoch:        1,
 				OSName:       "os-name",
+				OSPrettyName: "os-pretty-name",
 				OSID:         "os-id",
 				OSVersionID:  "os-version-id",
 				OSBuildID:    "os-build-id",
@@ -213,6 +217,71 @@ func TestToStruct(t *testing.T) {
 			}
 			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
 				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			}
+		})
+	}
+}
+
+func TestOpenEulerEcosystemSuffix(t *testing.T) {
+	testCases := []struct {
+		desc string
+		meta *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "base version from pretty name",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03",
+			},
+			want: "24.03",
+		},
+		{
+			desc: "lts qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS)",
+			},
+			want: "24.03-LTS",
+		},
+		{
+			desc: "lts space qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS SP1)",
+			},
+			want: "24.03-LTS-SP1",
+		},
+		{
+			desc: "lts hyphen qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS-SP1)",
+			},
+			want: "24.03-LTS-SP1",
+		},
+		{
+			desc: "fallback to version id",
+			meta: &metadata.Metadata{
+				OSVersionID: "24.03",
+			},
+			want: "24.03",
+		},
+		{
+			desc: "non openEuler pretty name",
+			meta: &metadata.Metadata{
+				OSPrettyName: "Fedora Linux 38 (Container Image)",
+				OSVersionID:  "38",
+			},
+			want: "38",
+		},
+		{
+			desc: "no details",
+			meta: &metadata.Metadata{},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.meta.OpenEulerEcosystemSuffix(); got != tc.want {
+				t.Fatalf("OpenEulerEcosystemSuffix() = %q, want %q", got, tc.want)
 			}
 		})
 	}

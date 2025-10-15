@@ -113,6 +113,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |-----------------------------------|--------------------------------------|
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
+| Crates.io API Token                         | `secrets/cratesioapitoken`           |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
 | Docker hub PAT                              | `secrets/dockerhubpat`               |
 | GCP API key                                 | `secrets/gcpapikey`                  |
@@ -131,8 +132,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
+| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
+| PyPI API Token                              | `secrets/pypiapitoken`               |
 | Postgres pgpass file                        | `secrets/pgpass`                     |
 | Postman API key                             | `secrets/postmanapikey`              |
 | Postman Collection token                    | `secrets/postmancollectiontoken`     |
@@ -145,7 +148,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
-| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
 
 ### Container inventory
 
@@ -154,8 +156,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
 | Docker container images         | `containers/docker` (standalone)                                                   |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
-| Podman container images         | `containers/podman` (filesystem)                                                   |
 | K8s images                      | `containers/k8simage` (filesystem)                                                 |
+| Podman container images         | `containers/podman` (filesystem)                                                   |
 
 ### SBOM files
 

@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -44,7 +43,7 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -172,7 +171,7 @@ VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -207,6 +206,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -221,6 +221,7 @@ func TestExtract(t *testing.T) {
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -241,6 +242,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -268,6 +270,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -285,6 +288,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -302,6 +306,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -362,6 +367,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -379,6 +385,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -396,6 +403,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -488,6 +496,7 @@ func TestExtract(t *testing.T) {
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},
@@ -566,7 +575,7 @@ func TestExtract(t *testing.T) {
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -599,6 +608,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -613,6 +623,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -633,6 +644,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -659,6 +671,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -676,6 +689,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -693,6 +707,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -719,6 +734,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -736,6 +752,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -753,6 +770,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -786,6 +804,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},

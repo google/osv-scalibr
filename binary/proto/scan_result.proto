@@ -359,6 +359,7 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
+  string os_pretty_name = 11;
 
   reserved "license";
 }
@@ -698,6 +699,8 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    PyPIAPIToken pypi = 44;
+    CratesIOAPIToken crates_io_api_token = 45;
   }
 
   message GCPSAK {
@@ -805,6 +808,10 @@ message SecretData {
     string key = 1;
   }
 
+  message CratesIOAPIToken {
+    string token = 1;
+  }
+
   message GithubAppRefreshToken {
     string token = 1;
   }
@@ -826,6 +833,10 @@ message SecretData {
   }
 
   message GithubAppUserToServerToken {
+    string token = 1;
+  }
+
+  message PyPIAPIToken {
     string token = 1;
   }
 
