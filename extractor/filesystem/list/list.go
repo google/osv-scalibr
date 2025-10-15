@@ -89,6 +89,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
@@ -334,8 +335,9 @@ var (
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name: {asdf.New},
-		nvm.Name:  {nvm.New},
+		asdf.Name:        {asdf.New},
+		nvm.Name:         {nvm.New},
+		nodeversion.Name: {nodeversion.New},
 	}
 
 	// EmbeddedFS extractors.
