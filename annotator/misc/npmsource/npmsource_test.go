@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fromnpm_test
+package npmsource_test
 
 import (
 	"os"
@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
+	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -66,7 +66,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		},
 	}
 
-	err := fromnpm.New().Annotate(t.Context(), input, inv)
+	err := npmsource.New().Annotate(t.Context(), input, inv)
 	if err != nil {
 		t.Errorf("Annotate(%v) error: %v; want error presence = false", inputPackage, err)
 	}
@@ -272,7 +272,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := fromnpm.New().Annotate(t.Context(), input, inv)
+			err := npmsource.New().Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -500,7 +500,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := fromnpm.New().Annotate(t.Context(), input, inv)
+			err := npmsource.New().Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -614,7 +614,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			got := fromnpm.MapNPMProjectRootsToPackages(tt.inputPackages)
+			got := npmsource.MapNPMProjectRootsToPackages(tt.inputPackages)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("MapNPMProjectRootsToPackages(%v): unexpected diff (-want +got): %v", tt.inputPackages, diff)
 			}
@@ -720,7 +720,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			fsys := scalibrfs.DirFS(root)
 
-			got, err := fromnpm.ResolvedFromLockfile("testproject", fsys)
+			got, err := npmsource.ResolvedFromLockfile("testproject", fsys)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("ResolvedFromLockfile(testproject) error: %v; want error presence = %v", err, tt.wantAnyErr)

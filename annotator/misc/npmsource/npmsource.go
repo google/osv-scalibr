@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fromnpm implements an annotator for packages to determine where they were installed from.
+// Package npmsource implements an annotator for packages to determine where they were installed from.
 // This is used to determine if NPM package is a locally-published package or not to
 // identify package name collisions on the NPM registry.
-package fromnpm
+package npmsource
 
 import (
 	"context"
@@ -40,7 +40,7 @@ import (
 
 const (
 	// Name of the Annotator.
-	Name = "misc/from-npm"
+	Name = "misc/npm-source"
 	// nodeModulesDirectory is the NPM node_modules directory.
 	nodeModulesDirectory = "node_modules"
 	// npmRegistryURL is the NPM Registry URL.
@@ -64,7 +64,7 @@ type Annotator struct{}
 func New() annotator.Annotator { return &Annotator{} }
 
 // Name of the annotator.
-func (Annotator) Name() string { return "misc/from-npm" }
+func (Annotator) Name() string { return "misc/npm-source" }
 
 // Version of the annotator.
 func (Annotator) Version() int { return 1 }
