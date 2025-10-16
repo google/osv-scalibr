@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"runtime"
 	"slices"
@@ -227,6 +228,19 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	sro.Inventory = inv
+	// Defer cleanup of all temporary files and directories created during extraction.
+	// This function iterates over all EmbeddedFS entries in the inventory and
+	// removes their associated TempPaths.
+	// Any failures during removal are logged but do not interrupt execution.
+	defer func() {
+		for _, embeddedFS := range sro.Inventory.EmbeddedFSs {
+			for _, tmpPath := range embeddedFS.TempPaths {
+				if err := os.RemoveAll(tmpPath); err != nil {
+					log.Infof("Failed to remove %s", tmpPath)
+				}
+			}
+		}
+	}()
 	sro.PluginStatus = append(sro.PluginStatus, extractorStatus...)
 	sysroot := config.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
