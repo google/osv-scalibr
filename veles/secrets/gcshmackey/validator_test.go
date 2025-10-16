@@ -15,98 +15,116 @@
 package gcshmackey_test
 
 import (
-	"fmt"
+	"context"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 )
 
+type fakeSigner struct{}
+
+func (n fakeSigner) SignHTTP(_ context.Context, creds aws.Credentials, r *http.Request, _ string, _ string, _ string, _ time.Time, _ ...func(*v4.SignerOptions)) error {
+	r.Header.Set("Authorization", "Signature="+creds.AccessKeyID+":"+creds.SecretAccessKey)
+	return nil
+}
+
 // mockS3Server returns an httptest.Server that simulates an S3 ListBuckets endpoint.
 // It accepts only the "testsecret" key; any other secret yields SignatureDoesNotMatch.
-func mockS3Server(t *testing.T) *httptest.Server {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Print("AAAAA")
+func mockS3Server(signature string, denied bool) func() *httptest.Server {
+	return func() *httptest.Server {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-		// Only handle ListBuckets (GET /)
-		if r.Method != http.MethodGet || r.URL.Path != "/" {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
-		}
+			// Only handle ListBuckets (GET /)
+			if req.Method != http.MethodGet || req.URL.Path != "/" {
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			}
 
-		authHeader := r.Header.Get("Authorization")
+			if !strings.Contains(req.Header.Get("Authorization"), signature) {
+				w.WriteHeader(http.StatusForbidden)
+				io.WriteString(w, `<Error>
+					<Code>SignatureDoesNotMatch</Code>
+					<Message>The request signature we calculated does not match</Message>
+				</Error>`)
+				return
+			}
 
-		// In real S3, the signature is an HMAC of canonical request,
-		// but here we just check if the secret string appears in the header.
-		switch {
-		case strings.Contains(authHeader, "testsecret"):
-			// Simulate a valid ListBuckets XML response
-			w.Header().Set("Content-Type", "application/xml")
-			fmt.Fprint(w, `<ListAllMyBucketsResult><Buckets></Buckets></ListAllMyBucketsResult>`)
-			return
+			if denied {
+				w.WriteHeader(http.StatusForbidden)
+				io.WriteString(w, `<Error>
+					<Code>AccessDenied</Code>
+				</Error>`)
+				return
+			}
 
-		case strings.Contains(authHeader, "wrongsecret"):
-			// Simulate a SignatureDoesNotMatch error
-			w.WriteHeader(http.StatusForbidden)
-			io.WriteString(w, `<Error>
-				<Code>SignatureDoesNotMatch</Code>
-				<Message>The request signature we calculated does not match</Message>
-			</Error>`)
-			return
+			w.WriteHeader(http.StatusOK)
+		})
 
-		default:
-			// Default to invalid signature
-			w.WriteHeader(http.StatusForbidden)
-			io.WriteString(w, `<Error>
-				<Code>AccessDenied</Code>
-				<Message>Access Denied</Message>
-			</Error>`)
-		}
-	})
+		return httptest.NewServer(handler)
+	}
 
-	return httptest.NewServer(handler)
 }
+
+var (
+	exampleAccessID  = "GOOGerkjf4f034"
+	correctSecret    = "testsecret"
+	badSecret        = "badSecret"
+	correctSignature = exampleAccessID + ":" + correctSecret
+)
 
 func TestValidator(t *testing.T) {
 	// Set up fake "GCP metadata" HTTP server.
-	srv := mockS3Server(t)
-	t.Cleanup(srv.Close)
-
-	validator := gcshmackey.NewValidator(
-		gcshmackey.WithURL(srv.URL),
-	)
-
 	cases := []struct {
-		name string
-		key  gcshmackey.HMACKey
-		want veles.ValidationStatus
+		name   string
+		key    gcshmackey.HMACKey
+		want   veles.ValidationStatus
+		server func() *httptest.Server
 	}{
 		{
-			name: "ok",
+			name: "correct secret",
 			key: gcshmackey.HMACKey{
-				AccessID: "GOOGerkjf4f034",
-				Secret:   "testsecret",
+				AccessID: exampleAccessID,
+				Secret:   correctSecret,
 			},
-			want: veles.ValidationValid,
+			want:   veles.ValidationValid,
+			server: mockS3Server(correctSignature, false),
+		},
+		{
+			name: "correct secret, access denied",
+			key: gcshmackey.HMACKey{
+				AccessID: exampleAccessID,
+				Secret:   correctSecret,
+			},
+			want:   veles.ValidationValid,
+			server: mockS3Server(correctSignature, true),
 		},
 		{
 			name: "bad secret",
 			key: gcshmackey.HMACKey{
-				AccessID: "GOOGerkjf4f034",
-				Secret:   "wrongsecret",
+				AccessID: exampleAccessID,
+				Secret:   badSecret,
 			},
-			want: veles.ValidationInvalid,
+			want:   veles.ValidationInvalid,
+			server: mockS3Server(correctSignature, true),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			srv := tc.server()
+			validator := gcshmackey.NewValidator(
+				gcshmackey.WithURL(srv.URL),
+				gcshmackey.WithSigner(fakeSigner{}),
+			)
+
 			got, err := validator.Validate(t.Context(), tc.key)
 			if err != nil {
 				t.Errorf("Validate() error: %v, want nil", err)

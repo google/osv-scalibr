@@ -22,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 	"github.com/google/osv-scalibr/veles"
 )
@@ -47,6 +46,13 @@ func WithURL(url string) ValidatorOption {
 	}
 }
 
+// WithEndpointResolver configures the s3.Client that the Validator uses.
+func WithSigner(signer s3.HTTPSignerV4) ValidatorOption {
+	return func(v *Validator) {
+		v.options.HTTPSignerV4 = signer
+	}
+}
+
 // NewValidator creates a new Validator with the given ValidatorOptions.
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
@@ -66,23 +72,16 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.ValidationStatus, error) {
 	opts := v.options.Copy()
 	opts.Credentials = credentials.NewStaticCredentialsProvider(key.AccessID, key.Secret, "")
-	client := s3.New(opts, ignoreAcceptEncodingOpt)
+	client := s3.New(opts, patchForGCSOpt)
 
-	_, err := client.HeadBucket(context.Background(), &s3.HeadBucketInput{
-		Bucket: aws.String("test"),
-	})
+	_, err := client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
 	if err != nil {
-		notFound := &types.NotFound{}
-		noSuchBucket := &types.NoSuchBucket{}
-		if errors.As(err, &notFound) || errors.As(err, &noSuchBucket) {
-			return veles.ValidationValid, nil
-		}
-		apiErr := &smithy.GenericAPIError{}
+		var apiErr smithy.APIError
 		if errors.As(err, &apiErr) {
-			if apiErr.Code == CodeAccessDenied {
+			if apiErr.ErrorCode() == CodeAccessDenied {
 				return veles.ValidationValid, nil
 			}
-			if apiErr.Code == CodeSignatureDoesNotMatch {
+			if apiErr.ErrorCode() == CodeSignatureDoesNotMatch {
 				return veles.ValidationInvalid, nil
 			}
 		}
