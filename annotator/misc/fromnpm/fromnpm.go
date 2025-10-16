@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fromnpm implements an annotator for packages that were installed from the NPM
-// repositories. This is used to determine if NPM package is a locally-published package or not to
+// Package fromnpm implements an annotator for packages to determine where they were installed from.
+// This is used to determine if NPM package is a locally-published package or not to
 // identify package name collisions on the NPM registry.
 package fromnpm
 
@@ -67,7 +67,7 @@ func New() annotator.Annotator { return &Annotator{} }
 func (Annotator) Name() string { return "misc/from-npm" }
 
 // Version of the annotator.
-func (Annotator) Version() int { return 0 }
+func (Annotator) Version() int { return 1 }
 
 // Requirements of the annotator.
 func (Annotator) Requirements() *plugin.Capabilities {
@@ -102,22 +102,25 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 				errs = append(errs, fmt.Errorf("%s expected type *metadata.JavascriptPackageJSONMetadata but got %T for package %q", a.Name(), pkg.Metadata, pkg.Name))
 				continue
 			}
-			// If no lockfile is found, we assume they are locally published packages.
-			castedMetadata.FromNPMRepository = registryResolvedMap != nil && registryResolvedMap[pkg.Name]
+			if source, ok := registryResolvedMap[pkg.Name]; ok {
+				castedMetadata.Source = source
+			} else {
+				castedMetadata.Source = metadata.Unknown
+			}
 		}
 	}
 	return errors.Join(errs...)
 }
 
 // ResolvedFromLockfile looks for lockfiles in the given root directory and returns a map of package
-// names in the lockfile and whether they were resolved from the NPM registry.
+// names in the lockfile and the source of the package.
 // If no lockfile is found, it returns an error.
 // The first non-empty lockfile it finds per the priority list gets parsed and returned.
 // For example, when given /tmp as root, it will look through the following lockfiles in this order:
 // 1. /tmp/npm-shrinkwrap.json
 // 2. /tmp/package-lock.json
 // 3. /tmp/node_modules/.package-lock.json
-func ResolvedFromLockfile(root string, fsys scalibrfs.FS) (map[string]bool, error) {
+func ResolvedFromLockfile(root string, fsys scalibrfs.FS) (map[string]metadata.NPMPackageSource, error) {
 	var errs []error
 	for _, lockfile := range lockfilesByPriority {
 		lockfilePath := filepath.Join(root, lockfile)
@@ -140,8 +143,22 @@ func ResolvedFromLockfile(root string, fsys scalibrfs.FS) (map[string]bool, erro
 	return nil, errors.Join(errs...)
 }
 
-func registryResolvedPackages(lockfile *packagelockjson.LockFile) map[string]bool {
-	registryResolvedMap := make(map[string]bool)
+// NPMPackageSource returns the source of the NPM package based on the resolved field in the lockfile.
+func NPMPackageSource(resolved string) metadata.NPMPackageSource {
+	if resolved == "" {
+		return metadata.Unknown
+	}
+	if strings.HasPrefix(resolved, npmRegistryURL) {
+		return metadata.PublicRegistry
+	}
+	if strings.HasPrefix(resolved, "file:") {
+		return metadata.Local
+	}
+	return metadata.Other
+}
+
+func registryResolvedPackages(lockfile *packagelockjson.LockFile) map[string]metadata.NPMPackageSource {
+	registryResolvedMap := make(map[string]metadata.NPMPackageSource)
 
 	if lockfile.Packages != nil {
 		registryResolvedMap = lockfilePackages(lockfile.Packages)
@@ -152,8 +169,8 @@ func registryResolvedPackages(lockfile *packagelockjson.LockFile) map[string]boo
 	return registryResolvedMap
 }
 
-func lockfilePackages(packages map[string]packagelockjson.Package) map[string]bool {
-	packagesResolvedMap := make(map[string]bool)
+func lockfilePackages(packages map[string]packagelockjson.Package) map[string]metadata.NPMPackageSource {
+	packagesResolvedMap := make(map[string]metadata.NPMPackageSource)
 	for namePath, pkg := range packages {
 		if namePath == "" {
 			continue
@@ -162,24 +179,21 @@ func lockfilePackages(packages map[string]packagelockjson.Package) map[string]bo
 		if pkgName == "" {
 			pkgName = packageName(namePath)
 		}
-		packagesResolvedMap[pkgName] = strings.HasPrefix(pkg.Resolved, npmRegistryURL)
+		packagesResolvedMap[pkgName] = NPMPackageSource(pkg.Resolved)
 	}
 	return packagesResolvedMap
 }
 
-func lockfileDependencies(dependencies map[string]packagelockjson.Dependency) map[string]bool {
-	resolvedMap := make(map[string]bool)
+func lockfileDependencies(dependencies map[string]packagelockjson.Dependency) map[string]metadata.NPMPackageSource {
+	resolvedMap := make(map[string]metadata.NPMPackageSource)
 	resolvedLockfileDependencies(dependencies, resolvedMap)
 	return resolvedMap
 }
 
-func resolvedLockfileDependencies(dependencies map[string]packagelockjson.Dependency, dependenciesResolvedMap map[string]bool) {
+func resolvedLockfileDependencies(dependencies map[string]packagelockjson.Dependency, dependenciesResolvedMap map[string]metadata.NPMPackageSource) {
 	for name, detail := range dependencies {
 		identifier := dependencyName(name, detail.Version)
-		if dependenciesResolvedMap[identifier] {
-			continue
-		}
-		dependenciesResolvedMap[identifier] = detail.Resolved != "" && strings.HasPrefix(detail.Resolved, npmRegistryURL)
+		dependenciesResolvedMap[identifier] = NPMPackageSource(detail.Resolved)
 		if detail.Dependencies != nil {
 			resolvedLockfileDependencies(detail.Dependencies, dependenciesResolvedMap)
 		}

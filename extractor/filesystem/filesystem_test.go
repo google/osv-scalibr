@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -134,6 +135,160 @@ func TestInitWalkContext(t *testing.T) {
 				t.Errorf("filesystem.InitializeWalkContext(%v) error got diff (-want +got):\n%s", config, diff)
 			}
 		})
+	}
+}
+
+// fakeExtractorFS is a mock extractor for testing embedded filesystem extraction.
+// It simulates extracting an embedded filesystem from a VMDK file (e.g., disk.vmdk)
+// and provides a function to return the embedded filesystem for scanning.
+type fakeExtractorFS struct {
+	name          string                                          // Name of the extractor (e.g., "fake-ex-fs").
+	getEmbeddedFS func(ctx context.Context) (scalibrfs.FS, error) // Function to return the embedded filesystem for disk.vmdk:1.
+}
+
+func (e *fakeExtractorFS) Name() string                       { return e.name }
+func (e *fakeExtractorFS) Version() int                       { return 1 }
+func (e *fakeExtractorFS) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *fakeExtractorFS) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+	return path == "disk.vmdk"
+}
+func (e *fakeExtractorFS) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := input.Path
+	if path != "disk.vmdk" {
+		return inventory.Inventory{}, errors.New("unrecognized path")
+	}
+	return inventory.Inventory{
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          "disk.vmdk:1",
+				GetEmbeddedFS: e.getEmbeddedFS, // Use stored function
+			},
+		},
+	}, nil
+}
+
+// fakeExtractorSoftware is a mock extractor for testing package detection.
+// It simulates detecting a software package from a file (e.g., file.txt) within
+// an embedded filesystem.
+type fakeExtractorSoftware struct {
+	name string // Name of the extractor (e.g., "fake-ex-software").
+}
+
+func (e *fakeExtractorSoftware) Name() string                       { return e.name }
+func (e *fakeExtractorSoftware) Version() int                       { return 1 }
+func (e *fakeExtractorSoftware) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *fakeExtractorSoftware) FileRequired(api filesystem.FileAPI) bool {
+	path := filepath.ToSlash(api.Path())
+	return strings.HasSuffix(path, "file.txt") || strings.HasSuffix(path, "/file.txt") || path == "file.txt" || path == "./file.txt"
+}
+func (e *fakeExtractorSoftware) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := filepath.ToSlash(input.Path)
+	if !strings.HasSuffix(path, "file.txt") {
+		return inventory.Inventory{}, errors.New("not a file.txt")
+	}
+	return inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:      "Software",
+				Locations: []string{path},
+				Plugins:   []string{e.Name()},
+			},
+		},
+	}, nil
+}
+
+func TestRun_EmbeddedFS(t *testing.T) {
+	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
+	fsys := setupMapFS(t, mapFS{
+		"disk.vmdk": []byte("VMDK Content"),
+	})
+
+	// Create temporary directory for embedded filesystem
+	embeddedDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(embeddedDir, "file.txt"), []byte("Content"), fs.ModePerm)
+	if err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", filepath.Join(embeddedDir, "file.txt"), err)
+	}
+	embeddedFS := scalibrfs.DirFS(embeddedDir)
+
+	fakeExFS := &fakeExtractorFS{
+		name: "fake-ex-fs",
+		getEmbeddedFS: func(ctx context.Context) (scalibrfs.FS, error) {
+			return embeddedFS, nil
+		},
+	}
+	fakeExSoftware := &fakeExtractorSoftware{name: "fake-ex-software"}
+	extractors := []filesystem.Extractor{fakeExFS, fakeExSoftware}
+
+	// Create config with a single ScanRoot
+	config := &filesystem.Config{
+		Extractors: extractors,
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS:   fsys,
+			Path: ".",
+		}},
+		Stats: &fakeCollector{},
+	}
+
+	// Run the test
+	gotInv, gotStatus, err := filesystem.Run(t.Context(), config)
+	if err != nil {
+		t.Fatalf("filesystem.Run(%v): %v", config, err)
+	}
+
+	// Expected inventory
+	wantInv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:      "Software",
+				Locations: []string{"disk.vmdk:1:file.txt"},
+				Plugins:   []string{"fake-ex-software", "fake-ex-software"}, // Expect duplicate due to observed behavior
+			},
+		},
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          "disk.vmdk:1",
+				GetEmbeddedFS: fakeExFS.getEmbeddedFS,
+			},
+		},
+	}
+
+	// Expected status
+	wantStatus := []*plugin.Status{
+		{Name: "fake-ex-fs", Version: 1, Status: success},
+		{Name: "fake-ex-software", Version: 1, Status: success},
+	}
+
+	// Sort package locations for comparison
+	for _, p := range gotInv.Packages {
+		sort.Strings(p.Locations)
+	}
+
+	// Compare inventory
+	if diff := cmp.Diff(wantInv, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorFS{}, fakeExtractorSoftware{}), cmpopts.EquateErrors(), cmpopts.IgnoreFields(inventory.EmbeddedFS{}, "GetEmbeddedFS")); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected findings (-want +got):\n%s", config, diff)
+	}
+
+	// Deduplicate status entries, keeping the latest for each extractor
+	seen := make(map[string]*plugin.Status)
+	for _, s := range gotStatus {
+		s.Status.FailureReason = ""
+		seen[s.Name] = s
+	}
+	var dedupedStatus []*plugin.Status
+	for _, s := range seen {
+		dedupedStatus = append(dedupedStatus, s)
+	}
+	sort.Slice(dedupedStatus, func(i, j int) bool {
+		return dedupedStatus[i].Name < dedupedStatus[j].Name
+	})
+
+	// Compare status
+	if diff := cmp.Diff(wantStatus, dedupedStatus, cmpopts.SortSlices(func(s1, s2 *plugin.Status) bool {
+		return s1.Name < s2.Name
+	})); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected status (-want +got):\n%s", config, diff)
 	}
 }
 

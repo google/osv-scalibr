@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
+//go:build !windows
 
 // Package rpm extracts packages from rpm database.
 package rpm
@@ -113,7 +113,9 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{}
+}
 
 // FileRequired returns true if the specified file matches rpm status file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
@@ -195,6 +197,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			SourceRPM:    p.SourceRPM,
 			Epoch:        p.Epoch,
 			OSName:       m["NAME"],
+			OSPrettyName: m["PRETTY_NAME"],
 			OSID:         m["ID"],
 			OSVersionID:  m["VERSION_ID"],
 			OSBuildID:    m["BUILD_ID"],
