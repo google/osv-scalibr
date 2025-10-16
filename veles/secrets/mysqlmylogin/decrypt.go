@@ -121,33 +121,29 @@ func decryptMyLoginCNF(reader io.Reader) ([]byte, error) {
 
 // removePaddingBytes removes padding bytes from the plaintext
 //
-// From Reference:
-// "We assume that any trailing byte containing a value less than '\n'
-//
-//	is a padding byte"
+// See the comment before the for loop
+// All the fields are separated by \n.
+// Padding is made until 16 bytes (maximum).
 func removePaddingBytes(data []byte) []byte {
 	if len(data) == 0 {
 		return data
 	}
 
-	pad := int(data[len(data)-1]) // last byte indicates padding length
-	if pad <= 0 || pad > aes.BlockSize {
-		// Not valid padding (or no padding). Return as-is.
-		return data
-	}
-
-	// Ensure the last 'pad' bytes all equal 'pad'
-	if pad > len(data) {
-		return data
-	}
-	for i := len(data) - pad; i < len(data); i++ {
-		if int(data[i]) != pad {
-			// Invalid padding; return original
-			return data
+	i := len(data)
+	// Check if the last byte of the chunk is a padding byte
+	for i > 0 && data[i-1] <= 0x10 {
+		if data[i-1] == 0x0A {
+			// Hanlde of multiple \n case
+			if i > 1 && data[i-2] != 0x0A {
+				// This is the first (legitimate) newline, keep it
+				break
+			}
+			// Otherwise it's padding, remove it
 		}
+		i--
 	}
 
-	return data[:len(data)-pad]
+	return data[:i]
 }
 
 // decryptAES128ECB decrypts using AES-128 in ECB mode

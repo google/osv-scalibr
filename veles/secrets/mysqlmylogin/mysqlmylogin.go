@@ -28,7 +28,7 @@ import (
 )
 
 // MysqlMyloginSection is a Veles Secret that holds relevant information for a [Mysql MyLogin](https://dev.mysql.com/doc/refman/8.4/en/option-files.html).
-type MysqlMyloginSection struct { //nolint
+type MysqlMyloginSection struct {
 	SectionName string
 	User        string
 	Password    string
