@@ -28,7 +28,6 @@ import (
 
 const (
 	CodeSignatureDoesNotMatch = "SignatureDoesNotMatch"
-	CodeInvalidArgument       = "InvalidArgument"
 	CodeAccessDenied          = "AccessDenied"
 )
 
