@@ -108,6 +108,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -318,6 +319,7 @@ var (
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
+		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

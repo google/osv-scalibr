@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcpstoragehmackey contains a Veles Secret type, a Detector, and a Validator for
+// Package gcshmackey contains a Veles Secret type, a Detector, and a Validator for
 // Google Cloud Storage HMAC keys
-package gcpstoragehmackey
+package gcshmackey
 
 // HMACKey is a Veles Secret that holds relevant information for a Google Cloud Storage HMAC key
 type HMACKey struct {
