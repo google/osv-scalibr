@@ -20,6 +20,7 @@ import (
 	"time"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
@@ -40,7 +41,6 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
-	velesmysqlmylogin "github.com/google/osv-scalibr/veles/secrets/mysqlmylogin"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
