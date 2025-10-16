@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 )
@@ -79,10 +78,7 @@ func TestValidator(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	validator := gcshmackey.NewValidator(
-		gcshmackey.WithOptions(s3.Options{
-			EndpointResolver: s3.EndpointResolverFromURL(srv.URL),
-			HTTPClient:       srv.Client(),
-		}),
+		gcshmackey.WithURL(srv.URL),
 	)
 
 	cases := []struct {

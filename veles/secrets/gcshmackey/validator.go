@@ -17,6 +17,7 @@ package gcshmackey
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -33,32 +34,26 @@ const (
 
 // Validator is a Veles Validator for Google Cloud Storage HMAC keys
 type Validator struct {
-	client func(provider aws.CredentialsProvider) *s3.Client
+	options s3.Options
 }
 
 // ValidatorOption configures a Validator when creating it via NewValidator.
 type ValidatorOption func(*Validator)
 
-// WithOptions configures the s3.Client that the Validator uses.
-func WithOptions(opt s3.Options) ValidatorOption {
+// WithEndpointResolver configures the s3.Client that the Validator uses.
+func WithURL(url string) ValidatorOption {
 	return func(v *Validator) {
-		v.client = func(provider aws.CredentialsProvider) *s3.Client {
-			opt.Credentials = provider
-			return s3.New(opt, ignoreAcceptEncodingOpt)
-		}
+		v.options.BaseEndpoint = &url
 	}
 }
 
 // NewValidator creates a new Validator with the given ValidatorOptions.
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
-		client: func(provider aws.CredentialsProvider) *s3.Client {
-			s3Opts := s3.Options{
-				Region:           "auto",
-				Credentials:      provider,
-				EndpointResolver: s3.EndpointResolverFromURL("https://storage.googleapis.com"),
-			}
-			return s3.New(s3Opts, ignoreAcceptEncodingOpt)
+		options: s3.Options{
+			Region:       "auto",
+			UsePathStyle: true,
+			BaseEndpoint: aws.String("https://storage.googleapis.com"),
 		},
 	}
 	for _, opt := range opts {
@@ -69,8 +64,9 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 
 // Validate checks whether the given Google Cloud Storage HMAC key
 func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.ValidationStatus, error) {
-	provider := credentials.NewStaticCredentialsProvider(key.AccessID, key.Secret, "")
-	client := v.client(provider)
+	opts := v.options.Copy()
+	opts.Credentials = credentials.NewStaticCredentialsProvider(key.AccessID, key.Secret, "")
+	client := s3.New(opts, ignoreAcceptEncodingOpt)
 
 	_, err := client.HeadBucket(context.Background(), &s3.HeadBucketInput{
 		Bucket: aws.String("test"),
@@ -90,7 +86,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 				return veles.ValidationInvalid, nil
 			}
 		}
-		return veles.ValidationFailed, nil
+		return veles.ValidationFailed, fmt.Errorf("unknown error %w", err)
 	}
 
 	return veles.ValidationValid, nil
