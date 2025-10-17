@@ -32,10 +32,34 @@ type Pair struct {
 	distance int
 }
 
-// FindOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
-func FindOptimalPairs(as, bs []*Match, maxDistance int, fromPair func(Pair) veles.Secret) ([]veles.Secret, []int) {
+var _ veles.Detector = &Detector{}
+
+// Detector finds instances of a pair of keys
+type Detector struct {
+	// The maximum length of the pair.
+	MaxLen uint32
+	// Function to use to search for matches
+	FindA, FindB func(data []byte) []*Match
+	// Returns a veles.Secret from a Match.
+	//  It returns the secret and a boolean indicating success.
+	FromPair func(Pair) (veles.Secret, bool)
+}
+
+// Detect implements veles.Detector.
+func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
+	as, bs := d.FindA(data), d.FindB(data)
+	return findOptimalPairs(as, bs, int(d.MaxLen), d.FromPair)
+}
+
+// MaxSecretLen implements veles.Detector.
+func (d *Detector) MaxSecretLen() uint32 {
+	return d.MaxLen
+}
+
+// findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
+func findOptimalPairs(as, bs []*Match, maxLen int, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
-	possiblePairs := findPossiblePairs(as, bs, maxDistance)
+	possiblePairs := findPossiblePairs(as, bs, maxLen)
 
 	// Sort by distance (closest first)
 	slices.SortFunc(possiblePairs, func(a, b Pair) int {
@@ -51,22 +75,30 @@ func FindOptimalPairs(as, bs []*Match, maxDistance int, fromPair func(Pair) vele
 	// select best match
 	for _, pair := range possiblePairs {
 		if !usedA[pair.A] && !usedB[pair.B] {
-			secrets = append(secrets, fromPair(pair))
+			secret, ok := fromPair(pair)
+			if !ok {
+				continue
+			}
+			secrets = append(secrets, secret)
 			positions = append(positions, min(pair.A.Position, pair.B.Position))
 			usedA[pair.A] = true
 			usedB[pair.B] = true
 		}
 	}
-
 	return secrets, positions
 }
 
 // findPossiblePairs finds all pairs within the maximum context length.
-func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
+func findPossiblePairs(as, bs []*Match, maxLen int) []Pair {
 	var possiblePairs []Pair
 	for _, a := range as {
 		for _, b := range bs {
 			distance := abs(a.Position - b.Position)
+
+			maxDistance := maxLen - len(a.Value)
+			if a.Position < b.Position {
+				maxDistance = maxLen - len(b.Value)
+			}
 			if distance <= maxDistance {
 				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
 			}

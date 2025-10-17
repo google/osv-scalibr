@@ -21,9 +21,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
-// Enforce detector interface.
-var _ veles.Detector = (*detector)(nil)
-
 const (
 	// maxIDLength is the maximum length of a valid client ID.
 	// There is not documented length, but examples are ~75 characters.
@@ -65,36 +62,16 @@ var (
 	clientSecretRe = regexp.MustCompile(`\bGOCSPX-[a-zA-Z0-9_-]{10,40}`)
 )
 
-// detector implements OAuth2 client credentials detection.
-type detector struct {
-	maxSecretLen int
-}
-
 // NewDetector returns a detector that matches GCP OAuth2 client credentials.
 func NewDetector() veles.Detector {
-	return &detector{
-		maxSecretLen: maxSecretLen,
+	return &pair.Detector{
+		MaxLen: maxSecretLen,
+		FindA:  func(data []byte) []*pair.Match { return findAllMatches(data, clientIDRe) },
+		FindB:  func(data []byte) []*pair.Match { return findAllMatches(data, clientSecretRe) },
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return Credentials{ID: p.A.Value, Secret: p.B.Value}, true
+		},
 	}
-}
-
-// MaxSecretLen returns the maximum length of secrets this detector can find.
-func (d *detector) MaxSecretLen() uint32 {
-	return uint32(d.maxSecretLen)
-}
-
-// Detect implements simple regex-based OAuth2 client credentials detection with proximity grouping.
-func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
-	clientIDs := findAllMatches(data, clientIDRe)
-	clientSecrets := findAllMatches(data, clientSecretRe)
-
-	fromPair := func(p pair.Pair) veles.Secret {
-		return Credentials{
-			ID:     p.A.Value,
-			Secret: p.B.Value,
-		}
-	}
-
-	return pair.FindOptimalPairs(clientIDs, clientSecrets, d.maxSecretLen, fromPair)
 }
 
 // findAllMatches finds all matches of a given regex in the given data.
