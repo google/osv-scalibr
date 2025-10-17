@@ -109,8 +109,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                              | Extractor Plugin                     |
-|-----------------------------------|--------------------------------------|
+| Type                                        | Extractor Plugin                     |
+|---------------------------------------------|--------------------------------------|
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
 | Crates.io API Token                         | `secrets/cratesioapitoken`           |
@@ -129,10 +129,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+<<<<<<< HEAD
+| Mysql Mylogin                               | `secrets/mysqlmylogin`               |
+=======
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
+>>>>>>> main
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
 | PyPI API Token                              | `secrets/pypiapitoken`               |

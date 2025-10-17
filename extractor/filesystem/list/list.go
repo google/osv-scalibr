@@ -96,6 +96,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
@@ -272,6 +273,7 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
+		mysqlmylogin.Name:            {mysqlmylogin.New},
 		pgpass.Name:                  {pgpass.New},
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 	}

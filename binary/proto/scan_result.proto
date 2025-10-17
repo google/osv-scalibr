@@ -716,6 +716,17 @@ message SecretData {
     Pgpass pgpass = 43;
     PyPIAPIToken pypi = 44;
     CratesIOAPIToken crates_io_api_token = 45;
+    MysqlMyloginSection mysql_mylogin_section = 46;
+  }
+
+
+  message MysqlMyloginSection {
+    string section_name = 1;
+    string user = 2;
+    string password = 3;
+    string host = 4;
+    string port = 5;
+    string socket = 6;
   }
 
   message GCPSAK {
