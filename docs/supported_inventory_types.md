@@ -57,49 +57,51 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Language packages
 
-| Language   | Details                                   | Extractor Plugin(s)                  |
-|------------|-------------------------------------------|--------------------------------------|
-| .NET       | packages.lock.json                        | `dotnet/packageslockjson`            |
-|            | packages.config                           | `dotnet/packagesconfig`              |
-|            | deps.json                                 | `dotnet/depsjson`                    |
-|            | portable executables                      | `dotnet/pe`                          |
-| C++        | Conan packages                            | `cpp/conanlock`                      |
-| Dart       | pubspec.lock                              | `dart/pubspec`                       |
-| Erlang     | mix.lock                                  | `erlang/mixlock`                     |
-| Elixir     | mix.lock                                  | `elixir/mixlock`                     |
-| Go         | Go binaries                               | `go/binary`                          |
-|            | go.mod (OSV)                              | `go/gomod`                           |
-| Haskell    | stack.yaml.lock                           | `haskell/stacklock`                  |
-|            | cabal.project.freeze                      | `haskell/cabal`                      |
-| Java       | Java archives                             | `java/archive`                       |
-|            | pom.xml                                   | `java/pomxml`, `java/pomxmlnet`      |
-|            | gradle.lockfile                           | `java/gradlelockfile`                |
-|            | verification-metadata.xml                 | `java/gradleverificationmetadataxml` |
-| Javascript | Installed NPM packages (package.json)     | `javascript/packagejson`             |
-|            | package-lock.json, npm-shrinkwrap.json    | `javascript/packagelockjson`         |
-|            | yarn.lock                                 | `javascript/yarnlock`                |
-|            | pnpm-lock.yaml                            | `javascript/pnpmlock`                |
-|            | bun.lock                                  | `javascript/bunlock`                 |
-| Lua        | Luarocks modules                          | `lua/luarocks`                       |
-| ObjectiveC | Podfile.lock                              | `swift/podfilelock`                  |
-| PHP        | Composer                                  | `php/composerlock`                   |
-| Python     | Installed PyPI packages (global and venv) | `python/wheelegg`                    |
-|            | requirements.txt                          | `python/requirements`                |
-|            | poetry.lock                               | `python/poetrylock`                  |
-|            | Pipfile.lock                              | `python/pipfilelock`                 |
-|            | pdm.lock                                  | `python/pdmlock`                     |
-|            | Conda packages                            | `python/condameta`                   |
-|            | setup.py                                  | `python/setup`                       |
-|            | uv.lock                                   | `python/uvlock`                      |
-| R          | renv.lock                                 | `r/renvlock`                         |
-| Ruby       | Installed Gem packages                    | `ruby/gemspec`                       |
-|            | Gemfile.lock (OSV)                        | `ruby/gemfilelock`                   |
-| Rust       | Cargo.lock                                | `rust/cargolock`                     |
-|            | Cargo.toml                                | `rust/cargotoml`                     |
-|            | Rust binaries                             | `rust/cargoauditable`                |
-| Swift      | Podfile.lock                              | `swift/podfilelock`                  |
-|            | Package.resolved                          | `swift/packageresolved`              |
-| Nim        | Nimble packages                           | `nim/nimble`                         |
+| Language   | Details                                           | Extractor Plugin(s)                  |
+|------------|---------------------------------------------------|--------------------------------------|
+| .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
+|            | packages.config                                   | `dotnet/packagesconfig`              |
+|            | deps.json                                         | `dotnet/depsjson`                    |
+|            | portable executables                              | `dotnet/pe`                          |
+| C++        | Conan packages                                    | `cpp/conanlock`                      |
+| Dart       | pubspec.lock                                      | `dart/pubspec`                       |
+| Erlang     | mix.lock                                          | `erlang/mixlock`                     |
+| Elixir     | mix.lock                                          | `elixir/mixlock`                     |
+| Go         | Go binaries                                       | `go/binary`                          |
+|            | go.mod (OSV)                                      | `go/gomod`                           |
+| Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
+|            | cabal.project.freeze                              | `haskell/cabal`                      |
+| Java       | Java archives                                     | `java/archive`                       |
+|            | pom.xml                                           | `java/pomxml`, `java/pomxmlnet`      |
+|            | gradle.lockfile                                   | `java/gradlelockfile`                |
+|            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+| Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
+|            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
+|            | yarn.lock                                         | `javascript/yarnlock`                |
+|            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
+|            | bun.lock                                          | `javascript/bunlock`                 |
+| Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
+|            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
+| Lua        | Luarocks modules                                  | `lua/luarocks`                       |
+| ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
+| PHP        | Composer                                          | `php/composerlock`                   |
+| Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
+|            | requirements.txt                                  | `python/requirements`                |
+|            | poetry.lock                                       | `python/poetrylock`                  |
+|            | Pipfile.lock                                      | `python/pipfilelock`                 |
+|            | pdm.lock                                          | `python/pdmlock`                     |
+|            | Conda packages                                    | `python/condameta`                   |
+|            | setup.py                                          | `python/setup`                       |
+|            | uv.lock                                           | `python/uvlock`                      |
+| R          | renv.lock                                         | `r/renvlock`                         |
+| Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
+|            | Gemfile.lock (OSV)                                | `ruby/gemfilelock`                   |
+| Rust       | Cargo.lock                                        | `rust/cargolock`                     |
+|            | Cargo.toml                                        | `rust/cargotoml`                     |
+|            | Rust binaries                                     | `rust/cargoauditable`                |
+| Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
+|            | Package.resolved                                  | `swift/packageresolved`              |
+| Nim        | Nimble packages                                   | `nim/nimble`                         |
 
 ### Language runtime managers
 | runtime    | Details                                     | Extractor Plugin(s)                  |
