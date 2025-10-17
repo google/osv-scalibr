@@ -21,5 +21,8 @@ endif
 scalibr-static:
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr/scalibr.go
 
+linter-plugger:
+	go run linter/plugger/main.go -interface 'Plugin|Validator|Detector' -exclude-pkg 'testing|velestest' ./...
+
 clean:
 	rm -f scalibr
