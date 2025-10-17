@@ -12,7 +12,7 @@ on:
 permissions: {}
 
 jobs:
-  lint:
+  lint-plugger:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
