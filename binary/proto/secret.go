@@ -114,7 +114,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
-	case velesmysqlmylogin.MysqlMyloginSection:
+	case velesmysqlmylogin.Section:
 		return mysqlMyloginSectionToProto(t), nil
 	case dockerhubpat.DockerHubPAT:
 		return dockerHubPATToProto(t), nil
@@ -300,7 +300,7 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	}
 }
 
-func mysqlMyloginSectionToProto(e velesmysqlmylogin.MysqlMyloginSection) *spb.SecretData {
+func mysqlMyloginSectionToProto(e velesmysqlmylogin.Section) *spb.SecretData {
 	ePB := &spb.SecretData_MysqlMyloginSection{
 		SectionName: e.SectionName,
 		User:        e.User,
@@ -988,8 +988,8 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 	return sak
 }
 
-func mysqlMyloginSectionToStruct(ePB *spb.SecretData_MysqlMyloginSection) velesmysqlmylogin.MysqlMyloginSection {
-	mysqlmylogin := velesmysqlmylogin.MysqlMyloginSection{
+func mysqlMyloginSectionToStruct(ePB *spb.SecretData_MysqlMyloginSection) velesmysqlmylogin.Section {
+	mysqlmylogin := velesmysqlmylogin.Section{
 		SectionName: ePB.GetSectionName(),
 		User:        ePB.GetUser(),
 		Password:    ePB.GetPassword(),

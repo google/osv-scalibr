@@ -83,7 +83,7 @@ func TestExtract(t *testing.T) {
 			},
 			WantSecrets: []*inventory.Secret{
 				{
-					Secret: mysqlmylogin.MysqlMyloginSection{
+					Secret: mysqlmylogin.Section{
 						SectionName: "local",
 						User:        "root",
 						Password:    "google",
@@ -100,7 +100,7 @@ func TestExtract(t *testing.T) {
 			},
 			WantSecrets: []*inventory.Secret{
 				{
-					Secret: mysqlmylogin.MysqlMyloginSection{
+					Secret: mysqlmylogin.Section{
 						SectionName: "local",
 						User:        "root",
 						Password:    "google",
@@ -109,7 +109,7 @@ func TestExtract(t *testing.T) {
 						Socket:      "socket"},
 					Location: "testdata/valid_multiple_sections",
 				}, {
-					Secret: mysqlmylogin.MysqlMyloginSection{
+					Secret: mysqlmylogin.Section{
 						SectionName: "client",
 						User:        "admin",
 						Password:    "password_client",

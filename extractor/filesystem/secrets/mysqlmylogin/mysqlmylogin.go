@@ -27,8 +27,8 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// MysqlMyloginSection is a Veles Secret that holds relevant information for a [Mysql MyLogin](https://dev.mysql.com/doc/refman/8.4/en/option-files.html).
-type MysqlMyloginSection struct {
+// Section is a Veles Secret that holds relevant information for a [Mysql MyLogin](https://dev.mysql.com/doc/refman/8.4/en/option-files.html).
+type Section struct {
 	SectionName string
 	User        string
 	Password    string
@@ -90,7 +90,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Get all key-value pairs
 		keysMap := section.KeysHash()
 		// Populate struct (keys that don't exist will just be "")
-		s := MysqlMyloginSection{
+		s := Section{
 			SectionName: section.Name(),
 			Host:        keysMap["host"],
 			User:        keysMap["user"],
