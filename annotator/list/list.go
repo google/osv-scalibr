@@ -23,7 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
-	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
+	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
@@ -48,7 +48,7 @@ var VEX = InitMap{
 }
 
 // Misc annotators.
-var Misc = InitMap{fromnpm.Name: {fromnpm.New}}
+var Misc = InitMap{npmsource.Name: {npmsource.New}}
 
 // FFA (Full Filesystem Accountability) related annotators.
 var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}

@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 )
 
@@ -95,8 +96,8 @@ func TestClientCredentialsValidator(t *testing.T) {
 	}{
 		{name: "valid_pair", id: validatorTestClientID, secret: validatorTestClientSecret, ok: true, want: veles.ValidationValid},
 		{name: "invalid_pair", id: validatorTestClientID, secret: "wrong_secret", ok: false, want: veles.ValidationInvalid},
-		{name: "missing_id", id: "", secret: validatorTestClientSecret, ok: true, want: veles.ValidationUnsupported},
-		{name: "missing_secret", id: validatorTestClientID, secret: "", ok: true, want: veles.ValidationUnsupported},
+		{name: "missing_id", id: "", secret: validatorTestClientSecret, ok: true, want: veles.ValidationInvalid},
+		{name: "missing_secret", id: validatorTestClientID, secret: "", ok: true, want: veles.ValidationInvalid},
 	}
 
 	for _, tc := range cases {
@@ -105,8 +106,8 @@ func TestClientCredentialsValidator(t *testing.T) {
 			defer srv.Close()
 
 			v := hcp.NewClientCredentialsValidator(
-				hcp.WithHTTPClient(http.DefaultClient),
-				hcp.WithTokenURL(srv.URL+"/oauth2/token"),
+				simplevalidate.WithClient[hcp.ClientCredentials](http.DefaultClient),
+				simplevalidate.WithEndpoint[hcp.ClientCredentials](srv.URL+"/oauth2/token"),
 			)
 
 			got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: tc.id, ClientSecret: tc.secret})
@@ -128,8 +129,8 @@ func TestClientCredentialsValidator_Errors(t *testing.T) {
 		srv.Close()
 
 		v := hcp.NewClientCredentialsValidator(
-			hcp.WithHTTPClient(http.DefaultClient),
-			hcp.WithTokenURL(base+"/oauth2/token"),
+			simplevalidate.WithClient[hcp.ClientCredentials](http.DefaultClient),
+			simplevalidate.WithEndpoint[hcp.ClientCredentials](base+"/oauth2/token"),
 		)
 
 		got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: validatorTestClientID, ClientSecret: validatorTestClientSecret})
@@ -154,8 +155,8 @@ func TestClientCredentialsValidator_Errors(t *testing.T) {
 		defer srv.Close()
 
 		v := hcp.NewClientCredentialsValidator(
-			hcp.WithHTTPClient(http.DefaultClient),
-			hcp.WithTokenURL(srv.URL+"/oauth2/token"),
+			simplevalidate.WithClient[hcp.ClientCredentials](http.DefaultClient),
+			simplevalidate.WithEndpoint[hcp.ClientCredentials](srv.URL+"/oauth2/token"),
 		)
 
 		got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: validatorTestClientID, ClientSecret: validatorTestClientSecret})
@@ -200,7 +201,7 @@ func TestAccessTokenValidator(t *testing.T) {
 			defer srv.Close()
 
 			v := hcp.NewAccessTokenValidator(
-				hcp.WithAccessHTTPClient(http.DefaultClient),
+				simplevalidate.WithClient[hcp.AccessToken](http.DefaultClient),
 				hcp.WithAPIBase(srv.URL),
 			)
 
@@ -223,7 +224,7 @@ func TestAccessTokenValidator_Errors(t *testing.T) {
 		srv.Close()
 
 		v := hcp.NewAccessTokenValidator(
-			hcp.WithAccessHTTPClient(http.DefaultClient),
+			simplevalidate.WithClient[hcp.AccessToken](http.DefaultClient),
 			hcp.WithAPIBase(base),
 		)
 		got, err := v.Validate(context.Background(), hcp.AccessToken{Token: validatorTestAccessToken})
@@ -240,7 +241,7 @@ func TestAccessTokenValidator_Errors(t *testing.T) {
 		defer srv.Close()
 
 		v := hcp.NewAccessTokenValidator(
-			hcp.WithAccessHTTPClient(http.DefaultClient),
+			simplevalidate.WithClient[hcp.AccessToken](http.DefaultClient),
 			hcp.WithAPIBase(srv.URL),
 		)
 		got, err := v.Validate(context.Background(), hcp.AccessToken{Token: validatorTestAccessToken})
