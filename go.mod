@@ -3,6 +3,7 @@ module github.com/google/osv-scalibr
 go 1.24.4
 
 require (
+	bitbucket.org/creachadair/stringset v0.0.14
 	deps.dev/api/v3 v3.0.0-20250903005441-604c45d5b44b
 	deps.dev/api/v3alpha v0.0.0-20250903005441-604c45d5b44b
 	deps.dev/util/maven v0.0.0-20250903005441-604c45d5b44b
@@ -46,6 +47,7 @@ require (
 	github.com/saferwall/pe v1.5.7
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spdx/tools-golang v0.5.5
+	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tidwall/sjson v1.2.5

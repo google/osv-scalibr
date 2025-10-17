@@ -32,9 +32,10 @@ import (
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
-	"github.com/google/osv-scalibr/binary/spdx"
+	binspdx "github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/converter"
+	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
@@ -444,7 +445,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 }
 
 // GetSPDXConfig creates an SPDXConfig struct based on the CLI flags.
-func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
+func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
 		for _, item := range strings.Split(f.SPDXCreators, ",") {
@@ -457,7 +458,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 			})
 		}
 	}
-	return converter.SPDXConfig{
+	return convspdx.Config{
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
 		Creators:          creators,
@@ -502,7 +503,7 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
 				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
-				if err := spdx.Write23(doc, oPath, oFormat); err != nil {
+				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
