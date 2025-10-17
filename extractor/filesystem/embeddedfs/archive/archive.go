@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ova provides an extractor for extracting software inventories from OVA archives
-package ova
+// Package archive provides an extractor for extracting software inventories from archives
+package archive
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -30,14 +31,14 @@ import (
 )
 
 const (
-	// Name is the unique identifier for the ova extractor.
-	Name = "embeddedfs/ova"
+	// Name is the unique identifier for the archive extractor.
+	Name = "embeddedfs/archive"
 )
 
-// Extractor implements the filesystem.Extractor interface for ova.
+// Extractor implements the filesystem.Extractor interface for archive extraction.
 type Extractor struct{}
 
-// New returns a new ova extractor.
+// New returns a new archive extractor.
 func New() filesystem.Extractor {
 	return &Extractor{}
 }
@@ -57,24 +58,36 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// FileRequired checks if the file is a .ova file based on its extension.
+// FileRequired checks if the file is a supported archive.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	return strings.HasSuffix(strings.ToLower(path), ".ova")
+	return strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".tar.gz")
 }
 
-// Extract returns an Inventory with embedded filesystems which contains a mount function for the filesystem in the .ova file.
+// Extract returns an Inventory with embedded filesystems for the given archive file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	// Check wether input.Reader is nil or not.
-	// This check is crucial because tar.NewReader doesn't validate the input,
-	// it simply wraps it around tar.Reader.
 	if input.Reader == nil {
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	tempDir, err := common.TARToTempDir(input.Reader)
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
+	var tempDir string
+	var err error
+	if strings.HasSuffix(input.Path, ".tar") {
+		tempDir, err = common.TARToTempDir(input.Reader)
+		if err != nil {
+			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
+		}
+	} else if strings.HasSuffix(input.Path, ".tar.gz") {
+		reader, err := gzip.NewReader(input.Reader)
+		if err != nil {
+			return inventory.Inventory{}, fmt.Errorf("gzip.NewReader(%q): %w", input.Path, err)
+		}
+		tempDir, err = common.TARToTempDir(reader)
+		if err != nil {
+			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
+		}
+	} else {
+		return inventory.Inventory{}, fmt.Errorf("%q not a supported archive format", input.Path)
 	}
 
 	var refCount int32 = 1
@@ -88,10 +101,11 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 			RefMu:    &refMu,
 		}, nil
 	}
-	var inv inventory.Inventory
-	inv.EmbeddedFSs = append(inv.EmbeddedFSs, &inventory.EmbeddedFS{
-		Path:          input.Path,
-		GetEmbeddedFS: getEmbeddedFS,
-	})
-	return inv, nil
+	return inventory.Inventory{
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          input.Path,
+				GetEmbeddedFS: getEmbeddedFS,
+			}},
+	}, nil
 }

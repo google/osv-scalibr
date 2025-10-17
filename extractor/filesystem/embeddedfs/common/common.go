@@ -29,15 +29,17 @@ import (
 	"sync"
 	"time"
 
+	"archive/tar"
+
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/diskfs/go-diskfs/partition/part"
 	"github.com/dsoprea/go-exfat"
+	"github.com/google/osv-scalibr/artifact/image/symlink"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
-
-	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 const (
@@ -651,4 +653,69 @@ func (fi *fileInfo) IsDir() bool {
 
 func (fi *fileInfo) Sys() any {
 	return nil
+}
+
+// TARToTempDir extracts a tar file into a temporary directory
+// that can be used to traverse its contents recursively.
+func TARToTempDir(reader io.Reader) (string, error) {
+	// Create a temporary directory for extracted files
+	tempDir, err := os.MkdirTemp("", "scalibr-archive-")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+
+	// Extract the tar archive
+	var extractErr error
+	tr := tar.NewReader(reader)
+loop:
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			extractErr = fmt.Errorf("failed to read tar header: %w", err)
+			break
+		}
+
+		if symlink.TargetOutsideRoot("/", hdr.Name) {
+			extractErr = errors.New("tar contains invalid entries")
+			break
+		}
+
+		target := filepath.Join(tempDir, hdr.Name)
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
+				break loop
+			}
+		case tar.TypeReg:
+			dir := filepath.Dir(target)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
+				break loop
+			}
+			outFile, err := os.Create(target)
+			if err != nil {
+				extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+				break loop
+			}
+			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
+				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
+				break loop
+			}
+			outFile.Close()
+		default:
+			// Skip other types (symlinks, etc.) for now
+		}
+	}
+
+	if extractErr != nil {
+		os.Remove(tempDir)
+		return "", extractErr
+	}
+
+	return tempDir, nil
 }
