@@ -12,7 +12,7 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package, deepScan bool) inventory.Finding {
+func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package) inventory.Finding {
 	t.Helper()
 	scanRoot := &fs.ScanRoot{
 		FS:   f,
@@ -22,7 +22,7 @@ func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package, deepScan bool
 	if err != nil {
 		t.Fatalf("packageindex.New() returned error: %v", err)
 	}
-	d := &Detector{opts: Options{DeepScan: deepScan}}
+	d := &Detector{}
 	finding, err := d.Scan(context.Background(), scanRoot, px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)
@@ -31,7 +31,7 @@ func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package, deepScan bool
 }
 
 func TestNoFindings(t *testing.T) {
-	finding := runDetector(t, fstest.MapFS{}, nil, false)
+	finding := runDetector(t, fstest.MapFS{}, nil)
 	if len(finding.PackageVulns) != 0 {
 		t.Errorf("Expected no findings, got %d", len(finding.PackageVulns))
 	}
@@ -43,7 +43,7 @@ func TestInstalledWinRARAffected(t *testing.T) {
 		Version: "6.23",
 	}}
 
-	finding := runDetector(t, fstest.MapFS{}, pkgs, false)
+	finding := runDetector(t, fstest.MapFS{}, pkgs)
 	if len(finding.PackageVulns) == 0 {
 		t.Fatalf("Expected a finding for vulnerable WinRAR package")
 	}
@@ -59,22 +59,24 @@ func TestInstalledWinRARSafe(t *testing.T) {
 		Version: "7.20",
 	}}
 
-	finding := runDetector(t, fstest.MapFS{}, pkgs, false)
+	finding := runDetector(t, fstest.MapFS{}, pkgs)
 	if len(finding.PackageVulns) != 0 {
 		t.Fatalf("Expected no finding for safe WinRAR version, got %+v", finding)
 	}
 }
 
 func TestFileSystemWinRARPortable(t *testing.T) {
-	if !NewDefault().(*Detector).opts.DeepScan {
-		t.Skip("DeepScan disabled, skipping filesystem portable test")
+	// Simulate what the PE version extractor would find for WinRAR610.exe
+	pkgs := []*extractor.Package{
+		{
+			Name:      "WinRAR",
+			Version:   "6.10",
+			PURLType:  "generic",
+			Locations: []string{"WinRAR610.exe"},
+		},
 	}
 
-	fsys := fstest.MapFS{
-		"WinRAR610.exe": &fstest.MapFile{Data: []byte{}},
-	}
-
-	finding := runDetector(t, fsys, nil, true)
+	finding := runDetector(t, fstest.MapFS{}, pkgs)
 	if len(finding.PackageVulns) == 0 {
 		t.Fatalf("Expected finding from portable WinRAR exe, got none")
 	}
@@ -83,7 +85,7 @@ func TestFileSystemWinRARPortable(t *testing.T) {
 		t.Errorf("Expected package name WinRAR, got %s", got.Package.Name)
 	}
 
-	sv, err := semantic.Parse(got.Package.Version, "Go")
+	sv, err := semantic.Parse(got.Package.Version, "Maven")
 	if err != nil {
 		t.Errorf("Failed to parse version: %v", err)
 	}

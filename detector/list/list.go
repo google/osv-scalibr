@@ -76,7 +76,7 @@ var Untested = InitMap{
 // CVE Detectors for vulnerabilities
 var CVEDetectors = InitMap{
 	// CVE-2025-8088 WinRAR RCE detector
-	cve20258088.Name: {cve20258088.NewDefault},
+	cve20258088.Name: {cve20258088.New},
 }
 
 // Weakcredentials detectors for weak credentials.

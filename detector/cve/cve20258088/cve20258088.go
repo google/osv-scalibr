@@ -18,9 +18,6 @@ package cve20258088
 import (
 	"context"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -33,14 +30,11 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"github.com/saferwall/pe"
 )
 
-// Precompiled regex patterns
+// Precompiled regex pattern for matching WinRAR product names with word boundaries
 var (
-	peRegex   = regexp.MustCompile(`(?i)(winrar|rar|unrar).*?(\.exe|\.dll)$`)
-	archRegex = regexp.MustCompile(`(?i)(x64|x86|arm64|arm32|portable)`)
-	verRegex  = regexp.MustCompile(`(\d+[\._-]?\d*)`)
+	winrarNameRegex = regexp.MustCompile(`(?i)\b(winrar|unrar)\b|\brar\b`)
 )
 
 const (
@@ -48,31 +42,12 @@ const (
 	Name = "cve/cve-2025-8088"
 )
 
-// Options configures the detector behavior.
-type Options struct {
-	// DeepScan toggles the expensive full filesystem crawl.
-	// Default (false): if true, perform the existing FS walk to catch renamed/portable binaries in non-standard paths.
-	// False: reuse packages from extractor (dotnet/pe) without walking the FS.
-	DeepScan bool
-}
-
 // Detector is a SCALIBR Detector for CVE-2025-8088.
-type Detector struct {
-	opts Options
-}
+type Detector struct{}
 
-// New returns a detector with options.
-func New(opts Options) detector.Detector {
-	return &Detector{opts: opts}
-}
-
-// NewDefault returns a detector with default options (DeepScan enabled).
-func NewDefault() detector.Detector {
-	return &Detector{
-		opts: Options{
-			DeepScan: false,
-		},
-	}
+// New returns a detector.
+func New() detector.Detector {
+	return &Detector{}
 }
 
 // Name of the detector.
@@ -88,18 +63,23 @@ func (Detector) Requirements() *plugin.Capabilities {
 
 // RequiredExtractors of the detector.
 func (Detector) RequiredExtractors() []string {
-	return []string{"windows/ospackages"}
+	return []string{"windows/ospackages", "windows/peversion"}
 }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
-func (Detector) DetectedFinding() inventory.Finding {
-	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2025-8088",
-			Summary: "WinRAR path traversal vulnerability (<7.13)",
-			Details: "Detects WinRAR installs or portables < 7.13, using robust and reliable PE analysis (if DeepScan enabled)",
-		},
-	}}}
+func (d Detector) DetectedFinding() inventory.Finding {
+	return d.findingForPackage(nil)
+}
+
+func (d Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+	pkg := &extractor.Package{
+		Name:     "winrar",
+		PURLType: "generic",
+	}
+	vuln := d.makePackageVulnWithDb(pkg, "7.13", "WinRAR path traversal vulnerability (<7.13)",
+		"WinRAR versions before 7.13 are vulnerable to a path traversal attack that allows attackers to extract files to arbitrary locations outside the intended extraction directory.",
+		dbSpecific)
+	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{vuln}}
 }
 
 // Scan checks for the presence of the WinRAR RCE CVE-2025-8088 vulnerability.
@@ -107,126 +87,37 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	var findings []*inventory.PackageVuln
 
 	// === Phase 1: Installed packages via package index ===
-	if px != nil {
-		for _, pkg := range px.GetAll() {
-			nameLower := strings.ToLower(pkg.Name)
-			if strings.Contains(nameLower, "winrar") {
-				normalizedVersion := normalizeVersion(pkg.Version)
-
-				if sv, err := semantic.Parse(normalizedVersion, "Go"); err == nil {
-					if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
-						log.Infof("cve20258088: Vulnerable WinRAR package installation found (uninstall them): Package %s, Version: %s", pkg.Name, normalizedVersion)
-
-						details := fmt.Sprintf("Installed WinRAR %s detected via package index", normalizedVersion)
-						vuln := d.makePackageVuln(pkg, normalizedVersion, "WinRAR vulnerable version detected (installed package)", details)
-						findings = append(findings, vuln)
-					}
-				}
-			}
-		}
+	if px == nil {
+		log.Infof("cve20258088: PackageIndex is nil, no packages to scan")
+		return inventory.Finding{}, nil
 	}
 
-	// === Phase 2: Hybrid ===
-	if !d.opts.DeepScan {
-		// Lightweight: reuse packages produced by extractors (any extractor)
-		// No filesystem walk, no re-parsing binaries.
-		if px != nil {
-			for _, pkg := range px.GetAll() {
-				// Identify WinRAR family by name across any extractor's packages
-				nameLower := strings.ToLower(pkg.Name)
-				if !(strings.Contains(nameLower, "winrar") || strings.Contains(nameLower, "unrar") || strings.Contains(nameLower, "rar")) {
-					continue
-				}
+	allPackages := px.GetAll()
+	log.Infof("cve20258088: Scanning %d packages from PackageIndex", len(allPackages))
 
-				nver := normalizeVersion(pkg.Version)
-				if nver == "" {
-					// If extractor didn't get a version, skip in lightweight mode.
-					// (DeepScan can still catch it via PE/resource parsing.)
-					continue
-				}
+	for _, pkg := range allPackages {
+		log.Debugf("cve20258088: Checking package %q version %q", pkg.Name, pkg.Version)
 
-				if sv, err := semantic.Parse(nver, "Go"); err == nil {
-					if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
-						details := fmt.Sprintf("%s from extractor (PURLType=%s), version: %s", pkg.Name, pkg.PURLType, nver)
-						vuln := d.makePackageVuln(pkg, nver, "WinRAR vulnerable version detected (extracted binary)", details)
-						findings = append(findings, vuln)
-					}
-				}
-			}
-		} else {
-			log.Debugf("cve20258088: Package index is null %s", px)
+		// Use word boundary regex to avoid false positives like "Libraries", "Hardware", etc.
+		if !winrarNameRegex.MatchString(pkg.Name) {
+			continue
 		}
-	} else {
-		rootInfo, err := os.Stat(scanRoot.Path)
-		if err != nil || !rootInfo.IsDir() {
-			log.Warnf("cve20258088: Root path invalid or inaccessible: %s, skipping deepscan", scanRoot.Path)
-		} else {
-			err := filepath.WalkDir(scanRoot.Path, func(path string, de fs.DirEntry, walkErr error) error {
-				if walkErr != nil {
-					log.Warnf("cve20258088: Walk error for %s: %v", path, walkErr)
-					return nil
-				}
-				if de == nil || de.IsDir() {
-					return nil
-				}
-				ext := strings.ToLower(filepath.Ext(de.Name()))
-				if ext != ".exe" && ext != ".dll" {
-					return nil
-				}
 
-				confidence := 0
-				var component string
+		log.Debugf("cve20258088: Package %q matched WinRAR regex", pkg.Name)
 
-				// Indicator 1: Filename match
-				if peRegex.MatchString(de.Name()) {
-					confidence += 2
-					matches := peRegex.FindStringSubmatch(de.Name())
-					if len(matches) > 1 {
-						component = matches[1]
-					}
-				}
+		normalizedVersion := normalizeVersion(pkg.Version)
+		if normalizedVersion == "" {
+			continue
+		}
 
-				// Indicator 2: PE resource analysis - extract version info from PE resources
-				// Now check PE resources for ALL .exe/.dll files, not just regex matches
-				binVersion, prodName := extractPEVersion(path)
-				if prodName != "" {
-					prodNameLower := strings.ToLower(prodName)
-					if strings.Contains(prodNameLower, "winrar") || strings.Contains(prodNameLower, "rar") || strings.Contains(prodNameLower, "unrar") {
-						confidence += 2
-						if component == "" {
-							component = prodName
-						}
-					}
-				}
+		if sv, err := semantic.Parse(normalizedVersion, "Maven"); err == nil {
+			if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
+				log.Infof("cve20258088: Vulnerable WinRAR package found: Package %q, Version: %q",
+					pkg.Name, normalizedVersion)
 
-				// Only report if confidence is high enough
-				if confidence >= 2 && binVersion != "" {
-					normalizedVersion := normalizeVersion(binVersion)
-
-					if sv, err := semantic.Parse(normalizedVersion, "Go"); err == nil {
-						if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
-							log.Infof("cve20258088: Vulnerable WinRAR package found (delete them): %s, Package: %s, Version: %s", path, prodName, normalizedVersion)
-							pkg := &extractor.Package{
-								Name:         component,
-								Version:      normalizedVersion,
-								PURLType:     "generic",
-								Locations:    []string{path},
-								SourceCode:   &extractor.SourceCodeIdentifier{},
-								LayerDetails: &extractor.LayerDetails{},
-								Metadata:     nil,
-							}
-
-							details := fmt.Sprintf("%s found at %s, version: %s (confidence: %d)", component, path, normalizedVersion, confidence)
-							vuln := d.makePackageVuln(pkg, normalizedVersion, "WinRAR vulnerable version detected", details)
-							findings = append(findings, vuln)
-						}
-					}
-				}
-				return nil
-			})
-			if err != nil {
-				log.Infof("cve20258088: WalkDir error: %v", err)
-				return inventory.Finding{}, err
+				details := fmt.Sprintf("WinRAR %s detected via package index", normalizedVersion)
+				vuln := d.makePackageVuln(pkg, normalizedVersion, "WinRAR vulnerable version detected", details)
+				findings = append(findings, vuln)
 			}
 		}
 	}
@@ -239,126 +130,38 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 // makePackageVuln constructs a PackageVuln for CVE-2025-8088.
 // normalizedVersion should be the already-normalized version string (e.g. "6.10").
-func (Detector) makePackageVuln(pkg *extractor.Package, normalizedVersion, summary, details string) *inventory.PackageVuln {
-	affected := []osvschema.Affected{{
-		Package: osvschema.Package{
-			Name:      pkg.Name,
-			Ecosystem: "generic",
-		},
-		Ranges: []osvschema.Range{{
-			Type: "SEMVER",
-			Events: []osvschema.Event{{
-				Introduced: "0",
-			}, {
-				Fixed: "7.13",
-			}},
-		}},
-		Versions: []string{normalizedVersion},
-	}}
+func (d Detector) makePackageVuln(pkg *extractor.Package, normalizedVersion, summary, details string) *inventory.PackageVuln {
+	dbSpecific := map[string]any{
+		"extra": fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", ")),
+	}
+	return d.makePackageVulnWithDb(pkg, normalizedVersion, summary, details, dbSpecific)
+}
 
+// makePackageVulnWithDb constructs a PackageVuln for CVE-2025-8088 with custom DatabaseSpecific.
+func (Detector) makePackageVulnWithDb(pkg *extractor.Package, normalizedVersion, summary, details string, dbSpecific map[string]any) *inventory.PackageVuln {
 	vuln := &inventory.PackageVuln{
 		Package: pkg,
 		Vulnerability: osvschema.Vulnerability{
-			ID:       "CVE-2025-8088",
-			Summary:  summary,
-			Details:  details,
-			Affected: affected,
+			ID:      "CVE-2025-8088",
+			Summary: summary,
+			Details: details,
+			Affected: inventory.PackageToAffected(pkg, "7.13", &osvschema.Severity{
+				Type:  osvschema.SeverityCVSSV3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+			}),
+			DatabaseSpecific: dbSpecific,
 		},
 	}
+
+	// Override the versions field to include the actual detected version
+	if len(vuln.Vulnerability.Affected) > 0 && normalizedVersion != "7.13" {
+		vuln.Vulnerability.Affected[0].Versions = []string{normalizedVersion}
+	}
+
 	return vuln
 }
 
-// extractPEVersion tries to extract version info and product name from PE resources
-func extractPEVersion(exePath string) (version, prodName string) {
-	peFile, err := pe.New(exePath, &pe.Options{})
-	if err != nil {
-		log.Debugf("Error while opening file: %s, reason: %v", exePath, err)
-		// Fallback to filename heuristics
-		return extractVersionFromFilename(exePath)
-	}
-	defer peFile.Close()
-
-	// Parse the PE file
-	err = peFile.Parse()
-	if err != nil {
-		log.Debugf("cve20258088: extractPEVersion: failed to parse PE file: %s, error: %v", exePath, err)
-		// Fallback to filename heuristics
-		return extractVersionFromFilename(exePath)
-	}
-
-	// Extract version resources
-	versionInfo, err := peFile.ParseVersionResources()
-	if err != nil {
-		log.Debugf("cve20258088: extractPEVersion: failed to parse version resources: %s, error: %v", exePath, err)
-		// Fallback to filename heuristics
-		return extractVersionFromFilename(exePath)
-	}
-
-	// Extract version and product name from version resources
-	if productVersion, ok := versionInfo["ProductVersion"]; ok && productVersion != "" {
-		version = productVersion
-	} else if fileVersion, ok := versionInfo["FileVersion"]; ok && fileVersion != "" {
-		version = fileVersion
-	}
-
-	if productName, ok := versionInfo["ProductName"]; ok && productName != "" {
-		prodName = productName
-	} else if internalName, ok := versionInfo["InternalName"]; ok && internalName != "" {
-		prodName = internalName
-	} else if originalFilename, ok := versionInfo["OriginalFilename"]; ok && originalFilename != "" {
-		prodName = originalFilename
-	}
-
-	// If we couldn't extract from PE resources, fallback to filename heuristics
-	if version == "" || prodName == "" {
-		fallbackVersion, fallbackProdName := extractVersionFromFilename(exePath)
-		if version == "" {
-			version = fallbackVersion
-		}
-		if prodName == "" {
-			prodName = fallbackProdName
-		}
-	}
-	return version, prodName
-}
-
-// extractVersionFromFilename tries to extract version info and product name from filename (fallback method)
-func extractVersionFromFilename(exePath string) (version, prodName string) {
-	base := filepath.Base(exePath)
-	lower := strings.ToLower(base)
-
-	switch {
-	case strings.Contains(lower, "winrar"):
-		prodName = "WinRAR"
-	case strings.Contains(lower, "unrar"):
-		prodName = "UnRAR"
-	case strings.Contains(lower, "rar"):
-		prodName = "RAR"
-	}
-
-	clean := archRegex.ReplaceAllString(lower, "")
-
-	clean = strings.TrimSuffix(clean, ".exe")
-	clean = strings.TrimSuffix(clean, ".dll")
-
-	// Find version number (supports 610, 6.10, 6_10, etc.)
-	verMatch := verRegex.FindStringSubmatch(clean)
-	if verMatch != nil {
-		verStr := verMatch[1]
-		// Normalize: 610 -> 6.10, 623 -> 6.23, etc.
-		if len(verStr) == 3 && !strings.ContainsAny(verStr, "._-") {
-			version = fmt.Sprintf("%s.%s", verStr[:1], verStr[1:])
-		} else if len(verStr) == 4 && !strings.ContainsAny(verStr, "._-") {
-			version = fmt.Sprintf("%s.%s", verStr[:2], verStr[2:])
-		} else {
-			version = strings.ReplaceAll(verStr, "_", ".")
-			version = strings.ReplaceAll(version, "-", ".")
-		}
-	}
-	return version, prodName
-}
-
-// normalizeVersion tries to standardize WinRAR version strings
+// normalizeVersion tries to standardize version strings
 func normalizeVersion(ver string) string {
 	ver = strings.TrimSpace(ver)
 	ver = strings.ReplaceAll(ver, "_", ".")
