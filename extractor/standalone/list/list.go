@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
+	"github.com/google/osv-scalibr/extractor/standalone/windows/common/peversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
@@ -46,6 +47,7 @@ var (
 		ospackages.Name:    {ospackages.NewDefault},
 		regosversion.Name:  {regosversion.NewDefault},
 		regpatchlevel.Name: {regpatchlevel.NewDefault},
+		peversion.Name:     {peversion.NewDefault},
 	}
 
 	// OSExperimental defines experimental OS extractors.
