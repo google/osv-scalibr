@@ -39,14 +39,14 @@ type Validator struct {
 // ValidatorOption configures a Validator when creating it via NewValidator.
 type ValidatorOption func(*Validator)
 
-// WithEndpointResolver configures the s3.Client that the Validator uses.
+// WithURL configures the URL that the Validator uses.
 func WithURL(url string) ValidatorOption {
 	return func(v *Validator) {
 		v.options.BaseEndpoint = &url
 	}
 }
 
-// WithEndpointResolver configures the s3.Client that the Validator uses.
+// WithSigner configures s3.HTTPSignerV4 that the Validator uses.
 func WithSigner(signer s3.HTTPSignerV4) ValidatorOption {
 	return func(v *Validator) {
 		v.options.HTTPSignerV4 = signer
