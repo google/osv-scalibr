@@ -16,6 +16,7 @@
 package pair
 
 import (
+	"fmt"
 	"regexp"
 	"slices"
 
@@ -25,6 +26,10 @@ import (
 type Match struct {
 	Value    string
 	Position int
+}
+
+func (m Match) String() string {
+	return fmt.Sprintf("%d:%s", m.Position, m.Value)
 }
 
 type Pair struct {
@@ -135,6 +140,8 @@ func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
 			}
 
 			// Skip overlapping matches
+			// - hard check to prevent errors
+			// - overlapping should be handled before reaching this point
 			if distance < 0 {
 				continue
 			}

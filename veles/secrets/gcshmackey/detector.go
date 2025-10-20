@@ -23,8 +23,8 @@ import (
 
 var (
 	// ref: https://cloud.google.com/storage/docs/authentication/hmackeys#overview
-	accessIDPattern = regexp.MustCompile(`^GOOG(?:[A-Z0-9]{20}|[A-Z0-9]{57})$`)
-	secretPattern   = regexp.MustCompile(`^[A-Za-z0-9+/]{40}$`)
+	accessIDPattern = regexp.MustCompile(`GOOG(?:[A-Z0-9]{57}|[A-Z0-9]{20})`)
+	secretPattern   = regexp.MustCompile(`[A-Za-z0-9+/]{40}`)
 )
 
 var (
@@ -39,9 +39,9 @@ var (
 // NewDetector returns a new Veles Detector that finds Google Cloud Storage HMAC keys
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: uint32(maxTotalLen),
-		FindA:  pair.FindAllMatches(accessIDPattern),
-		FindB:  pair.FindAllMatches(secretPattern),
+		MaxLen: uint32(maxTotalLen), MaxDistance: uint32(maxDistance),
+		FindA: pair.FindAllMatches(accessIDPattern),
+		FindB: pair.FindAllMatches(secretPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return HMACKey{AccessID: p.A.Value, Secret: p.B.Value}, true
 		},
