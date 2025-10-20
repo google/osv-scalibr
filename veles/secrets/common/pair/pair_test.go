@@ -54,23 +54,20 @@ func TestFindOptimalPairs(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		maxLen      uint32
 		wantSecrets []veles.Secret
 		wantPos     []int
 	}{
 		{
-			name:   "simple match",
-			input:  "a1 b1 a2      b2",
-			maxLen: 5,
+			name:  "simple match",
+			input: "a1 b1",
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 			},
 			wantPos: []int{0},
 		},
 		{
-			name:   "multiple matches, greedy selection",
-			input:  "a1 b1 a2 b2",
-			maxLen: 5,
+			name:  "multiple matches, greedy selection",
+			input: "a1 b1 a2 b2",
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 				mockSecret{Value: "a2-b2"},
@@ -78,14 +75,12 @@ func TestFindOptimalPairs(t *testing.T) {
 			wantPos: []int{0, 6},
 		},
 		{
-			name:   "no matches",
-			input:  "a1 xxxxx b1",
-			maxLen: 3,
+			name:  "no matches",
+			input: "a1 xxxxx",
 		},
 		{
-			name:   "more bs than as",
-			input:  "a1 b1 b2",
-			maxLen: 10,
+			name:  "more bs than as",
+			input: "a1 b1 b2",
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 			},
@@ -96,7 +91,8 @@ func TestFindOptimalPairs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &pair.Detector{
-				MaxLen:   tt.maxLen,
+				// include the whole payload
+				MaxLen:   uint32(len(tt.input)),
 				FindA:    simpleFinder(t, "a"),
 				FindB:    simpleFinder(t, "b"),
 				FromPair: mockFromPair,

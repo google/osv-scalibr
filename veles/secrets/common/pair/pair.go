@@ -48,7 +48,7 @@ type Detector struct {
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	as, bs := d.FindA(data), d.FindB(data)
-	return findOptimalPairs(as, bs, int(d.MaxLen), d.FromPair)
+	return findOptimalPairs(as, bs, d.FromPair)
 }
 
 // MaxSecretLen implements veles.Detector.
@@ -57,9 +57,9 @@ func (d *Detector) MaxSecretLen() uint32 {
 }
 
 // findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
-func findOptimalPairs(as, bs []*Match, maxLen int, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
+func findOptimalPairs(as, bs []*Match, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
-	possiblePairs := findPossiblePairs(as, bs, maxLen)
+	possiblePairs := findPossiblePairs(as, bs)
 
 	// Sort by distance (closest first)
 	slices.SortFunc(possiblePairs, func(a, b Pair) int {
@@ -89,19 +89,12 @@ func findOptimalPairs(as, bs []*Match, maxLen int, fromPair func(Pair) (veles.Se
 }
 
 // findPossiblePairs finds all pairs within the maximum context length.
-func findPossiblePairs(as, bs []*Match, maxLen int) []Pair {
+func findPossiblePairs(as, bs []*Match) []Pair {
 	var possiblePairs []Pair
 	for _, a := range as {
 		for _, b := range bs {
 			distance := abs(a.Position - b.Position)
-
-			maxDistance := maxLen - len(a.Value)
-			if a.Position < b.Position {
-				maxDistance = maxLen - len(b.Value)
-			}
-			if distance <= maxDistance {
-				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
-			}
+			possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
 		}
 	}
 	return possiblePairs

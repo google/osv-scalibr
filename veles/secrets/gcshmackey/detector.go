@@ -18,35 +18,45 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
 var (
-	// TODO: fill these
-	accessIDPattern = regexp.MustCompile("")
-	secretPattern   = regexp.MustCompile("")
+	// ref: https://cloud.google.com/storage/docs/authentication/hmackeys#overview
+	accessIDPattern = regexp.MustCompile(`^GOOG(?:[A-Z0-9]{20}|[A-Z0-9]{57})$`)
+	secretPattern   = regexp.MustCompile(`^[A-Za-z0-9+/]{40}$`)
 )
 
 var (
-	maxAccessIDLen = 1
-	maxSecretLen   = 1
-	maxDistance    = 1
-	maxTotalLen    = maxAccessIDLen + maxSecretLen + maxDistance
+	maxAccessIDLen = 61
+	maxSecretLen   = 40
+	// maxDistance is the maximum distance between AccessID and secrets to be considered for pairing.
+	// 10 KiB is a good upper bound as we don't expect files containing credentials to be larger than this.
+	maxDistance = 10 * 1 << 10 // 10 KiB
+	maxTotalLen = maxAccessIDLen + maxSecretLen + maxDistance
 )
-
-// Detector is a Veles Detector that findsGoogle Cloud Storage HMAC keys
-type Detector struct{}
 
 // NewDetector returns a new Veles Detector that finds Google Cloud Storage HMAC keys
-func NewDetector() *Detector {
-	return &Detector{}
+func NewDetector() veles.Detector {
+	return &pair.Detector{
+		MaxLen: uint32(maxTotalLen),
+		FindA:  func(data []byte) []*pair.Match { return findAllMatches(data, accessIDPattern) },
+		FindB:  func(data []byte) []*pair.Match { return findAllMatches(data, secretPattern) },
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return HMACKey{AccessID: p.A.Value, Secret: p.B.Value}, true
+		},
+	}
 }
 
-// MaxSecretLen returns the maximum length a secret from this Detector can have.
-func (d *Detector) MaxSecretLen() uint32 {
-	return uint32(maxTotalLen)
-}
-
-// Detect finds Google Cloud Storage HMAC keys
-func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	panic("unimplemented")
+// findAllMatches finds all matches of a given regex in the given data.
+func findAllMatches(data []byte, re *regexp.Regexp) []*pair.Match {
+	matches := re.FindAllSubmatchIndex(data, -1)
+	var results []*pair.Match
+	for _, m := range matches {
+		results = append(results, &pair.Match{
+			Value:    string(data[m[0]:m[1]]),
+			Position: m[0],
+		})
+	}
+	return results
 }
