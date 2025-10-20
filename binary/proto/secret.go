@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/deepseekapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -171,6 +172,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return cratesioAPITokenToProto(t), nil
 	case npmjsaccesstoken.NpmJsAccessToken:
 		return npmJSAccessTokenToProto(t), nil
+	case deepseekapikey.APIKey:
+		return deepseekAPIKeyToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -561,6 +564,16 @@ func cratesioAPITokenToProto(s cratesioapitoken.CratesIOAPItoken) *spb.SecretDat
 		Secret: &spb.SecretData_CratesIoApiToken{
 			CratesIoApiToken: &spb.SecretData_CratesIOAPIToken{
 				Token: s.Token,
+			},
+		},
+	}
+}
+
+func deepseekAPIKeyToProto(s deepseekapikey.APIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DeepseekApiKey{
+			DeepseekApiKey: &spb.SecretData_DeepSeekAPIKey{
+				Key: s.Key,
 			},
 		},
 	}
@@ -1232,6 +1245,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
 	case *spb.SecretData_NpmjsAccessToken:
 		return npmJSAccessTokenToStruct(s.GetNpmjsAccessToken()), nil
+	case *spb.SecretData_DeepseekApiKey:
+		return deepseekAPIKeyToStruct(s.GetDeepseekApiKey()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -1514,6 +1529,12 @@ func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapit
 func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJsAccessToken) npmjsaccesstoken.NpmJsAccessToken {
 	return npmjsaccesstoken.NpmJsAccessToken{
 		Token: kPB.GetToken(),
+	}
+}
+
+func deepseekAPIKeyToStruct(kPB *spb.SecretData_DeepSeekAPIKey) deepseekapikey.APIKey {
+	return deepseekapikey.APIKey{
+		Key: kPB.GetKey(),
 	}
 }
 
