@@ -177,7 +177,6 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
-	var tmpPaths []string
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
 		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
@@ -232,14 +231,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			tmpPaths = append(tmpPaths, c.TempPaths()...)
-		}
-	}
-
-	// Remove all temporary directories and raw files we collected during filesystem traversal.
-	for _, tmpPath := range tmpPaths {
-		if err := os.RemoveAll(tmpPath); err != nil {
-			log.Infof("Failed to remove %s temporary file / directory", tmpPath)
+			embeddedFS.TempPaths = c.TempPaths()
 		}
 	}
 
@@ -528,7 +520,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 }
 
 func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
-	if wc.useGitignore && d.Type().IsDir() {
+	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
 	}

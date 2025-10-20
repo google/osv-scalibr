@@ -28,6 +28,7 @@ import (
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -45,6 +46,7 @@ import (
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
+	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -116,6 +118,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
+	case pypiapitoken.PyPIAPIToken:
+		return pypiAPITokenToProto(t), nil
+	case cratesioapitoken.CratesIOAPItoken:
+		return cratesioAPITokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -220,6 +226,16 @@ func digitaloceanAPIKeyToProto(s velesdigitalocean.DigitaloceanAPIToken) *spb.Se
 	}
 }
 
+func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_Pypi{
+			Pypi: &spb.SecretData_PyPIAPIToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func slackAppLevelTokenToProto(s velesslacktoken.SlackAppLevelToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SlackAppLevelToken_{
@@ -244,6 +260,16 @@ func slackAppConfigRefreshTokenToProto(s velesslacktoken.SlackAppConfigRefreshTo
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SlackAppConfigRefreshToken_{
 			SlackAppConfigRefreshToken: &spb.SecretData_SlackAppConfigRefreshToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func cratesioAPITokenToProto(s cratesioapitoken.CratesIOAPItoken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CratesIoApiToken{
+			CratesIoApiToken: &spb.SecretData_CratesIOAPIToken{
 				Token: s.Token,
 			},
 		},
@@ -720,6 +746,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
+	case *spb.SecretData_Pypi:
+		return pypiAPITokenToStruct(s.GetPypi()), nil
+	case *spb.SecretData_CratesIoApiToken:
+		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -846,6 +876,18 @@ func digitalOceanAPITokenToStruct(kPB *spb.SecretData_DigitalOceanAPIToken) vele
 	}
 }
 
+func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPIToken {
+	return pypiapitoken.PyPIAPIToken{
+		Token: kPB.GetToken(),
+	}
+}
+
+func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapitoken.CratesIOAPItoken {
+	return cratesioapitoken.CratesIOAPItoken{
+		Token: kPB.GetToken(),
+	}
+}
+
 func slackAppLevelTokenToStruct(kPB *spb.SecretData_SlackAppLevelToken) velesslacktoken.SlackAppLevelToken {
 	return velesslacktoken.SlackAppLevelToken{
 		Token: kPB.GetToken(),
@@ -870,6 +912,7 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 		Username: kPB.GetUsername(),
 	}
 }
+
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),

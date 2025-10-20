@@ -77,7 +77,7 @@ func TestToPURL(t *testing.T) {
 				PURLType:  purl.TypeNPM,
 				Locations: []string{"location"},
 				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: javascriptmeta.Unknown,
 				},
 			},
 			want: &purl.PackageURL{
