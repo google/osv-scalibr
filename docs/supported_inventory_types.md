@@ -176,10 +176,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### EmbeddedFS
 
-| Type  | Details                                           | Extractor Plugin  |
-|-------|---------------------------------------------------|-------------------|
-| vmdk  | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk` |
-| ova   | Extracts .ova files                               | `embeddedfs/ova`  |
+| Type     | Details                                           | Extractor Plugin     |
+|----------|---------------------------------------------------|----------------------|
+| archive  | tar and tar.gz archives                           | `embeddedfs/archive` |
+| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
+| vdi      | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
+| vmdk     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 
 ## Detectors
 

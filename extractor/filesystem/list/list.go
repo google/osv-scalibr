@@ -26,7 +26,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -344,8 +346,10 @@ var (
 
 	// EmbeddedFS extractors.
 	EmbeddedFS = InitMap{
-		vmdk.Name: {vmdk.NewDefault},
-		ova.Name:  {ova.New},
+		archive.Name: {archive.New},
+		vdi.Name:     {vdi.New},
+		vmdk.Name:    {vmdk.NewDefault},
+		ova.Name:     {ova.New},
 	}
 
 	// Collections of extractors.

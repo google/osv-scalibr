@@ -19,15 +19,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
-	"archive/tar"
-
-	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -78,68 +72,14 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	// Create a temporary directory for extracted files
-	tempDir, err := os.MkdirTemp("", "scalibr-ova-")
+	tempDir, err := common.TARToTempDir(input.Reader)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to create temporary directory: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 	}
 
-	// Extract the tar archive
-	var extractErr error
-	tr := tar.NewReader(input.Reader)
-loop:
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			extractErr = fmt.Errorf("failed to read tar header: %w", err)
-			break
-		}
-
-		if symlink.TargetOutsideRoot("/", hdr.Name) {
-			extractErr = fmt.Errorf("%s contains invalid entries", input.Path)
-			break
-		}
-
-		target := filepath.Join(tempDir, hdr.Name)
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
-				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
-				break loop
-			}
-		case tar.TypeReg:
-			dir := filepath.Dir(target)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
-				break loop
-			}
-			outFile, err := os.Create(target)
-			if err != nil {
-				extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
-				break loop
-			}
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
-				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
-				break loop
-			}
-			outFile.Close()
-		default:
-			// Skip other types (symlinks, etc.) for now
-		}
-	}
-
-	if extractErr != nil {
-		os.Remove(tempDir)
-		return inventory.Inventory{}, extractErr
-	}
-
+	var refCount int32 = 1
+	var refMu sync.Mutex
 	getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
-		var refCount int32 = 1
-		var refMu sync.Mutex
 		return &common.EmbeddedDirFS{
 			FS:       scalibrfs.DirFS(tempDir),
 			File:     nil,
@@ -148,7 +88,6 @@ loop:
 			RefMu:    &refMu,
 		}, nil
 	}
-
 	var inv inventory.Inventory
 	inv.EmbeddedFSs = append(inv.EmbeddedFSs, &inventory.EmbeddedFS{
 		Path:          input.Path,
