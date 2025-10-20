@@ -66,23 +66,10 @@ var (
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxLen: maxSecretLen,
-		FindA:  func(data []byte) []*pair.Match { return findAllMatches(data, clientIDRe) },
-		FindB:  func(data []byte) []*pair.Match { return findAllMatches(data, clientSecretRe) },
+		FindA:  pair.FindAllMatches(clientIDRe),
+		FindB:  pair.FindAllMatches(clientSecretRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return Credentials{ID: p.A.Value, Secret: p.B.Value}, true
 		},
 	}
-}
-
-// findAllMatches finds all matches of a given regex in the given data.
-func findAllMatches(data []byte, re *regexp.Regexp) []*pair.Match {
-	matches := re.FindAllSubmatchIndex(data, -1)
-	var results []*pair.Match
-	for _, m := range matches {
-		results = append(results, &pair.Match{
-			Value:    string(data[m[0]:m[1]]),
-			Position: m[0],
-		})
-	}
-	return results
 }

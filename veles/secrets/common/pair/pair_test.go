@@ -34,23 +34,11 @@ func mockFromPair(p pair.Pair) (veles.Secret, bool) {
 	}, true
 }
 
-func simpleFinder(t *testing.T, key string) func(data []byte) []*pair.Match {
-	t.Helper()
-
-	re := regexp.MustCompile(key + "[1-9]")
-	return func(data []byte) []*pair.Match {
-		var matches []*pair.Match
-		for _, m := range re.FindAllSubmatchIndex(data, -1) {
-			matches = append(matches, &pair.Match{
-				Value:    string(data[m[0]:m[1]]),
-				Position: m[0],
-			})
-		}
-		return matches
-	}
-}
-
 func TestFindOptimalPairs(t *testing.T) {
+	var (
+		aPattern = regexp.MustCompile(`a[1-Z]`)
+		bPattern = regexp.MustCompile(`b[1-Z]`)
+	)
 	tests := []struct {
 		name        string
 		input       string
@@ -93,8 +81,8 @@ func TestFindOptimalPairs(t *testing.T) {
 			d := &pair.Detector{
 				// include the whole payload
 				MaxLen:   uint32(len(tt.input)),
-				FindA:    simpleFinder(t, "a"),
-				FindB:    simpleFinder(t, "b"),
+				FindA:    pair.FindAllMatches(aPattern),
+				FindB:    pair.FindAllMatches(bPattern),
 				FromPair: mockFromPair,
 			}
 

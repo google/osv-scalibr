@@ -16,6 +16,7 @@
 package pair
 
 import (
+	"regexp"
 	"slices"
 
 	"github.com/google/osv-scalibr/veles"
@@ -54,6 +55,21 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 // MaxSecretLen implements veles.Detector.
 func (d *Detector) MaxSecretLen() uint32 {
 	return d.MaxLen
+}
+
+// FindAllMatches returns a function which finds all matches of a given regex.
+func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
+	return func(data []byte) []*Match {
+		matches := re.FindAllSubmatchIndex(data, -1)
+		var results []*Match
+		for _, m := range matches {
+			results = append(results, &Match{
+				Value:    string(data[m[0]:m[1]]),
+				Position: m[0],
+			})
+		}
+		return results
+	}
 }
 
 // findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
