@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -185,6 +186,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpOAuth2ClientCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
+	case gcshmackey.HMACKey:
+		return gcsHmacKeyToProto(t), nil
 	case velesonepasswordconnecttoken.OnePasswordConnectToken:
 		return onePasswordConnectTokenToProto(t), nil
 	case velesonepasswordkeys.OnePasswordSecretKey:
@@ -293,6 +296,17 @@ func gcpsakToProto(sak velesgcpsak.GCPSAK) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Gcpsak{
 			Gcpsak: sakPB,
+		},
+	}
+}
+
+func gcsHmacKeyToProto(t gcshmackey.HMACKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GcsHmacKey{
+			GcsHmacKey: &spb.SecretData_GCSHmacKey{
+				AccessId: t.AccessID,
+				Secret:   t.Secret,
+			},
 		},
 	}
 }
@@ -853,6 +867,9 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			UserID:         t.GetUserId(),
 			UserEmail:      t.GetUserEmail(),
 		}, nil
+	case *spb.SecretData_GcsHmacKey:
+		t := s.GetGcsHmacKey()
+		return gcshmackey.HMACKey{AccessID: t.GetAccessId(), Secret: t.GetSecret()}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
