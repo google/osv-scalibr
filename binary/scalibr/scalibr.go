@@ -97,6 +97,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	windowsAllDrives := fs.Bool("windows-all-drives", false, "Scan all drives on Windows")
 	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
 	localRegistry := fs.String("local-registry", "", "The local directory to store the downloaded manifests during dependency resolution.")
+	disableGoogleAuth := fs.Bool("disable-google-auth", false, "Disables the use of Google Application Default Credentials for authenticating with Google Artifact Registry.")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -139,6 +140,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		WindowsAllDrives:           *windowsAllDrives,
 		Offline:                    *offline,
 		LocalRegistry:              *localRegistry,
+		DisableGoogleAuth:          *disableGoogleAuth,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err
