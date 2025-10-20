@@ -27,8 +27,10 @@ import (
 )
 
 const (
+	// CodeSignatureDoesNotMatch is returned by GCS if a request and the signature don't match
 	CodeSignatureDoesNotMatch = "SignatureDoesNotMatch"
-	CodeAccessDenied          = "AccessDenied"
+	// CodeAccessDenied is returned by GCS if the user doesn't have access to a resource
+	CodeAccessDenied = "AccessDenied"
 )
 
 // Validator is a Veles Validator for Google Cloud Storage HMAC keys
@@ -74,7 +76,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 	opts.Credentials = credentials.NewStaticCredentialsProvider(key.AccessID, key.Secret, "")
 	client := s3.New(opts, patchForGCSOpt)
 
-	_, err := client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
+	_, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		var apiErr smithy.APIError
 		if errors.As(err, &apiErr) {

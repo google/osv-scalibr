@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
+// Match contains information about a match
 type Match struct {
 	Value    string
 	Position int
@@ -32,6 +33,7 @@ func (m Match) String() string {
 	return fmt.Sprintf("%d:%s", m.Position, m.Value)
 }
 
+// Pair contains two matches and their distance
 type Pair struct {
 	A        *Match
 	B        *Match

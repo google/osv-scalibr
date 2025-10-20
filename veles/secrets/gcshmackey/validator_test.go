@@ -41,7 +41,6 @@ func (n fakeSigner) SignHTTP(_ context.Context, creds aws.Credentials, r *http.R
 func mockS3Server(signature string, denied bool) func() *httptest.Server {
 	return func() *httptest.Server {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
 			// Only handle ListBuckets (GET /)
 			if req.Method != http.MethodGet || req.URL.Path != "/" {
 				http.Error(w, "not found", http.StatusNotFound)
@@ -50,7 +49,7 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 
 			if !strings.Contains(req.Header.Get("Authorization"), signature) {
 				w.WriteHeader(http.StatusForbidden)
-				io.WriteString(w, `<Error>
+				_, _ = io.WriteString(w, `<Error>
 					<Code>SignatureDoesNotMatch</Code>
 					<Message>The request signature we calculated does not match</Message>
 				</Error>`)
@@ -59,7 +58,7 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 
 			if denied {
 				w.WriteHeader(http.StatusForbidden)
-				io.WriteString(w, `<Error>
+				_, _ = io.WriteString(w, `<Error>
 					<Code>AccessDenied</Code>
 				</Error>`)
 				return
@@ -70,7 +69,6 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 
 		return httptest.NewServer(handler)
 	}
-
 }
 
 var (
