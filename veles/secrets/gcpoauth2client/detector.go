@@ -65,9 +65,9 @@ var (
 // NewDetector returns a detector that matches GCP OAuth2 client credentials.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: maxSecretLen,
-		FindA:  pair.FindAllMatches(clientIDRe),
-		FindB:  pair.FindAllMatches(clientSecretRe),
+		MaxLen: maxSecretLen, MaxDistance: maxDistance,
+		FindA: pair.FindAllMatches(clientIDRe),
+		FindB: pair.FindAllMatches(clientSecretRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return Credentials{ID: p.A.Value, Secret: p.B.Value}, true
 		},

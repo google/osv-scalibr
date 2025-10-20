@@ -43,6 +43,7 @@ func TestFindOptimalPairs(t *testing.T) {
 		name        string
 		input       string
 		wantSecrets []veles.Secret
+		maxDistance uint32
 		wantPos     []int
 	}{
 		{
@@ -74,16 +75,22 @@ func TestFindOptimalPairs(t *testing.T) {
 			},
 			wantPos: []int{0},
 		},
+		{
+			name:        "far apart",
+			input:       "a1           b2",
+			maxDistance: uint32(5),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &pair.Detector{
 				// include the whole payload
-				MaxLen:   uint32(len(tt.input)),
-				FindA:    pair.FindAllMatches(aPattern),
-				FindB:    pair.FindAllMatches(bPattern),
-				FromPair: mockFromPair,
+				MaxLen:      uint32(len(tt.input)),
+				FindA:       pair.FindAllMatches(aPattern),
+				FindB:       pair.FindAllMatches(bPattern),
+				FromPair:    mockFromPair,
+				MaxDistance: tt.maxDistance,
 			}
 
 			gotSecrets, gotPos := d.Detect([]byte(tt.input))

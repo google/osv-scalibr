@@ -134,11 +134,11 @@ config_app2:
 GOCSPX-SecondSecret987654321098`,
 			want: []veles.Secret{
 				gcpoauth2client.Credentials{
-					ID:     "222222222222-second.apps.googleusercontent.com",
+					ID:     "111111111111-first.apps.googleusercontent.com",
 					Secret: "GOCSPX-FirstSecret123456789012",
 				},
 				gcpoauth2client.Credentials{
-					ID:     "111111111111-first.apps.googleusercontent.com",
+					ID:     "222222222222-second.apps.googleusercontent.com",
 					Secret: "GOCSPX-SecondSecret987654321098",
 				},
 			},
@@ -162,6 +162,15 @@ GOCSPX-SecondSecret987654321098`,
 					Secret: "GOCSPX-RealWorldExample123456789",
 				},
 			},
+		},
+		// -- Multiple Client ID and Secret in with varied proximity ---
+		{
+			name: "complex file with multiple client ID and secret - far apart (no pairing)",
+			input: `config_app1:
+111111111111-first.apps.googleusercontent.com` + strings.Repeat("\nfiller line with random data", 500) + `
+config_app2:
+GOCSPX-FarAwaySecret123456789012`,
+			want: nil,
 		},
 		{
 			name: "multiple client IDs with one secret - closest pairing",

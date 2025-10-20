@@ -39,17 +39,20 @@ var _ veles.Detector = &Detector{}
 type Detector struct {
 	// The maximum length of the pair.
 	MaxLen uint32
-	// Function to use to search for matches
+	// MaxDistance sets the maximum distance between the matches.
+	MaxDistance uint32
+	// Function to use to search for matches.
 	FindA, FindB func(data []byte) []*Match
 	// Returns a veles.Secret from a Match.
-	//  It returns the secret and a boolean indicating success.
+	// It returns the secret and a boolean indicating success.
 	FromPair func(Pair) (veles.Secret, bool)
 }
 
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	as, bs := d.FindA(data), d.FindB(data)
-	return findOptimalPairs(as, bs, d.FromPair)
+	bs = filterOverlapping(as, bs)
+	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair)
 }
 
 // MaxSecretLen implements veles.Detector.
@@ -72,10 +75,27 @@ func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
 	}
 }
 
+func filterOverlapping(as, bs []*Match) []*Match {
+	var filtered []*Match
+	aIdx := 0
+
+	for _, b := range bs {
+		// Skip all A matches that end before B starts
+		for aIdx < len(as) && as[aIdx].Position+len(as[aIdx].Value) <= b.Position {
+			aIdx++
+		}
+		// If B does not overlap the current A, keep it
+		if aIdx >= len(as) || b.Position < as[aIdx].Position {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
+}
+
 // findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
-func findOptimalPairs(as, bs []*Match, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
+func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
-	possiblePairs := findPossiblePairs(as, bs)
+	possiblePairs := findPossiblePairs(as, bs, maxDistance)
 
 	// Sort by distance (closest first)
 	slices.SortFunc(possiblePairs, func(a, b Pair) int {
@@ -105,20 +125,25 @@ func findOptimalPairs(as, bs []*Match, fromPair func(Pair) (veles.Secret, bool))
 }
 
 // findPossiblePairs finds all pairs within the maximum context length.
-func findPossiblePairs(as, bs []*Match) []Pair {
+func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
 	var possiblePairs []Pair
 	for _, a := range as {
 		for _, b := range bs {
-			distance := abs(a.Position - b.Position)
-			possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
+			distance := b.Position - (a.Position + len(a.Value))
+			if a.Position > b.Position {
+				distance = a.Position - (b.Position + len(b.Value))
+			}
+
+			// Skip overlapping matches
+			if distance < 0 {
+				continue
+			}
+
+			// Include pair if within maxDistance (or if maxDistance == 0)
+			if maxDistance == 0 || distance <= maxDistance {
+				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
+			}
 		}
 	}
 	return possiblePairs
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }
