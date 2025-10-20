@@ -716,6 +716,7 @@ message SecretData {
     Pgpass pgpass = 43;
     PyPIAPIToken pypi = 44;
     CratesIOAPIToken crates_io_api_token = 45;
+    DeepSeekAPIKey deepseek_api_key = 46;
   }
 
   message GCPSAK {
@@ -825,6 +826,10 @@ message SecretData {
 
   message CratesIOAPIToken {
     string token = 1;
+  }
+
+  message DeepSeekAPIKey {
+    string key = 1;
   }
 
   message GithubAppRefreshToken {
