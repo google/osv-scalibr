@@ -154,6 +154,7 @@ type Flags struct {
 	WindowsAllDrives           bool
 	Offline                    bool
 	LocalRegistry              string
+	DisableGoogleAuth          bool
 }
 
 var supportedOutputFormats = []string{
@@ -555,6 +556,9 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 						client.SetLocalRegistry(f.LocalRegistry)
 					}
 				}
+			}
+			if f.DisableGoogleAuth && p.Name() == pomxmlnet.Name {
+				p.(*pomxmlnet.Extractor).MavenClient.DisableGoogleAuth()
 			}
 		}
 
