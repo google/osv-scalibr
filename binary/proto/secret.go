@@ -28,6 +28,7 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/deepseekapikey"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -121,6 +122,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pypiAPITokenToProto(t), nil
 	case cratesioapitoken.CratesIOAPItoken:
 		return cratesioAPITokenToProto(t), nil
+	case deepseekapikey.APIKey:
+		return deepseekAPIKeyToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -268,6 +271,16 @@ func cratesioAPITokenToProto(s cratesioapitoken.CratesIOAPItoken) *spb.SecretDat
 		Secret: &spb.SecretData_CratesIoApiToken{
 			CratesIoApiToken: &spb.SecretData_CratesIOAPIToken{
 				Token: s.Token,
+			},
+		},
+	}
+}
+
+func deepseekAPIKeyToProto(s deepseekapikey.APIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DeepseekApiKey{
+			DeepseekApiKey: &spb.SecretData_DeepSeekAPIKey{
+				Key: s.Key,
 			},
 		},
 	}
@@ -747,6 +760,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return pypiAPITokenToStruct(s.GetPypi()), nil
 	case *spb.SecretData_CratesIoApiToken:
 		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
+	case *spb.SecretData_DeepseekApiKey:
+		return deepseekAPIKeyToStruct(s.GetDeepseekApiKey()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -873,6 +888,12 @@ func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPI
 func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapitoken.CratesIOAPItoken {
 	return cratesioapitoken.CratesIOAPItoken{
 		Token: kPB.GetToken(),
+	}
+}
+
+func deepseekAPIKeyToStruct(kPB *spb.SecretData_DeepSeekAPIKey) deepseekapikey.APIKey {
+	return deepseekapikey.APIKey{
+		Key: kPB.GetKey(),
 	}
 }
 
