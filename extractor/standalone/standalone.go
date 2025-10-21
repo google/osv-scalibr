@@ -69,7 +69,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 
 		exInv, err := extractor.Extract(ctx, scanInput)
 		if err != nil {
-			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err, nil))
+			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err))
 			continue
 		}
 		for _, p := range exInv.Packages {
@@ -77,7 +77,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 		}
 
 		inv.Append(exInv)
-		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil, nil))
+		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil))
 	}
 
 	return inv, statuses, nil

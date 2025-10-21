@@ -671,11 +671,7 @@ func TestRunFS(t *testing.T) {
 			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status:        plugin.ScanStatusPartiallySucceeded,
-					FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
-					FileErrors: []*plugin.FileErrors{
-						{FilePath: path1, ErrorMessage: "extraction failed"},
-					},
+					Status: plugin.ScanStatusPartiallySucceeded,
 				}},
 			},
 			wantInodeCount: 6,
@@ -688,11 +684,7 @@ func TestRunFS(t *testing.T) {
 			wantPkg: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status:        plugin.ScanStatusFailed,
-					FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
-					FileErrors: []*plugin.FileErrors{
-						{FilePath: path1, ErrorMessage: "extraction failed"},
-					},
+					Status: plugin.ScanStatusFailed,
 				}},
 			},
 			wantInodeCount: 6,
@@ -708,12 +700,7 @@ func TestRunFS(t *testing.T) {
 			wantPkg: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status:        plugin.ScanStatusFailed,
-					FailureReason: "encountered 2 error(s) while running plugin; check file-specific errors for details",
-					FileErrors: []*plugin.FileErrors{
-						{FilePath: path1, ErrorMessage: "extraction failed"},
-						{FilePath: path2, ErrorMessage: "extraction failed"},
-					},
+					Status: plugin.ScanStatusFailed,
 				}},
 			},
 			wantInodeCount: 6,
@@ -879,15 +866,11 @@ func TestRunFS(t *testing.T) {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
-			// The order of the statuses doesn't matter.
 			for _, s := range gotStatus {
-				if s.Status.FileErrors != nil {
-					sort.Slice(s.Status.FileErrors, func(i, j int) bool {
-						return s.Status.FileErrors[i].FilePath < s.Status.FileErrors[j].FilePath
-					})
-				}
+				// Failure reason can be non-deterministic depending on the order of
+				// files traversed so we're ignoring it.
+				s.Status.FailureReason = ""
 			}
-
 			sortStatus := func(s1, s2 *plugin.Status) bool {
 				return s1.Name < s2.Name
 			}
@@ -1159,9 +1142,7 @@ func TestRunFS_ReadError(t *testing.T) {
 	}
 	wantStatus := []*plugin.Status{
 		{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-			Status: plugin.ScanStatusFailed, FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details", FileErrors: []*plugin.FileErrors{
-				{FilePath: "file", ErrorMessage: "Open(file): failed to open"},
-			},
+			Status: plugin.ScanStatusFailed, FailureReason: "Open(file): failed to open",
 		}},
 	}
 	fsys := &fakeFS{}

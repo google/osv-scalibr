@@ -102,13 +102,6 @@ type Status struct {
 type ScanStatus struct {
 	Status        ScanStatusEnum
 	FailureReason string
-	FileErrors    []*FileErrors
-}
-
-// FileErrors contains the errors that occurred while scanning a specific file.
-type FileErrors struct {
-	FilePath     string
-	ErrorMessage string
 }
 
 // ScanStatusEnum is the enum for the scan status.
@@ -171,9 +164,9 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 }
 
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
-func StatusFromErr(p Plugin, partial bool, overallErr error, fileErrors []*FileErrors) *Status {
+func StatusFromErr(p Plugin, partial bool, err error) *Status {
 	status := &ScanStatus{}
-	if overallErr == nil {
+	if err == nil {
 		status.Status = ScanStatusSucceeded
 	} else {
 		if partial {
@@ -181,8 +174,7 @@ func StatusFromErr(p Plugin, partial bool, overallErr error, fileErrors []*FileE
 		} else {
 			status.Status = ScanStatusFailed
 		}
-		status.FileErrors = fileErrors
-		status.FailureReason = overallErr.Error()
+		status.FailureReason = err.Error()
 	}
 	return &Status{
 		Name:    p.Name(),

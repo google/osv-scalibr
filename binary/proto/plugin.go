@@ -61,18 +61,7 @@ func scanStatusToProto(s *plugin.ScanStatus) *spb.ScanStatus {
 		return nil
 	}
 	statusEnum := structToProtoScanStatus[s.Status]
-	return &spb.ScanStatus{Status: statusEnum, FailureReason: s.FailureReason, FileErrors: fileErrorsToProto(s.FileErrors)}
-}
-
-func fileErrorsToProto(s []*plugin.FileErrors) []*spb.FileErrors {
-	if s == nil {
-		return nil
-	}
-	var res []*spb.FileErrors
-	for _, e := range s {
-		res = append(res, &spb.FileErrors{FilePath: e.FilePath, ErrorMessage: e.ErrorMessage})
-	}
-	return res
+	return &spb.ScanStatus{Status: statusEnum, FailureReason: s.FailureReason}
 }
 
 // --- Proto to Struct
@@ -95,16 +84,5 @@ func scanStatusToStruct(s *spb.ScanStatus) *plugin.ScanStatus {
 		return nil
 	}
 	statusEnum := protoToStructScanStatus[s.GetStatus()]
-	return &plugin.ScanStatus{Status: statusEnum, FailureReason: s.GetFailureReason(), FileErrors: fileErrorsToStruct(s.GetFileErrors())}
-}
-
-func fileErrorsToStruct(s []*spb.FileErrors) []*plugin.FileErrors {
-	if s == nil {
-		return nil
-	}
-	var res []*plugin.FileErrors
-	for _, e := range s {
-		res = append(res, &plugin.FileErrors{FilePath: e.GetFilePath(), ErrorMessage: e.GetErrorMessage()})
-	}
-	return res
+	return &plugin.ScanStatus{Status: statusEnum, FailureReason: s.GetFailureReason()}
 }

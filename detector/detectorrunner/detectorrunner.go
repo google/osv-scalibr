@@ -49,7 +49,7 @@ func Run(ctx context.Context, c stats.Collector, detectors []detector.Detector, 
 		}
 		findings.PackageVulns = append(findings.PackageVulns, result.PackageVulns...)
 		findings.GenericFindings = append(findings.GenericFindings, result.GenericFindings...)
-		status = append(status, plugin.StatusFromErr(d, false, err, nil))
+		status = append(status, plugin.StatusFromErr(d, false, err))
 	}
 	if err := validateAdvisories(findings.GenericFindings); err != nil {
 		return inventory.Finding{}, status, err

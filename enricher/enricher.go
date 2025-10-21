@@ -97,7 +97,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 	for _, e := range config.Enrichers {
 		err := e.Enrich(ctx, input, inventory)
 		// TODO - b/410630503: Support partial success.
-		statuses = append(statuses, plugin.StatusFromErr(e, false, err, nil))
+		statuses = append(statuses, plugin.StatusFromErr(e, false, err))
 	}
 	return statuses, nil
 }

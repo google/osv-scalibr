@@ -277,7 +277,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		lastStatus: time.Now(),
 
 		inventory: inventory.Inventory{},
-		errors:    make(map[string]map[string]error),
+		errors:    make(map[string]error),
 		foundInv:  make(map[string]bool),
 
 		fileAPI: &lazyFileAPI{},
@@ -350,8 +350,8 @@ type walkContext struct {
 	gitignores []internal.GitignorePattern
 	// Inventories found.
 	inventory inventory.Inventory
-	// Extractor name to file path to runtime errors.
-	errors map[string]map[string]error
+	// Extractor name to runtime errors.
+	errors map[string]error
 	// Whether an extractor found any inventory.
 	foundInv map[string]bool
 	// Whether to read symlinks.
@@ -572,14 +572,14 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	if !isDir {
 		rc, err = wc.fs.Open(path)
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("Open(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
 			return
 		}
 		defer rc.Close()
 
 		info, err = rc.Stat()
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("stat(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
 			return
 		}
 	}
@@ -603,7 +603,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	})
 
 	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), path, err)
+		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
 	}
 
 	if !results.IsEmpty() {
@@ -707,35 +707,20 @@ func pathStringListToMap(paths []string) map[string]bool {
 	return result
 }
 
-func addErrToMap(errors map[string]map[string]error, extractor string, path string, err error) {
-	if _, ok := errors[extractor]; !ok {
-		errors[extractor] = make(map[string]error)
+func addErrToMap(errors map[string]error, key string, err error) {
+	if prev, ok := errors[key]; !ok {
+		errors[key] = err
+	} else {
+		errors[key] = fmt.Errorf("%w\n%w", prev, err)
 	}
-	errors[extractor][path] = err
 }
 
-func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errs map[string]map[string]error) []*plugin.Status {
+func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
-		fileErrs, overallErr := createFileErrorsForPlugin(errs[ex.Name()])
-		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], overallErr, fileErrs))
+		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))
 	}
 	return result
-}
-
-func createFileErrorsForPlugin(errorMap map[string]error) ([]*plugin.FileErrors, error) {
-	if len(errorMap) == 0 {
-		return nil, nil
-	}
-
-	var fileErrors []*plugin.FileErrors
-	for path, err := range errorMap {
-		fileErrors = append(fileErrors, &plugin.FileErrors{
-			FilePath:     path,
-			ErrorMessage: err.Error(),
-		})
-	}
-	return fileErrors, fmt.Errorf("encountered %d error(s) while running plugin; check file-specific errors for details", len(fileErrors))
 }
 
 func (wc *walkContext) printStatus() {
