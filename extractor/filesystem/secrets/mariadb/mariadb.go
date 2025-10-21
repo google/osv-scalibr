@@ -18,6 +18,7 @@ package mariadb
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -101,25 +102,35 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 // include call includeDir or includeFile depending on the prefix
 func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*inventory.Secret, error) {
-	if after, ok := strings.CutPrefix(line, "!includedir"); ok {
-		// Remove leading '/' or "C:" since SCALIBR fs paths don't include that.
-		// Remove trailing '/' if present
-		before, path, _ := strings.Cut(strings.TrimSpace(after), ":")
-		if path == "" {
-			path = before
-		}
-		path = strings.Trim(path, "/\\")
+	after, isDir, err := cutIncludePrefix(line)
+	if err != nil {
+		return nil, fmt.Errorf("error in line %q: %w", line, err)
+	}
 
+	// Remove leading '/' or "C:" since SCALIBR fs paths don't include that.
+	// Remove trailing '/' if present
+	before, path, _ := strings.Cut(strings.TrimSpace(after), ":")
+	if path == "" {
+		path = before
+	}
+	path = strings.Trim(path, "/\\")
+
+	if isDir {
 		sections, err := e.includeDir(ctx, input, path)
 		return sections, err
 	}
-	if after, ok := strings.CutPrefix(line, "!include"); ok {
-		// Remove leading '/' since SCALIBR fs paths don't include that
-		path := strings.TrimPrefix(strings.TrimSpace(after), "/")
-		sections, err := e.includeFile(ctx, input, path)
-		return sections, err
+
+	return e.includeFile(ctx, input, path)
+}
+
+func cutIncludePrefix(s string) (after string, dir bool, err error) {
+	if after, ok := strings.CutPrefix(s, "!includedir"); ok {
+		return after, true, nil
 	}
-	return nil, fmt.Errorf("unknown include prefix in %q", line)
+	if after, ok := strings.CutPrefix(s, "!include"); ok {
+		return after, false, nil
+	}
+	return "", false, errors.New("unknown include prefix")
 }
 
 // includeFile recursively extract secrets from a config file

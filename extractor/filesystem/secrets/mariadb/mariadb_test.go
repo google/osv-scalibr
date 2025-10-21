@@ -115,6 +115,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name:          "include_file_windows",
+			FollowInclude: true,
+			Path:          "include_file_windows.ini",
+			WantSecrets: []*inventory.Secret{
+				{
+					Secret: mariadb.Credentials{
+						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
+					},
+					Location: "to_include/to_include.cnf",
+				},
+			},
+		},
+		{
 			Name:          "include_dir",
 			FollowInclude: true,
 			Path:          "include_dir.cnf",

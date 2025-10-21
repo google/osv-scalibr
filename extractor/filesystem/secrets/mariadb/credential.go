@@ -17,8 +17,6 @@ package mariadb
 import "strings"
 
 // Credentials contains mariadb credentials
-//
-// TODO: add location in some way
 type Credentials struct {
 	Section  string
 	Host     string
@@ -28,7 +26,9 @@ type Credentials struct {
 }
 
 func (c *Credentials) setField(key, value string) bool {
-	k := strings.TrimSpace(strings.ToLower(strings.ReplaceAll(key, "_", "-")))
+	// "Dashes (-) and underscores (_) in option names are interchangeable"
+	// ref: https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files#example-hybrid-option-file
+	k := strings.TrimSpace(strings.ToLower(key))
 	switch k {
 	case "host":
 		c.Host = value
