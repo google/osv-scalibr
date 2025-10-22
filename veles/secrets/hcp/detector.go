@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	jwtlib "github.com/google/osv-scalibr/veles/secrets/common/jwt"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
 const (
@@ -36,108 +37,37 @@ var (
 	reClientSec = regexp.MustCompile(`["']?\b(?:HCP_CLIENT_SECRET|hcp_client_secret)\b["']?\s*[:=]\s*["']?([A-Za-z0-9._~\-]{64})["']?`)
 )
 
-// match holds the start offset and captured value of a regex match.
-type match struct {
-	start int
-	value string
+// NewPairDetector returns a Detector that finds HCP client credentials from key/value pairs.
+func NewPairDetector() veles.Detector {
+	return &pair.Detector{
+		MaxLen: maxPairWindowLen,
+		FindA:  findMatches(reClientID), FindB: findMatches(reClientSec),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return ClientCredentials{ClientID: p.A.Value, ClientSecret: p.B.Value}, true
+		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.A == nil {
+				return ClientCredentials{ClientSecret: p.B.Value}, true
+			}
+			return ClientCredentials{ClientID: p.A.Value}, true
+		},
+	}
 }
 
 // findMatches returns the start offsets and captured group values for all matches of re in data.
-func findMatches(re *regexp.Regexp, data []byte) []match {
-	idxs := re.FindAllSubmatchIndex(data, -1)
-	if len(idxs) == 0 {
-		return nil
-	}
-	out := make([]match, 0, len(idxs))
-	for _, m := range idxs {
-		// m[0], m[1] are the full-match bounds; m[2], m[3] are the first capture group bounds
-		out = append(out, match{start: m[2], value: string(data[m[2]:m[3]])})
-	}
-	return out
-}
-
-// pairWithinWindow pairs ids with the nearest subsequent secret within window bytes.
-// Returns paired tuples and the leftover ids and secrets that could not be paired.
-func pairWithinWindow(ids, secs []match, window int) (pairs [][2]match, leftoverIDs, leftoverSecs []match) {
-	if len(ids) == 0 && len(secs) == 0 {
-		return nil, nil, nil
-	}
-	usedSec := make([]bool, len(secs))
-	j := 0
-	for i := range ids {
-		id := ids[i]
-		// Advance to the first secret within [id.start-window, ...].
-		// Pairing below uses absolute distance.
-		for j < len(secs) && secs[j].start < id.start-window {
-			j++
+func findMatches(re *regexp.Regexp) func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		idxs := re.FindAllSubmatchIndex(data, -1)
+		if len(idxs) == 0 {
+			return nil
 		}
-		// Pair the nearest secret within [id.start-window, id.start+window]
-		k := j
-		for k < len(secs) && secs[k].start <= id.start+window {
-			if abs(secs[k].start-id.start) <= window {
-				pairs = append(pairs, [2]match{id, secs[k]})
-				usedSec[k] = true
-				k++
-				break
-			}
-			k++
+		out := make([]*pair.Match, 0, len(idxs))
+		for _, m := range idxs {
+			// m[0], m[1] are the full-match bounds; m[2], m[3] are the first capture group bounds
+			out = append(out, &pair.Match{Position: m[2], Value: string(data[m[2]:m[3]])})
 		}
-		if k == j || (k > 0 && !usedSec[k-1]) { // nothing paired for this id
-			leftoverIDs = append(leftoverIDs, id)
-		}
+		return out
 	}
-	for k := range secs {
-		if !usedSec[k] {
-			leftoverSecs = append(leftoverSecs, secs[k])
-		}
-	}
-	return pairs, leftoverIDs, leftoverSecs
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-// PairDetector finds HCP client credentials by key names and values.
-// It emits pairs if both are present within a window, otherwise singletons.
-type PairDetector struct{}
-
-var _ veles.Detector = PairDetector{}
-
-// NewPairDetector returns a Detector that finds HCP client credentials from key/value pairs.
-func NewPairDetector() veles.Detector { return PairDetector{} }
-
-// MaxSecretLen implements veles.Detector and returns the maximum input window
-// size considered when pairing client id and secret values.
-func (PairDetector) MaxSecretLen() uint32 { return maxPairWindowLen }
-
-// Detect implements veles.Detector and emits ClientCredentials secrets based on
-// presence of client_id and/or client_secret key/value pairs.
-func (PairDetector) Detect(data []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var positions []int
-
-	ids := findMatches(reClientID, data)
-	secs := findMatches(reClientSec, data)
-
-	pairs, leftoversID, leftoversSec := pairWithinWindow(ids, secs, maxPairWindowLen)
-
-	for _, p := range pairs {
-		secrets = append(secrets, ClientCredentials{ClientID: p[0].value, ClientSecret: p[1].value})
-		positions = append(positions, p[0].start)
-	}
-	for _, m := range leftoversID {
-		secrets = append(secrets, ClientCredentials{ClientID: m.value})
-		positions = append(positions, m.start)
-	}
-	for _, m := range leftoversSec {
-		secrets = append(secrets, ClientCredentials{ClientSecret: m.value})
-		positions = append(positions, m.start)
-	}
-	return secrets, positions
 }
 
 // AccessTokenDetector finds HCP access tokens by scanning for JWTs and checking

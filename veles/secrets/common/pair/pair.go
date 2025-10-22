@@ -50,16 +50,27 @@ type Detector struct {
 	MaxDistance uint32
 	// Function to use to search for matches.
 	FindA, FindB func(data []byte) []*Match
-	// Returns a veles.Secret from a Match.
+	// Returns a veles.Secret from a Pair.
 	// It returns the secret and a boolean indicating success.
 	FromPair func(Pair) (veles.Secret, bool)
+	// Returns a veles.Secret from a partial Pair.
+	// It returns the secret and a boolean indicating success.
+	FromPartialPair func(Pair) (veles.Secret, bool)
+}
+
+var nopFromPartialPair = func(Pair) (veles.Secret, bool) {
+	return nil, false
 }
 
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
+	if d.FromPartialPair == nil {
+		d.FromPartialPair = nopFromPartialPair
+	}
+
 	as, bs := d.FindA(data), d.FindB(data)
 	bs = filterOverlapping(as, bs)
-	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair)
+	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair, d.FromPartialPair)
 }
 
 // MaxSecretLen implements veles.Detector.
@@ -100,7 +111,7 @@ func filterOverlapping(as, bs []*Match) []*Match {
 }
 
 // findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
-func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
+func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
 	possiblePairs := findPossiblePairs(as, bs, maxDistance)
 
@@ -128,6 +139,30 @@ func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair func(Pair) (vel
 			usedB[pair.B] = true
 		}
 	}
+
+	// leftover handling
+	for _, a := range as {
+		if !usedA[a] {
+			secret, ok := fromPartialPair(Pair{A: a})
+			if !ok {
+				continue
+			}
+			secrets = append(secrets, secret)
+			positions = append(positions, a.Position)
+		}
+	}
+
+	for _, b := range bs {
+		if !usedB[b] {
+			secret, ok := fromPartialPair(Pair{B: b})
+			if !ok {
+				continue
+			}
+			secrets = append(secrets, secret)
+			positions = append(positions, b.Position)
+		}
+	}
+
 	return secrets, positions
 }
 
