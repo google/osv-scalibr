@@ -124,3 +124,25 @@ func TestFindUsages(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestNolintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, regexp.MustCompile(`.*`)))
+
+	// Collect implementation names for comparison
+	var got []string
+	for _, implsInPkg := range impls {
+		for _, i := range implsInPkg {
+			got = append(got, i.Obj().Name())
+		}
+	}
+
+	want := []string{"PluginA", "PluginB"} // what you expect
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

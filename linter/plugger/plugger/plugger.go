@@ -25,6 +25,9 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// Name is the name of the linter
+var Name = "plugger"
+
 // Config is the config used by the linter
 var Config = &packages.Config{
 	Mode:  packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,

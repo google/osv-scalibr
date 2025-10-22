@@ -16,8 +16,10 @@ package plugger
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 	"slices"
+	"strings"
 
 	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/packages"
@@ -27,35 +29,74 @@ import (
 func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) map[*packages.Package][]*types.Named {
 	implementations := make(map[*packages.Package][]*types.Named)
 
-	filter := []ast.Node{(*ast.TypeSpec)(nil)}
+	filter := []ast.Node{(*ast.GenDecl)(nil)}
 
 	for _, pkg := range pkgs {
 		inspector.New(pkg.Syntax).Preorder(filter, func(n ast.Node) {
-			typeSpec := n.(*ast.TypeSpec)
-
-			obj := pkg.TypesInfo.Defs[typeSpec.Name]
-			if obj == nil {
+			genDecl := n.(*ast.GenDecl)
+			if genDecl.Tok != token.TYPE {
 				return
 			}
 
-			named, ok := obj.Type().(*types.Named)
-			if !ok {
+			if hasNoLint(genDecl.Doc, Name) {
 				return
 			}
-			// Skip interfaces themselves
-			if _, ok := named.Underlying().(*types.Interface); ok {
-				return
-			}
-			implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
-				return doesImplement(named, iface)
-			})
-			if implementsAny {
-				implementations[pkg] = append(implementations[pkg], named)
+
+			for _, spec := range genDecl.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok {
+					continue
+				}
+
+				obj := pkg.TypesInfo.Defs[typeSpec.Name]
+				if obj == nil {
+					continue
+				}
+
+				named, ok := obj.Type().(*types.Named)
+				if !ok {
+					continue
+				}
+
+				// Skip interfaces themselves
+				if _, ok := named.Underlying().(*types.Interface); ok {
+					continue
+				}
+				implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
+					return doesImplement(named, iface)
+				})
+				if implementsAny {
+					implementations[pkg] = append(implementations[pkg], named)
+				}
 			}
 		})
 	}
 
 	return implementations
+}
+
+func hasNoLint(commentGroup *ast.CommentGroup, name string) bool {
+	if commentGroup == nil {
+		return false
+	}
+	for _, comment := range commentGroup.List {
+		text := comment.Text
+		linters, ok := strings.CutPrefix(text, "//nolint:")
+		if !ok {
+			continue
+		}
+
+		// remove comment after //nolint, ex:
+		//
+		//	//nolint:plugger //something
+		linters, _, _ = strings.Cut(linters, " ")
+
+		// return true if one of the comma separated linter is plugger
+		if slices.Contains(strings.Split(linters, ","), name) {
+			return true
+		}
+	}
+	return false
 }
 
 func doesImplement(named, iface *types.Named) bool {
