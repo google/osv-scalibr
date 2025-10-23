@@ -763,8 +763,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Maintainers of Mozilla-related packages <team+pkg-mozilla@tracker.debian.org>",
 						Architecture:      "all",
 					},
-					Locations:             []string{"var/lib/dpkg/status"},
-					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					Locations: []string{"var/lib/dpkg/status"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -794,8 +793,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Gerrit Pape <pape@smarden.org>",
 						Architecture:      "all",
 					},
-					Locations:             []string{"var/lib/dpkg/status"},
-					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					Locations: []string{"var/lib/dpkg/status"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -825,8 +823,7 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Lorenzo Puliti <plorenzo@disroot.org>",
 						Architecture:      "all",
 					},
-					Locations:             []string{"var/lib/dpkg/status"},
-					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					Locations: []string{"var/lib/dpkg/status"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -1233,8 +1230,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "openwrt-21.02.1",
 						OSVersionID:       "21.02.1",
 					},
-					Locations:             []string{"usr/lib/opkg/status"},
-					AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+					Locations: []string{"usr/lib/opkg/status"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
