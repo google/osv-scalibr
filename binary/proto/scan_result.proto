@@ -53,6 +53,8 @@ message Inventory {
 message ScanStatus {
   ScanStatusEnum status = 1;
   string failure_reason = 2;
+  repeated FileError file_errors = 4;
+
   enum ScanStatusEnum {
     UNSPECIFIED = 0;
     SUCCEEDED = 1;
@@ -65,6 +67,11 @@ message PluginStatus {
   string name = 1;
   int32 version = 2;
   ScanStatus status = 3;
+}
+
+message FileError {
+  string file_path = 1;
+  string error_message = 2;
 }
 
 // A software package or library found by an extractor.
