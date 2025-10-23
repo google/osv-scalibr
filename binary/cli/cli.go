@@ -148,7 +148,7 @@ type Flags struct {
 	CDXComponentVersion        string
 	CDXAuthors                 string
 	Verbose                    bool
-	ExplicitExtractors         bool
+	ExplicitPlugins            bool
 	FilterByCapabilities       bool
 	StoreAbsolutePath          bool
 	WindowsAllDrives           bool
@@ -233,7 +233,7 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun, flags.AnnotatorsToRun)
-	if err := validateDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(pluginsToRun, flags.ExplicitPlugins); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -442,6 +442,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		UseGitignore:      f.UseGitignore,
 		StoreAbsolutePath: f.StoreAbsolutePath,
 		ExtractorOverride: extractorOverrideFn,
+		ExplicitPlugins:   f.ExplicitPlugins,
 	}, nil
 }
 
