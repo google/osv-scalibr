@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
+
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -159,10 +160,11 @@ var (
 		"secretsenrich":        vals(SecretsEnrich),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
-		"enrichers/default":    vals(Default),
-		"default":              vals(Default),
-		"enrichers/all":        vals(All),
-		"all":                  vals(All),
+
+		"enrichers/default": vals(Default),
+		"default":           vals(Default),
+		"enrichers/all":     vals(All),
+		"all":               vals(All),
 	})
 )
 

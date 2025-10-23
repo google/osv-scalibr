@@ -716,6 +716,7 @@ message SecretData {
     Pgpass pgpass = 43;
     PyPIAPIToken pypi = 44;
     CratesIOAPIToken crates_io_api_token = 45;
+    MariaDBCredentials maria_db_credentials = 46;
   }
 
   message GCPSAK {
@@ -780,6 +781,14 @@ message SecretData {
     string database = 3;
     string username = 4;
     string password = 5;
+  }
+
+  message MariaDBCredentials {
+    string host = 1;
+    string port = 2;
+    string user = 4;
+    string password = 5;
+    string section = 6;
   }
 
   message AzureIdentityToken {
