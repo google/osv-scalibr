@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	scalibr "github.com/google/osv-scalibr"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
@@ -38,6 +37,9 @@ import (
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/spdx/tools-golang/spdx/v2/common"
+
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -46,7 +48,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
-	"github.com/spdx/tools-golang/spdx/v2/common"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
