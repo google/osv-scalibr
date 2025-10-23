@@ -835,6 +835,16 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			name: "explicit plugins enabled",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
+				},
+				ExplicitPlugins: true,
+			},
+			wantErr: cmpopts.AnyError,
+		},
 	}
 
 	for _, tc := range cases {

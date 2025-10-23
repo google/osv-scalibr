@@ -140,17 +140,6 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Detector with missing extractor dependency when ExplicitExtractors",
-			flags: &cli.Flags{
-				Root:               "/",
-				ResultFile:         "result.textproto",
-				ExtractorsToRun:    []string{"python,javascript"},
-				DetectorsToRun:     []string{"govulncheck"}, // Needs the Go binary extractor.
-				ExplicitExtractors: true,
-			},
-			wantErr: cmpopts.AnyError,
-		},
-		{
 			desc: "Detector with missing extractor dependency (enabled automatically)",
 			flags: &cli.Flags{
 				Root:            "/",
