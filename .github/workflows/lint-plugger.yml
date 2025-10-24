@@ -1,0 +1,25 @@
+name: "Linter plugger"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [main]
+
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
+jobs:
+  lint-plugger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.x
+
+      - name: Run plugger
+        run: make lint-plugger
