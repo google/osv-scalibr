@@ -72,6 +72,8 @@ message PluginStatus {
 message FileError {
   string file_path = 1;
   string error_message = 2;
+  string ecosystem = 3;
+  string plugin = 4;
 }
 
 // A software package or library found by an extractor.
