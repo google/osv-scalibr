@@ -564,9 +564,11 @@ func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 	case "package.json":
 		return writeNpmLockfile(ctx, manifestPath)
 	case "requirements.in":
-		return writeRequirementsLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "pip-compile", "requirements.txt", "--generate-hashes", "requirements.in")
 	case "pyproject.toml":
-		return writePoetryLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "poetry", "poetry.lock", "lock")
+	case "Pipfile":
+		return writePythonLockfile(ctx, manifestPath, "pipenv", "Pipfile.lock", "lock")
 	default:
 		return fmt.Errorf("unsupported manifest type: %s", base)
 	}
@@ -614,30 +616,16 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	return nil
 }
 
-func writeRequirementsLockfile(ctx context.Context, path string) error {
+// writePythonLockfile executes a command-line tool to generate or update a lockfile.
+func writePythonLockfile(ctx context.Context, path, executable, lockfileName string, args ...string) error {
 	dir := filepath.Dir(path)
-	pipCompilePath, err := exec.LookPath("pip-compile")
+	execPath, err := exec.LookPath(executable)
 	if err != nil {
-		return fmt.Errorf("cannot find pip-compile executable: %w", err)
+		return fmt.Errorf("cannot find %s executable: %w", executable, err)
 	}
 
-	log.Infof("Running pip-compile to regenerate requirements.txt")
-	cmd := exec.CommandContext(ctx, pipCompilePath, "--generate-hashes", "requirements.in")
-	cmd.Dir = dir
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	return cmd.Run()
-}
-
-func writePoetryLockfile(ctx context.Context, path string) error {
-	dir := filepath.Dir(path)
-	poetryPath, err := exec.LookPath("poetry")
-	if err != nil {
-		return fmt.Errorf("cannot find poetry executable: %w", err)
-	}
-
-	log.Infof("Running poetry to regenerate poetry.lock")
-	cmd := exec.CommandContext(ctx, poetryPath, "lock")
+	log.Infof("Running %s to regenerate %s", executable, lockfileName)
+	cmd := exec.CommandContext(ctx, execPath, args...)
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
@@ -660,6 +648,8 @@ func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenReg
 		return python.GetRequirementsReadWriter()
 	case "pyproject.toml":
 		return python.GetPoetryReadWriter()
+	case "pipfile":
+		return python.GetPipfileReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
@@ -692,6 +682,9 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 	}
 	if manifestBaseName == "pyproject.toml" {
 		return lockfileBaseName == "poetry.lock"
+	}
+	if manifestBaseName == "Pipfile" {
+		return lockfileBaseName == "Pipfile.lock"
 	}
 	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json"
 }

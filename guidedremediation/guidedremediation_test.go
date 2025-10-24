@@ -197,6 +197,14 @@ func TestFixRelax(t *testing.T) {
 			wantResultPath:   "testdata/python/relax/poetry/result.json",
 			remOpts:          options.DefaultRemediationOptions(),
 		},
+		{
+			name:             "python pipfile",
+			universeDir:      "testdata/python",
+			manifest:         "testdata/python/relax/pipfile/Pipfile",
+			wantManifestPath: "testdata/python/relax/pipfile/want.Pipfile",
+			wantResultPath:   "testdata/python/relax/pipfile/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))

@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	scalibr "github.com/google/osv-scalibr"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
@@ -38,6 +37,9 @@ import (
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/spdx/tools-golang/spdx/v2/common"
+
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -46,7 +48,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
-	"github.com/spdx/tools-golang/spdx/v2/common"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -148,12 +149,13 @@ type Flags struct {
 	CDXComponentVersion        string
 	CDXAuthors                 string
 	Verbose                    bool
-	ExplicitExtractors         bool
+	ExplicitPlugins            bool
 	FilterByCapabilities       bool
 	StoreAbsolutePath          bool
 	WindowsAllDrives           bool
 	Offline                    bool
 	LocalRegistry              string
+	DisableGoogleAuth          bool
 }
 
 var supportedOutputFormats = []string{
@@ -232,7 +234,7 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun, flags.AnnotatorsToRun)
-	if err := validateDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(pluginsToRun, flags.ExplicitPlugins); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -441,6 +443,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		UseGitignore:      f.UseGitignore,
 		StoreAbsolutePath: f.StoreAbsolutePath,
 		ExtractorOverride: extractorOverrideFn,
+		ExplicitPlugins:   f.ExplicitPlugins,
 	}, nil
 }
 
@@ -555,6 +558,9 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 						client.SetLocalRegistry(f.LocalRegistry)
 					}
 				}
+			}
+			if f.DisableGoogleAuth && p.Name() == pomxmlnet.Name {
+				p.(*pomxmlnet.Extractor).MavenClient.DisableGoogleAuth()
 			}
 		}
 

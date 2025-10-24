@@ -64,6 +64,22 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestParse_EcosystemWithSuffix(t *testing.T) {
+	ecosystems := []string{
+		"Debian:13",
+		"Alpine:v3.9",
+		"Red Hat:ansible_automation_platform:2.0::el8",
+		"Ubuntu:Pro:24.04:LTS",
+	}
+	for _, ecosystem := range ecosystems {
+		_, err := semantic.Parse("", ecosystem)
+
+		if errors.Is(err, semantic.ErrUnsupportedEcosystem) {
+			t.Errorf("'%s' is not a supported ecosystem", ecosystem)
+		}
+	}
+}
+
 func TestParse_InvalidVersions(t *testing.T) {
 	type args struct {
 		versions  []string

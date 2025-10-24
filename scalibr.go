@@ -112,6 +112,9 @@ type ScanConfig struct {
 	// Optional: If set, this function is called for each file to check if there is a specific
 	// extractor for this file. If it returns an extractor, only that extractor is used for the file.
 	ExtractorOverride func(filesystem.FileAPI) []filesystem.Extractor
+	// Optional: If set, SCALIBR returns an error when a plugin's required plugin
+	// isn't configured instead of enabling required plugins automatically.
+	ExplicitPlugins bool
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled
@@ -140,6 +143,12 @@ func (cfg *ScanConfig) EnableRequiredPlugins() error {
 		if _, enabled := enabledPlugins[p]; enabled {
 			continue
 		}
+		if cfg.ExplicitPlugins {
+			// Plugins need to be explicitly enabled,
+			// so we log an error instead of auto-enabling them.
+			return fmt.Errorf("required plugin %q not enabled", p)
+		}
+
 		requiredPlugin, err := pl.FromName(p)
 		// TODO: b/416106602 - Implement transitive enablement for required enrichers.
 		if err != nil {
