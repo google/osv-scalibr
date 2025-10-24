@@ -123,7 +123,7 @@ func decryptMyLoginCNF(reader io.Reader) ([]byte, error) {
 //
 // See the comment before the for loop
 // All the fields are separated by \n.
-// Padding is made until 16 bytes (maximum).
+// Padding is made until 16 bytes (maximum). It can be from 0x1 to 0x10.
 func removePaddingBytes(data []byte) []byte {
 	if len(data) == 0 {
 		return data
