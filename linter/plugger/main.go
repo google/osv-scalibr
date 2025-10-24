@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main contains the plugger entrypoint
+// The plugger command is used to flag plugins which are not registered
 package main
 
 import (
