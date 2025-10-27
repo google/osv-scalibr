@@ -109,53 +109,46 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                                        | Extractor Plugin                        |
-|---------------------------------------------|-----------------------------------------|
-| Anthropic API key                           | `secrets/anthropicapikey`               |
-| Azure Storage Account Access Key            | `secrets/azurestorageaccountaccesskey`  |
-| Azure Token                                 | `secrets/azuretoken`                    |
-| DigitalOcean API key                        | `secrets/digitaloceanapikey`            |
-| Docker hub PAT                              | `secrets/dockerhubpat`                  |
-| GCP API key                                 | `secrets/gcpapikey`                     |
-| GCP Express Mode API key                    | `secrets/gcpexpressmode`                |
-| GCP service account key                     | `secrets/gcpsak`                        |
-| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`               |
-| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`               |
-| GCP Service Account Key                     | `secrets/gcpsak`                        | 
-| Github App Refresh Token                    | `secrets/NewAppRefreshTokenDetector`    |
-| Github App Server To Server Token           | `secrets/githubapps2stoken`             |
-| Github App User To Server Token             | `secrets/githubappu2stoken`             |
-| Github Classic Personal Access Token        | `secrets/githubclassicpat`              |
-| Github Fine Grained Personal Access Token   | `secrets/githubfinegrainedpat`          |
-| Github OAuthToken                           | `secrets/githuboauthtoken`              |
-| Gitlab PAT                                  | `secrets/gitlabpat`                     |
-| Grok xAI API key                            | `secrets/grokxaiapikey`                 |
-| Grok xAI Management key                     | `secrets/grokxaimanagementkey`          |
-| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`          |
-| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`                |
-| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`           |
-| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`         |
-| HCP client credentials                      | `secrets/hcpclientcredentials`          |
-| HCP access tokens                           | `secrets/hcpaccesstoken`                |
-| Hugging Face API key                        | `secrets/huggingfaceapikey`             |
-| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`       |
-| 1Password Secret Key                        | `secrets/onepasswordsecretkey`          |
-| 1Password Service Token                     | `secrets/onepasswordservicetoken`       |
-| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`       |
-| OpenAI API key                              | `secrets/openai`                        |
-| Perplexity API key                          | `secrets/perplexityapikey`              |
-| Postgres pgpass file                        | `secrets/pgpass`                        |
-| Postman API key                             | `secrets/postmanapikey`                 |
-| Postman Collection token                    | `secrets/postmancollectiontoken`        |
-| PEM/OpenSSH Private key                     | `secrets/privatekey`                    |
-| RubyGems API key                            | `secrets/rubygemsapikey`                |
-| Slack Application Level Token               | `secrets/slackappleveltoken`            |
-| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`     |
-| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`    |
-| Stripe Secret Key                           | `secrets/stripesecretkey`               |
-| Stripe Restricted Key                       | `secrets/striperestrictedkey`           |
-| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`           |
-| Tink keyset                                 | `secrets/tinkkeyset`                    |
+| Type                              | Extractor Plugin                     |
+|-----------------------------------|--------------------------------------|
+| Anthropic API key                           | `secrets/anthropicapikey`            |
+| Azure Token                                 | `secrets/azuretoken`                 |
+| Crates.io API Token                         | `secrets/cratesioapitoken`           |
+| DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
+| Docker hub PAT                              | `secrets/dockerhubpat`               |
+| GCP API key                                 | `secrets/gcpapikey`                  |
+| GCP Express Mode API key                    | `secrets/gcpexpressmode`             |
+| GCP service account key                     | `secrets/gcpsak`                     |
+| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
+| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
+| Gitlab PAT                                  | `secrets/gitlabpat`                  |
+| Grok xAI API key                            | `secrets/grokxaiapikey`              |
+| Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |
+| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`       |
+| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`             |
+| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
+| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
+| Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| MariaDB Credentials                         | `secrets/mariadb`                    |
+| 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
+| 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
+| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
+| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
+| OpenAI API key                              | `secrets/openai`                     |
+| Perplexity API key                          | `secrets/perplexityapikey`           |
+| PyPI API Token                              | `secrets/pypiapitoken`               |
+| Postgres pgpass file                        | `secrets/pgpass`                     |
+| Postman API key                             | `secrets/postmanapikey`              |
+| Postman Collection token                    | `secrets/postmancollectiontoken`     |
+| PEM/OpenSSH Private key                     | `secrets/privatekey`                 |
+| RubyGems API key                            | `secrets/rubygemsapikey`             |
+| Slack Application Level Token               | `secrets/slackappleveltoken`         |
+| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`  |
+| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken` |
+| Stripe Secret Key                           | `secrets/stripesecretkey`            |
+| Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
+| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
+| Tink keyset                                 | `secrets/tinkkeyset`                 |
 
 ### Container inventory
 
@@ -164,8 +157,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
 | Docker container images         | `containers/docker` (standalone)                                                   |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
-| Podman container images         | `containers/podman` (filesystem)                                                   |
 | K8s images                      | `containers/k8simage` (filesystem)                                                 |
+| Podman container images         | `containers/podman` (filesystem)                                                   |
 
 ### SBOM files
 
@@ -181,6 +174,16 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Wordpress plugins | `wordpress/plugins` |
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
+
+### EmbeddedFS
+
+| Type     | Details                                           | Extractor Plugin     |
+|----------|---------------------------------------------------|----------------------|
+| archive  | tar and tar.gz archives                           | `embeddedfs/archive` |
+| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
+| vdi      | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
+| vmdk     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 
 ## Detectors
 

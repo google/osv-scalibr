@@ -54,6 +54,8 @@ func DefaultConfig() Config {
 }
 
 // Extractor extracts python packages from requirements.txt files.
+//
+//nolint:plugger // This plugin will be removed shortly
 type Extractor struct {
 	resolve.Client
 

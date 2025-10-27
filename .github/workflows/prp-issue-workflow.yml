@@ -21,11 +21,12 @@ jobs:
         env:
           BODY: |
               Welcome to the OSV-SCALIBR patch reward program!
-              Your issue has been added to our triage queue and will reviewed
-              shortly. The panel usually takes a decision once per week, so it
-              can take up to a week before you hear back from us.
-              Please, do not start the work until the panel has reached a
-              decision. Although we always welcome contributions, unapproved
+              Your issue has been added to our triage queue.
+              Note that due to capacity issues and a restructuring to the PRP rules,
+              we are pausing evalutations of new PRP submissions for the next 1-2 months.
+              We apologize for the invoncenience and thank you for your patience.
+              Please, do not start the work until the panel has resumed the evaluations
+              and reached a decision. Although we always welcome contributions, unapproved
               work is not eligible for a reward.
               *~The OSV-SCALIBR PRP team*
       - name: Assign to author

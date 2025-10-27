@@ -190,7 +190,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 					Email: "maintainer2@corp.com",
 				},
 			},
-			FromNPMRepository: false,
+			Source: javascriptmeta.Unknown,
 		},
 		Locations: []string{"/file1"},
 		Plugins:   []string{packagejson.Name},
@@ -322,7 +322,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins:   []string{"javascript/packagejson"},
 		Metadata: &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
-				FromNpmRepository: false,
+				Source: spb.PackageSource_UNKNOWN,
 				Maintainers: []string{
 					"maintainer1 <maintainer1@corp.com> (https://blog.maintainer1.com)",
 					"maintainer2 <maintainer2@corp.com>",

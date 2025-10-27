@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
@@ -91,6 +92,8 @@ func TestFixOverride(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			// mavenClient is not used in the test, but is required to be non-nil for pom.xml manifests.
+			mavenClient, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
 			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
 
@@ -109,6 +112,7 @@ func TestFixOverride(t *testing.T) {
 				Strategy:           strategy.StrategyOverride,
 				MatcherClient:      matcher,
 				ResolveClient:      client,
+				MavenClient:        mavenClient,
 				RemediationOptions: tt.remOpts,
 				MaxUpgrades:        tt.maxUpgrades,
 				NoIntroduce:        tt.noIntroduce,
@@ -191,6 +195,14 @@ func TestFixRelax(t *testing.T) {
 			manifest:         "testdata/python/relax/poetry/pyproject.toml",
 			wantManifestPath: "testdata/python/relax/poetry/want.pyproject.toml",
 			wantResultPath:   "testdata/python/relax/poetry/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
+		{
+			name:             "python pipfile",
+			universeDir:      "testdata/python",
+			manifest:         "testdata/python/relax/pipfile/Pipfile",
+			wantManifestPath: "testdata/python/relax/pipfile/want.Pipfile",
+			wantResultPath:   "testdata/python/relax/pipfile/result.json",
 			remOpts:          options.DefaultRemediationOptions(),
 		},
 	} {
@@ -415,6 +427,8 @@ func TestUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			// mavenClient is not used in the test, but is required to be non-nil for pom.xml manifests.
+			mavenClient, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
 
 			tmpDir := t.TempDir()
@@ -439,6 +453,7 @@ func TestUpdate(t *testing.T) {
 			opts := options.UpdateOptions{
 				Manifest:      manifestPath,
 				ResolveClient: client,
+				MavenClient:   mavenClient,
 				UpgradeConfig: tt.config,
 				IgnoreDev:     tt.ignoreDev,
 			}

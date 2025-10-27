@@ -31,6 +31,7 @@ import (
 
 	"deps.dev/util/resolve"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	pythonlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/python"
@@ -73,7 +74,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 
 	if hasManifest {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 		if err != nil {
 			return result.Result{}, err
 		}
@@ -130,7 +131,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 	var lockfileRW lockfile.ReadWriter
 	if opts.Manifest != "" {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 		if err != nil {
 			return err
 		}
@@ -185,7 +186,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 	}
 
 	var err error
-	manifestRW, err = readWriterForManifest(opts.Manifest, opts.DefaultRepository)
+	manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -563,9 +564,11 @@ func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 	case "package.json":
 		return writeNpmLockfile(ctx, manifestPath)
 	case "requirements.in":
-		return writeRequirementsLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "pip-compile", "requirements.txt", "--generate-hashes", "requirements.in")
 	case "pyproject.toml":
-		return writePoetryLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "poetry", "poetry.lock", "lock")
+	case "Pipfile":
+		return writePythonLockfile(ctx, manifestPath, "pipenv", "Pipfile.lock", "lock")
 	default:
 		return fmt.Errorf("unsupported manifest type: %s", base)
 	}
@@ -613,51 +616,45 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	return nil
 }
 
-func writeRequirementsLockfile(ctx context.Context, path string) error {
+// writePythonLockfile executes a command-line tool to generate or update a lockfile.
+func writePythonLockfile(ctx context.Context, path, executable, lockfileName string, args ...string) error {
 	dir := filepath.Dir(path)
-	pipCompilePath, err := exec.LookPath("pip-compile")
+	execPath, err := exec.LookPath(executable)
 	if err != nil {
-		return fmt.Errorf("cannot find pip-compile executable: %w", err)
+		return fmt.Errorf("cannot find %s executable: %w", executable, err)
 	}
 
-	log.Infof("Running pip-compile to regenerate requirements.txt")
-	cmd := exec.CommandContext(ctx, pipCompilePath, "--generate-hashes", "requirements.in")
+	log.Infof("Running %s to regenerate %s", executable, lockfileName)
+	cmd := exec.CommandContext(ctx, execPath, args...)
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	return cmd.Run()
 }
 
-func writePoetryLockfile(ctx context.Context, path string) error {
-	dir := filepath.Dir(path)
-	poetryPath, err := exec.LookPath("poetry")
-	if err != nil {
-		return fmt.Errorf("cannot find poetry executable: %w", err)
-	}
-
-	log.Infof("Running poetry to regenerate poetry.lock")
-	cmd := exec.CommandContext(ctx, poetryPath, "lock")
-	cmd.Dir = dir
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	return cmd.Run()
-}
-
-func readWriterForManifest(manifestPath string, registry string) (manifest.ReadWriter, error) {
+// readWriterForManifest returns the manifest read/write interface for the given manifest path.
+// mavenClient is used to read/write Maven manifests, and may be nil for other ecosystems.
+func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
-		return maven.GetReadWriter(registry, "")
+		if mavenClient == nil {
+			return nil, errors.New("a maven client must be provided for pom.xml")
+		}
+		return maven.GetReadWriter(mavenClient)
 	case "package.json":
-		return npm.GetReadWriter(registry)
+		return npm.GetReadWriter()
 	case "requirements.in", "requirements.txt":
 		return python.GetRequirementsReadWriter()
 	case "pyproject.toml":
 		return python.GetPoetryReadWriter()
+	case "pipfile":
+		return python.GetPipfileReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
 
+// readWriterForLockfile returns the lockfile read/write interface for the given lockfile path.
 func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
 	switch strings.ToLower(baseName) {
@@ -685,6 +682,9 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 	}
 	if manifestBaseName == "pyproject.toml" {
 		return lockfileBaseName == "poetry.lock"
+	}
+	if manifestBaseName == "Pipfile" {
+		return lockfileBaseName == "Pipfile.lock"
 	}
 	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json"
 }

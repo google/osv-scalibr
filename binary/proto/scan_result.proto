@@ -53,6 +53,8 @@ message Inventory {
 message ScanStatus {
   ScanStatusEnum status = 1;
   string failure_reason = 2;
+  repeated FileError file_errors = 4;
+
   enum ScanStatusEnum {
     UNSPECIFIED = 0;
     SUCCEEDED = 1;
@@ -65,6 +67,11 @@ message PluginStatus {
   string name = 1;
   int32 version = 2;
   ScanStatus status = 3;
+}
+
+message FileError {
+  string file_path = 1;
+  string error_message = 2;
 }
 
 // A software package or library found by an extractor.
@@ -311,10 +318,25 @@ message PythonPackageMetadata {
 
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
+  reserved 4;
+
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
-  bool from_npm_repository = 4;
+  PackageSource source = 5;
+}
+
+// The source of the package.
+enum PackageSource {
+  UNKNOWN = 0;
+  // PUBLIC_REGISTRY is the public NPM registry.
+  PUBLIC_REGISTRY = 1;
+  // OTHER is any other remote or private source (e.g. Github).
+  // This is used for packages that are not found in the public NPM registry.
+  OTHER = 2;
+  // LOCAL is the local filesystem that stores the package versions.
+  // This is used for when the package is locally-developed or -installed.
+  LOCAL = 3;
 }
 
 // The additional data found in APK packages.
@@ -359,6 +381,7 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
+  string os_pretty_name = 11;
 
   reserved "license";
 }
@@ -698,6 +721,9 @@ message SecretData {
     OnePasswordRecoveryCode onepassword_recovery_code = 41;
     OnePasswordConnectToken onepassword_connect_token = 42;
     Pgpass pgpass = 43;
+    PyPIAPIToken pypi = 44;
+    CratesIOAPIToken crates_io_api_token = 45;
+    MariaDBCredentials maria_db_credentials = 46;
   }
 
   message GCPSAK {
@@ -764,6 +790,14 @@ message SecretData {
     string password = 5;
   }
 
+  message MariaDBCredentials {
+    string host = 1;
+    string port = 2;
+    string user = 4;
+    string password = 5;
+    string section = 6;
+  }
+
   message AzureIdentityToken {
     string token = 1;
   }
@@ -805,6 +839,10 @@ message SecretData {
     string key = 1;
   }
 
+  message CratesIOAPIToken {
+    string token = 1;
+  }
+
   message GithubAppRefreshToken {
     string token = 1;
   }
@@ -826,6 +864,10 @@ message SecretData {
   }
 
   message GithubAppUserToServerToken {
+    string token = 1;
+  }
+
+  message PyPIAPIToken {
     string token = 1;
   }
 
