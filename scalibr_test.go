@@ -60,7 +60,10 @@ func TestScan(t *testing.T) {
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
-		FailureReason: "file.txt: " + pluginFailure,
+		FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+		FileErrors: []*plugin.FileError{
+			{FilePath: "file.txt", ErrorMessage: pluginFailure},
+		},
 	}
 	detFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
@@ -832,6 +835,16 @@ func TestEnableRequiredPlugins(t *testing.T) {
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			name: "explicit plugins enabled",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
+				},
+				ExplicitPlugins: true,
 			},
 			wantErr: cmpopts.AnyError,
 		},

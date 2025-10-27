@@ -163,7 +163,7 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 }
 
 func versionQuery(system depsdevpb.System, name string, version string) *depsdevpb.GetVersionRequest {
-	if system == depsdevpb.System_GO {
+	if system == depsdevpb.System_GO && name != "stdlib" {
 		version = "v" + version
 	}
 
