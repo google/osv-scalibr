@@ -58,16 +58,8 @@ type Detector struct {
 	FromPartialPair func(Pair) (veles.Secret, bool)
 }
 
-var nopFromPartialPair = func(Pair) (veles.Secret, bool) {
-	return nil, false
-}
-
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	if d.FromPartialPair == nil {
-		d.FromPartialPair = nopFromPartialPair
-	}
-
 	as, bs := d.FindA(data), d.FindB(data)
 	bs = filterOverlapping(as, bs)
 	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair, d.FromPartialPair)
@@ -138,6 +130,10 @@ func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPai
 			usedA[pair.A] = true
 			usedB[pair.B] = true
 		}
+	}
+
+	if fromPartialPair == nil {
+		return secrets, positions
 	}
 
 	// leftover handling
