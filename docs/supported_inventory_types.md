@@ -93,7 +93,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | uv.lock                                   | `python/uvlock`                      |
 | R          | renv.lock                                 | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                    | `ruby/gemspec`                       |
-|            | Gemfile.lock (OSV)                        | `ruby/gemfilelock`                   |
+|            | Gemfile.lock, gems.locked                 | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                | `rust/cargolock`                     |
 |            | Cargo.toml                                | `rust/cargotoml`                     |
 |            | Rust binaries                             | `rust/cargoauditable`                |
