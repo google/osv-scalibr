@@ -25,6 +25,7 @@ var ecosystems = []string{
 	"AlmaLinux",
 	"Alpaquita",
 	"Alpine",
+	"BellSoft Hardened Containers",
 	"Bioconductor",
 	"Bitnami",
 	"Chainguard",
