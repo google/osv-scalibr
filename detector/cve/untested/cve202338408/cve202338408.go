@@ -80,7 +80,7 @@ func (d Detector) DetectedFinding() inventory.Finding {
 
 func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			Id:      "CVE-2023-38408",
 			Summary: "CVE-2023-38408",
 			Details: "CVE-2023-38408",

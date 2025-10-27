@@ -84,7 +84,7 @@ func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			Id:      "CVE-2023-6019",
 			Summary: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
 			Details: "CVE-2023-6019: Ray Dashboard Remote Code Execution",

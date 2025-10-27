@@ -61,7 +61,7 @@ func TestScan(t *testing.T) {
 	}
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			Id:        "GO-2022-1144",
 			Modified:  &timestamppb.Timestamp{},
 			Published: &timestamppb.Timestamp{},

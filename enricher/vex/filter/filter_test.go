@@ -40,7 +40,7 @@ func TestEnrich(t *testing.T) {
 		{
 			desc: "PackageVuln with VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability:         osvschema.Vulnerability{Id: "CVE-123"},
+				Vulnerability:         &osvschema.Vulnerability{Id: "CVE-123"},
 				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Justification: vex.ComponentNotPresent}},
 			}}},
 			want: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{}},
@@ -48,10 +48,10 @@ func TestEnrich(t *testing.T) {
 		{
 			desc: "PackageVuln with no VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability: osvschema.Vulnerability{Id: "CVE-123"},
+				Vulnerability: &osvschema.Vulnerability{Id: "CVE-123"},
 			}}},
 			want: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability: osvschema.Vulnerability{Id: "CVE-123"},
+				Vulnerability: &osvschema.Vulnerability{Id: "CVE-123"},
 			}}},
 		},
 		{

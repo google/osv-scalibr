@@ -109,7 +109,7 @@ func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			Id:      "CVE-2024-2912",
 			Summary: "CVE-2024-2912",
 			Details: "CVE-2024-2912",

@@ -157,7 +157,7 @@ func TestEnrich(t *testing.T) {
 		}},
 		PackageVulns: []*inventory.PackageVuln{
 			{
-				Vulnerability: osvschema.Vulnerability{Id: "CVE-9012"},
+				Vulnerability: &osvschema.Vulnerability{Id: "CVE-9012"},
 			},
 		},
 		GenericFindings: []*inventory.GenericFinding{{
@@ -179,7 +179,7 @@ func TestEnrich(t *testing.T) {
 			Version: "3.0",
 		}},
 		PackageVulns: []*inventory.PackageVuln{{
-			Vulnerability: osvschema.Vulnerability{Id: "CVE-9012"},
+			Vulnerability: &osvschema.Vulnerability{Id: "CVE-9012"},
 		}},
 		GenericFindings: []*inventory.GenericFinding{{
 			Adv: &inventory.GenericFindingAdvisory{

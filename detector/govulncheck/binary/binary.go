@@ -159,7 +159,7 @@ func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
 	// create scalibr findings for detected govulncheck findings
 	for osvID := range detectedOSVs {
 		osv := allOSVs[osvID]
-		result = append(result, &inventory.PackageVuln{Vulnerability: *osv})
+		result = append(result, &inventory.PackageVuln{Vulnerability: osv})
 	}
 	return result, nil
 }

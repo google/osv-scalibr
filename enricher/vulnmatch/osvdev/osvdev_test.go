@@ -410,9 +410,9 @@ func TestEnrich(t *testing.T) {
 			name:     "simple_test",
 			packages: []*extractor.Package{goPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
@@ -429,45 +429,45 @@ func TestEnrich(t *testing.T) {
 			name:     "interleaving_covered_not_covered",
 			packages: []*extractor.Package{goPkg, fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
 			name: "not_empty_local_inventory_vulns",
 			packageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
-				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
 			name: "one_local_one_remote__same_pkg_same_cve",
 			packageVulns: []*inventory.PackageVuln{
-				{Vulnerability: jsVuln1Local, Package: jsPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: &jsVuln1Local, Package: jsPkg, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name, "mock/plugin"}},
-				{Vulnerability: jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvdev.Name, "mock/plugin"}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
 			name: "one_local_one_remote__different_pkg_same_cve",
 			packageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 			},
 			packages: []*extractor.Package{fzfPkg, pyPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: pyPkgSameVulnAsFzf, Package: pyPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
+				{Vulnerability: &pyPkgSameVulnAsFzf, Package: pyPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 		{
@@ -475,13 +475,13 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{goPkgWithSignals},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{
-					Vulnerability:         goVuln1,
+					Vulnerability:         &goVuln1,
 					Package:               goPkgWithSignals,
 					Plugins:               []string{osvdev.Name},
 					ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Plugin: "annotator/example", Justification: vex.Unspecified}},
 				},
-				{Vulnerability: goVuln2, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
-				{Vulnerability: goVuln3, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
 			}},
 	}
 

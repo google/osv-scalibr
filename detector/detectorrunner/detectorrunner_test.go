@@ -63,7 +63,7 @@ func TestRun(t *testing.T) {
 	findingNoAdvisory := &inventory.GenericFinding{}
 	findingNoAdvisoryID := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{}}
 	packageVuln := &inventory.PackageVuln{
-		Vulnerability: osvschema.Vulnerability{Id: "CVE-9012"},
+		Vulnerability: &osvschema.Vulnerability{Id: "CVE-9012"},
 	}
 	det1 := fd.New().WithName("det1").WithVersion(1)
 	det2 := fd.New().WithName("det2").WithVersion(2)

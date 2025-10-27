@@ -146,7 +146,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	for _, vuln := range vulnerabilities {
 		for _, pkg := range vulnToPkgs[vuln.Id] {
 			inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
-				Vulnerability:         *vuln,
+				Vulnerability:         vuln,
 				Package:               pkg,
 				ExploitabilitySignals: vex.FindingVEXFromPackageVEX(vuln.Id, pkg.ExploitabilitySignals),
 				Plugins:               []string{Name},
