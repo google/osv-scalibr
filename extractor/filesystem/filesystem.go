@@ -227,7 +227,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		}
 
 		additionalInv.Append(mountedInv)
-		status = append(status, mountedStatus...)
+		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
 
 		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
@@ -717,15 +717,15 @@ func addErrToMap(errors map[string]map[string]error, extractor string, path stri
 func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errs map[string]map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
-		fileErrs, overallErr := createFileErrorsForPlugin(errs[ex.Name()])
-		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], overallErr, fileErrs))
+		fileErrs := createFileErrorsForPlugin(errs[ex.Name()])
+		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], plugin.OverallErrFromFileErrs(fileErrs), fileErrs))
 	}
 	return result
 }
 
-func createFileErrorsForPlugin(errorMap map[string]error) ([]*plugin.FileError, error) {
+func createFileErrorsForPlugin(errorMap map[string]error) []*plugin.FileError {
 	if len(errorMap) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	var fileErrors []*plugin.FileError
@@ -735,7 +735,7 @@ func createFileErrorsForPlugin(errorMap map[string]error) ([]*plugin.FileError, 
 			ErrorMessage: err.Error(),
 		})
 	}
-	return fileErrors, fmt.Errorf("encountered %d error(s) while running plugin; check file-specific errors for details", len(fileErrors))
+	return fileErrors
 }
 
 func (wc *walkContext) printStatus() {

@@ -27,14 +27,14 @@ type pak = PerplexityAPIKey
 // using the API key in the Authorization header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func NewValidator(opts ...sv.Option[pak]) *sv.Validator[pak] {
-	return sv.New(append([]sv.Option[pak]{
-		sv.WithEndpoint[pak]("https://api.perplexity.ai/async/chat/completions"),
-		sv.WithHTTPMethod[pak](http.MethodGet),
-		sv.WithHTTPHeaders(func(s pak) map[string]string {
+func NewValidator() *sv.Validator[pak] {
+	return &sv.Validator[pak]{
+		Endpoint:   "https://api.perplexity.ai/async/chat/completions",
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s pak) map[string]string {
 			return map[string]string{"Authorization": "Bearer " + s.Key}
-		}),
-		sv.WithValidResponseCodes[pak]([]int{http.StatusOK}),
-		sv.WithInvalidResponseCodes[pak]([]int{http.StatusUnauthorized}),
-	}, opts...)...)
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+	}
 }
