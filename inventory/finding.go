@@ -36,7 +36,7 @@ type Finding struct {
 // PackageVuln is a vulnerability (e.g. a CVE) related to a package.
 // It follows the OSV Schema format: https://ossf.github.io/osv-schema
 type PackageVuln struct {
-	*osvschema.Vulnerability
+	Vulnerability *osvschema.Vulnerability
 
 	// The extracted package associated with this vuln.
 	Package *extractor.Package

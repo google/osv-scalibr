@@ -496,7 +496,7 @@ func cmpStatus(a, b *plugin.Status) int {
 }
 
 func cmpPackageVulns(a, b *inventory.PackageVuln) int {
-	return cmpString(a.Id, b.Id)
+	return cmpString(a.Vulnerability.Id, b.Vulnerability.Id)
 }
 
 func cmpGenericFindings(a, b *inventory.GenericFinding) int {

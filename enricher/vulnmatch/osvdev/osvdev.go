@@ -176,12 +176,12 @@ func dedupPackageVulns(vulns []*inventory.PackageVuln) []*inventory.PackageVuln 
 	dedupVulns := map[key]*inventory.PackageVuln{}
 
 	for _, vv := range vulns {
-		if vuln, ok := dedupVulns[key{vv.Package, vv.Id}]; !ok {
-			dedupVulns[key{vv.Package, vv.Id}] = vv
+		if vuln, ok := dedupVulns[key{vv.Package, vv.Vulnerability.Id}]; !ok {
+			dedupVulns[key{vv.Package, vv.Vulnerability.Id}] = vv
 		} else {
 			// use the latest (from OSV.dev) as source of truth
-			dedupVulns[key{vv.Package, vv.Id}] = vv
-			dedupVulns[key{vv.Package, vv.Id}].Plugins = append(dedupVulns[key{vv.Package, vv.Id}].Plugins, vuln.Plugins...)
+			dedupVulns[key{vv.Package, vv.Vulnerability.Id}] = vv
+			dedupVulns[key{vv.Package, vv.Vulnerability.Id}].Plugins = append(dedupVulns[key{vv.Package, vv.Vulnerability.Id}].Plugins, vuln.Plugins...)
 		}
 	}
 
