@@ -65,7 +65,7 @@ func TestValidate(t *testing.T) {
 
 	tests := []struct {
 		desc         string
-		opts         []sv.Option[velestest.FakeStringSecret]
+		validator    *sv.Validator[velestest.FakeStringSecret]
 		secret       string
 		roundTripper *mockRoundTripper
 		want         veles.ValidationStatus
@@ -73,13 +73,13 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			desc: "valid_response",
-			opts: []sv.Option[velestest.FakeStringSecret]{
-				sv.WithEndpoint[velestest.FakeStringSecret](testURLStr),
-				sv.WithHTTPMethod[velestest.FakeStringSecret](http.MethodGet),
-				sv.WithHTTPHeaders(func(s velestest.FakeStringSecret) map[string]string {
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint:   testURLStr,
+				HTTPMethod: http.MethodGet,
+				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
-				}),
-				sv.WithValidResponseCodes[velestest.FakeStringSecret]([]int{http.StatusOK}),
+				},
+				ValidResponseCodes: []int{http.StatusOK},
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{
@@ -96,14 +96,14 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid_response",
-			opts: []sv.Option[velestest.FakeStringSecret]{
-				sv.WithEndpoint[velestest.FakeStringSecret](testURLStr),
-				sv.WithHTTPMethod[velestest.FakeStringSecret](http.MethodGet),
-				sv.WithHTTPHeaders(func(s velestest.FakeStringSecret) map[string]string {
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint:   testURLStr,
+				HTTPMethod: http.MethodGet,
+				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
-				}),
-				sv.WithValidResponseCodes[velestest.FakeStringSecret]([]int{http.StatusOK}),
-				sv.WithInvalidResponseCodes[velestest.FakeStringSecret]([]int{http.StatusUnauthorized}),
+				},
+				ValidResponseCodes:   []int{http.StatusOK},
+				InvalidResponseCodes: []int{http.StatusUnauthorized},
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{
@@ -120,14 +120,14 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "failed_response",
-			opts: []sv.Option[velestest.FakeStringSecret]{
-				sv.WithEndpoint[velestest.FakeStringSecret](testURLStr),
-				sv.WithHTTPMethod[velestest.FakeStringSecret](http.MethodGet),
-				sv.WithHTTPHeaders(func(s velestest.FakeStringSecret) map[string]string {
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint:   testURLStr,
+				HTTPMethod: http.MethodGet,
+				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
-				}),
-				sv.WithValidResponseCodes[velestest.FakeStringSecret]([]int{http.StatusOK}),
-				sv.WithInvalidResponseCodes[velestest.FakeStringSecret]([]int{http.StatusUnauthorized}),
+				},
+				ValidResponseCodes:   []int{http.StatusOK},
+				InvalidResponseCodes: []int{http.StatusUnauthorized},
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{
@@ -145,18 +145,21 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "custom_body_parsing_valid_response",
-			opts: []sv.Option[velestest.FakeStringSecret]{
-				sv.WithEndpoint[velestest.FakeStringSecret](testURLStr),
-				sv.WithHTTPHeaders(func(s velestest.FakeStringSecret) map[string]string {
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint: testURLStr,
+				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
-				}),
-				sv.WithStatusFromResponseBody[velestest.FakeStringSecret](
-					func(body []byte) (veles.ValidationStatus, error) {
-						if string(body) == "valid_secret" {
-							return veles.ValidationValid, nil
-						}
-						return veles.ValidationInvalid, nil
-					}),
+				},
+				StatusFromResponseBody: func(body io.Reader) (veles.ValidationStatus, error) {
+					content, err := io.ReadAll(body)
+					if err != nil {
+						return veles.ValidationFailed, err
+					}
+					if string(content) == "valid_secret" {
+						return veles.ValidationValid, nil
+					}
+					return veles.ValidationInvalid, nil
+				},
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{
@@ -174,18 +177,21 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "custom_body_parsing_invalid_response",
-			opts: []sv.Option[velestest.FakeStringSecret]{
-				sv.WithEndpoint[velestest.FakeStringSecret](testURLStr),
-				sv.WithHTTPHeaders(func(s velestest.FakeStringSecret) map[string]string {
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint: testURLStr,
+				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
-				}),
-				sv.WithStatusFromResponseBody[velestest.FakeStringSecret](
-					func(body []byte) (veles.ValidationStatus, error) {
-						if string(body) == "valid_secret" {
-							return veles.ValidationValid, nil
-						}
-						return veles.ValidationInvalid, nil
-					}),
+				},
+				StatusFromResponseBody: func(body io.Reader) (veles.ValidationStatus, error) {
+					content, err := io.ReadAll(body)
+					if err != nil {
+						return veles.ValidationFailed, err
+					}
+					if string(content) == "valid_secret" {
+						return veles.ValidationValid, nil
+					}
+					return veles.ValidationInvalid, nil
+				},
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{
@@ -205,14 +211,10 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			validator := sv.New[velestest.FakeStringSecret](
-				append(tc.opts,
-					sv.WithClient[velestest.FakeStringSecret](&http.Client{Transport: tc.roundTripper}),
-				)...,
-			)
+			tc.validator.HTTPC = &http.Client{Transport: tc.roundTripper}
 
 			secret := velestest.FakeStringSecret{Value: tc.secret}
-			got, err := validator.Validate(t.Context(), secret)
+			got, err := tc.validator.Validate(t.Context(), secret)
 			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: got %v, want %v\n", err, tc.wantErr)
 			}
@@ -230,11 +232,11 @@ func TestValidate_respectsContext(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	validator := sv.New(
-		sv.WithClient[velestest.FakeStringSecret](srv.Client()),
-		sv.WithEndpoint[velestest.FakeStringSecret]("https://test"),
-		sv.WithHTTPMethod[velestest.FakeStringSecret](http.MethodGet),
-	)
+	validator := &sv.Validator[velestest.FakeStringSecret]{
+		HTTPC:      srv.Client(),
+		Endpoint:   "https://test",
+		HTTPMethod: http.MethodGet,
+	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
