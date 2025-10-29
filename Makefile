@@ -8,6 +8,12 @@ scalibr:
 lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 run ./...
 
+lint-plugger:
+	go run linter/plugger/main.go \
+	  -interface 'github.com/google/osv-scalibr/plugin.Plugin|github.com/google/osv-scalibr/veles.(Validator|Detector)' \
+		-exclude-pkg 'testing|velestest' \
+		./...
+
 test:
 	CGO_ENABLED=1 go test ./...
 
@@ -20,6 +26,7 @@ endif
 
 scalibr-static:
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr/scalibr.go
+
 
 clean:
 	rm -f scalibr

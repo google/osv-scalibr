@@ -3,6 +3,7 @@ module github.com/google/osv-scalibr
 go 1.24.4
 
 require (
+	bitbucket.org/creachadair/stringset v0.0.14
 	deps.dev/api/v3 v3.0.0-20250903005441-604c45d5b44b
 	deps.dev/api/v3alpha v0.0.0-20250903005441-604c45d5b44b
 	deps.dev/util/maven v0.0.0-20250903005441-604c45d5b44b
@@ -46,6 +47,7 @@ require (
 	github.com/saferwall/pe v1.5.7
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spdx/tools-golang v0.5.5
+	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tidwall/sjson v1.2.5
@@ -60,6 +62,7 @@ require (
 	golang.org/x/sys v0.33.0
 	golang.org/x/term v0.32.0
 	golang.org/x/text v0.26.0
+	golang.org/x/tools v0.34.0
 	golang.org/x/vuln v1.1.4
 	google.golang.org/grpc v1.75.0
 	google.golang.org/protobuf v1.36.8
@@ -175,7 +178,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
-	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect

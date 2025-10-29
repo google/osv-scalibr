@@ -52,6 +52,7 @@ type BaseImageDetails struct {
 	Registry string
 	// Plugin name of the plugin used to extract the base image.
 	Plugin string
-	// ChainID of the last layer in the base image.
+	// ChainID used to query this layer. This is calculated including empty layers, so will not correspond
+	// to the ChainID of any layer in the inventory.
 	ChainID digest.Digest
 }

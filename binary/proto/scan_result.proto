@@ -53,6 +53,8 @@ message Inventory {
 message ScanStatus {
   ScanStatusEnum status = 1;
   string failure_reason = 2;
+  repeated FileError file_errors = 4;
+
   enum ScanStatusEnum {
     UNSPECIFIED = 0;
     SUCCEEDED = 1;
@@ -65,6 +67,11 @@ message PluginStatus {
   string name = 1;
   int32 version = 2;
   ScanStatus status = 3;
+}
+
+message FileError {
+  string file_path = 1;
+  string error_message = 2;
 }
 
 // A software package or library found by an extractor.
@@ -716,7 +723,8 @@ message SecretData {
     Pgpass pgpass = 43;
     PyPIAPIToken pypi = 44;
     CratesIOAPIToken crates_io_api_token = 45;
-    MysqlMyloginSection mysql_mylogin_section = 46;
+    MariaDBCredentials maria_db_credentials = 46;
+    MysqlMyloginSection mysql_mylogin_section = 47;
   }
 
 
@@ -791,6 +799,14 @@ message SecretData {
     string database = 3;
     string username = 4;
     string password = 5;
+  }
+
+  message MariaDBCredentials {
+    string host = 1;
+    string port = 2;
+    string user = 4;
+    string password = 5;
+    string section = 6;
   }
 
   message AzureIdentityToken {

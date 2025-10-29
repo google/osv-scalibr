@@ -177,7 +177,6 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
-	var tmpPaths []string
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
 		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
@@ -228,18 +227,11 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		}
 
 		additionalInv.Append(mountedInv)
-		status = append(status, mountedStatus...)
+		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
 
 		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			tmpPaths = append(tmpPaths, c.TempPaths()...)
-		}
-	}
-
-	// Remove all temporary directories and raw files we collected during filesystem traversal.
-	for _, tmpPath := range tmpPaths {
-		if err := os.RemoveAll(tmpPath); err != nil {
-			log.Infof("Failed to remove %s temporary file / directory", tmpPath)
+			embeddedFS.TempPaths = c.TempPaths()
 		}
 	}
 
@@ -285,7 +277,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		lastStatus: time.Now(),
 
 		inventory: inventory.Inventory{},
-		errors:    make(map[string]error),
+		errors:    make(map[string]map[string]error),
 		foundInv:  make(map[string]bool),
 
 		fileAPI: &lazyFileAPI{},
@@ -358,8 +350,8 @@ type walkContext struct {
 	gitignores []internal.GitignorePattern
 	// Inventories found.
 	inventory inventory.Inventory
-	// Extractor name to runtime errors.
-	errors map[string]error
+	// Extractor name to file path to runtime errors.
+	errors map[string]map[string]error
 	// Whether an extractor found any inventory.
 	foundInv map[string]bool
 	// Whether to read symlinks.
@@ -580,14 +572,14 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	if !isDir {
 		rc, err = wc.fs.Open(path)
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("Open(%s): %w", path, err))
 			return
 		}
 		defer rc.Close()
 
 		info, err = rc.Stat()
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("stat(%s): %w", path, err))
 			return
 		}
 	}
@@ -611,7 +603,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	})
 
 	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
+		addErrToMap(wc.errors, ex.Name(), path, err)
 	}
 
 	if !results.IsEmpty() {
@@ -715,20 +707,35 @@ func pathStringListToMap(paths []string) map[string]bool {
 	return result
 }
 
-func addErrToMap(errors map[string]error, key string, err error) {
-	if prev, ok := errors[key]; !ok {
-		errors[key] = err
-	} else {
-		errors[key] = fmt.Errorf("%w\n%w", prev, err)
+func addErrToMap(errors map[string]map[string]error, extractor string, path string, err error) {
+	if _, ok := errors[extractor]; !ok {
+		errors[extractor] = make(map[string]error)
 	}
+	errors[extractor][path] = err
 }
 
-func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
+func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errs map[string]map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
-		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))
+		fileErrs := createFileErrorsForPlugin(errs[ex.Name()])
+		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], plugin.OverallErrFromFileErrs(fileErrs), fileErrs))
 	}
 	return result
+}
+
+func createFileErrorsForPlugin(errorMap map[string]error) []*plugin.FileError {
+	if len(errorMap) == 0 {
+		return nil
+	}
+
+	var fileErrors []*plugin.FileError
+	for path, err := range errorMap {
+		fileErrors = append(fileErrors, &plugin.FileError{
+			FilePath:     path,
+			ErrorMessage: err.Error(),
+		})
+	}
+	return fileErrors
 }
 
 func (wc *walkContext) printStatus() {

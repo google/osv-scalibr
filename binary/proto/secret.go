@@ -20,6 +20,7 @@ import (
 	"time"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
@@ -200,6 +201,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformCredentialsToProto(t), nil
 	case veleshashicorpcloudplatform.AccessToken:
 		return hashicorpCloudPlatformTokenToProto(t), nil
+	case mariadb.Credentials:
+		return mariadbCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -875,6 +878,15 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			UserID:         t.GetUserId(),
 			UserEmail:      t.GetUserEmail(),
 		}, nil
+	case *spb.SecretData_MariaDbCredentials:
+		creds := s.GetMariaDbCredentials()
+		return mariadb.Credentials{
+			Section:  creds.Section,
+			Host:     creds.Host,
+			Port:     creds.Port,
+			User:     creds.User,
+			Password: creds.Password,
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1098,6 +1110,19 @@ func hashicorpCloudPlatformTokenToProto(token veleshashicorpcloudplatform.Access
 				GroupIds:       token.GroupIDs,
 				UserId:         token.UserID,
 				UserEmail:      token.UserEmail,
+			},
+		},
+	}
+}
+func mariadbCredentialsToProto(t mariadb.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MariaDbCredentials{
+			MariaDbCredentials: &spb.SecretData_MariaDBCredentials{
+				Host:     t.Host,
+				Port:     t.Port,
+				User:     t.User,
+				Password: t.Password,
+				Section:  t.Section,
 			},
 		},
 	}

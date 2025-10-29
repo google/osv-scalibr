@@ -27,16 +27,19 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	scalibr "github.com/google/osv-scalibr"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
-	"github.com/google/osv-scalibr/binary/spdx"
+	binspdx "github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/converter"
+	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/spdx/tools-golang/spdx/v2/common"
+
+	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -45,7 +48,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
-	"github.com/spdx/tools-golang/spdx/v2/common"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -147,12 +149,13 @@ type Flags struct {
 	CDXComponentVersion        string
 	CDXAuthors                 string
 	Verbose                    bool
-	ExplicitExtractors         bool
+	ExplicitPlugins            bool
 	FilterByCapabilities       bool
 	StoreAbsolutePath          bool
 	WindowsAllDrives           bool
 	Offline                    bool
 	LocalRegistry              string
+	DisableGoogleAuth          bool
 }
 
 var supportedOutputFormats = []string{
@@ -231,7 +234,7 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun, flags.AnnotatorsToRun)
-	if err := validateDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(pluginsToRun, flags.ExplicitPlugins); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -440,11 +443,12 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		UseGitignore:      f.UseGitignore,
 		StoreAbsolutePath: f.StoreAbsolutePath,
 		ExtractorOverride: extractorOverrideFn,
+		ExplicitPlugins:   f.ExplicitPlugins,
 	}, nil
 }
 
 // GetSPDXConfig creates an SPDXConfig struct based on the CLI flags.
-func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
+func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
 		for _, item := range strings.Split(f.SPDXCreators, ",") {
@@ -457,7 +461,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 			})
 		}
 	}
-	return converter.SPDXConfig{
+	return convspdx.Config{
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
 		Creators:          creators,
@@ -502,7 +506,7 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
 				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
-				if err := spdx.Write23(doc, oPath, oFormat); err != nil {
+				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
@@ -554,6 +558,9 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 						client.SetLocalRegistry(f.LocalRegistry)
 					}
 				}
+			}
+			if f.DisableGoogleAuth && p.Name() == pomxmlnet.Name {
+				p.(*pomxmlnet.Extractor).MavenClient.DisableGoogleAuth()
 			}
 		}
 
