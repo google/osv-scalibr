@@ -2447,7 +2447,7 @@ func (x *APKPackageMetadata) GetArchitecture() string {
 }
 
 // The additional data found in DPKG packages.
-// Next ID: 11
+// Next ID: 12
 type DPKGPackageMetadata struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	PackageName       string                 `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
@@ -2460,6 +2460,7 @@ type DPKGPackageMetadata struct {
 	Maintainer        string                 `protobuf:"bytes,8,opt,name=maintainer,proto3" json:"maintainer,omitempty"`
 	Architecture      string                 `protobuf:"bytes,9,opt,name=architecture,proto3" json:"architecture,omitempty"`
 	Status            string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	PackageSource     string                 `protobuf:"bytes,11,opt,name=package_source,json=packageSource,proto3" json:"package_source,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2560,6 +2561,13 @@ func (x *DPKGPackageMetadata) GetArchitecture() string {
 func (x *DPKGPackageMetadata) GetStatus() string {
 	if x != nil {
 		return x.Status
+	}
+	return ""
+}
+
+func (x *DPKGPackageMetadata) GetPackageSource() string {
+	if x != nil {
+		return x.PackageSource
 	}
 	return ""
 }
@@ -9222,7 +9230,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\n" +
 	"maintainer\x18\x05 \x01(\tR\n" +
 	"maintainer\x12\"\n" +
-	"\farchitecture\x18\x06 \x01(\tR\farchitectureJ\x04\b\a\x10\bR\alicense\"\xee\x02\n" +
+	"\farchitecture\x18\x06 \x01(\tR\farchitectureJ\x04\b\a\x10\bR\alicense\"\x95\x03\n" +
 	"\x13DPKGPackageMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x1f\n" +
 	"\vsource_name\x18\x02 \x01(\tR\n" +
@@ -9237,7 +9245,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"maintainer\x12\"\n" +
 	"\farchitecture\x18\t \x01(\tR\farchitecture\x12\x16\n" +
 	"\x06status\x18\n" +
-	" \x01(\tR\x06status\"\xcf\x02\n" +
+	" \x01(\tR\x06status\x12%\n" +
+	"\x0epackage_source\x18\v \x01(\tR\rpackageSource\"\xcf\x02\n" +
 	"\x12RPMPackageMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x1d\n" +
 	"\n" +
