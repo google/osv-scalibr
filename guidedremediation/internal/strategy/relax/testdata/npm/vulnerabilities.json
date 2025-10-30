@@ -1,0 +1,73 @@
+{
+  "vulns": [
+    {
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "@bad/one"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "2.0.0"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ]
+        }
+      ],
+      "id": "OSV-000-000"
+    },
+    {
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "@bad/two"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "3.0.0"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ]
+        }
+      ],
+      "id": "OSV-000-001"
+    },
+    {
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "@bad/three"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ]
+        }
+      ],
+      "id": "OSV-000-002"
+    }
+  ]
+}

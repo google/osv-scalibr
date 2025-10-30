@@ -328,9 +328,9 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 	}
 	vulns := make([]result.Vuln, 0, len(resolved.Vulns))
 	for _, v := range resolved.Vulns {
-		_, fixable := fixableVulns[v.OSV.ID]
+		_, fixable := fixableVulns[v.OSV.Id]
 		vuln := result.Vuln{
-			ID:           v.OSV.ID,
+			ID:           v.OSV.Id,
 			Unactionable: !fixable,
 			Packages:     make([]result.Package, 0, len(v.Subgraphs)),
 		}
@@ -388,9 +388,9 @@ func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches 
 			}
 		}
 		for vk := range vks {
-			_, fixable := fixableVulns[vuln{v.OSV.ID, vk.Name, vk.Version}]
+			_, fixable := fixableVulns[vuln{v.OSV.Id, vk.Name, vk.Version}]
 			vulns = append(vulns, result.Vuln{
-				ID:           v.OSV.ID,
+				ID:           v.OSV.Id,
 				Unactionable: !fixable,
 				Packages: []result.Package{{
 					Name:    vk.Name,
@@ -536,13 +536,13 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 
 	manifestVulns := make(map[string]struct{})
 	for _, v := range resolvedManif.Vulns {
-		manifestVulns[v.OSV.ID] = struct{}{}
+		manifestVulns[v.OSV.Id] = struct{}{}
 	}
 
 	var vulns []result.Vuln
 	for _, v := range resolvedLockf.Vulns {
-		if _, ok := manifestVulns[v.OSV.ID]; !ok {
-			vuln := result.Vuln{ID: v.OSV.ID, Unactionable: false}
+		if _, ok := manifestVulns[v.OSV.Id]; !ok {
+			vuln := result.Vuln{ID: v.OSV.Id, Unactionable: false}
 			for _, sg := range v.Subgraphs {
 				n := resolvedLockf.Graph.Nodes[sg.Dependency]
 				vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})

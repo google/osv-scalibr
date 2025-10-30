@@ -57,7 +57,7 @@ func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest,
 
 	toProcess := 0
 	for _, v := range resolved.Vulns {
-		go doPatch([]string{v.OSV.ID})
+		go doPatch([]string{v.OSV.Id})
 		toProcess++
 	}
 

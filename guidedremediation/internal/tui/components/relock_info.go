@@ -48,7 +48,7 @@ func NewRelockInfo(patch result.Patch, allVulns []resolution.Vulnerability, deta
 	preamble.WriteString("Will resolve the following:")
 	fixedVulns := make([]resolution.Vulnerability, 0, len(patch.Fixed))
 	for _, fixed := range patch.Fixed {
-		idx := slices.IndexFunc(allVulns, func(v resolution.Vulnerability) bool { return v.OSV.ID == fixed.ID })
+		idx := slices.IndexFunc(allVulns, func(v resolution.Vulnerability) bool { return v.OSV.Id == fixed.ID })
 		if idx >= 0 {
 			fixedVulns = append(fixedVulns, allVulns[idx])
 		}
@@ -63,7 +63,7 @@ func NewRelockInfo(patch result.Patch, allVulns []resolution.Vulnerability, deta
 	// Create a second list showing introduced vulns
 	newVulns := make([]resolution.Vulnerability, 0, len(patch.Introduced))
 	for i := range patch.Introduced {
-		idx := slices.IndexFunc(allVulns, func(v resolution.Vulnerability) bool { return v.OSV.ID == patch.Introduced[i].ID })
+		idx := slices.IndexFunc(allVulns, func(v resolution.Vulnerability) bool { return v.OSV.Id == patch.Introduced[i].ID })
 		if idx >= 0 {
 			newVulns = append(newVulns, allVulns[idx])
 		}

@@ -38,7 +38,7 @@ var (
 )
 
 // RenderSeverity renders for terminal the highest severity score & rating of a list of severities.
-func RenderSeverity(severities []osvschema.Severity) string {
+func RenderSeverity(severities []*osvschema.Severity) string {
 	text := "UNKNOWN"
 	bestScore := -1.0
 	for _, sev := range severities {
@@ -55,7 +55,7 @@ func RenderSeverity(severities []osvschema.Severity) string {
 }
 
 // RenderSeverityShort renders for terminal the highest severity score only of a list of severities.
-func RenderSeverityShort(severities []osvschema.Severity) string {
+func RenderSeverityShort(severities []*osvschema.Severity) string {
 	bestScore := -1.0
 	bestRating := "UNKNOWN"
 	for _, sev := range severities {

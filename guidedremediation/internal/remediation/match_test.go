@@ -29,10 +29,10 @@ func TestMatchVuln(t *testing.T) {
 		// ID: VULN-001, Dev: false, Severity: 6.6, Depth: 3, Aliases: CVE-111, OSV-2
 		vuln1 = resolution.Vulnerability{
 			OSV: &osvschema.Vulnerability{
-				ID: "VULN-001",
-				Severity: []osvschema.Severity{
-					{Type: osvschema.SeverityCVSSV3, Score: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"}, // 6.6
-					{Type: osvschema.SeverityCVSSV2, Score: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},                   // 5.7
+				Id: "VULN-001",
+				Severity: []*osvschema.Severity{
+					{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"}, // 6.6
+					{Type: osvschema.Severity_CVSS_V2, Score: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},                   // 5.7
 				},
 				Aliases: []string{"CVE-111", "OSV-2"},
 			},
@@ -66,7 +66,7 @@ func TestMatchVuln(t *testing.T) {
 		// ID: VULN-002, Dev: true, Severity: N/A, Depth: 2
 		vuln2 = resolution.Vulnerability{
 			OSV: &osvschema.Vulnerability{
-				ID: "VULN-002",
+				Id: "VULN-002",
 				// No severity
 			},
 			DevOnly: true,
@@ -100,44 +100,43 @@ func TestMatchVuln(t *testing.T) {
 		// ID: VULN-003, Dev: false, Severity: 7.0, Depth: 1
 		vuln3 = resolution.Vulnerability{
 			OSV: &osvschema.Vulnerability{
-				ID: "VULN-003",
-
+				Id:      "VULN-003",
 				Aliases: []string{"CVE-111", "OSV-2"},
-				Affected: []osvschema.Affected{
+				Affected: []*osvschema.Affected{
 					{
-						Package: osvschema.Package{
+						Package: &osvschema.Package{
 							Ecosystem: "npm",
 							Name:      "pkg",
 						},
-						Ranges: []osvschema.Range{
+						Ranges: []*osvschema.Range{
 							{
-								Type: osvschema.RangeSemVer,
-								Events: []osvschema.Event{
+								Type: osvschema.Range_SEMVER,
+								Events: []*osvschema.Event{
 									{Introduced: "0"},
 									{Fixed: "1.9.1"},
 								},
 							},
 						},
-						Severity: []osvschema.Severity{
-							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
+						Severity: []*osvschema.Severity{
+							{Type: osvschema.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
 						},
 					},
 					{
-						Package: osvschema.Package{
+						Package: &osvschema.Package{
 							Ecosystem: "npm",
 							Name:      "pkg",
 						},
-						Ranges: []osvschema.Range{
+						Ranges: []*osvschema.Range{
 							{
-								Type: osvschema.RangeSemVer,
-								Events: []osvschema.Event{
+								Type: osvschema.Range_SEMVER,
+								Events: []*osvschema.Event{
 									{Introduced: "2.0.0"},
 									{Fixed: "2.9.9"},
 								},
 							},
 						},
-						Severity: []osvschema.Severity{
-							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
+						Severity: []*osvschema.Severity{
+							{Type: osvschema.Severity_CVSS_V4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
 						},
 					},
 				},

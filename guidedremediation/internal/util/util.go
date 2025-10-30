@@ -17,19 +17,19 @@ package util
 
 import (
 	"deps.dev/util/resolve"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 // DepsDevToOSVEcosystem converts a deps.dev resolve.System into an osvschema.Ecosystem.
 // Unknown / invalid Systems become the empty ecosystem `osvschema.Ecosystem("")`.
-func DepsDevToOSVEcosystem(sys resolve.System) osvschema.Ecosystem {
+func DepsDevToOSVEcosystem(sys resolve.System) osvconstants.Ecosystem {
 	switch sys {
 	case resolve.Maven:
-		return osvschema.EcosystemMaven
+		return osvconstants.EcosystemMaven
 	case resolve.NPM:
-		return osvschema.EcosystemNPM
+		return osvconstants.EcosystemNPM
 	case resolve.PyPI:
-		return osvschema.EcosystemPyPI
+		return osvconstants.EcosystemPyPI
 	case resolve.UnknownSystem:
 		fallthrough
 	default:
@@ -39,47 +39,47 @@ func DepsDevToOSVEcosystem(sys resolve.System) osvschema.Ecosystem {
 
 // OSVToDepsDevEcosystem converts an osvschema.Ecosystem into a deps.dev resolve.System.
 // Unknown / invalid Ecosystems become `resolve.UnknownEcosystem`.
-func OSVToDepsDevEcosystem(sys osvschema.Ecosystem) resolve.System {
+func OSVToDepsDevEcosystem(sys osvconstants.Ecosystem) resolve.System {
 	switch sys {
-	case osvschema.EcosystemMaven:
+	case osvconstants.EcosystemMaven:
 		return resolve.Maven
-	case osvschema.EcosystemNPM:
+	case osvconstants.EcosystemNPM:
 		return resolve.NPM
-	case osvschema.EcosystemPyPI:
+	case osvconstants.EcosystemPyPI:
 		return resolve.PyPI
 	case
-		osvschema.EcosystemAlmaLinux,
-		osvschema.EcosystemAlpine,
-		osvschema.EcosystemAndroid,
-		osvschema.EcosystemBioconductor,
-		osvschema.EcosystemBitnami,
-		osvschema.EcosystemChainguard,
-		osvschema.EcosystemConanCenter,
-		osvschema.EcosystemCRAN,
-		osvschema.EcosystemCratesIO,
-		osvschema.EcosystemDebian,
-		osvschema.EcosystemGHC,
-		osvschema.EcosystemGitHubActions,
-		osvschema.EcosystemGo,
-		osvschema.EcosystemHackage,
-		osvschema.EcosystemHex,
-		osvschema.EcosystemKubernetes,
-		osvschema.EcosystemLinux,
-		osvschema.EcosystemMageia,
-		osvschema.EcosystemMinimOS,
-		osvschema.EcosystemNuGet,
-		osvschema.EcosystemOpenSUSE,
-		osvschema.EcosystemOSSFuzz,
-		osvschema.EcosystemPackagist,
-		osvschema.EcosystemPhotonOS,
-		osvschema.EcosystemPub,
-		osvschema.EcosystemRedHat,
-		osvschema.EcosystemRockyLinux,
-		osvschema.EcosystemRubyGems,
-		osvschema.EcosystemSUSE,
-		osvschema.EcosystemSwiftURL,
-		osvschema.EcosystemUbuntu,
-		osvschema.EcosystemWolfi:
+		osvconstants.EcosystemAlmaLinux,
+		osvconstants.EcosystemAlpine,
+		osvconstants.EcosystemAndroid,
+		osvconstants.EcosystemBioconductor,
+		osvconstants.EcosystemBitnami,
+		osvconstants.EcosystemChainguard,
+		osvconstants.EcosystemConanCenter,
+		osvconstants.EcosystemCRAN,
+		osvconstants.EcosystemCratesIO,
+		osvconstants.EcosystemDebian,
+		osvconstants.EcosystemGHC,
+		osvconstants.EcosystemGitHubActions,
+		osvconstants.EcosystemGo,
+		osvconstants.EcosystemHackage,
+		osvconstants.EcosystemHex,
+		osvconstants.EcosystemKubernetes,
+		osvconstants.EcosystemLinux,
+		osvconstants.EcosystemMageia,
+		osvconstants.EcosystemMinimOS,
+		osvconstants.EcosystemNuGet,
+		osvconstants.EcosystemOpenSUSE,
+		osvconstants.EcosystemOSSFuzz,
+		osvconstants.EcosystemPackagist,
+		osvconstants.EcosystemPhotonOS,
+		osvconstants.EcosystemPub,
+		osvconstants.EcosystemRedHat,
+		osvconstants.EcosystemRockyLinux,
+		osvconstants.EcosystemRubyGems,
+		osvconstants.EcosystemSUSE,
+		osvconstants.EcosystemSwiftURL,
+		osvconstants.EcosystemUbuntu,
+		osvconstants.EcosystemWolfi:
 		fallthrough
 	default:
 		return resolve.UnknownSystem

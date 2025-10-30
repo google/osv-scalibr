@@ -72,8 +72,8 @@ func ResolveGraphVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulner
 	// If explicit vulns are set, add the others to ignored vulns.
 	if len(opts.ExplicitVulns) > 0 {
 		for _, v := range allVulns {
-			if !slices.Contains(opts.ExplicitVulns, v.OSV.ID) {
-				opts.IgnoreVulns = append(opts.IgnoreVulns, v.OSV.ID)
+			if !slices.Contains(opts.ExplicitVulns, v.OSV.Id) {
+				opts.IgnoreVulns = append(opts.IgnoreVulns, v.OSV.Id)
 			}
 		}
 	}
@@ -91,21 +91,21 @@ func ResolveGraphVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulner
 func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 	fixedVulns := make(map[string]*resolution.Vulnerability)
 	for _, v := range oldRes.Vulns {
-		fixedVulns[v.OSV.ID] = &v
+		fixedVulns[v.OSV.Id] = &v
 	}
 	introducedVulns := make(map[string]*resolution.Vulnerability)
 	for _, v := range newRes.Vulns {
-		if _, ok := fixedVulns[v.OSV.ID]; !ok {
-			introducedVulns[v.OSV.ID] = &v
+		if _, ok := fixedVulns[v.OSV.Id]; !ok {
+			introducedVulns[v.OSV.Id] = &v
 		} else {
-			delete(fixedVulns, v.OSV.ID)
+			delete(fixedVulns, v.OSV.Id)
 		}
 	}
 
 	var output result.Patch
 	output.Fixed = make([]result.Vuln, 0, len(fixedVulns))
 	for _, v := range fixedVulns {
-		vuln := result.Vuln{ID: v.OSV.ID}
+		vuln := result.Vuln{ID: v.OSV.Id}
 		for _, sg := range v.Subgraphs {
 			n := oldRes.Graph.Nodes[sg.Dependency]
 			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
@@ -118,7 +118,7 @@ func ConstructPatches(oldRes, newRes *ResolvedManifest) result.Patch {
 		output.Introduced = make([]result.Vuln, 0, len(introducedVulns))
 	}
 	for _, v := range introducedVulns {
-		vuln := result.Vuln{ID: v.OSV.ID}
+		vuln := result.Vuln{ID: v.OSV.Id}
 		for _, sg := range v.Subgraphs {
 			n := newRes.Graph.Nodes[sg.Dependency]
 			vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})

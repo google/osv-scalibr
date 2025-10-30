@@ -277,7 +277,7 @@ func relockUnfixableVulns(allVulns []resolution.Vulnerability, patches []result.
 	}
 	var unfixableVulns []resolution.Vulnerability
 	for _, v := range allVulns {
-		if _, ok := fixableVulnIDs[v.OSV.ID]; !ok {
+		if _, ok := fixableVulnIDs[v.OSV.Id]; !ok {
 			unfixableVulns = append(unfixableVulns, v)
 		}
 	}

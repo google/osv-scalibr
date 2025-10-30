@@ -50,7 +50,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			lockfilePath: "npm/package-lock.json",
 			readWriter:   npmWR,
 			opts:         options.DefaultRemediationOptions(),

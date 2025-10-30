@@ -95,7 +95,7 @@ func TestFixOverride(t *testing.T) {
 			// mavenClient is not used in the test, but is required to be non-nil for pom.xml manifests.
 			mavenClient, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			manifestPath := filepath.Join(tmpDir, "pom.xml")
@@ -208,7 +208,7 @@ func TestFixRelax(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			manifestPath := filepath.Join(tmpDir, filepath.Base(tt.manifest))
@@ -322,7 +322,7 @@ func TestFixInPlace(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			lockfilePath := filepath.Join(tmpDir, "package-lock.json")

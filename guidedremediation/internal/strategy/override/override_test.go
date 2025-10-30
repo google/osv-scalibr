@@ -54,7 +54,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-zeppelin-server",
 			universeFile: "testdata/zeppelin-server/universe.yaml",
-			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
+			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.json",
 			manifestPath: "zeppelin-server/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -63,7 +63,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-classifier",
 			universeFile: "testdata/maven-classifier/universe.yaml",
-			vulnsFile:    "testdata/maven-classifier/vulnerabilities.yaml",
+			vulnsFile:    "testdata/maven-classifier/vulnerabilities.json",
 			manifestPath: "maven-classifier/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -72,7 +72,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-management-only",
 			universeFile: "testdata/zeppelin-server/universe.yaml",
-			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
+			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.json",
 			manifestPath: "zeppelin-server/parent/pom.xml",
 			readWriter:   mavenRW,
 			opts: options.RemediationOptions{
@@ -88,7 +88,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-none-to-jre",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/none-to-jre/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -97,7 +97,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-jre-to-jre",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/jre-to-jre/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -106,7 +106,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-android-to-android",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/android-to-android/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -115,7 +115,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-commons",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/commons/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
