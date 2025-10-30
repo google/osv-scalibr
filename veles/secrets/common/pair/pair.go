@@ -44,8 +44,8 @@ var _ veles.Detector = &Detector{}
 
 // Detector finds instances of a pair of keys
 type Detector struct {
-	// The maximum length of the pair.
-	MaxLen uint32
+	// The maximum length of an element in the pair.
+	MaxElementLen uint32
 	// MaxDistance sets the maximum distance between the matches.
 	MaxDistance uint32
 	// Function to use to search for matches.
@@ -67,7 +67,7 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 
 // MaxSecretLen implements veles.Detector.
 func (d *Detector) MaxSecretLen() uint32 {
-	return d.MaxLen
+	return d.MaxElementLen*2 + d.MaxDistance
 }
 
 // FindAllMatches returns a function which finds all matches of a given regex.
@@ -185,8 +185,8 @@ func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
 				continue
 			}
 
-			// Include pair if within maxDistance (or if maxDistance == 0)
-			if maxDistance == 0 || distance <= maxDistance {
+			// Include pair if within maxDistance
+			if distance <= maxDistance {
 				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
 			}
 		}

@@ -35,10 +35,6 @@ const (
 	// maxDistance is the maximum distance between client IDs and secrets to be considered for pairing.
 	// 10 KiB is a good upper bound as we don't expect files containing credentials to be larger than this.
 	maxDistance = 10 * 1 << 10 // 10 KiB
-
-	// maxSecretLen is the maximum length of secrets this detector can find.
-	// Veles uses this to set the chunk size. Client ID and secrets should be contained within this chunk.
-	maxSecretLen = maxIDLength + maxSecretLength + maxDistance
 )
 
 var (
@@ -65,7 +61,7 @@ var (
 // NewDetector returns a detector that matches GCP OAuth2 client credentials.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: maxSecretLen, MaxDistance: maxDistance,
+		MaxElementLen: max(maxIDLength, maxSecretLength), MaxDistance: maxDistance,
 		FindA: pair.FindAllMatches(clientIDRe),
 		FindB: pair.FindAllMatches(clientSecretRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {

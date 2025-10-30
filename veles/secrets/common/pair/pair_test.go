@@ -45,6 +45,8 @@ func TestFindOptimalPairs(t *testing.T) {
 		aPattern = regexp.MustCompile(`a[a-z]*[1-9]`)
 		bPattern = regexp.MustCompile(`b[a-z]*[1-9]`)
 	)
+	const distanceUpperBound = 1 << 10
+
 	tests := []struct {
 		name            string
 		input           string
@@ -54,16 +56,18 @@ func TestFindOptimalPairs(t *testing.T) {
 		fromPartialPair func(p pair.Pair) (veles.Secret, bool)
 	}{
 		{
-			name:  "simple match",
-			input: "a1 b1",
+			name:        "simple match",
+			input:       "a1 b1",
+			maxDistance: distanceUpperBound,
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 			},
 			wantPos: []int{0},
 		},
 		{
-			name:  "multiple matches, greedy selection",
-			input: "a1 b1 a2 b2",
+			name:        "multiple matches, greedy selection",
+			input:       "a1 b1 a2 b2",
+			maxDistance: distanceUpperBound,
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 				mockSecret{Value: "a2-b2"},
@@ -75,8 +79,9 @@ func TestFindOptimalPairs(t *testing.T) {
 			input: "a1 xxxxx",
 		},
 		{
-			name:  "more bs than as - deduplication",
-			input: "a1 b1 b2",
+			name:        "more bs than as - deduplication",
+			input:       "a1 b1 b2",
+			maxDistance: distanceUpperBound,
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
 			},
@@ -90,7 +95,7 @@ func TestFindOptimalPairs(t *testing.T) {
 		{
 			name:        "overlapping pairs",
 			input:       " b2 ab1",
-			maxDistance: uint32(5),
+			maxDistance: distanceUpperBound,
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "ab1-b2"},
 			},
@@ -99,6 +104,7 @@ func TestFindOptimalPairs(t *testing.T) {
 		{
 			name:            "partial pair",
 			input:           "a1",
+			maxDistance:     distanceUpperBound,
 			fromPartialPair: mockSecretFromPartialPair,
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1"},
@@ -110,13 +116,12 @@ func TestFindOptimalPairs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &pair.Detector{
-				// include the whole payload
-				MaxLen:          uint32(len(tt.input)),
+				// include the whole payload using an upper bound as MaxDistance
+				MaxElementLen: 10, MaxDistance: tt.maxDistance,
 				FindA:           pair.FindAllMatches(aPattern),
 				FindB:           pair.FindAllMatches(bPattern),
 				FromPair:        mockSecretFromPair,
 				FromPartialPair: tt.fromPartialPair,
-				MaxDistance:     tt.maxDistance,
 			}
 
 			gotSecrets, gotPos := d.Detect([]byte(tt.input))
