@@ -85,6 +85,12 @@ func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
 	}
 }
 
+// filterOverlapping filters overlapping matches, it expects both slices to be ordered
+// and considers the first to be more important
+//
+// usage:
+//
+//	filtered_bs = filterOverlapping(as,bs)
 func filterOverlapping(as, bs []*Match) []*Match {
 	var filtered []*Match
 	aIdx := 0
@@ -102,7 +108,7 @@ func filterOverlapping(as, bs []*Match) []*Match {
 	return filtered
 }
 
-// findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
+// findOptimalPairs finds the best pairing between two sets of matches using a greedy algorithm.
 func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
 	possiblePairs := findPossiblePairs(as, bs, maxDistance)
