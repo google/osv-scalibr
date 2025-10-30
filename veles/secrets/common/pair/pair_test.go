@@ -28,23 +28,30 @@ type mockSecret struct {
 }
 
 // mock function to convert Pair to veles.Secret
-func mockFromPair(p pair.Pair) (veles.Secret, bool) {
-	return mockSecret{
-		Value: p.A.Value + "-" + p.B.Value,
-	}, true
+func mockSecretFromPair(p pair.Pair) (veles.Secret, bool) {
+	return mockSecret{Value: p.A.Value + "-" + p.B.Value}, true
+}
+
+// mock function to convert Pair to veles.Secret
+func mockSecretFromPartialPair(p pair.Pair) (veles.Secret, bool) {
+	if p.B == nil {
+		return mockSecret{Value: p.A.Value}, true
+	}
+	return mockSecret{Value: p.B.Value}, true
 }
 
 func TestFindOptimalPairs(t *testing.T) {
 	var (
-		aPattern = regexp.MustCompile(`a[1-Z]`)
-		bPattern = regexp.MustCompile(`b[1-Z]`)
+		aPattern = regexp.MustCompile(`a[a-z]*[1-9]`)
+		bPattern = regexp.MustCompile(`b[a-z]*[1-9]`)
 	)
 	tests := []struct {
-		name        string
-		input       string
-		wantSecrets []veles.Secret
-		maxDistance uint32
-		wantPos     []int
+		name            string
+		input           string
+		wantSecrets     []veles.Secret
+		maxDistance     uint32
+		wantPos         []int
+		fromPartialPair func(p pair.Pair) (veles.Secret, bool)
 	}{
 		{
 			name:  "simple match",
@@ -68,7 +75,7 @@ func TestFindOptimalPairs(t *testing.T) {
 			input: "a1 xxxxx",
 		},
 		{
-			name:  "more bs than as",
+			name:  "more bs than as - deduplication",
 			input: "a1 b1 b2",
 			wantSecrets: []veles.Secret{
 				mockSecret{Value: "a1-b1"},
@@ -76,9 +83,27 @@ func TestFindOptimalPairs(t *testing.T) {
 			wantPos: []int{0},
 		},
 		{
-			name:        "far apart",
+			name:        "far apart - no match",
 			input:       "a1           b2",
 			maxDistance: uint32(5),
+		},
+		{
+			name:        "overlapping pairs",
+			input:       " b2 ab1",
+			maxDistance: uint32(5),
+			wantSecrets: []veles.Secret{
+				mockSecret{Value: "ab1-b2"},
+			},
+			wantPos: []int{1},
+		},
+		{
+			name:            "partial pair",
+			input:           "a1",
+			fromPartialPair: mockSecretFromPartialPair,
+			wantSecrets: []veles.Secret{
+				mockSecret{Value: "a1"},
+			},
+			wantPos: []int{0},
 		},
 	}
 
@@ -86,11 +111,12 @@ func TestFindOptimalPairs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &pair.Detector{
 				// include the whole payload
-				MaxLen:      uint32(len(tt.input)),
-				FindA:       pair.FindAllMatches(aPattern),
-				FindB:       pair.FindAllMatches(bPattern),
-				FromPair:    mockFromPair,
-				MaxDistance: tt.maxDistance,
+				MaxLen:          uint32(len(tt.input)),
+				FindA:           pair.FindAllMatches(aPattern),
+				FindB:           pair.FindAllMatches(bPattern),
+				FromPair:        mockSecretFromPair,
+				FromPartialPair: tt.fromPartialPair,
+				MaxDistance:     tt.maxDistance,
 			}
 
 			gotSecrets, gotPos := d.Detect([]byte(tt.input))
