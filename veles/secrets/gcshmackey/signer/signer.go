@@ -43,6 +43,8 @@ func sha256Hex(data string) string {
 }
 
 // Derive signing key
+//
+// ref: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html#signing-key
 func getSignatureKey(secret, date, region, service string) []byte {
 	kDate := hmacSHA256([]byte("AWS4"+secret), date)
 	kRegion := hmacSHA256(kDate, region)
@@ -52,6 +54,8 @@ func getSignatureKey(secret, date, region, service string) []byte {
 }
 
 // Signer provides AWS Signature Version 4 signing for HTTP requests.
+//
+// ref: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 type Signer struct {
 	Service string // AWS service name (e.g. "s3")
 	Region  string // AWS region (e.g., "us-east-1")
