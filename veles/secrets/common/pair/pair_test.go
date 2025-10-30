@@ -45,7 +45,8 @@ func TestFindOptimalPairs(t *testing.T) {
 		aPattern = regexp.MustCompile(`a[a-z]*[1-9]`)
 		bPattern = regexp.MustCompile(`b[a-z]*[1-9]`)
 	)
-	const distanceUpperBound = 1 << 10
+
+	const distanceUpperBound = 1000
 
 	tests := []struct {
 		name            string
@@ -116,7 +117,7 @@ func TestFindOptimalPairs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &pair.Detector{
-				// include the whole payload using an upper bound as MaxDistance
+				// include the whole payload using an upper bound as MaxElementLen
 				MaxElementLen: 10, MaxDistance: tt.maxDistance,
 				FindA:           pair.FindAllMatches(aPattern),
 				FindB:           pair.FindAllMatches(bPattern),

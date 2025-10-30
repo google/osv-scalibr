@@ -80,6 +80,8 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 	if err != nil {
 		var apiErr smithy.APIError
 		if errors.As(err, &apiErr) {
+			// If the access is denied it means that
+			// the key is valid but lacks permission for ListBuckets.
 			if apiErr.ErrorCode() == CodeAccessDenied {
 				return veles.ValidationValid, nil
 			}
