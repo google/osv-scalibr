@@ -15,25 +15,35 @@
 package gcshmackey_test
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 )
 
 type fakeSigner struct{}
 
-func (n fakeSigner) SignHTTP(_ context.Context, creds aws.Credentials, r *http.Request, _ string, _ string, _ string, _ time.Time, _ ...func(*v4.SignerOptions)) error {
-	r.Header.Set("Authorization", "Signature="+creds.AccessKeyID+":"+creds.SecretAccessKey)
+func (n fakeSigner) Sign(r *http.Request, accessID string, secret string) error {
+	r.Header.Set("Authorization", "Signature="+accessID+":"+secret)
 	return nil
+}
+
+type mockRoundTripper struct {
+	url string
+}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Host == "storage.googleapis.com" {
+		testURL, _ := url.Parse(m.url)
+		req.URL.Scheme = testURL.Scheme
+		req.URL.Host = testURL.Host
+	}
+	return http.DefaultTransport.RoundTrip(req)
 }
 
 // mockS3Server returns an httptest.Server that simulates an S3 ListBuckets endpoint.
@@ -49,21 +59,32 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 
 			if !strings.Contains(req.Header.Get("Authorization"), signature) {
 				w.WriteHeader(http.StatusForbidden)
-				_, _ = io.WriteString(w, `<Error>
-					<Code>SignatureDoesNotMatch</Code>
-					<Message>The request signature we calculated does not match</Message>
-				</Error>`)
+				_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
+					<Error>
+						<Code>SignatureDoesNotMatch</Code>
+						<Message>Access denied.</Message>
+						<Details>The request signature we calculated does not match the signature you provided. Check your Google secret key and signing method.</Details>
+						<StringToSign>**REDACTED***</StringToSign>
+						<CanonicalRequest>**REDACTED***</CanonicalRequest>
+					</Error>`)
 				return
 			}
 
 			if denied {
 				w.WriteHeader(http.StatusForbidden)
-				_, _ = io.WriteString(w, `<Error>
-					<Code>AccessDenied</Code>
-				</Error>`)
+				_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
+					<Error>
+						<Code>AccessDenied</Code>
+						<Message>Access denied.</Message>
+						<Details>test-no-permission-id@scalibr-gcp-hmac.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project. Permission 'storage.buckets.list' denied on resource (or it may not exist).</Details>
+					</Error>`)
 				return
 			}
 
+			_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
+				<ListAllMyBucketsResult xmlns='http://doc.s3.amazonaws.com/2006-03-01'>
+					<Buckets/>
+				</ListAllMyBucketsResult>`)
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -118,8 +139,12 @@ func TestValidator(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := tc.server()
+			client := &http.Client{
+				Transport: &mockRoundTripper{url: srv.URL},
+			}
+
 			validator := gcshmackey.NewValidator(
-				gcshmackey.WithURL(srv.URL),
+				gcshmackey.WithHTTPClient(client),
 				gcshmackey.WithSigner(fakeSigner{}),
 			)
 
