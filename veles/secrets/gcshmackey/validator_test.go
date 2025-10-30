@@ -76,7 +76,7 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 					<Error>
 						<Code>AccessDenied</Code>
 						<Message>Access denied.</Message>
-						<Details>test-no-permission-id@scalibr-gcp-hmac.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project. Permission 'storage.buckets.list' denied on resource (or it may not exist).</Details>
+						<Details>**SERVICE-ACCOUNT-EMAIL-REDACTED** does not have storage.buckets.list access to the Google Cloud project. Permission 'storage.buckets.list' denied on resource (or it may not exist).</Details>
 					</Error>`)
 				return
 			}
