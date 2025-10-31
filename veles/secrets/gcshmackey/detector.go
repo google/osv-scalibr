@@ -27,19 +27,18 @@ var (
 	secretPattern   = regexp.MustCompile(`[A-Za-z0-9+/]{40}`)
 )
 
-var (
+const (
 	maxAccessIDLen = 61
 	maxSecretLen   = 40
 	// maxDistance is the maximum distance between AccessID and secrets to be considered for pairing.
 	// 10 KiB is a good upper bound as we don't expect files containing credentials to be larger than this.
 	maxDistance = 10 * 1 << 10 // 10 KiB
-	maxTotalLen = maxAccessIDLen + maxSecretLen + maxDistance
 )
 
 // NewDetector returns a new Veles Detector that finds Google Cloud Storage HMAC keys
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: uint32(maxTotalLen), MaxDistance: uint32(maxDistance),
+		MaxElementLen: max(maxAccessIDLen, maxSecretLen), MaxDistance: uint32(maxDistance),
 		FindA: pair.FindAllMatches(accessIDPattern),
 		FindB: pair.FindAllMatches(secretPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {

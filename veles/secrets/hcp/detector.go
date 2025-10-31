@@ -24,6 +24,8 @@ import (
 )
 
 const (
+	// maxSecretLen is a broad upper bound of the maximum length that hcp_client_id and hcp_client_secret can have
+	maxSecretLen = 80
 	// maxPairWindowLen is the maximum window length to pair env-style credentials.
 	maxPairWindowLen = 10 * 1 << 10 // 10 KiB
 	// maxAccessTokenLen is the maximum length of a JWT token (delegated to common jwt limits).
@@ -40,8 +42,8 @@ var (
 // NewPairDetector returns a Detector that finds HCP client credentials from key/value pairs.
 func NewPairDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: maxPairWindowLen,
-		FindA:  findMatches(reClientID), FindB: findMatches(reClientSec),
+		MaxElementLen: maxSecretLen, MaxDistance: maxPairWindowLen,
+		FindA: findMatches(reClientID), FindB: findMatches(reClientSec),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return ClientCredentials{ClientID: p.A.Value, ClientSecret: p.B.Value}, true
 		},

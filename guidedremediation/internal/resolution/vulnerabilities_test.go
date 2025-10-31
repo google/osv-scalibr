@@ -79,7 +79,7 @@ test 1.0.0
 		charlieNode resolve.NodeID = 4
 	)
 
-	vulnMatcher := matchertest.NewMockVulnerabilityMatcher(t, "testdata/vulnerabilities.yaml")
+	vulnMatcher := matchertest.NewMockVulnerabilityMatcher(t, "testdata/vulnerabilities.json")
 	type vuln struct {
 		ID    string
 		Nodes []resolve.NodeID
@@ -119,7 +119,7 @@ test 1.0.0
 	}
 	got := make([]vuln, len(vulns))
 	for i, v := range vulns {
-		got[i].ID = v.OSV.ID
+		got[i].ID = v.OSV.Id
 		for _, sg := range v.Subgraphs {
 			got[i].Nodes = append(got[i].Nodes, sg.Dependency)
 		}

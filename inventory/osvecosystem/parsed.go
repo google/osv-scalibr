@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 // Parsed represents an ecosystem-with-suffix string as defined by the [spec], parsed into
@@ -34,7 +34,7 @@ import (
 //
 //nolint:recvcheck
 type Parsed struct {
-	Ecosystem osvschema.Ecosystem
+	Ecosystem osvconstants.Ecosystem
 	Suffix    string
 }
 
@@ -95,44 +95,44 @@ func (p Parsed) GetValidity() error {
 
 	// Missing ecosystems here would be caught by the "exhaustive" linter
 	switch p.Ecosystem {
-	case osvschema.EcosystemAlmaLinux,
-		osvschema.EcosystemAlpaquita,
-		osvschema.EcosystemAlpine,
-		osvschema.EcosystemAndroid,
-		osvschema.EcosystemBellSoftHardenedContainers,
-		osvschema.EcosystemBioconductor,
-		osvschema.EcosystemBitnami,
-		osvschema.EcosystemChainguard,
-		osvschema.EcosystemConanCenter,
-		osvschema.EcosystemCRAN,
-		osvschema.EcosystemCratesIO,
-		osvschema.EcosystemDebian,
-		osvschema.EcosystemGHC,
-		osvschema.EcosystemGitHubActions,
-		osvschema.EcosystemGo,
-		osvschema.EcosystemHackage,
-		osvschema.EcosystemHex,
-		osvschema.EcosystemKubernetes,
-		osvschema.EcosystemLinux,
-		osvschema.EcosystemMageia,
-		osvschema.EcosystemMaven,
-		osvschema.EcosystemMinimOS,
-		osvschema.EcosystemNPM,
-		osvschema.EcosystemNuGet,
-		osvschema.EcosystemOpenEuler,
-		osvschema.EcosystemOpenSUSE,
-		osvschema.EcosystemOSSFuzz,
-		osvschema.EcosystemPackagist,
-		osvschema.EcosystemPhotonOS,
-		osvschema.EcosystemPub,
-		osvschema.EcosystemPyPI,
-		osvschema.EcosystemRedHat,
-		osvschema.EcosystemRockyLinux,
-		osvschema.EcosystemRubyGems,
-		osvschema.EcosystemSUSE,
-		osvschema.EcosystemSwiftURL,
-		osvschema.EcosystemUbuntu,
-		osvschema.EcosystemWolfi:
+	case osvconstants.EcosystemAlmaLinux,
+		osvconstants.EcosystemAlpaquita,
+		osvconstants.EcosystemAlpine,
+		osvconstants.EcosystemAndroid,
+		osvconstants.EcosystemBellSoftHardenedContainers,
+		osvconstants.EcosystemBioconductor,
+		osvconstants.EcosystemBitnami,
+		osvconstants.EcosystemChainguard,
+		osvconstants.EcosystemConanCenter,
+		osvconstants.EcosystemCRAN,
+		osvconstants.EcosystemCratesIO,
+		osvconstants.EcosystemDebian,
+		osvconstants.EcosystemGHC,
+		osvconstants.EcosystemGitHubActions,
+		osvconstants.EcosystemGo,
+		osvconstants.EcosystemHackage,
+		osvconstants.EcosystemHex,
+		osvconstants.EcosystemKubernetes,
+		osvconstants.EcosystemLinux,
+		osvconstants.EcosystemMageia,
+		osvconstants.EcosystemMaven,
+		osvconstants.EcosystemMinimOS,
+		osvconstants.EcosystemNPM,
+		osvconstants.EcosystemNuGet,
+		osvconstants.EcosystemOpenEuler,
+		osvconstants.EcosystemOpenSUSE,
+		osvconstants.EcosystemOSSFuzz,
+		osvconstants.EcosystemPackagist,
+		osvconstants.EcosystemPhotonOS,
+		osvconstants.EcosystemPub,
+		osvconstants.EcosystemPyPI,
+		osvconstants.EcosystemRedHat,
+		osvconstants.EcosystemRockyLinux,
+		osvconstants.EcosystemRubyGems,
+		osvconstants.EcosystemSUSE,
+		osvconstants.EcosystemSwiftURL,
+		osvconstants.EcosystemUbuntu,
+		osvconstants.EcosystemWolfi:
 
 	default:
 		return fmt.Errorf("base ecosystem does not exist in osvschema: %q", p.Ecosystem)
@@ -164,12 +164,12 @@ func Parse(str string) (Parsed, error) {
 	// And return an error if not.
 	ecosystem, suffix, _ := strings.Cut(str, ":")
 
-	result := Parsed{osvschema.Ecosystem(ecosystem), suffix}
+	result := Parsed{osvconstants.Ecosystem(ecosystem), suffix}
 
 	return result, result.GetValidity()
 }
 
 // FromEcosystem creates a Parsed struct from an osvschema.Ecosystem.
-func FromEcosystem(ecosystem osvschema.Ecosystem) Parsed {
+func FromEcosystem(ecosystem osvconstants.Ecosystem) Parsed {
 	return Parsed{Ecosystem: ecosystem}
 }

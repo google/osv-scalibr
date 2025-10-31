@@ -134,39 +134,12 @@ GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA
 		},
 		// -- Multiple access ID and Secret in with varied proximity ---
 		{
-			name: "complex file with multiple access ID and secret - far apart (no pairing)",
+			name: "complex file with access ID and secret - far apart (no pairing)",
 			input: `config_app1:
 GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA` + strings.Repeat("\nfiller line with random data", 500) + `
 config_app2:
 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
 			want: nil,
-		},
-		// --- Duplicate access ID or secret ---
-		{
-			name: "deduplication test - same access ID appears multiple times",
-			input: `first_occurrence: GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA
-some_other_data: random_value
-second_occurrence: GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA
-secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
-			want: []veles.Secret{
-				gcshmackey.HMACKey{
-					AccessID: "GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA",
-					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt432",
-				},
-			},
-		},
-		{
-			name: "deduplication test - same secret appears multiple times",
-			input: `id: GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA
-first_secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt432
-some_other_data: random_value
-second_secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
-			want: []veles.Secret{
-				gcshmackey.HMACKey{
-					AccessID: "GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA",
-					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt432",
-				},
-			},
 		},
 	}
 

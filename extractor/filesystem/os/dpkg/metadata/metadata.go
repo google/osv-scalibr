@@ -27,6 +27,7 @@ type Metadata struct {
 	Status            string
 	SourceName        string
 	SourceVersion     string
+	PackageSource     string
 	PackageVersion    string
 	OSID              string
 	OSVersionCodename string
@@ -75,6 +76,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			Status:            m.Status,
 			SourceName:        m.SourceName,
 			SourceVersion:     m.SourceVersion,
+			PackageSource:     m.PackageSource,
 			PackageVersion:    m.PackageVersion,
 			OsId:              m.OSID,
 			OsVersionCodename: m.OSVersionCodename,
@@ -96,6 +98,7 @@ func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
 		Status:            m.GetStatus(),
 		SourceName:        m.GetSourceName(),
 		SourceVersion:     m.GetSourceVersion(),
+		PackageSource:     m.GetPackageSource(),
 		PackageVersion:    m.GetPackageVersion(),
 		OSID:              m.GetOsId(),
 		OSVersionCodename: m.GetOsVersionCodename(),

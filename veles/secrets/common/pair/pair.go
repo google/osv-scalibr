@@ -44,8 +44,8 @@ var _ veles.Detector = &Detector{}
 
 // Detector finds instances of a pair of keys
 type Detector struct {
-	// The maximum length of the pair.
-	MaxLen uint32
+	// The maximum length of an element in the pair.
+	MaxElementLen uint32
 	// MaxDistance sets the maximum distance between the matches.
 	MaxDistance uint32
 	// Function to use to search for matches.
@@ -67,7 +67,7 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 
 // MaxSecretLen implements veles.Detector.
 func (d *Detector) MaxSecretLen() uint32 {
-	return d.MaxLen
+	return d.MaxElementLen*2 + d.MaxDistance
 }
 
 // FindAllMatches returns a function which finds all matches of a given regex.
@@ -85,6 +85,12 @@ func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
 	}
 }
 
+// filterOverlapping filters overlapping matches, it expects both slices to be ordered
+// and considers the first to be more important
+//
+// usage:
+//
+//	filtered_bs = filterOverlapping(as,bs)
 func filterOverlapping(as, bs []*Match) []*Match {
 	var filtered []*Match
 	aIdx := 0
@@ -102,7 +108,7 @@ func filterOverlapping(as, bs []*Match) []*Match {
 	return filtered
 }
 
-// findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
+// findOptimalPairs finds the best pairing between two sets of matches using a greedy algorithm.
 func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
 	// Find all possible pairings within maxContextLen distance
 	possiblePairs := findPossiblePairs(as, bs, maxDistance)
@@ -179,8 +185,8 @@ func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
 				continue
 			}
 
-			// Include pair if within maxDistance (or if maxDistance == 0)
-			if maxDistance == 0 || distance <= maxDistance {
+			// Include pair if within maxDistance
+			if distance <= maxDistance {
 				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
 			}
 		}

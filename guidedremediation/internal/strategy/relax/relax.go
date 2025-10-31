@@ -94,7 +94,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 func reqsToRelax(ctx context.Context, cl resolve.Client, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) []resolve.RequirementVersion {
 	var toRelax []resolve.RequirementVersion
 	for _, v := range resolved.Vulns {
-		if !slices.Contains(vulnIDs, v.OSV.ID) {
+		if !slices.Contains(vulnIDs, v.OSV.Id) {
 			continue
 		}
 		// Only relax dependencies if their distance is less than MaxDepth

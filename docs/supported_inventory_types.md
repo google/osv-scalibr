@@ -93,7 +93,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | uv.lock                                   | `python/uvlock`                      |
 | R          | renv.lock                                 | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                    | `ruby/gemspec`                       |
-|            | Gemfile.lock (OSV)                        | `ruby/gemfilelock`                   |
+|            | Gemfile.lock, gems.locked                 | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                | `rust/cargolock`                     |
 |            | Cargo.toml                                | `rust/cargotoml`                     |
 |            | Rust binaries                             | `rust/cargoauditable`                |
@@ -121,6 +121,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | GCP service account key                     | `secrets/gcpsak`                     |
 | GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
 | GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
+| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                 |
 | Gitlab PAT                                  | `secrets/gitlabpat`                  |
 | Grok xAI API key                            | `secrets/grokxaiapikey`              |
 | Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |
@@ -214,6 +215,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 pp| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
 | Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
 | Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
+| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`       |
 
 ## Enrichers
 

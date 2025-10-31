@@ -16,14 +16,14 @@ package gcshmackey
 
 import (
 	"context"
-	"errors"
+	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/smithy-go"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gcshmackey/signer"
+	"github.com/google/osv-scalibr/version"
 )
 
 const (
@@ -33,36 +33,40 @@ const (
 	CodeAccessDenied = "AccessDenied"
 )
 
+// HTTPSignerV4 defines the interface for signing HTTP requests using
+// the AWS Signature Version 4 signing process.
+type HTTPSignerV4 interface {
+	Sign(req *http.Request, accessKey, secretKey string) error
+}
+
 // Validator is a Veles Validator for Google Cloud Storage HMAC keys
 type Validator struct {
-	options s3.Options
+	client *http.Client
+	signer HTTPSignerV4
 }
 
 // ValidatorOption configures a Validator when creating it via NewValidator.
 type ValidatorOption func(*Validator)
 
-// WithURL configures the URL that the Validator uses.
-func WithURL(url string) ValidatorOption {
+// WithHTTPClient configures the http.Client that the Validator uses.
+func WithHTTPClient(cli *http.Client) ValidatorOption {
 	return func(v *Validator) {
-		v.options.BaseEndpoint = &url
+		v.client = cli
 	}
 }
 
-// WithSigner configures s3.HTTPSignerV4 that the Validator uses.
-func WithSigner(signer s3.HTTPSignerV4) ValidatorOption {
+// WithSigner configures HTTPSignerV4 that the Validator uses.
+func WithSigner(signer HTTPSignerV4) ValidatorOption {
 	return func(v *Validator) {
-		v.options.HTTPSignerV4 = signer
+		v.signer = signer
 	}
 }
 
 // NewValidator creates a new Validator with the given ValidatorOptions.
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
-		options: s3.Options{
-			Region:       "auto",
-			UsePathStyle: true,
-			BaseEndpoint: aws.String("https://storage.googleapis.com"),
-		},
+		client: http.DefaultClient,
+		signer: &signer.Signer{Service: "s3", Region: "auto"},
 	}
 	for _, opt := range opts {
 		opt(v)
@@ -70,25 +74,53 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 	return v
 }
 
-// Validate checks whether the given Google Cloud Storage HMAC key
+// Validate checks whether the given Google Cloud Storage HMAC key is valid
+// using the ListBuckets api call
 func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.ValidationStatus, error) {
-	opts := v.options.Copy()
-	opts.Credentials = credentials.NewStaticCredentialsProvider(key.AccessID, key.Secret, "")
-	client := s3.New(opts, patchForGCSOpt)
-
-	_, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://storage.googleapis.com/", nil)
 	if err != nil {
-		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) {
-			if apiErr.ErrorCode() == CodeAccessDenied {
-				return veles.ValidationValid, nil
-			}
-			if apiErr.ErrorCode() == CodeSignatureDoesNotMatch {
-				return veles.ValidationInvalid, nil
-			}
-		}
-		return veles.ValidationFailed, fmt.Errorf("unknown error %w", err)
+		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
+	}
+	req.Header.Set("User-Agent", "osv-scalibr/"+version.ScannerVersion)
+
+	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
+		return veles.ValidationFailed, fmt.Errorf("signing failed: %w", err)
 	}
 
-	return veles.ValidationValid, nil
+	rsp, err := v.client.Do(req)
+	if err != nil {
+		return veles.ValidationFailed, fmt.Errorf("GET failed: %w", err)
+	}
+
+	// the credentials are valid and the resource is accessible
+	if rsp.StatusCode == http.StatusOK {
+		return veles.ValidationValid, nil
+	}
+
+	body, err := io.ReadAll(rsp.Body)
+	if err != nil {
+		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
+	}
+	defer rsp.Body.Close()
+
+	type errorResponse struct {
+		Code string `xml:"Code"`
+	}
+
+	errResp := errorResponse{}
+	if err := xml.Unmarshal(body, &errResp); err != nil {
+		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
+	}
+
+	switch errResp.Code {
+	case CodeSignatureDoesNotMatch:
+		// Signature mismatch => credentials invalid
+		return veles.ValidationInvalid, nil
+	case CodeAccessDenied:
+		// Signature valid, but account lacks access
+		return veles.ValidationValid, nil
+	default:
+		// Unexpected error response
+		return veles.ValidationFailed, fmt.Errorf("unknown error code: %q", errResp.Code)
+	}
 }
