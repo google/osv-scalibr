@@ -43,6 +43,11 @@ var (
 	privateKeyPattern = regexp.MustCompile(`(?i)(vapid\S*)?[ \t:=]+["']?([A-Za-z0-9_-]{43})([^A-Za-z0-9_-]|$)`)
 )
 
+// matchMetadata contains metadata about the key match
+type matchMetadata struct {
+	HasContext bool
+}
+
 // NewDetector returns a VAPID private key detector
 //
 // a key is detected if:
@@ -59,13 +64,16 @@ func NewDetector() veles.Detector {
 			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
-			return Keys{PublicB64: pubB64, PrivateB64: privB64}, true
+			return Key{PublicB64: pubB64, PrivateB64: privB64}, true
 		},
 		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
-			if p.B == nil || !p.B.HasContext {
+			privB64 := p.B
+			if privB64 == nil || !privB64.Metadata.(matchMetadata).HasContext {
 				return nil, false
 			}
-			return Keys{PrivateB64: p.B.Value}, true
+			// if the private key was found and it had context before
+			// return it
+			return Key{PrivateB64: privB64.Value}, true
 		},
 	}
 }
@@ -77,12 +85,10 @@ func findAllMatchesWithContext(re *regexp.Regexp) func(data []byte) []*pair.Matc
 		matches := re.FindAllSubmatchIndex(data, -1)
 		var results []*pair.Match
 		for _, m := range matches {
-			fmt.Println(m)
-			hasVapid := m[2] != -1
 			results = append(results, &pair.Match{
-				Value:      string(data[m[4]:m[5]]),
-				Position:   m[0],
-				HasContext: hasVapid,
+				Value:    string(data[m[4]:m[5]]),
+				Position: m[0],
+				Metadata: matchMetadata{HasContext: m[2] != -1},
 			})
 		}
 		return results

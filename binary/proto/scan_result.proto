@@ -727,6 +727,7 @@ message SecretData {
     MariaDBCredentials maria_db_credentials = 46;
     GCSHmacKey gcs_hmac_key = 47;
     MysqlMyloginSection mysql_mylogin_section = 48;
+    VapidKey vapid_key = 49;
   }
 
   message GCPSAK {
@@ -956,6 +957,11 @@ message SecretData {
     string host = 4;
     string port = 5;
     string socket = 6;
+  }
+
+  message VapidKey {
+    string private_b64 = 1;
+    string public_b64 = 2;
   }
 
   message OnePasswordConnectToken {

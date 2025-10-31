@@ -18,7 +18,8 @@
 // ref: https://firebase.google.com/docs/cloud-messaging/get-started?platform=web&_gl=1*vzrfcj*_up*MQ..*_ga*ODM5Mzk4NDUxLjE3NDU5MzczOTk.*_ga_CW55HF8NVT*MTc0NTkzNzM5OS4xLjAuMTc0NTkzNzM5OS4wLjAuMA..#configure_web_credentials_with
 package vapid
 
-type Keys struct {
+// Key holds the content of a VAPID key
+type Key struct {
 	PrivateB64 string
 	PublicB64  string
 }

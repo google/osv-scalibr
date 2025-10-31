@@ -58,7 +58,7 @@ func TestDetector_Detect(t *testing.T) {
 				Vapid Public Key: BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
 					PublicB64:  "BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs",
 				},
@@ -71,7 +71,7 @@ func TestDetector_Detect(t *testing.T) {
 				Vapid Public Key: BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
 					PublicB64:  "BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs",
 				},
@@ -96,7 +96,7 @@ func TestDetector_Detect(t *testing.T) {
 			name:  "only private - context",
 			input: `VapidPrivateKey: LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
 				},
 			},
@@ -105,7 +105,7 @@ func TestDetector_Detect(t *testing.T) {
 			name:  "only private - context with strange spacing",
 			input: `VapidPrivateKey  : LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
 				},
 			},
@@ -114,7 +114,7 @@ func TestDetector_Detect(t *testing.T) {
 			name:  "only private - context - snake case ",
 			input: `VAPID_PRIVATE_KEY=LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
 			want: []veles.Secret{
-				vapid.Keys{PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4"},
+				vapid.Key{PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4"},
 			},
 		},
 		{
@@ -146,7 +146,7 @@ func TestDetector_Detect(t *testing.T) {
 			}
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "rrvzfePgU7wc8RP7fcSMR-8ur2nDzqissXT5ovojK6Q",
 					PublicB64:  "BFKSGCtM-gouDaPSNYwDRmCTCSEelTpujQ6mHG2KIXaaJI9WLReodcS00QE4ck8P5uPHLSkNKZ7ZAWjpgITwrNI",
 				},
@@ -174,7 +174,7 @@ func TestDetector_Detect(t *testing.T) {
       },
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0",
 					PublicB64:  "BKC9CAak3PFu0nhmVbEFs0HG0o6T1bMb-q_iSAtiYHv2zdQM_IPkz1A9gzVd_-4cNYMeLwq1i8gA83-U0pc4aOk",
 				},
@@ -189,7 +189,7 @@ func TestDetector_Detect(t *testing.T) {
       },
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0",
 				},
 			},
@@ -207,7 +207,7 @@ func TestDetector_Detect(t *testing.T) {
 			}
 			`,
 			want: []veles.Secret{
-				vapid.Keys{
+				vapid.Key{
 					PrivateB64: "gIe4zn7y8cgAyxLVk-6NX_mpR-1R_aPx_8CZ1VI0oYg",
 					PublicB64:  "BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw",
 				},
