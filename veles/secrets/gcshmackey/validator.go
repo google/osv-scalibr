@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey/signer"
-	"github.com/google/osv-scalibr/version"
 )
 
 const (
@@ -81,7 +80,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
-	req.Header.Set("User-Agent", "osv-scalibr/"+version.ScannerVersion)
+	req.Header.Set("User-Agent", "osv-scalibr")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("signing failed: %w", err)
