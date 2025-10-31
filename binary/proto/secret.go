@@ -21,6 +21,7 @@ import (
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
+	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
@@ -115,6 +116,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return privatekeyToProto(t), nil
 	case velesgcpsak.GCPSAK:
 		return gcpsakToProto(t), nil
+	case velesmysqlmylogin.Section:
+		return mysqlMyloginSectionToProto(t), nil
 	case dockerhubpat.DockerHubPAT:
 		return dockerHubPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
@@ -310,6 +313,23 @@ func gcsHmacKeyToProto(t gcshmackey.HMACKey) *spb.SecretData {
 				AccessId: t.AccessID,
 				Secret:   t.Secret,
 			},
+		},
+	}
+}
+
+func mysqlMyloginSectionToProto(e velesmysqlmylogin.Section) *spb.SecretData {
+	ePB := &spb.SecretData_MysqlMyloginSection{
+		SectionName: e.SectionName,
+		User:        e.User,
+		Password:    e.Password,
+		Host:        e.Host,
+		Port:        e.Port,
+		Socket:      e.Socket,
+	}
+
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MysqlMyloginSection_{
+			MysqlMyloginSection: ePB,
 		},
 	}
 }
@@ -754,6 +774,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return pgpassToStruct(s.GetPgpass()), nil
 	case *spb.SecretData_Gcpsak:
 		return gcpsakToStruct(s.GetGcpsak()), nil
+	case *spb.SecretData_MysqlMyloginSection_:
+		return mysqlMyloginSectionToStruct(s.GetMysqlMyloginSection()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
 	case *spb.SecretData_GitlabPat_:
@@ -993,6 +1015,18 @@ func gcpsakToStruct(sakPB *spb.SecretData_GCPSAK) velesgcpsak.GCPSAK {
 		}
 	}
 	return sak
+}
+
+func mysqlMyloginSectionToStruct(ePB *spb.SecretData_MysqlMyloginSection) velesmysqlmylogin.Section {
+	mysqlmylogin := velesmysqlmylogin.Section{
+		SectionName: ePB.GetSectionName(),
+		User:        ePB.GetUser(),
+		Password:    ePB.GetPassword(),
+		Host:        ePB.GetHost(),
+		Port:        ePB.GetPort(),
+		Socket:      ePB.GetSocket(),
+	}
+	return mysqlmylogin
 }
 
 func pgpassToStruct(ePB *spb.SecretData_Pgpass) velespgpass.Pgpass {
