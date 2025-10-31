@@ -25,13 +25,17 @@ import (
 )
 
 const (
-	maxSecretLen = 87
+	publicKeyLen  = 87
+	privateKeyLen = 43
+	maxKeyLen     = max(publicKeyLen, privateKeyLen)
+
 	// maxDistance is the maximum window length to pair env-style credentials.
 	maxDistance = 10 * 1 << 10 // 10 KiB
 )
 
 var (
-	publicKeyPattern = regexp.MustCompile(`[A-Za-z0-9_-]{87}`)
+	// match a json blob of exactly 87 characters
+	publicKeyPattern = regexp.MustCompile(`[A-Za-z0-9_-]{87}([^A-Za-z0-9_-]|$)`)
 	// match:
 	// - **vapid**=base64blob with exact length of 43
 	// - **vapid**"="base64blob with exact length of 43
@@ -47,11 +51,11 @@ var (
 // - it is validated against a nearby public key
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxElementLen: maxSecretLen, MaxDistance: maxDistance,
+		MaxElementLen: maxKeyLen, MaxDistance: maxDistance,
 		FindA: pair.FindAllMatches(publicKeyPattern),
 		FindB: findAllMatchesWithContext(privateKeyPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			pubB64, privB64 := p.A.Value, p.B.Value
+			pubB64, privB64 := p.A.Value[:publicKeyLen], p.B.Value
 			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
