@@ -27,17 +27,17 @@ func TestYankedUnmarshalJSON(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "boolean false",
+			name: "boolean_false",
 			json: `false`,
 			want: Yanked{Value: false},
 		},
 		{
-			name: "boolean true",
+			name: "boolean_true",
 			json: `true`,
 			want: Yanked{Value: true},
 		},
 		{
-			name: "string reason",
+			name: "string_reason",
 			json: `"security issue"`,
 			want: Yanked{Value: true},
 		},

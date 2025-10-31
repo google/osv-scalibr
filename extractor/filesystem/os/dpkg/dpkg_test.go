@@ -589,7 +589,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "VERSION_CODENAME not set, fallback to VERSION_ID",
+			name: "VERSION_CODENAME_not_set,_fallback_to_VERSION_ID",
 			path: "testdata/dpkg/single",
 			osrelease: `VERSION_ID="12"
 			ID=debian`,
@@ -1121,7 +1121,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "VERSION_CODENAME not set, fallback to VERSION_ID",
+			name: "VERSION_CODENAME_not_set,_fallback_to_VERSION_ID",
 			path: "testdata/opkg/single",
 			osrelease: `VERSION_ID="21.02.1"
 			ID=openwrt`,

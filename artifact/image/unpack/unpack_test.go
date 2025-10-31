@@ -49,28 +49,28 @@ func TestNewUnpacker(t *testing.T) {
 		want    *unpack.Unpacker
 		wantErr error
 	}{{
-		name: "missing SymlinkResolution",
+		name: "missing_SymlinkResolution",
 		cfg: &unpack.UnpackerConfig{
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 			Requirer:           &require.FileRequirerAll{},
 		},
 		wantErr: cmpopts.AnyError,
 	}, {
-		name: "missing SymlinkErrStrategy",
+		name: "missing_SymlinkErrStrategy",
 		cfg: &unpack.UnpackerConfig{
 			SymlinkResolution: unpack.SymlinkRetain,
 			Requirer:          &require.FileRequirerAll{},
 		},
 		wantErr: cmpopts.AnyError,
 	}, {
-		name: "missing Requirer",
+		name: "missing_Requirer",
 		cfg: &unpack.UnpackerConfig{
 			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
 		},
 		wantErr: cmpopts.AnyError,
 	}, {
-		name: "0 MaxFileBytes bytes",
+		name: "0_MaxFileBytes_bytes",
 		cfg: &unpack.UnpackerConfig{
 			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
@@ -86,7 +86,7 @@ func TestNewUnpacker(t *testing.T) {
 			Requirer:           &require.FileRequirerAll{},
 		},
 	}, {
-		name: "all fields populated",
+		name: "all_fields_populated",
 		cfg: &unpack.UnpackerConfig{
 			SymlinkResolution:  unpack.SymlinkRetain,
 			SymlinkErrStrategy: unpack.SymlinkErrLog,
@@ -102,7 +102,7 @@ func TestNewUnpacker(t *testing.T) {
 			Requirer:           &require.FileRequirerAll{},
 		},
 	}, {
-		name: "default config",
+		name: "default_config",
 		cfg:  unpack.DefaultUnpackerConfig(),
 		want: &unpack.Unpacker{
 			SymlinkResolution:  unpack.SymlinkRetain,
@@ -187,7 +187,7 @@ func TestUnpackSquashed(t *testing.T) {
 			"sample.txt": {content: "sample text file\n", mode: fs.FileMode(0600)},
 		},
 	}, {
-		name: "image with symlinks",
+		name: "image_with_symlinks",
 		cfg:  unpack.DefaultUnpackerConfig().WithMaxPass(1),
 		dir: func() string {
 			// Create an inner directory to unpack in and an outer directory to test if symlinks try pointing to it.
@@ -214,7 +214,7 @@ func TestUnpackSquashed(t *testing.T) {
 			filepath.FromSlash("dir2/dir3/relative-subfolder-symlink.txt"):   {content: "sample text\n", mode: fs.ModeSymlink | fs.FileMode(0777)},
 		},
 	}, {
-		name: "image with absolute path symlink but only the symlink is required",
+		name: "image_with_absolute_path_symlink_but_only_the_symlink_is_required",
 		cfg: unpack.DefaultUnpackerConfig().WithMaxPass(2).WithRequirer(
 			require.NewFileRequirerPaths([]string{
 				filepath.FromSlash("dir1/absolute-symlink.txt"),
@@ -227,7 +227,7 @@ func TestUnpackSquashed(t *testing.T) {
 			filepath.FromSlash("dir1/sample.txt"):           {content: "sample text\n", mode: fs.FileMode(0644)},
 		},
 	}, {
-		name: "image with a chain of symlinks but only the first symlink is required",
+		name: "image_with_a_chain_of_symlinks_but_only_the_first_symlink_is_required",
 		cfg: unpack.DefaultUnpackerConfig().WithMaxPass(2).WithRequirer(
 			require.NewFileRequirerPaths([]string{
 				filepath.FromSlash("dir1/chain-symlink.txt"),
@@ -241,7 +241,7 @@ func TestUnpackSquashed(t *testing.T) {
 			filepath.FromSlash("dir1/sample.txt"):           {content: "sample text\n", mode: fs.FileMode(0644)},
 		},
 	}, {
-		name: "image with absolute path symlink, only the symlink is required, but there were not enough passes to resolve the symlink",
+		name: "image_with_absolute_path_symlink,_only_the_symlink_is_required,_but_there_were_not_enough_passes_to_resolve_the_symlink",
 		cfg: unpack.DefaultUnpackerConfig().WithMaxPass(1).WithRequirer(
 			require.NewFileRequirerPaths([]string{
 				filepath.FromSlash("dir1/chain-symlink.txt"),
@@ -251,7 +251,7 @@ func TestUnpackSquashed(t *testing.T) {
 		image: mustImageFromPath(t, filepath.Join("testdata", "symlinks.tar")),
 		want:  map[string]contentAndMode{},
 	}, {
-		name: "image built from scratch (not through a tool like Docker)",
+		name: "image_built_from_scratch_(not_through_a_tool_like_Docker)",
 		cfg:  unpack.DefaultUnpackerConfig().WithMaxPass(1),
 		dir:  t.TempDir(),
 		image: mustNewSquashedImage(t, map[string]contentAndMode{
@@ -263,7 +263,7 @@ func TestUnpackSquashed(t *testing.T) {
 			filepath.FromSlash("another/file.json"): {content: "some other text", mode: fs.FileMode(0600)},
 		},
 	}, {
-		name: "only some files are required",
+		name: "only_some_files_are_required",
 		cfg:  unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{"some/file.txt"})),
 		dir:  t.TempDir(),
 		image: mustNewSquashedImage(t, map[string]contentAndMode{
@@ -323,7 +323,7 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 		wantErr    error
 	}{
 		{
-			name: "os.Root fails when writing files outside base directory due to long symlink target",
+			name: "os.Root_fails_when_writing_files_outside_base_directory_due_to_long_symlink_target",
 			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
 				"/usr/share/doc/a/copyright",
 				"/usr/share/doc/b/copyright",
@@ -385,7 +385,7 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			want: map[string]contentAndMode{},
 		},
 		{
-			name: "os.Root detects writing files outside base directory",
+			name: "os.Root_detects_writing_files_outside_base_directory",
 			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
 				"/usr/share/doc/a/copyright",
 				"/usr/share/doc/b/copyright",

@@ -31,7 +31,7 @@ func TestAnnotationToProto(t *testing.T) {
 		want spb.Package_AnnotationEnum
 	}{
 		{
-			desc: "zero value",
+			desc: "zero_value",
 		},
 		{
 			desc: "unspecified",
@@ -44,12 +44,12 @@ func TestAnnotationToProto(t *testing.T) {
 			want: spb.Package_TRANSITIONAL,
 		},
 		{
-			desc: "inside os package",
+			desc: "inside_os_package",
 			a:    extractor.InsideOSPackage,
 			want: spb.Package_INSIDE_OS_PACKAGE,
 		},
 		{
-			desc: "inside cache dir",
+			desc: "inside_cache_dir",
 			a:    extractor.InsideCacheDir,
 			want: spb.Package_INSIDE_CACHE_DIR,
 		},
@@ -74,7 +74,7 @@ func TestAnnotationToStruct(t *testing.T) {
 		want extractor.Annotation
 	}{
 		{
-			desc: "zero value",
+			desc: "zero_value",
 		},
 		{
 			desc: "unspecified",
@@ -87,12 +87,12 @@ func TestAnnotationToStruct(t *testing.T) {
 			want: extractor.Transitional,
 		},
 		{
-			desc: "inside os package",
+			desc: "inside_os_package",
 			a:    spb.Package_INSIDE_OS_PACKAGE,
 			want: extractor.InsideOSPackage,
 		},
 		{
-			desc: "inside cache dir",
+			desc: "inside_cache_dir",
 			a:    spb.Package_INSIDE_CACHE_DIR,
 			want: extractor.InsideCacheDir,
 		},

@@ -46,7 +46,7 @@ func TestNew(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			name: "valid config",
+			name: "valid_config",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{}),
 			},
@@ -159,7 +159,7 @@ func TestEnrich(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "no image metadata to enrich",
+			name: "no_image_metadata_to_enrich",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{}),
 			},
@@ -167,7 +167,7 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{},
 		},
 		{
-			name: "enrich layers",
+			name: "enrich_layers",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
@@ -216,7 +216,7 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
-			name: "same layer chainID in different images, should use cache",
+			name: "same_layer_chainID_in_different_images,_should_use_cache",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
@@ -265,7 +265,7 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
-			name: "client error on last layer",
+			name: "client_error_on_last_layer",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{
@@ -302,7 +302,7 @@ func TestEnrich(t *testing.T) {
 			wantErr: clientErr,
 		},
 		{
-			name: "client error on first layer",
+			name: "client_error_on_first_layer",
 			cfg: &baseimage.Config{
 				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 					{

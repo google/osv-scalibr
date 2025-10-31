@@ -933,7 +933,7 @@ func TestGetScanConfig_ExtractorOverride(t *testing.T) {
 		wantErr           error
 	}{
 		{
-			name: "no override",
+			name: "no_override",
 			flags: &cli.Flags{
 				Root:       "/",
 				ResultFile: "result.textproto",
@@ -943,7 +943,7 @@ func TestGetScanConfig_ExtractorOverride(t *testing.T) {
 			wantErr:           nil,
 		},
 		{
-			name: "extractor override plugin not found",
+			name: "extractor_override_plugin_not_found",
 			flags: &cli.Flags{
 				Root:              "/",
 				ResultFile:        "result.textproto",
@@ -955,7 +955,7 @@ func TestGetScanConfig_ExtractorOverride(t *testing.T) {
 			wantErr:           cmpopts.AnyError,
 		},
 		{
-			name: "override matches",
+			name: "override_matches",
 			flags: &cli.Flags{
 				Root:              "/",
 				ResultFile:        "result.textproto",
@@ -968,7 +968,7 @@ func TestGetScanConfig_ExtractorOverride(t *testing.T) {
 			wantErr:           nil,
 		},
 		{
-			name: "override does not match",
+			name: "override_does_not_match",
 			flags: &cli.Flags{
 				Root:              "/",
 				ResultFile:        "result.textproto",

@@ -195,7 +195,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "osrelease openwrt",
+			name: "osrelease_openwrt",
 			path: "testdata/single",
 			osrelease: `ID=openwrt
 			VERSION_ID=1.2.3`,

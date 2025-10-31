@@ -47,7 +47,7 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
-			name: "containerd metadb windows",
+			name: "containerd_metadb_windows",
 			path: "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db",
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos:         "ignore",

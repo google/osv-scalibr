@@ -53,7 +53,7 @@ func TestPluginStatusToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "converts file errors",
+			desc: "converts_file_errors",
 			s: &plugin.Status{
 				Name:    "test-plugin-with-file-errors",
 				Version: 1,
@@ -78,7 +78,7 @@ func TestPluginStatusToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "nil status",
+			desc: "nil_status",
 			s: &plugin.Status{
 				Name:    "test-plugin",
 				Version: 1,

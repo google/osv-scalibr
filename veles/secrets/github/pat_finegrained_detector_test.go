@@ -81,7 +81,7 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 			github.FineGrainedPersonalAccessToken{Token: anotherFinegrainedPATTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s

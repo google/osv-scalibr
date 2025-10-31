@@ -54,7 +54,7 @@ func TestDetectionEngine_withSmallBuffer(t *testing.T) {
 		sub    []testDetectionEngineSubCase
 	}{
 		{
-			name: "single detector",
+			name: "single_detector",
 			engine: mustEngine(veles.NewDetectionEngine(
 				velestest.FakeDetectors("FOO"),
 				veles.WithReadLen(5),
@@ -134,7 +134,7 @@ func TestDetectionEngine_withSmallBuffer(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple same length detectors",
+			name: "multiple_same_length_detectors",
 			engine: mustEngine(veles.NewDetectionEngine(
 				velestest.FakeDetectors("FOO", "BAR", "BAZ"),
 				veles.WithReadLen(5),
@@ -188,7 +188,7 @@ func TestDetectionEngine_withSmallBuffer(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple different length detectors",
+			name: "multiple_different_length_detectors",
 			engine: mustEngine(veles.NewDetectionEngine(
 				velestest.FakeDetectors("FOO", "HELLO", "FRIENDS"),
 				veles.WithRetainLen(7),
@@ -218,7 +218,7 @@ func TestDetectionEngine_withSmallBuffer(t *testing.T) {
 			},
 		},
 		{
-			name: "overlapping detectors",
+			name: "overlapping_detectors",
 			engine: mustEngine(veles.NewDetectionEngine(
 				velestest.FakeDetectors("TEST13", "TEST1337"),
 				veles.WithRetainLen(8),

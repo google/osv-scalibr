@@ -80,7 +80,7 @@ func TestDetector_Detect(t *testing.T) {
 		},
 		// -- Single Client ID and Secret in close proximity (happy path) ---
 		{
-			name: "client ID and secret in close proximity",
+			name: "client_ID_and_secret_in_close_proximity",
 			input: `123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
 GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			want: []veles.Secret{
@@ -91,13 +91,13 @@ GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			},
 		},
 		{
-			name: "client secret in with invalid prefix",
+			name: "client_secret_in_with_invalid_prefix",
 			input: `123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
 abcGOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			want: nil,
 		},
 		{
-			name: "client ID and secret in close proximity in json format",
+			name: "client_ID_and_secret_in_close_proximity_in_json_format",
 			input: `{
 				"client_id": "717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com",
 				"client_secret": "GOCSPX-WebAppSecret9876543210ABC"
@@ -110,7 +110,7 @@ abcGOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK`,
 			},
 		},
 		{
-			name: "valid formats mixed with invalid",
+			name: "valid_formats_mixed_with_invalid",
 			input: `valid_id: 444444444444-valid.apps.googleusercontent.com
 invalid_id: 123-invalid.apps.googleusercontent.com
 valid_secret: GOCSPX-ValidSecret123456789012
@@ -124,7 +124,7 @@ invalid_secret: WRONG-InvalidSecret123456789012`,
 		},
 		// -- Multiple Client ID and Secret in close proximity ---
 		{
-			name: "complex file with multiple client ID and secret - test proximity",
+			name: "complex_file_with_multiple_client_ID_and_secret_-_test_proximity",
 			input: `config_app1:
 111111111111-first.apps.googleusercontent.com
 GOCSPX-FirstSecret123456789012
@@ -144,7 +144,7 @@ GOCSPX-SecondSecret987654321098`,
 			},
 		},
 		{
-			name: "real world client_secrets.json example",
+			name: "real_world_client_secrets.json_example",
 			input: `{
   "web": {
     "client_id": "555666777888-webappclient.apps.googleusercontent.com",
@@ -165,7 +165,7 @@ GOCSPX-SecondSecret987654321098`,
 		},
 		// -- Multiple Client ID and Secret in with varied proximity ---
 		{
-			name: "complex file with multiple client ID and secret - far apart (no pairing)",
+			name: "complex_file_with_multiple_client_ID_and_secret_-_far_apart_(no_pairing)",
 			input: `config_app1:
 111111111111-first.apps.googleusercontent.com` + strings.Repeat("\nfiller line with random data", 500) + `
 config_app2:
@@ -173,7 +173,7 @@ GOCSPX-FarAwaySecret123456789012`,
 			want: nil,
 		},
 		{
-			name: "multiple client IDs with one secret - closest pairing",
+			name: "multiple_client_IDs_with_one_secret_-_closest_pairing",
 			input: `first_id: 111111111111-first.apps.googleusercontent.com
 second_id: 222222222222-second.apps.googleusercontent.com
 shared_secret: GOCSPX-SharedSecret123456789012`,
@@ -185,7 +185,7 @@ shared_secret: GOCSPX-SharedSecret123456789012`,
 			},
 		},
 		{
-			name: "one client ID with multiple secrets - closest pairing",
+			name: "one_client_ID_with_multiple_secrets_-_closest_pairing",
 			input: `first_secret: GOCSPX-FirstSecret123456789012
 shared_id: 333333333333-shared.apps.googleusercontent.com
 second_secret: GOCSPX-SecondSecret987654321098`,
@@ -198,7 +198,7 @@ second_secret: GOCSPX-SecondSecret987654321098`,
 		},
 		// --- Duplicate client ID or secret ---
 		{
-			name: "deduplication test - same client ID appears multiple times",
+			name: "deduplication_test_-_same_client_ID_appears_multiple_times",
 			input: `first_occurrence: 123456789012-duplicate.apps.googleusercontent.com
 some_other_data: random_value
 second_occurrence: 123456789012-duplicate.apps.googleusercontent.com
@@ -211,7 +211,7 @@ secret: GOCSPX-DuplicateTest123456789012`,
 			},
 		},
 		{
-			name: "deduplication test - same client secret appears multiple times",
+			name: "deduplication_test_-_same_client_secret_appears_multiple_times",
 			input: `id: 111111111111-unique.apps.googleusercontent.com
 first_secret: GOCSPX-DuplicateSecret123456789
 some_other_data: random_value
@@ -224,7 +224,7 @@ second_secret: GOCSPX-DuplicateSecret123456789`,
 			},
 		},
 		{
-			name: "deduplication test - multiple pairs with overlapping credentials",
+			name: "deduplication_test_-_multiple_pairs_with_overlapping_credentials",
 			input: `shared_id: 123456789012-shared.apps.googleusercontent.com
 first_secret: GOCSPX-FirstSecret123456789012
 another_id: 987654321098-another.apps.googleusercontent.com
@@ -247,7 +247,7 @@ shared_secret_again: GOCSPX-SharedSecret987654321098`,
 			},
 		},
 		{
-			name: "deduplication test - ensures no double pairing of same credentials",
+			name: "deduplication_test_-_ensures_no_double_pairing_of_same_credentials",
 			input: `first_id: 111111111111-first.apps.googleusercontent.com
 unique_secret: GOCSPX-UniqueSecret123456789012
 second_id: 222222222222-second.apps.googleusercontent.com

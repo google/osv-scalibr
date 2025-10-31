@@ -42,7 +42,7 @@ func TestToSPDX23(t *testing.T) {
 		want       *v2_3.Document
 	}{
 		{
-			desc: "Package with no custom config",
+			desc: "Package_with_no_custom_config",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -133,7 +133,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Package with custom config",
+			desc: "Package_with_custom_config",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -238,7 +238,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Packages with licenses",
+			desc: "Packages_with_licenses",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -376,7 +376,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Package with invalid PURLs skipped",
+			desc: "Package_with_invalid_PURLs_skipped",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
@@ -432,7 +432,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Invalid chars in package name replaced",
+			desc: "Invalid_chars_in_package_name_replaced",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -523,7 +523,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "One location reported",
+			desc: "One_location_reported",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -615,7 +615,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple locations reported",
+			desc: "Multiple_locations_reported",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{

@@ -127,22 +127,22 @@ func TestString(t *testing.T) {
 		want string
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
 			want: "SUCCEEDED",
 		},
 		{
-			desc: "Partially successful scan",
+			desc: "Partially_successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusPartiallySucceeded},
 			want: "PARTIALLY_SUCCEEDED",
 		},
 		{
-			desc: "Failed scan",
+			desc: "Failed_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"},
 			want: "FAILED: failure",
 		},
 		{
-			desc: "Unspecified status",
+			desc: "Unspecified_status",
 			s:    &plugin.ScanStatus{},
 			want: "UNSPECIFIED",
 		},

@@ -33,13 +33,13 @@ func TestSetProto(t *testing.T) {
 		want *pb.Package
 	}{
 		{
-			desc: "nil metadata",
+			desc: "nil_metadata",
 			m:    nil,
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{Name: "some-package"},
 		},
 		{
-			desc: "nil package",
+			desc: "nil_package",
 			m: &metadata.Metadata{
 				Name: "Git",
 			},
@@ -47,7 +47,7 @@ func TestSetProto(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "set metadata",
+			desc: "set_metadata",
 			m: &metadata.Metadata{
 				Name: "Git",
 				ID:   "Git.Git",
@@ -64,7 +64,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "override metadata",
+			desc: "override_metadata",
 			m: &metadata.Metadata{
 				Name: "Visual Studio Code",
 				ID:   "Microsoft.VisualStudioCode",
@@ -89,7 +89,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.Metadata{
 				Name:     "Git",
 				ID:       "Git.Git",
@@ -154,7 +154,7 @@ func TestToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.WingetPackageMetadata{
 				Name: "Git",
 				Id:   "Git.Git",
@@ -165,7 +165,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.WingetPackageMetadata{
 				Name:     "Git",
 				Id:       "Git.Git",

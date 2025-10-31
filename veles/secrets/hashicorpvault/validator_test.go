@@ -111,7 +111,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 		expectError    bool
 	}{
 		{
-			name: "valid credentials",
+			name: "valid_credentials",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -121,7 +121,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "invalid credentials - unauthorized",
+			name: "invalid_credentials_-_unauthorized",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "invalid-secret",
@@ -131,7 +131,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "invalid credentials - bad request",
+			name: "invalid_credentials_-_bad_request",
 			credentials: AppRoleCredentials{
 				RoleID:   "invalid-role-id",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -141,7 +141,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "server error",
+			name: "server_error",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -151,7 +151,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    true,
 		},
 		{
-			name: "missing role_id",
+			name: "missing_role_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -161,7 +161,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    true,
 		},
 		{
-			name: "missing secret_id",
+			name: "missing_secret_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "",
