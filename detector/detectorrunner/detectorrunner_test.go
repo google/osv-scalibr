@@ -29,7 +29,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestRun(t *testing.T) {
@@ -62,7 +63,7 @@ func TestRun(t *testing.T) {
 	findingNoAdvisory := &inventory.GenericFinding{}
 	findingNoAdvisoryID := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{}}
 	packageVuln := &inventory.PackageVuln{
-		Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+		Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 	}
 	det1 := fd.New().WithName("det1").WithVersion(1)
 	det2 := fd.New().WithName("det2").WithVersion(2)
@@ -187,7 +188,7 @@ func TestRun(t *testing.T) {
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
 			}
-			if diff := cmp.Diff(tc.wantFindings, gotFindings); diff != "" {
+			if diff := cmp.Diff(tc.wantFindings, gotFindings, protocmp.Transform()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantStatus, gotStatus); diff != "" {

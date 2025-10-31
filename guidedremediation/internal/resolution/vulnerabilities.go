@@ -23,12 +23,12 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/matcher"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // Vulnerability represents a vulnerability found in a dependency graph.
 type Vulnerability struct {
-	OSV     *osvschema.Vulnerability
+	OSV     *osvpb.Vulnerability
 	DevOnly bool
 	// Subgraphs are the collections of nodes and edges that reach the vulnerable node.
 	// Subgraphs all contain the root node (NodeID 0) with no incoming edges (Parents),
@@ -46,17 +46,17 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, d
 
 	// The root node is of the graph is excluded from the vulnerability results.
 	// Prepend an element to nodeVulns so that the indices line up with graph.Nodes[i] <=> nodeVulns[i]
-	nodeVulns = append([][]*osvschema.Vulnerability{nil}, nodeVulns...)
+	nodeVulns = append([][]*osvpb.Vulnerability{nil}, nodeVulns...)
 
 	// Find the dependency subgraphs of the vulnerable dependencies.
 	var vulnerableNodes []resolve.NodeID
-	uniqueVulns := make(map[string]*osvschema.Vulnerability)
+	uniqueVulns := make(map[string]*osvpb.Vulnerability)
 	for i, vulns := range nodeVulns {
 		if len(vulns) > 0 {
 			vulnerableNodes = append(vulnerableNodes, resolve.NodeID(i))
 		}
 		for _, vuln := range vulns {
-			uniqueVulns[vuln.ID] = vuln
+			uniqueVulns[vuln.Id] = vuln
 		}
 	}
 
@@ -64,7 +64,7 @@ func FindVulnerabilities(ctx context.Context, cl matcher.VulnerabilityMatcher, d
 	vulnSubgraphs := make(map[string][]*DependencySubgraph)
 	for i, nID := range vulnerableNodes {
 		for _, vuln := range nodeVulns[nID] {
-			vulnSubgraphs[vuln.ID] = append(vulnSubgraphs[vuln.ID], nodeSubgraphs[i])
+			vulnSubgraphs[vuln.Id] = append(vulnSubgraphs[vuln.Id], nodeSubgraphs[i])
 		}
 	}
 

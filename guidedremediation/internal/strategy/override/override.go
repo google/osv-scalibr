@@ -61,7 +61,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 		// Find the relevant vulns affecting each version key.
 		vkVulns := make(map[resolve.VersionKey][]*resolution.Vulnerability)
 		for i, v := range resolved.Vulns {
-			if !slices.Contains(vulnIDs, v.OSV.ID) {
+			if !slices.Contains(vulnIDs, v.OSV.Id) {
 				continue
 			}
 			// Keep track of VersionKeys we've seen for this vuln to avoid duplicates.
