@@ -33,7 +33,8 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -77,23 +78,23 @@ func (d Detector) DetectedFinding() inventory.Finding {
 	return d.findingForPackage(nil)
 }
 
-func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2023-38408",
+		Vulnerability: &osvpb.Vulnerability{
+			Id:      "CVE-2023-38408",
 			Summary: "CVE-2023-38408",
 			Details: "CVE-2023-38408",
-			Affected: []osvschema.Affected{{
-				Package: osvschema.Package{
+			Affected: []*osvpb.Affected{{
+				Package: &osvpb.Package{
 					Name: "openssh",
 				},
-				Severity: []osvschema.Severity{{
-					Type:  osvschema.SeverityCVSSV3,
+				Severity: []*osvpb.Severity{{
+					Type:  osvpb.Severity_CVSS_V3,
 					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 				}},
-				Ranges: []osvschema.Range{{
-					Type:   osvschema.RangeEcosystem,
-					Events: []osvschema.Event{{Fixed: "9.3.p2"}},
+				Ranges: []*osvpb.Range{{
+					Type:   osvpb.Range_ECOSYSTEM,
+					Events: []*osvpb.Event{{Fixed: "9.3.p2"}},
 				}},
 			}},
 			DatabaseSpecific: dbSpecific,
@@ -170,8 +171,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 	locations = append(locations, socketFiles...)
 
-	dbSpecific := map[string]any{
-		"extra": buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations),
+	dbSpecific := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"extra": {Kind: &structpb.Value_StringValue{StringValue: buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations)}},
+		},
 	}
 	return d.findingForPackage(dbSpecific), nil
 }
@@ -299,7 +302,7 @@ func findString(path string, re *regexp.Regexp) []int {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	r := []int{}
+	var r []int
 	i := -1
 	for scanner.Scan() {
 		i++

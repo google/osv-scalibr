@@ -19,10 +19,10 @@ import (
 	"context"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // VulnerabilityMatcher interface provides functionality get a list of affecting vulnerabilities for each package in an inventory.
 type VulnerabilityMatcher interface {
-	MatchVulnerabilities(ctx context.Context, pkgs []*extractor.Package) ([][]*osvschema.Vulnerability, error)
+	MatchVulnerabilities(ctx context.Context, pkgs []*extractor.Package) ([][]*osvpb.Vulnerability, error)
 }
