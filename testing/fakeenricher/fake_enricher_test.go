@@ -27,7 +27,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/testing/fakeenricher"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestName(t *testing.T) {
@@ -156,7 +157,7 @@ func TestEnrich(t *testing.T) {
 		}},
 		PackageVulns: []*inventory.PackageVuln{
 			{
-				Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+				Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 			},
 		},
 		GenericFindings: []*inventory.GenericFinding{{
@@ -178,7 +179,7 @@ func TestEnrich(t *testing.T) {
 			Version: "3.0",
 		}},
 		PackageVulns: []*inventory.PackageVuln{{
-			Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+			Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 		}},
 		GenericFindings: []*inventory.GenericFinding{{
 			Adv: &inventory.GenericFindingAdvisory{
@@ -243,7 +244,7 @@ func TestEnrich(t *testing.T) {
 			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Enricher{%+v}.Enrich(%+v, %+v) error: got %v, want %v\n", tc.cfg, tc.input, tc.inv, gotErr, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.wantInv, tc.inv); diff != "" {
+			if diff := cmp.Diff(tc.wantInv, tc.inv, protocmp.Transform()); diff != "" {
 				t.Errorf("Enricher{%+v}.Enrich(%+v, %+v) returned unexpected diff (-want +got):\n%s", tc.cfg, tc.input, tc.inv, diff)
 			}
 		})
