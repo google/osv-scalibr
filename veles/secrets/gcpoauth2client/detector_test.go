@@ -134,11 +134,11 @@ config_app2:
 GOCSPX-SecondSecret987654321098`,
 			want: []veles.Secret{
 				gcpoauth2client.Credentials{
-					ID:     "222222222222-second.apps.googleusercontent.com",
+					ID:     "111111111111-first.apps.googleusercontent.com",
 					Secret: "GOCSPX-FirstSecret123456789012",
 				},
 				gcpoauth2client.Credentials{
-					ID:     "111111111111-first.apps.googleusercontent.com",
+					ID:     "222222222222-second.apps.googleusercontent.com",
 					Secret: "GOCSPX-SecondSecret987654321098",
 				},
 			},

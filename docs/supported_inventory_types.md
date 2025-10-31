@@ -121,6 +121,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | GCP service account key                     | `secrets/gcpsak`                     |
 | GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
 | GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
+| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                 |
 | Gitlab PAT                                  | `secrets/gitlabpat`                  |
 | Grok xAI API key                            | `secrets/grokxaiapikey`              |
 | Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |

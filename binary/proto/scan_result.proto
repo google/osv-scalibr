@@ -725,6 +725,7 @@ message SecretData {
     PyPIAPIToken pypi = 44;
     CratesIOAPIToken crates_io_api_token = 45;
     MariaDBCredentials maria_db_credentials = 46;
+    GCSHmacKey gcs_hmac_key = 47;
   }
 
   message GCPSAK {
@@ -940,6 +941,11 @@ message SecretData {
     // GCP OAuth2 access token, typically in format:
     // "ya29.[alphanumeric_string]"
     string token = 1;
+  }
+
+  message GCSHmacKey {
+    string access_id = 1;
+    string secret = 2;
   }
 
   message OnePasswordConnectToken {
