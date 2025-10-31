@@ -25,31 +25,63 @@ import (
 )
 
 const (
-	// maxPairWindowLen is the maximum window length to pair env-style credentials.
-	maxPairWindowLen = 10 * 1 << 10 // 10 KiB
+	maxSecretLen = 87
+	// maxDistance is the maximum window length to pair env-style credentials.
+	maxDistance = 10 * 1 << 10 // 10 KiB
 )
 
 var (
-	publicKeyPattern  = regexp.MustCompile(`[A-Za-z0-9_-]{87}`)
-	privateKeyPattern = regexp.MustCompile(`[A-Za-z0-9_-]{43}`)
+	publicKeyPattern = regexp.MustCompile(`[A-Za-z0-9_-]{87}`)
+	// match:
+	// - **vapid**=base64blob with exact length of 43
+	// - **vapid**"="base64blob with exact length of 43
+	// - base64blob with exact length of 43
+	privateKeyPattern = regexp.MustCompile(`(?i)(vapid\S*)?[ \t:=]+["']?([A-Za-z0-9_-]{43})([^A-Za-z0-9_-]|$)`)
 )
 
+// NewDetector returns a VAPID private key detector
+//
+// a key is detected if:
+//
+// - it has some context, (ex: `VAPID_KEY:base64blob`)
+// - it is validated against a nearby public key
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxLen: maxPairWindowLen,
-		FindA:  pair.FindAllMatches(publicKeyPattern),
-		FindB:  pair.FindAllMatches(privateKeyPattern),
+		MaxElementLen: maxSecretLen, MaxDistance: maxDistance,
+		FindA: pair.FindAllMatches(publicKeyPattern),
+		FindB: findAllMatchesWithContext(privateKeyPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			pubB64, privB64 := p.A.Value, p.B.Value
-			ok, _ := validateVAPIDKeys(pubB64, privB64)
-			if !ok {
+			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
-			return Keys{
-				PublicB64:  pubB64,
-				PrivateB64: privB64,
-			}, true
+			return Keys{PublicB64: pubB64, PrivateB64: privB64}, true
 		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.B == nil || !p.B.HasContext {
+				return nil, false
+			}
+			return Keys{PrivateB64: p.B.Value}, true
+		},
+	}
+}
+
+// findAllMatchesWithContext returns a function which finds all matches of a given regex
+// and adds metadata to the Match depending if it found context before the match
+func findAllMatchesWithContext(re *regexp.Regexp) func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		matches := re.FindAllSubmatchIndex(data, -1)
+		var results []*pair.Match
+		for _, m := range matches {
+			fmt.Println(m)
+			hasVapid := m[2] != -1
+			results = append(results, &pair.Match{
+				Value:      string(data[m[4]:m[5]]),
+				Position:   m[0],
+				HasContext: hasVapid,
+			})
+		}
+		return results
 	}
 }
 

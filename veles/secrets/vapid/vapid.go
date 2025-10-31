@@ -15,7 +15,7 @@
 // Package vapid contain the logic for finding "Firebase Cloud Messaging Web Push Certificate"
 // also known as VAPID keys (Voluntary Application Server Identification)
 //
-// ref: https://datatracker.ietf.org/doc/html/draft-thomson-webpush-vapid
+// ref: https://firebase.google.com/docs/cloud-messaging/get-started?platform=web&_gl=1*vzrfcj*_up*MQ..*_ga*ODM5Mzk4NDUxLjE3NDU5MzczOTk.*_ga_CW55HF8NVT*MTc0NTkzNzM5OS4xLjAuMTc0NTkzNzM5OS4wLjAuMA..#configure_web_credentials_with
 package vapid
 
 type Keys struct {

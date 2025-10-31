@@ -77,6 +77,142 @@ func TestDetector_Detect(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "only public - context",
+			input: `VapidPublicKey: BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs`,
+			want:  nil,
+		},
+		{
+			name:  "only public - context no spacing",
+			input: `VapidPublicKey:BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs`,
+			want:  nil,
+		},
+		{
+			name:  "only private - no context",
+			input: `Lu7AeLYdEUws2iLm97LcwAbQCI1YA8NpLEe485kmO5s`,
+			want:  nil,
+		},
+		{
+			name:  "only private - context",
+			input: `VapidPrivateKey: LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
+				},
+			},
+		},
+		{
+			name:  "only private - context with strange spacing",
+			input: `VapidPrivateKey  : LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
+				},
+			},
+		},
+		{
+			name:  "only private - context - snake case ",
+			input: `VAPID_PRIVATE_KEY=LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
+			want: []veles.Secret{
+				vapid.Keys{PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4"},
+			},
+		},
+		{
+			name: "complex multiline - private key omitted, should not match",
+			input: `
+				VapidPrivateKey: ****
+				VapidPublicKey: BE7cFYQ2l4kASZ_7iKwAy6L2hztWwTKrwd41SkRJuGyo6J5vR9ATeUufONHzoaseSpKtcJbm5xLTkmo--IWpEt8
+			`,
+			want: []veles.Secret{},
+		},
+		{
+			name: "complex multiline - no multiline context match",
+			input: `
+				VapidPrivateKey:
+				LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4
+			`,
+			want: []veles.Secret{},
+		},
+		{
+			name: "complex javascript - match",
+			input: `
+			function setup() {
+			  webpush.setVapidDetails(
+			    'mailto:email@email.com',
+			    'BFKSGCtM-gouDaPSNYwDRmCTCSEelTpujQ6mHG2KIXaaJI9WLReodcS00QE4ck8P5uPHLSkNKZ7ZAWjpgITwrNI',
+			    'rrvzfePgU7wc8RP7fcSMR-8ur2nDzqissXT5ovojK6Q'
+			  );
+			  return Promise.resolve();
+			}
+			`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "rrvzfePgU7wc8RP7fcSMR-8ur2nDzqissXT5ovojK6Q",
+					PublicB64:  "BFKSGCtM-gouDaPSNYwDRmCTCSEelTpujQ6mHG2KIXaaJI9WLReodcS00QE4ck8P5uPHLSkNKZ7ZAWjpgITwrNI",
+				},
+			},
+		},
+		{
+			name: "complex golang - no match",
+			input: `
+			resp, err := webpush.SendNotification([]byte("Test"), s, &webpush.Options{
+				Subscriber:      "example@example.com", // Do not include "mailto:"
+				VAPIDPublicKey:  vapidPublicKey,
+				VAPIDPrivateKey: vapidPrivateKey,
+				TTL:             30,
+			})
+			`,
+			want: []veles.Secret{},
+		},
+		{
+			name: "json match",
+			input: `
+		 "webPush": {
+        "subject": "http://example.com",
+        "vapidPublicKey": "BKC9CAak3PFu0nhmVbEFs0HG0o6T1bMb-q_iSAtiYHv2zdQM_IPkz1A9gzVd_-4cNYMeLwq1i8gA83-U0pc4aOk",
+        "vapidPrivateKey": "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0"
+      },
+			`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0",
+					PublicB64:  "BKC9CAak3PFu0nhmVbEFs0HG0o6T1bMb-q_iSAtiYHv2zdQM_IPkz1A9gzVd_-4cNYMeLwq1i8gA83-U0pc4aOk",
+				},
+			},
+		},
+		{
+			name: "json match - context only",
+			input: `
+		 "webPush": {
+        "subject": "http://example.com",
+        "vapidPrivateKey": "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0"
+      },
+			`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0",
+				},
+			},
+		},
+		{
+			name: "json match - no context",
+			input: `
+		  {
+			  "Vapid": {
+			    "Subject": "mailto:email@outlook.com",
+			    "PublicKey": "BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw",
+			    "PrivateKey": "gIe4zn7y8cgAyxLVk-6NX_mpR-1R_aPx_8CZ1VI0oYg"
+			  },
+				...
+			}
+			`,
+			want: []veles.Secret{
+				vapid.Keys{
+					PrivateB64: "gIe4zn7y8cgAyxLVk-6NX_mpR-1R_aPx_8CZ1VI0oYg",
+					PublicB64:  "BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw",
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {

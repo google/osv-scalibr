@@ -25,8 +25,9 @@ import (
 
 // Match contains information about a match
 type Match struct {
-	Value    string
-	Position int
+	Value      string
+	Position   int
+	HasContext bool
 }
 
 func (m Match) String() string {
