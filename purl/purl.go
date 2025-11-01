@@ -113,6 +113,8 @@ const (
 	TypeNim = "nim"
 	// TypeLua is pkg:lua purl
 	TypeLua = "lua"
+	// TypeNetScaler is pkg:netscaler purl
+	TypeNetScaler = "netscaler"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -220,6 +222,7 @@ func validType(t string) bool {
 		TypeAsdf:      true,
 		TypeMacports:  true,
 		TypeWinget:    true,
+		TypeNetScaler: true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
