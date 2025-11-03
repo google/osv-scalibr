@@ -7,11 +7,9 @@ given interface.
 
 ```sh
 ~ plugger -h
-Usage of plugger /Users/just-hms/Library/Caches/go-build/06/06e00c874d5c5bb1e000de272e366cc65ebb32de196cc669944035eba56dfbc5-d/main:
-  -exclude-pkg string
-      regex pattern for pkg to exclude, ex: 'github\.com/package/testing/.*' (default "a^")
-  -interface string
-      regex pattern for plugin interfaces, ex: 'github\.com/package.MyInterface|.*\.OtherInterface'
+Usage of plugger:
+  -interface value
+    list of interfaces (repeatable), ex: '-interface github.com/pkg.Interface'
 ```
 
 ### Exclude plugins
@@ -22,9 +20,18 @@ directive
 ```go
 // Extractor extracts python packages from requirements.txt files.
 //
-//nolint:plugger: This plugin will be removed shortly
+//nolint:plugger // This plugin will be removed shortly
 type Extractor struct {
   resolve.Client
-  BaseExtractor *requirements.Extractor // The base extractor that we use to extract direct dependencies.
+  BaseExtractor *requirements.Extractor
 }
+```
+
+or directly exclude a pkg
+
+```go
+// Extractor extracts python packages from requirements.txt files.
+//
+//nolint:plugger // This pkg contains only mocks
+package fakeplugin
 ```
