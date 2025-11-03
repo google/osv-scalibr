@@ -36,7 +36,7 @@ func TestExtract(t *testing.T) {
 		wantPackages []*extractor.Package
 	}{
 		{
-			name: "comprehensive multi-resource test file",
+			name: "comprehensive_multi-resource_test_file",
 			path: "testdata/comprehensive-test.yaml",
 			cfg:  k8simage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -129,17 +129,17 @@ func TestFileRequired(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "yaml extension",
+			name: "yaml_extension",
 			path: "deployment.yaml",
 			want: true,
 		},
 		{
-			name: "yml extension",
+			name: "yml_extension",
 			path: "service.yml",
 			want: true,
 		},
 		{
-			name: "other extension",
+			name: "other_extension",
 			path: "config.json",
 			want: false,
 		},
@@ -162,7 +162,7 @@ func TestExtract_empty_results(t *testing.T) {
 		cfg  k8simage.Config
 	}{
 		{
-			name: "empty image fields should result in no packages",
+			name: "empty_image_fields_should_result_in_no_packages",
 			path: "testdata/comprehensive-test-failures.yaml",
 			cfg:  k8simage.DefaultConfig(),
 		},
@@ -197,7 +197,7 @@ func TestExtract_skip_non_k8s_files(t *testing.T) {
 		path string
 	}{
 		{
-			name: "invalid YAML syntax",
+			name: "invalid_YAML_syntax",
 			path: "testdata/yaml-parsing-error.yaml",
 		},
 	}

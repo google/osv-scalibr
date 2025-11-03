@@ -48,12 +48,12 @@ func TestSignature_roundtrip(t *testing.T) {
 		cert string
 	}{
 		{
-			name: "constant examples",
+			name: "constant_examples",
 			key:  examplePrivateKey,
 			cert: exampleCertificate,
 		},
 		{
-			name: "randomly generated",
+			name: "randomly_generated",
 			key:  randKey,
 			cert: randCert,
 		},

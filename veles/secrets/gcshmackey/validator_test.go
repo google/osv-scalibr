@@ -108,7 +108,7 @@ func TestValidator(t *testing.T) {
 		server func() *httptest.Server
 	}{
 		{
-			name: "correct secret",
+			name: "correct_secret",
 			key: gcshmackey.HMACKey{
 				AccessID: exampleAccessID,
 				Secret:   correctSecret,
@@ -117,7 +117,7 @@ func TestValidator(t *testing.T) {
 			server: mockS3Server(correctSignature, false),
 		},
 		{
-			name: "correct secret, access denied",
+			name: "correct_secret,_access_denied",
 			key: gcshmackey.HMACKey{
 				AccessID: exampleAccessID,
 				Secret:   correctSecret,
@@ -126,7 +126,7 @@ func TestValidator(t *testing.T) {
 			server: mockS3Server(correctSignature, true),
 		},
 		{
-			name: "bad secret",
+			name: "bad_secret",
 			key: gcshmackey.HMACKey{
 				AccessID: exampleAccessID,
 				Secret:   badSecret,

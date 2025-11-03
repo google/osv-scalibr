@@ -72,7 +72,7 @@ func TestDetector_truePositives(t *testing.T) {
 			pypiapitoken.PyPIAPIToken{Token: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: PYPI-test
 :PYPI_API_TOKEN: %s

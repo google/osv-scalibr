@@ -79,7 +79,7 @@ func TestExtract(t *testing.T) {
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name: "valid onepassword connect token",
+			name: "valid_onepassword_connect_token",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
@@ -100,14 +100,14 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid json",
+			name: "invalid_json",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",
 			},
 			wantSecrets: nil,
 		},
 		{
-			name: "missing required fields",
+			name: "missing_required_fields",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/incomplete",
 			},

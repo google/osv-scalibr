@@ -33,12 +33,12 @@ func TestEnrich(t *testing.T) {
 		want *inventory.Inventory
 	}{
 		{
-			desc: "no vulns",
+			desc: "no_vulns",
 			inv:  &inventory.Inventory{},
 			want: &inventory.Inventory{},
 		},
 		{
-			desc: "PackageVuln with VEX",
+			desc: "PackageVuln_with_VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
 				Vulnerability:         &osvpb.Vulnerability{Id: "CVE-123"},
 				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Justification: vex.ComponentNotPresent}},
@@ -46,7 +46,7 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{}},
 		},
 		{
-			desc: "PackageVuln with no VEX",
+			desc: "PackageVuln_with_no_VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
 				Vulnerability: &osvpb.Vulnerability{Id: "CVE-123"},
 			}}},
@@ -55,7 +55,7 @@ func TestEnrich(t *testing.T) {
 			}}},
 		},
 		{
-			desc: "GenericFinding with VEX",
+			desc: "GenericFinding_with_VEX",
 			inv: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{{
 				Adv:                   &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-123"}},
 				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Justification: vex.ComponentNotPresent}},
@@ -63,7 +63,7 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{}},
 		},
 		{
-			desc: "GenericFinding with no VEX",
+			desc: "GenericFinding_with_no_VEX",
 			inv: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{{
 				Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-123"}},
 			}}},

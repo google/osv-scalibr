@@ -131,7 +131,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "yaml gemspec",
+			name: "yaml_gemspec",
 			path: "testdata/yaml-0.2.1.gemspec",
 			wantPackages: []*extractor.Package{
 				{
@@ -144,7 +144,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "rss gemspec",
+			name: "rss_gemspec",
 			path: "testdata/rss-0.2.9.gemspec",
 			wantPackages: []*extractor.Package{
 				{

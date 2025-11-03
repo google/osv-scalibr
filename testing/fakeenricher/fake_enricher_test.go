@@ -37,7 +37,7 @@ func TestName(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no name",
+			name: "no_name",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
@@ -63,11 +63,11 @@ func TestVersion(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "zero version",
+			name: "zero_version",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "positive version",
+			name: "positive_version",
 			cfg:  &fakeenricher.Config{Version: 7},
 		},
 	}
@@ -89,11 +89,11 @@ func TestRequirements(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no requirements",
+			name: "no_requirements",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "some requirements",
+			name: "some_requirements",
 			cfg: &fakeenricher.Config{
 				Capabilities: &plugin.Capabilities{
 					Network:  plugin.NetworkOnline,
@@ -120,11 +120,11 @@ func TestRequiredPlugins(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no required plugins",
+			name: "no_required_plugins",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "some required plugins",
+			name: "some_required_plugins",
 			cfg:  &fakeenricher.Config{RequiredPlugins: []string{"plugin1", "plugin2"}},
 		},
 	}
@@ -211,7 +211,7 @@ func TestEnrich(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nothing to enrich",
+			name: "nothing_to_enrich",
 			cfg: &fakeenricher.Config{
 				WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
 					fakeenricher.MustHash(t, nil, &inventory.Inventory{}): fakeenricher.InventoryAndErr{
@@ -223,7 +223,7 @@ func TestEnrich(t *testing.T) {
 			wantInv: &inventory.Inventory{},
 		},
 		{
-			name: "enrich packages and findings",
+			name: "enrich_packages_and_findings",
 			cfg: &fakeenricher.Config{
 				WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
 					fakeenricher.MustHash(t, input1, inventory1): fakeenricher.InventoryAndErr{

@@ -65,7 +65,7 @@ func TestDetector_Detect(t *testing.T) {
 		},
 		// -- Single access ID and Secret in close proximity (happy path) ---
 		{
-			name: "access ID and secret in close proximity",
+			name: "access_ID_and_secret_in_close_proximity",
 			input: `GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT
 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			want: []veles.Secret{
@@ -86,7 +86,7 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "access ID and secret in close proximity in json format",
+			name: "access_ID_and_secret_in_close_proximity_in_json_format",
 			input: `{
 				"access_id": "GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT",
 				"secret": "32r923jr023rk320rk2a3rkB34tj340r32Ckt433"
@@ -99,7 +99,7 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "valid formats mixed with invalid",
+			name: "valid_formats_mixed_with_invalid",
 			input: `valid_id: GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT
 invalid_id: 123-invalid.apps.googleusercontent.com
 valid_secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt433
@@ -113,7 +113,7 @@ invalid_secret: WRONG-InvalidSecret123456789012`,
 		},
 		// -- Multiple access ID and Secret in close proximity ---
 		{
-			name: "complex file with multiple access ID and secret - test proximity",
+			name: "complex_file_with_multiple_access_ID_and_secret_-_test_proximity",
 			input: `config_app1:
 GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT
 32r923jr023rk320rk2a3rkB34tj340r32Ckt433
@@ -134,7 +134,7 @@ GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA
 		},
 		// -- Multiple access ID and Secret in with varied proximity ---
 		{
-			name: "complex file with access ID and secret - far apart (no pairing)",
+			name: "complex_file_with_access_ID_and_secret_-_far_apart_(no_pairing)",
 			input: `config_app1:
 GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JA` + strings.Repeat("\nfiller line with random data", 500) + `
 config_app2:

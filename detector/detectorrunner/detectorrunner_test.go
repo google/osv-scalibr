@@ -77,7 +77,7 @@ func TestRun(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			desc: "Plugins successful",
+			desc: "Plugins_successful",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(finding2),
@@ -94,7 +94,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "One plugin failed",
+			desc: "One_plugin_failed",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithErr(errors.New("detection failed")),
@@ -110,7 +110,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "Duplicate findings with identical advisories",
+			desc: "Duplicate_findings_with_identical_advisories",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(identicalFinding1),
@@ -125,7 +125,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "Duplicate findings with different advisories",
+			desc: "Duplicate_findings_with_different_advisories",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(&inventory.GenericFinding{
@@ -140,7 +140,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Error when Advisory is not set",
+			desc: "Error_when_Advisory_is_not_set",
 			det: []detector.Detector{
 				det1.WithGenericFinding(findingNoAdvisory),
 			},
@@ -151,7 +151,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Error when Advisory ID is not set",
+			desc: "Error_when_Advisory_ID_is_not_set",
 			det: []detector.Detector{
 				det1.WithGenericFinding(findingNoAdvisoryID),
 			},
@@ -162,7 +162,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Package and generic vulns",
+			desc: "Package_and_generic_vulns",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithPackageVuln(packageVuln),

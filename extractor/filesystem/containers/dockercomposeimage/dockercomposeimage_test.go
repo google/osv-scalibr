@@ -41,17 +41,17 @@ func TestFileRequired(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "docker compose file with yml extension",
+			name: "docker_compose_file_with_yml_extension",
 			path: "testdata/docker-compose-1.yml",
 			want: true,
 		},
 		{
-			name: "docker compose file with yaml extension",
+			name: "docker_compose_file_with_yaml_extension",
 			path: "testdata/docker-compose-extending.yaml",
 			want: true,
 		},
 		{
-			name: "not a docker compose file",
+			name: "not_a_docker_compose_file",
 			path: "testdata/docker.conf",
 			want: false,
 		},
@@ -75,7 +75,7 @@ func TestExtract(t *testing.T) {
 		wantPackages []*extractor.Package
 	}{
 		{
-			name: "single stage docker compose file",
+			name: "single_stage_docker_compose_file",
 			path: "testdata/docker-compose-extending.yaml",
 			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -88,7 +88,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "multi stage docker compose file",
+			name: "multi_stage_docker_compose_file",
 			path: "testdata/docker-compose-1.yml",
 			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -152,7 +152,7 @@ func TestExtract_failures(t *testing.T) {
 		path string
 	}{
 		{
-			name: "invalid docker compose file",
+			name: "invalid_docker_compose_file",
 			path: "testdata/docker-compose-yaml-parse-error.yaml",
 		},
 	}

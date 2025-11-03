@@ -87,7 +87,7 @@ func TestStat(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			name: "regular file",
+			name: "regular_file",
 			node: regularVirtualFile,
 			wantInfo: info{
 				name:    "bar",
@@ -283,7 +283,7 @@ func TestReadAt(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "unopened root file",
+			name: "unopened_root_file",
 			vf:   barVirtualFile,
 			want: "bar",
 			// All successful reads should return EOF
@@ -454,7 +454,7 @@ func TestClose(t *testing.T) {
 		vf   *virtualFile
 	}{
 		{
-			name: "close root file",
+			name: "close_root_file",
 			vf:   vf,
 		},
 	}
@@ -502,12 +502,12 @@ func TestReadingAfterClose(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "unopened root file",
+			name: "unopened_root_file",
 			vf:   fooVirtualFile,
 			want: "foo",
 		},
 		{
-			name: "opened root file",
+			name: "opened_root_file",
 			vf:   barVirtualFile,
 			want: "bar",
 		},
@@ -546,22 +546,22 @@ func TestName(t *testing.T) {
 		want string
 	}{
 		{
-			name: "root directory",
+			name: "root_directory",
 			node: rootDirectory,
 			want: "",
 		},
 		{
-			name: "root file",
+			name: "root_file",
 			node: rootFile,
 			want: "bar",
 		},
 		{
-			name: "non-root file",
+			name: "non-root_file",
 			node: nonRootFile,
 			want: "foo",
 		},
 		{
-			name: "non-root directory",
+			name: "non-root_directory",
 			node: nonRootDirectory,
 			want: "dir2",
 		},
@@ -584,22 +584,22 @@ func TestIsDir(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "root directory",
+			name: "root_directory",
 			node: rootDirectory,
 			want: true,
 		},
 		{
-			name: "root file",
+			name: "root_file",
 			node: rootFile,
 			want: false,
 		},
 		{
-			name: "non-root file",
+			name: "non-root_file",
 			node: nonRootFile,
 			want: false,
 		},
 		{
-			name: "non-root directory",
+			name: "non-root_directory",
 			node: nonRootDirectory,
 			want: true,
 		},
@@ -621,22 +621,22 @@ func TestType(t *testing.T) {
 		want fs.FileMode
 	}{
 		{
-			name: "root directory",
+			name: "root_directory",
 			node: rootDirectory,
 			want: fs.ModeDir | dirPermission,
 		},
 		{
-			name: "root file",
+			name: "root_file",
 			node: rootFile,
 			want: filePermission,
 		},
 		{
-			name: "non-root file",
+			name: "non-root_file",
 			node: nonRootFile,
 			want: filePermission,
 		},
 		{
-			name: "non-root directory",
+			name: "non-root_directory",
 			node: nonRootDirectory,
 			want: fs.ModeDir | dirPermission,
 		},

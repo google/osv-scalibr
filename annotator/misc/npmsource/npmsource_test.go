@@ -91,7 +91,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 		wantAnyErr   bool
 	}{
 		{
-			name: "unfound dependency in lockfile",
+			name: "unfound_dependency_in_lockfile",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -110,7 +110,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "dependency from private registry",
+			name: "dependency_from_private_registry",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -129,7 +129,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "custom package from github (private registry)",
+			name: "custom_package_from_github_(private_registry)",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -148,7 +148,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "local package",
+			name: "local_package",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -167,7 +167,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "nested dependency",
+			name: "nested_dependency",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -186,7 +186,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "alias package",
+			name: "alias_package",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -205,7 +205,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "duplicated dependency",
+			name: "duplicated_dependency",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -224,7 +224,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			},
 		},
 		{
-			name: "same package different group",
+			name: "same_package_different_group",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
@@ -300,7 +300,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 		wantAnyErr   bool
 	}{
 		{
-			name: "unfound package in lockfile",
+			name: "unfound_package_in_lockfile",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -319,7 +319,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "dependency from private registry",
+			name: "dependency_from_private_registry",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -338,7 +338,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "local package",
+			name: "local_package",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -357,7 +357,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "scoped packages from npm repository",
+			name: "scoped_packages_from_npm_repository",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -376,7 +376,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "alias package",
+			name: "alias_package",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -395,7 +395,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "custom package from github (private registry)",
+			name: "custom_package_from_github_(private_registry)",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -414,7 +414,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "nested packages",
+			name: "nested_packages",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -433,7 +433,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "duplicated packages",
+			name: "duplicated_packages",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -452,7 +452,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 		},
 		{
-			name: "same package different group",
+			name: "same_package_different_group",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -521,7 +521,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 		want          map[string][]*extractor.Package
 	}{
 		{
-			name: "maps root directory to package from node_modules/../package.json",
+			name: "maps_root_directory_to_package_from_node_modules/../package.json",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -542,7 +542,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			},
 		},
 		{
-			name: "maps root directory to package from node_modules/../package.json",
+			name: "maps_root_directory_to_package_from_node_modules/../package.json",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -563,7 +563,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			},
 		},
 		{
-			name: "no map for non-npm packages",
+			name: "no_map_for_non-npm_packages",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -575,7 +575,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			want: make(map[string][]*extractor.Package),
 		},
 		{
-			name: "no map for non-package.json",
+			name: "no_map_for_non-package.json",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -587,7 +587,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			want: make(map[string][]*extractor.Package),
 		},
 		{
-			name: "no map for non-node_modules directory",
+			name: "no_map_for_non-node_modules_directory",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -599,7 +599,7 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			want: make(map[string][]*extractor.Package),
 		},
 		{
-			name: "no map for empty locations",
+			name: "no_map_for_empty_locations",
 			inputPackages: []*extractor.Package{
 				{
 					Name:      "acorn",
@@ -632,7 +632,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 	}{
 		// All 3 lockfiles have the same file structure.
 		{
-			name: "parse package-lock.json",
+			name: "parse_package-lock.json",
 			lockfiles: map[string]string{
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
@@ -651,7 +651,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			skipWindows: true,
 		},
 		{
-			name: "parse npm-shrinkwrap.json",
+			name: "parse_npm-shrinkwrap.json",
 			lockfiles: map[string]string{
 				"testproject/npm-shrinkwrap.json": "testdata/package-lock.json",
 			},
@@ -670,7 +670,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			skipWindows: true,
 		},
 		{
-			name: "parse hidden package-lock.json in /node_modules",
+			name: "parse_hidden_package-lock.json_in_/node_modules",
 			lockfiles: map[string]string{
 				"testproject/node_modules/.package-lock.json": "testdata/package-lock.json",
 			},
@@ -696,7 +696,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			skipWindows: false,
 		},
 		{
-			name: "parse empty lockfiles returns error",
+			name: "parse_empty_lockfiles_returns_error",
 			lockfiles: map[string]string{
 				"testproject/node_modules/.package-lock.json": "empty-file.json",
 			},
@@ -705,7 +705,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 			skipWindows: true,
 		},
 		{
-			name: "parse lockfiles without dependencies and packages returns nothing",
+			name: "parse_lockfiles_without_dependencies_and_packages_returns_nothing",
 			lockfiles: map[string]string{
 				"testproject/node_modules/.package-lock.json": "testdata/no-dep-list-package-lock.json",
 			},

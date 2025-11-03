@@ -60,10 +60,6 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 	}
 
 	p := converter.ToPURL(pkg)
-	firstPluginName := ""
-	if len(pkg.Plugins) > 0 {
-		firstPluginName = pkg.Plugins[0]
-	}
 
 	var exps []*spb.PackageExploitabilitySignal
 	for _, exp := range pkg.ExploitabilitySignals {
@@ -73,11 +69,6 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 			continue
 		}
 		exps = append(exps, expProto)
-	}
-
-	var annotations []spb.Package_AnnotationEnum
-	for _, a := range pkg.AnnotationsDeprecated {
-		annotations = append(annotations, AnnotationToProto(a))
 	}
 
 	var cii *spb.Package_ContainerImageMetadataIndexes
@@ -90,17 +81,13 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 	}
 
 	packageProto := &spb.Package{
-		Name:       pkg.Name,
-		Version:    pkg.Version,
-		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:       purlToProto(p),
-		Ecosystem:  pkg.Ecosystem().String(),
-		Locations:  pkg.Locations,
-		// TODO(b/400910349): Stop setting the deprecated fields
-		// once integrators no longer read them.
-		ExtractorDeprecated:           firstPluginName,
+		Name:                          pkg.Name,
+		Version:                       pkg.Version,
+		SourceCode:                    sourceCodeIdentifierToProto(pkg.SourceCode),
+		Purl:                          purlToProto(p),
+		Ecosystem:                     pkg.Ecosystem().String(),
+		Locations:                     pkg.Locations,
 		Plugins:                       pkg.Plugins,
-		AnnotationsDeprecated:         annotations,
 		ExploitabilitySignals:         exps,
 		ContainerImageMetadataIndexes: cii,
 		Licenses:                      pkg.Licenses,
@@ -372,12 +359,6 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		exps = append(exps, expStruct)
 	}
 
-	var annotations []extractor.Annotation
-	//nolint:staticcheck
-	for _, a := range pkgProto.GetAnnotationsDeprecated() {
-		annotations = append(annotations, AnnotationToStruct(a))
-	}
-
 	pkg := &extractor.Package{
 		Name:                  pkgProto.GetName(),
 		Version:               pkgProto.GetVersion(),
@@ -385,7 +366,6 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Locations:             locations,
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
-		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
 		Metadata:              metadataToStruct(pkgProto),
 		Licenses:              pkgProto.GetLicenses(),

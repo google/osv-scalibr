@@ -81,7 +81,7 @@ func TestDetector_truePositives(t *testing.T) {
 			gcpapikey.GCPAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 CONFIG_FILE=config.txt
 API_KEY=%s

@@ -78,7 +78,7 @@ func TestScan(t *testing.T) {
 			wantFindings: nil,
 		},
 		{
-			desc: "Permissions incorrect",
+			desc: "Permissions_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 0},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,
@@ -88,7 +88,7 @@ func TestScan(t *testing.T) {
 			}},
 		},
 		{
-			desc: "Permissions and uid incorrect",
+			desc: "Permissions_and_uid_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 10, gid: 0},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,
@@ -98,7 +98,7 @@ func TestScan(t *testing.T) {
 			}},
 		},
 		{
-			desc: "Permissions and gid incorrect",
+			desc: "Permissions_and_gid_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 10},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,

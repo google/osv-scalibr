@@ -237,7 +237,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: createPackages(append(BinaryWithModulesPackagesNginx, goPackage("k8s.io/ingress-nginx", "(devel)")), "testdata/nginx-ingress-controller"),
 		},
 		{
-			name: "nginx-ingress-controller with version from content on",
+			name: "nginx-ingress-controller_with_version_from_content_on",
 			path: "testdata/nginx-ingress-controller",
 			cfg: func() *gobinary.Config {
 				cfg := gobinary.DefaultConfig()

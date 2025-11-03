@@ -57,7 +57,7 @@ func TestEnricher(t *testing.T) {
 		subs []testEnricherSubCase
 	}{
 		{
-			name: "Append role and Fine Grained Scopes",
+			name: "Append_role_and_Fine_Grained_Scopes",
 			subs: []testEnricherSubCase{
 				{
 					name:       "supported",

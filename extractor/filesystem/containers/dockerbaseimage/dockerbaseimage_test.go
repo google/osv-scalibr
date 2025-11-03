@@ -41,22 +41,22 @@ func TestFileRequired(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "mixed-case Dockerfile",
+			name: "mixed-case_Dockerfile",
 			path: "testdata/dOcKeRfile",
 			want: true,
 		},
 		{
-			name: "Dockerfile with extension",
+			name: "Dockerfile_with_extension",
 			path: "testdata/Dockerfile.prod",
 			want: true,
 		},
 		{
-			name: "Dockerfile extension",
+			name: "Dockerfile_extension",
 			path: "testdata/ext.dockerfile",
 			want: true,
 		},
 		{
-			name: "not Dockerfile",
+			name: "not_Dockerfile",
 			path: "testdata/pip.conf",
 			want: false,
 		},
@@ -80,7 +80,7 @@ func TestExtract(t *testing.T) {
 		wantPackages []*extractor.Package
 	}{
 		{
-			name: "single stage dockerfile",
+			name: "single_stage_dockerfile",
 			path: "testdata/dockerfile.single-stage",
 			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -93,7 +93,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "multi stage dockerfile",
+			name: "multi_stage_dockerfile",
 			path: "testdata/dockerfile.multi-stage",
 			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -112,7 +112,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "parameterized dockerfile",
+			name: "parameterized_dockerfile",
 			path: "testdata/dockerfile.parameterized",
 			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -131,7 +131,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "versionless dockerfile",
+			name: "versionless_dockerfile",
 			path: "testdata/dockerfile.no-version",
 			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -144,7 +144,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "sha256 version",
+			name: "sha256_version",
 			path: "testdata/dockerfile.hash",
 			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
@@ -198,11 +198,11 @@ func TestExtract_failures(t *testing.T) {
 		path string
 	}{
 		{
-			name: "invalid Dockerfile",
+			name: "invalid_Dockerfile",
 			path: "testdata/dockerfile.invalid",
 		},
 		{
-			name: "empty Dockerfile",
+			name: "empty_Dockerfile",
 			path: "testdata/dockerfile.empty",
 		},
 	}

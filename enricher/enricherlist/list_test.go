@@ -47,7 +47,7 @@ func TestEnrichersFromName(t *testing.T) {
 		wantErr error
 	}{
 		{
-			desc: "Find all extractors of a type",
+			desc: "Find_all_extractors_of_a_type",
 			name: "layerdetails",
 			want: []string{baseimage.Name},
 		},

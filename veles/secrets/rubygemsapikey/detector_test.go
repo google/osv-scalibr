@@ -72,7 +72,7 @@ func TestDetector_truePositives(t *testing.T) {
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: rubygems_abc
 :rubygems_api_key: %s 
