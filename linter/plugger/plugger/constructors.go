@@ -31,7 +31,7 @@ func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constru
 		for _, impl := range types {
 			for _, fn := range functions {
 				if fn.Returns(impl) {
-					ctrs = append(ctrs, NewConstructor(fn, impl))
+					ctrs = append(ctrs, &Constructor{Function: fn, Impl: impl})
 				}
 			}
 		}
@@ -41,6 +41,7 @@ func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constru
 
 // findFunctions finds all the function in the given pkg
 func findFunctions(pkg *packages.Package) []*Function {
+	seen := map[*ast.FuncDecl]*Function{}
 	fns := []*Function{}
 	for _, file := range pkg.Syntax {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -52,13 +53,7 @@ func findFunctions(pkg *packages.Package) []*Function {
 			if fn.Recv != nil {
 				return true
 			}
-			returnTypes := extractReturnTypes(pkg, fn, nil)
-
-			fns = append(fns, &Function{
-				Fun:         fn,
-				Pkg:         pkg,
-				ReturnTypes: returnTypes,
-			})
+			fns = append(fns, extractReturnTypes(pkg, fn, seen))
 			return true
 		})
 	}
@@ -68,20 +63,16 @@ func findFunctions(pkg *packages.Package) []*Function {
 
 // extractReturnTypes extracts concrete return types within the same package,
 // if the function calls an external function it uses its return type as type (even if not concrete)
-func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]bool) []types.Type {
+func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]*Function) *Function {
 	if fn.Body == nil {
 		return nil
 	}
-	if seen == nil {
-		seen = make(map[*ast.FuncDecl]bool)
+	if ts, ok := seen[fn]; ok {
+		return ts
 	}
-	if seen[fn] {
-		// Prevent infinite recursion on cyclic calls
-		return nil
-	}
-	seen[fn] = true
 
 	typesSet := map[types.Type]struct{}{}
+	callSet := map[*Function]struct{}{}
 
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		switch node := n.(type) {
@@ -94,8 +85,12 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 				case *ast.CallExpr:
 					if fnDecl := findFuncDecl(pkg, call.Fun); fnDecl != nil {
 						// Recurse into the called function
-						for _, t := range extractReturnTypes(pkg, fnDecl, seen) {
+						calledFn := extractReturnTypes(pkg, fnDecl, seen)
+						for _, t := range calledFn.ReturnTypes {
 							typesSet[t] = struct{}{}
+						}
+						for _, c := range calledFn.Called {
+							callSet[c] = struct{}{}
 						}
 						continue
 					}
@@ -114,7 +109,13 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 		return true
 	})
 
-	return slices.Collect(maps.Keys(typesSet))
+	res := &Function{
+		Fun: fn, Pkg: pkg,
+		Called:      slices.Collect(maps.Keys(callSet)),
+		ReturnTypes: slices.Collect(maps.Keys(typesSet)),
+	}
+	seen[fn] = res
+	return res
 }
 
 // findFuncDecl return searches the specified function in the given pkg

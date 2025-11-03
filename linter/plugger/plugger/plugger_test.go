@@ -62,7 +62,32 @@ func TestFindImplementations(t *testing.T) {
 		got = append(got, impl.Obj().Name())
 	}
 
-	want := []string{"PluginA", "PluginB"} // what you expect
+	want := []string{"PluginA", "PluginB"}
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFindImplementationsWithGeneric(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/generic")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/generic.Validator", "testdata/generic.IComplex"})
+	if len(interfaces) != 2 {
+		t.Errorf("expected 2 interface, found %d", len(interfaces))
+	}
+
+	impls := plugger.FindImplementations(pkgs, interfaces)
+
+	// Collect implementation names for comparison
+	var got []string
+	for _, impl := range impls {
+		got = append(got, impl.Obj().Name())
+	}
+
+	want := []string{"TestPointer", "Test", "TestAnotherType", "Complex"}
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -17,6 +17,7 @@ package plugger
 
 import (
 	"fmt"
+	"go/ast"
 	"go/types"
 	"slices"
 
@@ -70,24 +71,36 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	}
 
 	implementations := FindImplementations(pkgs, interfaces)
-	ctrs := FindConstructors(pkgs, slices.Concat(interfaces, implementations))
+	ctrs := FindConstructors(pkgs, slices.Concat(implementations, interfaces))
 	usages := FindUsages(pkgs, ctrs)
 	return notRegistered(ctrs, usages), nil
 }
 
+// TODO: add docs
 func notRegistered(all, used []*Constructor) []*Constructor {
 	type key struct {
 		Impl *types.Named
 		Pkg  *packages.Package
+		Fun  *ast.FuncDecl
 	}
+
 	usedSet := make(map[key]struct{}, len(used))
 	for _, c := range used {
-		usedSet[key{Impl: c.Impl, Pkg: c.Pkg}] = struct{}{}
+		usedSet[key{Fun: c.Fun}] = struct{}{}
+		// mark the type as "covered" only for types declared in the same pkg
+		if c.Impl.Obj().Pkg() == c.Pkg.Types {
+			usedSet[key{Impl: c.Impl, Pkg: c.Pkg}] = struct{}{}
+		}
+		for _, called := range c.Called {
+			usedSet[key{Fun: called.Fun}] = struct{}{}
+		}
 	}
 
 	var diff []*Constructor
 	for _, c := range all {
-		if _, exists := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]; !exists {
+		_, registered := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]
+		_, calledDirectly := usedSet[key{Fun: c.Fun}]
+		if (!registered) && !calledDirectly {
 			diff = append(diff, c)
 		}
 	}

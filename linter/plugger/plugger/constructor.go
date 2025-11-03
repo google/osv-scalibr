@@ -26,6 +26,7 @@ import (
 // Function is a generic function
 type Function struct {
 	Fun         *ast.FuncDecl
+	Called      []*Function
 	Pkg         *packages.Package
 	ReturnTypes []types.Type
 }
@@ -43,16 +44,7 @@ func (f *Function) Returns(t *types.Named) bool {
 // Constructor is a function with an assigned type
 type Constructor struct {
 	*Function
-
 	Impl *types.Named
-}
-
-// NewConstructor returns a constructor given a function and a type
-func NewConstructor(f *Function, t *types.Named) *Constructor {
-	return &Constructor{
-		Function: f,
-		Impl:     t,
-	}
 }
 
 // Pos returns a compiler style position of the constructor
