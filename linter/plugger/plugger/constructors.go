@@ -23,12 +23,12 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// FindConstructors returns the constructor for the given implementations and interfaces
-func FindConstructors(pkgs []*packages.Package, things []*types.Named) []*Constructor {
+// FindConstructors returns the constructor for the given types
+func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constructor {
 	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
-		for _, impl := range things {
+		for _, impl := range types {
 			for _, fn := range functions {
 				if fn.Returns(impl) {
 					ctrs = append(ctrs, NewConstructor(fn, impl))
