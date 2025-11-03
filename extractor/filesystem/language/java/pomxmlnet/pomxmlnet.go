@@ -114,13 +114,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
 	}
-	// Interpolate the project in case there are properties in any repository.
-	if err := project.Interpolate(); err != nil {
+	// Interpolate the repositories so that properties are resolved.
+	if err := project.InterpolateRepositories(); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to interpolate project: %w", err)
 	}
 	// Clear the registries that may be from other extraction.
 	e.MavenClient = e.MavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
+		if repo.URL.ContainsProperty() {
+			continue
+		}
 		if err := e.MavenClient.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
