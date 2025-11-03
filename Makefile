@@ -10,8 +10,9 @@ lint:
 
 lint-plugger:
 	go run linter/plugger/main.go \
-	  -interface 'github.com/google/osv-scalibr/plugin.Plugin|github.com/google/osv-scalibr/veles.(Validator|Detector)' \
-		-exclude-pkg 'testing|velestest' \
+	  -interface github.com/google/osv-scalibr/plugin.Plugin \
+		-interface github.com/google/osv-scalibr/veles.Validator \
+		-interface github.com/google/osv-scalibr/veles.Detector \
 		./...
 
 test:

@@ -16,14 +16,14 @@ package plugger
 
 import (
 	"go/types"
-	"regexp"
+	"slices"
 	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
 
 // FindInterfaces returns all interfaces that follow the specified pattern
-func FindInterfaces(pkgs []*packages.Package, iPattern *regexp.Regexp) []*types.Named {
+func FindInterfaces(pkgs []*packages.Package, interfaceNames []string) []*types.Named {
 	result := []*types.Named{}
 
 	var mu sync.Mutex
@@ -45,7 +45,7 @@ func FindInterfaces(pkgs []*packages.Package, iPattern *regexp.Regexp) []*types.
 				if _, ok := named.Underlying().(*types.Interface); !ok {
 					continue
 				}
-				if !iPattern.MatchString(pkg.String() + "." + ident.Name) {
+				if !slices.Contains(interfaceNames, pkg.String()+"."+ident.Name) {
 					continue
 				}
 				mu.Lock()

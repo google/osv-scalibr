@@ -26,8 +26,8 @@ import (
 )
 
 // FindImplementations returns all the implementations for the given interfaces
-func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) map[*packages.Package][]*types.Named {
-	implementations := make(map[*packages.Package][]*types.Named)
+func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) []*types.Named {
+	implementations := []*types.Named{}
 
 	filter := []ast.Node{(*ast.GenDecl)(nil)}
 
@@ -66,7 +66,7 @@ func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) ma
 					return doesImplement(named, iface)
 				})
 				if implementsAny {
-					implementations[pkg] = append(implementations[pkg], named)
+					implementations = append(implementations, named)
 				}
 			}
 		})

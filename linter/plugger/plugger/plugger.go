@@ -16,10 +16,8 @@
 package plugger
 
 import (
-	"errors"
 	"fmt"
 	"go/types"
-	"regexp"
 	"slices"
 
 	"golang.org/x/tools/go/packages"
@@ -47,36 +45,49 @@ var Config = &packages.Config{
 //  4. For each file, there must be at least one constructor call (!!!outside of the package!!!):
 //
 //     if none exist, the plugin is considered not registered.
-func Run(iPattern, excludePkgPattern *regexp.Regexp, pkgsPattern []string) ([]*Constructor, error) {
+func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) {
 	pkgs, err := packages.Load(Config, pkgsPattern...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load packages: %w", err)
 	}
 
 	pkgs = slices.DeleteFunc(pkgs, func(pkg *packages.Package) bool {
-		return excludePkgPattern.MatchString(pkg.String())
+		for _, f := range pkg.Syntax {
+			for _, cg := range f.Comments {
+				if hasNoLint(cg, Name) {
+					return true
+				}
+			}
+		}
+		return false
 	})
 
-	interfaces := FindInterfaces(pkgs, iPattern)
-	if len(interfaces) == 0 {
-		return nil, errors.New("no interface found")
+	interfaces := FindInterfaces(pkgs, interfaceNames)
+	if len(interfaceNames) != len(interfaces) {
+		return nil, fmt.Errorf("%d interfaces are specified but only %d are found: %v",
+			len(interfaceNames), len(interfaces), interfaces,
+		)
 	}
 
 	implementations := FindImplementations(pkgs, interfaces)
-	ctrs := FindConstructors(pkgs, implementations)
+	ctrs := FindConstructors(pkgs, slices.Concat(interfaces, implementations))
 	usages := FindUsages(pkgs, ctrs)
 	return notRegistered(ctrs, usages), nil
 }
 
 func notRegistered(all, used []*Constructor) []*Constructor {
-	usedSet := make(map[*types.Named]struct{}, len(used))
+	type key struct {
+		Impl *types.Named
+		Pkg  *packages.Package
+	}
+	usedSet := make(map[key]struct{}, len(used))
 	for _, c := range used {
-		usedSet[c.Impl] = struct{}{}
+		usedSet[key{Impl: c.Impl, Pkg: c.Pkg}] = struct{}{}
 	}
 
 	var diff []*Constructor
 	for _, c := range all {
-		if _, exists := usedSet[c.Impl]; !exists {
+		if _, exists := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]; !exists {
 			diff = append(diff, c)
 		}
 	}
