@@ -399,16 +399,10 @@ type ScanResult struct {
 	// Status of the overall scan.
 	Status *ScanStatus `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
 	// Status and versions of the plugins that ran.
-	PluginStatus []*PluginStatus `protobuf:"bytes,5,rep,name=plugin_status,json=pluginStatus,proto3" json:"plugin_status,omitempty"`
-	// TODO(b/400910349): Remove once integrators stop using these fields.
-	//
-	// Deprecated: Marked as deprecated in proto/scan_result.proto.
-	InventoriesDeprecated []*Package `protobuf:"bytes,6,rep,name=inventories_deprecated,json=inventoriesDeprecated,proto3" json:"inventories_deprecated,omitempty"`
-	// Deprecated: Marked as deprecated in proto/scan_result.proto.
-	FindingsDeprecated []*GenericFinding `protobuf:"bytes,7,rep,name=findings_deprecated,json=findingsDeprecated,proto3" json:"findings_deprecated,omitempty"`
-	Inventory          *Inventory        `protobuf:"bytes,8,opt,name=inventory,proto3" json:"inventory,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	PluginStatus  []*PluginStatus `protobuf:"bytes,5,rep,name=plugin_status,json=pluginStatus,proto3" json:"plugin_status,omitempty"`
+	Inventory     *Inventory      `protobuf:"bytes,8,opt,name=inventory,proto3" json:"inventory,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ScanResult) Reset() {
@@ -472,22 +466,6 @@ func (x *ScanResult) GetStatus() *ScanStatus {
 func (x *ScanResult) GetPluginStatus() []*PluginStatus {
 	if x != nil {
 		return x.PluginStatus
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in proto/scan_result.proto.
-func (x *ScanResult) GetInventoriesDeprecated() []*Package {
-	if x != nil {
-		return x.InventoriesDeprecated
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in proto/scan_result.proto.
-func (x *ScanResult) GetFindingsDeprecated() []*GenericFinding {
-	if x != nil {
-		return x.FindingsDeprecated
 	}
 	return nil
 }
@@ -758,10 +736,6 @@ type Package struct {
 	Ecosystem string `protobuf:"bytes,27,opt,name=ecosystem,proto3" json:"ecosystem,omitempty"`
 	// Paths or source of files related to the package.
 	Locations []string `protobuf:"bytes,2,rep,name=locations,proto3" json:"locations,omitempty"`
-	// TODO(b/400910349): Remove once integrators stop using these fields.
-	//
-	// Deprecated: Marked as deprecated in proto/scan_result.proto.
-	ExtractorDeprecated string `protobuf:"bytes,10,opt,name=extractor_deprecated,json=extractorDeprecated,proto3" json:"extractor_deprecated,omitempty"`
 	// The names of the plugins that found this software. Set by the
 	// core library.
 	Plugins []string `protobuf:"bytes,49,rep,name=plugins,proto3" json:"plugins,omitempty"`
@@ -807,11 +781,6 @@ type Package struct {
 	//	*Package_NvmMetadata
 	//	*Package_NodeversionMetadata
 	Metadata isPackage_Metadata `protobuf_oneof:"metadata"`
-	// Deprecated - use exploitability_signals instead
-	// TODO(b/400910349): Remove once integrators stop using this.
-	//
-	// Deprecated: Marked as deprecated in proto/scan_result.proto.
-	AnnotationsDeprecated []Package_AnnotationEnum `protobuf:"varint,28,rep,packed,name=annotations_deprecated,json=annotationsDeprecated,proto3,enum=scalibr.Package_AnnotationEnum" json:"annotations_deprecated,omitempty"`
 	// Signals to indicate that specific vulnerabilities are not applicable to
 	// this package.
 	ExploitabilitySignals []*PackageExploitabilitySignal `protobuf:"bytes,51,rep,name=exploitability_signals,json=exploitabilitySignals,proto3" json:"exploitability_signals,omitempty"`
@@ -892,14 +861,6 @@ func (x *Package) GetLocations() []string {
 		return x.Locations
 	}
 	return nil
-}
-
-// Deprecated: Marked as deprecated in proto/scan_result.proto.
-func (x *Package) GetExtractorDeprecated() string {
-	if x != nil {
-		return x.ExtractorDeprecated
-	}
-	return ""
 }
 
 func (x *Package) GetPlugins() []string {
@@ -1236,14 +1197,6 @@ func (x *Package) GetNodeversionMetadata() *NodeVersionMetadata {
 		if x, ok := x.Metadata.(*Package_NodeversionMetadata); ok {
 			return x.NodeversionMetadata
 		}
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in proto/scan_result.proto.
-func (x *Package) GetAnnotationsDeprecated() []Package_AnnotationEnum {
-	if x != nil {
-		return x.AnnotationsDeprecated
 	}
 	return nil
 }
@@ -9232,7 +9185,7 @@ var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
 	"\n" +
-	"\x17proto/scan_result.proto\x12\ascalibr\x1a\x1fgoogle/protobuf/timestamp.proto\"\xce\x03\n" +
+	"\x17proto/scan_result.proto\x12\ascalibr\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbf\x02\n" +
 	"\n" +
 	"ScanResult\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x129\n" +
@@ -9240,10 +9193,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12+\n" +
 	"\x06status\x18\x04 \x01(\v2\x13.scalibr.ScanStatusR\x06status\x12:\n" +
-	"\rplugin_status\x18\x05 \x03(\v2\x15.scalibr.PluginStatusR\fpluginStatus\x12K\n" +
-	"\x16inventories_deprecated\x18\x06 \x03(\v2\x10.scalibr.PackageB\x02\x18\x01R\x15inventoriesDeprecated\x12L\n" +
-	"\x13findings_deprecated\x18\a \x03(\v2\x17.scalibr.GenericFindingB\x02\x18\x01R\x12findingsDeprecated\x120\n" +
-	"\tinventory\x18\b \x01(\v2\x12.scalibr.InventoryR\tinventory\"\x83\x02\n" +
+	"\rplugin_status\x18\x05 \x03(\v2\x15.scalibr.PluginStatusR\fpluginStatus\x120\n" +
+	"\tinventory\x18\b \x01(\v2\x12.scalibr.InventoryR\tinventoryJ\x04\b\x06\x10\aJ\x04\b\a\x10\b\"\x83\x02\n" +
 	"\tInventory\x12,\n" +
 	"\bpackages\x18\x01 \x03(\v2\x10.scalibr.PackageR\bpackages\x12B\n" +
 	"\x10generic_findings\x18\x02 \x03(\v2\x17.scalibr.GenericFindingR\x0fgenericFindings\x12)\n" +
@@ -9267,7 +9218,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"M\n" +
 	"\tFileError\x12\x1b\n" +
 	"\tfile_path\x18\x01 \x01(\tR\bfilePath\x12#\n" +
-	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\xd0\x1d\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\xc9\x1c\n" +
 	"\aPackage\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\f \x01(\tR\aversion\x12>\n" +
@@ -9275,9 +9226,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"sourceCode\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x1c\n" +
 	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12\x1c\n" +
-	"\tlocations\x18\x02 \x03(\tR\tlocations\x125\n" +
-	"\x14extractor_deprecated\x18\n" +
-	" \x01(\tB\x02\x18\x01R\x13extractorDeprecated\x12\x18\n" +
+	"\tlocations\x18\x02 \x03(\tR\tlocations\x12\x18\n" +
 	"\aplugins\x181 \x03(\tR\aplugins\x12I\n" +
 	"\x0fpython_metadata\x18\x05 \x01(\v2\x1e.scalibr.PythonPackageMetadataH\x00R\x0epythonMetadata\x12Y\n" +
 	"\x13javascript_metadata\x18\x06 \x01(\v2&.scalibr.JavascriptPackageJSONMetadataH\x00R\x12javascriptMetadata\x12@\n" +
@@ -9314,8 +9263,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0fwinget_metadata\x186 \x01(\v2\x1e.scalibr.WingetPackageMetadataH\x00R\x0ewingetMetadata\x12<\n" +
 	"\rasdf_metadata\x187 \x01(\v2\x15.scalibr.AsdfMetadataH\x00R\fasdfMetadata\x129\n" +
 	"\fnvm_metadata\x188 \x01(\v2\x14.scalibr.NvmMetadataH\x00R\vnvmMetadata\x12Q\n" +
-	"\x14nodeversion_metadata\x18: \x01(\v2\x1c.scalibr.NodeVersionMetadataH\x00R\x13nodeversionMetadata\x12Z\n" +
-	"\x16annotations_deprecated\x18\x1c \x03(\x0e2\x1f.scalibr.Package.AnnotationEnumB\x02\x18\x01R\x15annotationsDeprecated\x12[\n" +
+	"\x14nodeversion_metadata\x18: \x01(\v2\x1c.scalibr.NodeVersionMetadataH\x00R\x13nodeversionMetadata\x12[\n" +
 	"\x16exploitability_signals\x183 \x03(\v2$.scalibr.PackageExploitabilitySignalR\x15exploitabilitySignals\x12\x1a\n" +
 	"\blicenses\x184 \x03(\tR\blicenses\x12|\n" +
 	" container_image_metadata_indexes\x189 \x01(\v2..scalibr.Package.ContainerImageMetadataIndexesH\x01R\x1dcontainerImageMetadataIndexes\x88\x01\x01\x1at\n" +
@@ -9330,7 +9278,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x10INSIDE_CACHE_DIR\x10\x03B\n" +
 	"\n" +
 	"\bmetadataB#\n" +
-	"!_container_image_metadata_indexesJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b#\x10$\"B\n" +
+	"!_container_image_metadata_indexesJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\n" +
+	"\x10\vJ\x04\b\x1c\x10\x1dJ\x04\b#\x10$\"B\n" +
 	"\x14SourceCodeIdentifier\x12\x12\n" +
 	"\x04repo\x18\x01 \x01(\tR\x04repo\x12\x16\n" +
 	"\x06commit\x18\x02 \x01(\tR\x06commit\"\x96\x01\n" +
@@ -10081,140 +10030,137 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	123, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	8,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	9,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
-	11,  // 4: scalibr.ScanResult.inventories_deprecated:type_name -> scalibr.Package
-	19,  // 5: scalibr.ScanResult.findings_deprecated:type_name -> scalibr.GenericFinding
-	7,   // 6: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
-	11,  // 7: scalibr.Inventory.packages:type_name -> scalibr.Package
-	19,  // 8: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
-	61,  // 9: scalibr.Inventory.secrets:type_name -> scalibr.Secret
-	69,  // 10: scalibr.Inventory.container_image_metadata:type_name -> scalibr.ContainerImageMetadata
-	3,   // 11: scalibr.ScanStatus.status:type_name -> scalibr.ScanStatus.ScanStatusEnum
-	10,  // 12: scalibr.ScanStatus.file_errors:type_name -> scalibr.FileError
-	8,   // 13: scalibr.PluginStatus.status:type_name -> scalibr.ScanStatus
-	12,  // 14: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
-	17,  // 15: scalibr.Package.purl:type_name -> scalibr.Purl
-	23,  // 16: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
-	24,  // 17: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
-	25,  // 18: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
-	26,  // 19: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
-	27,  // 20: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
-	28,  // 21: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
-	31,  // 22: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
-	39,  // 23: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
-	41,  // 24: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
-	42,  // 25: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
-	29,  // 26: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
-	30,  // 27: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
-	35,  // 28: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
-	36,  // 29: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
-	33,  // 30: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
-	43,  // 31: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
-	46,  // 32: scalibr.Package.netports_metadata:type_name -> scalibr.NetportsMetadata
-	44,  // 33: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
-	45,  // 34: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
-	47,  // 35: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
-	32,  // 36: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
-	34,  // 37: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
-	37,  // 38: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
-	48,  // 39: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
-	40,  // 40: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
-	49,  // 41: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
-	50,  // 42: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
-	51,  // 43: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
-	52,  // 44: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
-	53,  // 45: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
-	55,  // 46: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
-	38,  // 47: scalibr.Package.macports_metadata:type_name -> scalibr.MacportsPackageMetadata
-	60,  // 48: scalibr.Package.winget_metadata:type_name -> scalibr.WingetPackageMetadata
-	56,  // 49: scalibr.Package.asdf_metadata:type_name -> scalibr.AsdfMetadata
-	57,  // 50: scalibr.Package.nvm_metadata:type_name -> scalibr.NvmMetadata
-	58,  // 51: scalibr.Package.nodeversion_metadata:type_name -> scalibr.NodeVersionMetadata
-	4,   // 52: scalibr.Package.annotations_deprecated:type_name -> scalibr.Package.AnnotationEnum
-	14,  // 53: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
-	73,  // 54: scalibr.Package.container_image_metadata_indexes:type_name -> scalibr.Package.ContainerImageMetadataIndexes
-	0,   // 55: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
-	15,  // 56: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
-	0,   // 57: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
-	18,  // 58: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	20,  // 59: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
-	22,  // 60: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
-	16,  // 61: scalibr.GenericFinding.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
-	21,  // 62: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
-	1,   // 63: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
-	2,   // 64: scalibr.JavascriptPackageJSONMetadata.source:type_name -> scalibr.PackageSource
-	17,  // 65: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
-	17,  // 66: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
-	74,  // 67: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	123, // 68: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	123, // 69: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
-	59,  // 70: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
-	62,  // 71: scalibr.Secret.secret:type_name -> scalibr.SecretData
-	63,  // 72: scalibr.Secret.status:type_name -> scalibr.SecretStatus
-	64,  // 73: scalibr.Secret.locations:type_name -> scalibr.Location
-	75,  // 74: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	76,  // 75: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
-	77,  // 76: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
-	78,  // 77: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
-	82,  // 78: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
-	79,  // 79: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
-	80,  // 80: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
-	88,  // 81: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
-	95,  // 82: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
-	87,  // 83: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
-	93,  // 84: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
-	94,  // 85: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
-	83,  // 86: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
-	86,  // 87: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
-	104, // 88: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
-	89,  // 89: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
-	105, // 90: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
-	106, // 91: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	107, // 92: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
-	108, // 93: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
-	97,  // 94: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
-	111, // 95: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
-	112, // 96: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
-	113, // 97: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
-	114, // 98: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
-	115, // 99: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
-	98,  // 100: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
-	99,  // 101: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
-	100, // 102: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
-	102, // 103: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
-	101, // 104: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
-	92,  // 105: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
-	90,  // 106: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
-	91,  // 107: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
-	81,  // 108: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
-	109, // 109: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
-	110, // 110: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
-	119, // 111: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
-	120, // 112: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
-	121, // 113: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
-	118, // 114: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
-	84,  // 115: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
-	103, // 116: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
-	96,  // 117: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
-	85,  // 118: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
-	116, // 119: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
-	117, // 120: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
-	5,   // 121: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	123, // 122: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	65,  // 123: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	66,  // 124: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	67,  // 125: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	68,  // 126: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	13,  // 127: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	72,  // 128: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	70,  // 129: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	122, // 130: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	71,  // 131: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	54,  // 132: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	133, // [133:133] is the sub-list for method output_type
-	133, // [133:133] is the sub-list for method input_type
-	133, // [133:133] is the sub-list for extension type_name
-	133, // [133:133] is the sub-list for extension extendee
-	0,   // [0:133] is the sub-list for field type_name
+	7,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
+	11,  // 5: scalibr.Inventory.packages:type_name -> scalibr.Package
+	19,  // 6: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
+	61,  // 7: scalibr.Inventory.secrets:type_name -> scalibr.Secret
+	69,  // 8: scalibr.Inventory.container_image_metadata:type_name -> scalibr.ContainerImageMetadata
+	3,   // 9: scalibr.ScanStatus.status:type_name -> scalibr.ScanStatus.ScanStatusEnum
+	10,  // 10: scalibr.ScanStatus.file_errors:type_name -> scalibr.FileError
+	8,   // 11: scalibr.PluginStatus.status:type_name -> scalibr.ScanStatus
+	12,  // 12: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
+	17,  // 13: scalibr.Package.purl:type_name -> scalibr.Purl
+	23,  // 14: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
+	24,  // 15: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
+	25,  // 16: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
+	26,  // 17: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
+	27,  // 18: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
+	28,  // 19: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
+	31,  // 20: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
+	39,  // 21: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
+	41,  // 22: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
+	42,  // 23: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
+	29,  // 24: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
+	30,  // 25: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
+	35,  // 26: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
+	36,  // 27: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
+	33,  // 28: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
+	43,  // 29: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
+	46,  // 30: scalibr.Package.netports_metadata:type_name -> scalibr.NetportsMetadata
+	44,  // 31: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
+	45,  // 32: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
+	47,  // 33: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
+	32,  // 34: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
+	34,  // 35: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
+	37,  // 36: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
+	48,  // 37: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
+	40,  // 38: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
+	49,  // 39: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
+	50,  // 40: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
+	51,  // 41: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
+	52,  // 42: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
+	53,  // 43: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
+	55,  // 44: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
+	38,  // 45: scalibr.Package.macports_metadata:type_name -> scalibr.MacportsPackageMetadata
+	60,  // 46: scalibr.Package.winget_metadata:type_name -> scalibr.WingetPackageMetadata
+	56,  // 47: scalibr.Package.asdf_metadata:type_name -> scalibr.AsdfMetadata
+	57,  // 48: scalibr.Package.nvm_metadata:type_name -> scalibr.NvmMetadata
+	58,  // 49: scalibr.Package.nodeversion_metadata:type_name -> scalibr.NodeVersionMetadata
+	14,  // 50: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
+	73,  // 51: scalibr.Package.container_image_metadata_indexes:type_name -> scalibr.Package.ContainerImageMetadataIndexes
+	0,   // 52: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
+	15,  // 53: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
+	0,   // 54: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
+	18,  // 55: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
+	20,  // 56: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
+	22,  // 57: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
+	16,  // 58: scalibr.GenericFinding.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
+	21,  // 59: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
+	1,   // 60: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
+	2,   // 61: scalibr.JavascriptPackageJSONMetadata.source:type_name -> scalibr.PackageSource
+	17,  // 62: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
+	17,  // 63: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
+	74,  // 64: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
+	123, // 65: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	123, // 66: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	59,  // 67: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
+	62,  // 68: scalibr.Secret.secret:type_name -> scalibr.SecretData
+	63,  // 69: scalibr.Secret.status:type_name -> scalibr.SecretStatus
+	64,  // 70: scalibr.Secret.locations:type_name -> scalibr.Location
+	75,  // 71: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
+	76,  // 72: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
+	77,  // 73: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
+	78,  // 74: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
+	82,  // 75: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
+	79,  // 76: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
+	80,  // 77: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
+	88,  // 78: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
+	95,  // 79: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	87,  // 80: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
+	93,  // 81: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
+	94,  // 82: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
+	83,  // 83: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
+	86,  // 84: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
+	104, // 85: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
+	89,  // 86: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
+	105, // 87: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
+	106, // 88: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	107, // 89: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
+	108, // 90: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
+	97,  // 91: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
+	111, // 92: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
+	112, // 93: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
+	113, // 94: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
+	114, // 95: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
+	115, // 96: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
+	98,  // 97: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
+	99,  // 98: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
+	100, // 99: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
+	102, // 100: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
+	101, // 101: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
+	92,  // 102: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
+	90,  // 103: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
+	91,  // 104: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
+	81,  // 105: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
+	109, // 106: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
+	110, // 107: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
+	119, // 108: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
+	120, // 109: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
+	121, // 110: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
+	118, // 111: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
+	84,  // 112: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
+	103, // 113: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
+	96,  // 114: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
+	85,  // 115: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
+	116, // 116: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
+	117, // 117: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
+	5,   // 118: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	123, // 119: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	65,  // 120: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	66,  // 121: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	67,  // 122: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	68,  // 123: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	13,  // 124: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	72,  // 125: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	70,  // 126: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	122, // 127: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	71,  // 128: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	54,  // 129: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	130, // [130:130] is the sub-list for method output_type
+	130, // [130:130] is the sub-list for method input_type
+	130, // [130:130] is the sub-list for extension type_name
+	130, // [130:130] is the sub-list for extension extendee
+	0,   // [0:130] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
