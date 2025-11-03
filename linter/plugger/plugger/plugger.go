@@ -41,9 +41,13 @@ var Config = &packages.Config{
 //
 //  2. Find all types that implement those interfaces.
 //
-//  3. Identify all files in which the constructors for these types are declared
+//  3. Identify all packages in which the constructors for these types are declared
 //
-//  4. For each file, there must be at least one constructor call (!!!outside of the package!!!):
+//  4. Each constructor must be called at least once outside of the pkg. Note:
+//
+//     - 2 functions returning the same type declared in the current pkg are considered aliases (only 1 of those must be called)
+//
+//     - 2 functions returning the same type declared in another pkg, are considered separate (both must be called)
 //
 //     if none exist, the plugin is considered not registered.
 func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) {
@@ -76,7 +80,7 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	return notRegistered(ctrs, usages), nil
 }
 
-// TODO: add docs
+// notRegistered return a list of non-registered plugins
 func notRegistered(all, used []*Constructor) []*Constructor {
 	type key struct {
 		Impl *types.Named
@@ -98,9 +102,9 @@ func notRegistered(all, used []*Constructor) []*Constructor {
 
 	var diff []*Constructor
 	for _, c := range all {
-		_, registered := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]
+		_, returnedTypeCovered := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]
 		_, calledDirectly := usedSet[key{Fun: c.Fun}]
-		if (!registered) && !calledDirectly {
+		if !returnedTypeCovered && !calledDirectly {
 			diff = append(diff, c)
 		}
 	}
