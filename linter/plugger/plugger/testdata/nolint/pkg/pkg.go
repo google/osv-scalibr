@@ -1,5 +1,5 @@
 //nolint:plugger // test
-package pkgnolint
+package pkg
 
 import "testdata/basic"
 

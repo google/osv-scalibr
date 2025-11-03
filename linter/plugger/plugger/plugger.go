@@ -56,16 +56,7 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 		return nil, fmt.Errorf("failed to load packages: %w", err)
 	}
 
-	pkgs = slices.DeleteFunc(pkgs, func(pkg *packages.Package) bool {
-		for _, f := range pkg.Syntax {
-			for _, cg := range f.Comments {
-				if hasNoLint(cg, Name) {
-					return true
-				}
-			}
-		}
-		return false
-	})
+	pkgs = FilterNoLintPackages(pkgs)
 
 	interfaces := FindInterfaces(pkgs, interfaceNames)
 	if len(interfaceNames) != len(interfaces) {
@@ -78,6 +69,20 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	ctrs := FindConstructors(pkgs, slices.Concat(implementations, interfaces))
 	usages := FindUsages(pkgs, ctrs)
 	return notRegistered(ctrs, usages), nil
+}
+
+// FilterNoLintPackages filters out pkgs which have a nolint directive
+func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
+	return slices.DeleteFunc(pkgs, func(pkg *packages.Package) bool {
+		for _, f := range pkg.Syntax {
+			for _, cg := range f.Comments {
+				if hasNoLint(cg, Name) {
+					return true
+				}
+			}
+		}
+		return false
+	})
 }
 
 // notRegistered return a list of non-registered plugins

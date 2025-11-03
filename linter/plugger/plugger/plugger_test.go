@@ -144,8 +144,8 @@ func TestFindUsages(t *testing.T) {
 	}
 }
 
-func TestStructNolintRule(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint")
+func TestStructNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/plugin")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,14 +158,41 @@ func TestStructNolintRule(t *testing.T) {
 		got = append(got, impl.Obj().Name())
 	}
 
-	want := []string{"PluginA", "PluginB"}
+	want := []string{"PluginA", "PluginB", "PluginNotUsedToLint"}
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestPkgNolintRule(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/pkgnolint")
+func TestPkgNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/pkg")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgs = plugger.FilterNoLintPackages(pkgs)
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
+
+	var got []string
+	for _, ctr := range ctrs {
+		got = append(got, ctr.Fun.Name.String())
+	}
+
+	want := []string{
+		"NewPluginA",
+		"NewPluginB",
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFunNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/fun")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,6 +209,7 @@ func TestPkgNolintRule(t *testing.T) {
 	want := []string{
 		"NewPluginA",
 		"NewPluginB",
+		"NewPlugin",
 	}
 
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {

@@ -71,6 +71,13 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 		return ts
 	}
 
+	// handle nolint directive
+	if hasNoLint(fn.Doc, Name) {
+		res := &Function{Fun: fn, Pkg: pkg}
+		seen[fn] = res
+		return res
+	}
+
 	typesSet := map[types.Type]struct{}{}
 	callSet := map[*Function]struct{}{}
 

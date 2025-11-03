@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package nolint is a test package for the nolint comment
-package nolint
+package plugin
 
 import "testdata/basic"
 
@@ -26,3 +25,8 @@ type PluginNotUsed struct{}
 
 // Run implements the MyPlugin interface
 func (p *PluginNotUsed) Run() {}
+
+type PluginNotUsedToLint struct{}
+
+// Run implements the MyPlugin interface
+func (p *PluginNotUsedToLint) Run() {}
