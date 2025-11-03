@@ -66,8 +66,7 @@ func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) []
 				// Fix in FindImplementations: Removed unused pkg.Types argument
 				implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
 					// Pass the T type and the package object (which is needed for the types.Selection.Obj().Pkg() check in Lookup)
-					return doesImplement(pkg.Types, named, iface) ||
-						doesImplement(pkg.Types, types.NewPointer(named), iface)
+					return doesImplement(named, iface) || doesImplement(types.NewPointer(named), iface)
 				})
 				if implementsAny {
 					implementations = append(implementations, named)
@@ -106,7 +105,7 @@ func hasNoLint(commentGroup *ast.CommentGroup, name string) bool {
 // doesImplement checks if the named type 'T' implements the named interface 'iface'
 // by using instantiation logic for generic interfaces.
 // pkg is the package of the implementing type (needed for MethodSet.Lookup).
-func doesImplement(pkg *types.Package, T types.Type, iface *types.Named) bool {
+func doesImplement(t types.Type, iface *types.Named) bool {
 	ifaceType, ok := iface.Underlying().(*types.Interface)
 	if !ok {
 		return false
@@ -115,17 +114,17 @@ func doesImplement(pkg *types.Package, T types.Type, iface *types.Named) bool {
 	// non-generic interface
 	// or If the generic interface has no methods, we can't deduce type arguments.
 	if iface.TypeParams().Len() == 0 || ifaceType.NumMethods() == 0 {
-		return types.Satisfies(T, ifaceType)
+		return types.Satisfies(t, ifaceType)
 	}
 
 	// generic interface
 
-	concreteMSet := types.NewMethodSet(T)
+	concreteMSet := types.NewMethodSet(t)
 	typeArgs := make([]types.Type, iface.TypeParams().Len())
 	iTypeParams := iface.TypeParams()
 
 	// Check every method in the generic interface template
-	for i := 0; i < ifaceType.NumMethods(); i++ {
+	for i := range ifaceType.NumMethods() {
 		iMethod := ifaceType.Method(i) // e.g., Validator.Validate
 		mSel := concreteMSet.Lookup(iMethod.Pkg(), iMethod.Name())
 		// Method is missing on this T/*T, stop checking this type.
@@ -154,7 +153,7 @@ func doesImplement(pkg *types.Package, T types.Type, iface *types.Named) bool {
 	}
 
 	// final check: T satisfies the instantiated interface
-	return types.Satisfies(T, instantiated.Underlying().(*types.Interface))
+	return types.Satisfies(t, instantiated.Underlying().(*types.Interface))
 }
 
 // paramsMatch compares the template parameter list (iParams) against the concrete parameter
@@ -164,27 +163,20 @@ func paramsMatch(iTypeParams *types.TypeParamList, iParams, cParams *types.Tuple
 		return
 	}
 
-	for j := 0; j < iParams.Len(); j++ {
+	for j := range iParams.Len() {
 		iType := iParams.At(j).Type()
 
+		tp, isTypeParam := iType.(*types.TypeParam)
+		if !isTypeParam {
+			continue
+		}
 		// If the interface type at this position is a type parameter (e.g., S in Validator[S])
-		if tp, isTypeParam := iType.(*types.TypeParam); isTypeParam {
-
-			// Find its index in the interface's overall type parameter list
-			for i := range iTypeParams.Len() {
-				p := iTypeParams.At(i)
-				if p == tp {
-					// We found the concrete type argument!
-					cType := cParams.At(j).Type()
-
-					// Fix 3: Only set the type argument if it hasn't been set yet.
-					// This prevents inconsistent types from overwriting a deduced argument.
-					if typeArgs[i] == nil {
-						typeArgs[i] = cType
-					}
-
-					break
-				}
+		// Find its index in the interface's overall type parameter list
+		for i := range iTypeParams.Len() {
+			p := iTypeParams.At(i)
+			if p == tp {
+				typeArgs[i] = cParams.At(j).Type()
+				break
 			}
 		}
 	}

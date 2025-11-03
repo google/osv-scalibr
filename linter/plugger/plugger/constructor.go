@@ -44,6 +44,7 @@ func (f *Function) Returns(t *types.Named) bool {
 // Constructor is a function with an assigned type
 type Constructor struct {
 	*Function
+
 	Impl *types.Named
 }
 
