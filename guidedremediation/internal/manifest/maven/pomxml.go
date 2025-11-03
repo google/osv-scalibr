@@ -244,6 +244,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	}
 
 	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
+	// Interpolation seems breaks the override test, need further investigation.
 	for _, repo := range project.Repositories {
 		if err := r.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
