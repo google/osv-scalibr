@@ -30,7 +30,7 @@ type Extractor struct {
 or directly exclude a pkg
 
 ```go
-// Extractor extracts python packages from requirements.txt files.
+// Package fakeplugin contains a fake plugin to be used in testing
 //
 //nolint:plugger // This pkg contains only mocks
 package fakeplugin
