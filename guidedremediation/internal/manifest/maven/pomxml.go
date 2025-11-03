@@ -243,6 +243,11 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 
+	// Interpolate the project in case there are properties in any repository.
+	if err := project.Interpolate(); err != nil {
+		return nil, fmt.Errorf("failed to interpolate project: %w", err)
+	}
+
 	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
 	for _, repo := range project.Repositories {
 		if err := r.AddRegistry(ctx, datasource.MavenRegistry{
