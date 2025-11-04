@@ -82,9 +82,8 @@ var (
 			Maintainer:        "maintainer",
 			Architecture:      "amd64",
 		},
-		Locations:             []string{"/file1"},
-		Plugins:               []string{dpkg.Name},
-		AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+		Locations: []string{"/file1"},
+		Plugins:   []string{dpkg.Name},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          dpkg.Name,
 			Justification:   vex.ComponentNotPresent,
@@ -118,9 +117,7 @@ var (
 		},
 		Locations: []string{"/file1"},
 		// TODO(b/400910349): Remove once integrators stop using these fields.
-		ExtractorDeprecated:   "os/dpkg",
-		Plugins:               []string{"os/dpkg"},
-		AnnotationsDeprecated: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
+		Plugins: []string{"os/dpkg"},
 		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
 			Plugin:        dpkg.Name,
 			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
@@ -1598,12 +1595,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			opts := []cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
-				// Ignore deprecated fields in the comparison.
-				// TODO(b/400910349): Stop setting the deprecated fields
-				// once integrators no longer read them.
-				protocmp.IgnoreFields(&spb.Package{}, "extractor_deprecated"),
-				protocmp.IgnoreFields(&spb.ScanResult{}, "inventories_deprecated"),
-				protocmp.IgnoreFields(&spb.ScanResult{}, "findings_deprecated"),
 			}
 
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {

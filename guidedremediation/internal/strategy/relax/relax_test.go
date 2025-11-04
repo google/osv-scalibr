@@ -27,9 +27,9 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
@@ -213,12 +213,12 @@ func TestComputePatches(t *testing.T) {
 			}
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
-			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolved, err := remediation.ResolveManifest(t.Context(), cl, vm, m, &tt.opts)
+			ve := vulnenrichertest.NewMockVulnerabilityEnricher(t, tt.vulnsFile)
+			resolved, err := remediation.ResolveManifest(t.Context(), cl, ve, m, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			gotFull, err := relax.ComputePatches(t.Context(), cl, vm, resolved, &tt.opts)
+			gotFull, err := relax.ComputePatches(t.Context(), cl, ve, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}

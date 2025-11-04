@@ -232,12 +232,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		description := strings.ToLower(h.Get("Description"))
-		var annotations []extractor.Annotation
 		var vexes []*vex.PackageExploitabilitySignal
 		if strings.Contains(description, "transitional package") ||
 			strings.Contains(description, "transitional dummy package") ||
 			strings.Contains(description, "transitional empty package") {
-			annotations = append(annotations, extractor.Transitional)
 			vexes = append(vexes, &vex.PackageExploitabilitySignal{
 				Plugin:          Name,
 				Justification:   vex.ComponentNotPresent,
@@ -264,9 +262,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Maintainer:        h.Get("Maintainer"),
 				Architecture:      h.Get("Architecture"),
 			},
-			Locations: []string{input.Path},
-			// TODO(b/400910349): Remove once integrators stop using annotations.
-			AnnotationsDeprecated: annotations,
+			Locations:             []string{input.Path},
 			ExploitabilitySignals: vexes,
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))
