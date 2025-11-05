@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package vapid contain the logic for finding "Firebase Cloud Messaging Web Push Certificate"
-// also known as VAPID keys (Voluntary Application Server Identification)
+// Package vapid contain the logic for finding VAPID keys (Voluntary Application Server Identification)
 //
-// ref: https://firebase.google.com/docs/cloud-messaging/get-started?platform=web&_gl=1*vzrfcj*_up*MQ..*_ga*ODM5Mzk4NDUxLjE3NDU5MzczOTk.*_ga_CW55HF8NVT*MTc0NTkzNzM5OS4xLjAuMTc0NTkzNzM5OS4wLjAuMA..#configure_web_credentials_with
+// ref: https://web.dev/articles/push-notifications-web-push-protocol
 package vapid
 
 // Key holds the content of a VAPID key
