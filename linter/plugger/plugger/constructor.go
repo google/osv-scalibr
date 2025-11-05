@@ -26,9 +26,13 @@ import (
 // Function is a generic function
 type Function struct {
 	Fun         *ast.FuncDecl
-	Called      []*Function
+	Aliases     []*Function
 	Pkg         *packages.Package
 	ReturnTypes []types.Type
+}
+
+func (f Function) String() string {
+	return f.Fun.Name.Name
 }
 
 // Returns returns true if the function returns the given type

@@ -18,7 +18,6 @@ package plugger
 import (
 	"fmt"
 	"go/ast"
-	"go/types"
 	"slices"
 
 	"golang.org/x/tools/go/packages"
@@ -87,29 +86,21 @@ func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
 
 // notRegistered return a list of non-registered plugins
 func notRegistered(all, used []*Constructor) []*Constructor {
-	type key struct {
-		Impl *types.Named
-		Pkg  *packages.Package
-		Fun  *ast.FuncDecl
-	}
-
-	usedSet := make(map[key]struct{}, len(used))
+	usedSet := make(map[*ast.FuncDecl]bool, len(used))
 	for _, c := range used {
-		usedSet[key{Fun: c.Fun}] = struct{}{}
-		// mark the type as "covered" only for types declared in the same pkg
-		if c.Impl.Obj().Pkg() == c.Pkg.Types {
-			usedSet[key{Impl: c.Impl, Pkg: c.Pkg}] = struct{}{}
-		}
-		for _, called := range c.Called {
-			usedSet[key{Fun: called.Fun}] = struct{}{}
+		usedSet[c.Fun] = true
+		// also mark as used, aliases which return the same type
+		for _, alias := range c.Aliases {
+			if !alias.Returns(c.Impl) {
+				continue
+			}
+			usedSet[alias.Fun] = true
 		}
 	}
 
 	var diff []*Constructor
 	for _, c := range all {
-		_, returnedTypeCovered := usedSet[key{Impl: c.Impl, Pkg: c.Pkg}]
-		_, calledDirectly := usedSet[key{Fun: c.Fun}]
-		if !returnedTypeCovered && !calledDirectly {
+		if !usedSet[c.Fun] {
 			diff = append(diff, c)
 		}
 	}

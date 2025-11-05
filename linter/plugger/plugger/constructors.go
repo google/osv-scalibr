@@ -19,6 +19,7 @@ import (
 	"go/types"
 	"maps"
 	"slices"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -28,6 +29,7 @@ func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constru
 	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
+		findAliases(functions)
 		for _, impl := range types {
 			for _, fn := range functions {
 				if fn.Returns(impl) {
@@ -53,7 +55,7 @@ func findFunctions(pkg *packages.Package) []*Function {
 			if fn.Recv != nil {
 				return true
 			}
-			fns = append(fns, extractReturnTypes(pkg, fn, seen))
+			fns = append(fns, extractFunction(pkg, fn, seen))
 			return true
 		})
 	}
@@ -61,9 +63,9 @@ func findFunctions(pkg *packages.Package) []*Function {
 	return fns
 }
 
-// extractReturnTypes extracts concrete return types within the same package,
+// extractFunction extracts concrete return types within the same package,
 // if the function calls an external function it uses its return type as type (even if not concrete)
-func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]*Function) *Function {
+func extractFunction(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]*Function) *Function {
 	if fn.Body == nil {
 		return nil
 	}
@@ -79,7 +81,6 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 	}
 
 	typesSet := map[types.Type]struct{}{}
-	callSet := map[*Function]struct{}{}
 
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		switch node := n.(type) {
@@ -92,12 +93,9 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 				case *ast.CallExpr:
 					if fnDecl := findFuncDecl(pkg, call.Fun); fnDecl != nil {
 						// Recurse into the called function
-						calledFn := extractReturnTypes(pkg, fnDecl, seen)
+						calledFn := extractFunction(pkg, fnDecl, seen)
 						for _, t := range calledFn.ReturnTypes {
 							typesSet[t] = struct{}{}
-						}
-						for _, c := range calledFn.Called {
-							callSet[c] = struct{}{}
 						}
 						continue
 					}
@@ -118,7 +116,6 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 
 	res := &Function{
 		Fun: fn, Pkg: pkg,
-		Called:      slices.Collect(maps.Keys(callSet)),
 		ReturnTypes: slices.Collect(maps.Keys(typesSet)),
 	}
 	seen[fn] = res
@@ -142,4 +139,34 @@ func findFuncDecl(pkg *packages.Package, fun ast.Expr) *ast.FuncDecl {
 		}
 	}
 	return nil
+}
+
+// findAliases populates the .Aliases field in the given functions
+//
+// two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault) or they
+func findAliases(functions []*Function) {
+	slices.SortFunc(functions, func(a, b *Function) int {
+		return strings.Compare(a.Fun.Name.Name, b.Fun.Name.Name)
+	})
+
+	bins := map[string][]*Function{}
+	i, j := 0, 0
+	for i < len(functions) && j < len(functions) {
+		f1Name := functions[i].Fun.Name.Name
+		f2 := functions[j]
+		f2Name := f2.Fun.Name.Name
+		// skip to next bin since strings are sorted
+		if !strings.HasPrefix(f2Name, f1Name) {
+			i = j
+			continue
+		}
+		bins[f1Name] = append(bins[f1Name], f2)
+		j++
+	}
+
+	for _, bin := range bins {
+		for _, fn := range bin {
+			fn.Aliases = bin
+		}
+	}
 }
