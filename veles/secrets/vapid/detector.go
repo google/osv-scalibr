@@ -34,19 +34,11 @@ const (
 )
 
 var (
-	// match a json blob of exactly 87 characters
-	publicKeyPattern = regexp.MustCompile(`[A-Za-z0-9_-]{87}([^A-Za-z0-9_-]|$)`)
-	// match:
-	// - **vapid**=base64blob with exact length of 43
-	// - **vapid**"="base64blob with exact length of 43
-	// - base64blob with exact length of 43
-	privateKeyPattern = regexp.MustCompile(`(?i)(vapid\S*)?[ \t:=]+["']?([A-Za-z0-9_-]{43})([^A-Za-z0-9_-]|$)`)
+	// match a base64 blob of exactly 87 characters
+	publicKeyPattern = regexp.MustCompile(`(?:[^A-Za-z0-9_-]|^)([A-Za-z0-9_-]{87})(?:[^A-Za-z0-9_-]|$)`)
+	// match a base64 blob of exactly 43 characters
+	privateKeyPattern = regexp.MustCompile(`(?:[^A-Za-z0-9_-]|^)([A-Za-z0-9_-]{43})(?:[^A-Za-z0-9_-]|$)`)
 )
-
-// matchMetadata contains metadata about the key match
-type matchMetadata struct {
-	HasContext bool
-}
 
 // NewDetector returns a VAPID private key detector
 //
@@ -57,38 +49,31 @@ type matchMetadata struct {
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxKeyLen, MaxDistance: maxDistance,
-		FindA: pair.FindAllMatches(publicKeyPattern),
-		FindB: findAllMatchesWithContext(privateKeyPattern),
+		FindA: findStrict(publicKeyPattern),
+		FindB: findStrict(privateKeyPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			pubB64, privB64 := p.A.Value[:publicKeyLen], p.B.Value
+			pubB64, privB64 := p.A.Value, p.B.Value
 			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
 			return Key{PublicB64: pubB64, PrivateB64: privB64}, true
 		},
-		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
-			privB64 := p.B
-			if privB64 == nil || !privB64.Metadata.(matchMetadata).HasContext {
-				return nil, false
-			}
-			// if the private key was found and it had context before
-			// return it
-			return Key{PrivateB64: privB64.Value}, true
-		},
 	}
 }
 
-// findAllMatchesWithContext returns a function which finds all matches of a given regex
-// and adds metadata to the Match depending if it found context before the match
-func findAllMatchesWithContext(re *regexp.Regexp) func(data []byte) []*pair.Match {
+// findStrict returns all matches found using a "strict" regex.
+//
+// A "strict" regex must be composed by a single capture group for the payload,
+// and non-capturing groups for the boundaries, e.g.:
+// (?:[^group]|^)([group]{len})(?:[^group]|$)
+func findStrict(re *regexp.Regexp) func(data []byte) []*pair.Match {
 	return func(data []byte) []*pair.Match {
 		matches := re.FindAllSubmatchIndex(data, -1)
 		var results []*pair.Match
 		for _, m := range matches {
 			results = append(results, &pair.Match{
-				Value:    string(data[m[4]:m[5]]),
-				Position: m[0],
-				Metadata: matchMetadata{HasContext: m[2] != -1},
+				Value:    string(data[m[2]:m[3]]),
+				Position: m[2],
 			})
 		}
 		return results

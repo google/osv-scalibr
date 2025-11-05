@@ -15,7 +15,6 @@
 package vapid_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -38,12 +37,12 @@ func TestDetector_Detect(t *testing.T) {
 	}{
 		// --- Empty or invalid input ---
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 			want:  nil,
 		},
 		{
-			name: "correct syntax - bad key",
+			name: "correct_syntax_-_bad_key",
 			input: `
 				Not Vapid Private Key: LieO7JztGnRv11UxRNJlBkdoK97_PceW7rGXQh36c_4
 				Vapid Public Key: BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs
@@ -51,7 +50,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "correct syntax - bad key - choose the right one",
+			name: "correct_syntax_-_bad_key_-_choose_the_right one",
 			input: `
 				Vapid Private Key: LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4
 				Not Vapid Private Key: LieO7JztGnRv11UxRNJlBkdoK97_PceW7rGXQh36c_4
@@ -78,47 +77,32 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name:  "only public - context",
+			name:  "correct_-_tuple",
+			input: `LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4:BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs`,
+			want: []veles.Secret{
+				vapid.Key{
+					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
+					PublicB64:  "BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs",
+				},
+			},
+		},
+		{
+			name:  "only_public",
 			input: `VapidPublicKey: BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs`,
 			want:  nil,
 		},
 		{
-			name:  "only public - context no spacing",
-			input: `VapidPublicKey:BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs`,
-			want:  nil,
-		},
-		{
-			name:  "only private - no context",
+			name:  "only_private_-_no_context",
 			input: `Lu7AeLYdEUws2iLm97LcwAbQCI1YA8NpLEe485kmO5s`,
 			want:  nil,
 		},
 		{
-			name:  "only private - context",
+			name:  "only_private_-_context",
 			input: `VapidPrivateKey: LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
-			want: []veles.Secret{
-				vapid.Key{
-					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
-				},
-			},
+			want:  nil,
 		},
 		{
-			name:  "only private - context with strange spacing",
-			input: `VapidPrivateKey  : LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
-			want: []veles.Secret{
-				vapid.Key{
-					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
-				},
-			},
-		},
-		{
-			name:  "only private - context - snake case ",
-			input: `VAPID_PRIVATE_KEY=LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4`,
-			want: []veles.Secret{
-				vapid.Key{PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4"},
-			},
-		},
-		{
-			name: "complex multiline - private key omitted, should not match",
+			name: "complex_multiline_-_private_key_omitted,_should_not_match",
 			input: `
 				VapidPrivateKey: ****
 				VapidPublicKey: BE7cFYQ2l4kASZ_7iKwAy6L2hztWwTKrwd41SkRJuGyo6J5vR9ATeUufONHzoaseSpKtcJbm5xLTkmo--IWpEt8
@@ -126,7 +110,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: []veles.Secret{},
 		},
 		{
-			name: "complex multiline - no multiline context match",
+			name: "complex_multiline_-_no_multiline_context_match",
 			input: `
 				VapidPrivateKey:
 				LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4
@@ -134,7 +118,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: []veles.Secret{},
 		},
 		{
-			name: "complex javascript - match",
+			name: "complex_javascript_-_match",
 			input: `
 			function setup() {
 			  webpush.setVapidDetails(
@@ -153,7 +137,7 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "complex golang - no match",
+			name: "complex_golang_-_no_match",
 			input: `
 			resp, err := webpush.SendNotification([]byte("Test"), s, &webpush.Options{
 				Subscriber:      "example@example.com", // Do not include "mailto:"
@@ -165,7 +149,24 @@ func TestDetector_Detect(t *testing.T) {
 			want: []veles.Secret{},
 		},
 		{
-			name: "json match",
+			name: "complex_golang_-_match",
+			input: `
+			resp, err := webpush.SendNotification([]byte("Test"), s, &webpush.Options{
+				Subscriber:      "example@example.com", // Do not include "mailto:"
+				VAPIDPublicKey:  "rrvzfePgU7wc8RP7fcSMR-8ur2nDzqissXT5ovojK6Q",
+				VAPIDPrivateKey: "BFKSGCtM-gouDaPSNYwDRmCTCSEelTpujQ6mHG2KIXaaJI9WLReodcS00QE4ck8P5uPHLSkNKZ7ZAWjpgITwrNI",
+				TTL:             30,
+			})
+			`,
+			want: []veles.Secret{
+				vapid.Key{
+					PrivateB64: "rrvzfePgU7wc8RP7fcSMR-8ur2nDzqissXT5ovojK6Q",
+					PublicB64:  "BFKSGCtM-gouDaPSNYwDRmCTCSEelTpujQ6mHG2KIXaaJI9WLReodcS00QE4ck8P5uPHLSkNKZ7ZAWjpgITwrNI",
+				},
+			},
+		},
+		{
+			name: "json_match",
 			input: `
 		 "webPush": {
         "subject": "http://example.com",
@@ -181,21 +182,17 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "json match - context only",
+			name: "json_match_-_context_only",
 			input: `
 		 "webPush": {
         "subject": "http://example.com",
         "vapidPrivateKey": "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0"
       },
 			`,
-			want: []veles.Secret{
-				vapid.Key{
-					PrivateB64: "CSOfcDX5bADZupzLZFoIwvqfyPMEz-vZtJORwHTLPR0",
-				},
-			},
+			want: nil,
 		},
 		{
-			name: "json match - no context",
+			name: "json_match_-_no_context",
 			input: `
 		  {
 			  "Vapid": {
@@ -221,7 +218,6 @@ func TestDetector_Detect(t *testing.T) {
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			fmt.Printf("got = %+v\n", got)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
