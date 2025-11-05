@@ -30,12 +30,20 @@ type Extractor struct {
 exclude a function
 
 ```go
+// This function is called
 func NewPlugin() basic.MyPlugin {
 	return &basic.PluginA{}
 }
 
-//nolint:plugger // This function is meant to be used only in testing and returns the same plugin as fun.NewPlugin
+// This is detected as alias automatically
 func NewPluginAlias(something string) basic.MyPlugin {
+	return &basic.PluginA{}
+}
+
+// This is not detected as an alias automatically, so it needs a lint rule
+//
+//nolint:plugger // This function is meant to be used only in testing and returns the same plugin as fun.NewPlugin
+func NewForTest(something string) basic.MyPlugin {
 	return &basic.PluginA{}
 }
 ```
