@@ -89,7 +89,7 @@ func notRegistered(all, used []*Constructor) []*Constructor {
 	usedSet := make(map[*ast.FuncDecl]bool, len(used))
 	for _, c := range used {
 		usedSet[c.Fun] = true
-		// also mark as used, aliases which return the same type
+		// also mark as used aliases which return the same type
 		for _, alias := range c.Aliases {
 			if !alias.Returns(c.Impl) {
 				continue

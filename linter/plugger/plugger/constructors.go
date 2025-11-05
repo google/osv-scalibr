@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -152,7 +153,13 @@ func findAliases(functions []*Function) {
 	bins := map[string][]*Function{}
 	i, j := 0, 0
 	for i < len(functions) && j < len(functions) {
-		f1Name := functions[i].Fun.Name.Name
+		f1 := functions[i]
+		f1Name := f1.Fun.Name.Name
+
+		// Heuristically remove the suffixes: pkg.Name and "Default" from the function name
+		f1Name = strings.TrimSuffix(f1Name, "Default")
+		f1Name = strings.TrimSuffix(f1Name, capitalizeFirst(f1.Pkg.Name))
+
 		f2 := functions[j]
 		f2Name := f2.Fun.Name.Name
 		// skip to next bin since strings are sorted
@@ -169,4 +176,23 @@ func findAliases(functions []*Function) {
 			fn.Aliases = bin
 		}
 	}
+}
+
+func trimAnySuffix(s string, suffixes []string) string {
+	for _, suf := range suffixes {
+		if before, ok := strings.CutSuffix(s, suf); ok {
+			return before
+		}
+	}
+	return s
+}
+
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	// Convert first rune to uppercase, rest stays the same
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }
