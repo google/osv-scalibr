@@ -603,7 +603,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	// Guided remediation does not currently support peer dependencies.
 	// Try with `--legacy-peer-deps` in case the previous install errored from peer dependencies.
 	log.Warnf("npm install failed. Trying again with `--legacy-peer-deps`")
-	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps", "--ignore-scripts")
 	cmd.Dir = dir
 	cmdOut := &strings.Builder{}
 	cmd.Stdout = cmdOut
