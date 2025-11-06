@@ -1592,10 +1592,10 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
 			}
 
-			opts := []cmp.Option{
+			opts := append([]cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
-			}
+			}, pkgOpts...)
 
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)

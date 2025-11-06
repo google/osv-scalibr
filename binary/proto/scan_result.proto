@@ -19,6 +19,7 @@ syntax = "proto3";
 package scalibr;
 
 import "google/protobuf/timestamp.proto";
+import "third_party/osvschema/vulnerability.proto";
 
 option go_package = "github.com/google/scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
@@ -43,6 +44,7 @@ message ScanResult {
 // The artifacts (e.g. software inventory, security findings) that a scan found.
 message Inventory {
   repeated Package packages = 1;
+  repeated PackageVuln package_vulns = 6;
   repeated GenericFinding generic_findings = 2;
   repeated Secret secrets = 3;
   repeated ContainerImageMetadata container_image_metadata = 5;
@@ -76,6 +78,8 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  // Unique identifier for the package.
+  string id = 60;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -250,6 +254,17 @@ message Purl {
 message Qualifier {
   string key = 1;
   string value = 2;
+}
+
+// Describes a vulnerability (e.g. a CVE) related to a package.
+message PackageVuln {
+  osv.Vulnerability vuln = 1;
+  // The ID of the associated package in Inventory.Packages.
+  string package_id = 2;
+  // The plugins (e.g. Detectors, Enrichers) that found this vuln.
+  repeated string plugins = 3;
+  // Signals that indicate this finding is not exploitable.
+  repeated FindingExploitabilitySignal exploitability_signals = 4;
 }
 
 // Describes generic security findings not associated with any

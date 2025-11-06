@@ -86,7 +86,11 @@ func TestInventoryToProto(t *testing.T) {
 			if !errors.Is(err, tc.wantErr) {
 				t.Errorf("InventoryToProto(%v) returned error %v, want error %v", tc.inv, err, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
+			opts := append([]cmp.Option{
+				protocmp.Transform(),
+				cmpopts.EquateEmpty(),
+			}, pkgOpts...)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 
@@ -162,7 +166,11 @@ func TestInventoryToStruct(t *testing.T) {
 			if err != nil {
 				t.Fatalf("InventoryToProto(%v) returned error %v, want nil", got, err)
 			}
-			if diff := cmp.Diff(tc.inv, gotPB, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
+			opts := append([]cmp.Option{
+				protocmp.Transform(),
+				cmpopts.EquateEmpty(),
+			}, pkgOpts...)
+			if diff := cmp.Diff(tc.inv, gotPB, opts...); diff != "" {
 				t.Fatalf("InventoryToProto(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})
