@@ -26,9 +26,9 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/inplace"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
@@ -76,8 +76,8 @@ func TestComputePatches(t *testing.T) {
 			}
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
-			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolvedGraph, err := remediation.ResolveGraphVulns(t.Context(), cl, vm, g, nil, &tt.opts)
+			ve := vulnenrichertest.NewMockVulnerabilityEnricher(t, tt.vulnsFile)
+			resolvedGraph, err := remediation.ResolveGraphVulns(t.Context(), cl, ve, g, nil, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving vulns from graph: %v", err)
 			}

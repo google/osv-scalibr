@@ -41,11 +41,7 @@ func ScanResultToProto(r *result.ScanResult) (*spb.ScanResult, error) {
 		EndTime:      timestamppb.New(r.EndTime),
 		Status:       scanStatusToProto(r.Status),
 		PluginStatus: pluginStatus,
-		// TODO(b/400910349): Stop setting the deprecated fields
-		// once integrators no longer read them.
-		InventoriesDeprecated: inventory.GetPackages(),
-		FindingsDeprecated:    inventory.GetGenericFindings(),
-		Inventory:             inventory,
+		Inventory:    inventory,
 	}, nil
 }
 

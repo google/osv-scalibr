@@ -33,4 +33,5 @@ var System = map[string]depsdevpb.System{
 	purl.TypeGolang: depsdevpb.System_GO,
 	purl.TypeMaven:  depsdevpb.System_MAVEN,
 	purl.TypePyPi:   depsdevpb.System_PYPI,
+	purl.TypeGem:    depsdevpb.System_RUBYGEMS,
 }

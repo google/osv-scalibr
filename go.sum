@@ -7,8 +7,8 @@ deps.dev/api/v3 v3.0.0-20250903005441-604c45d5b44b h1:4f6EeZ4EexJUGBtmyMaxptWMoB
 deps.dev/api/v3 v3.0.0-20250903005441-604c45d5b44b/go.mod h1:BWOjjNq4+j4makGArvrtyFhzBi5TXU7AGH2nDnRORk8=
 deps.dev/api/v3alpha v0.0.0-20250903005441-604c45d5b44b h1:iXre7CzhkmdmzAdiOi+u/Yk1iDMI9SYlFEnXgJd5Rnk=
 deps.dev/api/v3alpha v0.0.0-20250903005441-604c45d5b44b/go.mod h1:CJqVceLEA55Tu9QwNoaUX4HhvzRQnYjCL1jUdw/rhPQ=
-deps.dev/util/maven v0.0.0-20250903005441-604c45d5b44b h1:rDwPZ29kX7RBvBWFwW7U72Gd/CIZQbb8/LxvYuW/ee4=
-deps.dev/util/maven v0.0.0-20250903005441-604c45d5b44b/go.mod h1:eGrXziwI7scSGrwIj+5EBHtTeSxAZD/yi8Hb3nFXesA=
+deps.dev/util/maven v0.0.0-20251104021112-20ad94767ddf h1:wfFm9buQJGKco1/uIlFpq9QKMhN5f8PA0f5vOK1u54M=
+deps.dev/util/maven v0.0.0-20251104021112-20ad94767ddf/go.mod h1:eGrXziwI7scSGrwIj+5EBHtTeSxAZD/yi8Hb3nFXesA=
 deps.dev/util/pypi v0.0.0-20250903005441-604c45d5b44b h1:67FfxwUt82PEMle2FKlW4DZvzcfSODDoTnSGOT1bYtY=
 deps.dev/util/pypi v0.0.0-20250903005441-604c45d5b44b/go.mod h1:qmA0z/Lsfa1FMtuLd9JmVZLMHR3GBX/EmbM6z1X3EDU=
 deps.dev/util/resolve v0.0.0-20250903005441-604c45d5b44b h1:Ha9MFfZZ3kJGK8T4RJjyvRNEaXlAvcDMqzEufu5obOI=
