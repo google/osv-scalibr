@@ -144,7 +144,9 @@ func findFuncDecl(pkg *packages.Package, fun ast.Expr) *ast.FuncDecl {
 
 // findAliases populates the .Aliases field in the given functions
 //
-// two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault) or they
+// Two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault)
+//
+// Note: suffixes such as "Default" and the name of the packages are removed from the name of the functions
 func findAliases(functions []*Function) {
 	slices.SortFunc(functions, func(a, b *Function) int {
 		return strings.Compare(a.Fun.Name.Name, b.Fun.Name.Name)

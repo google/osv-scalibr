@@ -44,9 +44,7 @@ var Config = &packages.Config{
 //
 //  4. Each constructor must be called at least once outside of the pkg. Note:
 //
-//     - 2 functions returning the same type declared in the current pkg are considered aliases (only 1 of those must be called)
-//
-//     - 2 functions returning the same type declared in another pkg, are considered separate (both must be called)
+//     - 2 functions returning the same type with a common prefix are considered aliases
 //
 //     if none exist, the plugin is considered not registered.
 func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) {
