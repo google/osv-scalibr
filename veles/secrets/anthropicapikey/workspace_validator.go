@@ -15,57 +15,32 @@
 package anthropicapikey
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-var _ veles.Validator[WorkspaceAPIKey] = &WorkspaceValidator{}
+// AnthropicWorkspacesEndpoint is the Anthropic API workspaces endpoint
+const AnthropicWorkspacesEndpoint = "/v1/organizations/workspaces"
 
-// WorkspaceValidator is a Veles Validator for Anthropic Workspace API keys.
-// It validates workspace API keys by making a test request to the Anthropic API.
-type WorkspaceValidator struct {
-	config *ValidationConfig
-}
-
-// WorkspaceValidatorOption configures a WorkspaceValidator when creating it via NewWorkspaceValidator.
-type WorkspaceValidatorOption func(*WorkspaceValidator)
-
-// WithWorkspaceHTTPClient configures the http.Client that the WorkspaceValidator uses.
-//
-// By default it uses http.DefaultClient with a timeout.
-func WithWorkspaceHTTPClient(c *http.Client) WorkspaceValidatorOption {
-	return func(v *WorkspaceValidator) {
-		v.config.WithHTTPClient(c)
+// NewWorkspaceValidator creates a new Validator for the Anthropic workspace API
+// keys.
+func NewWorkspaceValidator() *simplevalidate.Validator[WorkspaceAPIKey] {
+	return &simplevalidate.Validator[WorkspaceAPIKey]{
+		Endpoint:   anthropicAPIBaseURL + AnthropicWorkspacesEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k WorkspaceAPIKey) map[string]string {
+			return map[string]string{
+				"X-Api-Key":         k.Key,
+				"Anthropic-Version": anthropicAPIVersion,
+			}
+		},
+		// StatusTooManyRequests indicates that the key successfully authenticates
+		// against the Anthropic API and that this account is rate limited.
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusTooManyRequests},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// WithWorkspaceAPIURL configures the Anthropic API URL that the WorkspaceValidator uses.
-//
-// By default it uses the production Anthropic API URL.
-// This is useful for testing with mock servers.
-func WithWorkspaceAPIURL(url string) WorkspaceValidatorOption {
-	return func(v *WorkspaceValidator) {
-		v.config.WithAPIURL(url)
-	}
-}
-
-// NewWorkspaceValidator creates a new WorkspaceValidator with the given WorkspaceValidatorOptions.
-func NewWorkspaceValidator(opts ...WorkspaceValidatorOption) *WorkspaceValidator {
-	v := &WorkspaceValidator{
-		config: NewValidationConfig(),
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given WorkspaceAPIKey is valid.
-//
-// It makes a request to the /v1/organizations/workspaces endpoint which is specific to workspace keys.
-// This endpoint doesn't consume tokens and is used for validation purposes.
-func (v *WorkspaceValidator) Validate(ctx context.Context, key WorkspaceAPIKey) (veles.ValidationStatus, error) {
-	return validateAPIKey(ctx, v.config, key.Key, "/v1/organizations/workspaces")
 }
