@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package signer provides an implementation of AWS Signature Version 4 signing.
+// Package signerv4 provides an implementation of AWS Signature Version 4 signing.
 // It allows signing HTTP requests using AWS credentials
-package signer
+package signerv4
 
 import (
 	"bytes"
