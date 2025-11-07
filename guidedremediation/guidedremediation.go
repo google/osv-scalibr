@@ -597,7 +597,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 		return fmt.Errorf("failed removing old node_modules/: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only")
+	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--ignore-scripts")
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
