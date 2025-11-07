@@ -66,7 +66,11 @@ func WithSigner(signer HTTPSignerV4) ValidatorOption {
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
 		client: http.DefaultClient,
-		signer: &signerv4.Signer{Service: "sts", Region: "us-east-1"},
+		signer: signerv4.New(signerv4.Config{
+			Service: "sts", Region: "us-east-1",
+			SignedHeaders: []string{"amz-sdk-invocation-id", "amz-sdk-request", "content-length",
+				"content-type", "host", "x-amz-date"},
+		}),
 	}
 	for _, opt := range opts {
 		opt(v)
@@ -77,13 +81,17 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 // Validate checks whether the given AWS access key and secret are valid
 // using the GetCallerIdentity api call
 func (v *Validator) Validate(ctx context.Context, key Credential) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://sts.us-east-1.amazonaws.com/", nil)
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost,
+		"https://sts.us-east-1.amazonaws.com/",
+		io.NopCloser(strings.NewReader("Action=GetCallerIdentity&Version=2011-06-15")),
+	)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
-	req.Body = io.NopCloser(strings.NewReader("Action=GetCallerIdentity&Version=2011-06-15"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("signing failed: %w", err)

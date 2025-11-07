@@ -65,7 +65,12 @@ func WithSigner(signer HTTPSignerV4) ValidatorOption {
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
 		client: http.DefaultClient,
-		signer: &signerv4.Signer{Service: "s3", Region: "auto"},
+		signer: signerv4.New(signerv4.Config{
+			Service: "s3", Region: "auto",
+			SignedHeaders: []string{
+				"amz-sdk-invocation-id", "amz-sdk-request", "host", "x-amz-content-sha256", "x-amz-date",
+			},
+		}),
 	}
 	for _, opt := range opts {
 		opt(v)
@@ -81,6 +86,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("signing failed: %w", err)

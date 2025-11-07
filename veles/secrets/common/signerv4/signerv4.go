@@ -30,35 +30,34 @@ import (
 	"github.com/google/uuid"
 )
 
-func hmacSHA256(key []byte, data string) []byte {
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(data))
-	return h.Sum(nil)
-}
-
-// SHA256 hash helper
-func sha256Hex(data string) string {
-	hash := sha256.Sum256([]byte(data))
-	return hex.EncodeToString(hash[:])
-}
-
-// Derive signing key
-//
-// ref: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html#signing-key
-func getSignatureKey(secret, date, region, service string) []byte {
-	kDate := hmacSHA256([]byte("AWS4"+secret), date)
-	kRegion := hmacSHA256(kDate, region)
-	kService := hmacSHA256(kRegion, service)
-	kSigning := hmacSHA256(kService, "aws4_request")
-	return kSigning
-}
-
 // Signer provides AWS Signature Version 4 signing for HTTP requests.
 //
 // ref: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 type Signer struct {
-	Service string // AWS service name (e.g. "s3")
-	Region  string // AWS region (e.g., "us-east-1")
+	Config
+}
+
+// Config used to create a Signer.
+type Config struct {
+	Service       string // AWS service name (e.g. "s3")
+	Region        string // AWS region (e.g., "us-east-1")
+	Now           func() time.Time
+	UUID          func() string
+	SignedHeaders []string
+}
+
+// New creates a new Signer using the given config.
+func New(cfg Config) *Signer {
+	s := &Signer{
+		Config: cfg,
+	}
+	if s.Now == nil {
+		s.Now = time.Now().UTC
+	}
+	if s.UUID == nil {
+		s.UUID = func() string { return uuid.New().String() }
+	}
+	return s
 }
 
 // Sign applies AWS Signature Version 4 signing to an HTTP request.
@@ -67,9 +66,9 @@ type Signer struct {
 //
 //	s := signer.Signer{Service: "s3", Region: "us-east-1"}
 //	req, _ := http.NewRequest("GET", "https://my-bucket.s3.amazonaws.com/my-object", nil)
-//	err := s.Sign(req, "AKIAEXAMPLE", "secretkey123")
+//	err := s.Sign(req, "AKIAEXAMPLE", " ")
 func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
-	now := time.Now().UTC()
+	now := s.Now()
 	amzDate := now.Format("20060102T150405Z")
 	date := now.Format("20060102")
 
@@ -85,13 +84,26 @@ func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 	}
 
 	payloadHash := sha256Hex(payload)
-	invocationID := uuid.New().String()
 
-	// Canonical request
-	canonicalHeaders := fmt.Sprintf(
-		"amz-sdk-invocation-id:%s\namz-sdk-request:attempt=1; max=3\nhost:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
-		invocationID, req.Host, payloadHash, amzDate)
-	signedHeaders := "amz-sdk-invocation-id;amz-sdk-request;host;x-amz-content-sha256;x-amz-date"
+	// Mutate the request headers
+	req.Header.Set("Amz-Sdk-Invocation-Id", s.UUID())
+	req.Header.Set("Amz-Sdk-Request", "attempt=1; max=3")
+	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
+	req.Header.Set("X-Amz-Date", amzDate)
+	if len(payload) > 0 {
+		req.Header.Set("Content-Length", fmt.Sprint(len(payload)))
+	}
+
+	var canonicalHeadersB strings.Builder
+	for _, h := range s.SignedHeaders {
+		v := req.Header.Get(h)
+		if len(v) == 0 {
+			return fmt.Errorf("header %q not found", h)
+		}
+		canonicalHeadersB.WriteString(fmt.Sprintf("%s:%s\n", h, v))
+	}
+	canonicalHeaders := canonicalHeadersB.String()
+	signedHeaders := strings.Join(s.SignedHeaders, ";")
 
 	canonicalRequest := strings.Join([]string{
 		req.Method, req.URL.Path,
@@ -114,14 +126,29 @@ func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 		"AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s",
 		accessID, credentialScope, signedHeaders, signature,
 	)
-
-	// Mutate the request headers
-	req.Header.Set("Amz-Sdk-Invocation-Id", invocationID)
-	req.Header.Set("Amz-Sdk-Request", "attempt=1; max=3")
-	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
-	req.Header.Set("X-Amz-Date", amzDate)
 	req.Header.Set("Authorization", authorizationHeader)
-	req.Header.Set("Accept-Encoding", "gzip")
-
 	return nil
+}
+
+func hmacSHA256(key []byte, data string) []byte {
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(data))
+	return h.Sum(nil)
+}
+
+// SHA256 hash helper
+func sha256Hex(data string) string {
+	hash := sha256.Sum256([]byte(data))
+	return hex.EncodeToString(hash[:])
+}
+
+// Derive signing key
+//
+// ref: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html#signing-key
+func getSignatureKey(secret, date, region, service string) []byte {
+	kDate := hmacSHA256([]byte("AWS4"+secret), date)
+	kRegion := hmacSHA256(kDate, region)
+	kService := hmacSHA256(kRegion, service)
+	kSigning := hmacSHA256(kService, "aws4_request")
+	return kSigning
 }
