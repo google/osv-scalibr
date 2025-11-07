@@ -19,6 +19,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -68,8 +69,9 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 		client: http.DefaultClient,
 		signer: signerv4.New(signerv4.Config{
 			Service: "sts", Region: "us-east-1",
-			SignedHeaders: []string{"amz-sdk-invocation-id", "amz-sdk-request", "content-length",
-				"content-type", "host", "x-amz-date"},
+			SignedHeaders: []string{
+				"amz-sdk-invocation-id", "amz-sdk-request", "host", "x-amz-content-sha256", "x-amz-date",
+			},
 		}),
 	}
 	for _, opt := range opts {
@@ -91,6 +93,7 @@ func (v *Validator) Validate(ctx context.Context, key Credential) (veles.Validat
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Host", "sts.us-east-1.amazonaws.com")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
@@ -112,6 +115,8 @@ func (v *Validator) Validate(ctx context.Context, key Credential) (veles.Validat
 	}
 	defer rsp.Body.Close()
 
+	log.Println("body", string(body))
+
 	type errorResponse struct {
 		Error struct {
 			Code string `xml:"Code"`
@@ -123,6 +128,7 @@ func (v *Validator) Validate(ctx context.Context, key Credential) (veles.Validat
 		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
 	}
 
+	log.Println("errResp", errResp)
 	switch errResp.Error.Code {
 	case CodeSignatureDoesNotMatch:
 		// Signature mismatch => credentials invalid
