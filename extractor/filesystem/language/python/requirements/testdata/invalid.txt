@@ -1,4 +1,0 @@
-asdf==
-==1.0
-asdf 1.0
-urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/==1.26.8.zip

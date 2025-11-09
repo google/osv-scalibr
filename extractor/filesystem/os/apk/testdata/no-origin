@@ -1,5 +1,0 @@
-P:pkgname
-V:1.2.3
-A:x86_64
-T:Test package with no origin set
-L:GPL-2.0-only

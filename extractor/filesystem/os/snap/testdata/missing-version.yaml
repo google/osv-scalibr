@@ -1,8 +1,0 @@
-name: core
-summary: snapd runtime environment
-description: The core runtime environment for snapd
-type: os
-architectures:
-- amd64
-confinement: strict
-grade: stable

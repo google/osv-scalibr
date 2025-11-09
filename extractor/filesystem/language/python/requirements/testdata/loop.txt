@@ -1,2 +1,0 @@
-# Creates an infinite loop.
--r other-loop.txt

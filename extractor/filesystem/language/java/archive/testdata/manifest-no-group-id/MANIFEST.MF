@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-Implementation-Version: 1.2.3
-Name: some-package

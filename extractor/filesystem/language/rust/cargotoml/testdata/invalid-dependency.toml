@@ -1,7 +1,0 @@
-[package]
-  name = "hello_world"
-  version = "0.1.0"
-
-[dependencies]
-  # git should not be an object
-  regex = { git = {random_key = "random_value"}, tag = "0.0.1"}
