@@ -1,6 +1,0 @@
-rules:
-  end-of-file:
-    enable: true
-    ignore:
-      - extractor/filesystem/os/dpkg/testdata/dpkg/trailingnewlines
-      - extractor/filesystem/os/dpkg/testdata/opkg/trailingnewlines
