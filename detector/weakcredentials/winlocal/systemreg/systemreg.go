@@ -59,9 +59,8 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 		return nil, err
 	}
 
-	var syskey string
+	var syskey strings.Builder
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
-	var syskeySb63 strings.Builder
 	for _, k := range syskeyPaths {
 		key, err := s.OpenKey("HKLM", currentControlSet+k)
 		if err != nil {
@@ -73,11 +72,10 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 			return nil, err
 		}
 
-		syskeySb63.Write(class)
+		syskey.Write(class)
 	}
-	syskey += syskeySb63.String()
 
-	decodedKey, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().String(syskey)
+	decodedKey, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().String(syskey.String())
 	if err != nil {
 		return nil, err
 	}

@@ -255,20 +255,21 @@ func GetMainClasses(manifest io.Reader) ([]string, error) {
 		line := strings.TrimSpace(lines[i])
 		for _, marker := range markers {
 			if strings.HasPrefix(line, marker) {
-				class := strings.TrimSpace(strings.TrimPrefix(line, marker))
+				var class strings.Builder
+
+				class.WriteString(strings.TrimSpace(strings.TrimPrefix(line, marker)))
+
 				// Handle wrapped lines. Class names exceeding line length limits
 				// may be split across multiple lines, starting with a space.
-				var classSb261 strings.Builder
 				for index := i + 1; index < len(lines); index++ {
 					nextLine := lines[index]
 					if strings.HasPrefix(nextLine, " ") {
-						classSb261.WriteString(strings.TrimSpace(nextLine))
+						class.WriteString(strings.TrimSpace(nextLine))
 					} else {
 						break
 					}
 				}
-				class += classSb261.String()
-				classes = append(classes, strings.ReplaceAll(class, ".", "/"))
+				classes = append(classes, strings.ReplaceAll(class.String(), ".", "/"))
 			}
 		}
 	}
