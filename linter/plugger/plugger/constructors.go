@@ -180,15 +180,6 @@ func findAliases(functions []*Function) {
 	}
 }
 
-func trimAnySuffix(s string, suffixes []string) string {
-	for _, suf := range suffixes {
-		if before, ok := strings.CutSuffix(s, suf); ok {
-			return before
-		}
-	}
-	return s
-}
-
 func capitalizeFirst(s string) string {
 	if s == "" {
 		return s
