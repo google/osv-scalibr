@@ -129,6 +129,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/vapid"
 )
 
 // InitFn is the extractor initializer function.
@@ -326,6 +327,7 @@ var (
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
+		{vapid.NewDetector(), "secrets/vapidkey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
