@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"golang.org/x/text/encoding/unicode"
@@ -60,6 +61,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 
 	var syskey string
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
+	var syskeySb63 strings.Builder
 	for _, k := range syskeyPaths {
 		key, err := s.OpenKey("HKLM", currentControlSet+k)
 		if err != nil {
@@ -71,8 +73,9 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 			return nil, err
 		}
 
-		syskey += string(class)
+		syskeySb63.Write(class)
 	}
+	syskey += syskeySb63.String()
 
 	decodedKey, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().String(syskey)
 	if err != nil {

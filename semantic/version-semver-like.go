@@ -40,9 +40,11 @@ func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (componen
 
 	build := v.Build
 
+	var buildSb43 strings.Builder
 	for _, c := range extra {
-		build += fmt.Sprintf(".%d", c)
+		buildSb43.WriteString(fmt.Sprintf(".%d", c))
 	}
+	build += buildSb43.String()
 
 	return comps, build
 }

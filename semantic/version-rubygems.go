@@ -24,10 +24,11 @@ func canonicalizeRubyGemVersion(str string) string {
 	checkPrevious := false
 	previousWasDigit := true
 
+	var resSb27 strings.Builder
 	for _, c := range str {
 		if c == 46 {
 			checkPrevious = false
-			res += "."
+			resSb27.WriteString(".")
 
 			continue
 		}
@@ -35,14 +36,15 @@ func canonicalizeRubyGemVersion(str string) string {
 		isDigit := isASCIIDigit(c)
 
 		if checkPrevious && previousWasDigit != isDigit {
-			res += "."
+			resSb27.WriteString(".")
 		}
 
-		res += string(c)
+		resSb27.WriteRune(c)
 
 		previousWasDigit = isDigit
 		checkPrevious = true
 	}
+	res += resSb27.String()
 
 	return res
 }
