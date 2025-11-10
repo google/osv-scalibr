@@ -76,6 +76,8 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  // Unique identifier for the package.
+  string id = 60;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;

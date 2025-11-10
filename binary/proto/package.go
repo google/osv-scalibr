@@ -15,6 +15,7 @@
 package proto
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/docker/docker/api/types/container"
@@ -41,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/uuid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -54,9 +56,9 @@ type MetadataProtoSetter interface {
 // --- Struct to Proto
 
 // PackageToProto converts a Package struct to a Package proto.
-func PackageToProto(pkg *extractor.Package) *spb.Package {
+func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	if pkg == nil {
-		return nil
+		return nil, nil
 	}
 
 	p := converter.ToPURL(pkg)
@@ -80,7 +82,13 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		}
 	}
 
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID for %q package %q version %q: %w", pkg.Ecosystem().String(), pkg.Name, pkg.Version, err)
+	}
+
 	packageProto := &spb.Package{
+		Id:                            id.String(),
 		Name:                          pkg.Name,
 		Version:                       pkg.Version,
 		SourceCode:                    sourceCodeIdentifierToProto(pkg.SourceCode),
@@ -93,7 +101,7 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		Licenses:                      pkg.Licenses,
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
-	return packageProto
+	return packageProto, nil
 }
 
 func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceCodeIdentifier {
@@ -335,9 +343,9 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 // --- Proto to Struct
 
 // PackageToStruct converts a Package proto to a Package struct.
-func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
+func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 	if pkgProto == nil {
-		return nil
+		return nil, nil
 	}
 
 	var locations []string
@@ -370,7 +378,7 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Metadata:              metadataToStruct(pkgProto),
 		Licenses:              pkgProto.GetLicenses(),
 	}
-	return pkg
+	return pkg, nil
 }
 
 func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.SourceCodeIdentifier {
