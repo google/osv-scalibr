@@ -102,9 +102,8 @@ func hasNoLint(commentGroup *ast.CommentGroup, name string) bool {
 	return false
 }
 
-// doesImplement checks if the named type 'T' implements the named interface 'iface'
-// by using instantiation logic for generic interfaces.
-// pkg is the package of the implementing type (needed for MethodSet.Lookup).
+// doesImplement checks if the named type implements the named interface,
+// using heuristic instantiation logic for generic interfaces.
 func doesImplement(t types.Type, iface *types.Named) bool {
 	ifaceType, ok := iface.Underlying().(*types.Interface)
 	if !ok {
@@ -119,40 +118,41 @@ func doesImplement(t types.Type, iface *types.Named) bool {
 
 	// generic interface
 
-	concreteMSet := types.NewMethodSet(t)
-	typeArgs := make([]types.Type, iface.TypeParams().Len())
+	concreteMethods := types.NewMethodSet(t)
+	iTypeArgs := make([]types.Type, iface.TypeParams().Len())
 	iTypeParams := iface.TypeParams()
 
 	// Check every method in the generic interface template
 	for i := range ifaceType.NumMethods() {
-		iMethod := ifaceType.Method(i) // e.g., Validator.Validate
-		mSel := concreteMSet.Lookup(iMethod.Pkg(), iMethod.Name())
-		// Method is missing on this T/*T, stop checking this type.
-		if mSel == nil {
+		iMethod := ifaceType.Method(i)
+
+		// Search the method by name
+		mSelected := concreteMethods.Lookup(iMethod.Pkg(), iMethod.Name())
+		// Method is missing, it's impossible this type implements the interface
+		if mSelected == nil {
 			return false
 		}
 
 		iSignature := iMethod.Type().(*types.Signature)
-		cSignature := mSel.Type().(*types.Signature)
+		cSignature := mSelected.Type().(*types.Signature)
 
-		// Deduce type arguments from parameters and results
-		paramsMatch(iTypeParams, iSignature.Params(), cSignature.Params(), typeArgs)
-		paramsMatch(iTypeParams, iSignature.Results(), cSignature.Results(), typeArgs)
+		// check if the types match (both params and results)
+		paramsMatch(iTypeParams, iSignature.Params(), cSignature.Params(), iTypeArgs)
+		paramsMatch(iTypeParams, iSignature.Results(), cSignature.Results(), iTypeArgs)
 	}
 
 	// Check if all the required type arguments were found.
-	if slices.Contains(typeArgs, nil) {
+	if slices.Contains(iTypeArgs, nil) {
 		return false
 	}
 
 	// Instantiate the generic interface (e.g., Validator[int])
-	// The nil scope is fine here as we are using named types.
-	instantiated, err := types.Instantiate(nil, iface, typeArgs, false)
+	instantiated, err := types.Instantiate(nil, iface, iTypeArgs, false)
 	if err != nil {
 		return false
 	}
 
-	// final check: T satisfies the instantiated interface
+	// final check: t satisfies the instantiated interface
 	return types.Satisfies(t, instantiated.Underlying().(*types.Interface))
 }
 
