@@ -220,8 +220,8 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		}
 
 		// Extract paths to referenced requirements.txt files for further processing.
-		if strings.HasPrefix(l, "-r") {
-			p := strings.TrimPrefix(l, "-r")
+		if after, ok := strings.CutPrefix(l, "-r"); ok {
+			p := after
 			// Path is relative to the current requirement file's dir.
 			p = filepath.Join(filepath.Dir(path), p)
 			extraPaths = append(extraPaths, p)

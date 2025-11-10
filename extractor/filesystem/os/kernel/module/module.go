@@ -186,7 +186,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	var metadata modulemeta.Metadata
 
 	// Sections are delimited by null bytes (\x00)
-	for _, line := range bytes.Split(sectionData, []byte{'\x00'}) {
+	for line := range bytes.SplitSeq(sectionData, []byte{'\x00'}) {
 		if len(line) == 0 {
 			continue
 		}

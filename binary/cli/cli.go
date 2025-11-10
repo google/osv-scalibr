@@ -299,7 +299,7 @@ func validateMultiStringArg(arg []string) error {
 		if len(item) == 0 {
 			continue
 		}
-		for _, item := range strings.Split(item, ",") {
+		for item := range strings.SplitSeq(item, ",") {
 			if len(item) == 0 {
 				return errors.New("list item cannot be left empty")
 			}
@@ -452,7 +452,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
-		for _, item := range strings.Split(f.SPDXCreators, ",") {
+		for item := range strings.SplitSeq(f.SPDXCreators, ",") {
 			c := strings.Split(item, ":")
 			cType := c[0]
 			cName := c[1]
