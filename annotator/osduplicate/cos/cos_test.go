@@ -131,7 +131,7 @@ func TestAnnotate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(""),
