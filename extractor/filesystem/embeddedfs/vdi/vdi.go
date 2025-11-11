@@ -80,7 +80,12 @@ type Extractor struct {
 // New returns a new VDI extractor.
 // New returns a new archive extractor.
 func New(cfg *cpb.PluginConfig) filesystem.Extractor {
-	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.VDIConfig { return c.GetVdi() })
+	if specific != nil && specific.MaxFileSizeBytes > 0 {
+		maxSize = specific.MaxFileSizeBytes
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}
 }
 
 // Name returns the name of the extractor.

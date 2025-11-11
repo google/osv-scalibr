@@ -96,6 +96,10 @@ type PluginSpecificConfig struct {
 	//
 	//	*PluginSpecificConfig_GoBinary
 	//	*PluginSpecificConfig_Govulncheck
+	//	*PluginSpecificConfig_Archive
+	//	*PluginSpecificConfig_Ova
+	//	*PluginSpecificConfig_Vdi
+	//	*PluginSpecificConfig_Vmdk
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -156,6 +160,42 @@ func (x *PluginSpecificConfig) GetGovulncheck() *GovulncheckConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetArchive() *ArchiveConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Archive); ok {
+			return x.Archive
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetOva() *OVAConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Ova); ok {
+			return x.Ova
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetVdi() *VDIConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Vdi); ok {
+			return x.Vdi
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetVmdk() *VMDKConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Vmdk); ok {
+			return x.Vmdk
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -168,9 +208,33 @@ type PluginSpecificConfig_Govulncheck struct {
 	Govulncheck *GovulncheckConfig `protobuf:"bytes,2,opt,name=govulncheck,proto3,oneof"`
 }
 
+type PluginSpecificConfig_Archive struct {
+	Archive *ArchiveConfig `protobuf:"bytes,3,opt,name=archive,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Ova struct {
+	Ova *OVAConfig `protobuf:"bytes,4,opt,name=ova,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Vdi struct {
+	Vdi *VDIConfig `protobuf:"bytes,5,opt,name=vdi,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Vmdk struct {
+	Vmdk *VMDKConfig `protobuf:"bytes,6,opt,name=vmdk,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Archive) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Ova) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Vdi) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Vmdk) isPluginSpecificConfig_Config() {}
 
 type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -263,6 +327,194 @@ func (x *GovulncheckConfig) GetOfflineVulnDbPath() string {
 	return ""
 }
 
+type ArchiveConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ArchiveConfig) Reset() {
+	*x = ArchiveConfig{}
+	mi := &file_proto_config_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ArchiveConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArchiveConfig) ProtoMessage() {}
+
+func (x *ArchiveConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArchiveConfig.ProtoReflect.Descriptor instead.
+func (*ArchiveConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ArchiveConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type OVAConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *OVAConfig) Reset() {
+	*x = OVAConfig{}
+	mi := &file_proto_config_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OVAConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OVAConfig) ProtoMessage() {}
+
+func (x *OVAConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OVAConfig.ProtoReflect.Descriptor instead.
+func (*OVAConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *OVAConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type VDIConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *VDIConfig) Reset() {
+	*x = VDIConfig{}
+	mi := &file_proto_config_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VDIConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VDIConfig) ProtoMessage() {}
+
+func (x *VDIConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VDIConfig.ProtoReflect.Descriptor instead.
+func (*VDIConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *VDIConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type VMDKConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *VMDKConfig) Reset() {
+	*x = VMDKConfig{}
+	mi := &file_proto_config_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VMDKConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VMDKConfig) ProtoMessage() {}
+
+func (x *VMDKConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VMDKConfig.ProtoReflect.Descriptor instead.
+func (*VMDKConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *VMDKConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -270,15 +522,28 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x12proto/config.proto\x12\ascalibr\"\x85\x01\n" +
 	"\fPluginConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\x98\x01\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xc7\x02\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
-	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheckB\b\n" +
+	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
+	"\aarchive\x18\x03 \x01(\v2\x16.scalibr.ArchiveConfigH\x00R\aarchive\x12&\n" +
+	"\x03ova\x18\x04 \x01(\v2\x12.scalibr.OVAConfigH\x00R\x03ova\x12&\n" +
+	"\x03vdi\x18\x05 \x01(\v2\x12.scalibr.VDIConfigH\x00R\x03vdi\x12)\n" +
+	"\x04vmdk\x18\x06 \x01(\v2\x13.scalibr.VMDKConfigH\x00R\x04vmdkB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
 	"\x11GovulncheckConfig\x12/\n" +
-	"\x14offline_vuln_db_path\x18\x01 \x01(\tR\x11offlineVulnDbPathB:P\x01Z6github.com/google/scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x14offline_vuln_db_path\x18\x01 \x01(\tR\x11offlineVulnDbPath\">\n" +
+	"\rArchiveConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\":\n" +
+	"\tOVAConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\":\n" +
+	"\tVDIConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\";\n" +
+	"\n" +
+	"VMDKConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBBB\x06ConfigP\x01Z6github.com/google/scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -292,22 +557,30 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),         // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil), // 1: scalibr.PluginSpecificConfig
 	(*GoBinaryConfig)(nil),       // 2: scalibr.GoBinaryConfig
 	(*GovulncheckConfig)(nil),    // 3: scalibr.GovulncheckConfig
+	(*ArchiveConfig)(nil),        // 4: scalibr.ArchiveConfig
+	(*OVAConfig)(nil),            // 5: scalibr.OVAConfig
+	(*VDIConfig)(nil),            // 6: scalibr.VDIConfig
+	(*VMDKConfig)(nil),           // 7: scalibr.VMDKConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1, // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
 	2, // 1: scalibr.PluginSpecificConfig.go_binary:type_name -> scalibr.GoBinaryConfig
 	3, // 2: scalibr.PluginSpecificConfig.govulncheck:type_name -> scalibr.GovulncheckConfig
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 3: scalibr.PluginSpecificConfig.archive:type_name -> scalibr.ArchiveConfig
+	5, // 4: scalibr.PluginSpecificConfig.ova:type_name -> scalibr.OVAConfig
+	6, // 5: scalibr.PluginSpecificConfig.vdi:type_name -> scalibr.VDIConfig
+	7, // 6: scalibr.PluginSpecificConfig.vmdk:type_name -> scalibr.VMDKConfig
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -318,6 +591,10 @@ func file_proto_config_proto_init() {
 	file_proto_config_proto_msgTypes[1].OneofWrappers = []any{
 		(*PluginSpecificConfig_GoBinary)(nil),
 		(*PluginSpecificConfig_Govulncheck)(nil),
+		(*PluginSpecificConfig_Archive)(nil),
+		(*PluginSpecificConfig_Ova)(nil),
+		(*PluginSpecificConfig_Vdi)(nil),
+		(*PluginSpecificConfig_Vmdk)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -325,7 +602,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

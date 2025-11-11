@@ -35,11 +35,12 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		desc        string
-		path        string
-		fileSize    int64
-		maxFileSize int64
-		want        bool
+		desc                  string
+		path                  string
+		fileSize              int64
+		maxFileSize           int64
+		pluginSpecificMaxSize int64
+		want                  bool
 	}{
 		{
 			desc: "ova_lowercase",
@@ -75,10 +76,31 @@ func TestFileRequired(t *testing.T) {
 			maxFileSize: 1000,
 			want:        false,
 		},
+		{
+			desc:                  "override_global_size_below_limit",
+			path:                  "disk.ova",
+			fileSize:              1001,
+			maxFileSize:           1000,
+			pluginSpecificMaxSize: 1001,
+			want:                  true,
+		},
+		{
+			desc:                  "override_global_size_above_limit",
+			path:                  "disk.ova",
+			fileSize:              1001,
+			maxFileSize:           1001,
+			pluginSpecificMaxSize: 1000,
+			want:                  false,
+		},
 	}
 
 	for _, tt := range tests {
-		extractor := ova.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSize})
+		extractor := ova.New(&cpb.PluginConfig{
+			MaxFileSizeBytes: tt.maxFileSize,
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_Ova{Ova: &cpb.OVAConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
+			},
+		})
 		t.Run(tt.desc, func(t *testing.T) {
 			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,

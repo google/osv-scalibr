@@ -33,11 +33,12 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		desc        string
-		path        string
-		fileSize    int64
-		maxFileSize int64
-		want        bool
+		desc                  string
+		path                  string
+		fileSize              int64
+		maxFileSize           int64
+		pluginSpecificMaxSize int64
+		want                  bool
 	}{
 		{
 			desc: "vmdk_lowercase",
@@ -73,11 +74,32 @@ func TestFileRequired(t *testing.T) {
 			maxFileSize: 1000,
 			want:        false,
 		},
+		{
+			desc:                  "override_global_size_below_limit",
+			path:                  "disk.vmdk",
+			fileSize:              1001,
+			maxFileSize:           1000,
+			pluginSpecificMaxSize: 1001,
+			want:                  true,
+		},
+		{
+			desc:                  "override_global_size_above_limit",
+			path:                  "disk.vmdk",
+			fileSize:              1001,
+			maxFileSize:           1001,
+			pluginSpecificMaxSize: 1000,
+			want:                  false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			extractor := vmdk.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSize})
+			extractor := vmdk.New(&cpb.PluginConfig{
+				MaxFileSizeBytes: tt.maxFileSize,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Vmdk{Vmdk: &cpb.VMDKConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
+				},
+			})
 			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,
 			})); got != tt.want {

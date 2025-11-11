@@ -89,7 +89,12 @@ type Extractor struct {
 
 // New returns a new VMDK extractor.
 func New(cfg *cpb.PluginConfig) filesystem.Extractor {
-	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.VMDKConfig { return c.GetVmdk() })
+	if specific != nil && specific.MaxFileSizeBytes > 0 {
+		maxSize = specific.MaxFileSizeBytes
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}
 }
 
 // Name returns the name of the extractor.

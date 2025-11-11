@@ -40,6 +40,10 @@ message PluginSpecificConfig {
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
+    ArchiveConfig archive = 3;
+    OVAConfig ova = 4;
+    VDIConfig vdi = 5;
+    VMDKConfig vmdk = 6;
   }
 }
 
@@ -52,4 +56,32 @@ message GovulncheckConfig {
   // Path to the offline vuln DB to pass to govunlcheck. If empty,
   // the detector will query vulns from the net instead.
   string offline_vuln_db_path = 1;
+}
+
+message ArchiveConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message OVAConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message VDIConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message VMDKConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }
