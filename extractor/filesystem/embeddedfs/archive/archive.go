@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -36,11 +37,16 @@ const (
 )
 
 // Extractor implements the filesystem.Extractor interface for archive extraction.
-type Extractor struct{}
+type Extractor struct {
+	// maxFileSizeBytes is the maximum size of an archive file that can be traversed.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored.
+	maxFileSizeBytes int64
+}
 
 // New returns a new archive extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 }
 
 // Name returns the name of the extractor.
@@ -61,7 +67,20 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 // FileRequired checks if the file is a supported archive.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	return strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".tar.gz")
+	if !strings.HasSuffix(path, ".tar") && !strings.HasSuffix(path, ".tar.gz") {
+		return false
+	}
+
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		return false
+	}
+
+	return true
 }
 
 // Extract returns an Inventory with embedded filesystems for the given archive file.

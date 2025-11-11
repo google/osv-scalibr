@@ -353,10 +353,10 @@ var (
 
 	// EmbeddedFS extractors.
 	EmbeddedFS = InitMap{
-		archive.Name: {noCFG(archive.New)},
-		vdi.Name:     {noCFG(vdi.New)},
-		vmdk.Name:    {noCFG(vmdk.NewDefault)},
-		ova.Name:     {noCFG(ova.New)},
+		archive.Name: {archive.New},
+		vdi.Name:     {vdi.New},
+		vmdk.Name:    {vmdk.New},
+		ova.Name:     {ova.New},
 	}
 
 	// Collections of extractors.

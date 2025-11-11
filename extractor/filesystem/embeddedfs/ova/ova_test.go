@@ -26,27 +26,63 @@ import (
 
 	"archive/tar"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	extractor := ova.New()
 	tests := []struct {
-		path string
-		want bool
+		desc        string
+		path        string
+		fileSize    int64
+		maxFileSize int64
+		want        bool
 	}{
-		{"testdata/valid.ova", true},
-		{"testdata/VALID.OVA", true},
-		{"testdata/invalid.ova", true},
-		{"testdata/document.txt", false},
-		{"testdata/noextension", false},
+		{
+			desc: "ova_lowercase",
+			path: "testdata/disk.ova",
+			want: true,
+		},
+		{
+			desc: "ova_uppercase",
+			path: "testdata/DISK.OVA",
+			want: true,
+		},
+		{
+			desc: "not_ova",
+			path: "testdata/document.txt",
+			want: false,
+		},
+		{
+			desc: "no_extension",
+			path: "testdata/noextension",
+			want: false,
+		},
+		{
+			desc:        "file_size_below_limit",
+			path:        "disk.ova",
+			fileSize:    1000,
+			maxFileSize: 1000,
+			want:        true,
+		},
+		{
+			desc:        "file_size_above_limit",
+			path:        "disk.ova",
+			fileSize:    1001,
+			maxFileSize: 1000,
+			want:        false,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			if got := extractor.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.want {
+		extractor := ova.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSize})
+		t.Run(tt.desc, func(t *testing.T) {
+			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileSize: tt.fileSize,
+			})); got != tt.want {
 				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
@@ -54,7 +90,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidOVA(t *testing.T) {
-	extractor := ova.New()
+	extractor := ova.New(&cpb.PluginConfig{})
 	path := filepath.FromSlash("testdata/valid.ova")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -171,7 +207,7 @@ func TestExtractMaliciousOVA(t *testing.T) {
 	}
 	tw.Close()
 
-	extractor := ova.New()
+	extractor := ova.New(&cpb.PluginConfig{})
 	input := &filesystem.ScanInput{
 		Path:   "",
 		Root:   "testdata",
@@ -191,7 +227,7 @@ func TestExtractMaliciousOVA(t *testing.T) {
 }
 
 func TestExtractInvalidOVA(t *testing.T) {
-	extractor := ova.New()
+	extractor := ova.New(&cpb.PluginConfig{})
 	path := filepath.FromSlash("testdata/invalid.ova")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -220,7 +256,7 @@ func TestExtractInvalidOVA(t *testing.T) {
 }
 
 func TestExtractNonExistentOVA(t *testing.T) {
-	extractor := ova.New()
+	extractor := ova.New(&cpb.PluginConfig{})
 	path := filepath.FromSlash("testdata/nonexistent.ova")
 	input := &filesystem.ScanInput{
 		Path:   path,
