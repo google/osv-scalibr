@@ -80,7 +80,7 @@ func TestAppU2SValidator(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 
 			// Create a client with custom transport
