@@ -1,0 +1,55 @@
+/*
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package scalibr;
+
+option go_package = "github.com/google/scalibr/binary/proto/config_go_proto";
+option java_multiple_files = true;
+option java_outer_classname = "Config";
+
+// Proto file describing the SCALIBR plugin configs. Whenever this proto is
+// modified make sure to regenerate the go_proto file by running
+// `make protos`
+
+message PluginConfig {
+  // Global config values that apply to multiple plugins.
+
+  // The maximum file size the plugin will process.
+  int64 max_file_size_bytes = 1;
+
+  // Config values that only apply to a single plugin.
+  repeated PluginSpecificConfig plugin_specific = 2;
+}
+
+message PluginSpecificConfig {
+  oneof config {
+    GoBinaryConfig go_binary = 1;
+    GovulncheckConfig govulncheck = 2;
+  }
+}
+
+message GoBinaryConfig {
+  // Enables extracting the module version from the Go binary content.
+  bool version_from_content = 1;
+}
+
+message GovulncheckConfig {
+  // Path to the offline vuln DB to pass to govunlcheck. If empty,
+  // the detector will query vulns from the net instead.
+  string offline_vuln_db_path = 1;
+}

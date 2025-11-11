@@ -26,10 +26,11 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
-	pl "github.com/google/osv-scalibr/plugin/list"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -546,69 +547,39 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 	}
 }
 
-func TestGetScanConfig_GovulncheckParams(t *testing.T) {
-	dbPath := "path/to/db"
+func TestGetScanConfig_PluginConfig(t *testing.T) {
+	cfg := &cpb.PluginConfig{
+		MaxFileSizeBytes: 1234,
+	}
+	bytes, err := prototext.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("prototext.Marshal(%v): %v", cfg, err)
+	}
 	flags := &cli.Flags{
-		ExtractorsToRun:   []string{"go"},
-		DetectorsToRun:    []string{binary.Detector{}.Name()},
-		GovulncheckDBPath: dbPath,
+		ExtractorsToRun: []string{gobinary.Name},
+		PluginCFG:       string(bytes),
 	}
 
-	cfg, err := flags.GetScanConfig()
+	scanConfig, err := flags.GetScanConfig()
 	if err != nil {
 		t.Errorf("%v.GetScanConfig(): %v", flags, err)
 	}
-	detectors := pl.Detectors(cfg.Plugins)
-	if len(detectors) != 1 {
-		t.Fatalf("%v.GetScanConfig() want 1 detector got %d", flags, len(detectors))
-	}
-	got := detectors[0].(*binary.Detector).OfflineVulnDBPath
-	if got != dbPath {
-		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
-	}
-}
 
-func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
-	for _, tc := range []struct {
-		desc                   string
-		flags                  *cli.Flags
-		wantVersionFromContent bool
-	}{
-		{
-			desc: "version_from_content_enabled",
-			flags: &cli.Flags{
-				ExtractorsToRun:            []string{"go"},
-				GoBinaryVersionFromContent: true,
-			},
-			wantVersionFromContent: true,
-		},
-		{
-			desc: "version_from_content_disabled",
-			flags: &cli.Flags{
-				ExtractorsToRun:            []string{"go"},
-				GoBinaryVersionFromContent: false,
-			},
-			wantVersionFromContent: false,
-		},
-	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			cfg, err := tc.flags.GetScanConfig()
-			if err != nil {
-				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
-			}
-			var gobinaryExt *gobinary.Extractor
-			for _, p := range cfg.Plugins {
-				if p.Name() == gobinary.Name {
-					gobinaryExt = p.(*gobinary.Extractor)
-				}
-			}
-			if gobinaryExt == nil {
-				t.Fatalf("%+v.GetScanConfig() want go binary extractor got nil", tc.flags)
-			}
-			if gobinaryExt.VersionFromContent != tc.wantVersionFromContent {
-				t.Errorf("%+v.GetScanConfig() want go binary extractor with version from content %v got %v", tc.flags, tc.wantVersionFromContent, gobinaryExt.VersionFromContent)
-			}
-		})
+	if diff := cmp.Diff(cfg, scanConfig.RequiredPluginConfig, protocmp.Transform()); diff != "" {
+		t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+	}
+	if len(scanConfig.Plugins) != 1 {
+		t.Fatalf("%v.GetScanConfig(): Got %d plugins, want 1", flags, len(scanConfig.Plugins))
+	}
+
+	ext, ok := scanConfig.Plugins[0].(*gobinary.Extractor)
+	if !ok {
+		t.Fatalf("%v.GetScanConfig(): Got wrong plugin type", flags)
+	}
+
+	maxFileSizeBytes := ext.MaxFileSizeBytes()
+	if cfg.MaxFileSizeBytes != maxFileSizeBytes {
+		t.Errorf("%v.GetScanConfig(): Want maxFileSizeBytes %d, got %d", flags, cfg.MaxFileSizeBytes, maxFileSizeBytes)
 	}
 }
 

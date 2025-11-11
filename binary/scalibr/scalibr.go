@@ -71,6 +71,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	annotatorsToRun := cli.NewStringListFlag(nil)
 	// TODO(b/400910349): Remove once integrators stop using this CLI arg.
 	fs.Var(&annotatorsToRun, "annotators", "[Legacy field, prefer using --plugins instead] Comma-separated list of annotators plugins to run")
+	pluginCFG := fs.String("plugin-config", "", "Plugin-specific config values. Example: TODO. See binary/proto/config.proto for more settings")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -82,8 +83,6 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	imageTarball := fs.String("image-tarball", "", "The path to a tarball containing a container image. These are commonly procuded using `docker save`. If specified, SCALIBR scans this image instead of the local filesystem.")
 	imageDockerLocal := fs.String("image-local-docker", "", "The docker image that is available in the local filesystem. These are the images from the output of \"docker image ls\". If specified, SCALIBR scans this image. The name of the image MUST also include the tag of the image <image_name>:<image_tag>.")
 	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
-	goBinaryVersionFromContent := fs.Bool("gobinary-version-from-content", false, "Parse the main module version from the binary content. Off by default because this drastically increases latency (~10x).")
-	govulncheckDBPath := fs.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
 	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
@@ -105,42 +104,41 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
-		PrintVersion:               *printVersion,
-		Root:                       *root,
-		ResultFile:                 *resultFile,
-		Output:                     output,
-		PluginsToRun:               pluginsToRun.GetSlice(),
-		ExtractorOverride:          extractorOverride,
-		ExtractorsToRun:            extractorsToRun.GetSlice(),
-		DetectorsToRun:             detectorsToRun.GetSlice(),
-		AnnotatorsToRun:            annotatorsToRun.GetSlice(),
-		PathsToExtract:             pathsToExtract,
-		IgnoreSubDirs:              *ignoreSubDirs,
-		DirsToSkip:                 dirsToSkip.GetSlice(),
-		SkipDirRegex:               *skipDirRegex,
-		SkipDirGlob:                *skipDirGlob,
-		MaxFileSize:                *maxFileSize,
-		UseGitignore:               *useGitignore,
-		RemoteImage:                *remoteImage,
-		ImageLocal:                 *imageDockerLocal,
-		ImageTarball:               *imageTarball,
-		ImagePlatform:              *imagePlatform,
-		GoBinaryVersionFromContent: *goBinaryVersionFromContent,
-		GovulncheckDBPath:          *govulncheckDBPath,
-		SPDXDocumentName:           *spdxDocumentName,
-		SPDXDocumentNamespace:      *spdxDocumentNamespace,
-		SPDXCreators:               *spdxCreators,
-		CDXComponentName:           *cdxComponentName,
-		CDXComponentType:           *cdxComponentType,
-		CDXComponentVersion:        *cdxComponentVersion,
-		CDXAuthors:                 *cdxAuthors,
-		Verbose:                    *verbose,
-		ExplicitPlugins:            *explicitPlugins,
-		FilterByCapabilities:       *filterByCapabilities,
-		WindowsAllDrives:           *windowsAllDrives,
-		Offline:                    *offline,
-		LocalRegistry:              *localRegistry,
-		DisableGoogleAuth:          *disableGoogleAuth,
+		PrintVersion:          *printVersion,
+		Root:                  *root,
+		ResultFile:            *resultFile,
+		Output:                output,
+		PluginsToRun:          pluginsToRun.GetSlice(),
+		ExtractorOverride:     extractorOverride,
+		ExtractorsToRun:       extractorsToRun.GetSlice(),
+		DetectorsToRun:        detectorsToRun.GetSlice(),
+		AnnotatorsToRun:       annotatorsToRun.GetSlice(),
+		PluginCFG:             *pluginCFG,
+		PathsToExtract:        pathsToExtract,
+		IgnoreSubDirs:         *ignoreSubDirs,
+		DirsToSkip:            dirsToSkip.GetSlice(),
+		SkipDirRegex:          *skipDirRegex,
+		SkipDirGlob:           *skipDirGlob,
+		MaxFileSize:           *maxFileSize,
+		UseGitignore:          *useGitignore,
+		RemoteImage:           *remoteImage,
+		ImageLocal:            *imageDockerLocal,
+		ImageTarball:          *imageTarball,
+		ImagePlatform:         *imagePlatform,
+		SPDXDocumentName:      *spdxDocumentName,
+		SPDXDocumentNamespace: *spdxDocumentNamespace,
+		SPDXCreators:          *spdxCreators,
+		CDXComponentName:      *cdxComponentName,
+		CDXComponentType:      *cdxComponentType,
+		CDXComponentVersion:   *cdxComponentVersion,
+		CDXAuthors:            *cdxAuthors,
+		Verbose:               *verbose,
+		ExplicitPlugins:       *explicitPlugins,
+		FilterByCapabilities:  *filterByCapabilities,
+		WindowsAllDrives:      *windowsAllDrives,
+		Offline:               *offline,
+		LocalRegistry:         *localRegistry,
+		DisableGoogleAuth:     *disableGoogleAuth,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err

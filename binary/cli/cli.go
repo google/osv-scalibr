@@ -31,18 +31,18 @@ import (
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	binspdx "github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/converter"
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/spdx/tools-golang/spdx/v2/common"
+	"google.golang.org/protobuf/encoding/prototext"
 
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
@@ -119,43 +119,43 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
-	PrintVersion               bool
-	Root                       string
-	ResultFile                 string
-	Output                     Array
-	ExtractorsToRun            []string
-	DetectorsToRun             []string
-	AnnotatorsToRun            []string
-	PluginsToRun               []string
-	ExtractorOverride          Array
-	PathsToExtract             []string
-	IgnoreSubDirs              bool
-	DirsToSkip                 []string
-	SkipDirRegex               string
-	SkipDirGlob                string
-	MaxFileSize                int
-	UseGitignore               bool
-	RemoteImage                string
-	ImageLocal                 string
-	ImageTarball               string
-	ImagePlatform              string
-	GoBinaryVersionFromContent bool
-	GovulncheckDBPath          string
-	SPDXDocumentName           string
-	SPDXDocumentNamespace      string
-	SPDXCreators               string
-	CDXComponentName           string
-	CDXComponentType           string
-	CDXComponentVersion        string
-	CDXAuthors                 string
-	Verbose                    bool
-	ExplicitPlugins            bool
-	FilterByCapabilities       bool
-	StoreAbsolutePath          bool
-	WindowsAllDrives           bool
-	Offline                    bool
-	LocalRegistry              string
-	DisableGoogleAuth          bool
+	PrintVersion          bool
+	Root                  string
+	ResultFile            string
+	Output                Array
+	ExtractorsToRun       []string
+	DetectorsToRun        []string
+	AnnotatorsToRun       []string
+	PluginsToRun          []string
+	PluginCFG             string
+	ExtractorOverride     Array
+	PathsToExtract        []string
+	IgnoreSubDirs         bool
+	DirsToSkip            []string
+	SkipDirRegex          string
+	SkipDirGlob           string
+	MaxFileSize           int
+	UseGitignore          bool
+	RemoteImage           string
+	ImageLocal            string
+	ImageTarball          string
+	ImagePlatform         string
+	GovulncheckDBPath     string
+	SPDXDocumentName      string
+	SPDXDocumentNamespace string
+	SPDXCreators          string
+	CDXComponentName      string
+	CDXComponentType      string
+	CDXComponentVersion   string
+	CDXAuthors            string
+	Verbose               bool
+	ExplicitPlugins       bool
+	FilterByCapabilities  bool
+	StoreAbsolutePath     bool
+	WindowsAllDrives      bool
+	Offline               bool
+	LocalRegistry         string
+	DisableGoogleAuth     bool
 }
 
 var supportedOutputFormats = []string{
@@ -323,7 +323,7 @@ func validateGlob(arg string) error {
 
 func validateDependency(pluginNames []string, requireExtractors bool) error {
 	f := &Flags{PluginsToRun: pluginNames}
-	plugins, err := f.pluginsToRun()
+	plugins, _, err := f.pluginsToRun()
 	if err != nil {
 		return err
 	}
@@ -360,7 +360,7 @@ type extractorOverride struct {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	plugins, err := f.pluginsToRun()
+	plugins, pluginCFG, err := f.pluginsToRun()
 	if err != nil {
 		return nil, err
 	}
@@ -431,19 +431,20 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 
 	return &scalibr.ScanConfig{
-		ScanRoots:         scanRoots,
-		Plugins:           plugins,
-		Capabilities:      capab,
-		PathsToExtract:    f.PathsToExtract,
-		IgnoreSubDirs:     f.IgnoreSubDirs,
-		DirsToSkip:        f.dirsToSkip(scanRoots),
-		SkipDirRegex:      skipDirRegex,
-		SkipDirGlob:       skipDirGlob,
-		MaxFileSize:       f.MaxFileSize,
-		UseGitignore:      f.UseGitignore,
-		StoreAbsolutePath: f.StoreAbsolutePath,
-		ExtractorOverride: extractorOverrideFn,
-		ExplicitPlugins:   f.ExplicitPlugins,
+		ScanRoots:            scanRoots,
+		Plugins:              plugins,
+		Capabilities:         capab,
+		PathsToExtract:       f.PathsToExtract,
+		IgnoreSubDirs:        f.IgnoreSubDirs,
+		DirsToSkip:           f.dirsToSkip(scanRoots),
+		SkipDirRegex:         skipDirRegex,
+		SkipDirGlob:          skipDirGlob,
+		MaxFileSize:          f.MaxFileSize,
+		UseGitignore:         f.UseGitignore,
+		StoreAbsolutePath:    f.StoreAbsolutePath,
+		ExtractorOverride:    extractorOverrideFn,
+		ExplicitPlugins:      f.ExplicitPlugins,
+		RequiredPluginConfig: pluginCFG,
 	}, nil
 }
 
@@ -521,9 +522,15 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
+func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
+	pluginCFG := &cpb.PluginConfig{}
+	err := prototext.Unmarshal([]byte(f.PluginCFG), pluginCFG)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	extractorNames := addPluginPrefixToGroups("extractors/", multiStringToList(f.ExtractorsToRun))
 	detectorNames := addPluginPrefixToGroups("detectors/", multiStringToList(f.DetectorsToRun))
 	annotatorNames := addPluginPrefixToGroups("annotators/", multiStringToList(f.AnnotatorsToRun))
@@ -535,19 +542,13 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 	}
 
 	for _, name := range allPluginNames {
-		plugins, err := pl.FromNames([]string{name})
+		plugins, err := pl.FromNames([]string{name}, pluginCFG)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Apply plugin-specific config.
 		for _, p := range plugins {
-			if p.Name() == gobinary.Name {
-				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
-			}
-			if p.Name() == binary.Name {
-				p.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
-			}
 			if f.LocalRegistry != "" {
 				switch p.Name() {
 				case pomxmlnet.Name:
@@ -567,7 +568,7 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 		result = append(result, plugins...)
 	}
 
-	return result, nil
+	return result, pluginCFG, nil
 }
 
 // addPluginPrefixToGroups adds the specified prefix to the "default" and "all"
