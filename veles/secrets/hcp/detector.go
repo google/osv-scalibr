@@ -113,13 +113,7 @@ func isHCPAccessToken(t jwtlib.Token) bool {
 	if iss != "https://auth.idp.hashicorp.com/" {
 		return false
 	}
-	audOK := false
-	if aud, ok := p["aud"]; ok {
-		if slices.Contains(normalizeAud(aud), "https://api.hashicorp.cloud") {
-			audOK = true
-		}
-	}
-	if !audOK {
+	if aud, ok := p["aud"]; !ok || !slices.Contains(normalizeAud(aud), "https://api.hashicorp.cloud") {
 		return false
 	}
 	if gty, ok := p["gty"].(string); !ok || gty != "client-credentials" {
