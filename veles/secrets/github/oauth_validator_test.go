@@ -34,7 +34,7 @@ func TestOAuthTokenValidator(t *testing.T) {
 	cancel()
 
 	mockGithubServer := func(code int) *httptest.Server {
-		return mockgithub.Server(t, "/user", code, oauthValidatorTestKey)
+		return mockgithub.Server(t, github.UserValidationEndpoint, code, oauthValidatorTestKey)
 	}
 
 	cases := []struct {
@@ -66,14 +66,16 @@ func TestOAuthTokenValidator(t *testing.T) {
 			want:   veles.ValidationInvalid,
 		},
 		{
-			name:   "server_error",
-			server: mockGithubServer(http.StatusInternalServerError),
-			want:   veles.ValidationFailed,
+			name:    "server_error",
+			server:  mockGithubServer(http.StatusInternalServerError),
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 		{
-			name:   "bad_gateway",
-			server: mockGithubServer(http.StatusBadGateway),
-			want:   veles.ValidationFailed,
+			name:    "bad_gateway",
+			server:  mockGithubServer(http.StatusBadGateway),
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
@@ -83,15 +85,10 @@ func TestOAuthTokenValidator(t *testing.T) {
 				tt.ctx = t.Context()
 			}
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: mockgithub.Transport(tt.server),
-			}
-
 			// Create a validator with a mock client
-			validator := github.NewOAuthTokenValidator(
-				github.OAuthTokenWithClient(client),
-			)
+			validator := github.NewOAuthTokenValidator()
+			validator.HTTPC = tt.server.Client()
+			validator.Endpoint = tt.server.URL + github.UserValidationEndpoint
 
 			// Create a test key
 			key := github.OAuthToken{Token: tt.token}
