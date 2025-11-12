@@ -127,7 +127,7 @@ type Flags struct {
 	DetectorsToRun        []string
 	AnnotatorsToRun       []string
 	PluginsToRun          []string
-	PluginCFG             string
+	PluginCFG             []string
 	ExtractorOverride     Array
 	PathsToExtract        []string
 	IgnoreSubDirs         bool
@@ -525,8 +525,7 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
-	pluginCFG := &cpb.PluginConfig{}
-	err := prototext.Unmarshal([]byte(f.PluginCFG), pluginCFG)
+	pluginCFG, err := pluginCFGFromFlags(f.PluginCFG)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -583,6 +582,30 @@ func addPluginPrefixToGroups(prefix string, pluginNames []string) []string {
 		result = append(result, p)
 	}
 	return result
+}
+
+// pluginCFGFromFlags parses individually provided
+// plugin config strings into one proto.
+func pluginCFGFromFlags(flags []string) (*cpb.PluginConfig, error) {
+	var cfgString strings.Builder
+	for _, flag := range flags {
+		pluginCFG := &cpb.PluginConfig{}
+		err := prototext.Unmarshal([]byte(flag), pluginCFG)
+		if err != nil {
+			// Flags can use a shorthand for specifying a single plugin-specific setting.
+			// In this case we have to add the wrapping proto parts manually.
+			flag = "plugin_specific:{" + flag + "}"
+			err := prototext.Unmarshal([]byte(flag), pluginCFG)
+			if err != nil {
+				return nil, err
+			}
+		}
+		cfgString.WriteString(flag + "\n")
+	}
+
+	allCFGs := &cpb.PluginConfig{}
+	err := prototext.Unmarshal([]byte(cfgString.String()), allCFGs)
+	return allCFGs, err
 }
 
 func multiStringToList(arg []string) []string {

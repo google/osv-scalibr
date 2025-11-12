@@ -29,7 +29,6 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
-	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
@@ -548,38 +547,92 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 }
 
 func TestGetScanConfig_PluginConfig(t *testing.T) {
-	cfg := &cpb.PluginConfig{
-		MaxFileSizeBytes: 1234,
-	}
-	bytes, err := prototext.Marshal(cfg)
-	if err != nil {
-		t.Fatalf("prototext.Marshal(%v): %v", cfg, err)
-	}
-	flags := &cli.Flags{
-		ExtractorsToRun: []string{gobinary.Name},
-		PluginCFG:       string(bytes),
-	}
+	for _, tc := range []struct {
+		desc                   string
+		cfgFlags               []string
+		wantCFG                *cpb.PluginConfig
+		wantMaxFileSizeBytes   int64
+		wantVersionFromContent bool
+	}{
+		{
+			desc:     "single_setting_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+			},
+			wantMaxFileSizeBytes: 1234,
+		},
+		{
+			desc:     "multiple_settings_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234 plugin_specific:{go_binary:{version_from_content:true}}"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
+			wantVersionFromContent: true,
+		},
+		{
+			desc: "multiple_settings_in_multiple_flags",
+			cfgFlags: []string{
+				"max_file_size_bytes:1234",
+				"plugin_specific:{go_binary:{version_from_content:true}}",
+			},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
+			wantVersionFromContent: true,
+		},
+		{
+			desc:     "plugin_specific_config_short_version",
+			cfgFlags: []string{"go_binary:{version_from_content:true}"},
+			wantCFG: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantVersionFromContent: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			flags := &cli.Flags{
+				ExtractorsToRun: []string{gobinary.Name},
+				PluginCFG:       tc.cfgFlags,
+			}
 
-	scanConfig, err := flags.GetScanConfig()
-	if err != nil {
-		t.Errorf("%v.GetScanConfig(): %v", flags, err)
-	}
+			scanConfig, err := flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			}
 
-	if diff := cmp.Diff(cfg, scanConfig.RequiredPluginConfig, protocmp.Transform()); diff != "" {
-		t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
-	}
-	if len(scanConfig.Plugins) != 1 {
-		t.Fatalf("%v.GetScanConfig(): Got %d plugins, want 1", flags, len(scanConfig.Plugins))
-	}
+			if diff := cmp.Diff(tc.wantCFG, scanConfig.RequiredPluginConfig, protocmp.Transform()); diff != "" {
+				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+			}
+			if len(scanConfig.Plugins) != 1 {
+				t.Fatalf("%v.GetScanConfig(): Got %d plugins, want 1", flags, len(scanConfig.Plugins))
+			}
 
-	ext, ok := scanConfig.Plugins[0].(*gobinary.Extractor)
-	if !ok {
-		t.Fatalf("%v.GetScanConfig(): Got wrong plugin type", flags)
-	}
+			ext, ok := scanConfig.Plugins[0].(*gobinary.Extractor)
+			if !ok {
+				t.Fatalf("%v.GetScanConfig(): Got wrong plugin type", flags)
+			}
 
-	maxFileSizeBytes := ext.MaxFileSizeBytes()
-	if cfg.MaxFileSizeBytes != maxFileSizeBytes {
-		t.Errorf("%v.GetScanConfig(): Want maxFileSizeBytes %d, got %d", flags, cfg.MaxFileSizeBytes, maxFileSizeBytes)
+			maxFileSizeBytes := ext.MaxFileSizeBytes()
+			if tc.wantMaxFileSizeBytes != maxFileSizeBytes {
+				t.Errorf("%v.GetScanConfig(): Want maxFileSizeBytes %d, got %d", flags, tc.wantMaxFileSizeBytes, maxFileSizeBytes)
+			}
+
+			versionFromContent := ext.VersionFromContent()
+			if tc.wantVersionFromContent != versionFromContent {
+				t.Errorf("%v.GetScanConfig(): Want versionFromContent %t, got %t", flags, tc.wantVersionFromContent, versionFromContent)
+			}
+		})
 	}
 }
 

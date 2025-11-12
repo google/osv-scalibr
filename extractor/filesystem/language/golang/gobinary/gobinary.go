@@ -169,6 +169,12 @@ func (e *Extractor) MaxFileSizeBytes() int64 {
 	return e.maxFileSizeBytes
 }
 
+// VersionFromContent returns whether module version extraction
+// from binary content is enabled.
+func (e *Extractor) VersionFromContent() bool {
+	return e.versionFromContent
+}
+
 func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Package {
 	res := []*extractor.Package{}
 

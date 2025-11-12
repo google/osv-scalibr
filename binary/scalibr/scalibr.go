@@ -71,7 +71,8 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	annotatorsToRun := cli.NewStringListFlag(nil)
 	// TODO(b/400910349): Remove once integrators stop using this CLI arg.
 	fs.Var(&annotatorsToRun, "annotators", "[Legacy field, prefer using --plugins instead] Comma-separated list of annotators plugins to run")
-	pluginCFG := fs.String("plugin-config", "", "Plugin-specific config values. Example: TODO. See binary/proto/config.proto for more settings")
+	var pluginCFG cli.Array
+	fs.Var(&pluginCFG, "plugin-config", "Plugin-specific config values. Example: --plugin-config=\"max_file_size_bytes:10000000 plugin_specific: {go_binary: {version_from_content: true} }\", or --plugin-config=go_binary:{version_from_content:true}. See binary/proto/config.proto for more settings")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -113,7 +114,7 @@ func parseFlags(args []string) (*cli.Flags, error) {
 		ExtractorsToRun:       extractorsToRun.GetSlice(),
 		DetectorsToRun:        detectorsToRun.GetSlice(),
 		AnnotatorsToRun:       annotatorsToRun.GetSlice(),
-		PluginCFG:             *pluginCFG,
+		PluginCFG:             pluginCFG,
 		PathsToExtract:        pathsToExtract,
 		IgnoreSubDirs:         *ignoreSubDirs,
 		DirsToSkip:            dirsToSkip.GetSlice(),
