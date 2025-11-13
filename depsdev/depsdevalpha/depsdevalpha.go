@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package depsdev contains constants and mappings for the deps.dev v3 API.
-package depsdev
+// Package depsdevalpha contains constants and mappings for the deps.dev v3alpha API.
+package depsdevalpha
 
 import (
+	pb "deps.dev/api/v3alpha"
 	"github.com/google/osv-scalibr/purl"
-
-	depsdevpb "deps.dev/api/v3"
 )
 
-// DepsdevAPI is the URL to the deps.dev API. It is documented at
-// docs.deps.dev/api.
-const DepsdevAPI = "api.deps.dev:443"
-
-// System maps from purl type to the depsdev API system.
-var System = map[string]depsdevpb.System{
-	purl.TypeNPM:    depsdevpb.System_NPM,
-	purl.TypeNuget:  depsdevpb.System_NUGET,
-	purl.TypeCargo:  depsdevpb.System_CARGO,
-	purl.TypeGolang: depsdevpb.System_GO,
-	purl.TypeMaven:  depsdevpb.System_MAVEN,
-	purl.TypePyPi:   depsdevpb.System_PYPI,
-	purl.TypeGem:    depsdevpb.System_RUBYGEMS,
+// System maps from purl type to the deps.dev systems.
+var System = map[string]pb.System{
+	purl.TypeGolang: pb.System_GO,
+	purl.TypeGem:    pb.System_RUBYGEMS,
+	purl.TypeNPM:    pb.System_NPM,
+	purl.TypeCargo:  pb.System_CARGO,
+	purl.TypeMaven:  pb.System_MAVEN,
+	purl.TypePyPi:   pb.System_PYPI,
+	purl.TypeNuget:  pb.System_NUGET,
 }

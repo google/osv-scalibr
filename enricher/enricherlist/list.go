@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
+	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
@@ -137,6 +138,11 @@ var (
 		requirements.Name: {noCFG(requirements.NewDefault)},
 	}
 
+	// PackageDeprecation enricher.
+	PackageDeprecation = InitMap{
+		packagedeprecation.Name: {noCFG(packagedeprecation.New)},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
@@ -151,6 +157,7 @@ var (
 		License,
 		Reachability,
 		TransitiveDependency,
+		PackageDeprecation,
 	)
 
 	enricherNames = concat(All, InitMap{
@@ -162,6 +169,7 @@ var (
 		"secretsenrich":        vals(SecretsEnrich),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
+		"packagedeprecation":   vals(PackageDeprecation),
 
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),
