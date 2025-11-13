@@ -187,7 +187,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 		version.epoch = epoch
 	}
 
-	for _, r := range strings.Split(match[pypiVersionFinder.SubexpIndex("release")], ".") {
+	for r := range strings.SplitSeq(match[pypiVersionFinder.SubexpIndex("release")], ".") {
 		release, err := convertToBigInt(r)
 
 		if err != nil {

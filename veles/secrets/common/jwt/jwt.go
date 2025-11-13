@@ -18,6 +18,7 @@ package jwt
 import (
 	"encoding/base64"
 	"encoding/json"
+	"maps"
 	"regexp"
 	"strings"
 )
@@ -79,9 +80,7 @@ func copyMap(m map[string]any) map[string]any {
 	}
 
 	n := make(map[string]any, len(m))
-	for k, v := range m {
-		n[k] = v
-	}
+	maps.Copy(n, m)
 
 	return n
 }
