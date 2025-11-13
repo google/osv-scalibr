@@ -368,6 +368,14 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if f.FilterByCapabilities {
 		plugins = filterByCapabilities(plugins, capab)
 	}
+	if len(f.PluginsToRun)+len(f.ExtractorsToRun)+len(f.DetectorsToRun)+len(f.AnnotatorsToRun) == 0 {
+		names := make([]string, 0, len(plugins))
+		for _, p := range plugins {
+			names = append(names, p.Name())
+		}
+		log.Warnf("No plugins specified, using default list: %v", names)
+	}
+
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
 		skipDirRegex, err = regexp.Compile(f.SkipDirRegex)
