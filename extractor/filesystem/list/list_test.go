@@ -47,12 +47,12 @@ func TestExtractorsFromName(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			desc:     "Find all extractors of a type",
+			desc:     "Find_all_extractors_of_a_type",
 			name:     "python",
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
-			desc:     "Nonexistent plugin",
+			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
 			wantExts: []string{},
