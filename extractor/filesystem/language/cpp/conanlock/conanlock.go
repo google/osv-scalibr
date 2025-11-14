@@ -60,7 +60,7 @@ type conanGraphLock struct {
 type conanLockFile struct {
 	Version string `json:"version"`
 	// conan v0.4- lockfiles use "graph_lock", "profile_host" and "profile_build"
-	GraphLock conanGraphLock `json:"graph_lock,omitempty"`
+	GraphLock conanGraphLock `json:"graph_lock"`
 	// conan v0.5+ lockfiles use "requires", "build_requires" and "python_requires"
 	Requires       []string `json:"requires,omitempty"`
 	BuildRequires  []string `json:"build_requires,omitempty"`

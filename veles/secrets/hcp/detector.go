@@ -16,6 +16,7 @@ package hcp
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
@@ -112,16 +113,7 @@ func isHCPAccessToken(t jwtlib.Token) bool {
 	if iss != "https://auth.idp.hashicorp.com/" {
 		return false
 	}
-	audOK := false
-	if aud, ok := p["aud"]; ok {
-		for _, a := range normalizeAud(aud) {
-			if a == "https://api.hashicorp.cloud" {
-				audOK = true
-				break
-			}
-		}
-	}
-	if !audOK {
+	if aud, ok := p["aud"]; !ok || !slices.Contains(normalizeAud(aud), "https://api.hashicorp.cloud") {
 		return false
 	}
 	if gty, ok := p["gty"].(string); !ok || gty != "client-credentials" {

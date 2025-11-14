@@ -59,8 +59,8 @@ func LicenseExpression(licenses []string) (string, stringset.Set) {
 		l := strings.ReplaceAll(l, " or ", " OR ")
 		if strings.Contains(l, " OR ") {
 			orLicenses := []string{}
-			orLicenseSplit := strings.Split(l, " OR ")
-			for _, ols := range orLicenseSplit {
+			orLicenseSplit := strings.SplitSeq(l, " OR ")
+			for ols := range orLicenseSplit {
 				spdxL, customL := spdxAndCustomLicenses(ols)
 				orLicenses = append(orLicenses, spdxL)
 				if customL != "" {

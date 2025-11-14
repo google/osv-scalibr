@@ -640,9 +640,9 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
-	dirs := strings.Split(path.Dir(virtualPath), "/")
+	dirs := strings.SplitSeq(path.Dir(virtualPath), "/")
 
-	for _, dir := range dirs {
+	for dir := range dirs {
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.

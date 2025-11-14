@@ -258,10 +258,7 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 func writeZeros(w io.Writer, n int64) error {
 	buf := make([]byte, 64*1024)
 	for n > 0 {
-		chunk := int64(len(buf))
-		if chunk > n {
-			chunk = n
-		}
+		chunk := min(int64(len(buf)), n)
 		if _, err := w.Write(buf[:chunk]); err != nil {
 			return err
 		}
@@ -273,10 +270,7 @@ func writeZeros(w io.Writer, n int64) error {
 func skipBytes(r io.Reader, n int64) error {
 	buf := make([]byte, 64*1024)
 	for n > 0 {
-		chunk := int64(len(buf))
-		if chunk > n {
-			chunk = n
-		}
+		chunk := min(int64(len(buf)), n)
 		_, err := io.CopyN(io.Discard, r, chunk)
 		if err != nil {
 			return err

@@ -81,9 +81,9 @@ func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMa
 
 func addClassMapping(artifactName, class string, classMap map[string][]string, artifactMap map[string][]string) {
 	name := strings.TrimSuffix(class, ".class")
-	if strings.HasPrefix(name, MetaInfVersions) {
+	if after, ok := strings.CutPrefix(name, MetaInfVersions); ok {
 		// Strip the version after the META-INF/versions/<version>/
-		name = strings.TrimPrefix(name, MetaInfVersions)[1:]
+		name = after[1:]
 		name = name[strings.Index(name, "/")+1:]
 	}
 
