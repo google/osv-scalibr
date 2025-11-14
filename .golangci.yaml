@@ -44,8 +44,6 @@ linters:
     - wrapcheck        #
     - wsl              #
     - wsl_v5           #
-
-    - modernize
   settings:
     forbidigo:
       forbid:

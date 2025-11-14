@@ -72,10 +72,7 @@ func (c *GRPCClient) GetVersionBatch(ctx context.Context, req Request) (Response
 
 	for i := 0; i < len(vers); i += maxBatchSize {
 		// Splitting list of package versions into chunks of 5000 (maxBatchSize).
-		end := i + maxBatchSize
-		if end > len(vers) {
-			end = len(vers)
-		}
+		end := min(i+maxBatchSize, len(vers))
 		chunk := vers[i:end]
 
 		batchReq := makeBatchReq(chunk)

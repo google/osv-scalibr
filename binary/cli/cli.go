@@ -299,7 +299,7 @@ func validateMultiStringArg(arg []string) error {
 		if len(item) == 0 {
 			continue
 		}
-		for _, item := range strings.Split(item, ",") {
+		for item := range strings.SplitSeq(item, ",") {
 			if len(item) == 0 {
 				return errors.New("list item cannot be left empty")
 			}
@@ -368,6 +368,14 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if f.FilterByCapabilities {
 		plugins = filterByCapabilities(plugins, capab)
 	}
+	if len(f.PluginsToRun)+len(f.ExtractorsToRun)+len(f.DetectorsToRun)+len(f.AnnotatorsToRun) == 0 {
+		names := make([]string, 0, len(plugins))
+		for _, p := range plugins {
+			names = append(names, p.Name())
+		}
+		log.Warnf("No plugins specified, using default list: %v", names)
+	}
+
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
 		skipDirRegex, err = regexp.Compile(f.SkipDirRegex)
@@ -452,7 +460,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
-		for _, item := range strings.Split(f.SPDXCreators, ",") {
+		for item := range strings.SplitSeq(f.SPDXCreators, ",") {
 			c := strings.Split(item, ":")
 			cType := c[0]
 			cName := c[1]

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -573,9 +574,7 @@ func mustNewSquashedImage(t *testing.T, pathsToContent map[string]contentAndMode
 
 	// Squash layers into a single layer.
 	files := make(map[string]contentAndMode)
-	for path, contentAndMode := range pathsToContent {
-		files[path] = contentAndMode
-	}
+	maps.Copy(files, pathsToContent)
 
 	var buf bytes.Buffer
 	w := tar.NewWriter(&buf)
