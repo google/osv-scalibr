@@ -82,7 +82,7 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 
 // Validate checks whether the given AWS access key and secret are valid
 // using the GetCallerIdentity api call
-func (v *Validator) Validate(ctx context.Context, key Credential) (veles.ValidationStatus, error) {
+func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.ValidationStatus, error) {
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodPost,
 		"https://sts.us-east-1.amazonaws.com/",

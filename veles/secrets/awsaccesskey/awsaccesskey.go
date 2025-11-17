@@ -17,8 +17,8 @@
 // ref: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
 package awsaccesskey
 
-// Credential is a Veles Secret that holds the value of the AWS Access Key and Secret Key credentials.
-type Credential struct {
+// Credentials is a Veles Secret that holds the value of the AWS Access Key and Secret Key credentials.
+type Credentials struct {
 	AccessID string
 	Secret   string
 }

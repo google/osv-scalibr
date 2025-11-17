@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -206,8 +207,21 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformTokenToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
+	case awsaccesskey.Credentials:
+		return awsAccessKeyCredentialToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AwsAccessKeyCredentials_{
+			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
+				AccessId: s.AccessID,
+				Secret:   s.Secret,
+			},
+		},
 	}
 }
 
@@ -903,6 +917,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			Port:     creds.Port,
 			User:     creds.User,
 			Password: creds.Password,
+		}, nil
+	case *spb.SecretData_AwsAccessKeyCredentials_:
+		creds := s.GetAwsAccessKeyCredentials()
+		return &awsaccesskey.Credentials{
+			AccessID: creds.AccessId,
+			Secret:   creds.Secret,
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
