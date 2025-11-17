@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -91,7 +92,7 @@ func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
 	req.Header.Set("X-Amz-Date", amzDate)
 	if len(payload) > 0 {
-		req.Header.Set("Content-Length", fmt.Sprint(len(payload)))
+		req.Header.Set("Content-Length", strconv.Itoa(len(payload)))
 	}
 
 	var canonicalHeadersB strings.Builder

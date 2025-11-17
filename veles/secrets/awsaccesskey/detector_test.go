@@ -69,7 +69,7 @@ func TestDetector_Detect(t *testing.T) {
 aws_access_key_id = AIKA1984R439T439HTH4
 aws_secret_access_key = 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			want: []veles.Secret{
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
@@ -79,7 +79,7 @@ aws_secret_access_key = 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			name:  "access_ID_and_secret_in_close_proximity_-_no_space",
 			input: `AIKA1984R439T439HTH4:32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			want: []veles.Secret{
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
@@ -92,7 +92,7 @@ aws_secret_access_key = 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 				"secret": "32r923jr023rk320rk2a3rkB34tj340r32Ckt433"
 			}`,
 			want: []veles.Secret{
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
@@ -105,7 +105,7 @@ invalid_id: 123-invalid.apps.googleusercontent.com
 valid_secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt433
 invalid_secret: WRONG-InvalidSecret123456789012`,
 			want: []veles.Secret{
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
@@ -122,11 +122,11 @@ config_app2:
 AIKA1984R439T439HTH3
 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
 			want: []veles.Secret{
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
-				awsaccesskey.Credential{
+				awsaccesskey.Credentials{
 					AccessID: "AIKA1984R439T439HTH3",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt432",
 				},

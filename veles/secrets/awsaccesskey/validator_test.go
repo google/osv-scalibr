@@ -102,13 +102,13 @@ func TestValidator(t *testing.T) {
 	// Set up fake "GCP metadata" HTTP server.
 	cases := []struct {
 		name   string
-		key    awsaccesskey.Credential
+		key    awsaccesskey.Credentials
 		want   veles.ValidationStatus
 		server func() *httptest.Server
 	}{
 		{
 			name: "correct_secret",
-			key: awsaccesskey.Credential{
+			key: awsaccesskey.Credentials{
 				AccessID: exampleAccessID,
 				Secret:   correctSecret,
 			},
@@ -117,7 +117,7 @@ func TestValidator(t *testing.T) {
 		},
 		{
 			name: "bad_secret",
-			key: awsaccesskey.Credential{
+			key: awsaccesskey.Credentials{
 				AccessID: exampleAccessID,
 				Secret:   badSecret,
 			},
