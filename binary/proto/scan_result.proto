@@ -29,6 +29,7 @@ option java_multiple_files = true;
 
 // The results of a scan incl. scan status and artifacts found.
 message ScanResult {
+  reserved 6, 7;
   string version = 1;
   google.protobuf.Timestamp start_time = 2;
   google.protobuf.Timestamp end_time = 3;
@@ -36,9 +37,6 @@ message ScanResult {
   ScanStatus status = 4;
   // Status and versions of the plugins that ran.
   repeated PluginStatus plugin_status = 5;
-  // TODO(b/400910349): Remove once integrators stop using these fields.
-  repeated Package inventories_deprecated = 6 [deprecated = true];
-  repeated GenericFinding findings_deprecated = 7 [deprecated = true];
   Inventory inventory = 8;
 }
 
@@ -77,7 +75,9 @@ message FileError {
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
 message Package {
-  reserved 3, 4, 35;
+  reserved 3, 4, 10, 28, 35;
+  // Unique identifier for the package.
+  string id = 60;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -92,8 +92,6 @@ message Package {
   string ecosystem = 27;
   // Paths or source of files related to the package.
   repeated string locations = 2;
-  // TODO(b/400910349): Remove once integrators stop using these fields.
-  string extractor_deprecated = 10 [deprecated = true];
   // The names of the plugins that found this software. Set by the
   // core library.
   repeated string plugins = 49;
@@ -140,9 +138,6 @@ message Package {
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
-  // Deprecated - use exploitability_signals instead
-  // TODO(b/400910349): Remove once integrators stop using this.
-  repeated AnnotationEnum annotations_deprecated = 28 [deprecated = true];
   // Signals to indicate that specific vulnerabilities are not applicable to
   // this package.
   repeated PackageExploitabilitySignal exploitability_signals = 51;
@@ -727,6 +722,7 @@ message SecretData {
     MariaDBCredentials maria_db_credentials = 46;
     GCSHmacKey gcs_hmac_key = 47;
     MysqlMyloginSection mysql_mylogin_section = 48;
+    VapidKey vapid_key = 49;
   }
 
   message GCPSAK {
@@ -956,6 +952,11 @@ message SecretData {
     string host = 4;
     string port = 5;
     string socket = 6;
+  }
+
+  message VapidKey {
+    string private_b64 = 1;
+    string public_b64 = 2;
   }
 
   message OnePasswordConnectToken {

@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/trace"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/enricher"
@@ -115,6 +116,8 @@ type ScanConfig struct {
 	// Optional: If set, SCALIBR returns an error when a plugin's required plugin
 	// isn't configured instead of enabling required plugins automatically.
 	ExplicitPlugins bool
+	// Optional: Configuration to apply to auto-enabled required plugins.
+	RequiredPluginConfig *cpb.PluginConfig
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled
@@ -149,7 +152,7 @@ func (cfg *ScanConfig) EnableRequiredPlugins() error {
 			return fmt.Errorf("required plugin %q not enabled", p)
 		}
 
-		requiredPlugin, err := pl.FromName(p)
+		requiredPlugin, err := pl.FromName(p, cfg.RequiredPluginConfig)
 		// TODO: b/416106602 - Implement transitive enablement for required enrichers.
 		if err != nil {
 			return fmt.Errorf("required plugin %q not present in any list.go: %w", p, err)

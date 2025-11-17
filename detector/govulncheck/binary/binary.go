@@ -24,6 +24,7 @@ import (
 	"path"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -44,12 +45,17 @@ const (
 // Detector is a SCALIBR Detector that uses govulncheck to scan for vulns on Go binaries found
 // on the filesystem.
 type Detector struct {
-	OfflineVulnDBPath string
+	offlineVulnDBPath string
 }
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
+func New(cfg *cpb.PluginConfig) detector.Detector {
+	d := &Detector{}
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
+	if specific != nil {
+		d.offlineVulnDBPath = specific.OfflineVulnDbPath
+	}
+	return d
 }
 
 // Name of the detector.
@@ -61,7 +67,7 @@ func (Detector) Version() int { return 0 }
 // Requirements of the detector.
 func (d Detector) Requirements() *plugin.Capabilities {
 	net := plugin.NetworkOnline
-	if d.OfflineVulnDBPath == "" {
+	if d.offlineVulnDBPath == "" {
 		net = plugin.NetworkAny
 	}
 	return &plugin.Capabilities{Network: net, DirectFS: true}
@@ -117,8 +123,8 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 	fullPath := path.Join(scanRoot, binaryPath)
 	log.Debugf("Running govulncheck on go binary %v", fullPath)
 	args := []string{"--mode=binary", "--json"}
-	if d.OfflineVulnDBPath != "" {
-		args = append(args, "-db=file://"+d.OfflineVulnDBPath)
+	if d.offlineVulnDBPath != "" {
+		args = append(args, "-db=file://"+d.offlineVulnDBPath)
 	}
 	args = append(args, fullPath)
 	cmd := scan.Command(ctx, args...)

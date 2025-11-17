@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package matcher provides the interface for the vulnerability matcher used by guided remediation.
-package matcher
+// Package vapid contain the logic for finding VAPID keys (Voluntary Application Server Identification)
+//
+// ref: https://web.dev/articles/push-notifications-web-push-protocol
+package vapid
 
-import (
-	"context"
-
-	"github.com/google/osv-scalibr/extractor"
-	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
-)
-
-// VulnerabilityMatcher interface provides functionality get a list of affecting vulnerabilities for each package in an inventory.
-type VulnerabilityMatcher interface {
-	MatchVulnerabilities(ctx context.Context, pkgs []*extractor.Package) ([][]*osvpb.Vulnerability, error)
+// Key holds the content of a VAPID key
+type Key struct {
+	PrivateB64 string
+	PublicB64  string
 }

@@ -123,9 +123,7 @@ func doesImplement(t types.Type, iface *types.Named) bool {
 	iTypeParams := iface.TypeParams()
 
 	// Check every method in the generic interface template
-	for i := range ifaceType.NumMethods() {
-		iMethod := ifaceType.Method(i)
-
+	for iMethod := range ifaceType.Methods() {
 		// Search the method by name
 		mSelected := concreteMethods.Lookup(iMethod.Pkg(), iMethod.Name())
 		// Method is missing, it's impossible this type implements the interface

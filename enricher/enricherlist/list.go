@@ -20,13 +20,14 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
+	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
-
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -54,7 +55,7 @@ import (
 )
 
 // InitFn is the enricher initializer function.
-type InitFn func() enricher.Enricher
+type InitFn func(cfg *cpb.PluginConfig) enricher.Enricher
 
 // InitMap is a map of names to enricher initializer functions.
 type InitMap map[string][]InitFn
@@ -63,23 +64,23 @@ var (
 
 	// LayerDetails enrichers.
 	LayerDetails = InitMap{
-		baseimage.Name: {baseimage.NewDefault},
+		baseimage.Name: {noCFG(baseimage.NewDefault)},
 	}
 
 	// License enrichers.
 	License = InitMap{
-		license.Name: {license.New},
+		license.Name: {noCFG(license.New)},
 	}
 
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
 
-		osvdev.Name: {osvdev.NewDefault},
+		osvdev.Name: {noCFG(osvdev.NewDefault)},
 	}
 
 	// VEX related enrichers.
 	VEX = InitMap{
-		filter.Name: {filter.New},
+		filter.Name: {noCFG(filter.New)},
 	}
 
 	// SecretsValidate lists secret validators.
@@ -119,22 +120,27 @@ var (
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
 	SecretsEnrich = InitMap{
-		hcpidentity.Name: {hcpidentity.New},
+		hcpidentity.Name: {noCFG(hcpidentity.New)},
 	}
 
 	// HuggingfaceMeta enricher.
 	HuggingfaceMeta = InitMap{
-		huggingfacemeta.Name: {huggingfacemeta.New},
+		huggingfacemeta.Name: {noCFG(huggingfacemeta.New)},
 	}
 
 	// Reachability enrichers.
 	Reachability = InitMap{
-		java.Name: {java.NewDefault},
+		java.Name: {noCFG(java.NewDefault)},
 	}
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
-		requirements.Name: {requirements.NewDefault},
+		requirements.Name: {noCFG(requirements.NewDefault)},
+	}
+
+	// PackageDeprecation enricher.
+	PackageDeprecation = InitMap{
+		packagedeprecation.Name: {noCFG(packagedeprecation.New)},
 	}
 
 	// Default enrichers.
@@ -151,6 +157,7 @@ var (
 		License,
 		Reachability,
 		TransitiveDependency,
+		PackageDeprecation,
 	)
 
 	enricherNames = concat(All, InitMap{
@@ -162,6 +169,7 @@ var (
 		"secretsenrich":        vals(SecretsEnrich),
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
+		"packagedeprecation":   vals(PackageDeprecation),
 
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),
@@ -182,8 +190,14 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.AppendSeq(make([][]InitFn, 0, len(initMap)), maps.Values(initMap))...)
 }
 
+// Wraps initer functions that don't take any config value to initer functions that do.
+// TODO(b/400910349): Remove once all plugins take config values.
+func noCFG(f func() enricher.Enricher) InitFn {
+	return func(_ *cpb.PluginConfig) enricher.Enricher { return f() }
+}
+
 // EnricherFromName returns a single enricher based on its exact name.
-func EnricherFromName(name string) (enricher.Enricher, error) {
+func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	initers, ok := enricherNames[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown enricher %q", name)
@@ -191,7 +205,7 @@ func EnricherFromName(name string) (enricher.Enricher, error) {
 	if len(initers) != 1 {
 		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
 	}
-	e := initers[0]()
+	e := initers[0](cfg)
 	if e.Name() != name {
 		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
 	}
@@ -199,11 +213,11 @@ func EnricherFromName(name string) (enricher.Enricher, error) {
 }
 
 // EnrichersFromName returns a list of enrichers from a name.
-func EnrichersFromName(name string) ([]enricher.Enricher, error) {
+func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher, error) {
 	if initers, ok := enricherNames[name]; ok {
 		result := []enricher.Enricher{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			result = append(result, initer(cfg))
 		}
 		return result, nil
 	}
@@ -225,7 +239,7 @@ func fromVeles[S veles.Secret](validator veles.Validator[S], name string, versio
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{p.initFunc}
+		result[p.name] = []InitFn{noCFG(p.initFunc)}
 	}
 	return result
 }

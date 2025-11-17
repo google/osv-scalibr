@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
@@ -129,10 +130,11 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/vapid"
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func() filesystem.Extractor
+type InitFn func(cfg *cpb.PluginConfig) filesystem.Extractor
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
@@ -142,143 +144,143 @@ var (
 	// Language extractors.
 
 	// CppSource extractors for C++.
-	CppSource = InitMap{conanlock.Name: {conanlock.New}}
+	CppSource = InitMap{conanlock.Name: {noCFG(conanlock.New)}}
 	// JavaSource extractors for Java.
 	JavaSource = InitMap{
-		gradlelockfile.Name:                {gradlelockfile.New},
-		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
+		gradlelockfile.Name:                {noCFG(gradlelockfile.New)},
+		gradleverificationmetadataxml.Name: {noCFG(gradleverificationmetadataxml.New)},
 		// pom.xml extraction for environments with and without network access.
-		pomxml.Name:    {pomxml.New},
-		pomxmlnet.Name: {pomxmlnet.NewDefault},
+		pomxml.Name:    {noCFG(pomxml.New)},
+		pomxmlnet.Name: {noCFG(pomxmlnet.NewDefault)},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
-		javaarchive.Name: {javaarchive.NewDefault},
+		javaarchive.Name: {noCFG(javaarchive.NewDefault)},
 	}
 	// JavascriptSource extractors for Javascript.
 	JavascriptSource = InitMap{
-		packagejson.Name:     {packagejson.NewDefault},
-		packagelockjson.Name: {packagelockjson.NewDefault},
-		pnpmlock.Name:        {pnpmlock.New},
-		yarnlock.Name:        {yarnlock.New},
-		bunlock.Name:         {bunlock.New},
+		packagejson.Name:     {noCFG(packagejson.NewDefault)},
+		packagelockjson.Name: {noCFG(packagelockjson.NewDefault)},
+		pnpmlock.Name:        {noCFG(pnpmlock.New)},
+		yarnlock.Name:        {noCFG(yarnlock.New)},
+		bunlock.Name:         {noCFG(bunlock.New)},
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {packagejson.NewDefault},
+		packagejson.Name: {noCFG(packagejson.NewDefault)},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {requirements.NewDefault},
-		setup.Name:        {setup.NewDefault},
-		pipfilelock.Name:  {pipfilelock.New},
-		pdmlock.Name:      {pdmlock.New},
-		poetrylock.Name:   {poetrylock.New},
-		pylock.Name:       {pylock.New},
-		condameta.Name:    {condameta.NewDefault},
-		uvlock.Name:       {uvlock.New},
+		requirements.Name: {noCFG(requirements.NewDefault)},
+		setup.Name:        {noCFG(setup.NewDefault)},
+		pipfilelock.Name:  {noCFG(pipfilelock.New)},
+		pdmlock.Name:      {noCFG(pdmlock.New)},
+		poetrylock.Name:   {noCFG(poetrylock.New)},
+		pylock.Name:       {noCFG(pylock.New)},
+		condameta.Name:    {noCFG(condameta.NewDefault)},
+		uvlock.Name:       {noCFG(uvlock.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
-		wheelegg.Name: {wheelegg.NewDefault},
+		wheelegg.Name: {noCFG(wheelegg.NewDefault)},
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name: {gomod.New},
+		gomod.Name: {noCFG(gomod.New)},
 	}
 	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
-		gobinary.Name: {gobinary.NewDefault},
+		gobinary.Name: {gobinary.New},
 	}
 	// DartSource extractors for Dart.
-	DartSource = InitMap{pubspec.Name: {pubspec.New}}
+	DartSource = InitMap{pubspec.Name: {noCFG(pubspec.New)}}
 	// ErlangSource extractors for Erlang.
-	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
+	ErlangSource = InitMap{mixlock.Name: {noCFG(mixlock.New)}}
 	// NimSource extractors for Nim.
-	NimSource = InitMap{nimble.Name: {nimble.New}}
+	NimSource = InitMap{nimble.Name: {noCFG(nimble.New)}}
 	// LuaSource extractors for Lua.
-	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
+	LuaSource = InitMap{luarocks.Name: {noCFG(luarocks.New)}}
 	// ElixirSource extractors for Elixir.
-	ElixirSource = InitMap{elixir.Name: {elixir.NewDefault}}
+	ElixirSource = InitMap{elixir.Name: {noCFG(elixir.NewDefault)}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {stacklock.NewDefault},
-		cabal.Name:     {cabal.NewDefault},
+		stacklock.Name: {noCFG(stacklock.NewDefault)},
+		cabal.Name:     {noCFG(cabal.NewDefault)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {renvlock.New}}
+	RSource = InitMap{renvlock.Name: {noCFG(renvlock.New)}}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
-		gemspec.Name:     {gemspec.NewDefault},
-		gemfilelock.Name: {gemfilelock.New},
+		gemspec.Name:     {noCFG(gemspec.NewDefault)},
+		gemfilelock.Name: {noCFG(gemfilelock.New)},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
-		cargolock.Name: {cargolock.New},
-		cargotoml.Name: {cargotoml.New},
+		cargolock.Name: {noCFG(cargolock.New)},
+		cargotoml.Name: {noCFG(cargotoml.New)},
 	}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
-		cargoauditable.Name: {cargoauditable.NewDefault},
+		cargoauditable.Name: {noCFG(cargoauditable.NewDefault)},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
-		cdx.Name:  {cdx.New},
-		spdx.Name: {spdx.New},
+		cdx.Name:  {noCFG(cdx.New)},
+		spdx.Name: {noCFG(spdx.New)},
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
-		depsjson.Name:         {depsjson.NewDefault},
-		packagesconfig.Name:   {packagesconfig.NewDefault},
-		packageslockjson.Name: {packageslockjson.NewDefault},
+		depsjson.Name:         {noCFG(depsjson.NewDefault)},
+		packagesconfig.Name:   {noCFG(packagesconfig.NewDefault)},
+		packageslockjson.Name: {noCFG(packageslockjson.NewDefault)},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
-		dotnetpe.Name: {dotnetpe.NewDefault},
+		dotnetpe.Name: {noCFG(dotnetpe.NewDefault)},
 	}
 	// PHPSource extractors for PHP Source extractors.
-	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
+	PHPSource = InitMap{composerlock.Name: {noCFG(composerlock.New)}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
-		packageresolved.Name: {packageresolved.NewDefault},
-		podfilelock.Name:     {podfilelock.NewDefault},
+		packageresolved.Name: {noCFG(packageresolved.NewDefault)},
+		podfilelock.Name:     {noCFG(podfilelock.NewDefault)},
 	}
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {containerd.NewDefault},
-		k8simage.Name:           {k8simage.NewDefault},
-		podman.Name:             {podman.NewDefault},
-		dockerbaseimage.Name:    {dockerbaseimage.NewDefault},
-		dockercomposeimage.Name: {dockercomposeimage.NewDefault},
+		containerd.Name:         {noCFG(containerd.NewDefault)},
+		k8simage.Name:           {noCFG(k8simage.NewDefault)},
+		podman.Name:             {noCFG(podman.NewDefault)},
+		dockerbaseimage.Name:    {noCFG(dockerbaseimage.NewDefault)},
+		dockercomposeimage.Name: {noCFG(dockercomposeimage.NewDefault)},
 	}
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {dpkg.NewDefault},
-		apk.Name:      {apk.NewDefault},
-		rpm.Name:      {rpm.NewDefault},
-		cos.Name:      {cos.NewDefault},
-		snap.Name:     {snap.NewDefault},
-		nix.Name:      {nix.New},
-		module.Name:   {module.NewDefault},
-		vmlinuz.Name:  {vmlinuz.NewDefault},
-		pacman.Name:   {pacman.NewDefault},
-		portage.Name:  {portage.NewDefault},
-		flatpak.Name:  {flatpak.NewDefault},
-		homebrew.Name: {homebrew.New},
-		macapps.Name:  {macapps.NewDefault},
-		macports.Name: {macports.New},
-		winget.Name:   {winget.NewDefault},
+		dpkg.Name:     {noCFG(dpkg.NewDefault)},
+		apk.Name:      {noCFG(apk.NewDefault)},
+		rpm.Name:      {noCFG(rpm.NewDefault)},
+		cos.Name:      {noCFG(cos.NewDefault)},
+		snap.Name:     {noCFG(snap.NewDefault)},
+		nix.Name:      {noCFG(nix.New)},
+		module.Name:   {noCFG(module.NewDefault)},
+		vmlinuz.Name:  {noCFG(vmlinuz.NewDefault)},
+		pacman.Name:   {noCFG(pacman.NewDefault)},
+		portage.Name:  {noCFG(portage.NewDefault)},
+		flatpak.Name:  {noCFG(flatpak.NewDefault)},
+		homebrew.Name: {noCFG(homebrew.New)},
+		macapps.Name:  {noCFG(macapps.NewDefault)},
+		macports.Name: {noCFG(macports.New)},
+		winget.Name:   {noCFG(winget.NewDefault)},
 	}
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		mysqlmylogin.Name:            {mysqlmylogin.New},
-		pgpass.Name:                  {pgpass.New},
-		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
-		mariadb.Name:                 {mariadb.NewDefault},
+		mysqlmylogin.Name:            {noCFG(mysqlmylogin.New)},
+		pgpass.Name:                  {noCFG(pgpass.New)},
+		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
+		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -326,6 +328,7 @@ var (
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
+		{vapid.NewDetector(), "secrets/vapidkey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
@@ -336,23 +339,23 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {vscodeextensions.New},
-		wordpressplugins.Name: {wordpressplugins.NewDefault},
-		chromeextensions.Name: {chromeextensions.New},
+		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
+		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
+		chromeextensions.Name: {noCFG(chromeextensions.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name:        {asdf.New},
-		nvm.Name:         {nvm.New},
-		nodeversion.Name: {nodeversion.New},
+		asdf.Name:        {noCFG(asdf.New)},
+		nvm.Name:         {noCFG(nvm.New)},
+		nodeversion.Name: {noCFG(nodeversion.New)},
 	}
 
 	// EmbeddedFS extractors.
 	EmbeddedFS = InitMap{
 		archive.Name: {archive.New},
 		vdi.Name:     {vdi.New},
-		vmdk.Name:    {vmdk.NewDefault},
+		vmdk.Name:    {vmdk.New},
 		ova.Name:     {ova.New},
 	}
 
@@ -465,12 +468,18 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
+// Wraps initer functions that don't take any config value to initer functions that do.
+// TODO(b/400910349): Remove once all plugins take config values.
+func noCFG(f func() filesystem.Extractor) InitFn {
+	return func(_ *cpb.PluginConfig) filesystem.Extractor { return f() }
+}
+
 // ExtractorsFromName returns a list of extractors from a name.
-func ExtractorsFromName(name string) ([]filesystem.Extractor, error) {
+func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
 		result := []filesystem.Extractor{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			result = append(result, initer(cfg))
 		}
 		return result, nil
 	}
@@ -486,7 +495,7 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
+		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
 	}
 	return result
 }

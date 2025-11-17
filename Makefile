@@ -6,7 +6,7 @@ scalibr:
 	CGO_ENABLED=1 go build binary/scalibr/scalibr.go
 
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1 run ./...
 
 lint-plugger:
 	go run linter/plugger/main.go \

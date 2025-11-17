@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // OS is the OS the scanner is running on, or a specific OS type a Plugin needs to be run on.
@@ -169,6 +171,18 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 		}
 	}
 	return result
+}
+
+// FindConfig finds a plugin-specific config in the oveall config proto
+// using the specified getter function.
+func FindConfig[T any](cfg *cpb.PluginConfig, getter func(c *cpb.PluginSpecificConfig) *T) *T {
+	for _, specific := range cfg.PluginSpecific {
+		got := getter(specific)
+		if got != nil {
+			return got
+		}
+	}
+	return nil
 }
 
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.

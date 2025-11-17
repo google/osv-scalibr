@@ -32,6 +32,7 @@ import (
 	"deps.dev/util/resolve"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	pythonlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/python"
@@ -50,7 +51,6 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/tui/components"
 	"github.com/google/osv-scalibr/guidedremediation/internal/tui/model"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
@@ -70,6 +70,9 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	)
 	if !hasManifest && !hasLockfile {
 		return result.Result{}, errors.New("no manifest or lockfile provided")
+	}
+	if opts.VulnEnricher == nil || !strings.HasPrefix(opts.VulnEnricher.Name(), "vulnmatch/") {
+		return result.Result{}, errors.New("vulnmatch/ enricher is required for guided remediation")
 	}
 
 	if hasManifest {
@@ -125,6 +128,9 @@ type VulnDetailsRenderer components.DetailsRenderer
 // FixVulnsInteractive launches the guided remediation interactive TUI.
 // detailsRenderer is used to render the markdown details of vulnerabilities, if nil, a fallback renderer is used.
 func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetailsRenderer) error {
+	if opts.VulnEnricher == nil || !strings.HasPrefix(opts.VulnEnricher.Name(), "vulnmatch/") {
+		return errors.New("vulnmatch/ enricher is required for guided remediation")
+	}
 	// Explicitly specifying vulns by cli flag doesn't really make sense in interactive mode.
 	opts.ExplicitVulns = []string{}
 	var manifestRW manifest.ReadWriter
@@ -215,7 +221,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 }
 
 func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
-	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) (common.PatchResult, error)
+	var computePatches func(context.Context, resolve.Client, enricher.Enricher, *remediation.ResolvedManifest, *options.RemediationOptions) (common.PatchResult, error)
 	switch s {
 	case strategy.StrategyOverride:
 		computePatches = override.ComputePatches
@@ -241,7 +247,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		opts.DepCachePopulator.PopulateCache(ctx, opts.ResolveClient, m.Requirements(), opts.Manifest)
 	}
 
-	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
+	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.VulnEnricher, m, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving manifest: %w", err)
 	}
@@ -262,7 +268,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		}
 	}
 
-	allPatchResults, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	allPatchResults, err := computePatches(ctx, opts.ResolveClient, opts.VulnEnricher, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
@@ -302,7 +308,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
-	resolved, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	resolved, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.VulnEnricher, g, nil, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving lockfile vulnerabilities: %w", err)
 	}
@@ -529,7 +535,7 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 	if err != nil {
 		return err
 	}
-	resolvedLockf, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	resolvedLockf, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.VulnEnricher, g, nil, &opts.RemediationOptions)
 	if err != nil {
 		return err
 	}
@@ -591,7 +597,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 		return fmt.Errorf("failed removing old node_modules/: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only")
+	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--ignore-scripts")
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
@@ -603,7 +609,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	// Guided remediation does not currently support peer dependencies.
 	// Try with `--legacy-peer-deps` in case the previous install errored from peer dependencies.
 	log.Warnf("npm install failed. Trying again with `--legacy-peer-deps`")
-	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps", "--ignore-scripts")
 	cmd.Dir = dir
 	cmdOut := &strings.Builder{}
 	cmd.Stdout = cmdOut

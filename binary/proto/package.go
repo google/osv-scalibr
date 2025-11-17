@@ -15,6 +15,7 @@
 package proto
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/docker/docker/api/types/container"
@@ -41,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/uuid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -54,16 +56,12 @@ type MetadataProtoSetter interface {
 // --- Struct to Proto
 
 // PackageToProto converts a Package struct to a Package proto.
-func PackageToProto(pkg *extractor.Package) *spb.Package {
+func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	if pkg == nil {
-		return nil
+		return nil, nil
 	}
 
 	p := converter.ToPURL(pkg)
-	firstPluginName := ""
-	if len(pkg.Plugins) > 0 {
-		firstPluginName = pkg.Plugins[0]
-	}
 
 	var exps []*spb.PackageExploitabilitySignal
 	for _, exp := range pkg.ExploitabilitySignals {
@@ -75,11 +73,6 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		exps = append(exps, expProto)
 	}
 
-	var annotations []spb.Package_AnnotationEnum
-	for _, a := range pkg.AnnotationsDeprecated {
-		annotations = append(annotations, AnnotationToProto(a))
-	}
-
 	var cii *spb.Package_ContainerImageMetadataIndexes
 
 	if pkg.LayerMetadata != nil && pkg.LayerMetadata.ParentContainer != nil {
@@ -89,24 +82,26 @@ func PackageToProto(pkg *extractor.Package) *spb.Package {
 		}
 	}
 
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID for %q package %q version %q: %w", pkg.Ecosystem().String(), pkg.Name, pkg.Version, err)
+	}
+
 	packageProto := &spb.Package{
-		Name:       pkg.Name,
-		Version:    pkg.Version,
-		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:       purlToProto(p),
-		Ecosystem:  pkg.Ecosystem().String(),
-		Locations:  pkg.Locations,
-		// TODO(b/400910349): Stop setting the deprecated fields
-		// once integrators no longer read them.
-		ExtractorDeprecated:           firstPluginName,
+		Id:                            id.String(),
+		Name:                          pkg.Name,
+		Version:                       pkg.Version,
+		SourceCode:                    sourceCodeIdentifierToProto(pkg.SourceCode),
+		Purl:                          purlToProto(p),
+		Ecosystem:                     pkg.Ecosystem().String(),
+		Locations:                     pkg.Locations,
 		Plugins:                       pkg.Plugins,
-		AnnotationsDeprecated:         annotations,
 		ExploitabilitySignals:         exps,
 		ContainerImageMetadataIndexes: cii,
 		Licenses:                      pkg.Licenses,
 	}
 	setProtoMetadata(pkg.Metadata, packageProto)
-	return packageProto
+	return packageProto, nil
 }
 
 func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceCodeIdentifier {
@@ -348,9 +343,9 @@ func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
 // --- Proto to Struct
 
 // PackageToStruct converts a Package proto to a Package struct.
-func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
+func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 	if pkgProto == nil {
-		return nil
+		return nil, nil
 	}
 
 	var locations []string
@@ -372,12 +367,6 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		exps = append(exps, expStruct)
 	}
 
-	var annotations []extractor.Annotation
-	//nolint:staticcheck
-	for _, a := range pkgProto.GetAnnotationsDeprecated() {
-		annotations = append(annotations, AnnotationToStruct(a))
-	}
-
 	pkg := &extractor.Package{
 		Name:                  pkgProto.GetName(),
 		Version:               pkgProto.GetVersion(),
@@ -385,12 +374,11 @@ func PackageToStruct(pkgProto *spb.Package) *extractor.Package {
 		Locations:             locations,
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
-		AnnotationsDeprecated: annotations,
 		ExploitabilitySignals: exps,
 		Metadata:              metadataToStruct(pkgProto),
 		Licenses:              pkgProto.GetLicenses(),
 	}
-	return pkg
+	return pkg, nil
 }
 
 func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.SourceCodeIdentifier {

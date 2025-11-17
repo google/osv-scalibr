@@ -22,9 +22,9 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/internal/mavenutil"
@@ -45,13 +45,13 @@ type ResolvedManifest struct {
 }
 
 // ResolveManifest resolves and find vulnerabilities in a manifest.
-func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, m manifest.Manifest, opts *options.RemediationOptions) (*ResolvedManifest, error) {
+func ResolveManifest(ctx context.Context, cl resolve.Client, ve enricher.Enricher, m manifest.Manifest, opts *options.RemediationOptions) (*ResolvedManifest, error) {
 	g, err := resolution.Resolve(ctx, cl, m, opts.ResolutionOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	resGraph, err := ResolveGraphVulns(ctx, cl, vm, g, m.Groups(), opts)
+	resGraph, err := ResolveGraphVulns(ctx, cl, ve, g, m.Groups(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,8 @@ func ResolveManifest(ctx context.Context, cl resolve.Client, vm matcher.Vulnerab
 }
 
 // ResolveGraphVulns finds the vulnerabilities in a graph.
-func ResolveGraphVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, g *resolve.Graph, depGroups map[manifest.RequirementKey][]string, opts *options.RemediationOptions) (ResolvedGraph, error) {
-	allVulns, err := resolution.FindVulnerabilities(ctx, vm, depGroups, g)
+func ResolveGraphVulns(ctx context.Context, cl resolve.Client, ve enricher.Enricher, g *resolve.Graph, depGroups map[manifest.RequirementKey][]string, opts *options.RemediationOptions) (ResolvedGraph, error) {
+	allVulns, err := resolution.FindVulnerabilities(ctx, ve, depGroups, g)
 	if err != nil {
 		return ResolvedGraph{}, err
 	}

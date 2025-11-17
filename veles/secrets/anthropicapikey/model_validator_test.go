@@ -32,9 +32,10 @@ func mockAnthropicModelServer(t *testing.T, expectedKey string, statusCode int, 
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		modelsEndpoint := anthropicapikey.AnthropicModelsEndpoint
 		// Check if it's a GET request to the models endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/models" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/models", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != modelsEndpoint {
+			t.Errorf("unexpected request: %s %s, expected: GET %s", r.Method, r.URL.Path, modelsEndpoint)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -138,10 +139,9 @@ func TestModelValidator(t *testing.T) {
 			defer server.Close()
 
 			// Create validator with mock client and server URL
-			validator := anthropicapikey.NewModelValidator(
-				anthropicapikey.WithModelHTTPClient(server.Client()),
-				anthropicapikey.WithModelAPIURL(server.URL),
-			)
+			validator := anthropicapikey.NewModelValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + anthropicapikey.AnthropicModelsEndpoint
 
 			// Create test key
 			key := anthropicapikey.ModelAPIKey{Key: modelValidatorTestKey}
@@ -165,19 +165,5 @@ func TestModelValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestModelValidator_EmptyKey(t *testing.T) {
-	validator := anthropicapikey.NewModelValidator()
-	key := anthropicapikey.ModelAPIKey{Key: ""}
-
-	got, err := validator.Validate(t.Context(), key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

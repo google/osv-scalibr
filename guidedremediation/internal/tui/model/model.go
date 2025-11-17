@@ -91,10 +91,7 @@ func (m Model) setTermSize(w, h int) Model {
 	m.termHeight = h
 
 	// The internal rendering space of the views occupy a percentage of the terminal width
-	viewWidth := int(float64(w) * components.ViewWidthPct)
-	if viewWidth < components.ViewMinWidth {
-		viewWidth = components.ViewMinWidth
-	}
+	viewWidth := max(int(float64(w)*components.ViewWidthPct), components.ViewMinWidth)
 	// The internal height is constant
 	viewHeight := components.ViewMinHeight
 
