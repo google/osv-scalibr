@@ -27,6 +27,7 @@ import (
 type Match struct {
 	Value    string
 	Position int
+	Metadata any
 }
 
 func (m Match) String() string {

@@ -32,7 +32,10 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 
 	packages := make([]*spb.Package, 0, len(inv.Packages))
 	for _, p := range inv.Packages {
-		p := PackageToProto(p)
+		p, err := PackageToProto(p)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, p)
 	}
 
@@ -79,7 +82,11 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 
 	var packages []*extractor.Package
 	for _, pProto := range invProto.GetPackages() {
-		p := PackageToStruct(pProto)
+		p, err := PackageToStruct(pProto)
+		if err != nil {
+			log.Errorf("Failed to convert Package to struct: %v", err)
+			continue
+		}
 		packages = append(packages, p)
 	}
 

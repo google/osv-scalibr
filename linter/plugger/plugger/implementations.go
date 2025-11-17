@@ -112,8 +112,7 @@ func doesImplement(named, iface *types.Named) bool {
 		for i := range iface.TypeParams().Len() {
 			// For simplicity, try to infer from the first method with enough parameters
 			inferred := false
-			for j := range named.NumMethods() {
-				m := named.Method(j)
+			for m := range named.Methods() {
 				sig, ok := m.Type().(*types.Signature)
 				if !ok || sig.Params().Len() <= i {
 					continue

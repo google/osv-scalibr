@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package depsdev contains constants and mappings for the deps.dev API.
+// Package depsdev contains constants and mappings for the deps.dev v3 API.
 package depsdev
 
 import (

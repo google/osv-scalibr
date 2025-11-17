@@ -65,6 +65,8 @@ type Package struct {
 	Metadata any
 	// Licenses information of this package
 	Licenses []string
+	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)
+	Deprecated bool
 }
 
 // PURL returns the Package URL of this package.

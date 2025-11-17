@@ -76,6 +76,8 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  // Unique identifier for the package.
+  string id = 60;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -720,7 +722,8 @@ message SecretData {
     MariaDBCredentials maria_db_credentials = 46;
     GCSHmacKey gcs_hmac_key = 47;
     MysqlMyloginSection mysql_mylogin_section = 48;
-    AwsAccessKeyCredentials aws_access_key_credentials = 49;
+    VapidKey vapid_key = 49;
+    AwsAccessKeyCredentials aws_access_key_credentials = 50;
   }
 
   message GCPSAK {
@@ -950,6 +953,11 @@ message SecretData {
     string host = 4;
     string port = 5;
     string socket = 6;
+  }
+
+  message VapidKey {
+    string private_b64 = 1;
+    string public_b64 = 2;
   }
 
   message OnePasswordConnectToken {

@@ -23,27 +23,71 @@ import (
 	"strings"
 	"testing"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	extractor := vdi.New()
 	tests := []struct {
-		path string
-		want bool
+		desc                  string
+		path                  string
+		fileSize              int64
+		maxFileSize           int64
+		pluginSpecificMaxSize int64
+		want                  bool
 	}{
-		{"testdata/valid.vdi", true},
-		{"testdata/VALID.vdi", true},
-		{"testdata/invalid.vdi", true},
-		{"testdata/document.txt", false},
-		{"testdata/noextension", false},
+		{
+			desc: "vdi_lowercase",
+			path: "testdata/disk.vdi",
+			want: true,
+		},
+		{
+			desc: "vdi_uppercase",
+			path: "testdata/DISK.VDI",
+			want: true,
+		},
+		{
+			desc: "not_vdi",
+			path: "testdata/document.txt",
+			want: false,
+		},
+		{
+			desc: "no_extension",
+			path: "testdata/noextension",
+			want: false,
+		},
+		{
+			desc:                  "override_global_size_below_limit",
+			path:                  "disk.vdi",
+			fileSize:              1001,
+			maxFileSize:           1000,
+			pluginSpecificMaxSize: 1001,
+			want:                  true,
+		},
+		{
+			desc:                  "override_global_size_above_limit",
+			path:                  "disk.vdi",
+			fileSize:              1001,
+			maxFileSize:           1001,
+			pluginSpecificMaxSize: 1000,
+			want:                  false,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			if got := extractor.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.want {
+		t.Run(tt.desc, func(t *testing.T) {
+			extractor := vdi.New(&cpb.PluginConfig{
+				MaxFileSizeBytes: tt.maxFileSize,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Vdi{Vdi: &cpb.VDIConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
+				},
+			})
+			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileSize: tt.fileSize,
+			})); got != tt.want {
 				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
@@ -51,7 +95,7 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidVDI(t *testing.T) {
-	extractor := vdi.New()
+	extractor := vdi.New(&cpb.PluginConfig{})
 
 	tests := []struct {
 		name string
@@ -166,7 +210,7 @@ func TestExtractValidVDI(t *testing.T) {
 }
 
 func TestExtractInvalidVDI(t *testing.T) {
-	extractor := vdi.New()
+	extractor := vdi.New(&cpb.PluginConfig{})
 	path := filepath.FromSlash("testdata/invalid.vdi")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -195,7 +239,7 @@ func TestExtractInvalidVDI(t *testing.T) {
 }
 
 func TestExtractNonExistentVDI(t *testing.T) {
-	extractor := vdi.New()
+	extractor := vdi.New(&cpb.PluginConfig{})
 	path := filepath.FromSlash("testdata/nonexistent.vdi")
 	input := &filesystem.ScanInput{
 		Path:   path,

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -44,9 +45,13 @@ func TestScan(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.Detector{
-		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
-	}
+	det := binary.New(&cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{
+			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
+				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
+			}}},
+		},
+	})
 	px := setupPackageIndex([]string{binaryName})
 	findings, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err != nil {
@@ -114,9 +119,13 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.Detector{
-		OfflineVulnDBPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
-	}
+	det := binary.New(&cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{
+			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
+				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
+			}}},
+		},
+	})
 	px := setupPackageIndex([]string{"nonexistent", binaryName})
 	result, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err == nil {

@@ -53,6 +53,7 @@ import (
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -209,6 +210,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return mariadbCredentialsToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
+	case vapid.Key:
+		return vapidKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -924,6 +927,9 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			AccessID: creds.AccessId,
 			Secret:   creds.Secret,
 		}, nil
+	case *spb.SecretData_VapidKey_:
+		t := s.GetVapidKey()
+		return vapid.Key{PrivateB64: t.PrivateB64, PublicB64: t.PublicB64}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1160,6 +1166,17 @@ func mariadbCredentialsToProto(t mariadb.Credentials) *spb.SecretData {
 				User:     t.User,
 				Password: t.Password,
 				Section:  t.Section,
+			},
+		},
+	}
+}
+
+func vapidKeyToProto(t vapid.Key) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_VapidKey_{
+			VapidKey: &spb.SecretData_VapidKey{
+				PrivateB64: t.PrivateB64,
+				PublicB64:  t.PublicB64,
 			},
 		},
 	}

@@ -85,8 +85,16 @@ func NewEnricher(client resolve.Client) *Enricher {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := groupPackages(inv.Packages)
 	for path, pkgMap := range pkgGroups {
-		list := make([]*extractor.Package, 0, len(pkgMap))
+		packages := make([]packageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
+			packages = append(packages, indexPkg)
+		}
+		slices.SortFunc(packages, func(a, b packageWithIndex) int {
+			return a.index - b.index
+		})
+
+		list := make([]*extractor.Package, 0, len(packages))
+		for _, indexPkg := range packages {
 			list = append(list, indexPkg.pkg)
 		}
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {

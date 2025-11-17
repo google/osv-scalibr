@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -35,11 +36,21 @@ const (
 )
 
 // Extractor implements the filesystem.Extractor interface for ova.
-type Extractor struct{}
+type Extractor struct {
+	// maxFileSizeBytes is the maximum size of an archive file that can be traversed.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored.
+	maxFileSizeBytes int64
+}
 
 // New returns a new ova extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OVAConfig { return c.GetOva() })
+	if specific != nil && specific.MaxFileSizeBytes > 0 {
+		maxSize = specific.MaxFileSizeBytes
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}
 }
 
 // Name returns the name of the extractor.
@@ -60,7 +71,20 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 // FileRequired checks if the file is a .ova file based on its extension.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	return strings.HasSuffix(strings.ToLower(path), ".ova")
+	if !strings.HasSuffix(strings.ToLower(path), ".ova") {
+		return false
+	}
+
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		return false
+	}
+
+	return true
 }
 
 // Extract returns an Inventory with embedded filesystems which contains a mount function for the filesystem in the .ova file.

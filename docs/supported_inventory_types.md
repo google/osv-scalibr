@@ -152,6 +152,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
+| Vapid keys                                  | `secrets/vapidkey`                  |
 
 ### Container inventory
 
@@ -228,3 +229,6 @@ pp| Adds VEX statements for language packages already found by the RPM OS extrac
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
+| Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
+| Adds license data to software packages                                     | `license/depsdev`                   |
+| Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |
