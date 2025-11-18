@@ -54,6 +54,16 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	}, m.err
 }
 
+// mustParse is used for creating URLs in a "single-value" context.
+// It panics if the URL is invalid.
+func mustParse(s string) *url.URL {
+	u, err := url.Parse(s)
+	if err != nil {
+		panic("url.Parse: invalid URL string: " + s)
+	}
+	return u
+}
+
 func TestValidate(t *testing.T) {
 	testSecret := "TEST-SECRET"
 	testURLStr := "https://test"
@@ -206,6 +216,56 @@ func TestValidate(t *testing.T) {
 				t:              t,
 			},
 			want: veles.ValidationInvalid,
+		},
+		{
+			desc: "valid_response_with_endpointfunc",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				EndpointFunc: func(s velestest.FakeStringSecret) string {
+					return testURLStr + "?token=" + s.Value
+				},
+				HTTPMethod:         http.MethodGet,
+				ValidResponseCodes: []int{http.StatusOK},
+			},
+			secret: testSecret,
+			roundTripper: &mockRoundTripper{
+				want: &http.Request{
+					Method: http.MethodGet,
+					URL:    mustParse(testURLStr + "?token=" + testSecret),
+					Host:   testHost,
+					Header: http.Header{},
+				},
+				respStatusCode: http.StatusOK,
+				t:              t,
+			},
+			want: veles.ValidationValid,
+		},
+		{
+			desc: "endpoint_and_endpointfunc_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint: testURLStr,
+				EndpointFunc: func(s velestest.FakeStringSecret) string {
+					return testURLStr
+				},
+				HTTPMethod: http.MethodGet,
+			},
+			secret: testSecret,
+			roundTripper: &mockRoundTripper{
+				t: t,
+			},
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "no_endpoint_or_endpointfunc_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				HTTPMethod: http.MethodGet,
+			},
+			secret: testSecret,
+			roundTripper: &mockRoundTripper{
+				t: t,
+			},
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
