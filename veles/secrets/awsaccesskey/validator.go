@@ -45,26 +45,19 @@ type Validator struct {
 	signer HTTPAwsSignerV4
 }
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithHTTPClient configures the http.Client that the Validator uses.
-func WithHTTPClient(cli *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.client = cli
-	}
+// SetHTTPClient configures the http.Client that the Validator uses.
+func (v *Validator) SetHTTPClient(cli *http.Client) {
+	v.client = cli
 }
 
-// WithSigner configures HTTPSignerV4 that the Validator uses.
-func WithSigner(signer HTTPAwsSignerV4) ValidatorOption {
-	return func(v *Validator) {
-		v.signer = signer
-	}
+// SetSigner configures HTTPSignerV4 that the Validator uses.
+func (v *Validator) SetSigner(signer HTTPAwsSignerV4) {
+	v.signer = signer
 }
 
 // NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
+func NewValidator() *Validator {
+	return &Validator{
 		client: http.DefaultClient,
 		signer: awssignerv4.New(awssignerv4.Config{
 			Service: "sts", Region: "us-east-1",
@@ -73,10 +66,6 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 			},
 		}),
 	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
 }
 
 // Validate checks whether the given AWS access key and secret are valid

@@ -142,10 +142,9 @@ func TestValidator(t *testing.T) {
 				Transport: &mockRoundTripper{url: srv.URL},
 			}
 
-			validator := gcshmackey.NewValidator(
-				gcshmackey.WithHTTPClient(client),
-				gcshmackey.WithSigner(fakeSigner{}),
-			)
+			validator := gcshmackey.NewValidator()
+			validator.SetHTTPClient(client)
+			validator.SetSigner(fakeSigner{})
 
 			got, err := validator.Validate(t.Context(), tc.key)
 			if err != nil {

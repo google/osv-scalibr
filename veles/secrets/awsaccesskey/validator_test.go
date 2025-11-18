@@ -132,10 +132,9 @@ func TestValidator(t *testing.T) {
 				Transport: &mockRoundTripper{url: srv.URL},
 			}
 
-			validator := awsaccesskey.NewValidator(
-				awsaccesskey.WithHTTPClient(client),
-				awsaccesskey.WithSigner(fakeSigner{}),
-			)
+			validator := awsaccesskey.NewValidator()
+			validator.SetHTTPClient(client)
+			validator.SetSigner(fakeSigner{})
 
 			got, err := validator.Validate(t.Context(), tc.key)
 			if err != nil {
