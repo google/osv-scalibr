@@ -115,8 +115,6 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 	}
 	defer rsp.Body.Close()
 
-	log.Println("body", string(body))
-
 	type errorResponse struct {
 		Error struct {
 			Code string `xml:"Code"`
