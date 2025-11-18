@@ -100,7 +100,6 @@ const (
 )
 
 func TestValidator(t *testing.T) {
-	// Set up fake "GCP metadata" HTTP server.
 	cases := []struct {
 		name   string
 		key    gcshmackey.HMACKey

@@ -19,7 +19,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -102,18 +101,13 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 
 	rsp, err := v.client.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("GET failed: %w", err)
+		return veles.ValidationFailed, fmt.Errorf("POST failed: %w", err)
 	}
+	defer rsp.Body.Close()
 
 	if rsp.StatusCode == http.StatusOK {
 		return veles.ValidationValid, nil
 	}
-
-	body, err := io.ReadAll(rsp.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
-	}
-	defer rsp.Body.Close()
 
 	type errorResponse struct {
 		Error struct {
@@ -122,11 +116,10 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 	}
 
 	errResp := errorResponse{}
-	if err := xml.Unmarshal(body, &errResp); err != nil {
+	if err := xml.NewDecoder(rsp.Body).Decode(&errResp); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
 	}
 
-	log.Println("errResp", errResp)
 	switch errResp.Error.Code {
 	case CodeSignatureDoesNotMatch:
 		// Signature mismatch => credentials invalid

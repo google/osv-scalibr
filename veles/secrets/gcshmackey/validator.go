@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/osv-scalibr/veles"
@@ -96,24 +95,19 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("GET failed: %w", err)
 	}
+	defer rsp.Body.Close()
 
 	// the credentials are valid and the resource is accessible
 	if rsp.StatusCode == http.StatusOK {
 		return veles.ValidationValid, nil
 	}
 
-	body, err := io.ReadAll(rsp.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
-	}
-	defer rsp.Body.Close()
-
 	type errorResponse struct {
 		Code string `xml:"Code"`
 	}
 
 	errResp := errorResponse{}
-	if err := xml.Unmarshal(body, &errResp); err != nil {
+	if err := xml.NewDecoder(rsp.Body).Decode(&errResp); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
 	}
 
