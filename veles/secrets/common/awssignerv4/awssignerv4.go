@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package signerv4 provides an implementation of AWS Signature Version 4 signing.
+// Package awssignerv4 provides an implementation of AWS Signature Version 4 signing.
 // It allows signing HTTP requests using AWS credentials
-package signerv4
+package awssignerv4
 
 import (
 	"bytes"
@@ -67,7 +67,7 @@ func New(cfg Config) *Signer {
 //
 //	s := signer.Signer{Service: "s3", Region: "us-east-1"}
 //	req, _ := http.NewRequest("GET", "https://my-bucket.s3.amazonaws.com/my-object", nil)
-//	err := s.Sign(req, "AKIAEXAMPLE", " ")
+//	err := s.Sign(req, "AKIAEXAMPLE", "secretkey123")
 func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 	now := s.Now()
 	amzDate := now.Format("20060102T150405Z")

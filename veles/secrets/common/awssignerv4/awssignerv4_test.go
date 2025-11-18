@@ -14,7 +14,7 @@
 
 // Package signerv4 provides an implementation of AWS Signature Version 4 signing.
 // It allows signing HTTP requests using AWS credentials
-package signerv4_test
+package awssignerv4_test
 
 import (
 	"io"
@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/osv-scalibr/veles/secrets/common/signerv4"
+	"github.com/google/osv-scalibr/veles/secrets/common/awssignerv4"
 )
 
 const (
@@ -101,7 +101,7 @@ func TestSign(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			s := signerv4.New(signerv4.Config{
+			s := awssignerv4.New(awssignerv4.Config{
 				Service:       tt.service,
 				Region:        "us-east-1",
 				Now:           func() time.Time { return tt.time },

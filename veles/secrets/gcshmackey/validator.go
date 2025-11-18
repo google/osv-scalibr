@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/signerv4"
+	"github.com/google/osv-scalibr/veles/secrets/common/awssignerv4"
 )
 
 const (
@@ -32,16 +32,16 @@ const (
 	CodeAccessDenied = "AccessDenied"
 )
 
-// HTTPSignerV4 defines the interface for signing HTTP requests using
+// HTTPAwsSignerV4 defines the interface for signing HTTP requests using
 // the AWS Signature Version 4 signing process.
-type HTTPSignerV4 interface {
+type HTTPAwsSignerV4 interface {
 	Sign(req *http.Request, accessKey, secretKey string) error
 }
 
 // Validator is a Veles Validator for Google Cloud Storage HMAC keys
 type Validator struct {
 	client *http.Client
-	signer HTTPSignerV4
+	signer HTTPAwsSignerV4
 }
 
 // ValidatorOption configures a Validator when creating it via NewValidator.
@@ -55,7 +55,7 @@ func WithHTTPClient(cli *http.Client) ValidatorOption {
 }
 
 // WithSigner configures HTTPSignerV4 that the Validator uses.
-func WithSigner(signer HTTPSignerV4) ValidatorOption {
+func WithSigner(signer HTTPAwsSignerV4) ValidatorOption {
 	return func(v *Validator) {
 		v.signer = signer
 	}
@@ -65,7 +65,7 @@ func WithSigner(signer HTTPSignerV4) ValidatorOption {
 func NewValidator(opts ...ValidatorOption) *Validator {
 	v := &Validator{
 		client: http.DefaultClient,
-		signer: signerv4.New(signerv4.Config{
+		signer: awssignerv4.New(awssignerv4.Config{
 			Service: "s3", Region: "auto",
 			SignedHeaders: []string{
 				"amz-sdk-invocation-id", "amz-sdk-request", "host", "x-amz-content-sha256", "x-amz-date",
