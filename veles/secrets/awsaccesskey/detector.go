@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	accessIDPattern = regexp.MustCompile(`AIKA[A-Z0-9]{16}|ASIA[A-Z0-9]{16}`)
+	accessIDPattern = regexp.MustCompile(`\b(AIKA[A-Z0-9]{16}|ASIA[A-Z0-9]{16})\b`)
 	secretPattern   = regexp.MustCompile(`\b[A-Za-z0-9+/]{40}\b`)
 )
 
