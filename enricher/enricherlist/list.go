@@ -17,6 +17,7 @@ package enricherlist
 
 import (
 	"fmt"
+	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"maps"
 	"slices"
 
@@ -130,7 +131,8 @@ var (
 
 	// Reachability enrichers.
 	Reachability = InitMap{
-		java.Name: {noCFG(java.NewDefault)},
+		java.Name:       {noCFG(java.NewDefault)},
+		govcsource.Name: {govcsource.New},
 	}
 
 	// TransitiveDependency enrichers.

@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package source provides an enricher that uses govulncheck to scan Go source code.
-package source
+// Package govcsource provides an enricher that uses govulncheck to scan Go source code.
+package govcsource
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"io"
 	"os"
 	"os/exec"
@@ -37,7 +38,7 @@ import (
 
 const (
 	// Name is the unique name of this enricher.
-	Name = "reachability/govulncheck/source"
+	Name = "reachability/govcsource"
 )
 
 var ErrNoGoToolchain = errors.New("no Go toolchain found")
@@ -66,11 +67,6 @@ func (e *Enricher) Requirements() *plugin.Capabilities {
 // RequiredPlugins returns the names of the plugins required by this enricher.
 func (e *Enricher) RequiredPlugins() []string {
 	return []string{gomod.Name}
-}
-
-// NewEnricher creates the enricher
-func NewEnricher() Enricher {
-	return Enricher{}
 }
 
 // Enrich runs govulncheck on the Go modules in the inventory.
@@ -191,6 +187,6 @@ func handleJSON(from io.Reader, to *osvHandler) error {
 }
 
 // New returns a new govulncheck source enricher.
-func New() enricher.Enricher {
+func New(_ *cpb.PluginConfig) enricher.Enricher {
 	return &Enricher{}
 }
