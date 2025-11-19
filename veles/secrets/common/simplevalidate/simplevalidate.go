@@ -18,6 +18,7 @@ package simplevalidate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,6 +34,9 @@ import (
 type Validator[S veles.Secret] struct {
 	// The API endpoint to query.
 	Endpoint string
+	// Function that constructs the endpoint for a given secret.
+	// Exactly one of Endpoint or EndpointFunc must be provided.
+	EndpointFunc func(S) string
 	// The HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
 	HTTPMethod string
 	// HTTP headers to set in the query based on the secret.
@@ -56,6 +60,15 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		v.HTTPC = http.DefaultClient
 	}
 
+	if (v.Endpoint == "" && v.EndpointFunc == nil) || (v.Endpoint != "" && v.EndpointFunc != nil) {
+		return veles.ValidationFailed, errors.New("exactly one of Endpoint or EndpointFunc must be specified")
+	}
+
+	endpoint := v.Endpoint
+	if v.EndpointFunc != nil {
+		endpoint = v.EndpointFunc(secret)
+	}
+
 	var reqBodyReader io.Reader
 	if v.Body != nil {
 		reqBody := v.Body(secret)
@@ -63,7 +76,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 			reqBodyReader = strings.NewReader(reqBody)
 		}
 	}
-	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, v.Endpoint, reqBodyReader)
+	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
 	}

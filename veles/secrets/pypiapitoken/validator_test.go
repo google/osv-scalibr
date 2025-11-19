@@ -18,7 +18,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -27,21 +26,6 @@ import (
 )
 
 const validatorTestKey = `pypi-AgEIc433aS5vcmcffDgyZDA0MzFkLWMzZjEtNDlhNy1iOWQwLfflMjE5NmNkMjhjNQACKlszLCI22UBiYzQ2Yi05YjNhhTQ5NmItYWIxMHYhMGI3MmEyOWI5MzYiXQAABiCJBI80LFFz0JvS6UIj2LzgV9N-BQnBAD2123Dyu9xs33`
-
-// mockTransport redirects requests to the test server
-type mockTransport struct {
-	testServer *httptest.Server
-}
-
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL
-	if req.URL.Host == "upload.pypi.org" {
-		testURL, _ := url.Parse(m.testServer.URL)
-		req.URL.Scheme = testURL.Scheme
-		req.URL.Host = testURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
 
 // mockPyPIServer creates a mock PyPI API server for testing
 func mockPyPIServer(t *testing.T, expectedKey string, serverResponseCode int) *httptest.Server {
@@ -60,6 +44,7 @@ func mockPyPIServer(t *testing.T, expectedKey string, serverResponseCode int) *h
 		if !strings.Contains(authHeader, expectedKey) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
+			return
 		}
 
 		// Set response
@@ -95,11 +80,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 	}
 
@@ -109,15 +96,9 @@ func TestValidator(t *testing.T) {
 			server := mockPyPIServer(t, tc.serverExpectedKey, tc.serverResponseCode)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
-			// Create a validator with a mock client
-			validator := pypiapitoken.NewValidator(
-				pypiapitoken.WithClient(client),
-			)
+			validator := pypiapitoken.NewValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/legacy/"
 
 			// Create a test key
 			key := pypiapitoken.PyPIAPIToken{Token: tc.key}
@@ -151,14 +132,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := pypiapitoken.NewValidator(
-		pypiapitoken.WithClient(client),
-	)
+	validator := pypiapitoken.NewValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/legacy/"
 
 	key := pypiapitoken.PyPIAPIToken{Token: validatorTestKey}
 
@@ -183,29 +159,27 @@ func TestValidator_InvalidRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := pypiapitoken.NewValidator(
-		pypiapitoken.WithClient(client),
-	)
+	validator := pypiapitoken.NewValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/legacy/"
 
 	testCases := []struct {
-		name     string
-		key      string
-		expected veles.ValidationStatus
+		name        string
+		key         string
+		expected    veles.ValidationStatus
+		expectError bool
 	}{
 		{
-			name:     "empty_key",
-			key:      "",
-			expected: veles.ValidationFailed,
+			name:        "empty_key",
+			key:         "",
+			expected:    veles.ValidationFailed,
+			expectError: true,
 		},
 		{
-			name:     "invalid_key_format",
-			key:      "invalid-key-format",
-			expected: veles.ValidationFailed,
+			name:        "invalid_key_format",
+			key:         "invalid-key-format",
+			expected:    veles.ValidationFailed,
+			expectError: true,
 		},
 	}
 
@@ -215,8 +189,14 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 			got, err := validator.Validate(context.Background(), key)
 
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error for %s, got nil", tc.name)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
 			}
 			if got != tc.expected {
 				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)

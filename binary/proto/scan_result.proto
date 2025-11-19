@@ -141,12 +141,6 @@ message Package {
   // Signals to indicate that specific vulnerabilities are not applicable to
   // this package.
   repeated PackageExploitabilitySignal exploitability_signals = 51;
-  enum AnnotationEnum {
-    UNSPECIFIED = 0;
-    TRANSITIONAL = 1;
-    INSIDE_OS_PACKAGE = 2;
-    INSIDE_CACHE_DIR = 3;
-  }
 
   // Software licenses information
   repeated string licenses = 52;
@@ -989,6 +983,7 @@ message SecretData {
   message OnePasswordRecoveryCode {
     string key = 1;
   }
+
   message AwsAccessKeyCredentials {
     string access_id = 1;
     string secret = 2;
