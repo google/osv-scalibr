@@ -16,14 +16,18 @@ package recaptchakey
 
 import (
 	"regexp"
+	"slices"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 var (
-	// secretPattern matches a "captcha" keyword followed by "private" or "secret" and captures the associated value.
-	// It handles optional characters like spaces, colons, equals signs, underscores, and quotes.
-	secretPattern = regexp.MustCompile(`(?i)captcha\s?[:=]?\s*_?(?:private|secret)[a-zA-Z_]*\s?[:=]\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// inlinePattern matches a "captcha" keyword followed by "private" or "secret" and captures the associated value.
+	inlinePattern = regexp.MustCompile(`(?i)captcha_?(?:private|secret)[a-zA-Z_]*['"]?\s?[:=]\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// jsonPattern matches a json object named **captcha containing a key with private or secret in it and extracts its value
+	jsonPattern = regexp.MustCompile(`captcha"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*['"]?\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// yamlPattern matches a yaml object with 1 or 2 keys and extracts the private key value (this is an heuristic, but most of the time is good enough)
+	yamlPattern = regexp.MustCompile(`captcha:\s*(?:(?:public[a-zA-Z_]*:\s?)['"]?(?:6[A-Za-z0-9_-]{39})\b\s*)?(?:private|secret)[a-zA-Z_]*\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
 )
 
 const (
@@ -40,7 +44,11 @@ func NewDetector() veles.Detector {
 
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	matches := secretPattern.FindAllSubmatchIndex(data, -1)
+	matches := slices.Concat(
+		inlinePattern.FindAllSubmatchIndex(data, -1),
+		jsonPattern.FindAllSubmatchIndex(data, -1),
+		yamlPattern.FindAllSubmatchIndex(data, -1),
+	)
 	secrets, pos := []veles.Secret{}, []int{}
 	for _, match := range matches {
 		if len(match) >= 4 && match[2] != -1 && match[3] != -1 {

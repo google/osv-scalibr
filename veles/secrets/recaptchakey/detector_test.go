@@ -73,13 +73,66 @@ func TestDetector_Detect(t *testing.T) {
 			name: "yaml_multiline",
 			input: `
 		  recaptcha:
-		    private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
 		    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+		    private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
 			`,
 			want: []veles.Secret{
 				recaptchakey.Key{
 					Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3",
 				},
+			},
+		},
+		{
+			name: "yaml_multiline_another_key",
+			input: `
+		  recaptcha:
+		    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+		    private_key: ***
+			another_key:
+				private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+			`,
+			want: nil,
+		},
+		{
+			name: "multiple_keys",
+			input: `
+	    RECAPTCHA_PRIVATE_KEY = '6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1'
+	    recaptcha_secret_key: 6LeD4a3XAAAAA-7n9Gu2St3y3TestKeyPrivate2
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1"},
+				recaptchakey.Key{Secret: "6LeD4a3XAAAAA-7n9Gu2St3y3TestKeyPrivate2"},
+			},
+		},
+		{
+			name: "invalid_key",
+			input: `
+	    NOT_A_KEY = "6LeD4a3XAAAAA-INVALID-1234567890"
+	    `,
+			want: nil,
+		},
+		{
+			name: "simple_json",
+			input: `
+	    {
+	      "recaptcha_public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3",
+	      "recaptcha_secret_key": "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"
+	    }
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "multiline_json",
+			input: `{
+			  "recaptcha": {
+					"public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3",
+				  "secret_key": "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"
+				}
+			}`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
 			},
 		},
 	}
