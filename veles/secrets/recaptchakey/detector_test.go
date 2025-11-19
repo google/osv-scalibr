@@ -1,0 +1,98 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package recaptchakey_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+)
+
+func TestDetector_Detect(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{recaptchakey.NewDetector()})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		input string
+		want  []veles.Secret
+	}{
+		// --- Empty or invalid input ---
+		{
+			name:  "empty_input",
+			input: "",
+			want:  nil,
+		},
+		{
+			name:  "random_input",
+			input: "Some random text",
+			want:  nil,
+		},
+		{
+			name: "python",
+			input: `
+			RECAPTCHA_PUBLIC_KEY = '6LcA1x0UAAAAAF1b2Qp9Zp3t0TestKeyPublic01'
+			RECAPTCHA_PRIVATE_KEY = '6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1'`,
+			want: []veles.Secret{
+				recaptchakey.Key{
+					Secret: "6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1",
+				},
+			},
+		},
+		{
+			name: "yaml_simple",
+			input: `
+   		recaptcha_site_key: 6LcD4a3XAA-AAE7n9Gu2St3y3TestKeyPublic02
+    	recaptcha_secret_key: 6LeD4a3XAAAAA-7n9Gu2St3y3TestKeyPrivate2
+			`,
+			want: []veles.Secret{
+				recaptchakey.Key{
+					Secret: "6LeD4a3XAAAAA-7n9Gu2St3y3TestKeyPrivate2",
+				},
+			},
+		},
+		{
+			name: "yaml_multiline",
+			input: `
+		  recaptcha:
+		    private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+		    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+			`,
+			want: []veles.Secret{
+				recaptchakey.Key{
+					Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
+			if err != nil {
+				t.Errorf("Detect() error: %v, want nil", err)
+			}
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Detect() diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
