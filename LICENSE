@@ -203,6 +203,7 @@
 
 ------------------
 File: extractor/filesystem/internal/walkdir_iterate.go
+File: enricher/govulncheck/source/internal/result.go
 ------------------
 
 Copyright 2009, Google Inc.

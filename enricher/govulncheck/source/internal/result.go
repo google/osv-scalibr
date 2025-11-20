@@ -1,8 +1,11 @@
-// Copied from
-// https://github.com/golang/vuln/blob/267a472bf377fa105988693c2a597d2b8de36ad8/internal/govulncheck/result.go
-// and modified.
+// Derived from https://github.com/golang/vuln/blob/267a472bf377fa105988693c2a597d2b8de36ad8/internal/govulncheck/result.go
+//
+// Copyright 2023 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
-package govcsource
+// Package internal contains govulncheck models
+package internal
 
 // Message is an entry in the output stream. It will always have exactly one
 // field filled in.

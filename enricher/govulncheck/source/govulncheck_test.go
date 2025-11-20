@@ -11,10 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package govcsource
+package govcsource_test
 
 import (
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/osv-scalibr/enricher"
@@ -46,11 +50,32 @@ func TestEnricher(t *testing.T) {
 		PackageVulns: vulns,
 	}
 
-	enr := New(nil)
-	err := enr.Enrich(t.Context(), &input, &inv)
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
+	// Govulncheck expects the path to be file:///c:/something
+	if runtime.GOOS == "windows" {
+		wd = "/" + wd
+	}
+
+	enr := govcsource.New(&cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{
+			{
+				Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
+					OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
+				}}},
+		},
+	})
+
+	err = enr.Enrich(t.Context(), &input, &inv)
 
 	if err != nil {
 		t.Fatalf("govulncheck enrich failed: %s", err)
+	}
+
+	if len(inv.PackageVulns) != 2 {
+		t.Fatalf("govulncheck failed: expected %d vulns, but got %d vulns", 2, len(inv.PackageVulns))
 	}
 
 	for _, vuln := range inv.PackageVulns {

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
 	"io"
 	"os"
 	"os/exec"
@@ -117,7 +118,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 	return nil
 }
 
-func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*Finding) {
+func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*internal.Finding) {
 	for _, pv := range inv.PackageVulns {
 		findings, exist := idToFindings[pv.Vulnerability.Id]
 		// Skip if no findings for this package vulnerability ID
@@ -142,7 +143,7 @@ func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string]
 	}
 }
 
-func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersion string) (map[string][]*Finding, error) {
+func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersion string) (map[string][]*internal.Finding, error) {
 	args := []string{"-C", absModDir, "-format", "json", "-mode", "source"}
 	if e.offlineVulnDBPath != "" {
 		args = append(args, "-db=file://"+e.offlineVulnDBPath)
@@ -160,7 +161,7 @@ func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersi
 
 	// Group the output of govulncheck based on the OSV ID.
 	h := &osvHandler{
-		idToFindings: map[string][]*Finding{},
+		idToFindings: map[string][]*internal.Finding{},
 	}
 	if err := handleJSON(bytes.NewReader(b.Bytes()), h); err != nil {
 		return nil, err
@@ -170,17 +171,17 @@ func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersi
 }
 
 type osvHandler struct {
-	idToFindings map[string][]*Finding
+	idToFindings map[string][]*internal.Finding
 }
 
-func (h *osvHandler) Finding(f *Finding) {
+func (h *osvHandler) Finding(f *internal.Finding) {
 	h.idToFindings[f.OSV] = append(h.idToFindings[f.OSV], f)
 }
 
 func handleJSON(from io.Reader, to *osvHandler) error {
 	dec := json.NewDecoder(from)
 	for dec.More() {
-		msg := Message{}
+		msg := internal.Message{}
 		if err := dec.Decode(&msg); err != nil {
 			return err
 		}
