@@ -63,7 +63,7 @@ type Detector struct {
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	as := d.FindA(data)
-	// if FromPartialPair is not provided and no match was found for as early exit
+	// if FromPartialPair is not provided and no match was found for FindA early exit
 	if d.FromPartialPair == nil && len(as) == 0 {
 		return nil, nil
 	}
