@@ -44,7 +44,9 @@ const (
 var ErrNoGoToolchain = errors.New("no Go toolchain found")
 
 // Enricher is an enricher that runs govulncheck on Go source code.
-type Enricher struct{}
+type Enricher struct {
+	offlineVulnDBPath string
+}
 
 // Name returns the name of the enricher.
 func (e *Enricher) Name() string {
@@ -141,7 +143,11 @@ func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string]
 }
 
 func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersion string) (map[string][]*Finding, error) {
-	cmd := scan.Command(ctx, "-C", absModDir, "-json", "./...")
+	args := []string{"-C", absModDir, "-format", "json", "-mode", "source"}
+	if e.offlineVulnDBPath != "" {
+		args = append(args, "-db=file://"+e.offlineVulnDBPath)
+	}
+	cmd := scan.Command(ctx, append(args, "./...")...)
 	var b bytes.Buffer
 	cmd.Stdout = &b
 	cmd.Env = append(os.Environ(), "GOVERSION=go"+goVersion)
@@ -187,6 +193,11 @@ func handleJSON(from io.Reader, to *osvHandler) error {
 }
 
 // New returns a new govulncheck source enricher.
-func New(_ *cpb.PluginConfig) enricher.Enricher {
-	return &Enricher{}
+func New(cfg *cpb.PluginConfig) enricher.Enricher {
+	e := &Enricher{}
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
+	if specific != nil {
+		e.offlineVulnDBPath = specific.OfflineVulnDbPath
+	}
+	return e
 }
