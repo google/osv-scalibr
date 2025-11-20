@@ -15,6 +15,7 @@
 // Package recaptchakey detects reCAPTCHA keys
 package recaptchakey
 
+// Key contains a reCAPTCHA key secret value
 type Key struct {
 	Secret string
 }

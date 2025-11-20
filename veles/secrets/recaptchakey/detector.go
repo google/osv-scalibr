@@ -16,19 +16,22 @@ var (
 )
 
 const (
-	maxSecretLen = 60
-	maxLen       = maxSecretLen + 150
+	maxSecretLen  = 40
+	maxContextLen = 500
+	maxLen        = maxSecretLen + maxContextLen
 )
 
-type Detector struct{}
+type detector struct{}
 
-func NewDetector() veles.Detector { return &Detector{} }
+// NewDetector returns a reCAPTCHA secret keys detector
+func NewDetector() veles.Detector { return &detector{} }
 
-func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
+// Detect matches reCAPTCHA keys in config files,
+func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
 	matches := slices.Concat(
 		inlinePattern.FindAllSubmatchIndex(data, -1),
 		jsonPattern.FindAllSubmatchIndex(data, -1),
-		findYaml(data),
+		findInsideYamlBlock(data),
 	)
 
 	var secrets []veles.Secret
@@ -47,15 +50,16 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	return secrets, positions
 }
 
-func (d *Detector) MaxSecretLen() uint32 { return maxLen }
+// MaxSecretLen returns the length a secret can have
+func (d *detector) MaxSecretLen() uint32 { return maxLen }
 
 type block struct {
 	active bool
 	indent int
 }
 
-// findYaml searches for inlineYamlPattern inside `captcha:` yaml blocks
-func findYaml(data []byte) [][]int {
+// findInsideYamlBlock searches for inlineYamlPattern inside `captcha:` yaml blocks
+func findInsideYamlBlock(data []byte) [][]int {
 	var results [][]int
 	sc := bufio.NewScanner(bytes.NewReader(data))
 
@@ -105,6 +109,7 @@ func findYaml(data []byte) [][]int {
 	return results
 }
 
+// countIndent calculates the number of leading spaces or tabs in a byte slice.
 func countIndent(s []byte) int {
 	for i, r := range s {
 		if r != ' ' && r != '\t' {
