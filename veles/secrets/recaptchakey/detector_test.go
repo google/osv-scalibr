@@ -93,6 +93,16 @@ func TestDetector_Detect(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "yaml_indented",
+			input: `
+			someIndentation:
+			  recaptcha:
+			    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+					private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+			`,
+			want: nil,
+		},
+		{
 			name: "no_space_env",
 			input: `
 	    RECAPTCHA_PRIVATE_KEY=6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1

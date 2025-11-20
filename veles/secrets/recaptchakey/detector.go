@@ -13,9 +13,9 @@ var (
 	// inlinePattern matches an inline assignment of a captcha secret key and captures its value (works for .env and .json)
 	inlinePattern = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
 	// jsonBlockPattern matches a json object with the key ending in captcha and then extract the value of a secret key
-	jsonBlockPattern = regexp.MustCompile(`captcha\\*"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
-	// yamlPattern matches a reCAPTCHA secret key inside a yaml file, it's meant to be used after a reCAPTCHA yaml block has been identified
-	yamlPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
+	jsonBlockPattern = regexp.MustCompile(`(?i)captcha\\*"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// yamlBlockPattern roughly searches for a yaml block with a secret key near it (leaving space before to check for indentation)
+	yamlBlockPattern = regexp.MustCompile(`(?i)\s*([a-zA-Z_]*captcha:[\r\n]+)[\s\S]{0,300}(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
 )
 
 const (
@@ -56,60 +56,30 @@ func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
 // MaxSecretLen returns the length a secret can have
 func (d *detector) MaxSecretLen() uint32 { return maxLen }
 
-type block struct {
-	active bool
-	indent int
-}
-
 // findInsideYamlBlock searches for inlineYamlPattern inside `captcha:` yaml blocks
 func findInsideYamlBlock(data []byte) [][]int {
-	var results [][]int
-	sc := bufio.NewScanner(bytes.NewReader(data))
+	matches := yamlBlockPattern.FindAllSubmatchIndex(data, -1)
+	matches = slices.DeleteFunc(matches, func(m []int) bool {
+		blockKeyIndent := m[2] - m[0] // distance between the full match and the (captcha) capture group
+		block_start := m[3]           // end of key group
+		end := m[1]                   // end of full match
 
-	var b block
-	offset := 0
-
-	for sc.Scan() {
-		line := sc.Bytes()
-
-		// Start of a captcha block
-		if bytes.Contains(line, []byte("captcha:")) {
-			b.active = true
-			b.indent = countIndent(line)
-			offset += len(line) + 1
-			continue
-		}
-
-		// If not in block, just advance offset
-		if !b.active {
-			offset += len(line) + 1
-			continue
-		}
-
-		// End of captcha block if indentation drops
-		if countIndent(line) <= b.indent {
-			b.active = false
-			offset += len(line) + 1
-			continue
-		}
-
-		// Look for private/secret keys only inside block
-		matches := yamlPattern.FindAllSubmatchIndex(line, -1)
-		for _, m := range matches {
-			if len(m) < 4 {
+		r := bufio.NewScanner(bytes.NewReader(data[block_start+1 : end]))
+		for r.Scan() {
+			line := r.Bytes()
+			trimmed := bytes.TrimSpace(line)
+			// skip empty lines and comments
+			if len(trimmed) == 0 || trimmed[0] == '#' {
 				continue
 			}
-			// Adjust to file offset
-			results = append(results, []int{
-				offset + m[0], offset + m[1], // full match
-				offset + m[2], offset + m[3], // first capture group
-			})
+			// if the indent is less then the block's the key is in another block
+			if countIndent(line) < blockKeyIndent {
+				return true
+			}
 		}
-
-		offset += len(line) + 1
-	}
-
-	return results
+		return false
+	})
+	return matches
 }
 
 // countIndent calculates the number of leading spaces or tabs in a byte slice.
