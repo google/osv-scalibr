@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcshmackey_test
+package awsaccesskey_test
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 )
 
 type fakeSigner struct{}
@@ -38,7 +39,7 @@ type mockRoundTripper struct {
 }
 
 func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.Host == "storage.googleapis.com" {
+	if req.URL.Host == "sts.us-east-1.amazonaws.com" {
 		testURL, _ := url.Parse(m.url)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
@@ -46,45 +47,43 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockS3Server returns an httptest.Server that simulates an S3 ListBuckets endpoint.
-// It accepts only the "testsecret" key; any other secret yields SignatureDoesNotMatch.
-func mockS3Server(signature string, denied bool) func() *httptest.Server {
+// mockSTSServer returns an httptest.Server that simulates the AWS STS server
+func mockSTSServer(signature string) func() *httptest.Server {
 	return func() *httptest.Server {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// Only handle ListBuckets (GET /)
-			if req.Method != http.MethodGet || req.URL.Path != "/" {
+			// Only handle GetCallerIdentity (POST /)
+			if req.Method != http.MethodPost || req.URL.Path != "/" || req.Body == nil {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
+			}
+			body, _ := io.ReadAll(req.Body)
+			if !bytes.HasPrefix(body, []byte("Action=GetCallerIdentity")) {
+				http.Error(w, "bad method", http.StatusNotFound)
 			}
 
 			if !strings.Contains(req.Header.Get("Authorization"), signature) {
 				w.WriteHeader(http.StatusForbidden)
-				_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
-					<Error>
-						<Code>SignatureDoesNotMatch</Code>
-						<Message>Access denied.</Message>
-						<Details>The request signature we calculated does not match the signature you provided. Check your Google secret key and signing method.</Details>
-						<StringToSign>**REDACTED***</StringToSign>
-						<CanonicalRequest>**REDACTED***</CanonicalRequest>
-					</Error>`)
+				_, _ = io.WriteString(w, `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+				  <Error>
+				    <Type>Sender</Type>
+				    <Code>SignatureDoesNotMatch</Code>
+				    <Message>The request signature we calculated does not match the signature you provided. Check your AWS Secret Access Key and signing method. Consult the service documentation for details.</Message>
+				  </Error>
+				  <RequestId>f7a4e6b1-9d2c-4f80-8a7e-3c5d9f1b0e2b</RequestId>
+				</ErrorResponse>`)
 				return
 			}
 
-			if denied {
-				w.WriteHeader(http.StatusForbidden)
-				_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
-					<Error>
-						<Code>AccessDenied</Code>
-						<Message>Access denied.</Message>
-						<Details>**SERVICE-ACCOUNT-EMAIL-REDACTED** does not have storage.buckets.list access to the Google Cloud project. Permission 'storage.buckets.list' denied on resource (or it may not exist).</Details>
-					</Error>`)
-				return
-			}
-
-			_, _ = io.WriteString(w, `<?xml version='1.0' encoding='UTF-8'?>
-				<ListAllMyBucketsResult xmlns='http://doc.s3.amazonaws.com/2006-03-01'>
-					<Buckets/>
-				</ListAllMyBucketsResult>`)
+			_, _ = io.WriteString(w, `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+			  <GetCallerIdentityResult>
+			    <Arn>***</Arn>
+			    <UserId>***</UserId>
+			    <Account>***</Account>
+			  </GetCallerIdentityResult>
+			  <ResponseMetadata>
+			    <RequestId>f7a4e6b1-9d2c-4f80-8a7e-3c5d9f1b0e2a</RequestId>
+			  </ResponseMetadata>
+			</GetCallerIdentityResponse>`)
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -93,7 +92,7 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 }
 
 const (
-	exampleAccessID  = "GOOGerkjf4f034"
+	exampleAccessID  = "AIKAerkjf4f034"
 	correctSecret    = "testsecret"
 	badSecret        = "badSecret"
 	correctSignature = exampleAccessID + ":" + correctSecret
@@ -102,36 +101,27 @@ const (
 func TestValidator(t *testing.T) {
 	cases := []struct {
 		name   string
-		key    gcshmackey.HMACKey
+		key    awsaccesskey.Credentials
 		want   veles.ValidationStatus
 		server func() *httptest.Server
 	}{
 		{
 			name: "correct_secret",
-			key: gcshmackey.HMACKey{
+			key: awsaccesskey.Credentials{
 				AccessID: exampleAccessID,
 				Secret:   correctSecret,
 			},
 			want:   veles.ValidationValid,
-			server: mockS3Server(correctSignature, false),
-		},
-		{
-			name: "correct_secret,_access_denied",
-			key: gcshmackey.HMACKey{
-				AccessID: exampleAccessID,
-				Secret:   correctSecret,
-			},
-			want:   veles.ValidationValid,
-			server: mockS3Server(correctSignature, true),
+			server: mockSTSServer(correctSignature),
 		},
 		{
 			name: "bad_secret",
-			key: gcshmackey.HMACKey{
+			key: awsaccesskey.Credentials{
 				AccessID: exampleAccessID,
 				Secret:   badSecret,
 			},
 			want:   veles.ValidationInvalid,
-			server: mockS3Server(correctSignature, true),
+			server: mockSTSServer(correctSignature),
 		},
 	}
 
@@ -142,7 +132,7 @@ func TestValidator(t *testing.T) {
 				Transport: &mockRoundTripper{url: srv.URL},
 			}
 
-			validator := gcshmackey.NewValidator()
+			validator := awsaccesskey.NewValidator()
 			validator.SetHTTPClient(client)
 			validator.SetSigner(fakeSigner{})
 

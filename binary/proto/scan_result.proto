@@ -717,6 +717,7 @@ message SecretData {
     GCSHmacKey gcs_hmac_key = 47;
     MysqlMyloginSection mysql_mylogin_section = 48;
     VapidKey vapid_key = 49;
+    AwsAccessKeyCredentials aws_access_key_credentials = 50;
   }
 
   message GCPSAK {
@@ -981,6 +982,11 @@ message SecretData {
 
   message OnePasswordRecoveryCode {
     string key = 1;
+  }
+
+  message AwsAccessKeyCredentials {
+    string access_id = 1;
+    string secret = 2;
   }
 }
 

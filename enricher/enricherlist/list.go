@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -116,6 +117,7 @@ var (
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
+		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

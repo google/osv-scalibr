@@ -111,6 +111,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                                        | Extractor Plugin                     |
 |---------------------------------------------|--------------------------------------|
+| AWS access key                              | `secrets/awsaccesskey`               |
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
 | Crates.io API Token                         | `secrets/cratesioapitoken`           |

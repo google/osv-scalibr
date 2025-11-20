@@ -12,22 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcshmackey
+package awsaccesskey
 
 import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/awssignerv4"
 )
 
 const (
-	// CodeSignatureDoesNotMatch is returned by GCS if a request and the signature don't match
+	// CodeSignatureDoesNotMatch is returned by AWS if a request and the signature don't match
 	CodeSignatureDoesNotMatch = "SignatureDoesNotMatch"
-	// CodeAccessDenied is returned by GCS if the user doesn't have access to a resource
+	// CodeAccessDenied is returned by AWS if the user doesn't have access to a resource
 	CodeAccessDenied = "AccessDenied"
 )
 
@@ -58,7 +60,7 @@ func NewValidator() *Validator {
 	return &Validator{
 		client: http.DefaultClient,
 		signer: awssignerv4.New(awssignerv4.Config{
-			Service: "s3", Region: "auto",
+			Service: "sts", Region: "us-east-1",
 			SignedHeaders: []string{
 				"amz-sdk-invocation-id", "amz-sdk-request", "host", "x-amz-content-sha256", "x-amz-date",
 			},
@@ -66,14 +68,20 @@ func NewValidator() *Validator {
 	}
 }
 
-// Validate checks whether the given Google Cloud Storage HMAC key is valid
-// using the ListBuckets api call
-func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://storage.googleapis.com/", nil)
+// Validate checks whether the given AWS access key and secret are valid
+// using the GetCallerIdentity api call
+func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.ValidationStatus, error) {
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost,
+		"https://sts.us-east-1.amazonaws.com/",
+		io.NopCloser(strings.NewReader("Action=GetCallerIdentity&Version=2011-06-15")),
+	)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Host", "sts.us-east-1.amazonaws.com")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
@@ -82,17 +90,18 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 
 	rsp, err := v.client.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("GET failed: %w", err)
+		return veles.ValidationFailed, fmt.Errorf("POST failed: %w", err)
 	}
 	defer rsp.Body.Close()
 
-	// the credentials are valid and the resource is accessible
 	if rsp.StatusCode == http.StatusOK {
 		return veles.ValidationValid, nil
 	}
 
 	type errorResponse struct {
-		Code string `xml:"Code"`
+		Error struct {
+			Code string `xml:"Code"`
+		} `xml:"Error"`
 	}
 
 	errResp := errorResponse{}
@@ -100,7 +109,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
 	}
 
-	switch errResp.Code {
+	switch errResp.Error.Code {
 	case CodeSignatureDoesNotMatch:
 		// Signature mismatch => credentials invalid
 		return veles.ValidationInvalid, nil
@@ -109,6 +118,6 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 		return veles.ValidationValid, nil
 	default:
 		// Unexpected error response
-		return veles.ValidationFailed, fmt.Errorf("unknown error code: %q", errResp.Code)
+		return veles.ValidationFailed, fmt.Errorf("unknown error code: %q", errResp.Error.Code)
 	}
 }
