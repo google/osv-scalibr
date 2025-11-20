@@ -103,12 +103,45 @@ func TestDetector_Detect(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "yaml_indented_with_tabs",
+			input: `
+` + "\t" + `recaptcha:
+` + "\t\t" + `public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+` + "\t\t" + `private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3`,
+			want: nil,
+		},
+		{
 			name: "no_space_env",
 			input: `
 	    RECAPTCHA_PRIVATE_KEY=6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1
 	    `,
 			want: []veles.Secret{
 				recaptchakey.Key{Secret: "6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1"},
+			},
+		},
+		{
+			name: "simple_yaml",
+			input: `
+# This is a comment
+recaptcha_secret_key: 6LeF9x0UAAAAAG1b2Qp9Zp3t0PrivateComment1
+# Another comment
+recaptcha_site_key: 6LcF9x0UAAAAAF1b2Qp9Zp3t01PublicComment1
+`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeF9x0UAAAAAG1b2Qp9Zp3t0PrivateComment1"},
+			},
+		},
+		{
+			name: "yaml_with_nested_comments",
+			input: `
+reCaptcha:
+  # Inline comment for public key
+  public_key: 6LcH1x0UAAAAAF-1b2Qp9Z11p3t-PublicNested
+  private_key: 6LeH1x0UAAAAAG1r3Ky6Wx7c711PrivateNested
+# Comment outside mapping
+`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH1x0UAAAAAG1r3Ky6Wx7c711PrivateNested"},
 			},
 		},
 		{

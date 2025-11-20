@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	// inlinePattern matches an inline assignment of a captcha secret key and captures its value (works for .env and .json)
+	// inlinePattern matches an inline assignment of a captcha secret key and captures its value (works for .env .json and .yaml)
 	inlinePattern = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
 	// jsonBlockPattern matches a json object with the key ending in captcha and then extract the value of a secret key
 	jsonBlockPattern = regexp.MustCompile(`(?i)captcha\\*"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
