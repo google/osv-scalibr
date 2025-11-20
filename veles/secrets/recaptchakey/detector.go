@@ -1,20 +1,8 @@
-// Copyright 2025 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package recaptchakey
 
 import (
+	"bufio"
+	"bytes"
 	"regexp"
 	"slices"
 
@@ -22,46 +10,106 @@ import (
 )
 
 var (
-	// inlinePattern matches a "captcha" keyword followed by "private" or "secret" and captures the associated value.
-	inlinePattern = regexp.MustCompile(`(?i)captcha_?(?:private|secret)[a-zA-Z_]*['"]?\s?[:=]\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
-	// jsonPattern matches a json object named **captcha containing a key with private or secret in it and extracts its value
-	jsonPattern = regexp.MustCompile(`captcha"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*['"]?\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
-	// yamlPattern matches a yaml object with 1 or 2 keys and extracts the private key value (this is an heuristic, but most of the time is good enough)
-	yamlPattern = regexp.MustCompile(`captcha:\s*(?:(?:public[a-zA-Z_]*:\s?)['"]?(?:6[A-Za-z0-9_-]{39})\b\s*)?(?:private|secret)[a-zA-Z_]*\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
+	inlinePattern     = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	jsonPattern       = regexp.MustCompile(`captcha"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*['"]?\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
+	inlineYamlPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
 )
 
 const (
-	maxSecretLen = 40
-	maxLen       = maxSecretLen + 100 // add space for context
+	maxSecretLen = 60
+	maxLen       = maxSecretLen + 150
 )
 
 type Detector struct{}
 
-// NewDetector returns a new Veles Detector that finds reCAPTCHA secret keys
-func NewDetector() veles.Detector {
-	return &Detector{}
-}
+func NewDetector() veles.Detector { return &Detector{} }
 
-// Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	matches := slices.Concat(
 		inlinePattern.FindAllSubmatchIndex(data, -1),
 		jsonPattern.FindAllSubmatchIndex(data, -1),
-		yamlPattern.FindAllSubmatchIndex(data, -1),
+		findYaml(data),
 	)
-	secrets, pos := []veles.Secret{}, []int{}
-	for _, match := range matches {
-		if len(match) >= 4 && match[2] != -1 && match[3] != -1 {
-			start := match[2]
-			end := match[3]
-			secrets = append(secrets, Key{Secret: string(data[start:end])})
-			pos = append(pos, start)
+
+	var secrets []veles.Secret
+	var positions []int
+
+	// Process regex-based matches
+	for _, m := range matches {
+		start := m[len(m)-2]
+		end := m[len(m)-1]
+		if start == -1 || end == -1 {
+			continue
 		}
+		secrets = append(secrets, Key{Secret: string(data[start:end])})
+		positions = append(positions, start)
 	}
-	return secrets, pos
+	return secrets, positions
 }
 
-// MaxSecretLen implements veles.Detector.
-func (d *Detector) MaxSecretLen() uint32 {
-	return maxLen
+func (d *Detector) MaxSecretLen() uint32 { return maxLen }
+
+type block struct {
+	active bool
+	indent int
+}
+
+// findYaml searches for inlineYamlPattern inside `captcha:` yaml blocks
+func findYaml(data []byte) [][]int {
+	var results [][]int
+	sc := bufio.NewScanner(bytes.NewReader(data))
+
+	var b block
+	offset := 0
+
+	for sc.Scan() {
+		line := sc.Bytes()
+
+		// Start of a captcha block
+		if bytes.Contains(line, []byte("captcha:")) {
+			b.active = true
+			b.indent = countIndent(line)
+			offset += len(line) + 1
+			continue
+		}
+
+		// If not in block, just advance offset
+		if !b.active {
+			offset += len(line) + 1
+			continue
+		}
+
+		// End of captcha block if indentation drops
+		if countIndent(line) <= b.indent {
+			b.active = false
+			offset += len(line) + 1
+			continue
+		}
+
+		// Look for private/secret keys only inside block
+		matches := inlineYamlPattern.FindAllSubmatchIndex(line, -1)
+		for _, m := range matches {
+			if len(m) < 4 {
+				continue
+			}
+			// Adjust to file offset
+			results = append(results, []int{
+				offset + m[0], offset + m[1], // full match
+				offset + m[2], offset + m[3], // first capture group
+			})
+		}
+
+		offset += len(line) + 1
+	}
+
+	return results
+}
+
+func countIndent(s []byte) int {
+	for i, r := range s {
+		if r != ' ' && r != '\t' {
+			return i
+		}
+	}
+	return len(s)
 }

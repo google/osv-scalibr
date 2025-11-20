@@ -135,6 +135,13 @@ func TestDetector_Detect(t *testing.T) {
 				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
 			},
 		},
+		{
+			name:  "inline_json",
+			input: `{"recaptcha": {"public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3","secret_key": "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"}}`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
 	}
 
 	for _, tc := range tests {
