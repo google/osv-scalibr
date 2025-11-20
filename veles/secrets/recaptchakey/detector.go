@@ -61,10 +61,10 @@ func findInsideYamlBlock(data []byte) [][]int {
 	matches := yamlBlockPattern.FindAllSubmatchIndex(data, -1)
 	matches = slices.DeleteFunc(matches, func(m []int) bool {
 		blockKeyIndent := m[2] - m[0] // distance between the full match and the (captcha) capture group
-		block_start := m[3]           // end of key group
+		blockStart := m[3]            // end of key group, hence start of the block
 		end := m[1]                   // end of full match
 
-		r := bufio.NewScanner(bytes.NewReader(data[block_start+1 : end]))
+		r := bufio.NewScanner(bytes.NewReader(data[blockStart:end]))
 		for r.Scan() {
 			line := r.Bytes()
 			trimmed := bytes.TrimSpace(line)
@@ -73,7 +73,7 @@ func findInsideYamlBlock(data []byte) [][]int {
 				continue
 			}
 			// if the indent is less then the block's the key is in another block
-			if countIndent(line) < blockKeyIndent {
+			if countIndent(line) <= blockKeyIndent {
 				return true
 			}
 		}
