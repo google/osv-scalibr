@@ -41,8 +41,8 @@ func NewDetector() veles.Detector {
 		MaxElementLen: max(maxAccessIDLen, maxSecretLen), MaxDistance: uint32(maxDistance),
 		FindA: pair.FindAllMatches(accessIDPattern),
 		FindB: pair.FindAllMatches(secretPattern),
-		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			return HMACKey{AccessID: p.A.Value, Secret: p.B.Value}, true
+		FromPair: func(data []byte, p pair.Pair) (veles.Secret, bool) {
+			return HMACKey{AccessID: p.A.Value(data), Secret: p.B.Value(data)}, true
 		},
 	}
 }

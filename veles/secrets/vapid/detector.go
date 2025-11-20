@@ -51,8 +51,8 @@ func NewDetector() veles.Detector {
 		MaxElementLen: maxKeyLen, MaxDistance: maxDistance,
 		FindA: findStrict(publicKeyPattern),
 		FindB: findStrict(privateKeyPattern),
-		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			pubB64, privB64 := p.A.Value, p.B.Value
+		FromPair: func(data []byte, p pair.Pair) (veles.Secret, bool) {
+			pubB64, privB64 := p.A.Value(data), p.B.Value(data)
 			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
@@ -72,8 +72,8 @@ func findStrict(re *regexp.Regexp) func(data []byte) []*pair.Match {
 		var results []*pair.Match
 		for _, m := range matches {
 			results = append(results, &pair.Match{
-				Value:    string(data[m[2]:m[3]]),
-				Position: m[2],
+				End:   m[3],
+				Start: m[2],
 			})
 		}
 		return results
