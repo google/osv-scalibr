@@ -16,9 +16,11 @@ package gemspec
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
+	"slices"
 
 	// Use filepath to parse all paths extracted from disk, and convert with filepath.ToSlash() before
 	// interacting with fs.FS to ensure consistent OS-agnostic handling.
@@ -31,7 +33,7 @@ import (
 // constant. It returns an error if the constant cannot be resolved.
 func resolveVersionFromRequires(fsys fs.FS, gemspecPath string, requirePaths []string, constName string) (string, error) {
 	if fsys == nil {
-		return "", fmt.Errorf("filesystem unavailable for resolving version constant")
+		return "", errors.New("filesystem unavailable for resolving version constant")
 	}
 
 	gemspecDir := path.Dir(gemspecPath)
@@ -269,14 +271,7 @@ func appendUnique(existing []string, candidates ...string) []string {
 		if candidate == "" {
 			continue
 		}
-		duplicate := false
-		for _, current := range existing {
-			if current == candidate {
-				duplicate = true
-				break
-			}
-		}
-		if !duplicate {
+		if !slices.Contains(existing, candidate) {
 			existing = append(existing, candidate)
 		}
 	}
@@ -399,7 +394,7 @@ func extractCallArguments(expr, prefix string) (string, bool) {
 	depth := 1
 	var b strings.Builder
 	inSingle, inDouble := false, false
-	for i := 0; i < len(rem); i++ {
+	for i := range len(rem) {
 		ch := rem[i]
 		switch ch {
 		case '\\':
@@ -450,7 +445,7 @@ func splitArgs(expr string) []string {
 		parenDepth int
 	)
 
-	for i := 0; i < len(expr); i++ {
+	for i := range len(expr) {
 		ch := expr[i]
 		switch ch {
 		case '\\':
@@ -538,7 +533,7 @@ func stripInlineComment(line string) string {
 		inDouble bool
 		escaped  bool
 	)
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		ch := line[i]
 		if escaped {
 			escaped = false
@@ -624,7 +619,7 @@ func requireStatementComplete(expr string) bool {
 	inDouble := false
 	escaped := false
 	depth := 0
-	for i := 0; i < len(trimmed); i++ {
+	for i := range len(trimmed) {
 		ch := trimmed[i]
 		if escaped {
 			escaped = false
