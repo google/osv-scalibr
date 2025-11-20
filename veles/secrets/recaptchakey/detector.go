@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	inlinePattern     = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
-	jsonPattern       = regexp.MustCompile(`captcha"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*['"]?\s?:\s?['"]?(6[A-Za-z0-9_-]{39})\b`)
-	inlineYamlPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
+	inlinePattern    = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	jsonBlockPattern = regexp.MustCompile(`captcha\\*"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	yamlBlockPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
 )
 
 const (
@@ -30,7 +30,7 @@ func NewDetector() veles.Detector { return &detector{} }
 func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
 	matches := slices.Concat(
 		inlinePattern.FindAllSubmatchIndex(data, -1),
-		jsonPattern.FindAllSubmatchIndex(data, -1),
+		jsonBlockPattern.FindAllSubmatchIndex(data, -1),
 		findInsideYamlBlock(data),
 	)
 
@@ -91,7 +91,7 @@ func findInsideYamlBlock(data []byte) [][]int {
 		}
 
 		// Look for private/secret keys only inside block
-		matches := inlineYamlPattern.FindAllSubmatchIndex(line, -1)
+		matches := yamlBlockPattern.FindAllSubmatchIndex(line, -1)
 		for _, m := range matches {
 			if len(m) < 4 {
 				continue

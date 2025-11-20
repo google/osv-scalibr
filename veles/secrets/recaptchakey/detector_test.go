@@ -35,7 +35,6 @@ func TestDetector_Detect(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{
-		// --- Empty or invalid input ---
 		{
 			name:  "empty_input",
 			input: "",
@@ -94,7 +93,16 @@ func TestDetector_Detect(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "multiple_keys",
+			name: "no_space_env",
+			input: `
+	    RECAPTCHA_PRIVATE_KEY=6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1"},
+			},
+		},
+		{
+			name: "multiple_keys_env",
 			input: `
 	    RECAPTCHA_PRIVATE_KEY = '6LeA1x0UAAAAAG1b2Qp9Zp3t0TestKeyPrivate1'
 	    recaptcha_secret_key: 6LeD4a3XAAAAA-7n9Gu2St3y3TestKeyPrivate2
@@ -112,7 +120,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "simple_json",
+			name: "key_value_json",
 			input: `
 	    {
 	      "recaptcha_public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3",
@@ -138,6 +146,25 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name:  "inline_json",
 			input: `{"recaptcha": {"public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3","secret_key": "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"}}`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name:  "escaped_json",
+			input: `{\n  \"recaptcha\": {\n		\"public_key\": \"6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3\",\n	  \"secret_key\": \"6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3\"\n	}\n}`,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "escaped_key_value_json",
+			input: `
+	    {
+	      "recaptcha_public_key": "6LcA1x0UAAAAAF-1b2Qp9Zp3y3TestKeyPublic3",
+	      "recaptcha_secret_key": "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"
+	    }
+	    `,
 			want: []veles.Secret{
 				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
 			},
