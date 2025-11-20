@@ -10,9 +10,12 @@ import (
 )
 
 var (
-	inlinePattern    = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// inlinePattern matches an inline assignment of a captcha secret key and captures its value (works for .env and .json)
+	inlinePattern = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	// jsonBlockPattern matches a json object with the key ending in captcha and then extract the value of a secret key
 	jsonBlockPattern = regexp.MustCompile(`captcha\\*"\s?:\s?\{[^\{]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
-	yamlBlockPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
+	// yamlPattern matches a reCAPTCHA secret key inside a yaml file, it's meant to be used after a reCAPTCHA yaml block has been identified
+	yamlPattern = regexp.MustCompile(`(?i)(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
 )
 
 const (
@@ -91,7 +94,7 @@ func findInsideYamlBlock(data []byte) [][]int {
 		}
 
 		// Look for private/secret keys only inside block
-		matches := yamlBlockPattern.FindAllSubmatchIndex(line, -1)
+		matches := yamlPattern.FindAllSubmatchIndex(line, -1)
 		for _, m := range matches {
 			if len(m) < 4 {
 				continue
