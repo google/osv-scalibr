@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package govcsource provides an enricher that uses govulncheck to scan Go source code.
+// Package source provides an enricher that uses govulncheck to scan Go source code.
 package source
 
 import (
@@ -45,6 +45,7 @@ const (
 	Name = "reachability/govcsource"
 )
 
+// ErrNoGoToolchain is returned when the go toolchain is not found in the system.
 var ErrNoGoToolchain = errors.New("no Go toolchain found")
 
 // Enricher is an enricher that runs govulncheck on Go source code.
@@ -72,8 +73,8 @@ func (e *Enricher) Requirements() *plugin.Capabilities {
 	}
 
 	return &plugin.Capabilities{
-		Network:  network,
-		DirectFS: true,
+		Network:       network,
+		DirectFS:      true,
 		RunningSystem: true,
 	}
 }
@@ -132,7 +133,6 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*internal.Finding) {
 	for _, pv := range inv.PackageVulns {
 		findings, exist := idToFindings[pv.Vulnerability.Id]
-
 
 		if !exist {
 			if vulnHasImportsField(pv.Vulnerability, pv.Package) {

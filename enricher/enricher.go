@@ -38,6 +38,7 @@ var (
 	EnricherOrder = []string{
 		"reachability/java",
 		"vulnmatch/osvdev",
+		"reachability/govcsource",
 		"vex/filter",
 	}
 )

@@ -43,26 +43,26 @@ const unreachableVulnID2 = "GO-2024-2937"
 
 func TestEnricher(t *testing.T) {
 	testCases := []struct {
-		name					string
-		vulnID					string
+		name            string
+		vulnID          string
 		expectedSignals []*vex.FindingExploitabilitySignal
 	}{
 		{
-			name:					"reachable vuln",
-			vulnID:					reachableVulnID,
+			name:            "reachable vuln",
+			vulnID:          reachableVulnID,
 			expectedSignals: nil,
 		},
 		{
-			name:					"unreachable vuln 1 (package imported, vulnerable function not called)",
-			vulnID:					unreachableVulnID1,
+			name:   "unreachable vuln 1 (package imported, vulnerable function not called)",
+			vulnID: unreachableVulnID1,
 			expectedSignals: []*vex.FindingExploitabilitySignal{{
 				Plugin:        govcsource.Name,
 				Justification: vex.VulnerableCodeNotInExecutePath,
 			}},
 		},
 		{
-			name:					"unreachable vuln 2 (package not imported at all, just present in go.mod)",
-			vulnID:					unreachableVulnID2,
+			name:   "unreachable vuln 2 (package not imported at all, just present in go.mod)",
+			vulnID: unreachableVulnID2,
 			expectedSignals: []*vex.FindingExploitabilitySignal{{
 				Plugin:        govcsource.Name,
 				Justification: vex.VulnerableCodeNotInExecutePath,
@@ -166,6 +166,7 @@ func setupPackages() []*extractor.Package {
 }
 
 func setupPackageVulns(t *testing.T, pkgs []*extractor.Package) []*inventory.PackageVuln {
+	t.Helper()
 	pkgVulns := []*inventory.PackageVuln{
 		{
 			Vulnerability: loadVuln(t, reachableVulnID),
@@ -185,6 +186,7 @@ func setupPackageVulns(t *testing.T, pkgs []*extractor.Package) []*inventory.Pac
 }
 
 func loadVuln(t *testing.T, vulnID string) *osvschema.Vulnerability {
+	t.Helper()
 	path := filepath.Join(vulndbPath, vulnID+".json")
 	content, err := os.ReadFile(path)
 	if err != nil {
