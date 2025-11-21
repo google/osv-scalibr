@@ -15,74 +15,39 @@
 package dockerhubpat
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"strings"
+	"time"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Docker Hub PATs via the Docker Hub API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
-
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given DockerHubPAT is valid.
+// NewValidator creates a new Validator for DockerHub PATs.
 //
 // It performs a POST request to the Docker Hub create access token endpoint
-// using the API key in the Authorization header. If the request returns
+// using the PAT and username in the request body. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, unamePat DockerHubPAT) (veles.ValidationStatus, error) {
-	if unamePat.Username == "" {
-		return veles.ValidationUnsupported, nil
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://hub.docker.com/v2/auth/token/",
-		strings.NewReader(
-			fmt.Sprintf("{\"identifier\": \"%s\",\"secret\": \"%s\"}", unamePat.Username, unamePat.Pat)))
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP POST failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+func NewValidator() *simplevalidate.Validator[DockerHubPAT] {
+	return &simplevalidate.Validator[DockerHubPAT]{
+		Endpoint:   "https://hub.docker.com/v2/auth/token/",
+		HTTPMethod: http.MethodPost,
+		Body: func(k DockerHubPAT) (string, error) {
+			if k.Username == "" {
+				return "", errors.New("username is empty")
+			}
+			return fmt.Sprintf(`{"identifier": "%s","secret": "%s"}`, k.Username, k.Pat), nil
+		},
+		HTTPHeaders: func(k DockerHubPAT) map[string]string {
+			return map[string]string{
+				"Content-Type": "application/json",
+			}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 	}
 }
