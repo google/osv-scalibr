@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package govcsource provides an enricher that uses govulncheck to scan Go source code.
-package govcsource
+package source
 
 import (
 	"bytes"
@@ -64,9 +64,17 @@ func (e *Enricher) Version() int {
 
 // Requirements returns the requirements of the enricher.
 func (e *Enricher) Requirements() *plugin.Capabilities {
+	var network plugin.Network
+	if e.offlineVulnDBPath != "" {
+		network = plugin.NetworkOffline
+	} else {
+		network = plugin.NetworkOnline
+	}
+
 	return &plugin.Capabilities{
-		Network:  plugin.NetworkOnline,
+		Network:  network,
 		DirectFS: true,
+		RunningSystem: true,
 	}
 }
 
