@@ -50,6 +50,7 @@ import (
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -212,6 +213,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return awsAccessKeyCredentialToProto(t), nil
 	case vapid.Key:
 		return vapidKeyToProto(t), nil
+	case recaptchakey.Key:
+		return reCaptchaKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -223,6 +226,16 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
 				AccessId: s.AccessID,
 				Secret:   s.Secret,
+			},
+		},
+	}
+}
+
+func reCaptchaKeyToProto(s recaptchakey.Key) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ReCaptchaKey_{
+			ReCaptchaKey: &spb.SecretData_ReCaptchaKey{
+				Secret: s.Secret,
 			},
 		},
 	}
@@ -930,6 +943,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_VapidKey_:
 		t := s.GetVapidKey()
 		return vapid.Key{PrivateB64: t.PrivateB64, PublicB64: t.PublicB64}, nil
+	case *spb.SecretData_ReCaptchaKey_:
+		return recaptchakey.Key{
+			Secret: s.GetReCaptchaKey().GetSecret(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
