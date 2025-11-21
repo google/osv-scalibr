@@ -96,6 +96,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awscredentials"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
@@ -283,6 +284,7 @@ var (
 		pgpass.Name:                  {noCFG(pgpass.New)},
 		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
 		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
+		awscredentials.Name:          {noCFG(awscredentials.New)},
 	}
 
 	// SecretDetectors for Detector interface.
