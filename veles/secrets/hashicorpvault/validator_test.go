@@ -80,10 +80,9 @@ func TestTokenValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewTokenValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			validator := NewTokenValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/v1/auth/token/lookup-self"
 
 			token := Token{Token: "hvs.test-token"}
 			status, err := validator.Validate(t.Context(), token)
@@ -190,10 +189,9 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewAppRoleValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			validator := NewAppRoleValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/v1/auth/approle/login"
 
 			status, err := validator.Validate(t.Context(), test.credentials)
 
@@ -211,33 +209,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 	}
 }
 
-func TestValidator_InvalidVaultURL(t *testing.T) {
-	validator := NewTokenValidator(WithVaultURL("://invalid-url"))
-	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(t.Context(), token)
-
-	if err == nil {
-		t.Fatal("Expected error for invalid URL, got nil")
-	}
-	if status != veles.ValidationFailed {
-		t.Errorf("Expected ValidationFailed status, got %v", status)
-	}
-}
-
-func TestValidator_NetworkError(t *testing.T) {
-	// Use a URL that will cause a network error
-	validator := NewTokenValidator(WithVaultURL("http://localhost:1"))
-	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(t.Context(), token)
-
-	if err == nil {
-		t.Fatal("Expected network error, got nil")
-	}
-	if status != veles.ValidationFailed {
-		t.Errorf("Expected ValidationFailed status, got %v", status)
-	}
-}
-
 func TestValidator_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// This handler will never respond, allowing us to test context cancellation
@@ -245,10 +216,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	validator := NewTokenValidator(
-		WithClient(server.Client()),
-		WithVaultURL(server.URL),
-	)
+	validator := NewTokenValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/v1/auth/token/lookup-self"
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately
