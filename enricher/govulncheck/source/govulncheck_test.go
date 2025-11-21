@@ -14,12 +14,17 @@
 package govcsource_test
 
 import (
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
@@ -28,19 +33,48 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-const testdata = "./testdata"
+const testProjPath = "./testdata/goproj"
+const vulndbPath = "./testdata/vulndb"
 const reachableVulnID = "GO-2023-1558"
-const unreachableVulnID = "GO-2021-0053"
+const unreachableVulnID1 = "GO-2021-0053"
+const unreachableVulnID2 = "GO-2024-2937"
 
 func TestEnricher(t *testing.T) {
+	testCases := []struct {
+		name					string
+		vulnID					string
+		expectedSignals []*vex.FindingExploitabilitySignal
+	}{
+		{
+			name:					"reachable vuln",
+			vulnID:					reachableVulnID,
+			expectedSignals: nil,
+		},
+		{
+			name:					"unreachable vuln 1 (package imported, vulnerable function not called)",
+			vulnID:					unreachableVulnID1,
+			expectedSignals: []*vex.FindingExploitabilitySignal{{
+				Plugin:        govcsource.Name,
+				Justification: vex.VulnerableCodeNotInExecutePath,
+			}},
+		},
+		{
+			name:					"unreachable vuln 2 (package not imported at all, just present in go.mod)",
+			vulnID:					unreachableVulnID2,
+			expectedSignals: []*vex.FindingExploitabilitySignal{{
+				Plugin:        govcsource.Name,
+				Justification: vex.VulnerableCodeNotInExecutePath,
+			}},
+		},
+	}
+
 	pkgs := setupPackages()
-	vulns := setupPackageVulns()
+	vulns := setupPackageVulns(t, pkgs)
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
-			Path: testdata,
+			Path: testProjPath,
 			FS:   scalibrfs.DirFS("."),
 		},
 	}
@@ -74,76 +108,102 @@ func TestEnricher(t *testing.T) {
 		t.Fatalf("govulncheck enrich failed: %s", err)
 	}
 
-	if len(inv.PackageVulns) != 2 {
-		t.Fatalf("govulncheck failed: expected %d vulns, but got %d vulns", 2, len(inv.PackageVulns))
+	vulnsByID := make(map[string]*inventory.PackageVuln)
+	for _, v := range inv.PackageVulns {
+		vulnsByID[v.Vulnerability.Id] = v
 	}
 
-	for _, vuln := range inv.PackageVulns {
-		switch vuln.Vulnerability.Id {
-		case reachableVulnID:
-			if len(vuln.ExploitabilitySignals) != 0 {
-				t.Fatalf("govulncheck enrich failed, expected %s to be reachable, but marked as unreachable", reachableVulnID)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			vuln, ok := vulnsByID[tc.vulnID]
+			if !ok {
+				t.Fatalf("vulnerability %s not found in inventory", tc.vulnID)
 			}
-		case unreachableVulnID:
-			if len(vuln.ExploitabilitySignals) == 0 || vuln.ExploitabilitySignals[0].Justification != vex.VulnerableCodeNotInExecutePath {
-				t.Fatalf("govulncheck enrich failed, expected %s to be unreachable, but marked as reachable", unreachableVulnID)
+
+			if diff := cmp.Diff(tc.expectedSignals, vuln.ExploitabilitySignals); diff != "" {
+				t.Errorf("ExploitabilitySignals mismatch (-want +got):\n%s", diff)
 			}
-		}
+		})
 	}
 }
 
 func setupPackages() []*extractor.Package {
-	pkgs := []*extractor.Package{}
-
-	pkgs = append(pkgs, &extractor.Package{
-		Name:      "stdlib",
-		Version:   "1.19",
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filepath.Join(".", "go.mod")},
-		Plugins:   []string{gomod.Name},
-	})
-
-	pkgs = append(pkgs, &extractor.Package{
-		Name:      "github.com/gogo/protobuf",
-		Version:   "1.3.1",
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filepath.Join(".", "go.mod")},
-		Plugins:   []string{gomod.Name},
-	})
-
-	pkgs = append(pkgs, &extractor.Package{
-		Name:      "github.com/ipfs/go-bitfield",
-		Version:   "1.0.0",
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filepath.Join(".", "go.mod")},
-		Plugins:   []string{gomod.Name},
-	})
-
-	pkgs = append(pkgs, &extractor.Package{
-		Name:      "golang.org/x/image",
-		Version:   "0.4.0",
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filepath.Join(".", "go.mod")},
-		Plugins:   []string{gomod.Name},
-	})
+	pkgs := []*extractor.Package{
+		{
+			Name:      "stdlib",
+			Version:   "1.19",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join(".", "go.mod")},
+			Plugins:   []string{gomod.Name},
+		},
+		// Affected by GO-2021-0053, but we don't actually call the vulnerable func
+		{
+			Name:      "github.com/gogo/protobuf",
+			Version:   "1.3.1",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join(".", "go.mod")},
+			Plugins:   []string{gomod.Name},
+		},
+		// Affected by GO-2023-1558, and we do call the vulnerable func
+		{
+			Name:      "github.com/ipfs/go-bitfield",
+			Version:   "1.0.0",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join(".", "go.mod")},
+			Plugins:   []string{gomod.Name},
+		},
+		// Affected by GO-2024-2937, but only present in the go.mod file, nor present in the code
+		{
+			Name:      "golang.org/x/image",
+			Version:   "0.4.0",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join(".", "go.mod")},
+			Plugins:   []string{gomod.Name},
+		},
+	}
 
 	return pkgs
 }
 
-func setupPackageVulns() []*inventory.PackageVuln {
-	var vulns []*inventory.PackageVuln
-
-	vulns = append(vulns, &inventory.PackageVuln{
-		Vulnerability: &osvschema.Vulnerability{
-			Id: reachableVulnID,
+func setupPackageVulns(t *testing.T, pkgs []*extractor.Package) []*inventory.PackageVuln {
+	pkgVulns := []*inventory.PackageVuln{
+		{
+			Vulnerability: loadVuln(t, reachableVulnID),
+			Package:       getRefToPackage(pkgs, "github.com/ipfs/go-bitfield"),
 		},
-	})
-
-	vulns = append(vulns, &inventory.PackageVuln{
-		Vulnerability: &osvschema.Vulnerability{
-			Id: unreachableVulnID,
+		{
+			Vulnerability: loadVuln(t, unreachableVulnID1),
+			Package:       getRefToPackage(pkgs, "github.com/gogo/protobuf"),
 		},
-	})
+		{
+			Vulnerability: loadVuln(t, unreachableVulnID2),
+			Package:       getRefToPackage(pkgs, "golang.org/x/image"),
+		},
+	}
 
-	return vulns
+	return pkgVulns
+}
+
+func loadVuln(t *testing.T, vulnID string) *osvschema.Vulnerability {
+	path := filepath.Join(vulndbPath, vulnID+".json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read vuln file %s: %v", path, err)
+	}
+
+	vuln := &osvschema.Vulnerability{}
+	if err := protojson.Unmarshal(content, vuln); err != nil {
+		t.Fatalf("failed to unmarshal vuln from %s: %v", path, err)
+	}
+
+	return vuln
+}
+
+func getRefToPackage(pkgs []*extractor.Package, name string) *extractor.Package {
+	for _, pkg := range pkgs {
+		if pkg.Name == name {
+			return pkg
+		}
+	}
+	return nil
 }

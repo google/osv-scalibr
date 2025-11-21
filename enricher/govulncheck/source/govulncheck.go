@@ -20,13 +20,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
@@ -121,11 +124,23 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*internal.Finding) {
 	for _, pv := range inv.PackageVulns {
 		findings, exist := idToFindings[pv.Vulnerability.Id]
-		// Skip if no findings for this package vulnerability ID
+
+
 		if !exist {
+			if vulnHasImportsField(pv.Vulnerability, pv.Package) {
+				// If there is symbol information, then analysis has been performed, and
+				// code does not import the vulnerable package, so definitely not called
+				pv.ExploitabilitySignals = append(pv.ExploitabilitySignals, &vex.FindingExploitabilitySignal{
+					Plugin:        Name,
+					Justification: vex.VulnerableCodeNotInExecutePath,
+				})
+			}
+
+			// Otherwise, we don't know if the code is reachable or not.
 			continue
 		}
 
+		// For entries with findings, check if the code is reachable or not by whether there is a trace.
 		isReachable := false
 		for _, f := range findings {
 			if len(f.Trace) > 0 && f.Trace[0].Function != "" {
@@ -191,6 +206,24 @@ func handleJSON(from io.Reader, to *osvHandler) error {
 	}
 
 	return nil
+}
+
+func vulnHasImportsField(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
+	for _, affected := range vuln.Affected {
+		if pkg != nil {
+			// TODO: Compare versions to see if this is the correct affected element
+			// ver, err := semantic.Parse(pv.Package.Version, semantic.SemverVersion)
+			if affected.Package.Name != pkg.Name {
+				continue
+			}
+		}
+		_, hasImportsField := affected.EcosystemSpecific.GetFields()["imports"]
+		if hasImportsField {
+			return true
+		}
+	}
+
+	return false
 }
 
 // New returns a new govulncheck source enricher.
