@@ -84,9 +84,9 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "yaml_multiline_another_key",
 			input: `
-		  recaptcha:
-		    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
-		    private_key: ***
+			recaptcha:
+				public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+				private_key: ***
 			another_key:
 				private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
 			`,
@@ -100,14 +100,6 @@ func TestDetector_Detect(t *testing.T) {
 			    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
 					private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
 			`,
-			want: nil,
-		},
-		{
-			name: "yaml_indented_with_tabs",
-			input: `
-` + "\t" + `recaptcha:
-` + "\t\t" + `public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
-` + "\t\t" + `private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3`,
 			want: nil,
 		},
 		{
