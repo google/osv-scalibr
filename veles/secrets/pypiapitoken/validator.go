@@ -70,8 +70,8 @@ func NewValidator() *simplevalidate.Validator[PyPIAPIToken] {
 				"Content-Type":  contentType,
 			}
 		},
-		Body: func(_ PyPIAPIToken) string {
-			return body
+		Body: func(PyPIAPIToken) (string, error) {
+			return body, nil
 		},
 		ValidResponseCodes:   []int{http.StatusBadRequest},
 		InvalidResponseCodes: []int{http.StatusForbidden},

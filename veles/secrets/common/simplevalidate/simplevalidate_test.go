@@ -267,6 +267,22 @@ func TestValidate(t *testing.T) {
 			want:    veles.ValidationFailed,
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			desc: "body_func_returns_error",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint:   testURLStr,
+				HTTPMethod: http.MethodPost,
+				Body: func(s velestest.FakeStringSecret) (string, error) {
+					return "", errors.New("body construction failed")
+				},
+			},
+			secret: testSecret,
+			roundTripper: &mockRoundTripper{
+				t: t,
+			},
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
 	}
 
 	for _, tc := range tests {

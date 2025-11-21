@@ -44,12 +44,12 @@ func NewClientCredentialsValidator(opts ...ClientCredentialsOption) *sv.Validato
 		HTTPHeaders: func(_ cc) map[string]string {
 			return map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
 		},
-		Body: func(s cc) string {
+		Body: func(s cc) (string, error) {
 			form := url.Values{}
 			form.Set("grant_type", "client_credentials")
 			form.Set("client_id", s.ClientID)
 			form.Set("client_secret", s.ClientSecret)
-			return form.Encode()
+			return form.Encode(), nil
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
 		InvalidResponseCodes: []int{http.StatusBadRequest, http.StatusUnauthorized},
