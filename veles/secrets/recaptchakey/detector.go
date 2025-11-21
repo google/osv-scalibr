@@ -11,11 +11,13 @@ import (
 
 var (
 	// inlinePattern matches an inline assignment of a captcha secret key and captures its value (works for .env .json and .yaml)
-	inlinePattern = regexp.MustCompile(`(?i)captcha[._-]?(?:secret|private)[a-zA-Z_]*\\*"?\s*[:=]\s*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	//
+	// { and } are excluded to not overlap with inline json
+	inlinePattern = regexp.MustCompile(`(?i)captcha[^\{\}\n\r]{0,50}(?:secret|private)[^\{\}\n\r]{0,50}(6[A-Za-z0-9_\-'"]{39})\b`)
 	// jsonBlockPattern matches a json object with the key ending in captcha and then extract the value of a secret key
-	jsonBlockPattern = regexp.MustCompile(`(?i)captcha\\*"\s?:\s?\{[^\}]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
+	jsonBlockPattern = regexp.MustCompile(`(?i)captcha[._-a-zA-Z0-9]*\\*"\s?:\s?\{[^\}]*?(?:private|secret)[a-zA-Z_]*\\*['"]?\s?:\s?\\*['"]?(6[A-Za-z0-9_-]{39})\b`)
 	// yamlBlockPattern roughly searches for a yaml block with a secret key near it (leaving space before to check for indentation)
-	yamlBlockPattern = regexp.MustCompile(`(?i)\s*([a-zA-Z_]*captcha:[\r\n]+)[\s\S]{0,300}(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
+	yamlBlockPattern = regexp.MustCompile(`(?i)\s*([a-zA-Z_]*captcha[._-a-zA-Z0-9]*:[\r\n]+)[\s\S]{0,300}(?:private|secret)[a-zA-Z_]*\s*:\s*['"]?(6[A-Za-z0-9_-]{39}\b)`)
 )
 
 const (

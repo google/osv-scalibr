@@ -206,6 +206,51 @@ reCaptcha:
 				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
 			},
 		},
+		{
+			name: "space_in_between",
+			input: `
+	     recaptchaSecret 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "go",
+			input: `
+			var recaptchaV3Secret = "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "go2",
+			input: `
+			recaptchaV3Secret := "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "xml",
+			input: `
+			<add key="reCaptchaSecret" value="6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"/>
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
+		{
+			name: "url",
+			input: `
+			captchaenterprise.googleapis.com/?secret=6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+	    `,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
+		},
 	}
 
 	for _, tc := range tests {
