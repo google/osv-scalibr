@@ -96,11 +96,13 @@ func TestDetector_Detect(t *testing.T) {
 			name: "yaml_indented",
 			input: `
 			someIndentation:
-			  recaptcha:
-			    public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
-					private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
+        recaptcha:
+          public_key: 6LcA1x0UAAAAAF-1b2Qp9Zp3t-TestKeyPublic3
+          private_key: 6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3
 			`,
-			want: nil,
+			want: []veles.Secret{
+				recaptchakey.Key{Secret: "6LeH8e7VAAAAAG1r3Ky6Wx7c7TestKeyPrivate3"},
+			},
 		},
 		{
 			name: "no_space_env",
