@@ -20,20 +20,17 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 
+	"github.com/google/osv-scalibr/linter/plugger/flags"
 	"github.com/google/osv-scalibr/linter/plugger/plugger"
 )
 
 var (
-	fIPattern          string
-	fExcludePkgPattern string
+	fInterfaces flags.List
 )
 
 func setFlags() {
-	flag.StringVar(&fIPattern, "interface", "", `regex pattern for plugin interfaces, ex: 'github\.com/package.MyInterface|.*\.OtherInterface'`)
-	// setting a^ as default to include everything
-	flag.StringVar(&fExcludePkgPattern, "exclude-pkg", "a^", `regex pattern for pkg to exclude, ex: 'github\.com/package/testing/.*'`)
+	flag.Var(&fInterfaces, "interface", `list of interfaces (repeatable), ex: '-interface github.com/pkg.Interface'`)
 }
 
 func main() {
@@ -42,21 +39,11 @@ func main() {
 
 	pkgs := flag.Args()
 
-	if fIPattern == "" {
-		log.Fatal("please provide interface pattern")
+	if len(fInterfaces) == 0 {
+		log.Fatal("please provide at least one plugin interface, ex: '-interface github.com/pkg.Interface'")
 	}
 
-	iPattern, err := regexp.Compile(fIPattern)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	excludePkgPattern, err := regexp.Compile(fExcludePkgPattern)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ctrs, err := plugger.Run(iPattern, excludePkgPattern, pkgs)
+	ctrs, err := plugger.Run(fInterfaces, pkgs)
 	if err != nil {
 		log.Fatal(err)
 	}

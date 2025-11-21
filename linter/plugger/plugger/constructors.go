@@ -19,20 +19,22 @@ import (
 	"go/types"
 	"maps"
 	"slices"
+	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/packages"
 )
 
-// FindConstructors returns the constructor for the given implementations
-func FindConstructors(pkgs []*packages.Package, implementations map[*packages.Package][]*types.Named) []*Constructor {
+// FindConstructors returns the constructor for the given types
+func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constructor {
 	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
-		localImplemenations := implementations[pkg]
-		for _, impl := range localImplemenations {
+		findAliases(functions)
+		for _, impl := range types {
 			for _, fn := range functions {
 				if fn.Returns(impl) {
-					ctrs = append(ctrs, NewConstructor(fn, impl))
+					ctrs = append(ctrs, &Constructor{Function: fn, Impl: impl})
 				}
 			}
 		}
@@ -42,6 +44,7 @@ func FindConstructors(pkgs []*packages.Package, implementations map[*packages.Pa
 
 // findFunctions finds all the function in the given pkg
 func findFunctions(pkg *packages.Package) []*Function {
+	seen := map[*ast.FuncDecl]*Function{}
 	fns := []*Function{}
 	for _, file := range pkg.Syntax {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -53,13 +56,7 @@ func findFunctions(pkg *packages.Package) []*Function {
 			if fn.Recv != nil {
 				return true
 			}
-			returnTypes := extractReturnTypes(pkg, fn, nil)
-
-			fns = append(fns, &Function{
-				Fun:         fn,
-				Pkg:         pkg,
-				ReturnTypes: returnTypes,
-			})
+			fns = append(fns, extractFunction(pkg, fn, seen))
 			return true
 		})
 	}
@@ -67,20 +64,22 @@ func findFunctions(pkg *packages.Package) []*Function {
 	return fns
 }
 
-// extractReturnTypes extracts concrete return types within the same package,
+// extractFunction extracts concrete return types within the same package,
 // if the function calls an external function it uses its return type as type (even if not concrete)
-func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]bool) []types.Type {
+func extractFunction(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]*Function) *Function {
 	if fn.Body == nil {
 		return nil
 	}
-	if seen == nil {
-		seen = make(map[*ast.FuncDecl]bool)
+	if ts, ok := seen[fn]; ok {
+		return ts
 	}
-	if seen[fn] {
-		// Prevent infinite recursion on cyclic calls
-		return nil
+
+	// handle nolint directive
+	if hasNoLint(fn.Doc, Name) {
+		res := &Function{Fun: fn, Pkg: pkg}
+		seen[fn] = res
+		return res
 	}
-	seen[fn] = true
 
 	typesSet := map[types.Type]struct{}{}
 
@@ -95,7 +94,8 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 				case *ast.CallExpr:
 					if fnDecl := findFuncDecl(pkg, call.Fun); fnDecl != nil {
 						// Recurse into the called function
-						for _, t := range extractReturnTypes(pkg, fnDecl, seen) {
+						calledFn := extractFunction(pkg, fnDecl, seen)
+						for _, t := range calledFn.ReturnTypes {
 							typesSet[t] = struct{}{}
 						}
 						continue
@@ -115,7 +115,12 @@ func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.F
 		return true
 	})
 
-	return slices.Collect(maps.Keys(typesSet))
+	res := &Function{
+		Fun: fn, Pkg: pkg,
+		ReturnTypes: slices.Collect(maps.Keys(typesSet)),
+	}
+	seen[fn] = res
+	return res
 }
 
 // findFuncDecl return searches the specified function in the given pkg
@@ -135,4 +140,52 @@ func findFuncDecl(pkg *packages.Package, fun ast.Expr) *ast.FuncDecl {
 		}
 	}
 	return nil
+}
+
+// findAliases populates the .Aliases field in the given functions
+//
+// Two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault)
+//
+// Note: suffixes such as "Default" and the name of the packages are removed from the name of the functions
+func findAliases(functions []*Function) {
+	slices.SortFunc(functions, func(a, b *Function) int {
+		return strings.Compare(a.Fun.Name.Name, b.Fun.Name.Name)
+	})
+
+	bins := map[string][]*Function{}
+	i, j := 0, 0
+	for i < len(functions) && j < len(functions) {
+		f1 := functions[i]
+		f1Name := f1.Fun.Name.Name
+
+		// Heuristically remove the suffixes: pkg.Name and "Default" from the function name
+		f1Name = strings.TrimSuffix(f1Name, "Default")
+		f1Name = strings.TrimSuffix(f1Name, capitalizeFirst(f1.Pkg.Name))
+
+		f2 := functions[j]
+		f2Name := f2.Fun.Name.Name
+		// skip to next bin since strings are sorted
+		if !strings.HasPrefix(f2Name, f1Name) {
+			i = j
+			continue
+		}
+		bins[f1Name] = append(bins[f1Name], f2)
+		j++
+	}
+
+	for _, bin := range bins {
+		for _, fn := range bin {
+			fn.Aliases = bin
+		}
+	}
+}
+
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	// Convert first rune to uppercase, rest stays the same
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

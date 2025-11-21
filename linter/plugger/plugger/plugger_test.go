@@ -15,7 +15,7 @@
 package plugger_test
 
 import (
-	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -36,8 +36,7 @@ func TestFindInterfaces(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	re := regexp.MustCompile(`MyPlugin`)
-	interfaces := plugger.FindInterfaces(pkgs, re)
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
 	var got []string
 	for _, iface := range interfaces {
 		got = append(got, iface.String())
@@ -55,17 +54,40 @@ func TestFindImplementations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, regexp.MustCompile(`.*`)))
+	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"}))
 
 	// Collect implementation names for comparison
 	var got []string
-	for _, implsInPkg := range impls {
-		for _, i := range implsInPkg {
-			got = append(got, i.Obj().Name())
-		}
+	for _, impl := range impls {
+		got = append(got, impl.Obj().Name())
 	}
 
-	want := []string{"PluginA", "PluginB"} // what you expect
+	want := []string{"PluginA", "PluginB"}
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFindImplementationsWithGeneric(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/generic")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/generic.Validator", "testdata/generic.IComplex"})
+	if len(interfaces) != 2 {
+		t.Errorf("expected 2 interface, found %d", len(interfaces))
+	}
+
+	impls := plugger.FindImplementations(pkgs, interfaces)
+
+	// Collect implementation names for comparison
+	var got []string
+	for _, impl := range impls {
+		got = append(got, impl.Obj().Name())
+	}
+
+	want := []string{"TestPointer", "Test", "TestAnotherType", "Complex"}
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -77,10 +99,9 @@ func TestFindConstructors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	implementations := plugger.FindImplementations(
-		pkgs, plugger.FindInterfaces(pkgs, regexp.MustCompile(`.*`)),
-	)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
 	var got []string
 	for _, ctr := range ctrs {
 		got = append(got, ctr.Fun.Name.String())
@@ -103,11 +124,9 @@ func TestFindUsages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctrs := plugger.FindConstructors(
-		pkgs, plugger.FindImplementations(
-			pkgs, plugger.FindInterfaces(pkgs, regexp.MustCompile(`.*`)),
-		),
-	)
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
 
 	usages := plugger.FindUsages(pkgs, ctrs)
 	var got []string
@@ -125,23 +144,101 @@ func TestFindUsages(t *testing.T) {
 	}
 }
 
-func TestNolintRule(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint")
+func TestStructNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/plugin")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, regexp.MustCompile(`.*`)))
+	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"}))
 
 	// Collect implementation names for comparison
 	var got []string
-	for _, implsInPkg := range impls {
-		for _, i := range implsInPkg {
-			got = append(got, i.Obj().Name())
-		}
+	for _, impl := range impls {
+		got = append(got, impl.Obj().Name())
 	}
 
-	want := []string{"PluginA", "PluginB"} // what you expect
+	want := []string{"PluginA", "PluginB", "PluginNotUsedToLint"}
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPkgNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/pkg")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgs = plugger.FilterNoLintPackages(pkgs)
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
+
+	var got []string
+	for _, ctr := range ctrs {
+		got = append(got, ctr.Fun.Name.String())
+	}
+
+	want := []string{
+		"NewPluginA",
+		"NewPluginB",
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFunNoLintRule(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/fun")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
+
+	var got []string
+	for _, ctr := range ctrs {
+		got = append(got, ctr.Fun.Name.String())
+	}
+
+	want := []string{
+		"NewPluginA",
+		"NewPluginB",
+		"NewPlugin",
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestExternal(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/external")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, slices.Concat(implementations, interfaces))
+
+	var got []string
+	for _, ctr := range ctrs {
+		got = append(got, ctr.Fun.Name.String())
+	}
+
+	want := []string{
+		"NewPluginA",
+		"NewPluginB",
+		"NewPluginExternal",
+		"NewPluginExternalWithoutConcrete",
+	}
+
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
