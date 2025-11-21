@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 )
 
+// New returns a new extractor which searches for credentials in the .aws/credentials file
 func New() filesystem.Extractor {
 	return convert.FromVelesDetectorWithRequire(
 		[]veles.Detector{awsaccesskey.NewDetector(), gcshmackey.NewDetector()},

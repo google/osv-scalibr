@@ -20,6 +20,7 @@ type withRequire struct {
 	fileRequired func(api filesystem.FileAPI) bool
 }
 
+// Extract extracts secrets from a file using the specified detectors.
 func (e *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if e.engine == nil {
 		var err error
