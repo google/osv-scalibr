@@ -27,22 +27,21 @@ import (
 	"slices"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
-
-	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/vuln/scan"
 )
 
 const (
 	// Name is the unique name of this enricher.
-	Name = "reachability/govcsource"
+	Name = "reachability/go/source"
 )
 
 // ErrNoGoToolchain is returned when the go toolchain is not found in the system.
@@ -135,9 +134,13 @@ func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string]
 		findings, exist := idToFindings[pv.Vulnerability.Id]
 
 		if !exist {
+			// The finding doesn't exist, this could mean two things:
+			// 1. The code does not import the vulnerable package.
+			// 2. The vulnerability does not have symbol information, so govulncheck ignored it.
 			if vulnHasImportsField(pv.Vulnerability, pv.Package) {
-				// If there is symbol information, then analysis has been performed, and
-				// code does not import the vulnerable package, so definitely not called
+				// If there is symbol information, then analysis has been performed.
+				// Since this finding doesn't exist, it means the code does not import the vulnerable package,
+				// so definitely not called.
 				pv.ExploitabilitySignals = append(pv.ExploitabilitySignals, &vex.FindingExploitabilitySignal{
 					Plugin:        Name,
 					Justification: vex.VulnerableCodeNotInExecutePath,
@@ -149,15 +152,15 @@ func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string]
 		}
 
 		// For entries with findings, check if the code is reachable or not by whether there is a trace.
-		isReachable := false
+		reachable := false
 		for _, f := range findings {
 			if len(f.Trace) > 0 && f.Trace[0].Function != "" {
-				isReachable = true
+				reachable = true
 				break
 			}
 		}
 
-		if !isReachable {
+		if !reachable {
 			pv.ExploitabilitySignals = append(pv.ExploitabilitySignals, &vex.FindingExploitabilitySignal{
 				Plugin:        Name,
 				Justification: vex.VulnerableCodeNotInExecutePath,
