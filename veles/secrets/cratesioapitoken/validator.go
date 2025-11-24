@@ -15,89 +15,48 @@
 package cratesioapitoken
 
 import (
-	"bytes"
-	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Crates.io API keys via the Crates.io API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+const (
+	randomCrateName = "osvscalibr361aa9c83e8d69e1"
+	randomUserName  = "velesvalidationtestuser"
+	// We need to use a random crate name that is unlikely to exist.
+	endpointURL = "https://crates.io/api/v1/crates/" + randomCrateName + "/owners"
+)
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
+// NewValidator creates a new Validator that validates the CratesIOAPIToken via
+// the Crates.io API endpoint.
 //
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
+// It performs a PUT request to the Crates.io API endpoint to add an owner to
+// a non-existent crate using the API key in the Authorization header.
+// Valid tokens return 404 Not Found, while invalid tokens return 403 Forbidden.
+func NewValidator() *simplevalidate.Validator[CratesIOAPItoken] {
+	return &simplevalidate.Validator[CratesIOAPItoken]{
+		Endpoint:   endpointURL,
+		HTTPMethod: http.MethodPut,
+		HTTPHeaders: func(key CratesIOAPItoken) map[string]string {
+			return map[string]string{
+				"Authorization": "Bearer " + key.Token,
+				"Content-Type":  "application/json",
+			}
+		},
+		Body:                 buildRequestBody,
+		ValidResponseCodes:   []int{http.StatusNotFound},
+		InvalidResponseCodes: []int{http.StatusForbidden},
 	}
 }
 
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given CratesIOAPItoken is valid.
-//
-// It performs a PUT request to the Crates.io API endpoint to add an owner to a non-existent crate
-// using the API key in the Authorization header. Valid tokens return 404 Not Found,
-// while invalid tokens return 401 Unauthorized.
-func (v *Validator) Validate(ctx context.Context, key CratesIOAPItoken) (veles.ValidationStatus, error) {
-	// Use a random crate name that is unlikely to exist
-	randomBytes := make([]byte, 8)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to generate random hex: %w", err)
-	}
-	randomCrateName := "osvscalibr" + hex.EncodeToString(randomBytes)
-	randomUserName := "velesvalidationtestuser"
-
-	// Prepare the JSON payload
+func buildRequestBody(key CratesIOAPItoken) (string, error) {
 	payload := map[string][]string{
 		"users": {randomUserName},
 	}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to marshal JSON payload: %w", err)
+		return "", err
 	}
-
-	// Create the PUT request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
-		fmt.Sprintf("https://crates.io/api/v1/crates/%s/owners", randomCrateName), bytes.NewBuffer(jsonData))
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+key.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP PUT failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusNotFound: // crate doesn't exist, but the token is valid
-		return veles.ValidationValid, nil
-	case http.StatusForbidden: // invalid token
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, nil
-	}
+	return string(jsonData), nil
 }
