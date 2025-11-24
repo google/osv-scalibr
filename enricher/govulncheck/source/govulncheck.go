@@ -219,8 +219,8 @@ func handleJSON(from io.Reader, to *osvHandler) error {
 func vulnHasImportsField(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 	for _, affected := range vuln.Affected {
 		if pkg != nil {
-			// TODO: Compare versions to see if this is the correct affected element
-			// ver, err := semantic.Parse(pv.Package.Version, semantic.SemverVersion)
+			// TODO(#1559): Compare versions to see if this is the correct affected element
+			// This is very unlikely to ever matter however.
 			if affected.Package.Name != pkg.Name {
 				continue
 			}
