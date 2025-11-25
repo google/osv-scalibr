@@ -36,7 +36,8 @@ type Validator[S veles.Secret] struct {
 	Endpoint string
 	// Function that constructs the endpoint for a given secret.
 	// Exactly one of Endpoint or EndpointFunc must be provided.
-	EndpointFunc func(S) string
+	// If EndpointFunc returns an error, Validate returns ValidationFailed and the error.
+	EndpointFunc func(S) (string, error)
 	// The HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
 	HTTPMethod string
 	// HTTP headers to set in the query based on the secret.
@@ -67,7 +68,11 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 
 	endpoint := v.Endpoint
 	if v.EndpointFunc != nil {
-		endpoint = v.EndpointFunc(secret)
+		endpointURL, err := v.EndpointFunc(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
+		endpoint = endpointURL
 	}
 
 	var reqBodyReader io.Reader

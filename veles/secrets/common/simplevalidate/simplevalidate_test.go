@@ -220,8 +220,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid_response_with_endpointfunc",
 			validator: &sv.Validator[velestest.FakeStringSecret]{
-				EndpointFunc: func(s velestest.FakeStringSecret) string {
-					return testURLStr + "?token=" + s.Value
+				EndpointFunc: func(s velestest.FakeStringSecret) (string, error) {
+					return testURLStr + "?token=" + s.Value, nil
 				},
 				HTTPMethod:         http.MethodGet,
 				ValidResponseCodes: []int{http.StatusOK},
@@ -243,8 +243,8 @@ func TestValidate(t *testing.T) {
 			desc: "endpoint_and_endpointfunc_provided",
 			validator: &sv.Validator[velestest.FakeStringSecret]{
 				Endpoint: testURLStr,
-				EndpointFunc: func(s velestest.FakeStringSecret) string {
-					return testURLStr
+				EndpointFunc: func(s velestest.FakeStringSecret) (string, error) {
+					return testURLStr, nil
 				},
 				HTTPMethod: http.MethodGet,
 			},
@@ -275,6 +275,21 @@ func TestValidate(t *testing.T) {
 				Body: func(s velestest.FakeStringSecret) (string, error) {
 					return "", errors.New("body construction failed")
 				},
+			},
+			secret: testSecret,
+			roundTripper: &mockRoundTripper{
+				t: t,
+			},
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "endpointfunc_returns_error",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				EndpointFunc: func(s velestest.FakeStringSecret) (string, error) {
+					return "", errors.New("endpoint construction failed")
+				},
+				HTTPMethod: http.MethodGet,
 			},
 			secret: testSecret,
 			roundTripper: &mockRoundTripper{

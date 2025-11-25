@@ -355,8 +355,8 @@ func TestValidatorCollection_ContextCancellation(t *testing.T) {
 
 	validator := postmanapikey.NewCollectionValidator()
 	validator.HTTPC = server.Client()
-	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) string {
-		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key
+	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
+		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
 	}
 	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
@@ -382,8 +382,8 @@ func TestValidatorCollection_InvalidRequest(t *testing.T) {
 
 	validator := postmanapikey.NewCollectionValidator()
 	validator.HTTPC = server.Client()
-	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) string {
-		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key
+	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
+		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
 	}
 	testCases := []struct {
 		name     string
