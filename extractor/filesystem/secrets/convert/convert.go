@@ -37,7 +37,7 @@ func FromVelesDetector(velesDetector veles.Detector, name string, version int) f
 	}
 }
 
-type placeholder interface {
+type extractorPlaceHolder interface {
 	IsPlaceholder() bool
 }
 
@@ -105,9 +105,7 @@ func SetupVelesExtractors(extractors []filesystem.Extractor) ([]filesystem.Extra
 	for _, e := range extractors {
 		if d, isDetector := e.(veles.Detector); isDetector {
 			detectors = append(detectors, d)
-			// if the detector is an actual filesystem.Extractor
-			// add it to the result list
-			if _, isPlaceholder := e.(placeholder); !isPlaceholder {
+			if _, isExtractorPlaceHolder := e.(extractorPlaceHolder); !isExtractorPlaceHolder {
 				result = append(result, e)
 			}
 		} else {
