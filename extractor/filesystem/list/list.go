@@ -499,9 +499,7 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(func() filesystem.Extractor {
-			return convert.FromVelesDetector(p.detector, p.name, p.version)()
-		})}
+		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
 	}
 	return result
 }
