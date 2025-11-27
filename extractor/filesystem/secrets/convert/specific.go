@@ -16,7 +16,7 @@ import (
 // - Using the provided detector in the detection engine with other detectors.
 // - Using the detector as a standalone filesystem extractor.
 func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, version int, fileRequired func(filesystem.FileAPI) bool) filesystem.Extractor {
-	return &withRequire{
+	return &detectorWithRequire{
 		velesDetector: velesDetector,
 		name:          name,
 		version:       version,
@@ -24,9 +24,13 @@ func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, ver
 	}
 }
 
-// withRequire is a wrapper around the veles.Detector interface that
+// Assert that detectorWithRequire implements the required interfaces.
+var _ veles.Detector = &detectorWithRequire{}
+var _ filesystem.Extractor = &detectorWithRequire{}
+
+// detectorWithRequire is a wrapper around the veles.Detector interface that
 // implements the additional functions of the filesystem Extractor interface.
-type withRequire struct {
+type detectorWithRequire struct {
 	velesDetector veles.Detector
 	name          string
 	version       int
@@ -35,47 +39,47 @@ type withRequire struct {
 }
 
 // MaxSecretLen returns the maximum length a secret from this Detector can have.
-func (w *withRequire) MaxSecretLen() uint32 {
-	return w.velesDetector.MaxSecretLen()
+func (d *detectorWithRequire) MaxSecretLen() uint32 {
+	return d.velesDetector.MaxSecretLen()
 }
 
 // Detect finds candidate secrets in the data and returns them alongside their
 // starting positions.
-func (w *withRequire) Detect(data []byte) ([]veles.Secret, []int) {
-	return w.velesDetector.Detect(data)
+func (d *detectorWithRequire) Detect(data []byte) ([]veles.Secret, []int) {
+	return d.velesDetector.Detect(data)
 }
 
 // Name of the secret extractor.
-func (w *withRequire) Name() string {
-	return w.name
+func (d *detectorWithRequire) Name() string {
+	return d.name
 }
 
 // Version of the secret extractor.
-func (w *withRequire) Version() int {
-	return w.version
+func (d *detectorWithRequire) Version() int {
+	return d.version
 }
 
 // Requirements of the secret extractor.
-func (w *withRequire) Requirements() *plugin.Capabilities {
+func (d *detectorWithRequire) Requirements() *plugin.Capabilities {
 	// Veles plugins don't have any special requirements.
 	return &plugin.Capabilities{}
 }
 
 // FileRequired returns the provided file required callback.
-func (w *withRequire) FileRequired(api filesystem.FileAPI) bool {
-	return w.fileRequired(api)
+func (d *detectorWithRequire) FileRequired(api filesystem.FileAPI) bool {
+	return d.fileRequired(api)
 }
 
 // Extract extracts secret from the filesystem using the provided detector.
-func (w *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	if w.e == nil {
+func (d *detectorWithRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	if d.e == nil {
 		var err error
-		w.e, err = veles.NewDetectionEngine([]veles.Detector{w.velesDetector})
+		d.e, err = veles.NewDetectionEngine([]veles.Detector{d.velesDetector})
 		if err != nil {
 			return inventory.Inventory{}, err
 		}
 	}
-	secrets, err := w.e.Detect(ctx, input.Reader)
+	secrets, err := d.e.Detect(ctx, input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("unable to scan for secrets: %w", err)
 	}
