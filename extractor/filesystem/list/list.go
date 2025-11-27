@@ -96,7 +96,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
-	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awscredentials"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
@@ -104,7 +104,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
-	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -284,7 +283,7 @@ var (
 		pgpass.Name:                  {noCFG(pgpass.New)},
 		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
 		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
-		awscredentials.Name:          {noCFG(awscredentials.New)},
+		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -333,7 +332,6 @@ var (
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
-		{awsaccesskey.NewDetector(), "secrets/awsaccesskey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
 	})
 
@@ -501,7 +499,9 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
+		result[p.name] = []InitFn{noCFG(func() filesystem.Extractor {
+			return convert.FromVelesDetector(p.detector, p.name, p.version)()
+		})}
 	}
 	return result
 }

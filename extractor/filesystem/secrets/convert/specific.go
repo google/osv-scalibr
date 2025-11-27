@@ -10,26 +10,77 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-type withRequire struct {
-	engine *veles.DetectionEngine
-
-	detectors []veles.Detector
-
-	name         string
-	version      int
-	fileRequired func(api filesystem.FileAPI) bool
+// FromVelesDetectorWithRequire converts a Veles Detector into a SCALIBR FilesystemExtractor plugin.
+// This allows:
+// - Enabling Veles Detectors individually like regular SCALIBR plugins.
+// - Using the provided detector in the detection engine with other detectors.
+// - Using the detector as a standalone filesystem extractor.
+func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, version int, fileRequired func(filesystem.FileAPI) bool) filesystem.Extractor {
+	return &withRequire{
+		velesDetector: velesDetector,
+		name:          name,
+		version:       version,
+		fileRequired:  fileRequired,
+	}
 }
 
-// Extract extracts secrets from a file using the specified detectors.
-func (e *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	if e.engine == nil {
+// withRequire is a wrapper around the veles.Detector interface that
+// implements the additional functions of the filesystem Extractor interface.
+type withRequire struct {
+	velesDetector veles.Detector
+	name          string
+	version       int
+	fileRequired  func(filesystem.FileAPI) bool
+	e             *veles.DetectionEngine
+}
+
+// MaxSecretLen returns the maximum length a secret from this Detector can have.
+func (w *withRequire) MaxSecretLen() uint32 {
+	return w.velesDetector.MaxSecretLen()
+}
+
+// Detect finds candidate secrets in the data and returns them alongside their
+// starting positions.
+func (w *withRequire) Detect(data []byte) ([]veles.Secret, []int) {
+	return w.velesDetector.Detect(data)
+}
+
+// Name of the secret extractor.
+func (w *withRequire) Name() string {
+	return w.name
+}
+
+// Version of the secret extractor.
+func (w *withRequire) Version() int {
+	return w.version
+}
+
+// Requirements of the secret extractor.
+func (w *withRequire) Requirements() *plugin.Capabilities {
+	// Veles plugins don't have any special requirements.
+	return &plugin.Capabilities{}
+}
+
+// FileRequired returns the provided file required callback.
+func (w *withRequire) FileRequired(api filesystem.FileAPI) bool {
+	return w.fileRequired(api)
+}
+
+// IsRequirer implements the requirer interface.
+func (w *withRequire) IsRequirer() bool {
+	return true
+}
+
+// Extract extracts secret from the filesystem using the provided detector.
+func (w *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	if w.e == nil {
 		var err error
-		e.engine, err = veles.NewDetectionEngine(e.detectors)
+		w.e, err = veles.NewDetectionEngine([]veles.Detector{w.velesDetector})
 		if err != nil {
-			return inventory.Inventory{}, fmt.Errorf("error setting up the detection engine for %T: %w", e.detectors, err)
+			return inventory.Inventory{}, err
 		}
 	}
-	secrets, err := e.engine.Detect(ctx, input.Reader)
+	secrets, err := w.e.Detect(ctx, input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("unable to scan for secrets: %w", err)
 	}
@@ -41,35 +92,4 @@ func (e *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) 
 		})
 	}
 	return i, nil
-}
-
-// Name of the secret extractor.
-func (e *withRequire) Name() string {
-	return e.name
-}
-
-// Version of the secret extractor.
-func (e *withRequire) Version() int {
-	return e.version
-}
-
-// Requirements of the secret extractor.
-func (e *withRequire) Requirements() *plugin.Capabilities {
-	// Veles plugins don't have any special requirements.
-	return &plugin.Capabilities{}
-}
-
-// FileRequired returns true if the file is required by the extractor.
-func (e *withRequire) FileRequired(api filesystem.FileAPI) bool {
-	return e.fileRequired(api)
-}
-
-// FromVelesDetectorWithRequire returns a filesystem extractor from a veles detector.
-func FromVelesDetectorWithRequire(ds []veles.Detector, name string, version int, fileRequired func(api filesystem.FileAPI) bool) filesystem.Extractor {
-	return &withRequire{
-		detectors:    ds,
-		name:         name,
-		version:      version,
-		fileRequired: fileRequired,
-	}
 }

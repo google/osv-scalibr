@@ -12,34 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awscredentials extracts credentials from the .aws/credentials file
-package awscredentials
+// Package awsaccesskey extends the veles awsaccesskey.Detector to search inside the `~/.aws/credentials` file
+package awsaccesskey
 
 import (
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
-	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
-	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 )
 
 const (
 	// Name is the name of the extractor
-	Name = "secrets/awscredentials"
+	Name = "secrets/awsaccesskey"
+	// Version is the version of the extractor
+	Version = 0
 )
 
-// New returns a new extractor which searches for credentials in the .aws/credentials file
+// New returns a filesystem.Extractor which extracts AWS Access Keys using the awsaccesskey.Detector
 func New() filesystem.Extractor {
 	return convert.FromVelesDetectorWithRequire(
-		[]veles.Detector{awsaccesskey.NewDetector(), gcshmackey.NewDetector()},
-		Name,
-		0,
-		func(api filesystem.FileAPI) bool {
-			path := filepath.ToSlash(api.Path())
-			return strings.HasSuffix(path, ".aws/credentials")
-		},
+		awsaccesskey.NewDetector(), Name, Version, FileRequired,
 	)
+}
+
+// FileRequired returns true if a file contains aws credentials.
+func FileRequired(api filesystem.FileAPI) bool {
+	path := filepath.ToSlash(api.Path())
+	return strings.HasSuffix(path, ".aws/credentials")
 }

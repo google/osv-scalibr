@@ -37,6 +37,10 @@ func FromVelesDetector(velesDetector veles.Detector, name string, version int) f
 	}
 }
 
+type placeholder interface {
+	IsPlaceholder() bool
+}
+
 // detectorWrapper is a wrapper around the veles.Detector interface that
 // implements the additional functions of the filesystem Extractor interface.
 type detectorWrapper struct {
@@ -44,6 +48,8 @@ type detectorWrapper struct {
 	name          string
 	version       int
 }
+
+func (d *detectorWrapper) IsPlaceholder() bool { return true }
 
 // MaxSecretLen returns the maximum length a secret from this Detector can have.
 func (d *detectorWrapper) MaxSecretLen() uint32 {
@@ -95,9 +101,15 @@ var _ filesystem.Extractor = &detectorWrapper{}
 func SetupVelesExtractors(extractors []filesystem.Extractor) ([]filesystem.Extractor, error) {
 	result := make([]filesystem.Extractor, 0, len(extractors))
 	detectors := []veles.Detector{}
+
 	for _, e := range extractors {
-		if d, ok := e.(veles.Detector); ok {
+		if d, isDetector := e.(veles.Detector); isDetector {
 			detectors = append(detectors, d)
+			// if the detector is an actual filesystem.Extractor
+			// add it to the result list
+			if _, isPlaceholder := e.(placeholder); !isPlaceholder {
+				result = append(result, e)
+			}
 		} else {
 			result = append(result, e)
 		}
