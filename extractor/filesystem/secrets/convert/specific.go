@@ -66,11 +66,6 @@ func (w *withRequire) FileRequired(api filesystem.FileAPI) bool {
 	return w.fileRequired(api)
 }
 
-// IsRequirer implements the requirer interface.
-func (w *withRequire) IsRequirer() bool {
-	return true
-}
-
 // Extract extracts secret from the filesystem using the provided detector.
 func (w *withRequire) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if w.e == nil {
