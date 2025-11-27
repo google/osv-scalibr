@@ -16,7 +16,6 @@
 package pair
 
 import (
-	"fmt"
 	"regexp"
 	"slices"
 
@@ -25,13 +24,12 @@ import (
 
 // Match contains information about a match
 type Match struct {
-	Value    string
-	Position int
-	Metadata any
+	Start int
+	Value []byte
 }
 
-func (m Match) String() string {
-	return fmt.Sprintf("%d:%s", m.Position, m.Value)
+func (m Match) end() int {
+	return m.Start + len(m.Value)
 }
 
 // Pair contains two matches and their distance
@@ -49,8 +47,13 @@ type Detector struct {
 	MaxElementLen uint32
 	// MaxDistance sets the maximum distance between the matches.
 	MaxDistance uint32
-	// Function to use to search for matches.
-	FindA, FindB func(data []byte) []*Match
+	// FindA is a function that searches for the first element of a pair in the data.
+	// It should generally apply stricter matching rules than FindB. Its results are used to:
+	//  - filter out overlapping matches (removing conflicting matches from FindB)
+	//  - allow early termination if no matches are found.
+	FindA func(data []byte) []*Match
+	// FindB is a function that searches for the second element of a pair in the data.
+	FindB func(data []byte) []*Match
 	// Returns a veles.Secret from a Pair.
 	// It returns the secret and a boolean indicating success.
 	FromPair func(Pair) (veles.Secret, bool)
@@ -61,7 +64,12 @@ type Detector struct {
 
 // Detect implements veles.Detector.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	as, bs := d.FindA(data), d.FindB(data)
+	as := d.FindA(data)
+	// if FromPartialPair is not provided and no match was found for FindA early exit
+	if d.FromPartialPair == nil && len(as) == 0 {
+		return nil, nil
+	}
+	bs := d.FindB(data)
 	bs = filterOverlapping(as, bs)
 	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair, d.FromPartialPair)
 }
@@ -78,8 +86,8 @@ func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
 		var results []*Match
 		for _, m := range matches {
 			results = append(results, &Match{
-				Value:    string(data[m[0]:m[1]]),
-				Position: m[0],
+				Start: m[0],
+				Value: data[m[0]:m[1]],
 			})
 		}
 		return results
@@ -98,11 +106,11 @@ func filterOverlapping(as, bs []*Match) []*Match {
 
 	for _, b := range bs {
 		// Skip all A matches that end before B starts
-		for aIdx < len(as) && as[aIdx].Position+len(as[aIdx].Value) <= b.Position {
+		for aIdx < len(as) && as[aIdx].end() <= b.Start {
 			aIdx++
 		}
 		// If B does not overlap the current A, keep it
-		if aIdx >= len(as) || b.Position < as[aIdx].Position {
+		if aIdx >= len(as) || b.Start < as[aIdx].Start {
 			filtered = append(filtered, b)
 		}
 	}
@@ -133,7 +141,7 @@ func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPai
 				continue
 			}
 			secrets = append(secrets, secret)
-			positions = append(positions, min(pair.A.Position, pair.B.Position))
+			positions = append(positions, min(pair.A.Start, pair.B.Start))
 			usedA[pair.A] = true
 			usedB[pair.B] = true
 		}
@@ -151,7 +159,7 @@ func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPai
 				continue
 			}
 			secrets = append(secrets, secret)
-			positions = append(positions, a.Position)
+			positions = append(positions, a.Start)
 		}
 	}
 
@@ -162,7 +170,7 @@ func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPai
 				continue
 			}
 			secrets = append(secrets, secret)
-			positions = append(positions, b.Position)
+			positions = append(positions, b.Start)
 		}
 	}
 
@@ -174,9 +182,9 @@ func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
 	var possiblePairs []Pair
 	for _, a := range as {
 		for _, b := range bs {
-			distance := b.Position - (a.Position + len(a.Value))
-			if a.Position > b.Position {
-				distance = a.Position - (b.Position + len(b.Value))
+			distance := b.Start - (a.end())
+			if a.Start > b.Start {
+				distance = a.Start - (b.end())
 			}
 
 			// Skip overlapping matches
