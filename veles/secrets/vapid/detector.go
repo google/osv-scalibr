@@ -35,9 +35,9 @@ const (
 
 var (
 	// match a base64 blob of exactly 87 characters
-	publicKeyPattern = regexp.MustCompile(`\b([A-Za-z0-9_-]{87})\b`)
+	publicKeyPattern = regexp.MustCompile(`\b[A-Za-z0-9_-]{87}\b`)
 	// match a base64 blob of exactly 43 characters
-	privateKeyPattern = regexp.MustCompile(`\b([A-Za-z0-9_-]{43})\b`)
+	privateKeyPattern = regexp.MustCompile(`\b[A-Za-z0-9_-]{43}\b`)
 )
 
 // NewDetector returns a VAPID private key detector
@@ -49,34 +49,15 @@ var (
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxKeyLen, MaxDistance: maxDistance,
-		FindA: findStrict(publicKeyPattern),
-		FindB: findStrict(privateKeyPattern),
-		FromPair: func(data []byte, p pair.Pair) (veles.Secret, bool) {
-			pubB64, privB64 := p.A.Value(data), p.B.Value(data)
+		FindA: pair.FindAllMatches(publicKeyPattern),
+		FindB: pair.FindAllMatches(privateKeyPattern),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			pubB64, privB64 := string(p.A.Value), string(p.B.Value)
 			if ok, _ := validateVAPIDKeys(pubB64, privB64); !ok {
 				return nil, false
 			}
 			return Key{PublicB64: pubB64, PrivateB64: privB64}, true
 		},
-	}
-}
-
-// findStrict returns all matches found using a "strict" regex.
-//
-// A "strict" regex must be composed by a single capture group for the payload,
-// and non-capturing groups for the boundaries, e.g.:
-// `\b([group]{len})\b`
-func findStrict(re *regexp.Regexp) func(data []byte) []*pair.Match {
-	return func(data []byte) []*pair.Match {
-		matches := re.FindAllSubmatchIndex(data, -1)
-		var results []*pair.Match
-		for _, m := range matches {
-			results = append(results, &pair.Match{
-				End:   m[3],
-				Start: m[2],
-			})
-		}
-		return results
 	}
 }
 
