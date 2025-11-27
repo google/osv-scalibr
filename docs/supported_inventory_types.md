@@ -132,7 +132,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
 | MariaDB Credentials                         | `secrets/mariadb`                    |
-| AWS Credentials                             | `secrets/awscredentials`             |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`               |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
