@@ -50,8 +50,13 @@ type Detector struct {
 	MaxElementLen uint32
 	// MaxDistance sets the maximum distance between the matches.
 	MaxDistance uint32
-	// Function to use to search for matches.
-	FindA, FindB func(data []byte) []*Match
+	// FindA is a function that searches for the first element of a pair in the data.
+	// It should generally apply stricter matching rules than FindB. Its results are used to:
+	//  - filter out overlapping matches (removing conflicting matches from FindB)
+	//  - allow early termination if no matches are found.
+	FindA func(data []byte) []*Match
+	// FindB is a function that searches for the second element of a pair in the data.
+	FindB func(data []byte) []*Match
 	// Returns a veles.Secret from a Pair.
 	// It returns the secret and a boolean indicating success.
 	FromPair func([]byte, Pair) (veles.Secret, bool)
