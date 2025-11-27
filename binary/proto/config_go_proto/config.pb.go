@@ -40,6 +40,9 @@ type PluginConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum file size the plugin will process.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// The local directory to store the downloaded manifests during dependency
+	// resolution.
+	LocalRegistry string `protobuf:"bytes,3,opt,name=local_registry,json=localRegistry,proto3" json:"local_registry,omitempty"`
 	// Config values that only apply to a single plugin.
 	PluginSpecific []*PluginSpecificConfig `protobuf:"bytes,2,rep,name=plugin_specific,json=pluginSpecific,proto3" json:"plugin_specific,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -83,6 +86,13 @@ func (x *PluginConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+func (x *PluginConfig) GetLocalRegistry() string {
+	if x != nil {
+		return x.LocalRegistry
+	}
+	return ""
+}
+
 func (x *PluginConfig) GetPluginSpecific() []*PluginSpecificConfig {
 	if x != nil {
 		return x.PluginSpecific
@@ -100,6 +110,7 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_Ova
 	//	*PluginSpecificConfig_Vdi
 	//	*PluginSpecificConfig_Vmdk
+	//	*PluginSpecificConfig_PomXmlNet
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -196,6 +207,15 @@ func (x *PluginSpecificConfig) GetVmdk() *VMDKConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetPomXmlNet() *POMXMLNetConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_PomXmlNet); ok {
+			return x.PomXmlNet
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -224,6 +244,10 @@ type PluginSpecificConfig_Vmdk struct {
 	Vmdk *VMDKConfig `protobuf:"bytes,6,opt,name=vmdk,proto3,oneof"`
 }
 
+type PluginSpecificConfig_PomXmlNet struct {
+	PomXmlNet *POMXMLNetConfig `protobuf:"bytes,8,opt,name=pom_xml_net,json=pomXmlNet,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -235,6 +259,8 @@ func (*PluginSpecificConfig_Ova) isPluginSpecificConfig_Config() {}
 func (*PluginSpecificConfig_Vdi) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Vmdk) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_PomXmlNet) isPluginSpecificConfig_Config() {}
 
 type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -515,21 +541,77 @@ func (x *VMDKConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+type POMXMLNetConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The URL of the remote Maven registry.
+	RemoteUrl string `protobuf:"bytes,1,opt,name=remote_url,json=remoteUrl,proto3" json:"remote_url,omitempty"`
+	// If true, do not try to create google.DefaultClient for Artifact Registry.
+	DisableGoogleAuth bool `protobuf:"varint,2,opt,name=disable_google_auth,json=disableGoogleAuth,proto3" json:"disable_google_auth,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *POMXMLNetConfig) Reset() {
+	*x = POMXMLNetConfig{}
+	mi := &file_proto_config_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *POMXMLNetConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*POMXMLNetConfig) ProtoMessage() {}
+
+func (x *POMXMLNetConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use POMXMLNetConfig.ProtoReflect.Descriptor instead.
+func (*POMXMLNetConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *POMXMLNetConfig) GetRemoteUrl() string {
+	if x != nil {
+		return x.RemoteUrl
+	}
+	return ""
+}
+
+func (x *POMXMLNetConfig) GetDisableGoogleAuth() bool {
+	if x != nil {
+		return x.DisableGoogleAuth
+	}
+	return false
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
 	"\n" +
-	"\x12proto/config.proto\x12\ascalibr\"\x85\x01\n" +
+	"\x12proto/config.proto\x12\ascalibr\"\xac\x01\n" +
 	"\fPluginConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xc7\x02\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12%\n" +
+	"\x0elocal_registry\x18\x03 \x01(\tR\rlocalRegistry\x12F\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\x83\x03\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
 	"\aarchive\x18\x03 \x01(\v2\x16.scalibr.ArchiveConfigH\x00R\aarchive\x12&\n" +
 	"\x03ova\x18\x04 \x01(\v2\x12.scalibr.OVAConfigH\x00R\x03ova\x12&\n" +
 	"\x03vdi\x18\x05 \x01(\v2\x12.scalibr.VDIConfigH\x00R\x03vdi\x12)\n" +
-	"\x04vmdk\x18\x06 \x01(\v2\x13.scalibr.VMDKConfigH\x00R\x04vmdkB\b\n" +
+	"\x04vmdk\x18\x06 \x01(\v2\x13.scalibr.VMDKConfigH\x00R\x04vmdk\x12:\n" +
+	"\vpom_xml_net\x18\b \x01(\v2\x18.scalibr.POMXMLNetConfigH\x00R\tpomXmlNetB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
@@ -543,7 +625,11 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\";\n" +
 	"\n" +
 	"VMDKConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBBB\x06ConfigP\x01Z6github.com/google/scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"`\n" +
+	"\x0fPOMXMLNetConfig\x12\x1d\n" +
+	"\n" +
+	"remote_url\x18\x01 \x01(\tR\tremoteUrl\x12.\n" +
+	"\x13disable_google_auth\x18\x02 \x01(\bR\x11disableGoogleAuthBBB\x06ConfigP\x01Z6github.com/google/scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -557,7 +643,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),         // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil), // 1: scalibr.PluginSpecificConfig
@@ -567,6 +653,7 @@ var file_proto_config_proto_goTypes = []any{
 	(*OVAConfig)(nil),            // 5: scalibr.OVAConfig
 	(*VDIConfig)(nil),            // 6: scalibr.VDIConfig
 	(*VMDKConfig)(nil),           // 7: scalibr.VMDKConfig
+	(*POMXMLNetConfig)(nil),      // 8: scalibr.POMXMLNetConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1, // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -576,11 +663,12 @@ var file_proto_config_proto_depIdxs = []int32{
 	5, // 4: scalibr.PluginSpecificConfig.ova:type_name -> scalibr.OVAConfig
 	6, // 5: scalibr.PluginSpecificConfig.vdi:type_name -> scalibr.VDIConfig
 	7, // 6: scalibr.PluginSpecificConfig.vmdk:type_name -> scalibr.VMDKConfig
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	8, // 7: scalibr.PluginSpecificConfig.pom_xml_net:type_name -> scalibr.POMXMLNetConfig
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -595,6 +683,7 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_Ova)(nil),
 		(*PluginSpecificConfig_Vdi)(nil),
 		(*PluginSpecificConfig_Vmdk)(nil),
+		(*PluginSpecificConfig_PomXmlNet)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -602,7 +691,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

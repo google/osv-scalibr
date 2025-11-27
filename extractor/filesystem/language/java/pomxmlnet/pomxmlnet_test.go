@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor"
@@ -339,10 +340,8 @@ func TestExtractor_Extract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
-			extr := pomxmlnet.New(pomxmlnet.Config{
-				DependencyClient:       resolutionClient,
-				MavenRegistryAPIClient: &datasource.MavenRegistryAPIClient{},
-			})
+			extr := pomxmlnet.New(&cpb.PluginConfig{})
+			extr.(*pomxmlnet.Extractor).DepClient = resolutionClient
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
@@ -484,10 +483,9 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
-	extr := pomxmlnet.New(pomxmlnet.Config{
-		DependencyClient:       resolutionClient,
-		MavenRegistryAPIClient: apiClient,
-	})
+	extr := pomxmlnet.New(&cpb.PluginConfig{})
+	extr.(*pomxmlnet.Extractor).DepClient = resolutionClient
+	extr.(*pomxmlnet.Extractor).MavenClient = apiClient
 
 	scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 	defer extracttest.CloseTestScanInput(t, scanInput)
