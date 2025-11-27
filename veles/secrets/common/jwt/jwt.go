@@ -88,10 +88,6 @@ func copyMap(m map[string]any) map[string]any {
 // ExtractTokens scans the input data for JWT substrings, parses them and
 // returns a slice of Token objects and their positions.
 func ExtractTokens(data []byte) ([]Token, []int) {
-	if len(data) > MaxTokenLength {
-		return nil, nil
-	}
-
 	var tokens []Token
 	var positions []int
 	jwtMatches := jwtRe.FindAllIndex(data, -1)
