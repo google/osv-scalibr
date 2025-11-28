@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -78,7 +79,7 @@ func TestRun(t *testing.T) {
 			for i, arg := range tc.args {
 				args[i] = strings.ReplaceAll(arg, "{dir}", dir)
 			}
-			if got := run(args); got != tc.want {
+			if got := getRunFn(args, flag.NewFlagSet(tc.desc, flag.ExitOnError))(); got != tc.want {
 				t.Errorf("run(%v) returned unexpected exit code, got %d want %d", args, got, tc.want)
 			}
 		})
