@@ -16,8 +16,10 @@ import (
 	"strings"
 )
 
+// ErrNotAbsolute is returned when the input path is not absolute.
 var ErrNotAbsolute = errors.New("path is not absolute")
 
+// FromFilePath creates a url.URL object from a file path.
 func FromFilePath(path string) (*url.URL, error) {
 	if !filepath.IsAbs(path) {
 		return nil, ErrNotAbsolute

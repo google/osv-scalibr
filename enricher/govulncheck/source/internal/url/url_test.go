@@ -16,16 +16,12 @@ import (
 // Code copied from https://github.com/golang/go/blob/7c2b69080a0b9e35174cc9c93497b6e7176f8275/src/cmd/go/internal/web/url_test.go
 
 func TestURLFromFilePath(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range urlTests {
 		if tc.filePath == "" {
 			continue
 		}
 
 		t.Run(tc.filePath, func(t *testing.T) {
-			t.Parallel()
-
 			u, err := url.FromFilePath(tc.filePath)
 			if err != nil {
 				if err.Error() == tc.wantErr {
