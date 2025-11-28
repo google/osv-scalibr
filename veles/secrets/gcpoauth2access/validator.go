@@ -55,7 +55,7 @@ func NewValidator() *simplevalidate.Validator[Token] {
 // The token is considered valid if it contains any scopes and is not expired,
 // invalid if it has no scopes or is expired, and validation fails if the
 // expiration status cannot be determined.
-func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
+func statusFromResponseBody(body io.Reader, _ Token, _ *http.Request) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to read response: %w", err)

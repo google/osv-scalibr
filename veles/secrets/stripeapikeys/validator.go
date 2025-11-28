@@ -49,7 +49,7 @@ func authHeader(key string) map[string]string {
 	}
 }
 
-func alwaysInvalidStatus(body io.Reader) (veles.ValidationStatus, error) {
+func alwaysInvalidStatusSecretKey(body io.Reader, _ StripeSecretKey, _ *http.Request) (veles.ValidationStatus, error) {
 	return veles.ValidationInvalid, nil
 }
 
@@ -65,9 +65,13 @@ func NewSecretKeyValidator() *simplevalidate.Validator[StripeSecretKey] {
 			return authHeader(k.Key)
 		},
 		ValidResponseCodes:     []int{http.StatusOK},
-		StatusFromResponseBody: alwaysInvalidStatus,
+		StatusFromResponseBody: alwaysInvalidStatusSecretKey,
 		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
 	}
+}
+
+func alwaysInvalidStatusRestrictedKey(body io.Reader, _ StripeRestrictedKey, _ *http.Request) (veles.ValidationStatus, error) {
+	return veles.ValidationInvalid, nil
 }
 
 // NewRestrictedKeyValidator creates a validator for Stripe Restricted Keys.
@@ -88,7 +92,7 @@ func NewRestrictedKeyValidator() *simplevalidate.Validator[StripeRestrictedKey] 
 			return authHeader(k.Key)
 		},
 		ValidResponseCodes:     []int{http.StatusOK, http.StatusForbidden},
-		StatusFromResponseBody: alwaysInvalidStatus,
+		StatusFromResponseBody: alwaysInvalidStatusRestrictedKey,
 		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
 	}
 }
