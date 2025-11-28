@@ -20,6 +20,7 @@ func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, ver
 	}
 }
 
+// extractorKeeper signals that a Detector also functions as a standalone filesystem.Extractor.
 type extractorKeeper interface {
 	KeepExtractor() bool
 }
@@ -39,6 +40,8 @@ type detectorWithRequire struct {
 	e             *veles.DetectionEngine
 }
 
+// KeepExtractor signals that this detector must also be registered as a standalone
+// filesystem.Extractor to handle the additional files specified in the fileRequired callback.
 func (d *detectorWithRequire) KeepExtractor() bool { return true }
 
 // MaxSecretLen returns the maximum length a secret from this Detector can have.
