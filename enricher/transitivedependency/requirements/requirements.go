@@ -24,6 +24,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	pypiresolve "deps.dev/util/resolve/pypi"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
@@ -66,19 +67,11 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{requirements.Name}
 }
 
-// NewDefault returns a new enricher with the default configuration.
-func NewDefault() enricher.Enricher {
-	return &Enricher{
-		// Empty string indicates using default registry and no local registry.
-		Client: resolution.NewPyPIRegistryClient("", ""),
-	}
-}
-
-// NewEnricher creates a new Enricher.
-func NewEnricher(client resolve.Client) *Enricher {
-	return &Enricher{
-		Client: client,
-	}
+// New creates a new Enricher.
+func New(cfg *cpb.PluginConfig) enricher.Enricher {
+	client := resolution.NewPyPIRegistryClient("", "")
+	client.SetLocalRegistry(cfg.LocalRegistry)
+	return &Enricher{Client: client}
 }
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.

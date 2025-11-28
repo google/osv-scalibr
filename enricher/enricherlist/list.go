@@ -138,7 +138,7 @@ var (
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
-		requirements.Name: {noCFG(requirements.NewDefault)},
+		requirements.Name: {requirements.New},
 	}
 
 	// PackageDeprecation enricher.

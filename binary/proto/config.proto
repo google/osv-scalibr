@@ -31,6 +31,9 @@ message PluginConfig {
 
   // The maximum file size the plugin will process.
   int64 max_file_size_bytes = 1;
+  // The local directory to store the downloaded manifests during dependency
+  // resolution.
+  string local_registry = 3;
 
   // Config values that only apply to a single plugin.
   repeated PluginSpecificConfig plugin_specific = 2;
@@ -44,6 +47,7 @@ message PluginSpecificConfig {
     OVAConfig ova = 4;
     VDIConfig vdi = 5;
     VMDKConfig vmdk = 6;
+    POMXMLNetConfig pom_xml_net = 8;
   }
 }
 
@@ -84,4 +88,11 @@ message VMDKConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message POMXMLNetConfig {
+  // The URL of the remote Maven registry.
+  string remote_url = 1;
+  // If true, do not try to create google.DefaultClient for Artifact Registry.
+  bool disable_google_auth = 2;
 }
