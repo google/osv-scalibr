@@ -19,5 +19,5 @@ package codecatalyst
 type Credentials struct {
 	FullURL  string
 	Username string
-	Password string
+	PAT      string
 }

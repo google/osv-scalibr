@@ -15,37 +15,60 @@
 package codecatalyst
 
 import (
+	"net/url"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 const (
+	// maxURLLength is an upper bound value for the length of a URL to be considered.
+	// This helps limit the buffer size required for scanning.
 	maxURLLength = 1_000
 )
 
 var (
-	urlPattern = regexp.MustCompile(`\bhttps://([^:\s]+):([^\s@]+)@[^/]*codecatalyst\.aws/[^\s]*`)
+	// urlPattern matches URLs containing basic authentication credentials.
+	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@[^/]*codecatalyst\.aws/[^\s]*`)
 )
 
 type detector struct{}
 
+// NewDetector creates and returns a new instance of the CodeCatalyst secret detector.
 func NewDetector() veles.Detector {
 	return &detector{}
 }
 
+// MaxSecretLen returns the maximum expected length of the secret.
 func (d *detector) MaxSecretLen() uint32 {
 	return maxURLLength
 }
 
+// Detect scans the provided byte slice for AWS CodeCatalyst credentials.
 func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
 	secrets, positions := []veles.Secret{}, []int{}
 	matches := urlPattern.FindAllSubmatchIndex(data, -1)
 	for _, m := range matches {
+		fullURL := data[m[0]:m[1]]
+		u, err := url.Parse(string(fullURL))
+		if err != nil {
+			continue
+		}
+		if u.User == nil {
+			continue
+		}
+		username := u.User.Username()
+		if username == "" {
+			continue
+		}
+		password, ok := u.User.Password()
+		if !ok {
+			continue
+		}
 		secrets = append(secrets, Credentials{
-			FullURL:  string(data[m[0]:m[1]]),
-			Username: string(data[m[2]:m[3]]),
-			Password: string(data[m[4]:m[5]]),
+			FullURL:  u.String(),
+			Username: username,
+			PAT:      password,
 		})
 	}
 	return secrets, positions
