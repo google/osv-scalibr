@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,6 +30,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
+	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal/url"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/inventory"
@@ -197,7 +197,10 @@ func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, vulns [
 
 	// this only errors if the file path is not absolute,
 	// which paths from os.MkdirTemp should always be
-	dbdirURL := &url.URL{Scheme: "file", Path: dbdir}
+	dbdirURL, err := url.FromFilePath(dbdir)
+	if err != nil {
+		return nil, err
+	}
 
 	// Run govulncheck on the module at moddir and vulnerability database that
 	// was just created.
