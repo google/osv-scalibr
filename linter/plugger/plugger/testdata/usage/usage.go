@@ -17,6 +17,7 @@ package usage
 
 import "testdata/basic"
 
+// something calls the basic plugin (used in usage testing)
 func something() {
 	basic.NewPluginA()
 }

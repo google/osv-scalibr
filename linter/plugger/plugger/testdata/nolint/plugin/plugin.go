@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains fakes that can be used to test parts of Veles as
-// well as integrations.
+package plugin
+
+import "testdata/basic"
+
+var _ basic.MyPlugin = &PluginNotUsed{}
+
+// PluginNotUsed is a struct implementing Plugin that is not used.
 //
-//nolint:plugger // This package contains test only mocks
-package velestest
+//nolint:plugger // Example nolint
+type PluginNotUsed struct{}
+
+// Run implements the MyPlugin interface
+func (p *PluginNotUsed) Run() {}
+
+type PluginNotUsedToLint struct{}
+
+// Run implements the MyPlugin interface
+func (p *PluginNotUsedToLint) Run() {}
