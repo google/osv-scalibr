@@ -76,7 +76,7 @@ type collectionErrorResponse struct {
 	} `json:"error"`
 }
 
-func statusFromCollectionResponseBody(body io.Reader) (veles.ValidationStatus, error) {
+func statusFromCollectionResponseBody(body io.Reader, _ PostmanCollectionToken, _ *http.Request) (veles.ValidationStatus, error) {
 	var resp collectionErrorResponse
 	if err := json.NewDecoder(body).Decode(&resp); err != nil {
 		// Decoding failed -> ambiguous response, treat as failed to validate.

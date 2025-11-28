@@ -39,6 +39,10 @@ const (
 	validationTimeout = 10 * time.Second
 )
 
+func statusFromAppLevelTokenResponseBody(body io.Reader, _ SlackAppLevelToken, _ *http.Request) (veles.ValidationStatus, error) {
+	return statusFromResponseBody(body)
+}
+
 func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
@@ -70,11 +74,15 @@ func NewAppLevelTokenValidator() *simplevalidate.Validator[SlackAppLevelToken] {
 				"Content-Type":  "application/x-www-form-urlencoded",
 			}
 		},
-		StatusFromResponseBody: statusFromResponseBody,
+		StatusFromResponseBody: statusFromAppLevelTokenResponseBody,
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,
 		},
 	}
+}
+
+func statusFromAppConfigTokenResponseBody(body io.Reader, _ SlackAppConfigAccessToken, _ *http.Request) (veles.ValidationStatus, error) {
+	return statusFromResponseBody(body)
 }
 
 // NewAppConfigAccessTokenValidator creates a new Validator for SlackAppConfigAccessToken.
@@ -88,11 +96,15 @@ func NewAppConfigAccessTokenValidator() *simplevalidate.Validator[SlackAppConfig
 				"Content-Type":  "application/x-www-form-urlencoded",
 			}
 		},
-		StatusFromResponseBody: statusFromResponseBody,
+		StatusFromResponseBody: statusFromAppConfigTokenResponseBody,
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,
 		},
 	}
+}
+
+func statusFromAppConfigRefreshTokenResponseBody(body io.Reader, _ SlackAppConfigRefreshToken, _ *http.Request) (veles.ValidationStatus, error) {
+	return statusFromResponseBody(body)
 }
 
 // NewAppConfigRefreshTokenValidator creates a new Validator for SlackAppConfigRefreshToken.
@@ -106,7 +118,7 @@ func NewAppConfigRefreshTokenValidator() *simplevalidate.Validator[SlackAppConfi
 				"Content-Type":  "application/x-www-form-urlencoded",
 			}
 		},
-		StatusFromResponseBody: statusFromResponseBody,
+		StatusFromResponseBody: statusFromAppConfigRefreshTokenResponseBody,
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,
 		},

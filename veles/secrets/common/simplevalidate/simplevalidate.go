@@ -51,7 +51,7 @@ type Validator[S veles.Secret] struct {
 	InvalidResponseCodes []int
 	// Additional custom validation logic to perform on the response body. Will run if none of the
 	// status codes from ValidResponseCodes and InvalidResponseCodes have been found.
-	StatusFromResponseBody func(body io.Reader) (veles.ValidationStatus, error)
+	StatusFromResponseBody func(body io.Reader, secret S, req *http.Request) (veles.ValidationStatus, error)
 	// The HTTP client to use for the network queries. Uses http.DefaultClient if nil.
 	HTTPC *http.Client
 }
@@ -111,7 +111,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
 	}
 	if v.StatusFromResponseBody != nil {
-		return v.StatusFromResponseBody(res.Body)
+		return v.StatusFromResponseBody(res.Body, secret, req)
 	}
 
 	return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)

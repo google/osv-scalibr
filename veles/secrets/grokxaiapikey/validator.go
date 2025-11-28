@@ -61,7 +61,7 @@ type apiKeyResponse struct {
 
 // apiKeyStatusFromBody verifies responses from /v1/api-key.
 // If either api_key_blocked or api_key_disabled is true, the key is invalid.
-func apiKeyStatusFromBody(body io.Reader) (veles.ValidationStatus, error) {
+func apiKeyStatusFromBody(body io.Reader, secret GrokXAIAPIKey, req *http.Request) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
@@ -104,7 +104,7 @@ type managementErrorResponse struct {
 	Message string `json:"message"`
 }
 
-func managementKeyStatusFromBody(body io.Reader) (veles.ValidationStatus, error) {
+func managementKeyStatusFromBody(body io.Reader, _ GrokXAIManagementKey, _ *http.Request) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)

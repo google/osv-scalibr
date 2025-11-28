@@ -160,7 +160,7 @@ func TestValidate(t *testing.T) {
 				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
 				},
-				StatusFromResponseBody: func(body io.Reader) (veles.ValidationStatus, error) {
+				StatusFromResponseBody: func(body io.Reader, _ velestest.FakeStringSecret, _ *http.Request) (veles.ValidationStatus, error) {
 					content, err := io.ReadAll(body)
 					if err != nil {
 						return veles.ValidationFailed, err
@@ -192,7 +192,7 @@ func TestValidate(t *testing.T) {
 				HTTPHeaders: func(s velestest.FakeStringSecret) map[string]string {
 					return map[string]string{"Authorization": "Bearer " + s.Value}
 				},
-				StatusFromResponseBody: func(body io.Reader) (veles.ValidationStatus, error) {
+				StatusFromResponseBody: func(body io.Reader, _ velestest.FakeStringSecret, _ *http.Request) (veles.ValidationStatus, error) {
 					content, err := io.ReadAll(body)
 					if err != nil {
 						return veles.ValidationFailed, err
