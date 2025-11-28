@@ -93,14 +93,7 @@ func TestEnricher(t *testing.T) {
 		wd = "/" + wd
 	}
 
-	enr := govcsource.New(&cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{
-				Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
-					OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
-				}}},
-		},
-	})
+	enr := govcsource.New(&cpb.PluginConfig{})
 
 	err = enr.Enrich(t.Context(), &input, &inv)
 

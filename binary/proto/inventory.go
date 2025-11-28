@@ -41,6 +41,11 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 
 	// TODO(b/400910349): Add PackageVulns to the proto too.
 
+	for _, pv := range inv.PackageVulns {
+		// Debug print out the package vulns in a compact format by printing the id and parent package in one line:
+		log.Infof("PackageVuln: %v - Parent Package: %v", pv.Vulnerability.Id, pv.ExploitabilitySignals)
+	}
+
 	genericFindings := make([]*spb.GenericFinding, 0, len(inv.GenericFindings))
 	for _, f := range inv.GenericFindings {
 		p, err := GenericFindingToProto(f)

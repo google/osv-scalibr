@@ -20,7 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/vuln/scan"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -48,9 +51,7 @@ const (
 var ErrNoGoToolchain = errors.New("no Go toolchain found")
 
 // Enricher is an enricher that runs govulncheck on Go source code.
-type Enricher struct {
-	offlineVulnDBPath string
-}
+type Enricher struct{}
 
 // Name returns the name of the enricher.
 func (e *Enricher) Name() string {
@@ -64,15 +65,8 @@ func (e *Enricher) Version() int {
 
 // Requirements returns the requirements of the enricher.
 func (e *Enricher) Requirements() *plugin.Capabilities {
-	var network plugin.Network
-	if e.offlineVulnDBPath != "" {
-		network = plugin.NetworkOffline
-	} else {
-		network = plugin.NetworkOnline
-	}
-
 	return &plugin.Capabilities{
-		Network:       network,
+		Network:       plugin.NetworkAny,
 		DirectFS:      true,
 		RunningSystem: true,
 	}
@@ -110,10 +104,15 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 		}
 	}
 
+	var vulns []*osvschema.Vulnerability
+	for _, pv := range inv.PackageVulns {
+		vulns = append(vulns, pv.Vulnerability)
+	}
+
 	for goModLocation, goVersion := range goModVersions {
 		modDir := filepath.Dir(goModLocation)
 		absModDir := filepath.Join(input.ScanRoot.Path, modDir)
-		findings, err := e.runGovulncheck(ctx, absModDir, goVersion)
+		findings, err := e.runGovulncheck(ctx, absModDir, vulns, goVersion)
 		if err != nil {
 			log.Errorf("govulncheck on %s: %v", modDir, err)
 			continue
@@ -169,12 +168,40 @@ func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string]
 	}
 }
 
-func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, goVersion string) (map[string][]*internal.Finding, error) {
-	args := []string{"-C", absModDir, "-format", "json", "-mode", "source"}
-	if e.offlineVulnDBPath != "" {
-		args = append(args, "-db=file://"+e.offlineVulnDBPath)
+func (e *Enricher) runGovulncheck(ctx context.Context, absModDir string, vulns []*osvschema.Vulnerability, goVersion string) (map[string][]*internal.Finding, error) {
+	// Create a temporary directory containing all the vulnerabilities that
+	// are passed in to check against govulncheck.
+	//
+	// This enables OSV scanner to supply the OSV vulnerabilities to run
+	// against govulncheck and manage the database separately from vuln.go.dev.
+	dbdir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, err
 	}
-	cmd := scan.Command(ctx, append(args, "./...")...)
+	defer func() {
+		rerr := os.RemoveAll(dbdir)
+		if err == nil {
+			err = rerr
+		}
+	}()
+
+	for _, vuln := range vulns {
+		dat, err := protojson.Marshal(vuln)
+		if err != nil {
+			return nil, err
+		}
+		if err := os.WriteFile(fmt.Sprintf("%s/%s.json", dbdir, vuln.GetId()), dat, 0600); err != nil {
+			return nil, err
+		}
+	}
+
+	// this only errors if the file path is not absolute,
+	// which paths from os.MkdirTemp should always be
+	dbdirURL := &url.URL{Scheme: "file", Path: dbdir}
+
+	// Run govulncheck on the module at moddir and vulnerability database that
+	// was just created.
+	cmd := scan.Command(ctx, "-db", dbdirURL.String(), "-C", absModDir, "-json", "-mode", "source", "./...")
 	var b bytes.Buffer
 	cmd.Stdout = &b
 	cmd.Env = append(os.Environ(), "GOVERSION=go"+goVersion)
@@ -239,10 +266,5 @@ func vulnHasImportsField(vuln *osvschema.Vulnerability, pkg *extractor.Package) 
 
 // New returns a new govulncheck source enricher.
 func New(cfg *cpb.PluginConfig) enricher.Enricher {
-	e := &Enricher{}
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
-	if specific != nil {
-		e.offlineVulnDBPath = specific.OfflineVulnDbPath
-	}
-	return e
+	return &Enricher{}
 }
