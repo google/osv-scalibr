@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -78,6 +79,7 @@ func TestScan(t *testing.T) {
 	fs := scalibrfs.DirFS(tmp)
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "config"), []byte("Content"), 0644)
 
 	pkgName := "software"
 	fakeExtractor := fe.New(
@@ -363,6 +365,35 @@ func TestScan(t *testing.T) {
 						Location:   "file.txt",
 						Validation: inventory.SecretValidationResult{Status: veles.ValidationValid},
 					}},
+				},
+			},
+		},
+		{
+			desc: "Veles_secret_detector_with_extractor",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					// use the fakeSecretDetector1 also on config files
+					cf.FromVelesDetectorWithRequire(
+						fakeSecretDetector1, "secret-detector", 1,
+						func(fa filesystem.FileAPI) bool {
+							return strings.HasSuffix(fa.Path(), "config")
+						},
+					),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secret-detector", Version: 1, Status: success},
+					{Name: "secrets/veles", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: "config"},
+					},
 				},
 			},
 		},

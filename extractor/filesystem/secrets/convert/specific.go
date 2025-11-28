@@ -10,11 +10,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// FromVelesDetectorWithRequire converts a Veles Detector into a SCALIBR FilesystemExtractor plugin.
-// This allows:
-// - Enabling Veles Detectors individually like regular SCALIBR plugins.
-// - Using the provided detector in the detection engine with other detectors.
-// - Using the detector as a standalone filesystem extractor.
+// FromVelesDetectorWithRequire works similar to FromVelesDetector but allows specifying additional files to look at on top of the default ones.
 func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, version int, fileRequired func(filesystem.FileAPI) bool) filesystem.Extractor {
 	return &detectorWithRequire{
 		velesDetector: velesDetector,
@@ -24,9 +20,14 @@ func FromVelesDetectorWithRequire(velesDetector veles.Detector, name string, ver
 	}
 }
 
+type extractorKeeper interface {
+	KeepExtractor() bool
+}
+
 // Assert that detectorWithRequire implements the required interfaces.
 var _ veles.Detector = &detectorWithRequire{}
 var _ filesystem.Extractor = &detectorWithRequire{}
+var _ extractorKeeper = &detectorWithRequire{}
 
 // detectorWithRequire is a wrapper around the veles.Detector interface that
 // implements the additional functions of the filesystem Extractor interface.
@@ -37,6 +38,8 @@ type detectorWithRequire struct {
 	fileRequired  func(filesystem.FileAPI) bool
 	e             *veles.DetectionEngine
 }
+
+func (d *detectorWithRequire) KeepExtractor() bool { return true }
 
 // MaxSecretLen returns the maximum length a secret from this Detector can have.
 func (d *detectorWithRequire) MaxSecretLen() uint32 {
