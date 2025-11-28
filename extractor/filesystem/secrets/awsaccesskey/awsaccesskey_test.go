@@ -41,7 +41,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 		// windows
 		{inputPath: `C:\Users\USERNAME\.aws\credentials`, isWindows: true, want: true},
-		{inputPath: `C:\Users\USERNAME\another\bad\path`, isWindows: true, want: true},
+		{inputPath: `C:\Users\USERNAME\another\bad\path`, isWindows: true, want: false},
 	}
 
 	for _, tt := range tests {
