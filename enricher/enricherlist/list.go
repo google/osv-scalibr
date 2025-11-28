@@ -23,6 +23,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
@@ -133,7 +134,8 @@ var (
 
 	// Reachability enrichers.
 	Reachability = InitMap{
-		java.Name: {noCFG(java.NewDefault)},
+		java.Name:       {noCFG(java.NewDefault)},
+		govcsource.Name: {govcsource.New},
 	}
 
 	// TransitiveDependency enrichers.
