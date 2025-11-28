@@ -16,7 +16,6 @@ package source_test
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -84,18 +83,9 @@ func TestEnricher(t *testing.T) {
 		PackageVulns: vulns,
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd(): %v", err)
-	}
-	// Govulncheck expects the path to be file:///c:/something
-	if runtime.GOOS == "windows" {
-		wd = "/" + wd
-	}
-
 	enr := govcsource.New(&cpb.PluginConfig{})
 
-	err = enr.Enrich(t.Context(), &input, &inv)
+	err := enr.Enrich(t.Context(), &input, &inv)
 
 	if err != nil {
 		t.Fatalf("govulncheck enrich failed: %s", err)
