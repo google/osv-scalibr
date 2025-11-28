@@ -95,9 +95,13 @@ var _ filesystem.Extractor = &detectorWrapper{}
 func SetupVelesExtractors(extractors []filesystem.Extractor) ([]filesystem.Extractor, error) {
 	result := make([]filesystem.Extractor, 0, len(extractors))
 	detectors := []veles.Detector{}
+
 	for _, e := range extractors {
-		if d, ok := e.(veles.Detector); ok {
+		if d, isDetector := e.(veles.Detector); isDetector {
 			detectors = append(detectors, d)
+			if _, keepExtractor := e.(extractorKeeper); keepExtractor {
+				result = append(result, e)
+			}
 		} else {
 			result = append(result, e)
 		}
