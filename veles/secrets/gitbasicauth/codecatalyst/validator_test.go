@@ -1,0 +1,143 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package codecatalyst_test
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+)
+
+var (
+	validatorTestURL         = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/repo"
+	validatorTestBadCredsURL = "https://user:bad_pat@git.region.codecatalyst.aws/v1/space/project/repo"
+	validatorTestBadRepoURL  = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/bad-repo"
+)
+
+type redirectTransport struct {
+	url string
+}
+
+func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if strings.HasSuffix(req.URL.Host, ".codecatalyst.aws") {
+		newURL, err := url.Parse(t.url)
+		if err != nil {
+			return nil, err
+		}
+		req.URL.Scheme = newURL.Scheme
+		req.URL.Host = newURL.Host
+	}
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+func mockCodeCatalystHandler(t *testing.T, status int) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("r.Method = %s, want %s", r.Method, http.MethodGet)
+		}
+		auth := r.Header.Get("Authorization")
+		if !strings.HasPrefix(auth, "Basic") {
+			t.Errorf("should use basic auth")
+		}
+		if status == 200 {
+			w.WriteHeader(status)
+			return
+		}
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(`<InvalidRequestException>
+  <Message>The resource either does not exist, or you don’t have permission to access it.</Message>
+</InvalidRequestException>`))
+	}
+}
+
+func TestValidator(t *testing.T) {
+	cancelledContext, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	cases := []struct {
+		//nolint:containedctx
+		ctx        context.Context
+		name       string
+		url        string
+		httpStatus int
+		want       veles.ValidationStatus
+		wantErr    error
+	}{
+		{
+			name:       "cancelled_context",
+			url:        validatorTestURL,
+			want:       veles.ValidationFailed,
+			ctx:        cancelledContext,
+			httpStatus: http.StatusOK,
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			name:       "valid_credentials",
+			url:        validatorTestURL,
+			httpStatus: http.StatusOK,
+			want:       veles.ValidationValid,
+		},
+		{
+			name:       "invalid_creds",
+			url:        validatorTestBadCredsURL,
+			httpStatus: http.StatusBadRequest,
+			want:       veles.ValidationInvalid,
+		},
+		{
+			name:       "bad_repository",
+			url:        validatorTestBadRepoURL,
+			httpStatus: http.StatusBadRequest,
+			want:       veles.ValidationInvalid,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.ctx == nil {
+				tt.ctx = t.Context()
+			}
+			server := httptest.NewServer(mockCodeCatalystHandler(t, tt.httpStatus))
+			defer server.Close()
+
+			client := &http.Client{
+				Transport: &redirectTransport{
+					url: server.URL,
+				},
+			}
+
+			v := codecatalyst.NewValidator()
+			v.SetHTTPClient(client)
+
+			got, err := v.Validate(tt.ctx, codecatalyst.Credentials{FullURL: tt.url})
+
+			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
+				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)
+			}
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("v.Validate() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

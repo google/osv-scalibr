@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gitbasicauth contains common logic for Git basic auth.
+// Package gitbasicauth contains common logic for Git Basic Auth plugins.
 package gitbasicauth
 
 import (
@@ -20,36 +20,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"github.com/google/osv-scalibr/veles"
 )
 
-// Credentials contains git basic auth credentials.
-type Credentials struct {
-	Username string
-	Password string
-}
-
-// Validate validates git credential against the given repoUrl.
-func Validate(ctx context.Context, cli *http.Client, repoUrl *url.URL, creds Credentials) (veles.ValidationStatus, error) {
-	u := repoUrl.JoinPath("info/refs")
+// Info performs the info/refs request for Git upload-pack service.
+// It returns the HTTP status code and an optional error.
+func Info(ctx context.Context, cli *http.Client, repoURL *url.URL) (int, error) {
+	u := repoURL.JoinPath("info/refs")
 	u.RawQuery = "service=git-upload-pack"
-
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("error building request: %w", err)
+		return 0, fmt.Errorf("error building request: %w", err)
 	}
-	req.SetBasicAuth(creds.Username, creds.Password)
-
 	resp, err := cli.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("error executing request: %w", err)
+		return 0, fmt.Errorf("error executing request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		return veles.ValidationValid, nil
-	}
-
-	return veles.ValidationInvalid, nil
+	return resp.StatusCode, nil
 }

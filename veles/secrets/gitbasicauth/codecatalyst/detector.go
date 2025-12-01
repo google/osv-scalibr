@@ -29,7 +29,7 @@ const (
 
 var (
 	// urlPattern matches URLs containing basic authentication credentials.
-	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@[^/]*codecatalyst\.aws/[^\s]*`)
+	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@git\.[^/]*codecatalyst\.aws/[^\s]*`)
 )
 
 type detector struct{}
@@ -54,22 +54,18 @@ func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
 		if err != nil {
 			continue
 		}
-		if u.User == nil {
+		if !hasValidCredentials(u) {
 			continue
 		}
-		username := u.User.Username()
-		if username == "" {
-			continue
-		}
-		password, ok := u.User.Password()
-		if !ok {
-			continue
-		}
-		secrets = append(secrets, Credentials{
-			FullURL:  u.String(),
-			Username: username,
-			PAT:      password,
-		})
+		secrets = append(secrets, Credentials{FullURL: u.String()})
 	}
 	return secrets, positions
+}
+
+func hasValidCredentials(u *url.URL) bool {
+	if u.User == nil || u.User.Username() == "" {
+		return false
+	}
+	_, hasPassword := u.User.Password()
+	return hasPassword
 }

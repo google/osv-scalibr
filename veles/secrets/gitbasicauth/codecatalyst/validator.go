@@ -25,35 +25,47 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth"
 )
 
-type validator struct {
+// Validator validates CodeCatalyst credentials
+type Validator struct {
 	cli *http.Client
 }
 
 // SetHTTPClient sets the http.Client which the validator uses.
-func (v *validator) SetHTTPClient(cli *http.Client) {
+func (v *Validator) SetHTTPClient(cli *http.Client) {
 	v.cli = cli
 }
 
-// NewValidator creates a new Validator that validates Code Catalyst credentials
-func NewValidator() veles.Validator[Credentials] {
-	return &validator{
+// NewValidator creates a new Validator that validates CodeCatalyst credentials
+func NewValidator() *Validator {
+	return &Validator{
 		cli: http.DefaultClient,
 	}
 }
 
-// Validate validates code AWS Code Catalyst Git Basic Auth credentials
-func (v *validator) Validate(ctx context.Context, secret Credentials) (veles.ValidationStatus, error) {
+// Validate validates code AWS CodeCatalyst Git Basic Auth credentials.
+func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.ValidationStatus, error) {
 	u, err := url.Parse(secret.FullURL)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("error parsing URL: %w", err)
 	}
 
+	// redundant host validation kept intentionally as a security measure in case any regression
+	// is introduced in the detector.
 	if !strings.HasSuffix(u.Host, ".codecatalyst.aws") {
-		return veles.ValidationFailed, fmt.Errorf("not a valid AWS Code Catalyst host %q", u.Host)
+		return veles.ValidationFailed, fmt.Errorf("not a valid AWS CodeCatalyst host %q", u.Host)
 	}
 
-	return gitbasicauth.Validate(
-		ctx, v.cli, u,
-		gitbasicauth.Credentials{Username: secret.Username, Password: secret.PAT},
-	)
+	status, err := gitbasicauth.Info(ctx, v.cli, u)
+	if err != nil {
+		return veles.ValidationFailed, fmt.Errorf("failed to reach Git info endpoint: %w", err)
+	}
+
+	// Credentials successfully authenticated and repository info retrieved.
+	if status == http.StatusOK {
+		return veles.ValidationValid, nil
+	}
+
+	// Returns credentials invalid for every other state as the CodeCatalyst server always
+	// responds with either 200 or 400 status codes
+	return veles.ValidationInvalid, nil
 }

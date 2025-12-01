@@ -17,7 +17,5 @@ package codecatalyst
 
 // Credentials contains basic auth credential for CodeCatalyst.
 type Credentials struct {
-	FullURL  string
-	Username string
-	PAT      string
+	FullURL string
 }
