@@ -407,10 +407,15 @@ func TestScan(t *testing.T) {
 			tc.want.StartTime = got.StartTime
 			tc.want.EndTime = got.EndTime
 
-			// Ignore timestamps.
-			ignoreFields := cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At")
+			opts := []cmp.Option{
+				fe.AllowUnexported,
+				// Ignore timestamps.
+				cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At"),
+				// Sort secrets.
+				cmpopts.SortSlices(func(a, b *inventory.Secret) bool { return a.Location < b.Location }),
+			}
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields); diff != "" {
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})
