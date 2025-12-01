@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pomxmlnet extracts Maven's pom.xml format with transitive dependency resolution.
-package pomxmlnet
+// Package pomxml implements an enricher to perform dependency resolution for Java pom.xml files.
+package pomxml
 
 import (
 	"context"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -28,83 +27,157 @@ import (
 	mavenresolve "deps.dev/util/resolve/maven"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
-	"github.com/google/osv-scalibr/depsdev"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
-	// Name is the unique name of this extractor.
-	Name = "java/pomxmlnet"
+	// Name is the unique name of this enricher.
+	Name = "transitivedependency/pomxml"
 )
 
-// Extractor extracts Maven packages with transitive dependency resolution.
-type Extractor struct {
-	DepClient   resolve.Client
+// Enricher performs dependency resolution for pom.xml.
+type Enricher struct {
+	depClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
 }
 
-// New makes a new pom.xml transitive extractor with the given config.
-func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	upstreamRegistry := ""
-	depsdevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
-	if specific != nil {
-		upstreamRegistry = specific.UpstreamRegistry
-		depsdevRequirements = specific.DepsDevRequirements
-	}
+// Name returns the name of the enricher.
+func (Enricher) Name() string {
+	return Name
+}
 
+// Version returns the version of the enricher.
+func (Enricher) Version() int {
+	return 0
+}
+
+// Requirements returns the requirements of the enricher.
+func (Enricher) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		Network: plugin.NetworkOnline,
+	}
+}
+
+// RequiredPlugins returns the names of the plugins required by the enricher.
+func (Enricher) RequiredPlugins() []string {
+	return []string{pomxml.Name}
+}
+
+// Config is the configuration for the pomxmlnet Extractor.
+type Config struct {
+	*datasource.MavenRegistryAPIClient
+
+	DependencyClient resolve.Client
+}
+
+// NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
+func NewConfig(remote, local string, disableGoogleAuth bool) Config {
 	// No need to check errors since we are using the default Maven Central URL.
 	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
-		URL:             upstreamRegistry,
+		URL:             remote,
 		ReleasesEnabled: true,
-	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+	}, local, disableGoogleAuth)
+	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
+	return Config{
+		DependencyClient:       depClient,
+		MavenRegistryAPIClient: mavenClient,
+	}
+}
 
-	var depClient resolve.Client
-	var err error
-	if depsdevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
-		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+// DefaultConfig returns the default configuration for the pomxmlnet extractor.
+func DefaultConfig() Config {
+	return NewConfig("", "", false)
+}
+
+// New makes a new pom.xml transitive extractor with the given config.
+func New(c Config) *Enricher {
+	return &Enricher{
+		depClient:   c.DependencyClient,
+		MavenClient: c.MavenRegistryAPIClient,
+	}
+}
+
+// NewDefault returns an extractor with the default config settings.
+func NewDefault() *Enricher { return New(DefaultConfig()) }
+
+// packageWithIndex holds the package with its index in inv.Packages
+type packageWithIndex struct {
+	pkg   *extractor.Package
+	index int
+}
+
+// groupPackages groups packages found in pom.xml files by the first location that they are found
+// and returns a map of location -> package name -> package with index.
+func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithIndex {
+	result := make(map[string]map[string]packageWithIndex)
+	for i, pkg := range pkgs {
+		if !slices.Contains(pkg.Plugins, pomxml.Name) {
+			continue
 		}
-	} else {
-		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+		if len(pkg.Locations) == 0 {
+			log.Warnf("package %s has no locations", pkg.Name)
+			continue
+		}
+		// Use the path where this package is first found.
+		path := pkg.Locations[0]
+		if _, ok := result[path]; !ok {
+			result[path] = make(map[string]packageWithIndex)
+		}
+		result[path][pkg.Name] = packageWithIndex{pkg, i}
+	}
+	return result
+}
+
+// Enrich enriches the inventory in pom.xml files with transitive dependencies.
+func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+	pkgGroups := groupPackages(inv.Packages)
+
+	for path, pkgMap := range pkgGroups {
+		f, err := input.ScanRoot.FS.Open(path)
+
+		if err != nil {
+			return err
+		}
+
+		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
+			Path:   path,
+			Reader: f,
+			Info:   nil,
+			FS:     input.ScanRoot.FS,
+			Root:   input.ScanRoot.Path,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		for _, pkg := range enrichedInv.Packages {
+			indexPkg, ok := pkgMap[pkg.Name]
+			if ok {
+				// This dependency is in manifest, update the version and plugins.
+				i := indexPkg.index
+				inv.Packages[i].Version = pkg.Version
+				inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, Name)
+			} else {
+				// This dependency is not found in manifest, so it's a transitive dependency.
+				inv.Packages = append(inv.Packages, pkg)
+			}
+		}
 	}
 
-	return &Extractor{
-		DepClient:   depClient,
-		MavenClient: mavenClient,
-	}, nil
+	return nil
 }
 
-// Name of the extractor.
-func (e Extractor) Name() string { return Name }
-
-// Version of the extractor.
-func (e Extractor) Version() int { return 0 }
-
-// Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{
-		Network:  plugin.NetworkOnline,
-		DirectFS: true,
-	}
-}
-
-// FileRequired returns true if the specified file matches Maven POM lockfile patterns.
-func (e Extractor) FileRequired(fapi filesystem.FileAPI) bool {
-	return filepath.Base(fapi.Path()) == "pom.xml"
-}
-
-// Extract extracts packages from pom.xml files passed through the scan input.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
@@ -157,14 +230,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
-		if cl, ok := e.DepClient.(resolution.ClientWithRegistries); ok {
+		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
 			if err := cl.AddRegistries(ctx, clientRegs); err != nil {
 				return inventory.Inventory{}, err
 			}
 		}
 	}
 
-	overrideClient := resolution.NewOverrideClient(e.DepClient)
+	overrideClient := resolution.NewOverrideClient(e.depClient)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.
@@ -254,5 +327,3 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
-
-var _ filesystem.Extractor = Extractor{}
