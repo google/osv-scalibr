@@ -18,6 +18,7 @@ package simplevalidate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,12 +34,17 @@ import (
 type Validator[S veles.Secret] struct {
 	// The API endpoint to query.
 	Endpoint string
+	// Function that constructs the endpoint for a given secret.
+	// Exactly one of Endpoint or EndpointFunc must be provided.
+	// If EndpointFunc returns an error, Validate returns ValidationFailed and the error.
+	EndpointFunc func(S) (string, error)
 	// The HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
 	HTTPMethod string
 	// HTTP headers to set in the query based on the secret.
 	HTTPHeaders func(S) map[string]string
-	// The body to set in the query based on the secret
-	Body func(S) string
+	// The body to set in the query based on the secret.
+	// If Body returns an error, Validate returns ValidationFailed and the error.
+	Body func(S) (string, error)
 	// Status codes that should result in a "ValidationValid" validation result.
 	ValidResponseCodes []int
 	// Status codes that should result in a "ValidationInvalid" validation result.
@@ -56,14 +62,30 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		v.HTTPC = http.DefaultClient
 	}
 
+	if (v.Endpoint == "" && v.EndpointFunc == nil) || (v.Endpoint != "" && v.EndpointFunc != nil) {
+		return veles.ValidationFailed, errors.New("exactly one of Endpoint or EndpointFunc must be specified")
+	}
+
+	endpoint := v.Endpoint
+	if v.EndpointFunc != nil {
+		endpointURL, err := v.EndpointFunc(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
+		endpoint = endpointURL
+	}
+
 	var reqBodyReader io.Reader
 	if v.Body != nil {
-		reqBody := v.Body(secret)
+		reqBody, err := v.Body(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
 		if len(reqBody) > 0 {
 			reqBodyReader = strings.NewReader(reqBody)
 		}
 	}
-	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, v.Endpoint, reqBodyReader)
+	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
 	}

@@ -18,11 +18,10 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gcshmackey/signer"
+	"github.com/google/osv-scalibr/veles/secrets/common/awssignerv4"
 )
 
 const (
@@ -32,45 +31,39 @@ const (
 	CodeAccessDenied = "AccessDenied"
 )
 
-// HTTPSignerV4 defines the interface for signing HTTP requests using
+// HTTPAwsSignerV4 defines the interface for signing HTTP requests using
 // the AWS Signature Version 4 signing process.
-type HTTPSignerV4 interface {
+type HTTPAwsSignerV4 interface {
 	Sign(req *http.Request, accessKey, secretKey string) error
 }
 
 // Validator is a Veles Validator for Google Cloud Storage HMAC keys
 type Validator struct {
 	client *http.Client
-	signer HTTPSignerV4
+	signer HTTPAwsSignerV4
 }
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithHTTPClient configures the http.Client that the Validator uses.
-func WithHTTPClient(cli *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.client = cli
-	}
+// SetHTTPClient configures the http.Client that the Validator uses.
+func (v *Validator) SetHTTPClient(cli *http.Client) {
+	v.client = cli
 }
 
-// WithSigner configures HTTPSignerV4 that the Validator uses.
-func WithSigner(signer HTTPSignerV4) ValidatorOption {
-	return func(v *Validator) {
-		v.signer = signer
-	}
+// SetSigner configures HTTPSignerV4 that the Validator uses.
+func (v *Validator) SetSigner(signer HTTPAwsSignerV4) {
+	v.signer = signer
 }
 
 // NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
+func NewValidator() *Validator {
+	return &Validator{
 		client: http.DefaultClient,
-		signer: &signer.Signer{Service: "s3", Region: "auto"},
+		signer: awssignerv4.New(awssignerv4.Config{
+			Service: "s3", Region: "auto",
+			SignedHeaders: []string{
+				"amz-sdk-invocation-id", "amz-sdk-request", "host", "x-amz-content-sha256", "x-amz-date",
+			},
+		}),
 	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
 }
 
 // Validate checks whether the given Google Cloud Storage HMAC key is valid
@@ -81,6 +74,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("signing failed: %w", err)
@@ -90,24 +84,19 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("GET failed: %w", err)
 	}
+	defer rsp.Body.Close()
 
 	// the credentials are valid and the resource is accessible
 	if rsp.StatusCode == http.StatusOK {
 		return veles.ValidationValid, nil
 	}
 
-	body, err := io.ReadAll(rsp.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
-	}
-	defer rsp.Body.Close()
-
 	type errorResponse struct {
 		Code string `xml:"Code"`
 	}
 
 	errResp := errorResponse{}
-	if err := xml.Unmarshal(body, &errResp); err != nil {
+	if err := xml.NewDecoder(rsp.Body).Decode(&errResp); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to parse the response body: %w", err)
 	}
 

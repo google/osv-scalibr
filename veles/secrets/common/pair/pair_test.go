@@ -29,15 +29,15 @@ type mockSecret struct {
 
 // mock function to convert Pair to veles.Secret
 func mockSecretFromPair(p pair.Pair) (veles.Secret, bool) {
-	return mockSecret{Value: p.A.Value + "-" + p.B.Value}, true
+	return mockSecret{Value: string(p.A.Value) + "-" + string(p.B.Value)}, true
 }
 
 // mock function to convert Pair to veles.Secret
 func mockSecretFromPartialPair(p pair.Pair) (veles.Secret, bool) {
 	if p.B == nil {
-		return mockSecret{Value: p.A.Value}, true
+		return mockSecret{Value: string(p.A.Value)}, true
 	}
-	return mockSecret{Value: p.B.Value}, true
+	return mockSecret{Value: string(p.B.Value)}, true
 }
 
 func TestFindOptimalPairs(t *testing.T) {
@@ -54,7 +54,7 @@ func TestFindOptimalPairs(t *testing.T) {
 		wantSecrets     []veles.Secret
 		maxDistance     uint32
 		wantPos         []int
-		fromPartialPair func(p pair.Pair) (veles.Secret, bool)
+		fromPartialPair func(pair.Pair) (veles.Secret, bool)
 	}{
 		{
 			name:        "simple match",

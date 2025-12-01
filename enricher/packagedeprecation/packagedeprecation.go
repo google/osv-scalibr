@@ -80,7 +80,7 @@ func New() enricher.Enricher {
 
 // Enrich enriches the inventory with package version deprecation status from deps.dev.
 func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	log.Infof("Package deprecation enricher starting, %d packages to enrich.", len(inv.Packages))
+	log.Debugf("Package deprecation enricher starting, %d packages to enrich.", len(inv.Packages))
 
 	verToPkg := make(map[VersionKey][]*extractor.Package, len(inv.Packages))
 
@@ -120,7 +120,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 		}
 	}
 
-	log.Infof("Package deprecation enricher finished.")
+	log.Debugf("Package deprecation enricher finished.")
 	return nil
 }
 

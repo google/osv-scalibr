@@ -124,9 +124,8 @@ func TestValidatorSecretKey(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := stripeapikeys.NewSecretKeyValidator(
-				stripeapikeys.WithClientSecretKey(client),
-			)
+			validator := stripeapikeys.NewSecretKeyValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := stripeapikeys.StripeSecretKey{Key: validatorTestSK}
@@ -157,9 +156,8 @@ func TestValidatorSecretKey_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := stripeapikeys.NewSecretKeyValidator(
-		stripeapikeys.WithClientSecretKey(client),
-	)
+	validator := stripeapikeys.NewSecretKeyValidator()
+	validator.HTTPC = client
 
 	key := stripeapikeys.StripeSecretKey{Key: validatorTestSK}
 
@@ -219,9 +217,8 @@ func TestValidatorRestrictedKey(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := stripeapikeys.NewRestrictedKeyValidator(
-				stripeapikeys.WithClientRestrictedKey(client),
-			)
+			validator := stripeapikeys.NewRestrictedKeyValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := stripeapikeys.StripeRestrictedKey{Key: validatorTestRK}
@@ -252,9 +249,8 @@ func TestValidatorRestrictedKey_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := stripeapikeys.NewRestrictedKeyValidator(
-		stripeapikeys.WithClientRestrictedKey(client),
-	)
+	validator := stripeapikeys.NewRestrictedKeyValidator()
+	validator.HTTPC = client
 
 	key := stripeapikeys.StripeRestrictedKey{Key: validatorTestRK}
 

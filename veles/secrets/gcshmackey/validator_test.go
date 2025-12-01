@@ -92,7 +92,7 @@ func mockS3Server(signature string, denied bool) func() *httptest.Server {
 	}
 }
 
-var (
+const (
 	exampleAccessID  = "GOOGerkjf4f034"
 	correctSecret    = "testsecret"
 	badSecret        = "badSecret"
@@ -100,7 +100,6 @@ var (
 )
 
 func TestValidator(t *testing.T) {
-	// Set up fake "GCP metadata" HTTP server.
 	cases := []struct {
 		name   string
 		key    gcshmackey.HMACKey
@@ -143,10 +142,9 @@ func TestValidator(t *testing.T) {
 				Transport: &mockRoundTripper{url: srv.URL},
 			}
 
-			validator := gcshmackey.NewValidator(
-				gcshmackey.WithHTTPClient(client),
-				gcshmackey.WithSigner(fakeSigner{}),
-			)
+			validator := gcshmackey.NewValidator()
+			validator.SetHTTPClient(client)
+			validator.SetSigner(fakeSigner{})
 
 			got, err := validator.Validate(t.Context(), tc.key)
 			if err != nil {

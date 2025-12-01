@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -98,8 +99,9 @@ var (
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
-		fromVeles(hashicorpvault.NewTokenValidator(), "secrets/hashicorpvaulttokenvalidate", 0),
-		fromVeles(hashicorpvault.NewAppRoleValidator(), "secrets/hashicorpvaultapprolevalidate", 0),
+		// TODO: b/458337736 - Retrieve vault URL from config for both hashicorpvault validators.
+		fromVeles(hashicorpvault.NewTokenValidator(""), "secrets/hashicorpvaulttokenvalidate", 0),
+		fromVeles(hashicorpvault.NewAppRoleValidator(""), "secrets/hashicorpvaultapprolevalidate", 0),
 		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),
 		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
@@ -116,6 +118,7 @@ var (
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
+		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

@@ -111,15 +111,14 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := cratesioapitoken.NewValidator(
-				cratesioapitoken.WithClient(client),
-			)
+			validator := cratesioapitoken.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
 			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -150,9 +149,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := cratesioapitoken.NewValidator(
-		cratesioapitoken.WithClient(client),
-	)
+	validator := cratesioapitoken.NewValidator()
+	validator.HTTPC = client
 
 	key := cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey}
 
@@ -181,19 +179,20 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := cratesioapitoken.NewValidator(
-		cratesioapitoken.WithClient(client),
-	)
+	validator := cratesioapitoken.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
 		key      string
 		expected veles.ValidationStatus
+		wantErr  bool
 	}{
 		{
 			name:     "empty_key",
 			key:      "",
 			expected: veles.ValidationFailed,
+			wantErr:  true,
 		},
 		{
 			name:     "invalid_key_format",
@@ -206,11 +205,17 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
-			got, err := validator.Validate(context.Background(), key)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			got, err := validator.Validate(t.Context(), key)
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
 			}
+
 			if got != tc.expected {
 				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
 			}

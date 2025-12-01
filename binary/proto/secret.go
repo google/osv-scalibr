@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -49,6 +50,7 @@ import (
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -207,10 +209,35 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformTokenToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
+	case awsaccesskey.Credentials:
+		return awsAccessKeyCredentialToProto(t), nil
 	case vapid.Key:
 		return vapidKeyToProto(t), nil
+	case recaptchakey.Key:
+		return reCaptchaKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AwsAccessKeyCredentials_{
+			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
+				AccessId: s.AccessID,
+				Secret:   s.Secret,
+			},
+		},
+	}
+}
+
+func reCaptchaKeyToProto(s recaptchakey.Key) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ReCaptchaKey_{
+			ReCaptchaKey: &spb.SecretData_ReCaptchaKey{
+				Secret: s.Secret,
+			},
+		},
 	}
 }
 
@@ -907,9 +934,19 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			User:     creds.User,
 			Password: creds.Password,
 		}, nil
+	case *spb.SecretData_AwsAccessKeyCredentials_:
+		creds := s.GetAwsAccessKeyCredentials()
+		return &awsaccesskey.Credentials{
+			AccessID: creds.AccessId,
+			Secret:   creds.Secret,
+		}, nil
 	case *spb.SecretData_VapidKey_:
 		t := s.GetVapidKey()
 		return vapid.Key{PrivateB64: t.PrivateB64, PublicB64: t.PublicB64}, nil
+	case *spb.SecretData_ReCaptchaKey_:
+		return recaptchakey.Key{
+			Secret: s.GetReCaptchaKey().GetSecret(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

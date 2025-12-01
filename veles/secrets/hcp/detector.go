@@ -46,13 +46,13 @@ func NewPairDetector() veles.Detector {
 		MaxElementLen: maxSecretLen, MaxDistance: maxPairWindowLen,
 		FindA: findMatches(reClientID), FindB: findMatches(reClientSec),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			return ClientCredentials{ClientID: p.A.Value, ClientSecret: p.B.Value}, true
+			return ClientCredentials{ClientID: string(p.A.Value), ClientSecret: string(p.B.Value)}, true
 		},
 		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
 			if p.A == nil {
-				return ClientCredentials{ClientSecret: p.B.Value}, true
+				return ClientCredentials{ClientSecret: string(p.B.Value)}, true
 			}
-			return ClientCredentials{ClientID: p.A.Value}, true
+			return ClientCredentials{ClientID: string(p.A.Value)}, true
 		},
 	}
 }
@@ -67,7 +67,7 @@ func findMatches(re *regexp.Regexp) func(data []byte) []*pair.Match {
 		out := make([]*pair.Match, 0, len(idxs))
 		for _, m := range idxs {
 			// m[0], m[1] are the full-match bounds; m[2], m[3] are the first capture group bounds
-			out = append(out, &pair.Match{Position: m[2], Value: string(data[m[2]:m[3]])})
+			out = append(out, &pair.Match{Start: m[2], Value: data[m[2]:m[3]]})
 		}
 		return out
 	}
