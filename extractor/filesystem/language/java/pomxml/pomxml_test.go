@@ -336,6 +336,50 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "transitive dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/transitive.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "org.direct:alice",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/transitive.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "alice",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.direct:bob",
+					Version:   "2.0.0",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/transitive.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "bob",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.direct:chris",
+					Version:   "3.0.0",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/transitive.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "chris",
+						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
