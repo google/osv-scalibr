@@ -96,6 +96,7 @@ func TestSetProto(t *testing.T) {
 				OSBuildID:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OSCPEName:    "os-cpe-name",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -112,6 +113,7 @@ func TestSetProto(t *testing.T) {
 						OsBuildId:    "os-build-id",
 						Vendor:       "vendor",
 						Architecture: "architecture",
+						OsCpeName:    "os-cpe-name",
 					},
 				},
 			},
@@ -176,6 +178,7 @@ func TestToStruct(t *testing.T) {
 				OsBuildId:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OsCpeName:    "os-cpe-name",
 			},
 			want: &metadata.Metadata{
 				PackageName:  "name",
@@ -188,6 +191,7 @@ func TestToStruct(t *testing.T) {
 				OSBuildID:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OSCPEName:    "os-cpe-name",
 			},
 		},
 	}

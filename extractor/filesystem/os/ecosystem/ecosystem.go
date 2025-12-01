@@ -16,6 +16,8 @@
 package ecosystem
 
 import (
+	"strings"
+
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
@@ -49,7 +51,10 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 
 	case *rpmmeta.Metadata:
 		if m.OSID == "rhel" {
-			return osvecosystem.FromEcosystem(osvconstants.EcosystemRedHat)
+			// CPE_NAME="cpe:/o:redhat:enterprise_linux:9::baseos"
+			// If :redhat: doesn't exist, then suffix will just be empty and have no suffix.
+			_, suffix, _ := strings.Cut(m.OSCPEName, ":redhat:")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemRedHat, Suffix: suffix}
 		}
 		if m.OSID == "rocky" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemRockyLinux)
