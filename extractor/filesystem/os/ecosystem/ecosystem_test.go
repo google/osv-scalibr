@@ -216,6 +216,14 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Red Hat",
 		},
 		{
+			desc: "RHEL_with_CPE_name",
+			metadata: &rpmmeta.Metadata{
+				OSID:      "rhel",
+				OSCPEName: "cpe:/o:redhat:enterprise_linux:9::baseos",
+			},
+			want: "Red Hat:enterprise_linux:9::baseos",
+		},
+		{
 			desc: "rocky",
 			metadata: &rpmmeta.Metadata{
 				OSID: "rocky",

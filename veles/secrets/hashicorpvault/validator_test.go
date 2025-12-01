@@ -80,10 +80,9 @@ func TestTokenValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewTokenValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewTokenValidator(serverURL)
+			validator.HTTPC = server.Client()
 
 			token := Token{Token: "hvs.test-token"}
 			status, err := validator.Validate(t.Context(), token)
@@ -190,10 +189,9 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewAppRoleValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewAppRoleValidator(serverURL)
+			validator.HTTPC = server.Client()
 
 			status, err := validator.Validate(t.Context(), test.credentials)
 
@@ -212,7 +210,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 }
 
 func TestValidator_InvalidVaultURL(t *testing.T) {
-	validator := NewTokenValidator(WithVaultURL("://invalid-url"))
+	validator := NewTokenValidator("://invalid-url")
 	token := Token{Token: "hvs.test-token"}
 	status, err := validator.Validate(t.Context(), token)
 
@@ -226,7 +224,7 @@ func TestValidator_InvalidVaultURL(t *testing.T) {
 
 func TestValidator_NetworkError(t *testing.T) {
 	// Use a URL that will cause a network error
-	validator := NewTokenValidator(WithVaultURL("http://localhost:1"))
+	validator := NewTokenValidator("http://localhost:1")
 	token := Token{Token: "hvs.test-token"}
 	status, err := validator.Validate(t.Context(), token)
 
@@ -245,10 +243,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	validator := NewTokenValidator(
-		WithClient(server.Client()),
-		WithVaultURL(server.URL),
-	)
+	serverURL := server.URL
+	validator := NewTokenValidator(serverURL)
+	validator.HTTPC = server.Client()
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately

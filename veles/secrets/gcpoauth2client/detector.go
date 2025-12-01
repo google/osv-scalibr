@@ -65,7 +65,7 @@ func NewDetector() veles.Detector {
 		FindA: pair.FindAllMatches(clientIDRe),
 		FindB: pair.FindAllMatches(clientSecretRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
-			return Credentials{ID: p.A.Value, Secret: p.B.Value}, true
+			return Credentials{ID: string(p.A.Value), Secret: string(p.B.Value)}, true
 		},
 	}
 }
