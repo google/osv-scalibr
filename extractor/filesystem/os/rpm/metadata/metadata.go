@@ -39,6 +39,7 @@ type Metadata struct {
 	SourceRPM    string
 	Epoch        int
 	OSName       string
+	OSCPEName    string
 	OSPrettyName string
 	OSID         string
 	OSVersionID  string
@@ -91,6 +92,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			SourceRpm:    m.SourceRPM,
 			Epoch:        int32(m.Epoch),
 			OsName:       m.OSName,
+			OsCpeName:    m.OSCPEName,
 			OsPrettyName: m.OSPrettyName,
 			OsId:         m.OSID,
 			OsVersionId:  m.OSVersionID,
@@ -112,6 +114,7 @@ func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
 		SourceRPM:    m.GetSourceRpm(),
 		Epoch:        int(m.GetEpoch()),
 		OSName:       m.GetOsName(),
+		OSCPEName:    m.GetOsCpeName(),
 		OSPrettyName: m.GetOsPrettyName(),
 		OSID:         m.GetOsId(),
 		OSVersionID:  m.GetOsVersionId(),
