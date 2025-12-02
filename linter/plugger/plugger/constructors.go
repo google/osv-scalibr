@@ -30,6 +30,10 @@ func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constru
 	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
+		// remove functions not starting with New
+		functions = slices.DeleteFunc(functions, func(f *Function) bool {
+			return !strings.HasPrefix(f.Fun.Name.Name, "New")
+		})
 		findAliases(functions)
 		for _, impl := range types {
 			for _, fn := range functions {
@@ -147,34 +151,26 @@ func findFuncDecl(pkg *packages.Package, fun ast.Expr) *ast.FuncDecl {
 //
 // Note: suffixes such as "Default" and the name of the packages are removed from the name of the functions
 func findAliases(functions []*Function) {
-	slices.SortFunc(functions, func(a, b *Function) int {
-		return strings.Compare(a.Fun.Name.Name, b.Fun.Name.Name)
-	})
-
-	bins := map[string][]*Function{}
-	i, j := 0, 0
-	for i < len(functions) && j < len(functions) {
-		f1 := functions[i]
-		f1Name := f1.Fun.Name.Name
-
-		// Heuristically remove the suffixes: pkg.Name and "Default" from the function name
-		f1Name = strings.TrimSuffix(f1Name, "Default")
-		f1Name = strings.TrimSuffix(f1Name, capitalizeFirst(f1.Pkg.Name))
-
-		f2 := functions[j]
-		f2Name := f2.Fun.Name.Name
-		// skip to next bin since strings are sorted
-		if !strings.HasPrefix(f2Name, f1Name) {
-			i = j
-			continue
-		}
-		bins[f1Name] = append(bins[f1Name], f2)
-		j++
+	// Build a map from normalized name to functions
+	normMap := make(map[*Function]string)
+	for _, f := range functions {
+		fName := f.Fun.Name.Name
+		fName = strings.TrimSuffix(fName, "Default")
+		fName = strings.TrimSuffix(fName, capitalizeFirst(f.Pkg.Name))
+		normMap[f] = fName
 	}
 
-	for _, bin := range bins {
-		for _, fn := range bin {
-			fn.Aliases = bin
+	// Find aliases
+	for _, f := range functions {
+		fNormalized := normMap[f]
+		for _, g := range functions {
+			if f == g {
+				continue
+			}
+			gNormalized := normMap[g]
+			if strings.HasPrefix(gNormalized, fNormalized) || strings.HasPrefix(fNormalized, gNormalized) {
+				f.Aliases = append(f.Aliases, g)
+			}
 		}
 	}
 }

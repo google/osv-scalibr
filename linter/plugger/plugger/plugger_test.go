@@ -15,6 +15,7 @@
 package plugger_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -136,6 +137,42 @@ func TestFindUsages(t *testing.T) {
 	// only NewPluginA since NewPluginB is called only in tests
 	want := []string{
 		"NewPluginA",
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAliases(t *testing.T) {
+	// Load the mock packages
+	pkgs, err := packages.Load(cfg(), "testdata/alias", "testdata/basic")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
+	implementations := plugger.FindImplementations(pkgs, interfaces)
+	ctrs := plugger.FindConstructors(pkgs, implementations)
+
+	got := map[string]string{}
+	for _, ctr := range ctrs {
+		got[ctr.String()] = fmt.Sprint(ctr.Aliases)
+	}
+
+	// these NewAlias and NewDefault should be aliases of all of them since
+	// they contain the pkg.Name and "Default" suffixes
+	//
+	// Note: usually when a function like New or NewDefault or NewPkgName is returned
+	// the return type is the only public type returned by the pkg, otherwise it will
+	// have a more specific name
+	want := map[string]string{
+		"NewAlias":     "[NewDefault NewDetector NewValidator]",
+		"NewDefault":   "[NewAlias NewDetector NewValidator]",
+		"NewDetector":  "[NewAlias NewDefault]",
+		"NewValidator": "[NewAlias NewDefault]",
+		"NewPluginA":   "[]",
+		"NewPluginB":   "[]",
 	}
 
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
