@@ -58,11 +58,6 @@ func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) []
 					continue
 				}
 
-				// Skip interfaces themselves
-				if _, ok := named.Underlying().(*types.Interface); ok {
-					continue
-				}
-
 				// Fix in FindImplementations: Removed unused pkg.Types argument
 				implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
 					// Pass the T type and the package object (which is needed for the types.Selection.Obj().Pkg() check in Lookup)

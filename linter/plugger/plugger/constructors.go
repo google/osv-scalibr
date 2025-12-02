@@ -42,7 +42,7 @@ func FindConstructors(pkgs []*packages.Package, types []*types.Named) []*Constru
 	return ctrs
 }
 
-// findFunctions finds all the function in the given pkg
+// findFunctions finds all the functions in the given pkg
 func findFunctions(pkg *packages.Package) []*Function {
 	seen := map[*ast.FuncDecl]*Function{}
 	fns := []*Function{}
@@ -98,9 +98,8 @@ func extractFunction(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.Func
 						for _, t := range calledFn.ReturnTypes {
 							typesSet[t] = struct{}{}
 						}
-						continue
 					}
-					// Fallback: use the static return type of the call
+					// Also use the static return type of the call
 					if typ := pkg.TypesInfo.TypeOf(call); typ != nil {
 						typesSet[typ] = struct{}{}
 					}

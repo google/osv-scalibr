@@ -54,7 +54,6 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	}
 
 	pkgs = FilterNoLintPackages(pkgs)
-
 	interfaces := FindInterfaces(pkgs, interfaceNames)
 	if len(interfaceNames) != len(interfaces) {
 		return nil, fmt.Errorf("%d interfaces are specified but only %d are found: %v",
@@ -63,7 +62,7 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	}
 
 	implementations := FindImplementations(pkgs, interfaces)
-	ctrs := FindConstructors(pkgs, slices.Concat(implementations, interfaces))
+	ctrs := FindConstructors(pkgs, implementations)
 	usages := FindUsages(pkgs, ctrs)
 	return notRegistered(ctrs, usages), nil
 }
@@ -82,7 +81,7 @@ func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
 	})
 }
 
-// notRegistered return a list of non-registered plugins
+// notRegistered returns a list of non-registered plugins
 func notRegistered(all, used []*Constructor) []*Constructor {
 	usedSet := make(map[*ast.FuncDecl]bool, len(used))
 	for _, c := range used {
