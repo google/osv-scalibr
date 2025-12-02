@@ -69,6 +69,7 @@ func (c Constructor) Pos(cwd string) (string, error) {
 	return fmt.Sprintf("%s:%d:%d", rel, pos.Line, pos.Column), nil
 }
 
+// Registers returns the type of the plugin which the construct registers.
 func (c Constructor) Registers() string {
 	obj := c.registers.Obj()
 	return obj.Pkg().Name() + "." + obj.Name()

@@ -111,7 +111,7 @@ func TestAliases(t *testing.T) {
 
 	got := map[string]string{}
 	for _, ctr := range ctrs {
-		got[ctr.Fun.Name.Name] = fmt.Sprint(ctr.Aliases)
+		got[ctr.String()] = fmt.Sprint(ctr.Aliases)
 	}
 
 	// these NewAlias and NewDefault should be aliases of all of them since
@@ -121,12 +121,12 @@ func TestAliases(t *testing.T) {
 	// the return type is the only public type returned by the pkg, otherwise it will
 	// have a more specific name
 	want := map[string]string{
-		"NewAlias":     "[NewDefault NewDetector NewValidator]",
-		"NewDefault":   "[NewAlias NewDetector NewValidator]",
-		"NewDetector":  "[NewAlias NewDefault]",
-		"NewValidator": "[NewAlias NewDefault]",
-		"NewPluginA":   "[]",
-		"NewPluginB":   "[]",
+		"alias.NewAlias":     "[alias.NewDefault alias.NewDetector alias.NewValidator]",
+		"alias.NewDefault":   "[alias.NewAlias alias.NewDetector alias.NewValidator]",
+		"alias.NewDetector":  "[alias.NewAlias alias.NewDefault]",
+		"alias.NewValidator": "[alias.NewAlias alias.NewDefault]",
+		"basic.NewPluginA":   "[]",
+		"basic.NewPluginB":   "[]",
 	}
 
 	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
