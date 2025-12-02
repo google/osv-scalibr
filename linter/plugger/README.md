@@ -12,20 +12,7 @@ Usage of plugger:
     list of interfaces (repeatable), ex: '-interface github.com/pkg.Interface'
 ```
 
-### Exclude plugins
-
-Also excluding a plugin directly is possible, just add a `//nolint:plugger`
-directive
-
-```go
-// Extractor extracts python packages from requirements.txt files.
-//
-//nolint:plugger // This plugin will be removed shortly
-type Extractor struct {
-  resolve.Client
-  BaseExtractor *requirements.Extractor
-}
-```
+### No lint rules
 
 exclude a function
 
@@ -35,12 +22,13 @@ func NewPlugin() basic.MyPlugin {
 	return &basic.PluginA{}
 }
 
-// This is detected as alias automatically
+// This is treated as alias automatically
 func NewPluginAlias(something string) basic.MyPlugin {
 	return &basic.PluginA{}
 }
 
-// This is not detected as an alias automatically, so it needs a lint rule
+// NewForTest: since this function is intended to be used in tests only,
+// must be excluded from the lint
 //
 //nolint:plugger // This function is meant to be used only in testing and returns the same plugin as fun.NewPlugin
 func NewForTest(something string) basic.MyPlugin {

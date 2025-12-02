@@ -26,9 +26,9 @@ import (
 // Function is a generic function
 type Function struct {
 	Fun         *ast.FuncDecl
-	Aliases     []*Function
 	Pkg         *packages.Package
 	ReturnTypes []types.Type
+	Aliases     []*Function
 }
 
 func (f Function) String() string {
@@ -43,14 +43,8 @@ func (f *Function) Returns(t *types.Named) bool {
 			return true
 		}
 
-		// unwrap pointer once (if any)
-		elem := r
-		if p, ok := r.(*types.Pointer); ok {
-			elem = p.Elem()
-		}
-
-		// generic named match
-		if named, ok := elem.(*types.Named); ok && named.Origin() == t {
+		// check if the functions returns an interface of the type
+		if doesImplement(r, t) || doesImplement(types.NewPointer(r), t) {
 			return true
 		}
 	}
@@ -61,7 +55,7 @@ func (f *Function) Returns(t *types.Named) bool {
 type Constructor struct {
 	*Function
 
-	Impl *types.Named
+	Registers []*types.Named
 }
 
 // Pos returns a compiler style position of the constructor
@@ -73,4 +67,12 @@ func (c Constructor) Pos(cwd string) (string, error) {
 	}
 
 	return fmt.Sprintf("%s:%d:%d", rel, pos.Line, pos.Column), nil
+}
+
+func (c Constructor) RegisteredType() string {
+	return c.Registers[0].Obj().Pkg().Name() + "." + c.Registers[0].Obj().Name()
+}
+
+func (c Constructor) String() string {
+	return c.Pkg.Name + "." + c.Fun.Name.Name
 }

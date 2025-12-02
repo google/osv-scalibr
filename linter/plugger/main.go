@@ -54,9 +54,11 @@ func main() {
 	}
 
 	for _, c := range ctrs {
-		pos, _ := c.Pos(cwd)
-		shortObjName := c.Impl.Obj().Pkg().Name() + "." + c.Impl.Obj().Name()
-		fmt.Printf("%s: plugger: %s is not registered\n", pos, shortObjName)
+		pos, err := c.Pos(cwd)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s: plugger: %s is not registered\n", pos, c.RegisteredType())
 	}
 
 	if len(ctrs) != 0 {

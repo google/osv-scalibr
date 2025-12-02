@@ -24,6 +24,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var ignoreOrder = cmpopts.SortSlices(func(a, b string) bool { return a < b })
+
 func cfg() *packages.Config {
 	cfg := plugger.Config
 	cfg.Dir = "./testdata"
@@ -43,52 +45,7 @@ func TestFindInterfaces(t *testing.T) {
 	}
 
 	want := []string{"testdata/basic.MyPlugin"}
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestFindImplementations(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/basic")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"}))
-
-	// Collect implementation names for comparison
-	var got []string
-	for _, impl := range impls {
-		got = append(got, impl.Obj().Name())
-	}
-
-	want := []string{"MyPlugin", "PluginA", "PluginB"}
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestFindImplementationsWithGeneric(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/generic")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/generic.Validator", "testdata/generic.IComplex"})
-	if len(interfaces) != 2 {
-		t.Errorf("expected 2 interface, found %d", len(interfaces))
-	}
-
-	impls := plugger.FindImplementations(pkgs, interfaces)
-
-	// Collect implementation names for comparison
-	var got []string
-	for _, impl := range impls {
-		got = append(got, impl.Obj().Name())
-	}
-
-	want := []string{"Validator", "TestPointer", "Test", "TestAnotherType", "IComplex", "Complex"}
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -100,8 +57,7 @@ func TestFindConstructors(t *testing.T) {
 	}
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 	var got []string
 	for _, ctr := range ctrs {
 		got = append(got, ctr.Fun.Name.String())
@@ -112,7 +68,7 @@ func TestFindConstructors(t *testing.T) {
 		"NewPluginB",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -125,8 +81,7 @@ func TestFindUsages(t *testing.T) {
 	}
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	usages := plugger.FindUsages(pkgs, ctrs)
 	var got []string
@@ -139,7 +94,7 @@ func TestFindUsages(t *testing.T) {
 		"NewPluginA",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -152,12 +107,11 @@ func TestAliases(t *testing.T) {
 	}
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	got := map[string]string{}
 	for _, ctr := range ctrs {
-		got[ctr.String()] = fmt.Sprint(ctr.Aliases)
+		got[ctr.Fun.Name.Name] = fmt.Sprint(ctr.Aliases)
 	}
 
 	// these NewAlias and NewDefault should be aliases of all of them since
@@ -175,27 +129,7 @@ func TestAliases(t *testing.T) {
 		"NewPluginB":   "[]",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestStructNoLintRule(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/basic", "testdata/nolint/plugin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	impls := plugger.FindImplementations(pkgs, plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"}))
-
-	// Collect implementation names for comparison
-	var got []string
-	for _, impl := range impls {
-		got = append(got, impl.Obj().Name())
-	}
-
-	want := []string{"MyPlugin", "PluginA", "PluginB", "PluginNotUsedToLint"}
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -209,8 +143,7 @@ func TestPkgNoLintRule(t *testing.T) {
 	pkgs = plugger.FilterNoLintPackages(pkgs)
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	var got []string
 	for _, ctr := range ctrs {
@@ -222,7 +155,7 @@ func TestPkgNoLintRule(t *testing.T) {
 		"NewPluginB",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -234,8 +167,7 @@ func TestFunNoLintRule(t *testing.T) {
 	}
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	var got []string
 	for _, ctr := range ctrs {
@@ -248,7 +180,7 @@ func TestFunNoLintRule(t *testing.T) {
 		"NewPlugin",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -260,8 +192,7 @@ func TestExternal(t *testing.T) {
 	}
 
 	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/basic.MyPlugin"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	var got []string
 	for _, ctr := range ctrs {
@@ -275,20 +206,19 @@ func TestExternal(t *testing.T) {
 		"NewPluginExternal",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestGenericReturnType(t *testing.T) {
-	pkgs, err := packages.Load(cfg(), "testdata/generic/genericreturn")
+func TestGeneric(t *testing.T) {
+	pkgs, err := packages.Load(cfg(), "testdata/generic")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/generic/genericreturn.Validator"})
-	implementations := plugger.FindImplementations(pkgs, interfaces)
-	ctrs := plugger.FindConstructors(pkgs, implementations)
+	interfaces := plugger.FindInterfaces(pkgs, []string{"testdata/generic.Validator"})
+	ctrs := plugger.FindConstructors(pkgs, interfaces)
 
 	var got []string
 	for _, ctr := range ctrs {
@@ -297,7 +227,7 @@ func TestGenericReturnType(t *testing.T) {
 
 	want := []string{"NewValidator"}
 
-	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, ignoreOrder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

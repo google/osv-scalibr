@@ -15,86 +15,9 @@
 package plugger
 
 import (
-	"go/ast"
-	"go/token"
 	"go/types"
 	"slices"
-	"strings"
-
-	"golang.org/x/tools/go/ast/inspector"
-	"golang.org/x/tools/go/packages"
 )
-
-// FindImplementations returns all the implementations for the given interfaces
-func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) []*types.Named {
-	implementations := []*types.Named{}
-
-	filter := []ast.Node{(*ast.GenDecl)(nil)}
-
-	for _, pkg := range pkgs {
-		inspector.New(pkg.Syntax).Preorder(filter, func(n ast.Node) {
-			genDecl := n.(*ast.GenDecl)
-			if genDecl.Tok != token.TYPE {
-				return
-			}
-
-			if hasNoLint(genDecl.Doc, Name) {
-				return
-			}
-
-			for _, spec := range genDecl.Specs {
-				typeSpec, ok := spec.(*ast.TypeSpec)
-				if !ok {
-					continue
-				}
-
-				obj := pkg.TypesInfo.Defs[typeSpec.Name]
-				if obj == nil {
-					continue
-				}
-
-				named, ok := obj.Type().(*types.Named)
-				if !ok {
-					continue
-				}
-
-				implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
-					// Pass the T type and the package object (which is needed for the types.Selection.Obj().Pkg() check in Lookup)
-					return doesImplement(named, iface) || doesImplement(types.NewPointer(named), iface)
-				})
-				if implementsAny {
-					implementations = append(implementations, named)
-				}
-			}
-		})
-	}
-
-	return implementations
-}
-
-func hasNoLint(commentGroup *ast.CommentGroup, name string) bool {
-	if commentGroup == nil {
-		return false
-	}
-	for _, comment := range commentGroup.List {
-		text := comment.Text
-		linters, ok := strings.CutPrefix(text, "//nolint:")
-		if !ok {
-			continue
-		}
-
-		// remove comment after //nolint, ex:
-		//
-		//	//nolint:plugger //something
-		linters, _, _ = strings.Cut(linters, " ")
-
-		// return true if one of the comma separated linter is plugger
-		if slices.Contains(strings.Split(linters, ","), name) {
-			return true
-		}
-	}
-	return false
-}
 
 // doesImplement checks if the named type implements the named interface,
 // using heuristic instantiation logic for generic interfaces.

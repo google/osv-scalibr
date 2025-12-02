@@ -38,15 +38,13 @@ var Config = &packages.Config{
 //
 //  1. Find all interfaces matching iPattern.
 //
-//  2. Find all types that implement those interfaces.
-//
-//  3. Identify all packages in which the constructors for these types are declared
+//  2. Identify all functions returning those interfaces/their implementation for each pkg.
 //
 //  4. Each constructor must be called at least once outside of the pkg. Note:
 //
-//     Note: functions returning the same type with a common prefix are considered aliases
+//     Functions inside a package with a common prefix are considered aliases
 //
-//     if none exist, the plugin is considered not registered.
+//     If no function is called the plugin is considered not registered.
 func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) {
 	pkgs, err := packages.Load(Config, pkgsPattern...)
 	if err != nil {
@@ -60,9 +58,7 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 			len(interfaceNames), len(interfaces), interfaces,
 		)
 	}
-
-	implementations := FindImplementations(pkgs, interfaces)
-	ctrs := FindConstructors(pkgs, implementations)
+	ctrs := FindConstructors(pkgs, interfaces)
 	usages := FindUsages(pkgs, ctrs)
 	return notRegistered(ctrs, usages), nil
 }
@@ -72,6 +68,9 @@ func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
 	return slices.DeleteFunc(pkgs, func(pkg *packages.Package) bool {
 		for _, f := range pkg.Syntax {
 			for _, cg := range f.Comments {
+				if cg.Pos() >= f.Package {
+					break
+				}
 				if hasNoLint(cg, Name) {
 					return true
 				}
@@ -86,11 +85,7 @@ func notRegistered(all, used []*Constructor) []*Constructor {
 	usedSet := make(map[*ast.FuncDecl]bool, len(used))
 	for _, c := range used {
 		usedSet[c.Fun] = true
-		// also mark as used aliases which return the same type
 		for _, alias := range c.Aliases {
-			if !alias.Returns(c.Impl) {
-				continue
-			}
 			usedSet[alias.Fun] = true
 		}
 	}
