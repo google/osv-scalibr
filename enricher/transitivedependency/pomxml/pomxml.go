@@ -108,7 +108,9 @@ func New(c Config) *Enricher {
 }
 
 // NewDefault returns an extractor with the default config settings.
-func NewDefault() *Enricher { return New(DefaultConfig()) }
+func NewDefault() enricher.Enricher {
+	return *New(DefaultConfig())
+}
 
 // packageWithIndex holds the package with its index in inv.Packages
 type packageWithIndex struct {
