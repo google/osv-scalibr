@@ -52,9 +52,7 @@ type Detector struct {
 func New(cfg *cpb.PluginConfig) detector.Detector {
 	d := &Detector{}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
-	if specific != nil {
-		d.offlineVulnDBPath = specific.OfflineVulnDbPath
-	}
+	d.offlineVulnDBPath = specific.GetOfflineVulnDbPath()
 	return d
 }
 
