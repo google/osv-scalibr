@@ -58,7 +58,6 @@ func FindImplementations(pkgs []*packages.Package, interfaces []*types.Named) []
 					continue
 				}
 
-				// Fix in FindImplementations: Removed unused pkg.Types argument
 				implementsAny := slices.ContainsFunc(interfaces, func(iface *types.Named) bool {
 					// Pass the T type and the package object (which is needed for the types.Selection.Obj().Pkg() check in Lookup)
 					return doesImplement(named, iface) || doesImplement(types.NewPointer(named), iface)
@@ -105,19 +104,19 @@ func doesImplement(t types.Type, iface *types.Named) bool {
 		return false
 	}
 
-	// non-generic interface
-	// or If the generic interface has no methods, we can't deduce type arguments.
+	// Either a non-generic interface or a generic interface with no methods
+	// we can't deduce type arguments.
 	if iface.TypeParams().Len() == 0 || ifaceType.NumMethods() == 0 {
 		return types.Satisfies(t, ifaceType)
 	}
 
-	// generic interface
+	// Generic interface
 
 	concreteMethods := types.NewMethodSet(t)
 	iTypeArgs := make([]types.Type, iface.TypeParams().Len())
 	iTypeParams := iface.TypeParams()
 
-	// Check every method in the generic interface template
+	// check every method in the generic interface template
 	for iMethod := range ifaceType.Methods() {
 		// Search the method by name
 		mSelected := concreteMethods.Lookup(iMethod.Pkg(), iMethod.Name())
@@ -129,7 +128,7 @@ func doesImplement(t types.Type, iface *types.Named) bool {
 		iSignature := iMethod.Type().(*types.Signature)
 		cSignature := mSelected.Type().(*types.Signature)
 
-		// check if the types match (both params and results)
+		// Check if the types match (both params and results)
 		paramsMatch(iTypeParams, iSignature.Params(), cSignature.Params(), iTypeArgs)
 		paramsMatch(iTypeParams, iSignature.Results(), cSignature.Results(), iTypeArgs)
 	}
@@ -145,7 +144,7 @@ func doesImplement(t types.Type, iface *types.Named) bool {
 		return false
 	}
 
-	// final check: t satisfies the instantiated interface
+	// Final check: t satisfies the instantiated interface
 	return types.Satisfies(t, instantiated.Underlying().(*types.Interface))
 }
 
