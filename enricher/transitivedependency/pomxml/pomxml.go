@@ -63,7 +63,8 @@ func (Enricher) Version() int {
 // Requirements returns the requirements of the enricher.
 func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network: plugin.NetworkOnline,
+		Network:  plugin.NetworkOnline,
+		DirectFS: true,
 	}
 }
 
