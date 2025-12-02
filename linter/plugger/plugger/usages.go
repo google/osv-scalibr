@@ -56,7 +56,7 @@ func FindUsages(pkgs []*packages.Package, ctrs []*Constructor) []*Constructor {
 				}
 			}
 
-			if fn == nil || fn.Pkg() == nil || fn.Pkg().Name() == pkg.Name {
+			if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() == pkg.PkgPath {
 				return
 			}
 
