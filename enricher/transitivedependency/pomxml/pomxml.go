@@ -321,6 +321,7 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 			},
 			// TODO(#408): Add merged paths in here as well
 			Locations: []string{input.Path},
+			Plugins:   []string{Name},
 		}
 		details[pkg.Name] = &pkg
 	}
