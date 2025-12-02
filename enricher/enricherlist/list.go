@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
@@ -139,6 +140,7 @@ var (
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
 		requirements.Name: {noCFG(requirements.NewDefault)},
+		pomxml.Name:       {noCFG(pomxml.NewDefault)},
 	}
 
 	// PackageDeprecation enricher.

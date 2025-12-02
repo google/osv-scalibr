@@ -15,6 +15,8 @@
 // Package javalockfile provides shared structures for Java extractors.
 package javalockfile
 
+import "github.com/google/osv-scalibr/clients/datasource"
+
 // Metadata holds parsing information for a Java package.
 type Metadata struct {
 	ArtifactID   string
@@ -23,6 +25,7 @@ type Metadata struct {
 	Classifier   string
 	DepGroupVals []string
 	IsTransitive bool // Only set in pomxmlnet extractor
+	Registries   []datasource.MavenRegistry
 }
 
 // DepGroups returns the dependency groups for the package.
