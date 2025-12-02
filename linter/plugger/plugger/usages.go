@@ -68,3 +68,23 @@ func FindUsages(pkgs []*packages.Package, ctrs []*Constructor) []*Constructor {
 
 	return slices.Collect(maps.Keys(used))
 }
+
+// notUsed returns a list of non-registered plugins
+func notUsed(all, used []*Constructor) []*Constructor {
+	usedSet := make(map[*ast.FuncDecl]bool, len(used))
+	for _, c := range used {
+		usedSet[c.Fun] = true
+		for _, alias := range c.Aliases {
+			usedSet[alias.Fun] = true
+		}
+	}
+
+	var diff []*Constructor
+	for _, c := range all {
+		if !usedSet[c.Fun] {
+			diff = append(diff, c)
+		}
+	}
+
+	return diff
+}

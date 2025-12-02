@@ -32,7 +32,7 @@ type Function struct {
 }
 
 func (f Function) String() string {
-	return f.Fun.Name.Name
+	return f.Pkg.Name + "." + f.Fun.Name.Name
 }
 
 // Returns returns true if the function returns the given type
@@ -51,11 +51,11 @@ func (f *Function) Returns(t *types.Named) bool {
 	return false
 }
 
-// Constructor is a function with an assigned type
+// Constructor is a function with an assigned register type
 type Constructor struct {
 	*Function
 
-	Registers []*types.Named
+	registers *types.Named
 }
 
 // Pos returns a compiler style position of the constructor
@@ -69,10 +69,7 @@ func (c Constructor) Pos(cwd string) (string, error) {
 	return fmt.Sprintf("%s:%d:%d", rel, pos.Line, pos.Column), nil
 }
 
-func (c Constructor) RegisteredType() string {
-	return c.Registers[0].Obj().Pkg().Name() + "." + c.Registers[0].Obj().Name()
-}
-
-func (c Constructor) String() string {
-	return c.Pkg.Name + "." + c.Fun.Name.Name
+func (c Constructor) Registers() string {
+	obj := c.registers.Obj()
+	return obj.Pkg().Name() + "." + obj.Name()
 }

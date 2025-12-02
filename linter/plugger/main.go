@@ -58,7 +58,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%s: plugger: %s is not registered\n", pos, c.RegisteredType())
+		fmt.Printf("%s: plugger: %s is not registered\n", pos, c.Registers())
 	}
 
 	if len(ctrs) != 0 {

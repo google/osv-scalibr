@@ -17,7 +17,6 @@ package plugger
 import (
 	"go/ast"
 	"go/types"
-	"maps"
 	"slices"
 	"strings"
 	"unicode"
@@ -27,7 +26,7 @@ import (
 
 // FindConstructors returns the constructor for the given types
 func FindConstructors(pkgs []*packages.Package, nTypes []*types.Named) []*Constructor {
-	ctrs := map[*Function]*Constructor{}
+	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
 		// remove functions not starting with New
@@ -35,21 +34,16 @@ func FindConstructors(pkgs []*packages.Package, nTypes []*types.Named) []*Constr
 			return !strings.HasPrefix(f.Fun.Name.Name, "New")
 		})
 		findAliases(functions)
-		for _, impl := range nTypes {
-			for _, fn := range functions {
+		for _, fn := range functions {
+			for _, impl := range nTypes {
 				if fn.Returns(impl) {
-					if ctr, ok := ctrs[fn]; ok {
-						ctr.Registers = append(ctr.Registers, impl)
-						ctrs[fn] = ctr
-					} else {
-						ctrs[fn] = &Constructor{Function: fn, Registers: []*types.Named{impl}}
-					}
+					ctrs = append(ctrs, &Constructor{Function: fn, registers: impl})
+					break
 				}
 			}
 		}
 	}
-	res := slices.Collect(maps.Values(ctrs))
-	return res
+	return ctrs
 }
 
 // findFunctions finds all the functions in the given pkg

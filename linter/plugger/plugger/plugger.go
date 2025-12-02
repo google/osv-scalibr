@@ -17,7 +17,6 @@ package plugger
 
 import (
 	"fmt"
-	"go/ast"
 	"slices"
 
 	"golang.org/x/tools/go/packages"
@@ -40,7 +39,7 @@ var Config = &packages.Config{
 //
 //  2. Identify all functions returning those interfaces/their implementation for each pkg.
 //
-//  4. Each constructor must be called at least once outside of the pkg. Note:
+//  3. Each constructor must be called at least once outside of the pkg. Note:
 //
 //     Functions inside a package with a common prefix are considered aliases
 //
@@ -59,8 +58,8 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 		)
 	}
 	ctrs := FindConstructors(pkgs, interfaces)
-	usages := FindUsages(pkgs, ctrs)
-	return notRegistered(ctrs, usages), nil
+	used := FindUsages(pkgs, ctrs)
+	return notUsed(ctrs, used), nil
 }
 
 // FilterNoLintPackages filters out pkgs which have a nolint directive
@@ -78,24 +77,4 @@ func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
 		}
 		return false
 	})
-}
-
-// notRegistered returns a list of non-registered plugins
-func notRegistered(all, used []*Constructor) []*Constructor {
-	usedSet := make(map[*ast.FuncDecl]bool, len(used))
-	for _, c := range used {
-		usedSet[c.Fun] = true
-		for _, alias := range c.Aliases {
-			usedSet[alias.Fun] = true
-		}
-	}
-
-	var diff []*Constructor
-	for _, c := range all {
-		if !usedSet[c.Fun] {
-			diff = append(diff, c)
-		}
-	}
-
-	return diff
 }
