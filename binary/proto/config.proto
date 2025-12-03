@@ -44,6 +44,7 @@ message PluginSpecificConfig {
     OVAConfig ova = 4;
     VDIConfig vdi = 5;
     VMDKConfig vmdk = 6;
+    HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
   }
 }
 
@@ -84,4 +85,10 @@ message VMDKConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message HashiCorpVaultValidatorConfig {
+  // The URL of the Vault server to connect to.
+  // https://developer.hashicorp.com/vault
+  string vault_url = 1;
 }
