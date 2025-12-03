@@ -119,7 +119,7 @@ var (
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
-		fromVeles(codecatalyst.NewValidator(), "secretsc/odecatalystcredentialsvalidate", 0),
+		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
