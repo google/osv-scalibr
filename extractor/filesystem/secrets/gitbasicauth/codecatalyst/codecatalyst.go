@@ -43,6 +43,7 @@ func New() filesystem.Extractor {
 func FileRequired(api filesystem.FileAPI) bool {
 	path := filepath.ToSlash(api.Path())
 	return strings.HasSuffix(path, ".git/config") ||
+		strings.HasSuffix(path, ".git-credentials") ||
 		strings.HasSuffix(path, "_history") ||
 		strings.HasSuffix(path, ".history.txt")
 }
