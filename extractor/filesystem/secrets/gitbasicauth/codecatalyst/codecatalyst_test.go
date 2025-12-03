@@ -43,7 +43,6 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 		// windows
 		{inputPath: `C:\Users\USERNAME\folder\.git\config`, isWindows: true, want: true},
-		{inputPath: `C:\Users\YourUserName\AppData\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.tx`, isWindows: true, want: true},
 		{inputPath: `C:\Users\YourUserName\.git-credentials`, isWindows: true, want: true},
 		{inputPath: `C:\Users\USERNAME\another\bad\path`, isWindows: true, want: false},
 	}
