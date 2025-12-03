@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
@@ -91,7 +92,8 @@ func TestEnricher_Enrich(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
-	enricher := requirements.NewEnricher(resolutionClient)
+	enricher := requirements.New(&cpb.PluginConfig{})
+	enricher.(*requirements.Enricher).Client = resolutionClient
 	err := enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)

@@ -153,7 +153,7 @@ var (
 		gradleverificationmetadataxml.Name: {noCFG(gradleverificationmetadataxml.New)},
 		// pom.xml extraction for environments with and without network access.
 		pomxml.Name:    {noCFG(pomxml.New)},
-		pomxmlnet.Name: {noCFG(pomxmlnet.NewDefault)},
+		pomxmlnet.Name: {pomxmlnet.New},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{

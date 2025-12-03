@@ -68,9 +68,7 @@ type Extractor struct {
 func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
-	if specific != nil {
-		e.versionFromContent = specific.VersionFromContent
-	}
+	e.versionFromContent = specific.GetVersionFromContent()
 	return e
 }
 

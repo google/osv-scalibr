@@ -27,27 +27,23 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	scalibr "github.com/google/osv-scalibr"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	binspdx "github.com/google/osv-scalibr/binary/spdx"
-	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/converter"
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
-	"github.com/spdx/tools-golang/spdx/v2/common"
-	"google.golang.org/protobuf/encoding/prototext"
-
-	scalibr "github.com/google/osv-scalibr"
-	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
+	"github.com/spdx/tools-golang/spdx/v2/common"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -154,8 +150,6 @@ type Flags struct {
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
 	Offline               bool
-	LocalRegistry         string
-	DisableGoogleAuth     bool
 }
 
 var supportedOutputFormats = []string{
@@ -553,25 +547,6 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-
-		// Apply plugin-specific config.
-		for _, p := range plugins {
-			if f.LocalRegistry != "" {
-				switch p.Name() {
-				case pomxmlnet.Name:
-					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(f.LocalRegistry)
-				case requirements.Name:
-					if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
-						// The resolution client is the native PyPI registry client.
-						client.SetLocalRegistry(f.LocalRegistry)
-					}
-				}
-			}
-			if f.DisableGoogleAuth && p.Name() == pomxmlnet.Name {
-				p.(*pomxmlnet.Extractor).MavenClient.DisableGoogleAuth()
-			}
-		}
-
 		result = append(result, plugins...)
 	}
 

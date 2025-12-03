@@ -91,8 +91,8 @@ type Extractor struct {
 func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	maxSize := cfg.MaxFileSizeBytes
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.VMDKConfig { return c.GetVmdk() })
-	if specific != nil && specific.MaxFileSizeBytes > 0 {
-		maxSize = specific.MaxFileSizeBytes
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxSize = specific.GetMaxFileSizeBytes()
 	}
 	return &Extractor{maxFileSizeBytes: maxSize}
 }
