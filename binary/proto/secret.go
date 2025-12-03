@@ -44,6 +44,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -215,6 +216,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
 		return reCaptchaKeyToProto(t), nil
+	case jwt.Token:
+		return jwtTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -226,6 +229,16 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
 				AccessId: s.AccessID,
 				Secret:   s.Secret,
+			},
+		},
+	}
+}
+
+func jwtTokenToProto(s jwt.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_JwtToken{
+			JwtToken: &spb.SecretData_JWTToken{
+				Token: s.Value,
 			},
 		},
 	}
@@ -798,6 +811,8 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 
 func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
+	case *spb.SecretData_JwtToken:
+		return jwt.Token{Value: s.GetJwtToken().GetToken()}, nil
 	case *spb.SecretData_PrivateKey_:
 		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Pgpass_:
@@ -947,6 +962,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return recaptchakey.Key{
 			Secret: s.GetReCaptchaKey().GetSecret(),
 		}, nil
+
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}

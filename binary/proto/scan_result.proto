@@ -720,6 +720,7 @@ message SecretData {
     VapidKey vapid_key = 49;
     AwsAccessKeyCredentials aws_access_key_credentials = 50;
     ReCaptchaKey re_captcha_key = 51;
+    JWTToken jwt_token = 52;
   }
 
   message GCPSAK {
@@ -741,6 +742,11 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message JWTToken {
+    // a generic JWT token
+    string token = 1;
   }
 
   message AnthropicWorkspaceAPIKey {
