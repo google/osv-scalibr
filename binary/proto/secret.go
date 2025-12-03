@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -215,8 +216,20 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
 		return reCaptchaKeyToProto(t), nil
+	case codecatalyst.Credentials:
+		return codeCatalystCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func codeCatalystCredentialsToProto(s codecatalyst.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CodeCatalystCredentials_{
+			CodeCatalystCredentials: &spb.SecretData_CodeCatalystCredentials{
+				Url: s.FullURL,
+			},
+		},
 	}
 }
 
@@ -946,6 +959,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_ReCaptchaKey_:
 		return recaptchakey.Key{
 			Secret: s.GetReCaptchaKey().GetSecret(),
+		}, nil
+	case *spb.SecretData_CodeCatalystCredentials_:
+		return codecatalyst.Credentials{
+			FullURL: s.GetCodeCatalystCredentials().GetUrl(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

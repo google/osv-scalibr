@@ -720,6 +720,7 @@ message SecretData {
     VapidKey vapid_key = 49;
     AwsAccessKeyCredentials aws_access_key_credentials = 50;
     ReCaptchaKey re_captcha_key = 51;
+    CodeCatalystCredentials code_catalyst_credentials = 52;
   }
 
   message GCPSAK {
@@ -993,6 +994,10 @@ message SecretData {
 
   message ReCaptchaKey{
     string secret = 1;
+  }
+
+  message CodeCatalystCredentials{
+    string url = 1;
   }
 }
 
