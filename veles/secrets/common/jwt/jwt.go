@@ -42,7 +42,7 @@ type Token struct {
 	raw string
 	// header is the base64 decoded JWT header claims.
 	header map[string]any
-	// payload is the base64 decoded JWT header claims.
+	// payload is the base64 decoded JWT payload claims.
 	payload map[string]any
 	// signature is the raw signature section of the JWT.
 	signature string
