@@ -98,6 +98,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -284,6 +285,7 @@ var (
 		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
 		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
 		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
+		codecatalyst.Name:            {noCFG(codecatalyst.New)},
 	}
 
 	// SecretDetectors for Detector interface.
