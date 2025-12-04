@@ -858,7 +858,7 @@ func TestRunFS(t *testing.T) {
 			if err != nil {
 				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
 			}
-			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+			if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
 			gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
@@ -1030,7 +1030,7 @@ func TestRunFSGitignore(t *testing.T) {
 			if err != nil {
 				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
 			}
-			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+			if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
 			gotInv, _, err := filesystem.RunFS(t.Context(), config, wc)
@@ -1177,7 +1177,7 @@ func TestRunFS_ReadError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("filesystem.InitializeWalkContext(%v): %v", config, err)
 	}
-	if err := wc.UpdateScanRoot(".", fsys); err != nil {
+	if err := wc.PrepareNewScan(".", fsys); err != nil {
 		t.Fatalf("wc.UpdateScanRoot(%v): %v", config, err)
 	}
 	gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
