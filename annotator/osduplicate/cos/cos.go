@@ -18,7 +18,9 @@ package cos
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -34,6 +36,9 @@ const (
 	cosPkgDir = "mnt/stateful_partition/var_overlay/db/pkg/"
 	// The only mutable path inside COS filesystems.
 	mutableDir = "mnt/stateful_partition"
+
+	// The COS package info file.
+	cosPackageInfoFile = "etc/cos-package-info.json"
 )
 
 // Annotator adds annotations to language packages that have already been found in COS OS packages.
@@ -55,6 +60,18 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in COS OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+	if input == nil || input.ScanRoot == nil || input.ScanRoot.FS == nil {
+		return errors.New("input is nil")
+	}
+
+	if _, err := input.ScanRoot.FS.Stat(cosPackageInfoFile); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Nothing to annotate if we're not running on COS.
+			return nil
+		}
+		return fmt.Errorf("failed to stat %s: %w", cosPackageInfoFile, err)
+	}
+
 	for _, pkg := range results.Packages {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
