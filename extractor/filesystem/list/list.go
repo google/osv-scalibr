@@ -127,6 +127,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
+	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
@@ -333,6 +335,8 @@ var (
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
+		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
+		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

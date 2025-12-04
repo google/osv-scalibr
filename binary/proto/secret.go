@@ -50,6 +50,8 @@ import (
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
+	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -215,6 +217,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
 		return reCaptchaKeyToProto(t), nil
+	case pyxkeyv1.PyxKeyV1:
+		return pyxKeyV1ToProto(t), nil
+	case pyxkeyv2.PyxKeyV2:
+		return pyxKeyV2ToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -722,6 +728,26 @@ func onepasswordRecoveryCodeToProto(s velesonepasswordkeys.OnePasswordRecoveryCo
 	}
 }
 
+func pyxKeyV1ToProto(s pyxkeyv1.PyxKeyV1) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PyxKeyV1_{
+			PyxKeyV1: &spb.SecretData_PyxKeyV1{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func pyxKeyV2ToProto(s pyxkeyv2.PyxKeyV2) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PyxKeyV2_{
+			PyxKeyV2: &spb.SecretData_PyxKeyV2{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -946,6 +972,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_ReCaptchaKey_:
 		return recaptchakey.Key{
 			Secret: s.GetReCaptchaKey().GetSecret(),
+		}, nil
+	case *spb.SecretData_PyxKeyV1_:
+		return pyxkeyv1.PyxKeyV1{
+			Key: s.GetPyxKeyV1().GetKey(),
+		}, nil
+	case *spb.SecretData_PyxKeyV2_:
+		return pyxkeyv2.PyxKeyV2{
+			Key: s.GetPyxKeyV2().GetKey(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
