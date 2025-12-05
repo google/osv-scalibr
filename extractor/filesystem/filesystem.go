@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -327,6 +328,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inve
 }
 
 type walkContext struct {
+	mu sync.Mutex
 	//nolint:containedctx
 	ctx               context.Context
 	stats             stats.Collector
@@ -405,6 +407,8 @@ func walkIndividualPaths(wc *walkContext) error {
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	wc.currentPath = path
 
 	wc.inodesVisited++
@@ -520,6 +524,8 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 }
 
 func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
@@ -741,6 +747,8 @@ func createFileErrorsForPlugin(errorMap map[string]error) []*plugin.FileError {
 }
 
 func (wc *walkContext) printStatus() {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),
