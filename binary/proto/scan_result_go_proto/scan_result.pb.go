@@ -10182,7 +10182,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\aUNKNOWN\x10\x00\x12\x13\n" +
 	"\x0fPUBLIC_REGISTRY\x10\x01\x12\t\n" +
 	"\x05OTHER\x10\x02\x12\t\n" +
-	"\x05LOCAL\x10\x03B?P\x01Z;github.com/google/scalibr/binary/proto/scan_result_go_protob\x06proto3"
+	"\x05LOCAL\x10\x03BCP\x01Z?github.com/google/osv-scalibr/binary/proto/scan_result_go_protob\x06proto3"
 
 var (
 	file_proto_scan_result_proto_rawDescOnce sync.Once

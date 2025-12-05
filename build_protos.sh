@@ -20,5 +20,5 @@ rm -rf binary/proto/*_go_proto
 protoc -I=binary --go_out=binary/proto binary/proto/*.proto
 
 # Clean up.
-mv binary/proto/github.com/google/scalibr/binary/proto/* binary/proto/
+mv binary/proto/github.com/google/osv-scalibr/binary/proto/* binary/proto/
 rm -r binary/proto/github.com

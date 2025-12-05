@@ -20,7 +20,7 @@ package scalibr;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/google/scalibr/binary/proto/scan_result_go_proto";
+option go_package = "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
 
 // Proto file describing the SCALIBR scan results. Whenever this proto is
@@ -993,15 +993,15 @@ message SecretData {
     string secret = 2;
   }
 
-  message ReCaptchaKey{
+  message ReCaptchaKey {
     string secret = 1;
   }
 
-  message PyxKeyV1{
+  message PyxKeyV1 {
     string key = 1;
   }
 
-  message PyxKeyV2{
+  message PyxKeyV2 {
     string key = 1;
   }
 }
