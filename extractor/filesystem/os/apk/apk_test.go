@@ -59,6 +59,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "installed file in /var",
+			path:             "var/lib/apk/db/installed",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:         "sub file",
 			path:         "lib/apk/db/installed/test",
 			wantRequired: false,

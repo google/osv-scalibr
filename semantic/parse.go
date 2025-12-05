@@ -56,6 +56,8 @@ func Parse(str string, ecosystem string) (Version, error) {
 		return parseAlpineVersion(str)
 	case "Alpine":
 		return parseAlpineVersion(str)
+	case "BellSoft Hardened Containers":
+		return parseAlpineVersion(str)
 	case "Bitnami":
 		return parseSemverVersion(str), nil
 	case "Bioconductor":
