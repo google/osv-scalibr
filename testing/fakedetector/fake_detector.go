@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package fakedetector provides a Detector implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakedetector
 
 import (
