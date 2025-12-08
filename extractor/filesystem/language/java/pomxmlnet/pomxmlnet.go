@@ -150,8 +150,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return mavenutil.GetDependencyManagement(ctx, e.MavenClient, groupID, artifactID, version)
 	})
 
-	registries := e.MavenClient.GetRegistries()
-
 	if registries := e.MavenClient.GetRegistries(); len(registries) > 0 {
 		clientRegs := make([]resolution.Registry, len(registries))
 		for i, reg := range registries {
@@ -244,7 +242,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				GroupID:      groupID,
 				DepGroupVals: depGroups,
 				IsTransitive: !isDirect,
-				Registries:   registries,
 			},
 			// TODO(#408): Add merged paths in here as well
 			Locations: []string{input.Path},
