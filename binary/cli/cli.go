@@ -32,7 +32,6 @@ import (
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	binspdx "github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/converter"
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
@@ -44,6 +43,8 @@ import (
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 	"google.golang.org/protobuf/encoding/prototext"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,

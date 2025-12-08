@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
+
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 

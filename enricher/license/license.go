@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	depsdevpb "deps.dev/api/v3"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
@@ -30,6 +29,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	depsdevpb "deps.dev/api/v3"
 )
 
 const (
