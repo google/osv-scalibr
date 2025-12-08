@@ -107,18 +107,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			continue
 		}
 
-		for _, pkg := range pkgs {
-			indexPkg, ok := pkgMap[pkg.Name]
-			if ok {
-				// This dependency is in manifest, update the version and plugins.
-				i := indexPkg.Index
-				inv.Packages[i].Version = pkg.Version
-				inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, Name)
-			} else {
-				// This dependency is not found in manifest, so it's a transitive dependency.
-				inv.Packages = append(inv.Packages, pkg)
-			}
-		}
+		internal.Add(pkgs, inv, Name, pkgMap)
 	}
 	return nil
 }
