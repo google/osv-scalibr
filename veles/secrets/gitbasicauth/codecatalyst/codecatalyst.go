@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package codecatalyst contains the logic to extract CodeCatalyst credentials.
+// Package codecatalyst contains the logic to extract Amazon CodeCatalyst personal access tokens.
 package codecatalyst
 
-// Credentials contains basic auth credential for CodeCatalyst.
+// Credentials contains basic auth credential for Amazon CodeCatalyst.
 type Credentials struct {
 	FullURL string
 }

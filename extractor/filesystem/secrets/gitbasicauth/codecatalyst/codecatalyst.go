@@ -39,7 +39,10 @@ func New() filesystem.Extractor {
 	)
 }
 
-// FileRequired returns true if a file should be searched by the plugin.
+// FileRequired reports whether the plugin should scan the given file.
+//
+// The history.txt file is intentionally excluded because it is already
+// processed by the main secrets extractor.
 func FileRequired(api filesystem.FileAPI) bool {
 	path := filepath.ToSlash(api.Path())
 	return strings.HasSuffix(path, ".git/config") ||

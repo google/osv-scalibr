@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
 const (
@@ -32,34 +33,22 @@ var (
 	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@git\.[^/]*codecatalyst\.aws/[^\s]*`)
 )
 
-type detector struct{}
-
 // NewDetector creates and returns a new instance of the CodeCatalyst secret detector.
 func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-// MaxSecretLen returns the maximum expected length of the secret.
-func (d *detector) MaxSecretLen() uint32 {
-	return maxURLLength
-}
-
-// Detect scans the provided byte slice for AWS CodeCatalyst credentials.
-func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
-	secrets, positions := []veles.Secret{}, []int{}
-	matches := urlPattern.FindAllSubmatchIndex(data, -1)
-	for _, m := range matches {
-		fullURL := data[m[0]:m[1]]
-		u, err := url.Parse(string(fullURL))
-		if err != nil {
-			continue
-		}
-		if !hasValidCredentials(u) {
-			continue
-		}
-		secrets = append(secrets, Credentials{FullURL: u.String()})
+	return simpletoken.Detector{
+		MaxLen: maxURLLength,
+		Re:     urlPattern,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			u, err := url.Parse(string(b))
+			if err != nil {
+				return nil, false
+			}
+			if !hasValidCredentials(u) {
+				return nil, false
+			}
+			return Credentials{FullURL: u.String()}, true
+		},
 	}
-	return secrets, positions
 }
 
 func hasValidCredentials(u *url.URL) bool {
