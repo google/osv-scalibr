@@ -27,6 +27,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/inventory"
@@ -77,19 +78,19 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	pkgGroups := groupPackages(inv.Packages)
+	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
 	for path, pkgMap := range pkgGroups {
-		packages := make([]packageWithIndex, 0, len(pkgMap))
+		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
 		}
-		slices.SortFunc(packages, func(a, b packageWithIndex) int {
-			return a.index - b.index
+		slices.SortFunc(packages, func(a, b internal.PackageWithIndex) int {
+			return a.Index - b.Index
 		})
 
 		list := make([]*extractor.Package, 0, len(packages))
 		for _, indexPkg := range packages {
-			list = append(list, indexPkg.pkg)
+			list = append(list, indexPkg.Pkg)
 		}
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {
 			// Do not perform transitive extraction with hash-checking mode.
@@ -110,7 +111,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			indexPkg, ok := pkgMap[pkg.Name]
 			if ok {
 				// This dependency is in manifest, update the version and plugins.
-				i := indexPkg.index
+				i := indexPkg.Index
 				inv.Packages[i].Version = pkg.Version
 				inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, Name)
 			} else {
@@ -120,34 +121,6 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 	}
 	return nil
-}
-
-// packageWithIndex holds the package with its index in inv.Packages
-type packageWithIndex struct {
-	pkg   *extractor.Package
-	index int
-}
-
-// groupPackages groups packages found in requirements.txt by the first location that they are found
-// and returns a map of location -> package name -> package with index.
-func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithIndex {
-	result := make(map[string]map[string]packageWithIndex)
-	for i, pkg := range pkgs {
-		if !slices.Contains(pkg.Plugins, requirements.Name) {
-			continue
-		}
-		if len(pkg.Locations) == 0 {
-			log.Warnf("package %s has no locations", pkg.Name)
-			continue
-		}
-		// Use the path where this package is first found.
-		path := pkg.Locations[0]
-		if _, ok := result[path]; !ok {
-			result[path] = make(map[string]packageWithIndex)
-		}
-		result[path][pkg.Name] = packageWithIndex{pkg, i}
-	}
-	return result
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
