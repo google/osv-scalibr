@@ -152,7 +152,7 @@ var (
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
 		requirements.Name: {requirements.New},
-		pomxml.Name:       {noCFG(pomxml.NewDefault)},
+		pomxml.Name:       {pomxml.New},
 	}
 
 	// PackageDeprecation enricher.

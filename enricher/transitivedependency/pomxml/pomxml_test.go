@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/enricher"
@@ -138,10 +139,9 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy := pomxml.New(pomxml.Config{
-		DependencyClient:       resolutionClient,
-		MavenRegistryAPIClient: apiClient,
-	})
+	enrichy := pomxml.New(&cpb.PluginConfig{})
+	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
+	enrichy.(*pomxml.Enricher).MavenClient = apiClient
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
