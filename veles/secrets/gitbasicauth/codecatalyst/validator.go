@@ -15,57 +15,33 @@
 package codecatalyst
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth"
 )
 
-// Validator validates CodeCatalyst credentials
-type Validator struct {
-	cli *http.Client
-}
-
-// SetHTTPClient sets the http.Client which the validator uses.
-func (v *Validator) SetHTTPClient(cli *http.Client) {
-	v.cli = cli
-}
-
 // NewValidator creates a new Validator that validates CodeCatalyst credentials
-func NewValidator() *Validator {
-	return &Validator{
-		cli: http.DefaultClient,
-	}
-}
+func NewValidator() *simplevalidate.Validator[Credentials] {
+	return &simplevalidate.Validator[Credentials]{
+		EndpointFunc: func(c Credentials) (string, error) {
+			u, err := url.Parse(c.FullURL)
+			if err != nil {
+				return "", fmt.Errorf("error parsing URL: %w", err)
+			}
 
-// Validate validates code AWS CodeCatalyst Git Basic Auth credentials.
-func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.ValidationStatus, error) {
-	u, err := url.Parse(secret.FullURL)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("error parsing URL: %w", err)
+			// redundant host validation kept intentionally as a security measure in case any regression
+			// is introduced in the detector.
+			if !strings.HasSuffix(u.Host, ".codecatalyst.aws") {
+				return "", fmt.Errorf("not a valid AWS CodeCatalyst host %q", u.Host)
+			}
+			return gitbasicauth.Info(u).String(), nil
+		},
+		HTTPMethod:           http.MethodGet,
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusBadRequest},
 	}
-
-	// redundant host validation kept intentionally as a security measure in case any regression
-	// is introduced in the detector.
-	if !strings.HasSuffix(u.Host, ".codecatalyst.aws") {
-		return veles.ValidationFailed, fmt.Errorf("not a valid AWS CodeCatalyst host %q", u.Host)
-	}
-
-	status, err := gitbasicauth.Info(ctx, v.cli, u)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to reach Git info endpoint: %w", err)
-	}
-
-	// Credentials successfully authenticated and repository info retrieved.
-	if status == http.StatusOK {
-		return veles.ValidationValid, nil
-	}
-
-	// Returns credentials invalid for every other state as the CodeCatalyst server always
-	// responds with either 200 or 400 status codes
-	return veles.ValidationInvalid, nil
 }

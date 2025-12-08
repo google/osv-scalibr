@@ -16,26 +16,12 @@
 package gitbasicauth
 
 import (
-	"context"
-	"fmt"
-	"net/http"
 	"net/url"
 )
 
-// Info performs the info/refs request for Git upload-pack service.
-// It returns the HTTP status code and an optional error.
-func Info(ctx context.Context, cli *http.Client, repoURL *url.URL) (int, error) {
+// Info returns the URL for the Git info/refs endpoint with service=git-upload-pack.
+func Info(repoURL *url.URL) *url.URL {
 	u := repoURL.JoinPath("info/refs")
 	u.RawQuery = "service=git-upload-pack"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-	if err != nil {
-		return 0, fmt.Errorf("error building request: %w", err)
-	}
-	resp, err := cli.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("error executing request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode, nil
+	return u
 }

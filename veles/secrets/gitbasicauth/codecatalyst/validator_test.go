@@ -127,7 +127,7 @@ func TestValidator(t *testing.T) {
 			}
 
 			v := codecatalyst.NewValidator()
-			v.SetHTTPClient(client)
+			v.HTTPC = client
 
 			got, err := v.Validate(tt.ctx, codecatalyst.Credentials{FullURL: tt.url})
 
