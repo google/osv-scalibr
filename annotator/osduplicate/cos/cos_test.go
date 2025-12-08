@@ -16,6 +16,8 @@ package cos_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,6 +32,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	cosPackageInfoFile = "etc/cos-package-info.json"
+)
+
 func TestAnnotate(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
@@ -40,7 +46,9 @@ func TestAnnotate(t *testing.T) {
 	)
 
 	tests := []struct {
-		desc     string
+		desc string
+		// If nil, a default COS filesystem will be used.
+		input    *annotator.ScanInput
 		packages []*extractor.Package
 		//nolint:containedctx
 		ctx          context.Context
@@ -104,6 +112,33 @@ func TestAnnotate(t *testing.T) {
 			},
 		},
 		{
+			desc: "pkgs_found_in_non_cos_filesystem",
+			input: &annotator.ScanInput{
+				ScanRoot: scalibrfs.RealFSScanRoot(t.TempDir()),
+			},
+			packages: []*extractor.Package{
+				{
+					Name:      "file-in-cos-pkgs",
+					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+				},
+				{
+					Name:      "file-not-in-cos-pkgs",
+					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "file-in-cos-pkgs",
+					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					// Expect no exploitability signals.
+				},
+				{
+					Name:      "file-not-in-cos-pkgs",
+					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+				},
+			},
+		},
+		{
 			desc:         "pkg_has_no_location",
 			packages:     []*extractor.Package{{Name: "file"}},
 			wantPackages: []*extractor.Package{{Name: "file"}},
@@ -133,8 +168,11 @@ func TestAnnotate(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = t.Context()
 			}
-			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(""),
+			input := tt.input
+			if input == nil {
+				input = &annotator.ScanInput{
+					ScanRoot: mustCOSFS(t),
+				}
 			}
 
 			// Deep copy the packages to avoid modifying the original inventory that is used in other tests.
@@ -152,4 +190,28 @@ func TestAnnotate(t *testing.T) {
 			}
 		})
 	}
+}
+
+// mustWriteFiles creates all directories and writes all files in the given map.
+func mustWriteFiles(t *testing.T, files map[string]string) {
+	t.Helper()
+	for path, content := range files {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create directory %s: %v", filepath.Dir(path), err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to write file %s: %v", path, err)
+		}
+	}
+}
+
+// mustCOSFS returns a ScanRoot representing a COS filesystem with the package info file.
+func mustCOSFS(t *testing.T) *scalibrfs.ScanRoot {
+	t.Helper()
+	dir := t.TempDir()
+	files := map[string]string{
+		filepath.Join(dir, cosPackageInfoFile): "",
+	}
+	mustWriteFiles(t, files)
+	return scalibrfs.RealFSScanRoot(dir)
 }

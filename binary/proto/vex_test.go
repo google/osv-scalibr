@@ -20,9 +20,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/binary/proto"
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // --- Struct to Proto

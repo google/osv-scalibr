@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcpapikey
+package pyxkeyv1
 
 import (
 	"regexp"
@@ -21,19 +21,20 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-// maxTokenLength is the maximum size of a GPC API key.
-const maxTokenLength = 39
+// maxTokenLength is the maximum size of a pyx v1 user key.
+const maxTokenLength = 71
 
-// keyRe is a regular expression that matches a GCP API key.
-var keyRe = regexp.MustCompile(`AIzaSy[ABCD][a-zA-Z0-9_-]{32}`)
+// keyRe is a regular expression that matches a pyx v1 user key.
+var keyRe = regexp.MustCompile(`sk-pyx-[a-zA-Z0-9]{64}`)
 
-// NewDetector returns a new simpletoken.Detector that matches GCP API keys.
+// NewDetector returns a new simpletoken.Detector that matches pyx v1
+// user keys.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return GCPAPIKey{Key: string(b)}, true
+			return PyxKeyV1{Key: string(b)}, true
 		},
 	}
 }
