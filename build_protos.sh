@@ -16,9 +16,19 @@
 
 rm -rf binary/proto/*_go_proto
 
+# Install and prepare osv-schema protos.
+if [ ! -e binary/proto/vulnerability.proto ]; then
+  OSV_SCHEMA_VERSION="1.7.4"
+  wget --no-verbose https://github.com/ossf/osv-schema/archive/refs/tags/v$OSV_SCHEMA_VERSION.tar.gz
+  tar -xf v$OSV_SCHEMA_VERSION.tar.gz
+  mv osv-schema-$OSV_SCHEMA_VERSION/proto/vulnerability.proto binary/proto/vulnerability.proto
+  rm -r v$OSV_SCHEMA_VERSION.tar.gz osv-schema-$OSV_SCHEMA_VERSION
+fi
+
+
 # Compile protos.
 protoc -I=binary --go_out=binary/proto binary/proto/*.proto
 
 # Clean up.
 mv binary/proto/github.com/google/osv-scalibr/binary/proto/* binary/proto/
-rm -r binary/proto/github.com
+rm -r binary/proto/github.com binary/proto/vulnerability.proto
