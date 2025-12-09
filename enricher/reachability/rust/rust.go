@@ -111,6 +111,12 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 			continue
 		}
 
+		// Build call map but with fuzzy keys
+		fuzzyCalls := make(map[string]struct{}, len(calls))
+		for call := range calls {
+			fuzzyCalls[getFuzzyKey(call)] = struct{}{}
+		}
+
 		for _, pv := range inv.PackageVulns {
 			v := pv.Vulnerability
 			for _, a := range v.GetAffected() {
@@ -136,6 +142,10 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 				for _, f := range affectedFunctions {
 					if funcName, ok := f.(string); ok {
 						_, called := calls[funcName]
+						// Only try fuzzy match if full func path doesn't match anything
+						if !called {
+							called = fuzzyMatchFuncCall(funcName, fuzzyCalls)
+						}
 						// Once one advisory marks this vuln as called, always mark as called
 						isCalledVulnMap[v.Id] = isCalledVulnMap[v.Id] || called
 					}
@@ -157,7 +167,6 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 
 					log.Debugf("Added a unreachable signal to vulnerability '%s'", pv.Vulnerability.Id)
 				}
-
 			}
 		}
 	}
@@ -251,7 +260,6 @@ func extractRlibArchive(rlibPath string) (bytes.Buffer, error) {
 
 			// There should only be one file (since we set codegen-units=1)
 			if !strings.HasSuffix(filename, rustLibExtension) {
-				// TODO: Verify this, and return an error here instead.
 				log.Warnf("rlib archive contents were unexpected: %s\n", filename)
 			}
 		}
@@ -315,7 +323,6 @@ func functionsFromDWARF(readAt io.ReaderAt) (map[string]struct{}, error) {
 	return output, nil
 }
 
-// TODO: Use cache regexp as original code does
 // cleanRustFunctionSymbols takes in demanged rust symbols and makes them fit format of
 // the common function level advisory information
 func cleanRustFunctionSymbols(val string) string {
@@ -334,4 +341,26 @@ func cleanRustFunctionSymbols(val string) string {
 	val = antiTraitImplRegex.ReplaceAllString(val, "$1")
 
 	return val
+}
+
+func fuzzyMatchFuncCall(funcName string, fuzzyCalls map[string]struct{}) bool {
+	key := getFuzzyKey(funcName)
+	_, ok := fuzzyCalls[key]
+	return ok
+}
+
+// From crate_name::...::module::...::func_name
+// fuzzyKey is defined to be just crate_name::func_name
+func getFuzzyKey(funcName string) string {
+	parts := strings.Split(funcName, "::")
+	if len(parts) < 2 {
+		return funcName
+	}
+
+	// Also aggressively removes all leading special characters
+	// So that: <time::time::Time>::...::now_utc -> time::now_utc
+	antiLeadingSpecCharRegex := regexp.MustCompile(`\W*(.+)`)
+	parts[0] = antiLeadingSpecCharRegex.ReplaceAllString(parts[0], "$1")
+
+	return parts[0] + "::" + parts[len(parts)-1]
 }

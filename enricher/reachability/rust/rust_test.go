@@ -195,30 +195,30 @@ func Test_Enrich(t *testing.T) {
 }
 
 // Make ScanInput with target scan root
-func mockInput(t *testing.T, root string) *enricher.ScanInput {
-	input := &enricher.ScanInput{}
-
+func mockInput(t *testing.T, root string) *enricher.ScanInput { //nolint:unparam
+	t.Helper()
 	p, err := filepath.Abs(root)
 	if err != nil {
 		t.Errorf("cannot create ScanInput from provided scan root path")
 	}
+
 	config := enricher.Config{
 		ScanRoot: &fs.ScanRoot{
 			Path: p,
 		},
 	}
 
-	input = &enricher.ScanInput{
+	return &enricher.ScanInput{
 		ScanRoot: config.ScanRoot,
 	}
-	return input
 }
 
 func mockEcoSpecData(t *testing.T, tcname string) *structpb.Struct {
+	t.Helper()
 	baseEcoSpec := map[string]any{
 		"affected_functions": nil,
 		"affects": map[string]any{
-			"functions": []any{}, // Default with no func level vuln data
+			"functions": []any{}, // Default has no func level vuln data
 			"arch":      []any{},
 			"os":        []any{},
 		},
@@ -226,10 +226,9 @@ func mockEcoSpecData(t *testing.T, tcname string) *structpb.Struct {
 
 	switch tc := tcname; tc {
 	case "vuln_reachable":
-		// Vuln function time::Instant is called in test project
+		// Vuln function now_utc is called in test project
 		baseEcoSpec["affects"].(map[string]any)["functions"] = []any{"time::OffsetDateTime::now_utc"}
 	case "vuln_unreachable":
-		// Vuln function is not called in the test project
 		baseEcoSpec["affects"].(map[string]any)["functions"] = []any{"time::OffsetDateTime::fake_func"}
 	}
 

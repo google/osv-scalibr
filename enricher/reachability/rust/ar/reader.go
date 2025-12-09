@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	HeaderByteSize = 60
-	ArSignature    = "!<arch>\n"
+	headerByteSize = 60
+	arSignature    = "!<arch>\n"
 )
 
+// Header which contains the metadata about the file in the archive.
 type Header struct {
 	Name string
 	Size int
@@ -53,25 +54,26 @@ func (sp *slicer) next(n int) []byte {
 //		io.Copy(&buf, reader)
 //	}
 
+// Reader to  ar archive
 type Reader struct {
 	r           io.Reader
 	bytesToRead int
 	pad         int
 }
 
-// Copies read data to r. Strips the global ar header.
+// NewReader copies read data to r. Strips the global ar header.
 func NewReader(r io.Reader) (*Reader, error) {
 	sigBuf := bytes.Buffer{}
 	_, _ = io.CopyN(&sigBuf, r, 8) // Discard global header
 
-	if sigBuf.String() != ArSignature {
+	if sigBuf.String() != arSignature {
 		return nil, errors.New("not an rlib archive")
 	}
 
 	return &Reader{r: r}, nil
 }
 
-// Call Next() to skip to the next file in the archive file.
+// Next is called to skip to the next file in the archive file.
 // Returns a Header which contains the metadata about the
 // file in the archive.
 func (rd *Reader) Next() (*Header, error) {
@@ -111,7 +113,7 @@ func (rd *Reader) skipUnread() error {
 }
 
 func (rd *Reader) readHeader() (*Header, error) {
-	headerBuf := make([]byte, HeaderByteSize)
+	headerBuf := make([]byte, headerByteSize)
 	if _, err := io.ReadFull(rd.r, headerBuf); err != nil {
 		return nil, err
 	}
