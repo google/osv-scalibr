@@ -228,6 +228,7 @@ pp| Adds VEX statements for language packages already found by the RPM OS extrac
 | Filters findings that have VEX statements.                                 | `vex/filter`                        |
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
+| Performs reachability analysis for Rust code.                              | `reachability/rust`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
+	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -130,9 +131,14 @@ var (
 		huggingfacemeta.Name: {noCFG(huggingfacemeta.New)},
 	}
 
-	// Reachability enrichers.
-	Reachability = InitMap{
+	// ReachabilityJava enrichers.
+	ReachabilityJava = InitMap{
 		java.Name: {noCFG(java.NewDefault)},
+	}
+
+	// ReachabilityRust enricher
+	ReachabilityRust = InitMap{
+		rust.Name: {noCFG(rust.New)},
 	}
 
 	// TransitiveDependency enrichers.
@@ -157,7 +163,8 @@ var (
 		SecretsEnrich,
 		HuggingfaceMeta,
 		License,
-		Reachability,
+		ReachabilityJava,
+		ReachabilityRust,
 		TransitiveDependency,
 		PackageDeprecation,
 	)
@@ -169,7 +176,8 @@ var (
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(SecretsValidate),
 		"secretsenrich":        vals(SecretsEnrich),
-		"reachability":         vals(Reachability),
+		"reachability/java":    vals(ReachabilityJava),
+		"reachability/rust":    vals(ReachabilityRust),
 		"transitivedependency": vals(TransitiveDependency),
 		"packagedeprecation":   vals(PackageDeprecation),
 
