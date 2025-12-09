@@ -28,11 +28,12 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	scalibrversion "github.com/google/osv-scalibr/version"
-	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
-	osvapipb "osv.dev/bindings/go/api"
 	"osv.dev/bindings/go/osvdev"
 	"osv.dev/bindings/go/osvdevexperimental"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvapipb "osv.dev/bindings/go/api"
 )
 
 const (
