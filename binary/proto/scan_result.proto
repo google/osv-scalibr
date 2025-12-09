@@ -736,6 +736,7 @@ message SecretData {
     ReCaptchaKey re_captcha_key = 51;
     PyxKeyV1 pyx_key_v1 = 52;
     PyxKeyV2 pyx_key_v2 = 53;
+    CodeCatalystCredentials code_catalyst_credentials = 54;
   }
 
   message GCPSAK {
@@ -1010,13 +1011,16 @@ message SecretData {
   message ReCaptchaKey {
     string secret = 1;
   }
-
   message PyxKeyV1 {
     string key = 1;
   }
 
   message PyxKeyV2 {
     string key = 1;
+  }
+
+  message CodeCatalystCredentials{
+    string url = 1;
   }
 }
 
