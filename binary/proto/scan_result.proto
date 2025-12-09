@@ -737,6 +737,7 @@ message SecretData {
     PyxKeyV1 pyx_key_v1 = 52;
     PyxKeyV2 pyx_key_v2 = 53;
     CodeCatalystCredentials code_catalyst_credentials = 54;
+    JWTToken jwt_token = 55;
   }
 
   message GCPSAK {
@@ -758,6 +759,11 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message JWTToken {
+    // a generic JWT token
+    string token = 1;
   }
 
   message AnthropicWorkspaceAPIKey {

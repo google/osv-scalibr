@@ -155,6 +155,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
 | Vapid keys                                  | `secrets/vapidkey`                   |
 | reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
+| Generic JWT tokens                          | `secrets/jwttoken`                   |
 | pyx user key v1                             | `secrets/pyxkeyv1`                   |
 | pyx user key v2                             | `secrets/pyxkeyv2`                   |
 
