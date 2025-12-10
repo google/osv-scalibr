@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -75,20 +76,21 @@ func (Detector) RequiredExtractors() []string {
 
 // DetectedFinding returns generic vulnerability information about what is detected.
 func (d Detector) DetectedFinding() inventory.Finding {
-	return d.findingForPackage(nil)
+	return d.findingForPackage(nil, nil)
 }
 
-func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
-	pkg := &extractor.Package{
+func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Package) inventory.Finding {
+	rayPkg := &extractor.Package{
 		Name:     "ray",
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Package: pkg,
 		Vulnerability: &osvpb.Vulnerability{
 			Id:      "CVE-2023-6019",
 			Summary: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
 			Details: "CVE-2023-6019: Ray Dashboard Remote Code Execution",
-			Affected: inventory.PackageToAffected(pkg, "2.8.1", &osvpb.Severity{
+			Affected: inventory.PackageToAffected(rayPkg, "2.8.1", &osvpb.Severity{
 				Type:  osvpb.Severity_CVSS_V3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
@@ -132,7 +134,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", "))}},
 		},
 	}
-	return d.findingForPackage(dbSpecific), nil
+	return d.findingForPackage(dbSpecific, pkg), nil
 }
 
 // Find the Ray package and its version
