@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/extractor"
+	cosextractor "github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -135,6 +136,23 @@ func TestAnnotate(t *testing.T) {
 				{
 					Name:      "file-not-in-cos-pkgs",
 					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+				},
+			},
+		},
+		{
+			desc: "cos_os_packages",
+			packages: []*extractor.Package{
+				{
+					Name:      "os-pkg",
+					Locations: []string{"etc/cos-package-info.json"},
+					Plugins:   []string{cosextractor.Name},
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "os-pkg",
+					Locations: []string{"etc/cos-package-info.json"},
+					Plugins:   []string{cosextractor.Name},
 				},
 			},
 		},

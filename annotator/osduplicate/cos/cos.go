@@ -21,9 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -78,12 +80,16 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
 		}
 
-		if len(pkg.Locations) == 0 {
+		// Packages handled by the OS should always be scanned.
+		if slices.Contains(pkg.Plugins, cos.Name) {
 			continue
 		}
 
+		if len(pkg.Locations) == 0 {
+			continue
+		}
 		loc := pkg.Locations[0]
-		// Annotate packages as OS duplicates if:
+		// Annotate non-OS (e.g. language) packages as OS duplicates if:
 		// They're in the OS package installation directory
 		if strings.HasPrefix(loc, cosPkgDir) ||
 			// Or if they're outside of the user-writable path (only OS-installed packages can live there).
