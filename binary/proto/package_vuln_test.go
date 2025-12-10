@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
@@ -107,8 +108,11 @@ func TestPackageVulnToProto(t *testing.T) {
 				p.Package = nil
 				return p
 			}(pkgVulnStruct1),
-			want:    nil,
-			wantErr: proto.ErrPackageMissing,
+			want: func(p *spb.PackageVuln) *spb.PackageVuln {
+				p = copier.Copy(p).(*spb.PackageVuln)
+				p.PackageId = ""
+				return p
+			}(pkgVulnProto1),
 		},
 	}
 
@@ -158,14 +162,14 @@ func TestPackageVulnToStruct(t *testing.T) {
 			}(pkgVulnProto1),
 			idToPkg: idToPkg,
 			want:    nil,
-			wantErr: proto.ErrPackageMissing,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got, err := proto.PackageVulnToStruct(tc.pkgVuln, tc.idToPkg)
-			if !errors.Is(err, tc.wantErr) {
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("PackageVulnToStruct(%v, %v) returned error %v, want error %v", tc.pkgVuln, tc.idToPkg, err, tc.wantErr)
 			}
 			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {

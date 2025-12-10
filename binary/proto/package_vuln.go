@@ -15,7 +15,6 @@
 package proto
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -25,24 +24,19 @@ import (
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-var (
-	// ErrPackageMissing will be returned if the Package is not set on a PackageVuln.
-	ErrPackageMissing = errors.New("package is missing for PackageVuln")
-)
-
 // PackageVulnToProto converts a PackageVuln struct to proto.
 func PackageVulnToProto(v *inventory.PackageVuln, pkgToID map[*extractor.Package]string) (*spb.PackageVuln, error) {
 	if v == nil {
 		return nil, nil
 	}
 
-	if v.Package == nil {
-		return nil, fmt.Errorf("package field is nil for PackageVuln %+v: %w", v, ErrPackageMissing)
-	}
-
-	pkgID, ok := pkgToID[v.Package]
-	if !ok {
-		return nil, fmt.Errorf("%v package %q version %q not found in pkgToID map", v.Package.Ecosystem().String(), v.Package.Name, v.Package.Version)
+	var pkgID string
+	var ok bool
+	if v.Package != nil {
+		pkgID, ok = pkgToID[v.Package]
+		if !ok {
+			return nil, fmt.Errorf("%v package %q version %q not found in pkgToID map", v.Package.Ecosystem().String(), v.Package.Name, v.Package.Version)
+		}
 	}
 
 	var exps []*spb.FindingExploitabilitySignal
@@ -66,7 +60,7 @@ func PackageVulnToStruct(v *spb.PackageVuln, idToPkg map[string]*extractor.Packa
 	}
 
 	if v.GetPackageId() == "" {
-		return nil, fmt.Errorf("package ID is empty for PackageVuln %+v: %w", v, ErrPackageMissing)
+		return nil, fmt.Errorf("package ID is empty for PackageVuln %+v", v)
 	}
 
 	pkg, ok := idToPkg[v.GetPackageId()]
