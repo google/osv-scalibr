@@ -112,9 +112,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Type                                        | Extractor Plugin                     |
 |---------------------------------------------|--------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`               |
+| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`      |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
+| Bitbucket                                   | `secrets/bitbucketcredentials`       |
 | Crates.io API Token                         | `secrets/cratesioapitoken`           |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
 | Docker hub PAT                              | `secrets/dockerhubpat`               |
