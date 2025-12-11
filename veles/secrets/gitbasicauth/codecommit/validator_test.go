@@ -40,7 +40,6 @@ type redirectTransport struct {
 
 func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if strings.HasSuffix(req.URL.Host, ".amazonaws.com") {
-
 		newURL, err := url.Parse(t.url)
 		if err != nil {
 			return nil, err

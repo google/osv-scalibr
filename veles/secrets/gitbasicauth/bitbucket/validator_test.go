@@ -41,7 +41,6 @@ type redirectTransport struct {
 
 func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.URL.Host == "bitbucket.org" {
-
 		newURL, err := url.Parse(t.url)
 		if err != nil {
 			return nil, err

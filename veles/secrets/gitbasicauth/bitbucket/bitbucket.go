@@ -19,3 +19,8 @@ package bitbucket
 type Credentials struct {
 	FullURL string
 }
+
+// URL returns the raw URL containing basic auth credentials.
+func (c Credentials) URL() string {
+	return c.FullURL
+}

@@ -15,7 +15,6 @@
 package codecommit
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,21 +25,10 @@ import (
 
 // NewValidator creates a new Validator that validates CodeCommit credentials
 func NewValidator() *simplevalidate.Validator[Credentials] {
-	return &simplevalidate.Validator[Credentials]{
-		EndpointFunc: func(c Credentials) (string, error) {
-			u, err := url.Parse(c.FullURL)
-			if err != nil {
-				return "", fmt.Errorf("error parsing URL: %w", err)
-			}
-			// redundant host validation kept intentionally as a security measure in case any regression
-			// is introduced in the detector.
-			if !strings.HasPrefix(u.Host, "git-codecommit.") || !strings.HasSuffix(u.Host, ".amazonaws.com") {
-				return "", fmt.Errorf("not a valid codecommit host %q", u.Host)
-			}
-			return gitbasicauth.Info(u).String(), nil
+	return gitbasicauth.NewValidator[Credentials](
+		func(u *url.URL) bool {
+			return strings.HasPrefix(u.Host, "git-codecommit.") && strings.HasSuffix(u.Host, ".amazonaws.com")
 		},
-		HTTPMethod:           http.MethodGet,
-		ValidResponseCodes:   []int{http.StatusOK, http.StatusNotFound},
-		InvalidResponseCodes: []int{http.StatusForbidden},
-	}
+		[]int{http.StatusOK, http.StatusNotFound}, []int{http.StatusForbidden},
+	)
 }

@@ -15,7 +15,6 @@
 package codecatalyst
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,22 +25,10 @@ import (
 
 // NewValidator creates a new Validator that validates CodeCatalyst credentials
 func NewValidator() *simplevalidate.Validator[Credentials] {
-	return &simplevalidate.Validator[Credentials]{
-		EndpointFunc: func(c Credentials) (string, error) {
-			u, err := url.Parse(c.FullURL)
-			if err != nil {
-				return "", fmt.Errorf("error parsing URL: %w", err)
-			}
-
-			// redundant host validation kept intentionally as a security measure in case any regression
-			// is introduced in the detector.
-			if !strings.HasSuffix(u.Host, ".codecatalyst.aws") {
-				return "", fmt.Errorf("not a valid AWS CodeCatalyst host %q", u.Host)
-			}
-			return gitbasicauth.Info(u).String(), nil
+	return gitbasicauth.NewValidator[Credentials](
+		func(u *url.URL) bool {
+			return strings.HasSuffix(u.Host, ".codecatalyst.aws")
 		},
-		HTTPMethod:           http.MethodGet,
-		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusBadRequest},
-	}
+		[]int{http.StatusOK}, []int{http.StatusBadRequest},
+	)
 }

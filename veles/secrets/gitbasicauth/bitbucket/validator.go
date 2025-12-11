@@ -15,7 +15,6 @@
 package bitbucket
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -25,21 +24,10 @@ import (
 
 // NewValidator creates a new Validator that validates Bitbucket credentials
 func NewValidator() *simplevalidate.Validator[Credentials] {
-	return &simplevalidate.Validator[Credentials]{
-		EndpointFunc: func(c Credentials) (string, error) {
-			u, err := url.Parse(c.FullURL)
-			if err != nil {
-				return "", fmt.Errorf("error parsing URL: %w", err)
-			}
-			// redundant host validation kept intentionally as a security measure in case any regression
-			// is introduced in the detector.
-			if u.Host != "bitbucket.org" {
-				return "", fmt.Errorf("not a valid Bitbucket host %q", u.Host)
-			}
-			return gitbasicauth.Info(u).String(), nil
+	return gitbasicauth.NewValidator[Credentials](
+		func(u *url.URL) bool {
+			return u.Host == "bitbucket.org"
 		},
-		HTTPMethod:           http.MethodGet,
-		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized},
-	}
+		[]int{http.StatusOK}, []int{http.StatusUnauthorized},
+	)
 }
