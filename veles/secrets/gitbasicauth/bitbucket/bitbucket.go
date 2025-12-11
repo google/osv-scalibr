@@ -12,25 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gitbasicauth contains common logic for Git Basic Auth plugins.
-package gitbasicauth
+// Package bitbucket contains the logic to extract BitBucket personal access tokens.
+package bitbucket
 
-import (
-	"net/url"
-)
-
-// Info returns the URL for the Git info/refs endpoint with service=git-upload-pack.
-func Info(repoURL *url.URL) *url.URL {
-	u := repoURL.JoinPath("info/refs")
-	u.RawQuery = "service=git-upload-pack"
-	return u
-}
-
-// HasValidCredentials returns true if a given url has valid credentials
-func HasValidCredentials(u *url.URL) bool {
-	if u.User == nil || u.User.Username() == "" {
-		return false
-	}
-	_, hasPassword := u.User.Password()
-	return hasPassword
+// Credentials contains basic auth credential for BitBucket.
+type Credentials struct {
+	FullURL string
 }
