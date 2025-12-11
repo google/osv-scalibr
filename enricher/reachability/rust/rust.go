@@ -40,6 +40,9 @@ const (
 	rustLibExtension = ".rcgu.o/"
 )
 
+// Regex used for fuzzy funcion matching
+var antiLeadingSpecCharRegex = regexp.MustCompile(`\W*(.+)`)
+
 // Enricher enriches inventory's package vulnerability with reachability info
 type Enricher struct{}
 
@@ -345,8 +348,6 @@ func fuzzyMatchFuncCall(target string, calls map[string]struct{}) bool {
 	// To fuzzy match the func calls from binary:
 	// 1. Must match crate name
 	// 2. Starting from the back of the path, try to match the func_name
-	antiLeadingSpecCharRegex := regexp.MustCompile(`\W*(.+)`)
-
 	for call := range calls {
 		segments := strings.Split(call, "::")
 

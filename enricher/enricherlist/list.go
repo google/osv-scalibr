@@ -131,13 +131,9 @@ var (
 		huggingfacemeta.Name: {noCFG(huggingfacemeta.New)},
 	}
 
-	// ReachabilityJava enrichers.
-	ReachabilityJava = InitMap{
+	// Reachability enrichers.
+	Reachability = InitMap{
 		java.Name: {noCFG(java.NewDefault)},
-	}
-
-	// ReachabilityRust enricher
-	ReachabilityRust = InitMap{
 		rust.Name: {noCFG(rust.New)},
 	}
 
@@ -163,8 +159,7 @@ var (
 		SecretsEnrich,
 		HuggingfaceMeta,
 		License,
-		ReachabilityJava,
-		ReachabilityRust,
+		Reachability,
 		TransitiveDependency,
 		PackageDeprecation,
 	)
@@ -176,8 +171,7 @@ var (
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(SecretsValidate),
 		"secretsenrich":        vals(SecretsEnrich),
-		"reachability/java":    vals(ReachabilityJava),
-		"reachability/rust":    vals(ReachabilityRust),
+		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"packagedeprecation":   vals(PackageDeprecation),
 
