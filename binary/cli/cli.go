@@ -548,6 +548,7 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+
 		result = append(result, plugins...)
 	}
 
