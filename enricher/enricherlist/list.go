@@ -20,7 +20,6 @@ import (
 	"maps"
 	"slices"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
@@ -30,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
+	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
@@ -42,10 +42,10 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
-	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -54,6 +54,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the enricher initializer function.
@@ -100,8 +102,8 @@ var (
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
-		fromVeles(hashicorpvault.NewTokenValidator(), "secrets/hashicorpvaulttokenvalidate", 0),
-		fromVeles(hashicorpvault.NewAppRoleValidator(), "secrets/hashicorpvaultapprolevalidate", 0),
+		fromVelesWithCfg(hashicorp.NewTokenValidatorEnricher, "secrets/hashicorpvaulttokenvalidate"),
+		fromVelesWithCfg(hashicorp.NewAppRoleValidatorEnricher, "secrets/hashicorpvaultapprolevalidate"),
 		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),
 		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
@@ -119,6 +121,7 @@ var (
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
+		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
@@ -139,7 +142,7 @@ var (
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
-		requirements.Name: {noCFG(requirements.NewDefault)},
+		requirements.Name: {requirements.New},
 	}
 
 	// PackageDeprecation enricher.
@@ -219,7 +222,7 @@ func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, er
 // EnrichersFromName returns a list of enrichers from a name.
 func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher, error) {
 	if initers, ok := enricherNames[name]; ok {
-		result := []enricher.Enricher{}
+		var result []enricher.Enricher
 		for _, initer := range initers {
 			result = append(result, initer(cfg))
 		}
@@ -229,13 +232,20 @@ func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher,
 }
 
 type velesPlugin struct {
-	initFunc func() enricher.Enricher
+	initFunc InitFn
 	name     string
 }
 
 func fromVeles[S veles.Secret](validator veles.Validator[S], name string, version int) velesPlugin {
 	return velesPlugin{
-		initFunc: convert.FromVelesValidator(validator, name, version),
+		initFunc: noCFG(convert.FromVelesValidator(validator, name, version)),
+		name:     name,
+	}
+}
+
+func fromVelesWithCfg(initFunc InitFn, name string) velesPlugin {
+	return velesPlugin{
+		initFunc: initFunc,
 		name:     name,
 	}
 }
@@ -243,7 +253,7 @@ func fromVeles[S veles.Secret](validator veles.Validator[S], name string, versio
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(p.initFunc)}
+		result[p.name] = []InitFn{p.initFunc}
 	}
 	return result
 }

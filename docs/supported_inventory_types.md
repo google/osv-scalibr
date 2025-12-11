@@ -112,6 +112,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Type                                        | Extractor Plugin                     |
 |---------------------------------------------|--------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`               |
+| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
 | Crates.io API Token                         | `secrets/cratesioapitoken`           |
@@ -152,7 +153,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
-| Vapid keys                                  | `secrets/vapidkey`                  |
+| Vapid keys                                  | `secrets/vapidkey`                   |
+| reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
+| Generic JWT tokens                          | `secrets/jwttoken`                   |
+| pyx user key v1                             | `secrets/pyxkeyv1`                   |
+| pyx user key v2                             | `secrets/pyxkeyv2`                   |
 
 ### Container inventory
 
@@ -187,7 +192,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi      | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
-| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 
 ## Detectors
 

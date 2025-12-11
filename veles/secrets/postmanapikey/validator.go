@@ -108,8 +108,8 @@ func statusFromCollectionResponseBody(body io.Reader) (veles.ValidationStatus, e
 //   - other   -> validation failed.
 func NewCollectionValidator() *simplevalidate.Validator[PostmanCollectionToken] {
 	return &simplevalidate.Validator[PostmanCollectionToken]{
-		EndpointFunc: func(k PostmanCollectionToken) string {
-			return collectionEndpoint + "?access_key=" + k.Key
+		EndpointFunc: func(k PostmanCollectionToken) (string, error) {
+			return collectionEndpoint + "?access_key=" + k.Key, nil
 		},
 		HTTPMethod:             http.MethodGet,
 		ValidResponseCodes:     []int{http.StatusOK},

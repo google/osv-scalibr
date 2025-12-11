@@ -26,7 +26,6 @@ import (
 	"runtime/debug"
 	"strings"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
@@ -34,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -68,9 +69,7 @@ type Extractor struct {
 func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
-	if specific != nil {
-		e.versionFromContent = specific.VersionFromContent
-	}
+	e.versionFromContent = specific.GetVersionFromContent()
 	return e
 }
 

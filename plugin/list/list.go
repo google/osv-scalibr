@@ -20,7 +20,6 @@ import (
 
 	"github.com/google/osv-scalibr/annotator"
 	al "github.com/google/osv-scalibr/annotator/list"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/detector"
 	dl "github.com/google/osv-scalibr/detector/list"
 	"github.com/google/osv-scalibr/enricher"
@@ -30,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // FromCapabilities returns all plugins that can run under the specified

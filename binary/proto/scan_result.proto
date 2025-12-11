@@ -19,8 +19,9 @@ syntax = "proto3";
 package scalibr;
 
 import "google/protobuf/timestamp.proto";
+import "proto/vulnerability.proto";
 
-option go_package = "github.com/google/scalibr/binary/proto/scan_result_go_proto";
+option go_package = "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
 
 // Proto file describing the SCALIBR scan results. Whenever this proto is
@@ -43,6 +44,7 @@ message ScanResult {
 // The artifacts (e.g. software inventory, security findings) that a scan found.
 message Inventory {
   repeated Package packages = 1;
+  repeated PackageVuln package_vulns = 6;
   repeated GenericFinding generic_findings = 2;
   repeated Secret secrets = 3;
   repeated ContainerImageMetadata container_image_metadata = 5;
@@ -248,6 +250,18 @@ message Qualifier {
   string value = 2;
 }
 
+// Describes a vulnerability (e.g. a CVE) related to a package.
+message PackageVuln {
+  osv.Vulnerability vuln = 1;
+  // The ID of the associated package in Inventory.Packages.
+  // Used for mapping between proto and struct.
+  string package_id = 2;
+  // The plugins (e.g. Detectors, Enrichers) that found this vuln.
+  repeated string plugins = 3;
+  // Signals that indicate this finding is not exploitable.
+  repeated FindingExploitabilitySignal exploitability_signals = 4;
+}
+
 // Describes generic security findings not associated with any
 // specific package, e.g. weak credentials.
 message GenericFinding {
@@ -372,6 +386,7 @@ message RPMPackageMetadata {
   string vendor = 8;
   string architecture = 9;
   string os_pretty_name = 11;
+  string os_cpe_name = 12;
 
   reserved "license";
 }
@@ -718,6 +733,11 @@ message SecretData {
     MysqlMyloginSection mysql_mylogin_section = 48;
     VapidKey vapid_key = 49;
     AwsAccessKeyCredentials aws_access_key_credentials = 50;
+    ReCaptchaKey re_captcha_key = 51;
+    PyxKeyV1 pyx_key_v1 = 52;
+    PyxKeyV2 pyx_key_v2 = 53;
+    CodeCatalystCredentials code_catalyst_credentials = 54;
+    JWTToken jwt_token = 55;
   }
 
   message GCPSAK {
@@ -739,6 +759,11 @@ message SecretData {
     // Should not be filled out unless very explicitly requested accepting the
     // risk that this might accidentally leak the key.
     string private_key = 12;
+  }
+
+  message JWTToken {
+    // a generic JWT token
+    string token = 1;
   }
 
   message AnthropicWorkspaceAPIKey {
@@ -987,6 +1012,21 @@ message SecretData {
   message AwsAccessKeyCredentials {
     string access_id = 1;
     string secret = 2;
+  }
+
+  message ReCaptchaKey {
+    string secret = 1;
+  }
+  message PyxKeyV1 {
+    string key = 1;
+  }
+
+  message PyxKeyV2 {
+    string key = 1;
+  }
+
+  message CodeCatalystCredentials{
+    string url = 1;
   }
 }
 

@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
-option go_package = "github.com/google/scalibr/binary/proto/config_go_proto";
+option go_package = "github.com/google/osv-scalibr/binary/proto/config_go_proto";
 option java_multiple_files = true;
 option java_outer_classname = "Config";
 
@@ -31,6 +31,12 @@ message PluginConfig {
 
   // The maximum file size the plugin will process.
   int64 max_file_size_bytes = 1;
+  // The local directory to store the downloaded manifests during dependency
+  // resolution.
+  string local_registry = 3;
+  // If true, do not try to create google.DefaultClient for Artifact Registry
+  // during dependency resolution.
+  bool disable_google_auth = 4;
 
   // Config values that only apply to a single plugin.
   repeated PluginSpecificConfig plugin_specific = 2;
@@ -44,6 +50,9 @@ message PluginSpecificConfig {
     OVAConfig ova = 4;
     VDIConfig vdi = 5;
     VMDKConfig vmdk = 6;
+    HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
+    SDPInspectConfig sdp_inspect = 8;
+    POMXMLNetConfig pom_xml_net = 9;
   }
 }
 
@@ -84,4 +93,21 @@ message VMDKConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message HashiCorpVaultValidatorConfig {
+  // The URL of the Vault server to connect to.
+  // https://developer.hashicorp.com/vault
+  string vault_url = 1;
+}
+
+message SDPInspectConfig {
+  // The GCP project id to use for Sensitive Data Protection InspectContent API
+  // calls.
+  string project_id = 1;
+}
+
+message POMXMLNetConfig {
+  // The URL of the upstream Maven registry.
+  string upstream_registry = 1;
 }

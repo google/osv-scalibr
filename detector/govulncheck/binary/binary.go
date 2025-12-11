@@ -24,7 +24,6 @@ import (
 	"path"
 	"slices"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -33,8 +32,10 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/vuln/scan"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -52,9 +53,7 @@ type Detector struct {
 func New(cfg *cpb.PluginConfig) detector.Detector {
 	d := &Detector{}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
-	if specific != nil {
-		d.offlineVulnDBPath = specific.OfflineVulnDbPath
-	}
+	d.offlineVulnDBPath = specific.GetOfflineVulnDbPath()
 	return d
 }
 

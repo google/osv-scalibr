@@ -109,7 +109,7 @@ func (c *GRPCClient) GetVersionBatch(ctx context.Context, req Request) (Response
 		}
 	}
 
-	log.Infof("Package deprecation enricher: Finished querying deps.dev for deprecation status. Number of results: %d", len(results))
+	log.Debugf("Package deprecation enricher: Finished querying deps.dev for deprecation status. Number of results: %d", len(results))
 
 	return Response{Results: results}, nil
 }

@@ -165,7 +165,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			return inventory.Inventory{}, nil, err
 		}
 	}
-	if err = wc.UpdateScanRoot(abs, scanRoot.FS); err != nil {
+	if err = wc.PrepareNewScan(abs, scanRoot.FS); err != nil {
 		return inventory.Inventory{}, nil, err
 	}
 
@@ -618,12 +618,14 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	}
 }
 
-// UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
+// PrepareNewScan updates the scan root and the filesystem to use for the filesystem walk.
+// It also resets the inventory.
 // currentRoot is expected to be an absolute path.
-func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
+func (wc *walkContext) PrepareNewScan(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	wc.fileAPI.fs = fs
+	wc.inventory = inventory.Inventory{}
 	return nil
 }
 

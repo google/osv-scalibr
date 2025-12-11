@@ -1605,6 +1605,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				return
 			}
 
+			gotStruct, err := proto.ScanResultFromProto(tc.want)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
+			}
+			if diff := cmp.Diff(tc.res, gotStruct, opts...); diff != "" {
+				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)
+			}
+
 			// TODO - b/421456154: test conversion of remaining types.
 			invProto := protobuf.Clone(got.GetInventory()).(*spb.Inventory)
 			invProto.GenericFindings = nil
