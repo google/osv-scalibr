@@ -111,12 +111,6 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 			continue
 		}
 
-		// Build call map but with fuzzy keys
-		fuzzyCalls := make(map[string]struct{}, len(calls))
-		for call := range calls {
-			fuzzyCalls[getFuzzyKey(call)] = struct{}{}
-		}
-
 		for _, pv := range inv.PackageVulns {
 			v := pv.Vulnerability
 			for _, a := range v.GetAffected() {
@@ -144,7 +138,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 						_, called := calls[funcName]
 						// Only try fuzzy match if full func path doesn't match anything
 						if !called {
-							called = fuzzyMatchFuncCall(funcName, fuzzyCalls)
+							called = fuzzyMatchFuncCall(funcName, calls)
 						}
 						// Once one advisory marks this vuln as called, always mark as called
 						isCalledVulnMap[v.Id] = isCalledVulnMap[v.Id] || called
@@ -172,7 +166,6 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 	}
 
 	// TODO: Cleanup build target
-
 	return nil
 }
 
@@ -343,24 +336,30 @@ func cleanRustFunctionSymbols(val string) string {
 	return val
 }
 
-func fuzzyMatchFuncCall(funcName string, fuzzyCalls map[string]struct{}) bool {
-	key := getFuzzyKey(funcName)
-	_, ok := fuzzyCalls[key]
-	return ok
-}
+func fuzzyMatchFuncCall(target string, calls map[string]struct{}) bool {
+	// Target is from registry, in the form `crate_name::<ignore in-betweens>::func_name`
+	targetSegments := strings.Split(target, "::")
+	targetCrate := targetSegments[0]
+	targetFunc := targetSegments[len(targetSegments)-1]
 
-// From crate_name::...::module::...::func_name
-// fuzzyKey is defined to be just crate_name::func_name
-func getFuzzyKey(funcName string) string {
-	parts := strings.Split(funcName, "::")
-	if len(parts) < 2 {
-		return funcName
+	// To fuzzy match the func calls from binary:
+	// 1. Must match crate name
+	// 2. Starting from the back of the path, try to match the func_name
+	for call := range calls {
+		segments := strings.Split(call, "::")
+
+		// Removes leading special characters in crate name
+		antiLeadingSpecCharRegex := regexp.MustCompile(`\W*(.+)`)
+		segments[0] = antiLeadingSpecCharRegex.ReplaceAllString(segments[0], "$1")
+		if segments[0] != targetCrate {
+			continue
+		}
+
+		for i := len(segments) - 1; i > 0; i-- {
+			if segments[i] == targetFunc {
+				return true
+			}
+		}
 	}
-
-	// Also aggressively removes all leading special characters
-	// So that: <time::time::Time>::...::now_utc -> time::now_utc
-	antiLeadingSpecCharRegex := regexp.MustCompile(`\W*(.+)`)
-	parts[0] = antiLeadingSpecCharRegex.ReplaceAllString(parts[0], "$1")
-
-	return parts[0] + "::" + parts[len(parts)-1]
+	return false
 }
