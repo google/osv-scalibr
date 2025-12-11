@@ -98,7 +98,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 			// Is a library, so need an extra step to extract the object binary file before passing to parseDWARFData
 			buf, err := extractRlibArchive(path)
 			if err != nil {
-				log.Errorf("failed to analyse '%s': %s", path, err)
+				log.Errorf("failed to extract rlib archive '%s': %s", path, err)
 				continue
 			}
 			readAt = bytes.NewReader(buf.Bytes())
@@ -117,7 +117,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 		// Extract called functions
 		calls, err := functionsFromDWARF(readAt)
 		if err != nil {
-			log.Errorf("failed to analyse '%s': %s", path, err)
+			log.Errorf("failed to extract functions from '%s': %s", path, err)
 			continue
 		}
 
