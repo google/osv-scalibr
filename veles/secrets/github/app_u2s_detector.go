@@ -24,13 +24,16 @@ import (
 
 const u2sTokenMaxLen = 40
 
-var u2sTokenPattern = regexp.MustCompile(`ghu_[A-Za-z0-9]{36}`)
+var u2sTokenString = `ghu_[A-Za-z0-9]{36}`
+var u2sTokenPattern = regexp.MustCompile(u2sTokenString)
+var u2sTokenBase64Pattern = regexp.MustCompile(simpletoken.ToBase64Regexp(u2sTokenString))
 
 // NewAppU2SDetector returns a new Veles Detector that finds Github app user to server tokens
 func NewAppU2SDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: u2sTokenMaxLen,
-		Re:     u2sTokenPattern,
+		MaxLen:   simpletoken.ToBase64Len(u2sTokenMaxLen),
+		Re:       u2sTokenPattern,
+		ReBase64: u2sTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false
