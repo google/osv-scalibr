@@ -105,9 +105,8 @@ func cleanLicenseExpression(licenses []string) []string {
 // spdxAndCustomLicenses takes a single license, and returns just it (if it is a valid spdx license)
 // or the cleaned version of it for the reference, and the actual text
 func spdxAndCustomLicenses(l string) (string, string) {
-	_, ok := canonicalLicenses[l]
-	if ok {
-		return l, ""
+	if shortID, ok := ShortIdentifier(l); ok {
+		return shortID, ""
 	}
 	return spdxLicenceRef(l), l
 }
