@@ -72,8 +72,15 @@ func New() enricher.Enricher {
 
 // Enrich enriches the inventory with reachability information.
 func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+	// Temp directory for the cargo build artifacts and easy clean up
+	targetDir, err := os.MkdirTemp("", "rust-reachability-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp target dir: %w", err)
+	}
+	defer os.RemoveAll(targetDir)
+
 	// Build the project and get the binary artifacts
-	binaryPaths, err := rustBuildSource(ctx, input.ScanRoot.Path)
+	binaryPaths, err := rustBuildSource(ctx, input.ScanRoot.Path, targetDir)
 	if err != nil {
 		return fmt.Errorf("failed to build cargo/rust project from source: %w", err)
 	}
@@ -168,12 +175,11 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 		}
 	}
 
-	// TODO: Cleanup build target
 	return nil
 }
 
-func rustBuildSource(ctx context.Context, path string) ([]string, error) {
-	cmd := exec.CommandContext(ctx, "cargo", "build", "--workspace", "--all-targets", "--release")
+func rustBuildSource(ctx context.Context, path string, targetDir string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "cargo", "build", "--workspace", "--all-targets", "--release", "--target-dir", targetDir)
 	cmd.Env = append(cmd.Environ(), rustFlagsEnv)
 	cmd.Dir = path
 	if errors.Is(cmd.Err, exec.ErrDot) {
@@ -194,7 +200,7 @@ func rustBuildSource(ctx context.Context, path string) ([]string, error) {
 		return nil, fmt.Errorf("failed to run `%v`: %w", cmd.String(), err)
 	}
 
-	outputDir := filepath.Join(path, "target", "release")
+	outputDir := filepath.Join(targetDir, "release")
 	entries, err := os.ReadDir(outputDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read \"%s\" dir: %w", outputDir, err)
