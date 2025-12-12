@@ -20,9 +20,9 @@ import (
 	"maps"
 	"slices"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -53,6 +54,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the enricher initializer function.
@@ -118,6 +121,7 @@ var (
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
+		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
@@ -132,7 +136,8 @@ var (
 
 	// Reachability enrichers.
 	Reachability = InitMap{
-		java.Name: {noCFG(java.NewDefault)},
+		java.Name:       {noCFG(java.NewDefault)},
+		govcsource.Name: {govcsource.New},
 	}
 
 	// TransitiveDependency enrichers.

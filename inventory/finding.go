@@ -17,6 +17,7 @@ package inventory
 import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory/vex"
+
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 

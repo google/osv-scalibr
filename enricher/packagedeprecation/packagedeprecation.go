@@ -133,9 +133,13 @@ func makeVersionKey(pkg *extractor.Package) (VersionKey, bool) {
 	}
 	name, ver := pkg.Name, pkg.Version
 
-	// Add "v" prefix for Go versions (except stdlib) to match deps.dev format.
-	if pkg.PURLType == purl.TypeGolang && pkg.Name != "stdlib" {
-		ver = "v" + ver
+	// Matching deps.dev naming convention.
+	if pkg.PURLType == purl.TypeGolang {
+		if name == "stdlib" {
+			ver = "go" + ver
+		} else {
+			ver = "v" + ver
+		}
 	}
 
 	return VersionKey{

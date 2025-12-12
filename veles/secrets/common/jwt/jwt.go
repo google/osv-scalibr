@@ -42,7 +42,7 @@ type Token struct {
 	raw string
 	// header is the base64 decoded JWT header claims.
 	header map[string]any
-	// payload is the base64 decoded JWT header claims.
+	// payload is the base64 decoded JWT payload claims.
 	payload map[string]any
 	// signature is the raw signature section of the JWT.
 	signature string
@@ -50,12 +50,12 @@ type Token struct {
 
 // Header returns a copy of the JWT header claims.
 func (t *Token) Header() map[string]any {
-	return copyMap(t.header)
+	return maps.Clone(t.header)
 }
 
 // Payload returns a copy of the JWT payload claims.
 func (t *Token) Payload() map[string]any {
-	return copyMap(t.payload)
+	return maps.Clone(t.payload)
 }
 
 // Signature returns the JWT signature.
@@ -70,19 +70,6 @@ func (t *Token) Raw() string {
 
 func (t Token) isValid() bool {
 	return t.header != nil && t.payload != nil && t.signature != ""
-}
-
-// copyMap creates a shallow copy of a map[string]any.
-// Returns nil if the input map is nil.
-func copyMap(m map[string]any) map[string]any {
-	if m == nil {
-		return nil
-	}
-
-	n := make(map[string]any, len(m))
-	maps.Copy(n, m)
-
-	return n
 }
 
 // ExtractTokens scans the input data for JWT substrings, parses them and

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -38,23 +37,29 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
+	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -215,8 +220,26 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
 		return reCaptchaKeyToProto(t), nil
+	case jwt.Token:
+		return jwtTokenToProto(t), nil
+	case pyxkeyv1.PyxKeyV1:
+		return pyxKeyV1ToProto(t), nil
+	case pyxkeyv2.PyxKeyV2:
+		return pyxKeyV2ToProto(t), nil
+	case codecatalyst.Credentials:
+		return codeCatalystCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func codeCatalystCredentialsToProto(s codecatalyst.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CodeCatalystCredentials_{
+			CodeCatalystCredentials: &spb.SecretData_CodeCatalystCredentials{
+				Url: s.FullURL,
+			},
+		},
 	}
 }
 
@@ -226,6 +249,16 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
 				AccessId: s.AccessID,
 				Secret:   s.Secret,
+			},
+		},
+	}
+}
+
+func jwtTokenToProto(s jwt.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_JwtToken{
+			JwtToken: &spb.SecretData_JWTToken{
+				Token: s.Value,
 			},
 		},
 	}
@@ -722,6 +755,26 @@ func onepasswordRecoveryCodeToProto(s velesonepasswordkeys.OnePasswordRecoveryCo
 	}
 }
 
+func pyxKeyV1ToProto(s pyxkeyv1.PyxKeyV1) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PyxKeyV1_{
+			PyxKeyV1: &spb.SecretData_PyxKeyV1{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func pyxKeyV2ToProto(s pyxkeyv2.PyxKeyV2) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PyxKeyV2_{
+			PyxKeyV2: &spb.SecretData_PyxKeyV2{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -798,6 +851,8 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 
 func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	switch s.Secret.(type) {
+	case *spb.SecretData_JwtToken:
+		return jwt.Token{Value: s.GetJwtToken().GetToken()}, nil
 	case *spb.SecretData_PrivateKey_:
 		return privatekeyToStruct(s.GetPrivateKey()), nil
 	case *spb.SecretData_Pgpass_:
@@ -946,6 +1001,18 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_ReCaptchaKey_:
 		return recaptchakey.Key{
 			Secret: s.GetReCaptchaKey().GetSecret(),
+		}, nil
+	case *spb.SecretData_PyxKeyV1_:
+		return pyxkeyv1.PyxKeyV1{
+			Key: s.GetPyxKeyV1().GetKey(),
+		}, nil
+	case *spb.SecretData_PyxKeyV2_:
+		return pyxkeyv2.PyxKeyV2{
+			Key: s.GetPyxKeyV2().GetKey(),
+		}, nil
+	case *spb.SecretData_CodeCatalystCredentials_:
+		return codecatalyst.Credentials{
+			FullURL: s.GetCodeCatalystCredentials().GetUrl(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

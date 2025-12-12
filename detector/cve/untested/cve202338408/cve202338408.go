@@ -27,12 +27,14 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
+
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -75,11 +77,12 @@ func (Detector) RequiredExtractors() []string { return []string{} }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
 func (d Detector) DetectedFinding() inventory.Finding {
-	return d.findingForPackage(nil)
+	return d.findingForPackage(nil, nil)
 }
 
-func (Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
+func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Package) inventory.Finding {
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
+		Package: pkg,
 		Vulnerability: &osvpb.Vulnerability{
 			Id:      "CVE-2023-38408",
 			Summary: "CVE-2023-38408",
@@ -130,7 +133,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	log.Debugf("Found OpenSSH in range 5.5 to 9.3p1 (inclusive): %v", openSSHVersion)
 
 	// 2. Check ssh config
-	configsWithForward := []fileLocations{}
+	var configsWithForward []fileLocations
 	for _, path := range findSSHConfigs() {
 		ls := sshConfigContainsForward(path)
 		log.Debugf("ssh config: %q %v", path, ls)
@@ -152,7 +155,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 
 	// 4. check bash history
-	historyLocations := []fileLocations{}
+	var historyLocations []fileLocations
 	for _, path := range findHistoryFiles() {
 		ls := findString(path, sshRegex)
 		log.Debugf("history file: %q %v", path, ls)
@@ -162,7 +165,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		}
 	}
 
-	locations := []string{}
+	var locations []string
 	for _, l := range configsWithForward {
 		locations = append(locations, l.Path)
 	}
@@ -176,7 +179,8 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			"extra": {Kind: &structpb.Value_StringValue{StringValue: buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations)}},
 		},
 	}
-	return d.findingForPackage(dbSpecific), nil
+	// TODO: b/421456154 - Add package information to the finding.
+	return d.findingForPackage(dbSpecific, nil), nil
 }
 
 func getOpenSSHVersion(ctx context.Context) string {
@@ -197,7 +201,7 @@ func getOpenSSHVersion(ctx context.Context) string {
 
 func buildExtra(isVulnVersion bool, configsWithForward []fileLocations, socketFiles []string, historyLocations []fileLocations, targetLocations []string) string {
 	list := []bool{isVulnVersion, len(configsWithForward) > 0, len(socketFiles) > 0, len(historyLocations) > 0}
-	slist := []string{}
+	var slist []string
 	for _, l := range list {
 		if l {
 			slist = append(slist, "1")
@@ -214,7 +218,7 @@ func fileExists(path string) bool {
 }
 
 func findSSHConfigs() []string {
-	r := []string{}
+	var r []string
 
 	if fileExists("/root/.ssh/config") {
 		r = append(r, "/root/.ssh/config")
@@ -244,7 +248,7 @@ func sshConfigContainsForward(path string) []int {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	r := []int{}
+	var r []int
 	i := -1
 	for scanner.Scan() {
 		i++

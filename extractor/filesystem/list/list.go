@@ -20,7 +20,6 @@ import (
 	"maps"
 	"slices"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
@@ -98,6 +97,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -121,18 +121,23 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
+	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the extractor initializer function.
@@ -284,6 +289,7 @@ var (
 		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
 		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
 		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
+		codecatalyst.Name:            {noCFG(codecatalyst.New)},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -333,6 +339,9 @@ var (
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
+		{jwt.NewDetector(), "secrets/jwttoken", 0},
+		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
+		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
