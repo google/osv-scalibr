@@ -38,6 +38,8 @@ var (
 	EnricherOrder = []string{
 		"reachability/java",
 		"vulnmatch/osvdev",
+		// Reachability enrichers need to run after vulnmatch enrichers (in certain configurations).
+		"reachability/go/source",
 		"reachability/rust",
 		"vex/filter",
 	}

@@ -198,7 +198,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Description                                                          | Plugin Name                              |
 |----------------------------------------------------------------------|------------------------------------------|
 | Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
-| Finds vulns in Go binaries with reachability data using govunlcheck. | `govulncheck/binary`                     |
+| Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
 | Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
 | Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
 | Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
@@ -231,6 +231,7 @@ pp| Adds VEX statements for language packages already found by the RPM OS extrac
 | Extracts details about the base image a software package was added in      | `baseimage`                         |
 | Filters findings that have VEX statements.                                 | `vex/filter`                        |
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
+| Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
 | Performs reachability analysis for Rust code.                              | `reachability/rust`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
