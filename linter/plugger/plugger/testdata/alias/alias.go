@@ -2,10 +2,6 @@ package alias
 
 import "testdata/basic"
 
-func NewAlias() basic.MyPlugin {
-	return basic.NewPluginA()
-}
-
 func NewDefault() basic.MyPlugin {
 	return basic.NewPluginA()
 }

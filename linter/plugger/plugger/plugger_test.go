@@ -121,10 +121,9 @@ func TestAliases(t *testing.T) {
 	// the return type is the only public type returned by the pkg, otherwise it will
 	// have a more specific name
 	want := map[string]string{
-		"alias.NewAlias":     "[alias.NewDefault alias.NewDetector alias.NewValidator]",
-		"alias.NewDefault":   "[alias.NewAlias alias.NewDetector alias.NewValidator]",
-		"alias.NewDetector":  "[alias.NewAlias alias.NewDefault]",
-		"alias.NewValidator": "[alias.NewAlias alias.NewDefault]",
+		"alias.NewDefault":   "[alias.NewDetector alias.NewValidator]",
+		"alias.NewDetector":  "[alias.NewDefault]",
+		"alias.NewValidator": "[alias.NewDefault]",
 		"basic.NewPluginA":   "[]",
 		"basic.NewPluginB":   "[]",
 	}

@@ -19,7 +19,6 @@ import (
 	"go/types"
 	"slices"
 	"strings"
-	"unicode"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -86,14 +85,13 @@ func findFunctions(pkg *packages.Package) []*Function {
 //
 // Two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault)
 //
-// Note: suffixes such as "Default" and the name of the packages are removed from the name of the functions
+// Note: the "Default" suffix is removed from the name of the functions
 func findAliases(ctrs []*Function) {
 	// Build a map from normalized name to functions
 	normMap := make(map[*Function]string)
 	for _, f := range ctrs {
 		fName := f.Fun.Name.Name
 		fName = strings.TrimSuffix(fName, "Default")
-		fName = strings.TrimSuffix(fName, capitalizeFirst(f.Pkg.Name))
 		normMap[f] = fName
 	}
 
@@ -110,14 +108,4 @@ func findAliases(ctrs []*Function) {
 			}
 		}
 	}
-}
-
-func capitalizeFirst(s string) string {
-	if s == "" {
-		return s
-	}
-	// Convert first rune to uppercase, rest stays the same
-	runes := []rune(s)
-	runes[0] = unicode.ToUpper(runes[0])
-	return string(runes)
 }
