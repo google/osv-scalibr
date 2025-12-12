@@ -1,0 +1,60 @@
+{
+  "id": "GO-2021-0053",
+  "summary": "Panic due to improper input validation in github.com/gogo/protobuf",
+  "details": "Due to improper bounds checking, maliciously crafted input to generated Unmarshal methods can cause an out-of-bounds panic. If parsing messages from untrusted parties, this may be used as a denial of service vector.",
+  "aliases": [
+    "BIT-consul-2021-3121",
+    "BIT-protobuf-2021-3121",
+    "CVE-2021-3121",
+    "GHSA-c3h9-896r-86jm"
+  ],
+  "modified": "2024-05-20T16:03:47Z",
+  "published": "2021-04-14T20:04:52Z",
+  "database_specific": {
+    "review_status": "REVIEWED",
+    "url": "https://pkg.go.dev/vuln/GO-2021-0053"
+  },
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://github.com/gogo/protobuf/commit/b03c65ea87cdc3521ede29f62fe3ce239267c1bc"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "github.com/gogo/protobuf",
+        "ecosystem": "Go",
+        "purl": "pkg:golang/github.com/gogo/protobuf"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "1.3.2"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "imports": [
+          {
+            "symbols": [
+              "unmarshal.Generate",
+              "unmarshal.field"
+            ],
+            "path": "github.com/gogo/protobuf/plugin/unmarshal"
+          }
+        ]
+      },
+      "database_specific": {
+        "source": "https://vuln.go.dev/ID/GO-2021-0053.json"
+      }
+    }
+  ],
+  "schema_version": "1.7.3"
+}
