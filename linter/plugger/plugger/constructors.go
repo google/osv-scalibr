@@ -17,22 +17,27 @@ package plugger
 import (
 	"go/ast"
 	"go/types"
-	"maps"
 	"slices"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
 
-// FindConstructors returns the constructor for the given implementations
-func FindConstructors(pkgs []*packages.Package, implementations map[*packages.Package][]*types.Named) []*Constructor {
+// FindConstructors returns the constructor for the given types
+func FindConstructors(pkgs []*packages.Package, nTypes []*types.Named) []*Constructor {
 	ctrs := []*Constructor{}
 	for _, pkg := range pkgs {
 		functions := findFunctions(pkg)
-		localImplemenations := implementations[pkg]
-		for _, impl := range localImplemenations {
-			for _, fn := range functions {
+		// remove functions not starting with New
+		functions = slices.DeleteFunc(functions, func(f *Function) bool {
+			return !strings.HasPrefix(f.Fun.Name.Name, "New")
+		})
+		findAliases(functions)
+		for _, fn := range functions {
+			for _, impl := range nTypes {
 				if fn.Returns(impl) {
-					ctrs = append(ctrs, NewConstructor(fn, impl))
+					ctrs = append(ctrs, &Constructor{Function: fn, registers: impl})
+					break
 				}
 			}
 		}
@@ -40,7 +45,7 @@ func FindConstructors(pkgs []*packages.Package, implementations map[*packages.Pa
 	return ctrs
 }
 
-// findFunctions finds all the function in the given pkg
+// findFunctions finds all the functions in the given pkg
 func findFunctions(pkg *packages.Package) []*Function {
 	fns := []*Function{}
 	for _, file := range pkg.Syntax {
@@ -53,7 +58,16 @@ func findFunctions(pkg *packages.Package) []*Function {
 			if fn.Recv != nil {
 				return true
 			}
-			returnTypes := extractReturnTypes(pkg, fn, nil)
+
+			// skip excluded functions
+			if hasNoLint(fn.Doc, Name) {
+				return true
+			}
+
+			var returnTypes []types.Type
+			for _, field := range fn.Type.Results.List {
+				returnTypes = append(returnTypes, pkg.TypesInfo.TypeOf(field.Type))
+			}
 
 			fns = append(fns, &Function{
 				Fun:         fn,
@@ -67,72 +81,31 @@ func findFunctions(pkg *packages.Package) []*Function {
 	return fns
 }
 
-// extractReturnTypes extracts concrete return types within the same package,
-// if the function calls an external function it uses its return type as type (even if not concrete)
-func extractReturnTypes(pkg *packages.Package, fn *ast.FuncDecl, seen map[*ast.FuncDecl]bool) []types.Type {
-	if fn.Body == nil {
-		return nil
+// findAliases populates the .Aliases field in the given functions
+//
+// Two functions are considered aliases if one is prefix of another (New and NewWithClient or NewDefault)
+//
+// Note: the "Default" suffix is removed from the name of the functions
+func findAliases(ctrs []*Function) {
+	// Build a map from normalized name to functions
+	normMap := make(map[*Function]string)
+	for _, f := range ctrs {
+		fName := f.Fun.Name.Name
+		fName = strings.TrimSuffix(fName, "Default")
+		normMap[f] = fName
 	}
-	if seen == nil {
-		seen = make(map[*ast.FuncDecl]bool)
-	}
-	if seen[fn] {
-		// Prevent infinite recursion on cyclic calls
-		return nil
-	}
-	seen[fn] = true
 
-	typesSet := map[types.Type]struct{}{}
-
-	ast.Inspect(fn.Body, func(n ast.Node) bool {
-		switch node := n.(type) {
-		case *ast.FuncLit:
-			// Skip nested functions
-			return false
-		case *ast.ReturnStmt:
-			for _, expr := range node.Results {
-				switch call := expr.(type) {
-				case *ast.CallExpr:
-					if fnDecl := findFuncDecl(pkg, call.Fun); fnDecl != nil {
-						// Recurse into the called function
-						for _, t := range extractReturnTypes(pkg, fnDecl, seen) {
-							typesSet[t] = struct{}{}
-						}
-						continue
-					}
-					// Fallback: use the static return type of the call
-					if typ := pkg.TypesInfo.TypeOf(call); typ != nil {
-						typesSet[typ] = struct{}{}
-					}
-				default:
-					// Normal return expression
-					if typ := pkg.TypesInfo.TypeOf(expr); typ != nil {
-						typesSet[typ] = struct{}{}
-					}
-				}
+	// Find aliases
+	for _, f := range ctrs {
+		fNormalized := normMap[f]
+		for _, g := range ctrs {
+			if f == g {
+				continue
 			}
-		}
-		return true
-	})
-
-	return slices.Collect(maps.Keys(typesSet))
-}
-
-// findFuncDecl return searches the specified function in the given pkg
-func findFuncDecl(pkg *packages.Package, fun ast.Expr) *ast.FuncDecl {
-	// handle only identifier functions
-	ident, ok := fun.(*ast.Ident)
-	if !ok {
-		return nil
-	}
-
-	// return it
-	for _, file := range pkg.Syntax {
-		for _, decl := range file.Decls {
-			if d, ok := decl.(*ast.FuncDecl); ok && d.Name.Name == ident.Name {
-				return d
+			gNormalized := normMap[g]
+			if strings.HasPrefix(gNormalized, fNormalized) || strings.HasPrefix(fNormalized, gNormalized) {
+				f.Aliases = append(f.Aliases, g)
 			}
 		}
 	}
-	return nil
 }

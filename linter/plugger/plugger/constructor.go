@@ -28,31 +28,34 @@ type Function struct {
 	Fun         *ast.FuncDecl
 	Pkg         *packages.Package
 	ReturnTypes []types.Type
+	Aliases     []*Function
+}
+
+func (f Function) String() string {
+	return f.Pkg.Name + "." + f.Fun.Name.Name
 }
 
 // Returns returns true if the function returns the given type
 func (f *Function) Returns(t *types.Named) bool {
 	for _, r := range f.ReturnTypes {
+		// direct or pointer match
 		if types.Identical(r, t) || types.Identical(r, types.NewPointer(t)) {
+			return true
+		}
+
+		// check if the functions returns an interface of the type
+		if doesImplement(r, t) || doesImplement(types.NewPointer(r), t) {
 			return true
 		}
 	}
 	return false
 }
 
-// Constructor is a function with an assigned type
+// Constructor is a function with an assigned register type
 type Constructor struct {
 	*Function
 
-	Impl *types.Named
-}
-
-// NewConstructor returns a constructor given a function and a type
-func NewConstructor(f *Function, t *types.Named) *Constructor {
-	return &Constructor{
-		Function: f,
-		Impl:     t,
-	}
+	registers *types.Named
 }
 
 // Pos returns a compiler style position of the constructor
@@ -64,4 +67,10 @@ func (c Constructor) Pos(cwd string) (string, error) {
 	}
 
 	return fmt.Sprintf("%s:%d:%d", rel, pos.Line, pos.Column), nil
+}
+
+// Registers returns the type of the plugin which the construct registers.
+func (c Constructor) Registers() string {
+	obj := c.registers.Obj()
+	return obj.Pkg().Name() + "." + obj.Name()
 }
