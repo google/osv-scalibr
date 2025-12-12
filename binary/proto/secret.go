@@ -37,7 +37,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	velesgcpsak "github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
@@ -228,8 +230,32 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pyxKeyV2ToProto(t), nil
 	case codecatalyst.Credentials:
 		return codeCatalystCredentialsToProto(t), nil
+	case codecommit.Credentials:
+		return codeCommitCredentialsToProto(t), nil
+	case bitbucket.Credentials:
+		return bitbucketCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func codeCommitCredentialsToProto(s codecommit.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CodeCommitCredentials_{
+			CodeCommitCredentials: &spb.SecretData_CodeCommitCredentials{
+				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_BitbucketCredentials{
+			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
+				Url: s.FullURL,
+			},
+		},
 	}
 }
 
@@ -1013,6 +1039,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_CodeCatalystCredentials_:
 		return codecatalyst.Credentials{
 			FullURL: s.GetCodeCatalystCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_CodeCommitCredentials_:
+		return codecommit.Credentials{
+			FullURL: s.GetCodeCommitCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_BitbucketCredentials:
+		return bitbucket.Credentials{
+			FullURL: s.GetBitbucketCredentials().GetUrl(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

@@ -12,27 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package codecatalyst extends the veles codecatalyst.Detector to search inside the git config and history files
-package codecatalyst
+// Package codecommit extends the veles codecommit.Detector to search inside the git config and history files
+package codecommit
 
 import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
-
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 )
 
 const (
 	// Name is the name of the extractor
-	Name = "secrets/codecatalystcredentials"
+	Name = "secrets/codecommitcredentials"
 	// Version is the version of the extractor
 	Version = 0
 )
 
-// New returns a filesystem.Extractor which extracts Amazon CodeCatalyst Credentials using the codecatalyst.Detector
+// New returns a filesystem.Extractor which extracts CodeCommit Credentials using the codecommit.Detector
 func New() filesystem.Extractor {
 	return convert.FromVelesDetectorWithRequire(
-		codecatalyst.NewDetector(), Name, Version, gitbasicauth.FileRequired,
+		codecommit.NewDetector(), Name, Version, gitbasicauth.FileRequired,
 	)
 }

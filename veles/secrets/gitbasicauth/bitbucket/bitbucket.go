@@ -12,23 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst
+// Package bitbucket contains the logic to extract BitBucket personal access tokens.
+package bitbucket
 
-import (
-	"net/http"
-	"net/url"
-	"strings"
+// Credentials contains basic auth credential for BitBucket.
+type Credentials struct {
+	FullURL string
+}
 
-	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth"
-)
-
-// NewValidator creates a new Validator that validates CodeCatalyst credentials
-func NewValidator() *simplevalidate.Validator[Credentials] {
-	return gitbasicauth.NewValidator[Credentials](
-		func(u *url.URL) bool {
-			return strings.HasSuffix(u.Host, ".codecatalyst.aws")
-		},
-		[]int{http.StatusOK}, []int{http.StatusBadRequest},
-	)
+// URL returns the raw URL containing basic auth credentials.
+func (c Credentials) URL() string {
+	return c.FullURL
 }
