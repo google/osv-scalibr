@@ -24,13 +24,16 @@ import (
 
 const appRefreshTokenMaxLen = 80
 
-var appRefreshTokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
+var appRefreshTokenString = `ghr_[A-Za-z0-9]{76}`
+var appRefreshTokenPattern = regexp.MustCompile(appRefreshTokenString)
+var appRefreshTokenBase64Pattern = regexp.MustCompile(simpletoken.ToBase64Regexp(appRefreshTokenString))
 
 // NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
 func NewAppRefreshTokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: appRefreshTokenMaxLen,
-		Re:     appRefreshTokenPattern,
+		MaxLen:   simpletoken.ToBase64Len(appRefreshTokenMaxLen),
+		Re:       appRefreshTokenPattern,
+		ReBase64: appRefreshTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false

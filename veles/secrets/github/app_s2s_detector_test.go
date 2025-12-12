@@ -27,6 +27,7 @@ import (
 
 const (
 	s2sTestKey        = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
+	s2sTestKeyBase64  = `Z2hzX29KckkzTnhKb25YZWdhNGNkM3YxWEhEampNazNqaDJFTld6Yg==`
 	s2sAnotherTestKey = `ghs_DCASJRv332FYglZzXPw7n0onKEqqt50ugSfn`
 )
 
@@ -96,6 +97,12 @@ func TestAppS2SDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: s2sTestKey + `extra`,
+		want: []veles.Secret{
+			github.AppServerToServerToken{Token: s2sTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: s2sTestKeyBase64,
 		want: []veles.Secret{
 			github.AppServerToServerToken{Token: s2sTestKey},
 		},

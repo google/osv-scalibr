@@ -24,13 +24,16 @@ import (
 
 const oauthTokenMaxLen = 40
 
-var oauthTokenPattern = regexp.MustCompile(`gho_[A-Za-z0-9]{36}`)
+var oauthTokenString = `gho_[A-Za-z0-9]{36}`
+var oauthTokenPattern = regexp.MustCompile(oauthTokenString)
+var oauthTokenBase64Pattern = regexp.MustCompile(simpletoken.ToBase64Regexp(oauthTokenString))
 
 // NewOAuthTokenDetector returns a new Veles Detector that finds Github oauth tokens.
 func NewOAuthTokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: oauthTokenMaxLen,
-		Re:     oauthTokenPattern,
+		MaxLen:   simpletoken.ToBase64Len(oauthTokenMaxLen),
+		Re:       oauthTokenPattern,
+		ReBase64: oauthTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false
