@@ -8,7 +8,7 @@ Plugins are grouped into the following categories:
 
 - **Extractors**: Identify software packages, dependencies, and other inventory.
 - **Detectors**: Detect security findings, such as misconfigurations or
-                 specific vulnerabilities.
+  specific vulnerabilities.
 - **Enrichers**: Augment inventory with additional data from external sources.
 - **Annotators**: Add contextual information to the inventory.
 
@@ -33,7 +33,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
-|-------------------|--------------------------------|----------------------------------------------|
+| ----------------- | ------------------------------ | -------------------------------------------- |
 | Alpine            | APK                            | `os/apk`                                     |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
@@ -58,7 +58,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Language packages
 
 | Language   | Details                                   | Extractor Plugin(s)                  |
-|------------|-------------------------------------------|--------------------------------------|
+| ---------- | ----------------------------------------- | ------------------------------------ |
 | .NET       | packages.lock.json                        | `dotnet/packageslockjson`            |
 |            | packages.config                           | `dotnet/packagesconfig`              |
 |            | deps.json                                 | `dotnet/depsjson`                    |
@@ -102,15 +102,16 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Nim        | Nimble packages                           | `nim/nimble`                         |
 
 ### Language runtime managers
-| runtime    | Details                                     | Extractor Plugin(s)                  |
-|------------|---------------------------------------------|--------------------------------------|
-| asdf       | .tool-versions                              | `runtime/asdf`                       |
-| nvm        | .nvmrc                                      | `runtime/nvm`                        |
+
+| runtime | Details        | Extractor Plugin(s) |
+| ------- | -------------- | ------------------- |
+| asdf    | .tool-versions | `runtime/asdf`      |
+| nvm     | .nvmrc         | `runtime/nvm`       |
 
 ### Secrets
 
 | Type                                        | Extractor Plugin                     |
-|---------------------------------------------|--------------------------------------|
+| ------------------------------------------- | ------------------------------------ |
 | AWS access key                              | `secrets/awsaccesskey`               |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
 | Anthropic API key                           | `secrets/anthropicapikey`            |
@@ -162,7 +163,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Container inventory
 
 | Type                            | Extractor Plugin                                                                   |
-|---------------------------------|------------------------------------------------------------------------------------|
+| ------------------------------- | ---------------------------------------------------------------------------------- |
 | Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
 | Docker container images         | `containers/docker` (standalone)                                                   |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
@@ -172,31 +173,31 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### SBOM files
 
 | Type                       | Extractor Plugin |
-|----------------------------|------------------|
+| -------------------------- | ---------------- |
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
 
 ### Misc
 
 | Type              | Extractor Plugin    |
-|-------------------|---------------------|
+| ----------------- | ------------------- |
 | Wordpress plugins | `wordpress/plugins` |
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
 
 ### EmbeddedFS
 
-| Type     | Details                                           | Extractor Plugin     |
-|----------|---------------------------------------------------|----------------------|
-| archive  | tar and tar.gz archives                           | `embeddedfs/archive` |
-| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
-| vdi      | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
-| vmdk     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| Type    | Details                                           | Extractor Plugin     |
+| ------- | ------------------------------------------------- | -------------------- |
+| archive | tar and tar.gz archives                           | `embeddedfs/archive` |
+| ova     | Extracts .ova files                               | `embeddedfs/ova`     |
+| vdi     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
+| vmdk    | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
 
 ## Detectors
 
 | Description                                                          | Plugin Name                              |
-|----------------------------------------------------------------------|------------------------------------------|
+| -------------------------------------------------------------------- | ---------------------------------------- |
 | Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
 | Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
 | Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
@@ -213,27 +214,27 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ## Annotators
 
-| Description                                                                       | Plugin Name              |
-|-----------------------------------------------------------------------------------|--------------------------|
-| Adds VEX statements for packages from cached directories                          | `vex/cachedir`           |
-| Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`   |
-| Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`   |
-| Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`  |
-pp| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
-| Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
-| Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
-| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`       |
+| Description                                                                       | Plugin Name                                                                      |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------- |
+| Adds VEX statements for packages from cached directories                          | `vex/cachedir`                                                                   |
+| Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`                                                           |
+| Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`                                                           |
+| Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`                                                          |
+| pp                                                                                | Adds VEX statements for language packages already found by the RPM OS extractor. | `vex/os-duplicate/rpm` |
+| Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg`                                                         |
+| Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`                                                                  |
+| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`                                                               |
 
 ## Enrichers
 
 | Description                                                                | Plugin Name                         |
-|----------------------------------------------------------------------------|-------------------------------------|
+| -------------------------------------------------------------------------- | ----------------------------------- |
 | Extracts details about the base image a software package was added in      | `baseimage`                         |
 | Filters findings that have VEX statements.                                 | `vex/filter`                        |
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
 | Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
-| Performs reachability analysis for Rust code.                              | `reachability/rust`                 |
+| Performs reachability analysis for Rust code. (Linux-only)                 | `reachability/rust`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |

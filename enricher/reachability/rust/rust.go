@@ -55,8 +55,9 @@ func (*Enricher) Version() int { return 0 }
 // Requirements of rust reachability enricher.
 func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network:  plugin.NetworkOnline,
-		DirectFS: true,
+		Network:       plugin.NetworkOnline,
+		DirectFS:      true,
+		RunningSystem: true,
 	}
 }
 
@@ -252,7 +253,6 @@ func extractRlibArchive(rlibPath string) (bytes.Buffer, error) {
 		}
 		if header.Name == "//" { // "//" is used in GNU ar format as a store for long file names
 			fileBuf := bytes.Buffer{}
-			// Ignore the error here as it's likely
 			_, err = io.Copy(&fileBuf, reader)
 			if err != nil {
 				return bytes.Buffer{}, fmt.Errorf("failed to read // store in ar archive: %w", err)
