@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
@@ -31,6 +32,7 @@ var (
 	validatorTestURL         = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/repo"
 	validatorTestBadCredsURL = "https://user:bad_pat@git.region.codecatalyst.aws/v1/space/project/repo"
 	validatorTestBadRepoURL  = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/bad-repo"
+	badHostURL               = "https://user:pat@bad-host.com/v1/space/project/bad-repo"
 )
 
 type redirectTransport struct {
@@ -57,6 +59,12 @@ func TestValidator(t *testing.T) {
 			ctx:        cancelledContext,
 			httpStatus: http.StatusOK,
 			wantErr:    cmpopts.AnyError,
+		},
+		{
+			name:    "bad_host",
+			url:     badHostURL,
+			wantErr: extracttest.ContainsErrStr{Str: "invalid URL"},
+			want:    veles.ValidationFailed,
 		},
 		{
 			name:       "valid_credentials",

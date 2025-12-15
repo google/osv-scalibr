@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
@@ -31,6 +32,7 @@ var (
 	validatorTestURL         = "https://user:token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-test"
 	validatorTestBadCredsURL = "https://user:bad_token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-test"
 	validatorTestBadRepoURL  = "https://user:token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-bad"
+	badHostURL               = "https://user:token@bad-host/v1/repos/osv-scalibr-bad"
 )
 
 func TestValidator(t *testing.T) {
@@ -53,6 +55,12 @@ func TestValidator(t *testing.T) {
 			ctx:        cancelledContext,
 			httpStatus: http.StatusOK,
 			wantErr:    cmpopts.AnyError,
+		},
+		{
+			name:    "bad_host",
+			url:     badHostURL,
+			wantErr: extracttest.ContainsErrStr{Str: "invalid URL"},
+			want:    veles.ValidationFailed,
 		},
 		{
 			name:       "valid_credentials",
