@@ -22,10 +22,12 @@ import (
 	"testing"
 )
 
+// Transport is an http.RoundTripper that redirects all requests to the specified URL.
 type Transport struct {
 	URL string
 }
 
+// RoundTrip redirects every request to the Transport's URL
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	newURL, err := url.Parse(t.URL)
 	if err != nil {
@@ -36,16 +38,24 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-func GitHandler(t *testing.T, status int) http.HandlerFunc {
+// GitHandler returns an HTTP handler that validates a minimal Git request.
+func GitHandler(t *testing.T, wantStatus int) http.HandlerFunc {
 	t.Helper()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			t.Errorf("r.Method = %s, want %s", r.Method, http.MethodGet)
+			t.Fatalf("unexpected method: got %s, want %s", r.Method, http.MethodGet)
 		}
+
 		auth := r.Header.Get("Authorization")
-		if !strings.HasPrefix(auth, "Basic") {
-			t.Errorf("should use basic auth")
+		if !strings.HasPrefix(auth, "Basic ") {
+			t.Fatalf("missing or invalid Authorization header, got %q", auth)
 		}
-		w.WriteHeader(status)
+
+		if !strings.HasPrefix(auth, "Basic ") {
+			t.Fatalf("missing or invalid Authorization header, got %q", auth)
+		}
+
+		w.WriteHeader(wantStatus)
 	}
 }

@@ -28,7 +28,8 @@ type URLer interface {
 	URL() string
 }
 
-// NewValidator creates a new Validator that validates Bitbucket credentials
+// NewValidator creates a new Validator that validates git basic auth credentials using the
+// info/refs API
 func NewValidator[T URLer](isURLValid func(*url.URL) bool, validCodes, invalidCodes []int) *simplevalidate.Validator[T] {
 	return &simplevalidate.Validator[T]{
 		EndpointFunc: func(c T) (string, error) {

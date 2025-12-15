@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package codecommit contains the logic to extract Amazon CodeCommit personal access tokens.
+// Package codecommit contains the logic to extract Amazon CodeCommit URLs with basic auth credentials.
 package codecommit
 
 // Credentials contains an URL with basic auth credentials for Amazon CodeCommit.

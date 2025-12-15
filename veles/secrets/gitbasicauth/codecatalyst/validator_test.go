@@ -35,10 +35,6 @@ var (
 	badHostURL               = "https://user:pat@bad-host.com/v1/space/project/bad-repo"
 )
 
-type redirectTransport struct {
-	url string
-}
-
 func TestValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
