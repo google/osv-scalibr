@@ -15,7 +15,7 @@
 // Package codecommit contains the logic to extract Amazon CodeCommit personal access tokens.
 package codecommit
 
-// Credentials contains basic auth credential for CodeCommit.
+// Credentials contains an URL with basic auth credentials for Amazon CodeCommit.
 type Credentials struct {
 	FullURL string
 }

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bitbucket contains the logic to extract BitBucket personal access tokens.
+// Package bitbucket contains the logic to extract BitBucket URLs with basic auth credentials.
 package bitbucket
 
-// Credentials contains basic auth credential for BitBucket.
+// Credentials contains an URL with basic auth credentials for BitBucket.
 type Credentials struct {
 	FullURL string
 }
