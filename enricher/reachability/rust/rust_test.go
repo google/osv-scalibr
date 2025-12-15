@@ -2,6 +2,7 @@ package rust_test
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -17,6 +18,10 @@ import (
 )
 
 func Test_Enrich(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	e := rust.New()
 
 	tests := []struct {
