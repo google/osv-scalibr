@@ -57,6 +57,38 @@ func TestMakeEcosystemAPK(t *testing.T) {
 			metadata: &apkmeta.Metadata{},
 			want:     "Alpine",
 		},
+		{
+			desc: "BellSoft 1st case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "alpaquita",
+				OSVersionID: "23",
+			},
+			want: "Alpaquita:23",
+		},
+		{
+			desc: "BellSoft 2nd case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "alpaquita",
+				OSVersionID: "stream",
+			},
+			want: "Alpaquita:stream",
+		},
+		{
+			desc: "BellSoft 3rd case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "bellsoft-hardened-containers",
+				OSVersionID: "23",
+			},
+			want: "BellSoft Hardened Containers:23",
+		},
+		{
+			desc: "BellSoft 4th case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "bellsoft-hardened-containers",
+				OSVersionID: "stream",
+			},
+			want: "BellSoft Hardened Containers:stream",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
