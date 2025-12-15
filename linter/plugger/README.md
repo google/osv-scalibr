@@ -7,24 +7,40 @@ given interface.
 
 ```sh
 ~ plugger -h
-Usage of plugger /Users/just-hms/Library/Caches/go-build/06/06e00c874d5c5bb1e000de272e366cc65ebb32de196cc669944035eba56dfbc5-d/main:
-  -exclude-pkg string
-      regex pattern for pkg to exclude, ex: 'github\.com/package/testing/.*' (default "a^")
-  -interface string
-      regex pattern for plugin interfaces, ex: 'github\.com/package.MyInterface|.*\.OtherInterface'
+Usage of plugger:
+  -interface value
+    list of interfaces (repeatable), ex: '-interface github.com/pkg.Interface'
 ```
 
-### Exclude plugins
+### No lint rules
 
-Also excluding a plugin directly is possible, just add a `//nolint:plugger`
-directive
+exclude a function
 
 ```go
-// Extractor extracts python packages from requirements.txt files.
-//
-//nolint:plugger: This plugin will be removed shortly
-type Extractor struct {
-  resolve.Client
-  BaseExtractor *requirements.Extractor // The base extractor that we use to extract direct dependencies.
+// This function is called
+func NewPlugin() basic.MyPlugin {
+    return &basic.PluginA{}
 }
+
+// This is treated as alias automatically
+func NewPluginAlias(something string) basic.MyPlugin {
+    return &basic.PluginA{}
+}
+
+// NewForTest: since this function is intended to be used in tests only,
+// must be excluded from the lint
+//
+//nolint:plugger // This function is meant to be used only in testing and returns the same plugin as fun.NewPlugin
+func NewForTest(something string) basic.MyPlugin {
+    return &basic.PluginA{}
+}
+```
+
+or directly exclude a pkg
+
+```go
+// Package fakeplugin contains a fake plugin to be used in testing
+//
+//nolint:plugger // This pkg contains only mocks
+package fakeplugin
 ```

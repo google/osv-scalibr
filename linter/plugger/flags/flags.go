@@ -12,8 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains fakes that can be used to test parts of Veles as
-// well as integrations.
-//
-//nolint:plugger // This package contains test only mocks
-package velestest
+// Package flags contains logic for handling repeatable flag
+package flags
+
+import "fmt"
+
+// List is a slice of strings that implements the flag.Value interface.
+// It is designed to be used with flag.Var to allow a flag to be specified
+// multiple times, accumulating all values into the list.
+type List []string
+
+// String returns the string representation of the list
+func (s *List) String() string {
+	return fmt.Sprintf("%v", *s)
+}
+
+// Set adds a value to the list
+func (s *List) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
