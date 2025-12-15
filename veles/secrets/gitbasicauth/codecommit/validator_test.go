@@ -18,14 +18,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 )
 
 var (
@@ -33,51 +32,6 @@ var (
 	validatorTestBadCredsURL = "https://user:bad_token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-test"
 	validatorTestBadRepoURL  = "https://user:token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-bad"
 )
-
-type redirectTransport struct {
-	url string
-}
-
-func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if strings.HasSuffix(req.URL.Host, ".amazonaws.com") {
-		newURL, err := url.Parse(t.url)
-		if err != nil {
-			return nil, err
-		}
-		req.URL.Scheme = newURL.Scheme
-		req.URL.Host = newURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
-
-func mockCodeCommitHandler(t *testing.T, status int) http.HandlerFunc {
-	t.Helper()
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Errorf("r.Method = %s, want %s", r.Method, http.MethodGet)
-		}
-		auth := r.Header.Get("Authorization")
-		if !strings.HasPrefix(auth, "Basic") {
-			t.Errorf("should use basic auth")
-		}
-		w.WriteHeader(status)
-		if status != http.StatusNotFound {
-			_, _ = w.Write([]byte(`<RepositoryDoesNotExistException/>`))
-			return
-		}
-		if status != http.StatusForbidden {
-			_, _ = w.Write([]byte(`<AccessDeniedException>
-  <Message>Invalid request</Message>
-</AccessDeniedException>`))
-			return
-		}
-
-		_, _ = w.Write([]byte(`001e# service=git-upload-pack
-00000099c6cfbf1b4509f610801e5fff8b75623cd323f665 HEADmulti_ack_detailed shallow side-band-64k thin-pack allow-tip-sha1-in-want allow-reachable-sha1-in-want
-003dc6cfbf1b4509f610801e5fff8b75623cd323f665 refs/heads/main
-0000`))
-	}
-}
 
 func TestValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
@@ -125,11 +79,11 @@ func TestValidator(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = t.Context()
 			}
-			server := httptest.NewServer(mockCodeCommitHandler(t, tt.httpStatus))
+			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
 			client := &http.Client{
-				Transport: &redirectTransport{url: server.URL},
+				Transport: &mockserver.Transport{URL: server.URL},
 			}
 
 			v := codecommit.NewValidator()

@@ -18,14 +18,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 )
 
 var (
@@ -36,39 +35,6 @@ var (
 
 type redirectTransport struct {
 	url string
-}
-
-func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if strings.HasSuffix(req.URL.Host, ".codecatalyst.aws") {
-		newURL, err := url.Parse(t.url)
-		if err != nil {
-			return nil, err
-		}
-		req.URL.Scheme = newURL.Scheme
-		req.URL.Host = newURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
-
-func mockCodeCatalystHandler(t *testing.T, status int) http.HandlerFunc {
-	t.Helper()
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Errorf("r.Method = %s, want %s", r.Method, http.MethodGet)
-		}
-		auth := r.Header.Get("Authorization")
-		if !strings.HasPrefix(auth, "Basic") {
-			t.Errorf("should use basic auth")
-		}
-		if status == 200 {
-			w.WriteHeader(status)
-			return
-		}
-		w.WriteHeader(status)
-		_, _ = w.Write([]byte(`<InvalidRequestException>
-  <Message>The resource either does not exist, or you don’t have permission to access it.</Message>
-</InvalidRequestException>`))
-	}
 }
 
 func TestValidator(t *testing.T) {
@@ -117,12 +83,12 @@ func TestValidator(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = t.Context()
 			}
-			server := httptest.NewServer(mockCodeCatalystHandler(t, tt.httpStatus))
+			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
 			client := &http.Client{
-				Transport: &redirectTransport{
-					url: server.URL,
+				Transport: &mockserver.Transport{
+					URL: server.URL,
 				},
 			}
 

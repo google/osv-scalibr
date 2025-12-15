@@ -18,14 +18,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 )
 
 var (
@@ -34,43 +33,6 @@ var (
 	validatorTestBadCredsURL = "https://user:bad_password@bitbucket.org/workspace/project-repo.git"
 	validatorTestBadRepoURL  = "https://x-token-auth:token@bitbucket.org/workspace/bad-project-repo.git"
 )
-
-type redirectTransport struct {
-	url string
-}
-
-func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.Host == "bitbucket.org" {
-		newURL, err := url.Parse(t.url)
-		if err != nil {
-			return nil, err
-		}
-		req.URL.Scheme = newURL.Scheme
-		req.URL.Host = newURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
-
-func mockbitbucketHandler(t *testing.T, status int) http.HandlerFunc {
-	t.Helper()
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Errorf("r.Method = %s, want %s", r.Method, http.MethodGet)
-		}
-		auth := r.Header.Get("Authorization")
-		if !strings.HasPrefix(auth, "Basic") {
-			t.Errorf("should use basic auth")
-		}
-		w.WriteHeader(status)
-		if status != 200 {
-			_, _ = w.Write([]byte(`You may not have access to this repository or it no longer exists in this workspace. If you think this repository exists and you have access, make sure you are authenticated.`))
-			return
-		}
-		_, _ = w.Write([]byte(`001d# service=git-upload-pack0000014c4ee0de35abfc4b647af50b5f3fbe54641b9cd69f HEADmulti_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1 agent=git/2.51.0-Linux
-003d4ee0de35abfc4b647af50b5f3fbe54641b9cd69f refs/heads/main
-0000`))
-	}
-}
 
 func TestValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
@@ -124,11 +86,11 @@ func TestValidator(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = t.Context()
 			}
-			server := httptest.NewServer(mockbitbucketHandler(t, tt.httpStatus))
+			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
 			client := &http.Client{
-				Transport: &redirectTransport{url: server.URL},
+				Transport: &mockserver.Transport{URL: server.URL},
 			}
 
 			v := bitbucket.NewValidator()
