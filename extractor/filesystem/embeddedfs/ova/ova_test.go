@@ -95,12 +95,15 @@ func TestFileRequired(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		extractor := ova.New(&cpb.PluginConfig{
+		extractor, err := ova.New(&cpb.PluginConfig{
 			MaxFileSizeBytes: tt.maxFileSize,
 			PluginSpecific: []*cpb.PluginSpecificConfig{
 				{Config: &cpb.PluginSpecificConfig_Ova{Ova: &cpb.OVAConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
 			},
 		})
+		if err != nil {
+			t.Fatalf("ova.New: %v", err)
+		}
 		t.Run(tt.desc, func(t *testing.T) {
 			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,
@@ -112,7 +115,10 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidOVA(t *testing.T) {
-	extractor := ova.New(&cpb.PluginConfig{})
+	extractor, err := ova.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("ova.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/valid.ova")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -229,7 +235,10 @@ func TestExtractMaliciousOVA(t *testing.T) {
 	}
 	tw.Close()
 
-	extractor := ova.New(&cpb.PluginConfig{})
+	extractor, err := ova.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("ova.New: %v", err)
+	}
 	input := &filesystem.ScanInput{
 		Path:   "",
 		Root:   "testdata",
@@ -239,7 +248,6 @@ func TestExtractMaliciousOVA(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	var err error
 	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract succeeded, want error for parent path entry")
@@ -249,7 +257,10 @@ func TestExtractMaliciousOVA(t *testing.T) {
 }
 
 func TestExtractInvalidOVA(t *testing.T) {
-	extractor := ova.New(&cpb.PluginConfig{})
+	extractor, err := ova.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("ova.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/invalid.ova")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -278,7 +289,10 @@ func TestExtractInvalidOVA(t *testing.T) {
 }
 
 func TestExtractNonExistentOVA(t *testing.T) {
-	extractor := ova.New(&cpb.PluginConfig{})
+	extractor, err := ova.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("ova.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/nonexistent.ova")
 	input := &filesystem.ScanInput{
 		Path:   path,
@@ -289,7 +303,7 @@ func TestExtractNonExistentOVA(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	_, err := extractor.Extract(ctx, input)
+	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
 	}

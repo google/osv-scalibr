@@ -66,11 +66,11 @@ type Extractor struct {
 }
 
 // New returns a Go binary extractor.
-func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
 	e.versionFromContent = specific.GetVersionFromContent()
-	return e
+	return e, nil
 }
 
 // Name of the extractor.

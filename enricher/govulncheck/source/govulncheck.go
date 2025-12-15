@@ -203,10 +203,10 @@ func vulnHasImportsField(vuln *vulnpb.Vulnerability, pkg *extractor.Package) boo
 }
 
 // New returns a new govulncheck source enricher.
-func New(cfg *cpb.PluginConfig) enricher.Enricher {
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		client: &realGovulncheckClient{},
-	}
+	}, nil
 }
 
 // NewWithClient returns a new govulncheck source enricher with a custom client.

@@ -50,11 +50,11 @@ type Detector struct {
 }
 
 // New returns a detector.
-func New(cfg *cpb.PluginConfig) detector.Detector {
+func New(cfg *cpb.PluginConfig) (detector.Detector, error) {
 	d := &Detector{}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
 	d.offlineVulnDBPath = specific.GetOfflineVulnDbPath()
-	return d
+	return d, nil
 }
 
 // Name of the detector.

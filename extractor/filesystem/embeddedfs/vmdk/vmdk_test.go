@@ -94,12 +94,15 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			extractor := vmdk.New(&cpb.PluginConfig{
+			extractor, err := vmdk.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSize,
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_Vmdk{Vmdk: &cpb.VMDKConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
 				},
 			})
+			if err != nil {
+				t.Fatalf("vmdk.New: %v", err)
+			}
 			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,
 			})); got != tt.want {
@@ -110,7 +113,10 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidVMDK(t *testing.T) {
-	extractor := vmdk.New(&cpb.PluginConfig{})
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.vmdk")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -200,7 +206,10 @@ func TestExtractValidVMDK(t *testing.T) {
 }
 
 func TestExtractInvalidVMDK(t *testing.T) {
-	extractor := vmdk.New(&cpb.PluginConfig{})
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := "testdata/invalid.vmdk"
 	info, err := os.Stat(path)
 	if err != nil {
@@ -222,7 +231,10 @@ func TestExtractInvalidVMDK(t *testing.T) {
 }
 
 func TestExtractNonExistentVMDK(t *testing.T) {
-	extractor := vmdk.New(&cpb.PluginConfig{})
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := "testdata/nonexistent.vmdk"
 	input := &filesystem.ScanInput{
 		Path:   path,
@@ -233,7 +245,7 @@ func TestExtractNonExistentVMDK(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := extractor.Extract(ctx, input)
+	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
 	}
