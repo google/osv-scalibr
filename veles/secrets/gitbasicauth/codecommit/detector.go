@@ -31,7 +31,7 @@ const (
 
 var (
 	// urlPattern matches URLs containing basic authentication credentials.
-	urlPattern = regexp.MustCompile(`https://[^:\s]+:[^\s@]+@git-codecommit\.[a-zA-Z\-0-9]+.amazonaws\.com/[^\s]+`)
+	urlPattern = regexp.MustCompile(`https://[^:\s]+:[^\s@]+@git-codecommit\.[a-zA-Z\-0-9]+\.amazonaws\.com/[^\s]+`)
 )
 
 // NewDetector creates and returns a new instance of the Bitbucket secret detector.
