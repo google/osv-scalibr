@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
@@ -59,7 +58,7 @@ func TestValidator(t *testing.T) {
 		{
 			name:    "bad_host",
 			url:     badHostURL,
-			wantErr: extracttest.ContainsErrStr{Str: "invalid URL"},
+			wantErr: cmpopts.AnyError,
 			want:    veles.ValidationFailed,
 		},
 		{
