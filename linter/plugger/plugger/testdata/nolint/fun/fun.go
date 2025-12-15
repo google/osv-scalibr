@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains fakes that can be used to test parts of Veles as
-// well as integrations.
-//
-//nolint:plugger // This package contains test only mocks
-package velestest
+package fun
+
+import "testdata/basic"
+
+func NewPlugin() basic.MyPlugin {
+	return &basic.PluginA{}
+}
+
+//nolint:plugger // This function is meant to be used only in testing as it returns the same plugin as fun.NewPlugin
+func NewPluginAlias(something string) basic.MyPlugin {
+	return &basic.PluginA{}
+}
