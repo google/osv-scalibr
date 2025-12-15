@@ -55,8 +55,9 @@ func (*Enricher) Version() int { return 0 }
 // Requirements of rust reachability enricher.
 func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		Network:       plugin.NetworkOnline,
 		DirectFS:      true,
+		Network:       plugin.NetworkOnline,
+		OS:            plugin.OSLinux,
 		RunningSystem: true,
 	}
 }
@@ -223,7 +224,6 @@ func rustBuildSource(ctx context.Context, path string, targetDir string) ([]stri
 
 		fileSplit := strings.Split(string(file), ": ")
 		if len(fileSplit) != 2 {
-			// TODO: this can probably be fixed with more effort
 			return nil, errors.New("file path contains ': ', which is unsupported")
 		}
 		resultBinaryPaths = append(resultBinaryPaths, fileSplit[0])
