@@ -24,6 +24,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	pypiresolve "deps.dev/util/resolve/pypi"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
@@ -66,27 +67,27 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{requirements.Name}
 }
 
-// NewDefault returns a new enricher with the default configuration.
-func NewDefault() enricher.Enricher {
-	return &Enricher{
-		// Empty string indicates using default registry and no local registry.
-		Client: resolution.NewPyPIRegistryClient("", ""),
-	}
-}
-
-// NewEnricher creates a new Enricher.
-func NewEnricher(client resolve.Client) *Enricher {
-	return &Enricher{
-		Client: client,
-	}
+// New creates a new Enricher.
+func New(cfg *cpb.PluginConfig) enricher.Enricher {
+	client := resolution.NewPyPIRegistryClient("", "")
+	client.SetLocalRegistry(cfg.LocalRegistry)
+	return &Enricher{Client: client}
 }
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := groupPackages(inv.Packages)
 	for path, pkgMap := range pkgGroups {
-		list := make([]*extractor.Package, 0, len(pkgMap))
+		packages := make([]packageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
+			packages = append(packages, indexPkg)
+		}
+		slices.SortFunc(packages, func(a, b packageWithIndex) int {
+			return a.index - b.index
+		})
+
+		list := make([]*extractor.Package, 0, len(packages))
+		for _, indexPkg := range packages {
 			list = append(list, indexPkg.pkg)
 		}
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {

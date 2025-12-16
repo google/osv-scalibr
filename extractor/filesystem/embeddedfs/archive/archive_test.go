@@ -22,25 +22,85 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		path string
-		want bool
+		desc                  string
+		path                  string
+		fileSize              int64
+		maxFileSize           int64
+		pluginSpecificMaxSize int64
+		want                  bool
 	}{
-		{"archive.tar.gz", true},
-		{"archive.tar", true},
-		{"document.txt", false},
-		{"noextension", false},
+		{
+			desc: "tar.gz",
+			path: "archive.tar.gz",
+			want: true,
+		},
+		{
+			desc: "tar",
+			path: "archive.tar",
+			want: true,
+		},
+		{
+			desc: "unsupported_extension",
+			path: "document.txt",
+			want: false,
+		},
+		{
+			desc: "no_extension",
+			path: "noextension",
+			want: false,
+		},
+		{
+			desc:        "file_size_below_limit",
+			path:        "archive.tar.gz",
+			fileSize:    1000,
+			maxFileSize: 1000,
+			want:        true,
+		},
+		{
+			desc:        "file_size_above_limit",
+			path:        "archive.tar.gz",
+			fileSize:    1001,
+			maxFileSize: 1000,
+			want:        false,
+		},
+		{
+			desc:                  "override_global_size_below_limit",
+			path:                  "archive.tar.gz",
+			fileSize:              1001,
+			maxFileSize:           1000,
+			pluginSpecificMaxSize: 1001,
+			want:                  true,
+		},
+		{
+			desc:                  "override_global_size_above_limit",
+			path:                  "archive.tar.gz",
+			fileSize:              1001,
+			maxFileSize:           1001,
+			pluginSpecificMaxSize: 1000,
+			want:                  false,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			if got := archive.New().FileRequired(simplefileapi.New(tt.path, nil)); got != tt.want {
+		t.Run(tt.desc, func(t *testing.T) {
+			e := archive.New(&cpb.PluginConfig{
+				MaxFileSizeBytes: tt.maxFileSize,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Archive{Archive: &cpb.ArchiveConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
+				},
+			})
+			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileSize: tt.fileSize,
+			})); got != tt.want {
 				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
@@ -79,7 +139,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := archive.New()
+			e := archive.New(&cpb.PluginConfig{})
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 

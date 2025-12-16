@@ -66,7 +66,7 @@ func TestExtract(t *testing.T) {
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name: "valid .tool-versions ",
+			name: "valid_.tool-versions_",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/simpleValid/.tool-versions",
 			},
@@ -83,7 +83,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple versions",
+			name: "valid_.tool-versions_multiple_versions",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersions/.tool-versions",
 			},
@@ -118,7 +118,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple versions with skip values",
+			name: "valid_.tool-versions_multiple_versions_with_skip_values",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersionWithSkip/.tool-versions",
 			},
@@ -153,7 +153,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple lines",
+			name: "valid_.tool-versions_multiple_lines",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiLine/.tool-versions",
 			},
@@ -179,7 +179,7 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		}, {
-			name: "valid .tool-versions more whitespaces",
+			name: "valid_.tool-versions_more_whitespaces",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validWhiteSpaces/.tool-versions",
 			},
@@ -197,7 +197,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid .tool-versions ",
+			name: "invalid_.tool-versions_",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid/.tool-versions",
 			},

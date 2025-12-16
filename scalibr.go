@@ -49,6 +49,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -112,6 +114,11 @@ type ScanConfig struct {
 	// Optional: If set, this function is called for each file to check if there is a specific
 	// extractor for this file. If it returns an extractor, only that extractor is used for the file.
 	ExtractorOverride func(filesystem.FileAPI) []filesystem.Extractor
+	// Optional: If set, SCALIBR returns an error when a plugin's required plugin
+	// isn't configured instead of enabling required plugins automatically.
+	ExplicitPlugins bool
+	// Optional: Configuration to apply to auto-enabled required plugins.
+	RequiredPluginConfig *cpb.PluginConfig
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled
@@ -140,7 +147,13 @@ func (cfg *ScanConfig) EnableRequiredPlugins() error {
 		if _, enabled := enabledPlugins[p]; enabled {
 			continue
 		}
-		requiredPlugin, err := pl.FromName(p)
+		if cfg.ExplicitPlugins {
+			// Plugins need to be explicitly enabled,
+			// so we log an error instead of auto-enabling them.
+			return fmt.Errorf("required plugin %q not enabled", p)
+		}
+
+		requiredPlugin, err := pl.FromName(p, cfg.RequiredPluginConfig)
 		// TODO: b/416106602 - Implement transitive enablement for required enrichers.
 		if err != nil {
 			return fmt.Errorf("required plugin %q not present in any list.go: %w", p, err)
@@ -487,7 +500,7 @@ func cmpStatus(a, b *plugin.Status) int {
 }
 
 func cmpPackageVulns(a, b *inventory.PackageVuln) int {
-	return cmpString(a.ID, b.ID)
+	return cmpString(a.Vulnerability.Id, b.Vulnerability.Id)
 }
 
 func cmpGenericFindings(a, b *inventory.GenericFinding) int {

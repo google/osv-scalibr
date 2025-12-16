@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
@@ -79,16 +80,21 @@ type gdgtInfo struct {
 }
 
 // Extractor implements the filesystem.Extractor interface for vmdk.
-type Extractor struct{}
-
-// New returns a new VMDK extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+type Extractor struct {
+	// maxFileSizeBytes is the maximum size of an archive file that can be traversed.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored.
+	maxFileSizeBytes int64
 }
 
-// NewDefault returns a New()
-func NewDefault() filesystem.Extractor {
-	return New()
+// New returns a new VMDK extractor.
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.VMDKConfig { return c.GetVmdk() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxSize = specific.GetMaxFileSizeBytes()
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}
 }
 
 // Name returns the name of the extractor.
@@ -109,7 +115,20 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 // FileRequired checks if the file is a .vmdk file based on its extension.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	return strings.HasSuffix(strings.ToLower(path), ".vmdk")
+	if !strings.HasSuffix(strings.ToLower(path), ".vmdk") {
+		return false
+	}
+
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		return false
+	}
+
+	return true
 }
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vmdk file.

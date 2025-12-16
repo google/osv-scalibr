@@ -17,7 +17,6 @@ package proto
 import (
 	"reflect"
 
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -37,65 +36,67 @@ import (
 	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
+
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 var (
 	metadataTypeToStructConverter = map[reflect.Type]func(*spb.Package) any{
-		reflect.TypeOf(&spb.Package_PythonMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_PythonMetadata](): func(p *spb.Package) any {
 			return wheelegg.ToStruct(p.GetPythonMetadata())
 		},
-		reflect.TypeOf(&spb.Package_JavascriptMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_JavascriptMetadata](): func(p *spb.Package) any {
 			return javascriptmeta.ToStruct(p.GetJavascriptMetadata())
 		},
-		reflect.TypeOf(&spb.Package_DepsjsonMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_DepsjsonMetadata](): func(p *spb.Package) any {
 			return depsjson.ToStruct(p.GetDepsjsonMetadata())
 		},
-		reflect.TypeOf(&spb.Package_NetportsMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_NetportsMetadata](): func(p *spb.Package) any {
 			return netports.ToStruct(p.GetNetportsMetadata())
 		},
-		reflect.TypeOf(&spb.Package_ApkMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_ApkMetadata](): func(p *spb.Package) any {
 			return apkmeta.ToStruct(p.GetApkMetadata())
 		},
-		reflect.TypeOf(&spb.Package_DpkgMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_DpkgMetadata](): func(p *spb.Package) any {
 			return dpkgmeta.ToStruct(p.GetDpkgMetadata())
 		},
-		reflect.TypeOf(&spb.Package_SnapMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_SnapMetadata](): func(p *spb.Package) any {
 			return snapmeta.ToStruct(p.GetSnapMetadata())
 		},
-		reflect.TypeOf(&spb.Package_RpmMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_RpmMetadata](): func(p *spb.Package) any {
 			return rpmmeta.ToStruct(p.GetRpmMetadata())
 		},
-		reflect.TypeOf(&spb.Package_CosMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_CosMetadata](): func(p *spb.Package) any {
 			return cosmeta.ToStruct(p.GetCosMetadata())
 		},
-		reflect.TypeOf(&spb.Package_PacmanMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_PacmanMetadata](): func(p *spb.Package) any {
 			return pacmanmeta.ToStruct(p.GetPacmanMetadata())
 		},
-		reflect.TypeOf(&spb.Package_PortageMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_PortageMetadata](): func(p *spb.Package) any {
 			return portagemeta.ToStruct(p.GetPortageMetadata())
 		},
-		reflect.TypeOf(&spb.Package_FlatpakMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_FlatpakMetadata](): func(p *spb.Package) any {
 			return flatpakmeta.ToStruct(p.GetFlatpakMetadata())
 		},
-		reflect.TypeOf(&spb.Package_NixMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_NixMetadata](): func(p *spb.Package) any {
 			return nixmeta.ToStruct(p.GetNixMetadata())
 		},
-		reflect.TypeOf(&spb.Package_MacAppsMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_MacAppsMetadata](): func(p *spb.Package) any {
 			return macapps.ToStruct(p.GetMacAppsMetadata())
 		},
-		reflect.TypeOf(&spb.Package_AsdfMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_AsdfMetadata](): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
 		},
-		reflect.TypeOf(&spb.Package_NvmMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_NvmMetadata](): func(p *spb.Package) any {
 			return nvmmeta.ToStruct(p.GetNvmMetadata())
 		},
-		reflect.TypeOf(&spb.NodeVersionMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.NodeVersionMetadata](): func(p *spb.Package) any {
 			return nodeversionmeta.ToStruct(p.GetNodeversionMetadata())
 		},
-		reflect.TypeOf(&spb.Package_MacportsMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_MacportsMetadata](): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
-		reflect.TypeOf(&spb.Package_WingetMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_WingetMetadata](): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
 		},
 	}

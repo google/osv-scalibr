@@ -93,7 +93,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | uv.lock                                   | `python/uvlock`                      |
 | R          | renv.lock                                 | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                    | `ruby/gemspec`                       |
-|            | Gemfile.lock (OSV)                        | `ruby/gemfilelock`                   |
+|            | Gemfile.lock, gems.locked                 | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                | `rust/cargolock`                     |
 |            | Cargo.toml                                | `rust/cargotoml`                     |
 |            | Rust binaries                             | `rust/cargoauditable`                |
@@ -109,10 +109,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                              | Extractor Plugin                     |
-|-----------------------------------|--------------------------------------|
+| Type                                        | Extractor Plugin                     |
+|---------------------------------------------|--------------------------------------|
+| AWS access key                              | `secrets/awsaccesskey`               |
+| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`      |
+| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
 | Anthropic API key                           | `secrets/anthropicapikey`            |
 | Azure Token                                 | `secrets/azuretoken`                 |
+| Bitbucket                                   | `secrets/bitbucketcredentials`       |
 | Crates.io API Token                         | `secrets/cratesioapitoken`           |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
 | Docker hub PAT                              | `secrets/dockerhubpat`               |
@@ -121,6 +125,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | GCP service account key                     | `secrets/gcpsak`                     |
 | GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
 | GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
+| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                 |
 | Gitlab PAT                                  | `secrets/gitlabpat`                  |
 | Grok xAI API key                            | `secrets/grokxaiapikey`              |
 | Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |
@@ -129,6 +134,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`          |
+| MariaDB Credentials                         | `secrets/mariadb`                    |
+| Mysql Mylogin                               | `secrets/mysqlmylogin`               |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
@@ -148,6 +155,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
+| Vapid keys                                  | `secrets/vapidkey`                   |
+| reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
+| Generic JWT tokens                          | `secrets/jwttoken`                   |
+| pyx user key v1                             | `secrets/pyxkeyv1`                   |
+| pyx user key v2                             | `secrets/pyxkeyv2`                   |
 
 ### Container inventory
 
@@ -182,14 +194,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi      | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
-| ova      | Extracts .ova files                               | `embeddedfs/ova`     |
 
 ## Detectors
 
 | Description                                                          | Plugin Name                              |
 |----------------------------------------------------------------------|------------------------------------------|
 | Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
-| Finds vulns in Go binaries with reachability data using govunlcheck. | `govulncheck/binary`                     |
+| Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
 | Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
 | Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
 | Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
@@ -213,6 +224,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 pp| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`   |
 | Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg` |
 | Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`          |
+| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`       |
 
 ## Enrichers
 
@@ -221,5 +233,9 @@ pp| Adds VEX statements for language packages already found by the RPM OS extrac
 | Extracts details about the base image a software package was added in      | `baseimage`                         |
 | Filters findings that have VEX statements.                                 | `vex/filter`                        |
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
+| Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
+| Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
+| Adds license data to software packages                                     | `license/depsdev`                   |
+| Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |

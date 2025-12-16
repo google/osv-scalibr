@@ -46,7 +46,7 @@ func TestToCDX(t *testing.T) {
 		want       *cyclonedx.BOM
 	}{
 		{
-			desc: "Package with custom config",
+			desc: "Package_with_custom_config",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -94,7 +94,7 @@ func TestToCDX(t *testing.T) {
 			},
 		},
 		{
-			desc: "Package with custom config and cdx-component-type",
+			desc: "Package_with_custom_config_and_cdx-component-type",
 			scanResult: &scalibr.ScanResult{
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{{
@@ -172,7 +172,7 @@ func TestToPURL(t *testing.T) {
 		onGoos string
 	}{
 		{
-			desc: "Valid package extractor",
+			desc: "Valid_package_extractor",
 			pkg: &extractor.Package{
 				Name:      "software",
 				Version:   "1.0.0",

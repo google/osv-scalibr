@@ -136,7 +136,7 @@ func TestPersonString(t *testing.T) {
 			want:  "",
 		},
 		{
-			desc: "person with no name",
+			desc: "person_with_no_name",
 			input: &metadata.Person{
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -144,7 +144,7 @@ func TestPersonString(t *testing.T) {
 			want: "",
 		},
 		{
-			desc: "person with no email",
+			desc: "person_with_no_email",
 			input: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
@@ -152,7 +152,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer (http://dev.blog.com)",
 		},
 		{
-			desc: "person with no url",
+			desc: "person_with_no_url",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -160,7 +160,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer <dev@corp.com>",
 		},
 		{
-			desc: "person object",
+			desc: "person_object",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -243,13 +243,13 @@ func TestSetProto(t *testing.T) {
 		want *pb.Package
 	}{
 		{
-			desc: "nil metadata",
+			desc: "nil_metadata",
 			m:    nil,
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{Name: "some-package"},
 		},
 		{
-			desc: "nil package",
+			desc: "nil_package",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -260,7 +260,7 @@ func TestSetProto(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "set metadata",
+			desc: "set_metadata",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -280,7 +280,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "override metadata",
+			desc: "override_metadata",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-other-author",
@@ -307,7 +307,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -355,7 +355,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set public registry NPMResolutionSource",
+			desc: "set_public_registry_NPMResolutionSource",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -375,7 +375,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set other NPMResolutionSource",
+			desc: "set_other_NPMResolutionSource",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -395,7 +395,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set local NPMResolutionSource",
+			desc: "set_local_NPMResolutionSource",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -453,7 +453,7 @@ func TestToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author",
 			},
@@ -465,7 +465,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Maintainers: []string{
@@ -507,7 +507,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "set public registry NPMResolutionSource",
+			desc: "set_public_registry_NPMResolutionSource",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Source: pb.PackageSource_PUBLIC_REGISTRY,
@@ -521,7 +521,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "set other NPMResolutionSource",
+			desc: "set_other_NPMResolutionSource",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Source: pb.PackageSource_OTHER,
@@ -535,7 +535,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "set local NPMResolutionSource",
+			desc: "set_local_NPMResolutionSource",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Source: pb.PackageSource_LOCAL,

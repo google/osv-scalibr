@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	dl "github.com/google/osv-scalibr/detector/list"
 )
 
@@ -30,7 +31,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			name := initer().Name()
+			name := initer(&cpb.PluginConfig{}).Name()
 			if !reValidName.MatchString(name) {
 				t.Errorf("Invalid plugin name %q", name)
 			}
@@ -46,21 +47,21 @@ func TestDetectorsFromName(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			desc: "Find all detectors of a type",
+			desc: "Find_all_detectors_of_a_type",
 			name: "cis",
 			wantDets: []string{
 				"cis/generic-linux/etcpasswdpermissions",
 			},
 		},
 		{
-			desc: "Find misc detectors",
+			desc: "Find_misc_detectors",
 			name: "misc",
 			wantDets: []string{
 				"dockersocket",
 			},
 		},
 		{
-			desc: "Find weak credentials detectors",
+			desc: "Find_weak_credentials_detectors",
 			name: "weakcredentials",
 			wantDets: []string{
 				"weakcredentials/codeserver",
@@ -79,7 +80,7 @@ func TestDetectorsFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := dl.DetectorsFromName(tc.name)
+			got, err := dl.DetectorsFromName(tc.name, &cpb.PluginConfig{})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("dl.DetectorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

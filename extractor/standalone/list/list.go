@@ -28,35 +28,37 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func() standalone.Extractor
+type InitFn func(cfg *cpb.PluginConfig) standalone.Extractor
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
 
 var (
 	// Windows standalone extractors.
-	Windows = InitMap{dismpatch.Name: {dismpatch.New}}
+	Windows = InitMap{dismpatch.Name: {noCFG(dismpatch.New)}}
 
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = InitMap{
-		ospackages.Name:    {ospackages.NewDefault},
-		regosversion.Name:  {regosversion.NewDefault},
-		regpatchlevel.Name: {regpatchlevel.NewDefault},
+		ospackages.Name:    {noCFG(ospackages.NewDefault)},
+		regosversion.Name:  {noCFG(regosversion.NewDefault)},
+		regpatchlevel.Name: {noCFG(regpatchlevel.NewDefault)},
 	}
 
 	// OSExperimental defines experimental OS extractors.
 	OSExperimental = InitMap{
-		netports.Name: {netports.New},
+		netports.Name: {noCFG(netports.New)},
 	}
 
 	// Containers standalone extractors.
 	Containers = InitMap{
-		containerd.Name: {containerd.NewDefault},
-		docker.Name:     {docker.New},
+		containerd.Name: {noCFG(containerd.NewDefault)},
+		docker.Name:     {noCFG(docker.New)},
 	}
 
 	// Default standalone extractors.
@@ -89,12 +91,18 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
+// Wraps initer functions that don't take any config value to initer functions that do.
+// TODO(b/400910349): Remove once all plugins take config values.
+func noCFG(f func() standalone.Extractor) InitFn {
+	return func(_ *cpb.PluginConfig) standalone.Extractor { return f() }
+}
+
 // ExtractorsFromName returns a list of extractors from a name.
-func ExtractorsFromName(name string) ([]standalone.Extractor, error) {
+func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]standalone.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
 		result := []standalone.Extractor{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			result = append(result, initer(cfg))
 		}
 		return result, nil
 	}

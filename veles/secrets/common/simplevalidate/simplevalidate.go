@@ -18,6 +18,7 @@ package simplevalidate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,106 +34,58 @@ import (
 type Validator[S veles.Secret] struct {
 	// The API endpoint to query.
 	Endpoint string
+	// Function that constructs the endpoint for a given secret.
+	// Exactly one of Endpoint or EndpointFunc must be provided.
+	// If EndpointFunc returns an error, Validate returns ValidationFailed and the error.
+	EndpointFunc func(S) (string, error)
 	// The HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
 	HTTPMethod string
 	// HTTP headers to set in the query based on the secret.
 	HTTPHeaders func(S) map[string]string
-	// The body to set in the query based on the secret
-	Body func(S) string
+	// The body to set in the query based on the secret.
+	// If Body returns an error, Validate returns ValidationFailed and the error.
+	Body func(S) (string, error)
 	// Status codes that should result in a "ValidationValid" validation result.
 	ValidResponseCodes []int
 	// Status codes that should result in a "ValidationInvalid" validation result.
 	InvalidResponseCodes []int
 	// Additional custom validation logic to perform on the response body. Will run if none of the
 	// status codes from ValidResponseCodes and InvalidResponseCodes have been found.
-	StatusFromResponseBody func(body []byte) (veles.ValidationStatus, error)
-	httpC                  *http.Client
-}
-
-// Option configures a Validator when creating it.
-type Option[S veles.Secret] func(*Validator[S])
-
-// New creates a new Validator with the given options.
-func New[S veles.Secret](opts ...Option[S]) *Validator[S] {
-	v := &Validator[S]{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// WithClient configures the HTTP client this validator should use. Defaults to http.DefaultClient.
-func WithClient[S veles.Secret](c *http.Client) Option[S] {
-	return func(v *Validator[S]) {
-		v.httpC = c
-	}
-}
-
-// WithEndpoint configures the API endpoint to query.
-func WithEndpoint[S veles.Secret](e string) Option[S] {
-	return func(v *Validator[S]) {
-		v.Endpoint = e
-	}
-}
-
-// WithHTTPMethod configures HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
-func WithHTTPMethod[S veles.Secret](m string) Option[S] {
-	return func(v *Validator[S]) {
-		v.HTTPMethod = m
-	}
-}
-
-// WithHTTPHeaders configures HTTP headers to set in the query based on the secret.
-func WithHTTPHeaders[S veles.Secret](h func(S) map[string]string) Option[S] {
-	return func(v *Validator[S]) {
-		v.HTTPHeaders = h
-	}
-}
-
-// WithBody configures the request body to set in the query based on the secret.
-func WithBody[S veles.Secret](b func(S) string) Option[S] {
-	return func(v *Validator[S]) {
-		v.Body = b
-	}
-}
-
-// WithValidResponseCodes configures status codes that should result in a
-// "ValidationValid" validation result.
-func WithValidResponseCodes[S veles.Secret](r []int) Option[S] {
-	return func(v *Validator[S]) {
-		v.ValidResponseCodes = r
-	}
-}
-
-// WithInvalidResponseCodes configures status codes that should result in a
-// "ValidationInvalid" validation result.
-func WithInvalidResponseCodes[S veles.Secret](r []int) Option[S] {
-	return func(v *Validator[S]) {
-		v.InvalidResponseCodes = r
-	}
-}
-
-// WithStatusFromResponseBody configures the function that performs additional custom validation
-// on the response body. This will only run if none of the status codes from ValidResponseCodes
-// and InvalidResponseCodes have been found.
-func WithStatusFromResponseBody[S veles.Secret](f func(body []byte) (veles.ValidationStatus, error)) Option[S] {
-	return func(v *Validator[S]) {
-		v.StatusFromResponseBody = f
-	}
+	StatusFromResponseBody func(body io.Reader) (veles.ValidationStatus, error)
+	// The HTTP client to use for the network queries. Uses http.DefaultClient if nil.
+	HTTPC *http.Client
 }
 
 // Validate validates a secret with a simple HTTP request.
 func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.ValidationStatus, error) {
+	if v.HTTPC == nil {
+		v.HTTPC = http.DefaultClient
+	}
+
+	if (v.Endpoint == "" && v.EndpointFunc == nil) || (v.Endpoint != "" && v.EndpointFunc != nil) {
+		return veles.ValidationFailed, errors.New("exactly one of Endpoint or EndpointFunc must be specified")
+	}
+
+	endpoint := v.Endpoint
+	if v.EndpointFunc != nil {
+		endpointURL, err := v.EndpointFunc(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
+		endpoint = endpointURL
+	}
+
 	var reqBodyReader io.Reader
 	if v.Body != nil {
-		reqBody := v.Body(secret)
+		reqBody, err := v.Body(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
 		if len(reqBody) > 0 {
 			reqBodyReader = strings.NewReader(reqBody)
 		}
 	}
-	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, v.Endpoint, reqBodyReader)
+	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
 	}
@@ -141,7 +94,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 			req.Header.Set(key, val)
 		}
 	}
-	res, err := v.httpC.Do(req)
+	res, err := v.HTTPC.Do(req)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("HTTP %s failed: %w", v.HTTPMethod, err)
 	}
@@ -154,12 +107,11 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		return veles.ValidationInvalid, nil
 	}
 
-	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
 	}
 	if v.StatusFromResponseBody != nil {
-		return v.StatusFromResponseBody(body)
+		return v.StatusFromResponseBody(res.Body)
 	}
 
 	return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)

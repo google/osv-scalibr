@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -115,10 +116,10 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := gobinary.New(gobinary.Config{
-				Stats:            collector,
+			e := gobinary.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 			})
+			e.(*gobinary.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -145,7 +146,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
-		cfg              *gobinary.Config
+		cfg              *cpb.PluginConfig
 		path             string
 		wantPackages     []*extractor.Package
 		wantErr          error
@@ -237,17 +238,17 @@ func TestExtract(t *testing.T) {
 			wantPackages: createPackages(append(BinaryWithModulesPackagesNginx, goPackage("k8s.io/ingress-nginx", "(devel)")), "testdata/nginx-ingress-controller"),
 		},
 		{
-			name: "nginx-ingress-controller with version from content on",
+			name: "nginx-ingress-controller_with_version_from_content_on",
 			path: "testdata/nginx-ingress-controller",
-			cfg: func() *gobinary.Config {
-				cfg := gobinary.DefaultConfig()
-				cfg.VersionFromContent = true
-				return &cfg
-			}(),
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
 			wantPackages: createPackages(append(BinaryWithModulesPackagesNginx, goPackage("k8s.io/ingress-nginx", "1.11.4")), "testdata/nginx-ingress-controller"),
 		},
 		{
-			name:             "dummy file that fails to parse will log an error metric, but won't fail extraction",
+			name:             "dummy file that fails to parse will log an error, but won't fail extraction",
 			path:             "testdata/dummy",
 			wantPackages:     nil,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
@@ -271,13 +272,12 @@ func TestExtract(t *testing.T) {
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
 
-			cfg := gobinary.DefaultConfig()
-			if tt.cfg != nil {
-				cfg = *tt.cfg
+			if tt.cfg == nil {
+				tt.cfg = &cpb.PluginConfig{}
 			}
-			cfg.Stats = collector
 
-			e := gobinary.New(cfg)
+			e := gobinary.New(tt.cfg)
+			e.(*gobinary.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)

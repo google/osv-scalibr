@@ -15,66 +15,34 @@
 package gitlabpat
 
 import (
-	"context"
-	"fmt"
 	"net/http"
+	"time"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Gitlab PATs via the Gitlab API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+const (
+	httpClientTimeout = 10 * time.Second
+	gitlabAPIEndpoint = "https://gitlab.com/api/v4/personal_access_tokens/self"
+)
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given GitlabPAT is valid.
+// NewValidator creates a new Validator for Gitlab PATs via the Gitlab API endpoint.
 //
 // It performs a GET request to the gitlab.com access token endpoint
 // using the PAT in the PRIVATE-TOKEN header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, pat GitlabPAT) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://gitlab.com/api/v4/personal_access_tokens/self", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("PRIVATE-TOKEN", pat.Pat) //nolint:canonicalheader
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+func NewValidator() *simplevalidate.Validator[GitlabPAT] {
+	return &simplevalidate.Validator[GitlabPAT]{
+		Endpoint:   gitlabAPIEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(secret GitlabPAT) map[string]string {
+			return map[string]string{
+				"PRIVATE-TOKEN": secret.Pat,
+			}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC:                &http.Client{Timeout: httpClientTimeout},
 	}
 }

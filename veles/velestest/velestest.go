@@ -14,4 +14,6 @@
 
 // Package velestest contains fakes that can be used to test parts of Veles as
 // well as integrations.
+//
+//nolint:plugger // This package contains test only mocks
 package velestest

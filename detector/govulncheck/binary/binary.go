@@ -32,8 +32,10 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/vuln/scan"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -44,12 +46,15 @@ const (
 // Detector is a SCALIBR Detector that uses govulncheck to scan for vulns on Go binaries found
 // on the filesystem.
 type Detector struct {
-	OfflineVulnDBPath string
+	offlineVulnDBPath string
 }
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
+func New(cfg *cpb.PluginConfig) detector.Detector {
+	d := &Detector{}
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GovulncheckConfig { return c.GetGovulncheck() })
+	d.offlineVulnDBPath = specific.GetOfflineVulnDbPath()
+	return d
 }
 
 // Name of the detector.
@@ -61,7 +66,7 @@ func (Detector) Version() int { return 0 }
 // Requirements of the detector.
 func (d Detector) Requirements() *plugin.Capabilities {
 	net := plugin.NetworkOnline
-	if d.OfflineVulnDBPath == "" {
+	if d.offlineVulnDBPath == "" {
 		net = plugin.NetworkAny
 	}
 	return &plugin.Capabilities{Network: net, DirectFS: true}
@@ -117,8 +122,8 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 	fullPath := path.Join(scanRoot, binaryPath)
 	log.Debugf("Running govulncheck on go binary %v", fullPath)
 	args := []string{"--mode=binary", "--json"}
-	if d.OfflineVulnDBPath != "" {
-		args = append(args, "-db=file://"+d.OfflineVulnDBPath)
+	if d.offlineVulnDBPath != "" {
+		args = append(args, "-db=file://"+d.offlineVulnDBPath)
 	}
 	args = append(args, fullPath)
 	cmd := scan.Command(ctx, args...)
@@ -135,8 +140,8 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 }
 
 func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
-	result := []*inventory.PackageVuln{}
-	allOSVs := make(map[string]*osvschema.Vulnerability)
+	var result []*inventory.PackageVuln
+	allOSVs := make(map[string]*osvpb.Vulnerability)
 	detectedOSVs := make(map[string]struct{}) // osvs detected at the symbol level
 	dec := json.NewDecoder(bytes.NewReader(out.Bytes()))
 	for dec.More() {
@@ -145,7 +150,7 @@ func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
 			return nil, err
 		}
 		if msg.OSV != nil {
-			allOSVs[msg.OSV.ID] = msg.OSV
+			allOSVs[msg.OSV.Id] = msg.OSV
 		}
 		if msg.Finding != nil {
 			trace := msg.Finding.Trace
@@ -159,7 +164,7 @@ func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
 	// create scalibr findings for detected govulncheck findings
 	for osvID := range detectedOSVs {
 		osv := allOSVs[osvID]
-		result = append(result, &inventory.PackageVuln{Vulnerability: *osv})
+		result = append(result, &inventory.PackageVuln{Vulnerability: osv})
 	}
 	return result, nil
 }

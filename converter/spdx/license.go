@@ -59,8 +59,8 @@ func LicenseExpression(licenses []string) (string, stringset.Set) {
 		l := strings.ReplaceAll(l, " or ", " OR ")
 		if strings.Contains(l, " OR ") {
 			orLicenses := []string{}
-			orLicenseSplit := strings.Split(l, " OR ")
-			for _, ols := range orLicenseSplit {
+			orLicenseSplit := strings.SplitSeq(l, " OR ")
+			for ols := range orLicenseSplit {
 				spdxL, customL := spdxAndCustomLicenses(ols)
 				orLicenses = append(orLicenses, spdxL)
 				if customL != "" {
@@ -105,9 +105,8 @@ func cleanLicenseExpression(licenses []string) []string {
 // spdxAndCustomLicenses takes a single license, and returns just it (if it is a valid spdx license)
 // or the cleaned version of it for the reference, and the actual text
 func spdxAndCustomLicenses(l string) (string, string) {
-	_, ok := canonicalLicenses[l]
-	if ok {
-		return l, ""
+	if shortID, ok := ShortIdentifier(l); ok {
+		return shortID, ""
 	}
 	return spdxLicenceRef(l), l
 }

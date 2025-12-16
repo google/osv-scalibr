@@ -82,9 +82,8 @@ var (
 			Maintainer:        "maintainer",
 			Architecture:      "amd64",
 		},
-		Locations:             []string{"/file1"},
-		Plugins:               []string{dpkg.Name},
-		AnnotationsDeprecated: []extractor.Annotation{extractor.Transitional},
+		Locations: []string{"/file1"},
+		Plugins:   []string{dpkg.Name},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          dpkg.Name,
 			Justification:   vex.ComponentNotPresent,
@@ -118,9 +117,7 @@ var (
 		},
 		Locations: []string{"/file1"},
 		// TODO(b/400910349): Remove once integrators stop using these fields.
-		ExtractorDeprecated:   "os/dpkg",
-		Plugins:               []string{"os/dpkg"},
-		AnnotationsDeprecated: []spb.Package_AnnotationEnum{spb.Package_TRANSITIONAL},
+		Plugins: []string{"os/dpkg"},
 		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
 			Plugin:        dpkg.Name,
 			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
@@ -898,7 +895,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		excludeForOS []string // skip test for these operating systems
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1015,7 +1012,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful RPM scan linux-only",
+			desc: "Successful_RPM_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1052,7 +1049,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful PACMAN scan linux-only",
+			desc: "Successful_PACMAN_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1089,7 +1086,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful PORTAGE scan linux-only",
+			desc: "Successful_PORTAGE_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1126,7 +1123,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful Nix scan linux-only",
+			desc: "Successful_Nix_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1163,7 +1160,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful Homebrew scan darwin-only",
+			desc: "Successful_Homebrew_scan_darwin-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1200,7 +1197,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "linux"},
 		},
 		{
-			desc: "Successful winget scan windows-only",
+			desc: "Successful_winget_scan_windows-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1237,7 +1234,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"darwin", "linux"},
 		},
 		{
-			desc: "Successful containerd scan linux-only",
+			desc: "Successful_containerd_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1276,7 +1273,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful containerd runtime scan linux-only",
+			desc: "Successful_containerd_runtime_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1315,7 +1312,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "Successful docker scan",
+			desc: "Successful_docker_scan",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1351,7 +1348,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful podman runtime scan linux-only",
+			desc: "Successful_podman_runtime_scan_linux-only",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1388,7 +1385,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			excludeForOS: []string{"windows", "darwin"},
 		},
 		{
-			desc: "advisory without id, should error",
+			desc: "advisory_without_id,_should_error",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1426,7 +1423,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			wantErr: proto.ErrAdvisoryIDMissing,
 		},
 		{
-			desc: "no advisory, should error",
+			desc: "no_advisory,_should_error",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1458,7 +1455,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			wantErr: proto.ErrAdvisoryMissing,
 		},
 		{
-			desc: "Failed scan",
+			desc: "Failed_scan",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1498,7 +1495,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "pom.xml inventories with transitive dependencies",
+			desc: "pom.xml_inventories_with_transitive_dependencies",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1520,7 +1517,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "secret containing a GCP service account key",
+			desc: "secret_containing_a_GCP_service_account_key",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1541,7 +1538,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "secret containing a GCP service account key with extra information",
+			desc: "secret_containing_a_GCP_service_account_key_with_extra_information",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1562,7 +1559,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		{
-			desc: "package containing license data",
+			desc: "package_containing_license_data",
 			res: &scalibr.ScanResult{
 				Version:   "1.0.0",
 				StartTime: startTime,
@@ -1595,16 +1592,10 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
 			}
 
-			opts := []cmp.Option{
+			opts := append([]cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
-				// Ignore deprecated fields in the comparison.
-				// TODO(b/400910349): Stop setting the deprecated fields
-				// once integrators no longer read them.
-				protocmp.IgnoreFields(&spb.Package{}, "extractor_deprecated"),
-				protocmp.IgnoreFields(&spb.ScanResult{}, "inventories_deprecated"),
-				protocmp.IgnoreFields(&spb.ScanResult{}, "findings_deprecated"),
-			}
+			}, pkgOpts...)
 
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)
@@ -1612,6 +1603,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 
 			if err != nil {
 				return
+			}
+
+			gotStruct, err := proto.ScanResultFromProto(tc.want)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("proto.ScanResultToProto(%v) err: got %v, want %v", tc.res, err, tc.wantErr)
+			}
+			if diff := cmp.Diff(tc.res, gotStruct, opts...); diff != "" {
+				t.Errorf("proto.ScanResultToProto(%v) returned unexpected diff (-want +got):\n%s", tc.res, diff)
 			}
 
 			// TODO - b/421456154: test conversion of remaining types.

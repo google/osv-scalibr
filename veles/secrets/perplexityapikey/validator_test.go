@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
@@ -111,9 +110,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := perplexityapikey.NewValidator(
-				simplevalidate.WithClient[perplexityapikey.PerplexityAPIKey](client),
-			)
+			validator := perplexityapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
@@ -152,9 +150,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := perplexityapikey.NewValidator(
-		simplevalidate.WithClient[perplexityapikey.PerplexityAPIKey](client),
-	)
+	validator := perplexityapikey.NewValidator()
+	validator.HTTPC = client
 
 	key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
 
@@ -185,9 +182,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := perplexityapikey.NewValidator(
-		simplevalidate.WithClient[perplexityapikey.PerplexityAPIKey](client),
-	)
+	validator := perplexityapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
