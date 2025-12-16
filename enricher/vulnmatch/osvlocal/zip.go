@@ -153,10 +153,6 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		err = os.WriteFile(db.StoredAt, body, 0644)
 	}
 
-	if err != nil {
-		// cmdlogger.Warnf("Failed to save database to %s: %v", db.StoredAt, err)
-	}
-
 	return body, nil
 }
 
@@ -184,23 +180,17 @@ func mightAffectPackages(v *osvschema.Vulnerability, names []string) bool {
 func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 	file, err := zipFile.Open()
 	if err != nil {
-		// cmdlogger.Warnf("Could not read %s: %v", zipFile.Name, err)
-
 		return
 	}
 	defer file.Close()
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		// cmdlogger.Warnf("Could not read %s: %v", zipFile.Name, err)
-
 		return
 	}
 
 	vulnerability := &osvschema.Vulnerability{}
 	if err := protojson.Unmarshal(content, vulnerability); err != nil {
-		// cmdlogger.Warnf("%s is not a valid JSON file: %v", zipFile.Name, err)
-
 		return
 	}
 
