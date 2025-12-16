@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst
+// Package gitbasicauth contains common logic for git basic auth filesystem extractors.
+package gitbasicauth
 
 import (
-	"net/http"
-	"net/url"
+	"path/filepath"
 	"strings"
 
-	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 )
 
-// NewValidator creates a new Validator that validates CodeCatalyst credentials
-func NewValidator() *simplevalidate.Validator[Credentials] {
-	return gitbasicauth.NewValidator[Credentials](
-		func(u *url.URL) bool {
-			return strings.HasSuffix(u.Host, ".codecatalyst.aws")
-		},
-		[]int{http.StatusOK}, []int{http.StatusBadRequest},
-	)
+// FileRequired reports whether the plugin should scan the given file.
+//
+// The history.txt file is intentionally excluded because it is already
+// processed by the main secrets extractor.
+func FileRequired(api filesystem.FileAPI) bool {
+	path := filepath.ToSlash(api.Path())
+	return strings.HasSuffix(path, ".git/config") ||
+		strings.HasSuffix(path, ".git-credentials") ||
+		strings.HasSuffix(path, "_history")
 }

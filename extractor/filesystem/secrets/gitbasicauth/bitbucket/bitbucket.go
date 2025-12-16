@@ -12,27 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package codecatalyst extends the veles codecatalyst.Detector to search inside the git config and history files
-package codecatalyst
+// Package bitbucket extends the veles bitbucket.Detector to search inside the git config and history files
+package bitbucket
 
 import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
-
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 )
 
 const (
 	// Name is the name of the extractor
-	Name = "secrets/codecatalystcredentials"
+	Name = "secrets/bitbucketcredentials"
 	// Version is the version of the extractor
 	Version = 0
 )
 
-// New returns a filesystem.Extractor which extracts Amazon CodeCatalyst Credentials using the codecatalyst.Detector
+// New returns a filesystem.Extractor which extracts Bitbucket Credentials using the bitbucket.Detector
 func New() filesystem.Extractor {
 	return convert.FromVelesDetectorWithRequire(
-		codecatalyst.NewDetector(), Name, Version, gitbasicauth.FileRequired,
+		bitbucket.NewDetector(), Name, Version, gitbasicauth.FileRequired,
 	)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst
+package codecommit
 
 import (
 	"net/url"
@@ -31,10 +31,10 @@ const (
 
 var (
 	// urlPattern matches URLs containing basic authentication credentials.
-	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@git\.[^/]*codecatalyst\.aws/[^\s]*`)
+	urlPattern = regexp.MustCompile(`https://[^:\s]+:[^\s@]+@git-codecommit\.[a-zA-Z\-0-9]+\.amazonaws\.com/[^\s]+`)
 )
 
-// NewDetector creates and returns a new instance of the CodeCatalyst secret detector.
+// NewDetector creates and returns a new instance of the Bitbucket secret detector.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxURLLength,
