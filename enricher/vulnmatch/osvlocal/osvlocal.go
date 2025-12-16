@@ -5,7 +5,9 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+	scalibrversion "github.com/google/osv-scalibr/version"
 )
 
 const (
@@ -50,5 +52,28 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	dbs, err := newlocalMatcher("", "osv-scanner_scan/" + scalibrversion.ScannerVersion, true)
+
+	if err != nil {
+		return err
+	}
+
+	for _, pkg := range inv.Packages {
+		vulns, err := dbs.MatchVulnerabilities(ctx, pkg, inv.Packages)
+
+		if err != nil {
+			return err
+		}
+
+		for _, vuln := range vulns {
+			inv.PackageVulns = append(inv.PackageVulns, &inventory.PackageVuln{
+				Vulnerability:         vuln,
+				Package:               pkg,
+				ExploitabilitySignals: vex.FindingVEXFromPackageVEX(vuln.Id, pkg.ExploitabilitySignals),
+				Plugins:               []string{Name},
+			})
+		}
+	}
+
 	return nil
 }
