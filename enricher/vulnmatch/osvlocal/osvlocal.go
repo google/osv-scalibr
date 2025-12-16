@@ -2,8 +2,11 @@ package osvlocal
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -86,5 +89,37 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		}
 	}
 
+	// It's possible for other enrichers/detectors to have already added the same vulnerability
+	// for the same package, so we deduplicate and merge the results.
+	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
+
+	// return to the caller the initialQueryErr, which if not nil indicates that
+	// the list of vulnerabilities is not complete
 	return nil
+}
+
+// dedupPackageVulns deduplicate package vulnerabilities that have the same pkg and vulnID
+func dedupPackageVulns(vulns []*inventory.PackageVuln) []*inventory.PackageVuln {
+	if len(vulns) == 0 {
+		return vulns
+	}
+
+	type key struct {
+		pkg    *extractor.Package
+		vulnID string
+	}
+	dedupVulns := map[key]*inventory.PackageVuln{}
+
+	for _, vv := range vulns {
+		k := key{vv.Package, vv.Vulnerability.Id}
+		if v, ok := dedupVulns[k]; !ok {
+			dedupVulns[k] = vv
+		} else {
+			// use the latest (from OSV.dev) as source of truth
+			vv.Plugins = append(v.Plugins, vv.Plugins...)
+			dedupVulns[k] = vv
+		}
+	}
+
+	return slices.Collect(maps.Values(dedupVulns))
 }
