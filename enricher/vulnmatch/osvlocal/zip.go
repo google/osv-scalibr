@@ -150,7 +150,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 
 	if err == nil {
 		//nolint:gosec // being world readable is fine
-		err = os.WriteFile(db.StoredAt, body, 0644)
+		_ = os.WriteFile(db.StoredAt, body, 0644)
 	}
 
 	return body, nil
