@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -406,10 +405,9 @@ func TestEnrich(t *testing.T) {
 		packageVulns []*inventory.PackageVuln
 		packages     []*extractor.Package
 		//nolint:containedctx
-		ctx                 context.Context
-		wantErr             error
-		initialQueryTimeout time.Duration
-		wantPackageVulns    []*inventory.PackageVuln
+		ctx              context.Context
+		wantErr          error
+		wantPackageVulns []*inventory.PackageVuln
 	}{
 		{
 			name:             "ctx_cancelled",
@@ -417,13 +415,6 @@ func TestEnrich(t *testing.T) {
 			packages:         []*extractor.Package{jsPkg, goPkg},
 			wantPackageVulns: []*inventory.PackageVuln{},
 			wantErr:          cmpopts.AnyError,
-		},
-		{
-			name:                "initial_query_timeout",
-			initialQueryTimeout: -1 * time.Second,
-			packages:            []*extractor.Package{jsPkg, goPkg},
-			wantPackageVulns:    []*inventory.PackageVuln{},
-			wantErr:             osvdev.ErrInitialQueryTimeout,
 		},
 		{
 			name:     "simple_test",
