@@ -1,7 +1,8 @@
 package rust_test
 
 import (
-	"path/filepath"
+	"errors"
+	"os"
 	"runtime"
 	"testing"
 
@@ -13,234 +14,140 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var binaryPathsFile = "testdata/mock_data/mock_binarypaths.json"
+var extractedSymbolsFile = "testdata/mock_data/mock_extractedsymbols.json"
+var testProjPath = "testdata/real-rust-project"
 
 func Test_Enrich(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
-	e := rust.New()
-
 	tests := []struct {
-		name  string
-		input *enricher.ScanInput
-		inv   *inventory.Inventory
-		want  *inventory.Inventory
+		name          string
+		vulnFile      string
+		rustAvailable bool
+		wantErr       error
+		wantSignals   []*vex.FindingExploitabilitySignal
 	}{
 		{
-			name:  "empty_inventory",
-			input: mockInput(t, "testdata/rust-project"),
-			inv:   &inventory.Inventory{},
-			want:  &inventory.Inventory{},
+			name:          "rust_toolchain_not_available",
+			vulnFile:      "",
+			rustAvailable: false,
+			wantErr:       rust.ErrNoRustToolchain,
+			wantSignals:   nil,
 		},
 		{
-			name:  "vuln_func_level_data_not_exist",
-			input: mockInput(t, "testdata/rust-project"),
-			inv: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_func_level_data_not_exist"),
-								},
-							},
-						},
-						Package:               &extractor.Package{},
-						Plugins:               []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
-					},
-				},
-			},
-			want: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_func_level_data_not_exist"),
-								},
-							},
-						},
-						Package:               &extractor.Package{},
-						Plugins:               []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
-					},
+			name:          "empty_inventory",
+			vulnFile:      "",
+			rustAvailable: true,
+			wantErr:       nil,
+			wantSignals:   nil,
+		},
+		{
+			name:          "vuln_func_level_data_not_exist",
+			vulnFile:      "testdata/mock_data/vuln_nofunc.json",
+			rustAvailable: true,
+			wantErr:       nil,
+			wantSignals:   []*vex.FindingExploitabilitySignal{},
+		},
+		{
+			name:          "vuln_reachable",
+			vulnFile:      "testdata/mock_data/vuln_reachable.json",
+			rustAvailable: true,
+			wantErr:       nil,
+			wantSignals:   []*vex.FindingExploitabilitySignal{},
+		},
+		{
+			name:          "vuln_unreachable",
+			vulnFile:      "testdata/mock_data/vuln_unreachable.json",
+			rustAvailable: true,
+			wantErr:       nil,
+			wantSignals: []*vex.FindingExploitabilitySignal{
+				{
+					Plugin:        rust.Name,
+					Justification: vex.VulnerableCodeNotInExecutePath,
 				},
 			},
 		},
-		{
-			name:  "vuln_reachable",
-			input: mockInput(t, "testdata/rust-project"),
-			inv: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_reachable"),
-								},
-							},
-						},
-						Package:               &extractor.Package{},
-						Plugins:               []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
-					},
-				},
-			},
-			want: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_reachable"),
-								},
-							},
-						},
-						Package:               &extractor.Package{},
-						Plugins:               []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
-					},
-				},
-			},
-		},
-		{
-			name:  "vuln_unreachable",
-			input: mockInput(t, "testdata/rust-project"),
-			inv: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_unreachable"),
-								},
-							},
-						},
-						Package:               &extractor.Package{},
-						Plugins:               []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
-					},
-				},
-			},
-			want: &inventory.Inventory{
-				PackageVulns: []*inventory.PackageVuln{
-					{
-						Vulnerability: &osvschema.Vulnerability{
-							Id: "RUSTSEC-2020-0071",
-							Affected: []*osvschema.Affected{
-								{
-									Package: &osvschema.Package{
-										Name:      "time",
-										Ecosystem: "crates.io",
-										Purl:      "pkg:cargo/time",
-									},
-									EcosystemSpecific: mockEcoSpecData(t, "vuln_unreachable"),
-								},
-							},
-						},
-						Package: &extractor.Package{},
-						Plugins: []string{},
-						ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{
-							Plugin:        rust.Name,
-							Justification: vex.VulnerableCodeNotInExecutePath,
-						},
-						},
-					},
-				},
-			},
+	}
+
+	input := &enricher.ScanInput{
+		ScanRoot: &fs.ScanRoot{
+			Path: testProjPath,
+			FS:   fs.DirFS("."),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := e.Enrich(t.Context(), tc.input, tc.inv)
+			mockCli, err := newMockClient(binaryPathsFile, extractedSymbolsFile, tc.rustAvailable)
 			if err != nil {
-				t.Errorf("Enrich() returns unexpected error:\n%v", err)
+				t.Fatalf("failed to create mock client: %v", err)
 			}
-			if diff := cmp.Diff(tc.want, tc.inv, protocmp.Transform()); diff != "" {
-				t.Errorf("Enrich() returned diff (-want +got):\n%s", diff)
+			e := rust.NewWithClient(mockCli)
+
+			var inv *inventory.Inventory
+			if tc.vulnFile != "" {
+				vuln := loadVuln(t, tc.vulnFile)
+				inv = setupInventory(t, vuln)
+			} else {
+				inv = &inventory.Inventory{}
+			}
+
+			err = e.Enrich(t.Context(), input, inv)
+
+			if err != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Errorf("Enrich() error = %v, wantErr %v", err, tc.wantErr)
+				}
+				return
+			}
+
+			if tc.vulnFile == "" {
+				if len(inv.PackageVulns) != 0 {
+					t.Errorf("expected 0 PackageVulns, got %d", len(inv.PackageVulns))
+				}
+				return
+			}
+
+			gotSignals := inv.PackageVulns[0].ExploitabilitySignals
+			if diff := cmp.Diff(tc.wantSignals, gotSignals, protocmp.Transform()); diff != "" {
+				t.Errorf("ExploitabilitySignals mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-// Make ScanInput with target scan root
-func mockInput(t *testing.T, root string) *enricher.ScanInput { //nolint:unparam
+func loadVuln(t *testing.T, path string) *osvschema.Vulnerability {
 	t.Helper()
-	p, err := filepath.Abs(root)
+	content, err := os.ReadFile(path)
 	if err != nil {
-		t.Errorf("cannot create ScanInput from provided scan root path")
+		t.Fatalf("failed to read vuln file %s: %v", path, err)
 	}
 
-	config := enricher.Config{
-		ScanRoot: &fs.ScanRoot{
-			Path: p,
-		},
+	vuln := &osvschema.Vulnerability{}
+	if err := protojson.Unmarshal(content, vuln); err != nil {
+		t.Fatalf("failed to unmarshal vuln from %s: %v", path, err)
 	}
 
-	return &enricher.ScanInput{
-		ScanRoot: config.ScanRoot,
-	}
+	return vuln
 }
 
-func mockEcoSpecData(t *testing.T, tcname string) *structpb.Struct {
+func setupInventory(t *testing.T, vuln *osvschema.Vulnerability) *inventory.Inventory {
 	t.Helper()
-	baseEcoSpec := map[string]any{
-		"affected_functions": nil,
-		"affects": map[string]any{
-			"functions": []any{}, // Default has no func level vuln data
-			"arch":      []any{},
-			"os":        []any{},
+	return &inventory.Inventory{
+		PackageVulns: []*inventory.PackageVuln{
+			{
+				Vulnerability:         vuln,
+				Package:               &extractor.Package{},
+				Plugins:               []string{},
+				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{},
+			},
 		},
 	}
-
-	switch tc := tcname; tc {
-	case "vuln_reachable":
-		// Vuln function now_utc is called in test project
-		baseEcoSpec["affects"].(map[string]any)["functions"] = []any{"time::OffsetDateTime::now_utc"}
-	case "vuln_unreachable":
-		baseEcoSpec["affects"].(map[string]any)["functions"] = []any{"time::OffsetDateTime::fake_func"}
-	}
-
-	ecoSpecStruct, err := structpb.NewStruct(baseEcoSpec)
-	if err != nil {
-		t.Fatalf("unexpected error creating mock ecosystem specific data: %v", err)
-	}
-
-	return ecoSpecStruct
 }

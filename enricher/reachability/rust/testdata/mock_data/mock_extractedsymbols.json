@@ -1,0 +1,6 @@
+[
+  "real_vuln_rust_project::main",
+  "smallvec::SmallVec::insert_many",
+  "smallvec::SmallVec::new",
+  "smallvec::SmallVec::push"
+]
