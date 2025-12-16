@@ -63,6 +63,13 @@ func Test_Enrich(t *testing.T) {
 			wantSignals:   []*vex.FindingExploitabilitySignal{},
 		},
 		{
+			name:          "vuln_fuzzymatch_reachable",
+			vulnFile:      "testdata/mock_data/vuln_fuzzymatch.json",
+			rustAvailable: true,
+			wantErr:       nil,
+			wantSignals:   []*vex.FindingExploitabilitySignal{},
+		},
+		{
 			name:          "vuln_unreachable",
 			vulnFile:      "testdata/mock_data/vuln_unreachable.json",
 			rustAvailable: true,
