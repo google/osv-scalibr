@@ -364,6 +364,16 @@ func TestEnrich(t *testing.T) {
 		}
 	)
 
+	// todo: the spec requires that at least one introduced event is present, which the local enricher
+	//  ends up depending on, but currently inventory.PackageToAffected does not include one
+	for _, vuln := range []*osvpb.Vulnerability{
+		&goVuln1, &goVuln2, &goVuln3,
+		&jsVuln1, &jsVuln2,
+		&pyPkgSameVulnAsFzf,
+	} {
+		vuln.Affected[0].Ranges[0].Events = []*osvpb.Event{{Introduced: "0"}, vuln.Affected[0].Ranges[0].Events[0]}
+	}
+
 	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "Go/all.zip") {
 			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
