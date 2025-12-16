@@ -120,7 +120,6 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 
 	if err != nil {
 		matcher.failedDBs[eco] = err
-		// cmdlogger.Errorf("could not load db for %s ecosystem: %v", eco, err)
 
 		return nil, err
 	}
