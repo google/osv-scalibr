@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package fakeserver contains test helpers for serving OSVs in zip files
 package fakeserver
 
 import (
@@ -14,6 +29,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// CreateZipServer setups up a new httptest.Server
 func CreateZipServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 
@@ -24,6 +40,7 @@ func CreateZipServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	return ts
 }
 
+// ComputeCRC32CHash computes the CRC32 hash for the given data
 func ComputeCRC32CHash(t *testing.T, data []byte) string {
 	t.Helper()
 
@@ -32,6 +49,8 @@ func ComputeCRC32CHash(t *testing.T, data []byte) string {
 	return base64.StdEncoding.EncodeToString(binary.BigEndian.AppendUint32([]byte{}, hash))
 }
 
+// WriteOSVsZip writes a zipfile containing the given OVSs to the response writer,
+// along with setting the x-goog-hash with the crc32 hash of the file
 func WriteOSVsZip(t *testing.T, w http.ResponseWriter, osvs map[string]*osvschema.Vulnerability) (int, error) {
 	t.Helper()
 
@@ -42,6 +61,7 @@ func WriteOSVsZip(t *testing.T, w http.ResponseWriter, osvs map[string]*osvschem
 	return w.Write(z)
 }
 
+// ZipOSVs creates a new in-memory zip file containing the given osvs
 func ZipOSVs(t *testing.T, osvs map[string]*osvschema.Vulnerability) []byte {
 	t.Helper()
 

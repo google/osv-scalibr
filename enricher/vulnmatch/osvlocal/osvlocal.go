@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package osvlocal uses the osv.dev export bucket to find vulnerabilities in inventory packages
 package osvlocal
 
 import (
@@ -60,6 +75,7 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
+// Enrich checks for vulnerabilities in the inventory packages using zip files exported by osv.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	dbs, err := newlocalMatcher(
 		"",
@@ -93,8 +109,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	// for the same package, so we deduplicate and merge the results.
 	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
 
-	// return to the caller the initialQueryErr, which if not nil indicates that
-	// the list of vulnerabilities is not complete
 	return nil
 }
 
