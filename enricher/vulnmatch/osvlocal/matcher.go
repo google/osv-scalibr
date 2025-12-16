@@ -60,15 +60,6 @@ func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zipp
 }
 
 func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extractor.Package, pkgs []*extractor.Package) ([]*osvschema.Vulnerability, error) {
-	// ensure all databases loaded so far have been fully loaded; this is just a
-	// basic safeguard since we don't actually currently attempt to reuse matchers
-	// across scans, and its possible we never will, so we don't need to be smart
-	// for _, db := range matcher.dbs {
-	// 	if db.Partial {
-	// 		return nil, errors.New("local matcher cannot be (re)used with a partially loaded database")
-	// 	}
-	// }
-
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
