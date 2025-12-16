@@ -738,6 +738,8 @@ message SecretData {
     PyxKeyV2 pyx_key_v2 = 53;
     CodeCatalystCredentials code_catalyst_credentials = 54;
     JWTToken jwt_token = 55;
+    CodeCommitCredentials code_commit_credentials = 56;
+    BitBucketCredentials bitbucket_credentials = 57;
   }
 
   message GCPSAK {
@@ -1026,6 +1028,14 @@ message SecretData {
   }
 
   message CodeCatalystCredentials{
+    string url = 1;
+  }
+
+  message CodeCommitCredentials{
+    string url = 1;
+  }
+
+  message BitBucketCredentials{
     string url = 1;
   }
 }

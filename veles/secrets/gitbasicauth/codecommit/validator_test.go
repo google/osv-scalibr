@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst_test
+package codecommit_test
 
 import (
 	"context"
@@ -23,15 +23,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 )
 
 var (
-	validatorTestURL         = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/repo"
-	validatorTestBadCredsURL = "https://user:bad_pat@git.region.codecatalyst.aws/v1/space/project/repo"
-	validatorTestBadRepoURL  = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/bad-repo"
-	badHostURL               = "https://user:pat@bad-host.com/v1/space/project/bad-repo"
+	validatorTestURL         = "https://user:token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-test"
+	validatorTestBadCredsURL = "https://user:bad_token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-test"
+	validatorTestBadRepoURL  = "https://user:token@git-codecommit.us-east-1.amazonaws.com/v1/repos/osv-scalibr-bad"
+	badHostURL               = "https://user:token@bad-host/v1/repos/osv-scalibr-bad"
 )
 
 func TestValidator(t *testing.T) {
@@ -70,13 +70,13 @@ func TestValidator(t *testing.T) {
 		{
 			name:       "invalid_creds",
 			url:        validatorTestBadCredsURL,
-			httpStatus: http.StatusBadRequest,
+			httpStatus: http.StatusForbidden,
 			want:       veles.ValidationInvalid,
 		},
 		{
 			name:       "bad_repository",
 			url:        validatorTestBadRepoURL,
-			httpStatus: http.StatusBadRequest,
+			httpStatus: http.StatusForbidden,
 			want:       veles.ValidationInvalid,
 		},
 	}
@@ -90,15 +90,13 @@ func TestValidator(t *testing.T) {
 			defer server.Close()
 
 			client := &http.Client{
-				Transport: &mockserver.Transport{
-					URL: server.URL,
-				},
+				Transport: &mockserver.Transport{URL: server.URL},
 			}
 
-			v := codecatalyst.NewValidator()
+			v := codecommit.NewValidator()
 			v.HTTPC = client
 
-			got, err := v.Validate(tt.ctx, codecatalyst.Credentials{FullURL: tt.url})
+			got, err := v.Validate(tt.ctx, codecommit.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

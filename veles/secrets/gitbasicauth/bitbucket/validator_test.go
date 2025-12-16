@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst_test
+package bitbucket_test
 
 import (
 	"context"
@@ -23,15 +23,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 )
 
 var (
-	validatorTestURL         = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/repo"
-	validatorTestBadCredsURL = "https://user:bad_pat@git.region.codecatalyst.aws/v1/space/project/repo"
-	validatorTestBadRepoURL  = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/bad-repo"
-	badHostURL               = "https://user:pat@bad-host.com/v1/space/project/bad-repo"
+	validatorTestURL         = "https://user:password@bitbucket.org/workspace/project-repo.git"
+	validatorTokenURL        = "https://x-token-auth:token@bitbucket.org/workspace/project-repo.git"
+	validatorTestBadCredsURL = "https://user:bad_password@bitbucket.org/workspace/project-repo.git"
+	validatorTestBadRepoURL  = "https://x-token-auth:token@bitbucket.org/workspace/bad-project-repo.git"
+	badHostURL               = "https://x-token-auth:token@bad-host.com/workspace/bad-project-repo.git"
 )
 
 func TestValidator(t *testing.T) {
@@ -68,15 +69,21 @@ func TestValidator(t *testing.T) {
 			want:       veles.ValidationValid,
 		},
 		{
+			name:       "valid_token",
+			url:        validatorTokenURL,
+			httpStatus: http.StatusOK,
+			want:       veles.ValidationValid,
+		},
+		{
 			name:       "invalid_creds",
 			url:        validatorTestBadCredsURL,
-			httpStatus: http.StatusBadRequest,
+			httpStatus: http.StatusUnauthorized,
 			want:       veles.ValidationInvalid,
 		},
 		{
 			name:       "bad_repository",
 			url:        validatorTestBadRepoURL,
-			httpStatus: http.StatusBadRequest,
+			httpStatus: http.StatusUnauthorized,
 			want:       veles.ValidationInvalid,
 		},
 	}
@@ -90,15 +97,13 @@ func TestValidator(t *testing.T) {
 			defer server.Close()
 
 			client := &http.Client{
-				Transport: &mockserver.Transport{
-					URL: server.URL,
-				},
+				Transport: &mockserver.Transport{URL: server.URL},
 			}
 
-			v := codecatalyst.NewValidator()
+			v := bitbucket.NewValidator()
 			v.HTTPC = client
 
-			got, err := v.Validate(tt.ctx, codecatalyst.Credentials{FullURL: tt.url})
+			got, err := v.Validate(tt.ctx, bitbucket.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

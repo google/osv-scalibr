@@ -12,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package codecatalyst
+package bitbucket
 
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth"
 )
 
-// NewValidator creates a new Validator that validates CodeCatalyst credentials
+// NewValidator creates a new Validator that validates Bitbucket credentials
 func NewValidator() *simplevalidate.Validator[Credentials] {
 	return gitbasicauth.NewValidator[Credentials](
 		func(u *url.URL) bool {
-			return strings.HasSuffix(u.Host, ".codecatalyst.aws")
+			return u.Host == "bitbucket.org"
 		},
-		[]int{http.StatusOK}, []int{http.StatusBadRequest},
+		[]int{http.StatusOK}, []int{http.StatusUnauthorized},
 	)
 }
