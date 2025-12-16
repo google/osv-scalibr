@@ -89,6 +89,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	// Should match the status file.
 	if filepath.ToSlash(api.Path()) != "lib/apk/db/installed" &&
+		filepath.ToSlash(api.Path()) != "var/lib/apk/db/installed" &&
 		// TODO(b/428271704): Remove once we handle symlinks properly.
 		filepath.ToSlash(api.Path()) != "usr/lib/apk/db/installed" {
 		return false

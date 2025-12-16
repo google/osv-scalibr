@@ -12,8 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains fakes that can be used to test parts of Veles as
-// well as integrations.
-//
-//nolint:plugger // This package contains test only mocks
-package velestest
+package generic
+
+import "context"
+
+// Validator is a validator interface
+type Validator[S any] interface {
+	Validate(ctx context.Context, secret S) (int, error)
+}
+
+// GenericValidator is a generic validator
+type GenericValidator[T any] struct{}
+
+// Validate implements Validator.
+func (v *GenericValidator[T]) Validate(ctx context.Context, secret T) (int, error) {
+	panic("unimplemented")
+}
+
+// NewValidator returns an integer validator
+func NewValidator() *GenericValidator[int] {
+	return &GenericValidator[int]{}
+}
