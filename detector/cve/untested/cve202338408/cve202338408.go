@@ -97,7 +97,7 @@ func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Pa
 				}},
 				Ranges: []*osvpb.Range{{
 					Type:   osvpb.Range_ECOSYSTEM,
-					Events: []*osvpb.Event{{Fixed: "9.3.p2"}},
+					Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "9.3.p2"}},
 				}},
 			}},
 			DatabaseSpecific: dbSpecific,
