@@ -292,6 +292,7 @@ func TestEnrich(t *testing.T) {
 			},
 		}
 
+		// this vuln is withdrawn so should never be matched
 		jsVuln2 = osvpb.Vulnerability{
 			SchemaVersion: "1.7.0",
 			Id:            "GHSA-rv95-896h-c2vc",
@@ -451,7 +452,6 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
 				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
 				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -463,7 +463,6 @@ func TestEnrich(t *testing.T) {
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
 				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -474,7 +473,6 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name, "mock/plugin"}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
