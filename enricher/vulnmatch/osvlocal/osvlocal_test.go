@@ -391,7 +391,13 @@ func TestEnrich(t *testing.T) {
 			return
 		}
 
-		t.Fatalf("unexpected call")
+		if strings.HasSuffix(r.URL.Path, "GIT/all.zip") {
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{})
+
+			return
+		}
+
+		t.Fatalf("unexpected call to %s", r.URL.Path)
 	})
 
 	tests := []struct {
